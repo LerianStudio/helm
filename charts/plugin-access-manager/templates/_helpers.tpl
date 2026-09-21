@@ -551,3 +551,155 @@ never has to be spliced into a connection string.
       name: {{ include "plugin-caradhras.redisPasswordSecretName" . }}
       key: {{ $rp.secretKey | default "REDIS_PASSWORD" }}
 {{- end }}
+
+{{/*
+plugin-access-manager.ssoCallbackPath — the console route the identity provider
+sends the browser back to. This path is OUR contract, not the operator's: it is
+the Next.js route src/app/(auth-routes)/signin/sso/callback in product-console.
+Changing it here without changing the console breaks every SSO login.
+*/}}
+{{- define "plugin-access-manager.ssoCallbackPath" -}}
+/signin/sso/callback
+{{- end }}
+
+{{/*
+plugin-access-manager.ssoCallbackSource — which values field produced the
+callback URL for ONE component, as a human-readable path. Used only so a
+validation failure can name the field the operator actually wrote.
+
+Arguments: context (the root $), component ("auth" or "identity").
+*/}}
+{{- define "plugin-access-manager.ssoCallbackSource" -}}
+{{- $ctx := .context -}}
+{{- $cm := (index $ctx.Values .component).configmap | default dict -}}
+{{- $sso := ($ctx.Values.common | default dict).sso | default dict -}}
+{{- if $cm.PLUGIN_AUTH_SSO_CALLBACK_URL -}}
+{{- printf "%s.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL" .component -}}
+{{- else if $sso.callbackUrl -}}
+common.sso.callbackUrl
+{{- else if $sso.baseUrl -}}
+common.sso.baseUrl
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.ssoCallbackUrl — the browser-facing URL the identity
+provider sends the user back to after an SSO login, resolved for ONE component.
+
+Arguments: context (the root $), component ("auth" or "identity").
+
+The host is the CLIENT's: they map the console on a domain the chart cannot know
+or derive. The PATH is ours. So the normal channel is common.sso.baseUrl — the
+operator gives scheme + host (plus a path prefix when the console is served
+under one) and the chart appends the console route itself, which takes the most
+likely and least diagnosable mistake (a mistyped path) off the table: Casdoor
+rejects a redirect_uri that is not on its allow-list without saying why.
+
+common.sso.callbackUrl is the escape hatch for a literal full URL — a custom
+console route, or a proxy that rewrites the path — and a per-component
+configmap.PLUGIN_AUTH_SSO_CALLBACK_URL wins over both, for migration.
+
+Empty means the key is not emitted at all, so an install that does not use SSO
+renders exactly as it did before this key existed.
+
+The value is NOT derived from PLUGIN_AUTH_ADDRESS: that is the in-cluster
+address the components use to reach each other, while this one has to be
+reachable by the end user's browser.
+*/}}
+{{- define "plugin-access-manager.ssoCallbackUrl" -}}
+{{- $ctx := .context -}}
+{{- $cm := (index $ctx.Values .component).configmap | default dict -}}
+{{- $sso := ($ctx.Values.common | default dict).sso | default dict -}}
+{{- $literal := $cm.PLUGIN_AUTH_SSO_CALLBACK_URL | default $sso.callbackUrl | default "" | toString -}}
+{{- $base := $sso.baseUrl | default "" | toString -}}
+{{- if $literal -}}
+{{- $literal -}}
+{{- else if $base -}}
+{{- printf "%s%s" (trimSuffix "/" $base) (include "plugin-access-manager.ssoCallbackPath" $ctx) -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.validateSsoCallbackUrl — render-time guards for the SSO
+callback URL. Included once, from templates/auth/configmap.yaml (always
+rendered).
+
+1. baseUrl and callbackUrl are mutually exclusive. One says "compose the path",
+   the other says "use this literally"; setting both is a contradiction with no
+   correct answer, and silently preferring one hides a half-finished migration.
+2. The base must not already end in the console route, which is what a full URL
+   pasted into the base field looks like — composing it would double the path.
+3. The resolved URL must be what the binary accepts: an absolute http(s) URL
+   with a concrete path. identity refuses to configure SSO otherwise
+   (isAbsoluteCallbackURL, components/identity/internal/services/sso_provider.go),
+   and a path-less entry would widen Casdoor's allow-list to every path on the
+   host and its subdomains instead of authorising one endpoint. Failing here
+   names the values field; failing there is a provider that saves and never
+   completes a login.
+3b. The resolved URL must END in the console route. The host is the operator's
+   and the chart never questions it; the path is this platform's contract, and
+   a value that merely looks plausible — /sso/callback, /signin/callback — is
+   rejected by Caradhras at the first login as an unlisted redirect_uri, with
+   no indication of which part was wrong. baseUrl cannot trip this (the chart
+   appends the route itself); a literal can. Lifted, deliberately and by name,
+   by common.sso.allowCustomCallbackPath for a console on a custom route or
+   behind a path-rewriting proxy.
+4. auth and identity must resolve to the SAME value. identity writes the URL
+   into the Caradhras provider's redirect allow-list; auth then sends it as the
+   redirect_uri of the code relay, and Caradhras rejects any redirect_uri the
+   allow-list does not carry. A skew therefore does not fail at deploy time — it
+   fails at the first login, as a rejected redirect_uri that names neither
+   component. The shared common.sso.* fields satisfy this for free; the guard
+   exists for the per-component override.
+5. The named key and <component>.extraEnvVars must not both carry it. Both land
+   in the same ConfigMap `data` map, so the key would be emitted twice and which
+   one survives is the YAML parser's business, not the chart's — the same
+   undefined behavior this chart already refuses for the caradhras session
+   endpoint. Scoped to this key: an install that only uses extraEnvVars (no
+   named key) is untouched.
+*/}}
+{{- define "plugin-access-manager.validateSsoCallbackUrl" -}}
+{{- $sso := (.Values.common | default dict).sso | default dict -}}
+{{- $base := $sso.baseUrl | default "" | toString -}}
+{{- $literal := $sso.callbackUrl | default "" | toString -}}
+{{- $path := include "plugin-access-manager.ssoCallbackPath" . -}}
+{{- $custom := eq (toString ($sso.allowCustomCallbackPath | default false)) "true" -}}
+{{- if and $base $literal -}}
+{{- fail (printf "common.sso.baseUrl (%q) and common.sso.callbackUrl (%q) are both set. They are alternatives, not layers: baseUrl asks the chart to append the console route %s, callbackUrl supplies the whole URL literally. Keep baseUrl — it is the normal case, and it makes the path impossible to mistype — and drop callbackUrl unless the console really answers SSO on some other route." $base $literal $path) -}}
+{{- end -}}
+{{- if and $base (hasSuffix $path (trimSuffix "/" $base)) -}}
+{{- fail (printf "common.sso.baseUrl (%q) already ends in %s. That field takes only the part that is yours — scheme, host, and a path prefix if the console is served under one — because the chart appends the route itself; as written the callback would come out as %q. Drop the route from baseUrl, or use common.sso.callbackUrl if you really mean to pin the whole URL literally." $base $path (printf "%s%s" (trimSuffix "/" $base) $path)) -}}
+{{- end -}}
+{{- range $component := (list "auth" "identity") -}}
+{{- $url := include "plugin-access-manager.ssoCallbackUrl" (dict "context" $ "component" $component) -}}
+{{- if and $url (not (regexMatch `^https?://[^/?#]+/[^?#]+` $url)) -}}
+{{- fail (printf "%s resolves the SSO callback URL to %q, which is not an absolute http(s) URL with a path. plugin-identity refuses to configure any SSO provider with such a value, so the provider would look saved while no login through it could ever complete; a host with no path is refused as well, because Casdoor would then treat the allow-list entry as a wildcard over every path on that host and its subdomains. Give scheme, host and — when the console sits under one — its path prefix, for example \"https://console.example.com\"." (include "plugin-access-manager.ssoCallbackSource" (dict "context" $ "component" $component)) $url) -}}
+{{- end -}}
+{{- if and $url (not $custom) (not (hasSuffix $path $url)) -}}
+{{- fail (printf "%s resolves the SSO callback URL to %q, whose path is not %s.\n  expected path: %s\n  received:      %s\nThe HOST is yours — any domain you serve the console on is fine, and the chart never questions it. The PATH is this platform's contract: it is the console route the identity provider returns the browser to, and Caradhras rejects a redirect_uri that is not on its allow-list without saying which part was wrong, so a near-miss like /sso/callback deploys cleanly and breaks the first login. Set common.sso.baseUrl to just the scheme and host (plus a path prefix when the console sits under one) and let the chart append the route. If this deployment really answers SSO on another path — a custom console route, or a proxy that rewrites it — set common.sso.allowCustomCallbackPath=true to take that on deliberately." (include "plugin-access-manager.ssoCallbackSource" (dict "context" $ "component" $component)) $url $path $path $url) -}}
+{{- end -}}
+{{- end -}}
+{{- $authUrl := include "plugin-access-manager.ssoCallbackUrl" (dict "context" . "component" "auth") -}}
+{{- $idUrl := include "plugin-access-manager.ssoCallbackUrl" (dict "context" . "component" "identity") -}}
+{{- if ne $authUrl $idUrl -}}
+{{- fail (printf "PLUGIN_AUTH_SSO_CALLBACK_URL resolves to %q on auth and %q on identity. The two MUST be identical: identity registers this URL in the Caradhras provider's redirect allow-list, and auth sends it as the redirect_uri of the code relay, which Caradhras rejects when it is not on that list — so a skew deploys cleanly and then breaks every SSO login with a rejected redirect_uri. Set it ONCE in common.sso.baseUrl instead of per component." $authUrl $idUrl) -}}
+{{- end -}}
+{{- range $component := (list "auth" "identity") -}}
+{{- $extra := (index $.Values $component).extraEnvVars | default dict -}}
+{{- if and (include "plugin-access-manager.ssoCallbackUrl" (dict "context" $ "component" $component)) (hasKey $extra "PLUGIN_AUTH_SSO_CALLBACK_URL") -}}
+{{- fail (printf "PLUGIN_AUTH_SSO_CALLBACK_URL is set as a named chart key AND in %s.extraEnvVars. Both render into the same ConfigMap data map, so the key would be emitted twice and the effective value is whatever the YAML parser keeps — undefined behavior. Keep it in common.sso.baseUrl (or common.sso.callbackUrl / %s.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL) and remove it from %s.extraEnvVars." $component $component $component) -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.validateMfaEnabled — same collision guard for MFA_ENABLED,
+which the auth component alone reads.
+*/}}
+{{- define "plugin-access-manager.validateMfaEnabled" -}}
+{{- $cm := .Values.auth.configmap | default dict -}}
+{{- $extra := .Values.auth.extraEnvVars | default dict -}}
+{{- if and (not (kindIs "invalid" $cm.MFA_ENABLED)) (ne ($cm.MFA_ENABLED | toString) "") (hasKey $extra "MFA_ENABLED") -}}
+{{- fail "MFA_ENABLED is set both in auth.configmap and in auth.extraEnvVars. Both render into the same ConfigMap data map, so the key would be emitted twice and the effective value is whatever the YAML parser keeps — undefined behavior. Keep it in auth.configmap.MFA_ENABLED and remove it from auth.extraEnvVars." -}}
+{{- end -}}
+{{- end }}

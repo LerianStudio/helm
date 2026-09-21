@@ -1,5 +1,42 @@
 # Product-console Changelog
 
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.0)
+
+- **Features**
+  - Declare `MIDAZ_V2_BASE_PATH` as a named key in product-console.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.1.0...product-console-v4.2.0)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-started installation runbook in both English and Portuguese.
+  - Introduced documentation on volume warnings and their implications.
+  
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart will empty its volume.
+  - Ensured values are retained when repairing splits.
+  - Implemented refusal for secret names that consist only of spaces.
+  - Provided a reliable namespace remedy.
+  - Corrected the service name created by Bitnami.
+  - Refused existing secrets with no name.
+
+- **Improvements**
+  - Enhanced documentation with a Helm upgrade guide for version 4.0.5.
+  - Updated documentation to address authentication credentials, CORS settings, and DocumentDB TLS caveats.
+  - Improved port-forward readiness checks before executing curl commands.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
 ## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
 
 - **Features**

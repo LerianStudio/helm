@@ -1,5 +1,21 @@
 # Product-console Changelog
 
+## [4.2.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.1)
+
+- **Fixes**
+  - Updated product-console to version 2.0.0.
+  - Bumped image tag to 2.0.0 and restored chart from main branch.
+
+- **Improvements**
+  - Added Helm upgrade guide for product-console v4.1.0.
+  - Added Helm upgrade guide for product-console v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.0...product-console-v4.2.1)
+
+---
+
 ## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.0)
 
 - Features:

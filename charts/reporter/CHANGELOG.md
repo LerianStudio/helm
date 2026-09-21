@@ -2,6 +2,22 @@
 
 ## [4.3.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.3)
 
+- **Fixes:**
+  - Updated `reporter-manager` to version 4.0.0.
+  - Updated `reporter-worker` to version 4.0.0.
+
+- **Documentation:**
+  - Added Helm upgrade guide for reporter v4.3.2.
+  - Added upgrade guide for reporter v4.3.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.2...reporter-v4.3.3)
+
+---
+
+## [4.3.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.3)
+
 - **Fixes**
   - Updated `reporter-manager` to version 4.0.0.
   - Updated `reporter-worker` to version 4.0.0.

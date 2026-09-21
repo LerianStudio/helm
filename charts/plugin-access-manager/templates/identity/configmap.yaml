@@ -124,6 +124,12 @@ data:
   AUTHORIZER_ENFORCER_NAME: {{ .Values.identity.configmap.AUTHORIZER_ENFORCER_NAME | default "lerian-user-enforcer" | quote }}
   AUTHORIZER_MODEL_NAME: {{ .Values.identity.configmap.AUTHORIZER_MODEL_NAME | default "api-model" | quote }}
 
+  {{- with (include "plugin-access-manager.ssoCallbackUrl" (dict "context" $ "component" "identity")) }}
+
+  # SSO
+  PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
+  {{- end }}
+
   # RUNTIME
   DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   TRUSTED_PROXIES: {{ .Values.identity.configmap.TRUSTED_PROXIES | default "" | quote }}

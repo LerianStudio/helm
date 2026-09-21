@@ -5,7 +5,27 @@
   "properties": {
     "common": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "sso": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "baseUrl": {
+              "type": "string",
+              "description": "Scheme + host (plus path prefix) the console is served from. The chart appends the console SSO callback route. Empty omits the key."
+            },
+            "callbackUrl": {
+              "type": "string",
+              "description": "Literal full callback URL, replacing composition from baseUrl. Absolute http(s) URL ending in the console SSO callback route. Mutually exclusive with baseUrl."
+            },
+            "allowCustomCallbackPath": {
+              "type": "boolean",
+              "description": "Lift the console-route path check on callbackUrl. Only for a deployment that answers SSO on another path."
+            }
+          }
+        }
+      }
     },
     "identity": {
       "type": "object",

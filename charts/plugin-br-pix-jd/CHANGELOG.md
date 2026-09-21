@@ -1,5 +1,213 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features**
+  - Aligned migration guidance with job behavior to improve documentation clarity. (Commit: c5d96a2e)
+
+- **Fixes**
+  - Bumped app version to 2.0.1 and pinned published migrations to ensure stability and compatibility. (Commit: 91fa5a4f)
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features:**
+  - Updated plugin-br-pix-jd to version 0.4.4.
+
+- **Fixes:**
+  - Bumped app to version 2.0.1 and pinned published migrations for improved stability.
+
+- **Improvements:**
+  - Aligned migration guidance with job behavior to ensure consistent documentation and functionality.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features:**
+  - Aligned migration guidance with job behavior for improved documentation clarity. (Commit: c5d96a2e)
+
+- **Fixes:**
+  - Bumped app version to 2.0.1 and pinned published migrations to ensure stability and compatibility. (Commit: 91fa5a4f)
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features:**
+  - Updated plugin-br-pix-jd to version 0.4.4.
+
+- **Fixes:**
+  - Bumped the app version to 2.0.1 and pinned published migrations to ensure stability.
+
+- **Improvements:**
+  - Aligned migration guidance with job behavior for better documentation consistency.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features:**
+  - Aligned migration guidance with job behavior to improve documentation clarity.
+
+- **Fixes:**
+  - Bumped app version to 2.0.1 and pinned published migrations to ensure stability and compatibility.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features:**
+  - Updated plugin-br-pix-jd to version 0.4.4.
+
+- **Fixes:**
+  - Bumped app to version 2.0.1 and pinned published migrations to ensure stability.
+
+- **Improvements:**
+  - Aligned migration guidance with job behavior for better consistency.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features:**
+  - Updated migration guidance to align with job behavior.
+
+- **Fixes:**
+  - Bumped app version to 2.0.1 and pinned published migrations.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features:**
+  - Aligned migration guidance with job behavior to improve documentation clarity.
+
+- **Fixes:**
+  - Bumped app version to 2.0.1 and pinned published migrations to ensure stability and compatibility.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features**
+  - Aligned migration guidance with job behavior for improved documentation clarity. (Commit: c5d96a2e)
+
+- **Fixes**
+  - Bumped app version to 2.0.1 and pinned published migrations to ensure stability and compatibility. (Commit: 91fa5a4f)
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
+- **Features:**
+  - Updated plugin-br-pix-jd to version 0.4.4.
+
+- **Fixes:**
+  - Bumped app to version 2.0.1 and pinned published migrations to ensure stability.
+
+- **Improvements:**
+  - Aligned migration guidance with job behavior for better consistency.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
+
+- **Fixes**
+  - Adjusted the QR payload path default and budget gate to comply with JDPI's 77-character limit.
+
+- **Improvements**
+  - Added an upgrade guide for version 0.4.3 to assist users in transitioning smoothly.
+
+Contributors: @guimoreirar, @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.3...plugin-br-pix-jd-v0.4.4)
+
+---
+
+## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
+
+- Fixes:
+  - Adjusted the QR payload path default and budget gate to comply with JDPI's 77-character limit.
+
+- Improvements:
+  - Added an upgrade guide for plugin-br-pix-jd v0.4.3.
+
+Contributors: @guimoreirar, @jeffersonrodrigues92, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.3...plugin-br-pix-jd-v0.4.4)
+
+---
+
+## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
+
+- Fixes:
+  - Adjusted the QR payload path default and budget gate to comply with JDPI's 77-character limit.
+
+- Improvements:
+  - Added an upgrade guide for plugin-br-pix-jd v0.4.3.
+
+Contributors: @guimoreirar, @jeffersonrodrigues92, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.3...plugin-br-pix-jd-v0.4.4)
+
+---
+
+## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
+
+- Fixes:
+  - Adjusted the QR payload path default and budget gate to comply with JDPI's 77-character limit.
+
+- Improvements:
+  - Added an upgrade guide for plugin-br-pix-jd v0.4.3.
+
+Contributors: @guimoreirar, @jeffersonrodrigues92, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.3...plugin-br-pix-jd-v0.4.4)
+
+---
+
 ## [0.4.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.4)
 
 - Fixes:

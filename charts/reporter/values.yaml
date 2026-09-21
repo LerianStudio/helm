@@ -121,7 +121,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.0.0"
+    tag: "4.0.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -313,7 +313,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.0.0"
+    tag: "4.0.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -464,6 +464,69 @@ common:
   # dependency CONNECTIONS resolve through lerian-common typed masks/helpers, everything
   # else is an escape-hatch passthrough. Set common.configmap.<KEY> here to override any
   # shared key; add any other key and it flows through as-is.
+  #
+  # Optional Reporter CRM datasource (not enabled by default):
+  #   configmap:
+  #     DATASOURCE_CRM_CONFIG_NAME: "plugin_crm" # reserved name
+  #     DATASOURCE_CRM_TYPE: "mongodb"
+  #     DATASOURCE_CRM_HOST: "crm.example.invalid"
+  #     DATASOURCE_CRM_PORT: "27017"
+  #     DATASOURCE_CRM_DATABASE: "crm"
+  #     DATASOURCE_CRM_USER: "reporter"
+  #     DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+  # CRM is all-or-nothing once any DATASOURCE_CRM_* key is set. Put its password
+  # and crypto keys under secrets: (or in each component's external Secret), never here.
+  #
+  # -- CRM over TLS with an INLINE CA bundle (e.g. AWS DocumentDB / any managed MongoDB) --
+  # The CRM datasource is a MongoDB source, so it takes the same TLS knobs as any datasource:
+  # point DATASOURCE_CRM_HOST at the TLS endpoint and hand the app the trust anchor INLINE
+  # (Base64 of a PEM CA bundle) instead of a file path — no volume/mount, works with any
+  # secret manager. Requires reporter app >= the inline-CA release (3.0.2+).
+  #
+  #   configmap:
+  #     DATASOURCE_CRM_CONFIG_NAME: "plugin_crm"
+  #     DATASOURCE_CRM_TYPE: "mongodb"
+  #     # the real TLS endpoint — its hostname must match the server certificate (verify-full)
+  #     DATASOURCE_CRM_HOST: "shared-docdb.cluster-xxxx.<region>.docdb.amazonaws.com"
+  #     DATASOURCE_CRM_PORT: "27017"
+  #     DATASOURCE_CRM_DATABASE: "crm"
+  #     DATASOURCE_CRM_USER: "reporter"
+  #     DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+  #     # SSLMODE any value other than "disable" enables TLS for a mongo datasource. It may be
+  #     # OMITTED when SSLCA_BASE64 is set — the app then infers "require" from the configured CA.
+  #     DATASOURCE_CRM_SSLMODE: "require"
+  #     # Base64 of a PEM CA bundle. NOT a secret (a CA cert is public) — it lives here in the
+  #     # configmap, NOT under secrets:. The connection password stays in secrets.DATASOURCE_CRM_PASSWORD.
+  #     DATASOURCE_CRM_SSLCA_BASE64: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t..."   # one line, no newlines
+  #
+  # Two hard requirements for DATASOURCE_CRM_SSLCA_BASE64 (both learned the hard way):
+  #   1. SCOPE THE BUNDLE. Use the per-region / per-cluster CA, NOT the full AWS global bundle.
+  #      The global rds-combined/global-bundle.pem is ~108 certs (~220 KB Base64); as a single
+  #      env var it EXCEEDS the Linux per-arg env limit (MAX_ARG_STRLEN, 128 KB) and the container
+  #      fails to exec ("argument list too long") — the pod never starts. The regional bundle
+  #      (e.g. https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem, a few KB)
+  #      still validates and is what you want. Custom PKI: ship only the issuing chain.
+  #   2. SINGLE LINE, NO NEWLINES. The app decodes with strict Base64 and rejects embedded
+  #      newlines. Produce it with:  base64 -w0 ca.pem   (macOS:  base64 ca.pem | tr -d '\n').
+  #      In this YAML use a plain double-quoted scalar — do NOT use a block scalar (| / >),
+  #      which reintroduces newlines.
+  #
+  # Fetch the regional AWS RDS/DocumentDB CA and produce the value (pick your cluster's region):
+  #   REGION=sa-east-1   # e.g. the region in the DATASOURCE_CRM_HOST endpoint
+  #   curl -fsSLO "https://truststore.pki.rds.amazonaws.com/${REGION}/${REGION}-bundle.pem"
+  #   base64 -w0 "${REGION}-bundle.pem"                 # Linux — paste the output as the value
+  #   base64 "${REGION}-bundle.pem" | tr -d '\n'        # macOS equivalent
+  # (Global bundle, DO NOT use as an env var — see requirement 1:
+  #   https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem)
+  # Sanity-check it validates before deploying (needs mongosh + network to the cluster):
+  #   # credentials as separate flags so URI-reserved chars (@ : / ? # [ ]) need no percent-encoding
+  #   mongosh "mongodb://<DATASOURCE_CRM_HOST>:27017/?tls=true&tlsCAFile=${REGION}-bundle.pem&retryWrites=false" \
+  #     --username '<user>' --password '<pass>' --authenticationDatabase admin --quiet --eval 'db.runCommand({ping:1})'
+  # Custom / non-AWS PKI: base64 -w0 the issuing chain PEM the same way.
+  #
+  # Mutually exclusive with the legacy file path: set EITHER DATASOURCE_CRM_SSLCA_BASE64 (inline)
+  # OR DATASOURCE_CRM_SSLROOTCERT (a mounted file), never both. Same pattern applies to any other
+  # DATASOURCE_<NAME>_SSLCA_BASE64.
   configmap: {}
 # -- Dedicated datastore masks for THIS release (override global.datastores). Both the
 # manager and worker surfaces share these connections. Sub-keys (each host/port/user/ssl):
@@ -503,7 +566,18 @@ secrets:
   # RabbitMQ is single-sourced here (Pattern B): the broker is pointed at this Secret via
   # rabbitmq.authentication.existingSecret, so these are the only copies of the broker creds.
   RABBITMQ_DEFAULT_USER: reporter
-  RABBITMQ_DEFAULT_PASS: ""
+  # BUNDLED broker: this plaintext is BOTH what the workloads authenticate with AND (via its
+  # hash) what the broker seeds the user from. When rabbitmq.enabled, the broker imports
+  # load_definitions at boot, which makes RabbitMQ skip seeding the default user — so the
+  # reporter user is declared in the definitions with rabbitmq.loadDefinition.passwordHash,
+  # which is the hash of THIS value (the two are coupled). The bundled broker is DEV/LOCAL-ONLY
+  # and ships a FIXED dev credential so a from-scratch `helm install` reaches 1/1 — do NOT
+  # override it: Helm cannot verify a custom password matches a custom hash, so a mismatched pair
+  # would only surface as a runtime 403 (a render-time guard refuses any change). For a real /
+  # custom broker credential use the EXTERNAL broker (rabbitmq.enabled=false +
+  # externalRabbitmqDefinitions.enabled=true) — set your real password here (or via a component
+  # existingSecret) and provision the user per tier.
+  RABBITMQ_DEFAULT_PASS: "reporter123"
   # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
   # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the
   # cluster. Generate once with: openssl rand -hex 32
@@ -529,6 +603,12 @@ secrets:
   # NO ROTATION in this release: changing the value makes every already-registered data
   # source undecryptable (they must be re-registered).
   DATASOURCE_CRED_ENC_KEY: ""
+  # Optional Reporter CRM secrets (only when common.configmap.DATASOURCE_CRM_* is set):
+  # DATASOURCE_CRM_PASSWORD: ""
+  # CRYPTO_HASH_SECRET_KEY_CRM: ""
+  # CRYPTO_ENCRYPT_SECRET_KEY_CRM: ""
+  # With manager/worker.useExistingSecret=true, put these keys in each external Secret
+  # instead of setting them here. Keep DATASOURCE_CRED_ENC_KEY unchanged.
 seaweedfs:
   enabled: true
   # -- Subchart-wide settings. createClusterRole is disabled by default: the bundled
@@ -540,8 +620,17 @@ seaweedfs:
   global:
     createClusterRole: false
     serviceAccountName: "reporter-seaweedfs"
+  # -- The seaweedfs subchart hard-pins `nodeSelector: kubernetes.io/arch: amd64` on every
+  # component, so the pods stay Pending forever on arm64 nodes (e.g. Apple-Silicon minikube)
+  # and object-storage readiness never comes up. Unpinned here (empty string ⇒ the subchart's
+  # `{{ if .nodeSelector }}` drops the block) so the bundled storage schedules on any arch;
+  # amd64 is unaffected (no selector still matches amd64 nodes). Set a real selector per
+  # component to re-pin. The subchart expects a multi-line STRING, e.g.:
+  #   nodeSelector: |
+  #     kubernetes.io/arch: amd64
   master:
     enabled: true
+    nodeSelector: ""
     replicas: 1
     extraArgs:
       - "master"
@@ -559,6 +648,7 @@ seaweedfs:
       storageClass: null # Use cluster default or set a specific StorageClass
   volume:
     enabled: true
+    nodeSelector: ""
     replicas: 1
     extraArgs:
       - "volume"
@@ -579,6 +669,7 @@ seaweedfs:
         maxVolumes: 0 # 0 = let SeaweedFS decide, or set a limit
   filer:
     enabled: true
+    nodeSelector: ""
     extraArgs:
       - "filer"
       - "-port=8888"
@@ -594,6 +685,7 @@ seaweedfs:
       storageClass: null
   s3:
     enabled: true
+    nodeSelector: ""
     port: 8333
     grpcPort: 18333
     # Allow empty access key for development (disable auth)
@@ -772,6 +864,19 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
+  # -- Bundled-broker boot definitions (templates/manager/secrets_rabbitmq_definitions.yaml).
+  loadDefinition:
+    # -- RabbitMQ salted password_hash for the reporter user seeded into the bundled broker
+    # via load_definitions. REQUIRED when rabbitmq.enabled. Because a configured definitions
+    # import makes RabbitMQ stop seeding the default user from RABBITMQ_DEFAULT_USER/PASS, the
+    # user is declared in the definitions instead — and RabbitMQ definitions accept only a
+    # pre-computed hash, never a plaintext password. Helm cannot derive this hash from the
+    # plaintext, so it cannot verify a custom password/hash pair actually matches — an unmatched
+    # pair would render fine but fail at runtime with a 403. The bundled broker is DEV/LOCAL-ONLY,
+    # so it ships a FIXED dev credential (this hash matches the shipped RABBITMQ_DEFAULT_PASS
+    # "reporter123") and a render-time guard REFUSES any override. For a real / custom credential
+    # use the EXTERNAL broker (rabbitmq.enabled=false + externalRabbitmqDefinitions.enabled=true).
+    passwordHash: "MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G"
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store

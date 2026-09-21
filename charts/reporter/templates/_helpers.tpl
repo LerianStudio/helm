@@ -243,6 +243,140 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- end }}
 
 {{/*
+reporter.rabbitmqBundledDevPass / reporter.rabbitmqBundledDevHash — the SHIPPED
+dev credential pair for the BUNDLED groundhog2k rabbitmq subchart.
+
+The bundled broker imports files/rabbitmq/load_definitions.json at boot
+(rabbitmq.customConfig → management.load_definitions). Once a definitions file is
+configured, RabbitMQ STOPS seeding the default user from RABBITMQ_DEFAULT_USER/PASS —
+so the user MUST be declared inside the definitions, which requires a salted
+password_hash. Helm cannot compute RabbitMQ's rabbit_password_hashing_sha256 hash
+(raw-byte salt||sha256 concat then base64; sprig only gives hex sha256), so the hash
+is a VALUE, not derived from the plaintext password. The two are therefore coupled:
+change one, change the other.
+
+These two helpers are the single source of that shipped pair. values.yaml holds the
+SAME literals (secrets.RABBITMQ_DEFAULT_PASS and rabbitmq.loadDefinition.passwordHash);
+this helper backs the render-time consistency guard so the guard and the values default
+can never silently drift. Hash computed as base64(salt || sha256(salt||"reporter123"))
+with salt 0x31415926.
+DEV ONLY: production points at an EXTERNAL broker (rabbitmq.enabled=false) with real
+credentials, provisioned per tier.
+*/}}
+{{- define "reporter.rabbitmqBundledDevPass" -}}reporter123{{- end }}
+{{- define "reporter.rabbitmqBundledDevHash" -}}MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G{{- end }}
+
+{{/*
+reporter.rabbitmqLoadDefinitionConsistent — guard the coupled (password, password_hash)
+pair for the BUNDLED broker. Only active when the rabbitmq subchart is enabled (the
+external-broker path never imports load_definitions and is untouched).
+
+Footguns refused at render time:
+  1. Any custom bundled credential — secrets.RABBITMQ_DEFAULT_PASS or rabbitmq.loadDefinition.
+     passwordHash changed from the shipped dev defaults. A load_definitions import seeds the user
+     from a salted hash Helm cannot derive from the plaintext, so the chart cannot verify a custom
+     password and a custom hash are a matching pair; an unmatched pair passes render but is rejected
+     at runtime (403), which the TCP startup probe misses. The bundled broker is dev/local-only, so
+     it stays on the fixed dev credential; use the EXTERNAL broker for a real/custom credential.
+  2. manager/worker.useExistingSecret WITH the bundled broker — a component external Secret can
+     carry a RABBITMQ_DEFAULT_USER/PASS the bundled definitions never seed (the worker path is
+     invisible to the manager-name guard), so that workload authenticates with a rejected credential.
+*/}}
+{{- define "reporter.rabbitmqLoadDefinitionConsistent" -}}
+{{- $rmq := default dict .Values.rabbitmq -}}
+{{- $rmqEnabled := true -}}
+{{- if hasKey $rmq "enabled" -}}{{- $rmqEnabled = $rmq.enabled -}}{{- end -}}
+{{- if $rmqEnabled -}}
+{{- $hash := (default dict $rmq.loadDefinition).passwordHash | default "" | toString -}}
+{{- $pass := .Values.secrets.RABBITMQ_DEFAULT_PASS | default "" | toString -}}
+{{- $devPass := include "reporter.rabbitmqBundledDevPass" . -}}
+{{- $devHash := include "reporter.rabbitmqBundledDevHash" . -}}
+{{- if or (ne $pass $devPass) (ne $hash $devHash) -}}
+{{- fail "\n\nERROR: the BUNDLED rabbitmq broker (rabbitmq.enabled=true) uses a FIXED dev-only credential —\n   secrets.RABBITMQ_DEFAULT_PASS and rabbitmq.loadDefinition.passwordHash must stay at their shipped\n   defaults. A configured load_definitions import makes RabbitMQ seed the user from a salted\n   password_hash, and Helm CANNOT compute that hash from a plaintext password — so the chart cannot\n   verify that a custom password and a custom hash are a matching pair. An unmatched pair renders\n   fine but is rejected at runtime (403 \"username or password not allowed\"), which the TCP startup\n   probe does not catch. Rather than ship that footgun, a custom bundled credential is refused.\n   For a real / custom broker credential use the EXTERNAL broker instead:\n     rabbitmq.enabled=false  +  externalRabbitmqDefinitions.enabled=true   (provision the user per tier)\n" -}}
+{{- end -}}
+{{- $mgrExt := (default dict .Values.manager).useExistingSecret -}}
+{{- $wkrExt := (default dict .Values.worker).useExistingSecret -}}
+{{- if or $mgrExt $wkrExt -}}
+{{- fail "\n\nERROR: manager.useExistingSecret / worker.useExistingSecret is incompatible with the BUNDLED\n   rabbitmq subchart (rabbitmq.enabled=true). The bundled broker seeds its ONLY user from\n   secrets.RABBITMQ_DEFAULT_USER + rabbitmq.loadDefinition.passwordHash, but a component external\n   Secret carries its OWN RABBITMQ_DEFAULT_USER/PASS that the broker never learns — the workload\n   then authenticates with a credential the broker rejects (403), and the chart cannot compare\n   external-Secret contents at render time to catch it (worker path is invisible to the manager guard).\n   Use an EXTERNAL broker (rabbitmq.enabled=false + externalRabbitmqDefinitions.enabled=true) with\n   useExistingSecret, OR drop useExistingSecret so the chart single-sources the bundled broker credential.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmDeclared — true when an operator has supplied any CRM datasource
+configuration. CRM remains optional: installations that do not set a
+DATASOURCE_CRM_* key receive no validation or defaults.
+*/}}
+{{- define "reporter.crmDeclared" -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $declared := false -}}
+{{- range $key, $_ := $cm -}}
+{{- if or (hasPrefix "DATASOURCE_CRM_" $key) (eq $key "CRYPTO_HASH_SECRET_KEY_CRM") (eq $key "CRYPTO_ENCRYPT_SECRET_KEY_CRM") -}}{{- $declared = true -}}{{- end -}}
+{{- end -}}
+{{- if $declared -}}true{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmConfigRequired — validate Reporter CRM's non-secret datasource
+contract when, and only when, CRM is declared. These fields are deliberately in
+the shared ConfigMap because both workloads need them. The chart never guesses
+an organization ID or supplies a CRM connection default.
+*/}}
+{{- define "reporter.crmConfigRequired" -}}
+{{- if eq (include "reporter.crmDeclared" .) "true" -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $sensitive := list "DATASOURCE_CRM_PASSWORD" "CRYPTO_HASH_SECRET_KEY_CRM" "CRYPTO_ENCRYPT_SECRET_KEY_CRM" -}}
+{{- $misplaced := list -}}
+{{- range $key := $sensitive -}}
+{{- if hasKey $cm $key -}}{{- $misplaced = append $misplaced $key -}}{{- end -}}
+{{- end -}}
+{{- if gt (len $misplaced) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM secret keys must not be set in common.configmap: %s.\n   Put them under secrets: or in the matching external Secret.\n" (join ", " $misplaced)) -}}
+{{- end -}}
+{{- $required := list "DATASOURCE_CRM_CONFIG_NAME" "DATASOURCE_CRM_TYPE" "DATASOURCE_CRM_HOST" "DATASOURCE_CRM_PORT" "DATASOURCE_CRM_DATABASE" "DATASOURCE_CRM_USER" "DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID" -}}
+{{- $missing := list -}}
+{{- range $key := $required -}}
+{{- $value := index $cm $key -}}
+{{- if or (not (hasKey $cm $key)) (kindIs "invalid" $value) (eq (trim (toString $value)) "") -}}
+{{- $missing = append $missing $key -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $missing) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM is declared but its required non-secret configuration is incomplete: %s.\n   Set DATASOURCE_CRM_CONFIG_NAME=plugin_crm, DATASOURCE_CRM_TYPE=mongodb, HOST, PORT, DATABASE, USER and the correct DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID under common.configmap.\n   CRM is optional; remove all DATASOURCE_CRM_* keys to disable it.\n" (join ", " $missing)) -}}
+{{- end -}}
+{{- if ne (trim (toString (index $cm "DATASOURCE_CRM_CONFIG_NAME"))) "plugin_crm" -}}
+{{- fail "\n\nERROR: DATASOURCE_CRM_CONFIG_NAME must be \"plugin_crm\" when configuring Reporter CRM.\n   The plugin_crm datasource is reserved; do not substitute another name.\n" -}}
+{{- end -}}
+{{- if ne (trim (toString (index $cm "DATASOURCE_CRM_TYPE"))) "mongodb" -}}
+{{- fail "\n\nERROR: DATASOURCE_CRM_TYPE must be \"mongodb\" when configuring Reporter CRM.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmSecretsRequired — when CRM uses a chart-managed Secret, require its
+sensitive keys. This helper is intentionally called only from the manager/worker
+Secret templates; useExistingSecret remains opaque to Helm and valid external
+secret-manager inputs must not be blocked at render time.
+*/}}
+{{- define "reporter.crmSecretsRequired" -}}
+{{- if eq (include "reporter.crmDeclared" .context) "true" -}}
+{{- $secrets := .context.Values.secrets | default dict -}}
+{{- $required := list "DATASOURCE_CRM_PASSWORD" "CRYPTO_HASH_SECRET_KEY_CRM" "CRYPTO_ENCRYPT_SECRET_KEY_CRM" -}}
+{{- $missing := list -}}
+{{- range $key := $required -}}
+{{- $value := index $secrets $key -}}
+{{- if or (not (hasKey $secrets $key)) (kindIs "invalid" $value) (eq (trim (toString $value)) "") -}}
+{{- $missing = append $missing $key -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $missing) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM is declared and %s uses a chart-managed Secret, but these CRM secret keys are missing: %s.\n   Set them under secrets:, never common.configmap. When %s.useExistingSecret=true, provide the same keys in its external Secret instead.\n" .component (join ", " $missing) .component) -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 reporter.datasourceCredEncKeyRequired — gate secrets.DATASOURCE_CRED_ENC_KEY.
 
 The reporter app >= 3.0.0 stores registered data-source credentials ENCRYPTED at rest and
@@ -306,6 +440,7 @@ Input: the root context ($).
 {{- define "reporter.commonConfigmapData" -}}
 {{- $ := . -}}
 {{- $cm := .Values.common.configmap | default dict -}}
+{{- include "reporter.crmConfigRequired" . -}}
 {{- $ded := .Values.datastores | default dict -}}
 {{- $dv := "lerian-common.datastore.value" -}}
 {{- $osv := "lerian-common.objectStorage.value" -}}

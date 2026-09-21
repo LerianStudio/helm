@@ -187,6 +187,7 @@ ingress:
 | `tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
+| `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Literal callback URL for this component, overriding `common.sso.*`. Must match the auth component — see [Single sign-on](#single-sign-on-commonssobaseurl) | unset |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
 
@@ -226,8 +227,138 @@ ingress:
 | `tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
+| `configmap.MFA_ENABLED` | Multi-factor authentication gate. Unset omits the key and leaves the application default in force | unset |
+| `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Literal callback URL for this component, overriding `common.sso.*`. Must match the identity component — see [Single sign-on](#single-sign-on-commonssobaseurl) | unset |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
+
+#### Single sign-on (`common.sso.baseUrl`)
+
+An SSO login leaves the platform for the identity provider and has to come back.
+The address it comes back to has two halves, and they belong to different people:
+
+| half | example | whose |
+| --- | --- | --- |
+| scheme + host (+ path prefix) | `https://console.example.com` | **yours** — you map the console on your own domain; the chart cannot know or derive it |
+| callback path | `/signin/sso/callback` | **ours** — the console route the browser lands on; do not change it |
+
+So you give the chart the first half and it composes the second:
+
+```yaml
+common:
+  sso:
+    baseUrl: "https://console.example.com"
+    # -> https://console.example.com/signin/sso/callback
+```
+
+Serving the console under a path prefix works the same way —
+`baseUrl: "https://apps.example.com/console"` yields
+`https://apps.example.com/console/signin/sso/callback`.
+
+**Why the chart composes it instead of taking the whole URL.** A mistyped path is
+the most likely mistake here and by far the hardest to diagnose: Caradhras rejects
+a `redirect_uri` that is not on its allow-list without saying which part was wrong,
+so `/signin/sso/calback` produces a login that fails with an error naming nothing.
+Composing takes that mistake off the table.
+
+Setting this is **required to configure an SSO provider at all**. Without it,
+identity refuses to save the provider and answers the request with an error; the
+provider would otherwise look saved while no login through it could ever complete.
+
+**Passing the whole URL literally.** `common.sso.callbackUrl` takes the finished
+URL instead of composing one — but the host is the only part it may change: the
+chart refuses a value whose path is not `/signin/sso/callback`, naming the
+expected path and the one received. A near-miss (`/sso/callback`,
+`/signin/callback`, `/signin/sso/calback`) otherwise renders clean and surfaces
+only at the first login.
+
+```yaml
+common:
+  sso:
+    callbackUrl: "https://console.example.com/signin/sso/callback"
+```
+
+**The escape hatch, and it says so.** A deployment that genuinely answers SSO on
+another path — a console mounted on a custom route, or a proxy that rewrites it —
+lifts that check explicitly:
+
+```yaml
+common:
+  sso:
+    callbackUrl: "https://console.example.com/custom/sso/return"
+    allowCustomCallbackPath: true   # leaving the supported path, on purpose
+```
+
+Off this path the chart can no longer tell you whether the URL is right; it must
+match whatever actually serves the console callback, and a mismatch shows up only
+as a failed login. The absolute-`http(s)`-with-a-path requirement still applies —
+that one is the binary's, not the chart's.
+
+`baseUrl` and `callbackUrl` are alternatives, not layers — one asks the chart to
+append the route, the other supplies the finished URL — and the chart refuses to
+render when both are set. It also refuses a `baseUrl` that already ends in
+`/signin/sso/callback`, which is what a full URL pasted into the wrong field looks
+like and would otherwise double the path.
+
+**What the chart validates before you deploy.** The resolved URL must be an
+absolute `http(s)` URL carrying a concrete path — the same rule the binary applies
+(`isAbsoluteCallbackURL`). A host with no path is refused on purpose: Casdoor
+treats an allow-list entry without a path as a wildcard over every path on that
+host *and its subdomains*, so a half-formed value would widen the allow-list
+instead of authorising one endpoint. On top of that the chart checks the path is
+the console route, unless `allowCustomCallbackPath` says otherwise. Failing at
+`helm template` names the values field; failing at runtime is a provider that
+saves and never completes a login.
+
+**One value, both components, and the chart enforces it.** identity writes the URL
+into the Caradhras provider's redirect allow-list; auth then sends the same URL as
+the `redirect_uri` of the code relay, and Caradhras rejects any `redirect_uri` the
+allow-list does not carry. Two different values therefore deploy cleanly and break
+at the first login, with an error that names neither component. The shared
+`common.sso.*` fields give that for free; the per-component
+`{identity,auth}.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` overrides exist for
+migration, and the chart **refuses to render** whenever the two resolve differently.
+
+The value is never derived from `PLUGIN_AUTH_ADDRESS`. That address is how the
+components reach each other inside the cluster; this one has to be reachable by
+the end user's browser, and they are not the same host.
+
+#### Multi-factor authentication (`auth.configmap.MFA_ENABLED`)
+
+`MFA_ENABLED` gates multi-factor authentication on the auth component. It is unset
+by default: the key is then absent from the ConfigMap and the application's own
+default stays in force. Set `auth.configmap.MFA_ENABLED: "true"` to turn it on.
+The `MFA_SESSION_TTL_SEC` / `MFA_REMEMBER_TTL_SEC` / `MFA_MAX_ATTEMPTS` /
+`MFA_MAX_RESEND_ATTEMPTS` keys tune it and already have chart defaults.
+
+#### Moving these keys off `extraEnvVars`
+
+Both keys were previously deliverable only through `extraEnvVars`. That still
+works and nothing breaks on upgrade. But setting a key through **both** channels
+is refused: the named key and `extraEnvVars` render into the same ConfigMap `data`
+map, so the key would be emitted twice and the surviving value is whatever the
+YAML parser keeps — the chart refuses rather than shipping an install whose
+effective configuration nobody can read off the values file. When migrating,
+delete the `extraEnvVars` entry in the same change that adds the named key.
+
+```yaml
+# before
+auth:
+  extraEnvVars:
+    PLUGIN_AUTH_SSO_CALLBACK_URL: "https://console.example.com/signin/sso/callback"
+    MFA_ENABLED: "true"
+identity:
+  extraEnvVars:
+    PLUGIN_AUTH_SSO_CALLBACK_URL: "https://console.example.com/signin/sso/callback"
+
+# after
+common:
+  sso:
+    baseUrl: "https://console.example.com"
+auth:
+  configmap:
+    MFA_ENABLED: "true"
+```
 
 ### Caradhras Service (auth backend)
 
@@ -252,6 +383,76 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.ui.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
 | `caradhras.ui.service.port` | Service port | `80` |
 | `caradhras.ui.ingress.enabled` | Enable ingress for the UI | `false` |
+| `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |
+| `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
+| `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
+| `caradhras.existingSecretName` | Name of that Secret. Must carry the key `redisEndpoint` | `""` |
+| `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
+| `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
+| `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
+| `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
+
+#### Session store (required above one replica)
+
+Caradhras is beego, and beego writes a login session to a file under the pod's
+own working directory unless `redisEndpoint` names a Redis. With one pod that
+works. With two, a login that starts on one pod and finishes on another does not
+find its session and fails with `unknown authentication type`. The failure is
+intermittent by nature: it depends on which pod the load balancer picks.
+
+A session store is therefore mandatory whenever caradhras is pinned above one
+replica (`replicaCount > 1` with autoscaling off, or `autoscaling.minReplicas >
+1`). The chart **refuses to render** in that state rather than deploying a login
+that fails intermittently. When autoscaling can merely reach more than one pod
+(`autoscaling.maxReplicas > 1`, the chart default), the install notes carry a
+warning instead — failing there would break every default install.
+
+**Two channels, and they are mutually exclusive.** Beego's endpoint is
+positional — `host:port,poolsize,password,dbnum` — so the password, when there
+is one, is part of the same string the chart has to deliver:
+
+| The Redis | Set | Delivered as |
+|---|---|---|
+| needs no AUTH | `caradhras.configmap.redisEndpoint: "valkey:6379"` | ConfigMap key, via `envFrom` |
+| requires AUTH | `caradhras.secrets.redisEndpoint: "valkey:6379,100,<password>"` | Secret key, via `secretKeyRef` |
+| requires AUTH, password already in a Secret | `caradhras.configmap.redisEndpoint: "valkey:6379"` plus `caradhras.redisPassword.enabled: true` | endpoint in the ConfigMap, password as env `redisPassword`, via `secretKeyRef` |
+
+The ConfigMap channel **refuses a value with a third field**: a ConfigMap gives
+no Secret-equivalent protection, so any principal that can read it would recover
+the Redis password. Setting both channels is also refused — caradhras reads a
+single env named `redisEndpoint`, and defining it twice is undefined behavior.
+
+**The third row is the one to prefer when the password already lives in a
+Secret.** Caradhras reads `redisPassword` as its own config key and resolves the
+session store and the rate limiter from that one reading, so the credential never
+has to be spliced into a connection string — and the endpoint, carrying no
+password, can ride the ConfigMap. The password defaults to the auth Secret's
+`REDIS_PASSWORD` key, which is where the caradhras `DB_PASSWORD` already reads
+from; point `caradhras.redisPassword.secretName`/`.secretKey` elsewhere for a
+different topology.
+
+That channel requires the endpoint to be a **bare `host:port`**, and the chart
+refuses to render otherwise. Caradhras compares the endpoint's own password field
+with `redisPassword` and refuses to boot when they differ — and an endpoint that
+carries fields with an *empty* password field differs from any password, so
+`valkey:6379,100` plus `redisPassword` crashloops even though neither value looks
+wrong on its own. Set one or the other, never a mix.
+
+To keep the password out of your values file entirely, set
+`caradhras.useExistingSecret=true` and point `caradhras.existingSecretName` at a
+Secret you manage (external-secrets, sealed-secrets, or `kubectl create secret`)
+carrying the key `redisEndpoint`. The chart then creates no Secret of its own.
+
+The config keys are the beego literals in camelCase on purpose: caradhras
+resolves them with `conf.GetConfigString`, which looks the exact key up in the
+environment. `REDIS_HOST` / `REDIS_TLS` are the `auth`/`identity` names, read by
+lib-commons, and are silently ignored by caradhras.
+
+The endpoint is never derived from `global.datastores.redis.*`: the mask knows
+only host and port, so a derived value would be silently unauthenticated against
+any Redis that requires AUTH. Set it explicitly. `redisTls` does come from the
+mask, so a managed-cloud profile that sets `redis.tls` once covers auth and
+caradhras both.
 
 ### Auth Database (PostgreSQL)
 

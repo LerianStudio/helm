@@ -47,6 +47,40 @@ common:
     # templated by Helm, so components must never self-reference this with `{{ }}`.
     # Per-component override: {identity,auth}.configmap.AUTHORIZER_CLIENT_ID.
     clientId: "ac56c81d4d6d95c0ac12"
+  sso:
+    # -- Base the console is served from: scheme + host, plus a path prefix when
+    # the console is mounted under one. The DOMAIN IS YOURS — the chart cannot
+    # know or derive it. The CALLBACK PATH IS OURS: the chart appends
+    # "/signin/sso/callback", which is the console route the identity provider
+    # returns the browser to, and it must not be changed here.
+    #   baseUrl: "https://console.example.com"
+    #     -> https://console.example.com/signin/sso/callback
+    #   baseUrl: "https://apps.example.com/console"
+    #     -> https://apps.example.com/console/signin/sso/callback
+    # Setting this (or callbackUrl below) is REQUIRED to configure any SSO
+    # provider: identity refuses to save a provider without it, so the provider
+    # would look configurable while no login through it could ever complete.
+    # Empty (the default) omits PLUGIN_AUTH_SSO_CALLBACK_URL from both ConfigMaps.
+    # One value feeds identity AND auth, which MUST agree: identity registers the
+    # URL in the provider's redirect allow-list and auth sends it as the
+    # redirect_uri. The chart refuses to render when the two resolve differently.
+    # Not derivable from PLUGIN_AUTH_ADDRESS — that is the in-cluster address.
+    baseUrl: ""
+    # -- Literal full callback URL, replacing the composition above — set this OR
+    # baseUrl, never both. Must be an absolute http(s) URL AND must still end in
+    # "/signin/sso/callback": the host is yours, the path is ours. The chart
+    # refuses to render otherwise, because a near-miss (/sso/callback,
+    # /signin/callback) deploys cleanly and is then rejected by Caradhras at the
+    # first login as an unlisted redirect_uri, without saying what was wrong.
+    # Per-component override: {identity,auth}.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL.
+    callbackUrl: ""
+    # -- Lift the path check above. ONLY for a deployment that genuinely answers
+    # SSO on another path — a console mounted on a custom route, or a proxy that
+    # rewrites it. You are leaving the supported contract: the path must then
+    # match whatever actually serves the console SSO callback, and getting it
+    # wrong surfaces only as a failed login. The absolute-http(s)-with-a-path
+    # requirement still applies; it is the binary's, not the chart's.
+    allowCustomCallbackPath: false
 identity:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -341,6 +375,9 @@ auth:
     # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
     # do NOT pin it here, it WINS over the mask and defeats it. The default
     # ("development") lives in templates/auth/configmap.yaml.
+    # -- Multi-factor authentication gate. Unset (the default) omits MFA_ENABLED
+    # from the ConfigMap, leaving the application's own default in force.
+    # MFA_ENABLED: "false"
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -379,11 +416,9 @@ auth:
 # product replaces Casdoor; the image family is renamed accordingly
 # (casdoor -> caradhras, casdoor-migrations -> caradhras-migrations).
 #
-# Backward-compat: `image.repository`, `image.tag`, `image.pullPolicy`,
-# `service.port`, and `replicaCount` below ship EMPTY on purpose. They are
-# resolved through _helpers.tpl helpers (caradhras.imageRepository/.imageTag/
-# .imagePullPolicy/.servicePort/.replicaCount) using "new key wins, old key
-# is a fallback alias" precedence:
+# Backward-compat: helpers resolve image fields, service.port and replicaCount
+# using the precedence below. Server image defaults are explicit; migrations
+# image fields stay empty to preserve legacy overrides.
 #   1. caradhras.<field>       (this block, if set)
 #   2. auth.backend.<field>    (legacy path — only relevant for installs that
 #                               still set it in THEIR OWN values overrides;
@@ -405,6 +440,54 @@ caradhras:
   # privilege, and the target database/schema is typically provisioned ahead
   # of time (see benedita sandbox permission-denied incident, 2026-08-25).
   createDatabase: false
+  # -- Caradhras (beego) config keys. Names are the beego literals, camelCase:
+  # caradhras reads them with conf.GetConfigString, which looks up the exact
+  # key in the environment. The auth/identity REDIS_* names are NOT read here.
+  configmap:
+    # -- Shared session store for a Redis that needs NO AUTH, `host:port` with
+    # no space. Empty (the default) keeps login sessions in a file on each pod's
+    # own filesystem, which only works with a single pod: above one replica a
+    # login started on one pod and finished on another fails with "unknown
+    # authentication type". REQUIRED whenever caradhras runs more than one
+    # replica — the chart refuses to render when replicas are pinned above 1
+    # without a session store on either channel.
+    # This value is rendered into a ConfigMap, so it must NOT carry a password:
+    # beego's endpoint is positional (host:port,poolsize,password,dbnum) and the
+    # chart refuses to render a third field here. For a Redis with AUTH use
+    # caradhras.secrets.redisEndpoint below.
+    redisEndpoint: ""
+    # -- Whether to reach the session store over TLS ("true"/"false"). Only
+    # emitted when an endpoint is configured on either channel. Also resolvable
+    # once for every component via the datastore mask
+    # (global.datastores.redis.tls).
+    redisTls: ""
+  # -- Sensitive caradhras configuration.
+  # @default -- templates/caradhras/secrets.yaml
+  secrets:
+    # -- Session store connection string for a Redis that requires AUTH, in
+    # beego's positional form `host:port,poolsize,password[,dbnum]`. Written to
+    # the caradhras Secret and injected with secretKeyRef, so the password never
+    # reaches a ConfigMap. Mutually exclusive with
+    # caradhras.configmap.redisEndpoint.
+    redisEndpoint: ""
+  # -- Set true to manage the caradhras Secret yourself: the chart creates none
+  # and reads key `redisEndpoint` from existingSecretName instead.
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Redis/Valkey AUTH password, injected as the beego config key
+  # `redisPassword` by secretKeyRef — the same delivery DB_PASSWORD already uses
+  # on this workload. Caradhras hands it to both redis consumers (the session
+  # store and the rate limiter), so the endpoint above stays a bare `host:port`
+  # and the password never has to be spliced into a connection string.
+  redisPassword:
+    # -- Opt-in. Off by default: a Redis without AUTH needs nothing here.
+    enabled: false
+    # -- Secret holding the password. Empty uses the auth Secret, which already
+    # carries REDIS_PASSWORD (auth.secrets.REDIS_PASSWORD) and is where the
+    # caradhras DB_PASSWORD already reads from.
+    secretName: ""
+    # -- Key inside that Secret.
+    secretKey: REDIS_PASSWORD
   service:
     # -- Kubernetes service type for the caradhras component
     type: ClusterIP
@@ -438,7 +521,7 @@ caradhras:
     # -- to override.
     repository: ghcr.io/lerianstudio/caradhras
     pullPolicy: Always
-    tag: "1.2.0"
+    tag: "1.3.2"
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -460,18 +543,15 @@ caradhras:
     targetMemoryUtilizationPercentage: 80
   migrations:
     image:
-      # -- See "Backward-compat" note above — resolved via
-      # -- caradhras.migrationsImageRepository. NOTE: the GHCR repo
-      # -- `caradhras-migrations` carries TWO unrelated version trains —
-      # -- 1.2.0-beta.x (caradhras's own migrations, correct) and 3.2.0-beta.x
-      # -- (a different, legacy plugin-access-manager applier). The chart
-      # -- default (see templates/_helpers.tpl) always pins the 1.2.0-beta.x
-      # -- train — if you override this, keep it on that train.
+      # -- Empty preserves auth.backend.migrations.image.repository overrides;
+      # -- otherwise defaults to ghcr.io/lerianstudio/caradhras-migrations.
+      # -- Use the Caradhras release line, not the legacy PAM/Casdoor applier.
       repository: ""
       # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
       pullPolicy: ""
-      # -- See "Backward-compat" note above — resolved via caradhras.migrationsImageTag.
-      # -- Must stay on the 1.2.0-beta.x train if overridden.
+      # -- Empty preserves auth.backend.migrations.image.tag overrides;
+      # -- otherwise defaults to 1.3.2 in templates/_helpers.tpl.
+      # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
   # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
   # -- same-origin to the caradhras backend Service. Disabled by default.

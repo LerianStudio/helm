@@ -1,0 +1,17 @@
+# The chart pins `namespaceOverride: product-console` while this gate installs
+# with `-n it-<chart>`, so without this file every run lands the console in one
+# namespace and its bundled MongoDB in the other. That split is the single arm
+# in which the chart deliberately does NOT wire MONGODB_PASS, because a Secret
+# cannot be read across namespaces, so the gate never installed the credential
+# wiring that a default install actually gets: a rename of the subchart Secret's
+# key would reach an operator with every check here green.
+#
+# Pointing namespaceOverride at this gate's own release namespace lands both in
+# one namespace, which is the topology the chart's README install command
+# produces. A missing or renamed key then fails the container here, before a
+# release.
+#
+# The namespace SPLIT keeps its coverage in the render gate, which asserts that
+# a ServiceAccount lands in the namespace of the workload using it - the defect
+# that made this chart install cleanly and never create a pod.
+namespaceOverride: "it-product-console"

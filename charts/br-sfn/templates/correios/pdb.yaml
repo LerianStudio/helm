@@ -1,3 +1,0 @@
-{{- if $.Values.correios.enabled -}}
-{{ include "br-sfn.componentPdb" (dict "root" $ "name" "correios" "comp" $.Values.correios) }}
-{{- end -}}

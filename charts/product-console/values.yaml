@@ -9,8 +9,18 @@ replicaCount: 1
 revisionHistoryLimit: 10
 
 # -- Readiness probe configuration. All fields override chart defaults.
+# Defaults to '/api/admin/health/alive', which does NOT gate on MongoDB. The
+# image this chart pins opens its database connection on the first request that
+# needs one, so readiness on '/api/admin/health/readyz' deadlocks a fresh pod:
+# not Ready, no traffic, no connection, never Ready. Set
+#   readinessProbe:
+#     path: /api/admin/health/readyz
+# once you run an image that connects at startup, to gate readiness on the
+# database again.
 readinessProbe: {}
 # -- Liveness probe configuration. All fields override chart defaults.
+# Keep this on a MongoDB-independent path. Pointing it at readyz turns a
+# database outage into a crash-loop.
 livenessProbe: {}
 
 image:
@@ -19,7 +29,7 @@ image:
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)
-  tag: "1.12.0"
+  tag: "2.0.0"
 
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
@@ -216,9 +226,83 @@ otel:
 # ENABLE_TELEMETRY/PLUGIN_AUTH_*/MONGODB_*/MONGO_*) — none are declared here.
 # Add a key below only when you need to override its shipped default, e.g.:
 #   NODE_ENV: "development"
+# A key the chart does NOT declare is accepted here and silently dropped: this
+# map is an explicit allowlist, not a passthrough. Use extraEnvVars below for
+# anything else the console reads.
+#
+# The keys below are declared but ship NO default, because no default is safe
+# to invent for them. Leave one out and the chart writes nothing: the console
+# falls back to whatever its own image does, which for an address means "no
+# such page works" rather than "wrong page". Setting one through BOTH this map
+# and extraEnvVars is refused at render time, because both write into the same
+# ConfigMap and the surviving value would be whatever the YAML parser kept.
+#
+#   TRUSTED_PROXIES: "198.51.100.0/24"
+#     Comma list of CIDRs the console treats as its own infrastructure hops
+#     while reading X-Forwarded-For, so it can tell which address in that chain
+#     is the real caller. Set it to the ingress / load-balancer addresses
+#     actually in front of this service, never the pod or service CIDR.
+#     Left unset the console names NO caller at all, so a tenant IP allowlist
+#     has nothing to judge and either lets everyone through or no one. Set it
+#     WRONG — to a range that covers real callers — and it hides those callers
+#     and can let a caller choose the address it is judged by. Read the README
+#     section "Client IP resolution" before choosing a range.
+#
+#   MIDAZ_V2_BASE_PATH: "http://midaz-ledger.midaz.svc.cluster.local:3002/v2/"
+#     The address of the midaz ledger's SECOND API contract, /v2. Fees — fee
+#     packages, billing packages, billing runs and the fees statement — are
+#     served there and nowhere else: they stopped being a separate plugin and
+#     now live inside the ledger itself, under /v2. The rest of the console
+#     keeps talking to /v1 through MIDAZ_BASE_PATH, so the two coexist.
+#     Same host and port as MIDAZ_BASE_PATH, with /v1 swapped for /v2 — point
+#     it at the midaz release you deployed, in its own namespace.
+#     Set it wherever the fees screens are meant to work. Unset, the console
+#     has no address for them: every fees page fails, and the console's own
+#     health check reports "MIDAZ_V2_BASE_PATH is not set".
+#     Write it WITH the trailing slash. The console builds each call by
+#     resolving a relative path against this address, and that resolution only
+#     keeps the /v2 part when the address ends in a slash — without it, /v2 is
+#     dropped and the call lands on a contract that serves no fees, with no
+#     error to explain it. The console does add the missing slash for you, so
+#     both forms work today; the form above is the one to write.
+#
+#   PLUGIN_AUTH_PUBLIC_BASE_PATH: "https://auth.example.com/v1"
+#     The BROWSER-facing address of the Access Manager, as opposed to
+#     PLUGIN_AUTH_BASE_PATH, which is the cluster-internal one the console
+#     calls server-to-server. Single sign-on redirects the user's browser to
+#     this address, so a cluster-local name cannot serve: it must be absolute,
+#     https and end in /v1. Unset, the console falls back to the internal
+#     address and every SSO login lands on a host the browser cannot resolve.
+#     Only local development, where both addresses are the same localhost, can
+#     leave it out.
+#
+#   MFA_ENABLED: "true"
+#     An assertion about the DEPLOYMENT, not a per-user switch: it tells the
+#     console that the Access Manager in front of it may answer a correct
+#     password with an MFA challenge. It does not turn MFA on for anybody —
+#     that is per user, in the Access Manager. Leave it unset where MFA is off.
+#     Set it wherever MFA is on: without it the console does not recognise the
+#     challenge, and a user who has MFA enabled cannot sign in at all.
+#
+#   FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
+#   TRACER_BASE_PATH:  "http://midaz-tracer.midaz.svc.cluster.local:4020"
+#     Addresses of two OPTIONAL sibling services. Unlike the ledger and the
+#     Access Manager, these may simply not be installed, which is why the chart
+#     invents no address for them: a default would turn "this feature is not
+#     installed" into a connection error on the page. Set the one you deployed,
+#     to its own release name and namespace. TRACER_BASE_PATH is a bare origin
+#     with no /v1 — the console adds that itself; FLOWKER_BASE_PATH ends in /v1.
 configmap: {}
 
 # -- Extra environment variables from ConfigMap (merged with configmap values)
+# The passthrough for every console variable the chart does not declare above.
+# Each key is written into the same ConfigMap the pod loads, so it reaches the
+# container.
+# TRUSTED_PROXIES, MFA_ENABLED and PLUGIN_AUTH_PUBLIC_BASE_PATH used to belong
+# here because the chart had no name for them. They are declared under
+# configmap above now; delivering them from here still works, so existing
+# installs need no change, but a key set in both places is refused at render
+# time rather than emitted twice.
 extraEnvVars: {}
 
 # -- Secrets for storing sensitive data
@@ -230,6 +314,11 @@ secrets:
   PLUGIN_AUTH_CLIENT_ID: ""
   PLUGIN_AUTH_CLIENT_SECRET: ""
   NEXTAUTH_SECRET: ""
+  # -- MongoDB password. Leave it empty with the bundled MongoDB: the console
+  # reads the subchart's own generated password. Setting it here takes over, so
+  # it then has to match the password the subchart actually runs with: that is
+  # mongodb.auth.rootPassword, or the password inside the Secret named by
+  # mongodb.auth.existingSecret whenever you set that instead.
   MONGODB_PASS: ""
 
 # -- Use existing secret instead of creating one
@@ -241,6 +330,24 @@ existingSecretName: ""
 # Optional Dependencies
 # =============================================================================
 
+# The bundled MongoDB does not inherit this chart's namespaceOverride: it lands
+# in global.namespaceOverride when that is set and in the RELEASE namespace
+# otherwise. configmap.MONGO_HOST defaults to the Service the subchart really
+# creates, following mongodb.nameOverride, mongodb.fullnameOverride and the
+# release-name collapse, so the console finds it unconfigured.
+# That default covers the topology shipped here, a STANDALONE subchart under its
+# own Service name. Set mongodb.architecture to anything else, or rename the
+# Service with mongodb.service.nameOverride, and there is no single right
+# default: the chart then REFUSES TO RENDER until you set configmap.MONGO_HOST
+# yourself, and the refusal prints the value to set.
+# Its PASSWORD is read for you, straight from the Secret the subchart generates
+# (key mongodb-root-password), whenever that Secret lands in the same namespace
+# as the console pods: install with '-n product-console', the namespace this
+# chart pins, and leave global.namespaceOverride unset, and it does. Split them,
+# with a different -n or with global.namespaceOverride, and a Secret cannot be
+# read across the split, so set mongodb.auth.rootPassword and
+# secrets.MONGODB_PASS to the same value or every Mongo-backed page fails on an
+# auth error. The install notes say which of the two cases you are in.
 mongodb:
   enabled: true
 

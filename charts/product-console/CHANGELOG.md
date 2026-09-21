@@ -1,5 +1,312 @@
 # Product-console Changelog
 
+## [4.2.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.1)
+
+- **Fixes**
+  - Updated product-console to version 2.0.0.
+  - Bumped image tag to 2.0.0 and restored chart from main branch.
+
+- **Improvements**
+  - Added Helm upgrade guide for product-console v4.1.0.
+  - Added Helm upgrade guide for product-console v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.0...product-console-v4.2.1)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.0)
+
+- Features:
+  - Declare `MIDAZ_V2_BASE_PATH` as a named key in product-console.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.1.0...product-console-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.0)
+
+- Features:
+  - Declare MIDAZ_V2_BASE_PATH as a named key in product-console.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.1.0...product-console-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.0)
+
+- **Features**
+  - Declare `MIDAZ_V2_BASE_PATH` as a named key in product-console.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.1.0...product-console-v4.2.0)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-started installation runbook in both English and Portuguese.
+  - Introduced documentation on volume warnings and their implications.
+  
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart will empty its volume.
+  - Ensured values are retained when repairing splits.
+  - Implemented refusal for secret names that consist only of spaces.
+  - Provided a reliable namespace remedy.
+  - Corrected the service name created by Bitnami.
+  - Refused existing secrets with no name.
+
+- **Improvements**
+  - Enhanced documentation with a Helm upgrade guide for version 4.0.5.
+  - Updated documentation to address authentication credentials, CORS settings, and DocumentDB TLS caveats.
+  - Improved port-forward readiness checks before executing curl commands.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added a getting-started installation runbook in both English and Portuguese (pt-br).
+  - Added documentation on what the volume warning holds for.
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart empties its volume.
+  - Ensured values are retained when repairing splits.
+  - Implemented refusal for secret names that are only spaces.
+  - Addressed issue with existing secrets having no name.
+  - Provided a reliable namespace remedy.
+  - Corrected the service name created by Bitnami.
+
+- **Improvements**
+  - Enhanced documentation with a Helm upgrade guide for version 4.0.5.
+  - Updated documentation to address authentication credentials, CORS settings, and DocumentDB TLS insecurity caveats.
+  - Improved port-forward readiness checks before executing curl commands.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added a getting-started installation runbook in both English and Portuguese (pt-br).
+  - Added documentation for waiting for port-forward readiness before executing curl commands for CodeRabbit parity.
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Updated messaging to indicate that moving the subchart will empty its volume.
+  - Ensured that values are retained when repairing a split.
+  - Implemented a refusal for secret names that consist only of spaces.
+  - Added a remedy for namespace issues that is consistently effective.
+  - Corrected the service name to reflect what Bitnami actually creates.
+  - Implemented a refusal for existing secrets that have no name.
+
+- **Improvements**
+  - Clarified documentation regarding the volume warning and its implications.
+  - Enhanced documentation to cover authentication credentials cross-references, ALLOWED_ORIGINS/CORS, and DocumentDB tlsInsecure caveats.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-start installation runbook in both English and Portuguese (pt-br).
+
+- **Fixes**
+  - Instructed the operator to back up the database.
+  - Specified that moving the subchart empties its volume.
+  - Ensured values are retained when repairing the split.
+  - Refused secret names that consist only of spaces.
+  - Provided a remedy for namespace issues that consistently works.
+
+- **Improvements**
+  - Clarified what the volume warning pertains to.
+  - Updated documentation to address authentication credentials, ALLOWED_ORIGINS/CORS, and DocumentDB tlsInsecure caveat.
+  - Added a Helm upgrade guide for product-console v4.0.5.
+  - Improved documentation to wait for port-forward readiness before executing curl commands for better reliability.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-started installation runbook in both English and Portuguese (pt-br).
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart empties its volume.
+  - Ensured values are retained when repairing the split.
+  - Implemented refusal for secret names that consist only of spaces.
+  - Addressed issue with existing secrets having no name.
+  - Provided a reliable namespace remedy.
+  - Correctly named the service created by Bitnami.
+
+- **Improvements**
+  - Clarified the purpose of the volume warning.
+  - Documented what version 4.0.2 included and omitted.
+  - Enhanced documentation with references to authentication credentials, CORS settings, and DocumentDB TLS settings.
+  - Added a Helm upgrade guide for version 4.0.5.
+  - Improved port-forward readiness documentation for better parity with CodeRabbit.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added a getting-started installation runbook in both English and Portuguese (pt-br).
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart will empty its volume.
+  - Ensured values are retained when repairing the split.
+  - Implemented refusal for secret names that are only spaces.
+  - Provided a consistent namespace remedy.
+  - Corrected the service name created by Bitnami.
+  - Refused existing secrets with no name.
+
+- **Improvements**
+  - Documented the purpose of the volume warning.
+  - Added a Helm upgrade guide for version 4.0.5.
+  - Improved documentation on port-forward readiness and related caveats.
+  - Enhanced documentation with references to authentication credentials, CORS settings, and DocumentDB TLS insecurity.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-start installation runbook in English and Portuguese (pt-br).
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Notified that moving the subchart will empty its volume.
+  - Preserved user values when repairing the split.
+  - Implemented refusal for secret names that consist only of spaces.
+  - Rejected existing secrets with no name.
+  - Provided a reliable namespace remedy.
+  - Corrected service naming to match Bitnami's creation.
+
+- **Improvements**
+  - Clarified the purpose of the volume warning.
+  - Enhanced documentation with a Helm upgrade guide for product-console v4.0.5.
+  - Updated documentation to address authentication credentials cross-references, ALLOWED_ORIGINS/CORS, and DocumentDB tlsInsecure caveat.
+  - Ensured port-forward readiness before executing curl commands for better reliability.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.6)
+
+- **Features**
+  - Added getting-start installation runbook in both English and Portuguese (pt-br).
+  - Added documentation for port-forward readiness before curl to ensure CodeRabbit parity.
+
+- **Fixes**
+  - Instructed operators to back up the database.
+  - Clarified that moving the subchart empties its volume.
+  - Ensured values are retained when repairing the split.
+  - Implemented refusal for secret names that are only spaces.
+  - Provided a remedy for namespace issues that always works.
+  - Corrected service naming to reflect what Bitnami really creates.
+  - Implemented refusal for existing secrets without a name.
+
+- **Improvements**
+  - Clarified the purpose of volume warnings in documentation.
+  - Addressed CodeRabbit-related documentation improvements, including auth-cred cross-references, ALLOWED_ORIGINS/CORS, and DocumentDB tlsInsecure caveats.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.5...product-console-v4.0.6)
+
+---
+
+## [4.0.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.5)
+
+- **Fixes:**
+  - Refuse a MongoDB host the chart cannot name.
+  - Print the remedy that works for this split.
+  - Let a null clear the trusted proxy value.
+  - Read the bundled MongoDB password from its secret.
+  - Resolve the MongoDB host through lerian-common.
+
+- **Improvements:**
+  - Put the service account in the chart namespace.
+  - Come up on the chart's own shipped defaults.
+
+- **Documentation:**
+  - Specify which password the console's own must match.
+  - Indicate which subchart template reads the override.
+  - Name the key that carries the secret name.
+  - Specify when the MongoDB password is wired.
+  - Correct the client IP and MongoDB notes.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.4...product-console-v4.0.5)
+
+---
+
+## [4.0.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.5)
+
+- **Fixes:**
+  - Refuse a MongoDB host the chart cannot name.
+  - Print the remedy that works for this split.
+  - Let a null clear the trusted proxy value.
+  - Read the bundled MongoDB password from its secret.
+  - Resolve the MongoDB host through lerian-common.
+
+- **Improvements:**
+  - Refuse a non-string trusted proxy value by name.
+  - Come up on the chart's own shipped defaults.
+  - Put the service account in the chart namespace.
+
+- **Documentation:**
+  - Specify which password the console's own must match.
+  - Indicate which subchart template reads the override.
+  - Name the key that carries the secret name.
+  - Clarify when the MongoDB password is wired.
+  - Correct the client IP and MongoDB notes.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.0.4...product-console-v4.0.5)
+
+---
+
 ## [4.0.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.0.4)
 
 - Improvements:

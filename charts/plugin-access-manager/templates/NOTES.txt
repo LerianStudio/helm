@@ -1,0 +1,17 @@
+{{- $as := .Values.caradhras.autoscaling | default dict -}}
+{{- if and (not (include "plugin-caradhras.sessionStoreConfigured" .)) $as.enabled (gt (int ($as.maxReplicas | default 1)) 1) }}
+WARNING: caradhras has no shared session store while its HPA may scale it to
+{{ $as.maxReplicas }} pods. Login sessions live on each pod's own filesystem, so the moment the
+HPA adds a second pod, a login that starts on one and finishes on another fails
+with "unknown authentication type".
+
+Point caradhras at a Redis/Valkey every pod can reach{{ if ne (toString .Values.valkey.enabled) "false" }} (the Valkey bundled with
+this release is {{ include "plugin-access-manager.valkeyHost" . }}:6379){{ end }}:
+
+  - no AUTH: set caradhras.configmap.redisEndpoint to its host:port
+  - with AUTH: set caradhras.secrets.redisEndpoint to the full connection
+    string (host:port,poolsize,password) — it is delivered by Secret, never by
+    ConfigMap
+
+Or set caradhras.autoscaling.maxReplicas=1.
+{{- end }}

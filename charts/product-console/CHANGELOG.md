@@ -1,5 +1,19 @@
 # Product-console Changelog
 
+## [4.2.2](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.2)
+
+- **Fixes:**
+  - Updated product-console to version 2.1.0 to address existing issues.
+
+- **Improvements:**
+  - Added an upgrade guide for product-console version 4.2.1 to assist users with the transition.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.1...product-console-v4.2.2)
+
+---
+
 ## [4.2.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.1)
 
 - Fixes:

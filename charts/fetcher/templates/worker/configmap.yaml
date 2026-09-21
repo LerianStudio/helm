@@ -56,8 +56,14 @@ data:
   # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag
   VERSION: {{ .Values.worker.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.worker.image.tag | default .Chart.AppVersion | quote }}
+  {{- /* extraEnvVars is the escape hatch for keys the chart does not declare;
+     skip any key the storage/streaming masks already generated above, else an
+     operator redundantly setting one here produces a duplicate ConfigMap key
+     (rejected server-side). worker.configmap remains the supported override. */ -}}
   {{- with .Values.worker.extraEnvVars }}
   {{- range $key, $value := . }}
+  {{- if not (has $key $wcExplicit) }}
   {{ $key }}: {{ $value | quote }}
+  {{- end }}
   {{- end }}
   {{- end }}

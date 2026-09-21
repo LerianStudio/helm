@@ -343,5 +343,5 @@ mongodb:
     size: 8Gi
 product-console:
   image:
-    tag: 2.1.0
+    tag: 2.2.0
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

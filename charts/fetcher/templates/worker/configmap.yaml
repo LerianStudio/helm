@@ -6,16 +6,19 @@ metadata:
     {{- include "fetcher-worker.labels" . | nindent 4 }}
 data:
   {{- $wc := .Values.worker.configmap | default dict }}
-  {{- /* Every key lerian-common.streaming.env owns must be excluded from the
-     passthrough loop below — otherwise an operator setting one under
-     worker.configmap would emit it twice (duplicate ConfigMap key, rejected
-     server-side). Keep this in sync with the helper's emitted key set. */ -}}
+  {{- /* Every key this ConfigMap generates on its own — the storage/streaming
+     mask output plus VERSION/OTEL_RESOURCE_SERVICE_VERSION below — must be
+     excluded from the worker.configmap and worker.extraEnvVars passthrough
+     loops, otherwise an operator setting one there would emit it twice
+     (duplicate ConfigMap key, rejected server-side). Keep this list aligned
+     with every key emitted by this template. */ -}}
   {{- $wcExplicit := list
         "STREAMING_ENABLED" "STREAMING_BROKERS" "STREAMING_TLS_ENABLED"
         "STREAMING_SASL_MECHANISM" "STREAMING_SASL_USERNAME" "STREAMING_CLOUDEVENTS_SOURCE"
         "STREAMING_CLIENT_ID" "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_COMPRESSION"
         "STREAMING_REQUIRED_ACKS" "STREAMING_BATCH_LINGER_MS" "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS"
         "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_BUCKET" "OBJECT_STORAGE_USE_PATH_STYLE"
+        "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"
   }}
   {{- range $key, $value := $wc }}
   {{- if not (has $key $wcExplicit) }}

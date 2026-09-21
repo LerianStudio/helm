@@ -568,3 +568,66 @@ Usage:
 {{- define "plugin-br-pix-lerian.probeInitialDelay" -}}
 {{- dig "initialDelaySeconds" .default (.probe | default dict) -}}
 {{- end -}}
+
+{{/*
+==============================================================================
+plugin-br-pix-lerian.serviceDiscovery.env — LOCAL service-discovery env block.
+
+Emits the SD_* env keys THIS app consumes (advertise model, read by
+libsd.ConfigFromEnv): the per-component advertise pair
+(SD_ADVERTISE_ADDRESS / SD_ADVERTISE_PORT) plus the env-wide shared knobs
+(SD_ENABLED / SD_ADDRESS / SD_TLS / SD_TLS_SKIP_VERIFY / SD_WORKLOAD).
+
+This is a CHART-LOCAL helper (NOT lerian-common.serviceDiscovery.env, which
+emits the newer SD_INTERNAL / SD_EXTERNAL view-model this app does not read).
+
+- Shared knobs are DERIVED from global.serviceDiscovery (set ONCE per env in
+  GitOps): enabled / address / tls / tlsSkipVerify / workload.
+- The advertise pair is DERIVED from the component's own identity:
+  SD_ADVERTISE_ADDRESS = http://<name>.<namespace>.svc.cluster.local (NO port —
+  the port lives in SD_ADVERTISE_PORT), SD_ADVERTISE_PORT = <port>.
+- A native `configmap.SD_*` key still WINS (presence-based hasKey override), so
+  an operator can pin any single key. The emitted keys must ALSO be added to the
+  component configmap's `$enumerated` allowlist so the `range $cm` passthrough
+  skips them (no duplicate key).
+
+The caller passes `keys` as the EXACT ordered subset it currently renders, so
+the block is byte-identical to the pre-adoption (env-passthrough) output:
+  - apis (spi/dict-hub/cob-hub/pixauto): (list "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT")
+  - systemplanes (spi/dict/cob): (list "SD_ADDRESS" "SD_ENABLED" "SD_TLS" "SD_TLS_SKIP_VERIFY" "SD_WORKLOAD")
+  - adapter-provider-mock (full set, alphabetical): (list "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_ENABLED" "SD_TLS" "SD_TLS_SKIP_VERIFY" "SD_WORKLOAD")
+
+Inputs (dict):
+  context   (req) root context ($) — reads global.serviceDiscovery
+  keys      (req) ordered list of SD_* keys to emit
+  configmap (req) the component's `.configmap` map (per-key native override)
+  name      (opt) componentFullname — needed only when SD_ADVERTISE_ADDRESS is in keys
+  port      (opt) service port — needed only when SD_ADVERTISE_PORT is in keys
+  namespace (opt) resolved namespace — needed only when SD_ADVERTISE_ADDRESS is in keys
+
+global.serviceDiscovery (all optional): enabled, address, tls, tlsSkipVerify, workload
+==============================================================================
+*/}}
+{{- define "plugin-br-pix-lerian.serviceDiscovery.env" -}}
+{{- $sd := (.context.Values.global | default dict).serviceDiscovery | default dict -}}
+{{- $c := .configmap | default dict -}}
+{{- $advAddr := "" -}}
+{{- if and .name .namespace -}}{{- $advAddr = printf "http://%s.%s.svc.cluster.local" .name .namespace -}}{{- end -}}
+{{- $vals := dict
+      "SD_ENABLED" ($sd.enabled | default false)
+      "SD_ADDRESS" ($sd.address | default "localhost:8500")
+      "SD_TLS" ($sd.tls | default false)
+      "SD_TLS_SKIP_VERIFY" ($sd.tlsSkipVerify | default false)
+      "SD_WORKLOAD" ($sd.workload | default "")
+      "SD_ADVERTISE_ADDRESS" $advAddr
+      "SD_ADVERTISE_PORT" (.port | default "") -}}
+{{- $lines := list -}}
+{{- range $k := .keys -}}
+  {{- $v := index $vals $k -}}
+  {{- /* Presence-based override: a native configmap.SD_* WINS even if empty/false. */ -}}
+  {{- if hasKey $c $k -}}{{- $v = index $c $k -}}{{- end -}}
+  {{- if kindIs "invalid" $v -}}{{- $v = "" -}}{{- end -}}
+  {{- $lines = append $lines (printf "%s: %s" $k ($v | quote)) -}}
+{{- end -}}
+{{- join "\n" $lines -}}
+{{- end -}}

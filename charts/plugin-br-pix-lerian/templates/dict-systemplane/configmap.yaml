@@ -67,10 +67,15 @@ data:
   VSYNC_TENANT_CONCURRENCY: {{ $cm.VSYNC_TENANT_CONCURRENCY | default "4" | quote }}
   {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
      Chart.AppVersion); override via dictSystemplane.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}
-  {{- if not (hasKey $cm "OTEL_RESOURCE_SERVICE_VERSION") }}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION: always emitted (like OTEL_RESOURCE_SERVICE_NAME/
+     OTEL_LIBRARY_NAME) so the value lives in the ConfigMap and does NOT require a
+     redundant extraEnvVars entry. configmap.<KEY> wins; else derive from image.tag
+     then Chart.AppVersion. */}}
   {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ $compTag | quote }}
-  {{- end }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default $compTag | quote }}
+  # --- service discovery: shared knobs derived from global.serviceDiscovery
+  #     (set once per env). Seeded into this systemplane's store on first boot. ---
+  {{- include "plugin-br-pix-lerian.serviceDiscovery.env" (dict "context" $ "configmap" $cm "keys" (list "SD_ADDRESS" "SD_ENABLED" "SD_TLS" "SD_TLS_SKIP_VERIFY" "SD_WORKLOAD")) | nindent 2 }}
   {{- /* Escape hatch: un-enumerated configmap.<KEY>. Skips every emitted key
      (plain/mask/inline), the superseded deviating names, and every credential
      (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
@@ -84,7 +89,9 @@ data:
       "ORGANIZATION_ID" "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME"
       "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME"
       "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_HOST" "PLUGIN_AUTH_URL"
-      "REQUEST_TIMEOUT_SEC" "SERVER_ADDRESS" "SPI_BASE_URL" "SPI_CLIENT_ID" "SPI_CLIENT_SECRET"
+      "REQUEST_TIMEOUT_SEC"
+      "SD_ADDRESS" "SD_ENABLED" "SD_TLS" "SD_TLS_SKIP_VERIFY" "SD_WORKLOAD"
+      "SERVER_ADDRESS" "SPI_BASE_URL" "SPI_CLIENT_ID" "SPI_CLIENT_SECRET"
       "SYSTEMPLANE_POSTGRES_DSN" "SYSTEMPLANE_SECRET_MASTER_KEY" "TELEMETRY_ENABLED"
       "VSYNC_CHUNK_CONSUMER_WORKERS" "VSYNC_CHUNK_PROCESSING_DEADLINE_MIN" "VSYNC_ENABLED"
       "VSYNC_EVENTSYNC_MAX_PAGES" "VSYNC_FILE_RECON_ENABLED" "VSYNC_GATE_TTL_SEC"

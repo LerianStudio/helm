@@ -140,6 +140,11 @@ Input: the root context ($).
    (single-source; these were two independent hardcoded literals before). */ -}}
 {{- $rmqHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "rabbitmq") -}}
 {{- $rmqMgmtPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") -}}
+{{- /* Management API scheme mirrors the AMQP scheme (amqp→http, amqps→https) — a
+   managed-broker profile over TLS (e.g. AmazonMQ) exposes its management/health
+   endpoint over https, so the derived RABBITMQ_HEALTH_CHECK_URL must follow. */ -}}
+{{- $rmqScheme := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") -}}
+{{- $rmqMgmtScheme := ternary "https" "http" (eq $rmqScheme "amqps") -}}
 {{- /* Multi-tenant toggle: configmap override > global.multiTenant.enabled > false.
    Presence-based (hasKey), not sprig `default` — an explicit
    `common.configmap.MULTI_TENANT_ENABLED: false` must win over a true
@@ -184,7 +189,7 @@ RABBITMQ_PORT_HOST: {{ $rmqMgmtPort | quote }}
 {{- /* Health-check URL single-sourced from the broker mask (host:mgmt-port);
    configmap override still wins. Previously an independent hardcoded literal
    that could silently drift from RABBITMQ_HOST/_PORT_HOST. */}}
-RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "http://%s:%s" $rmqHost $rmqMgmtPort) | quote }}
+RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "%s://%s:%s" $rmqMgmtScheme $rmqHost $rmqMgmtPort) | quote }}
 {{- /* SeaweedFS filer wire protocol — no lerian-common mask models this (it is
    NOT the S3-shaped objectStorage mask; that is worker's OBJECT_STORAGE_* for
    the extraction bucket). Passthrough only. */}}

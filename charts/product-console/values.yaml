@@ -4,10 +4,8 @@
 
 # -- Number of replicas for the deployment
 replicaCount: 1
-
 # -- Number of old ReplicaSets to retain for deployment rollback
 revisionHistoryLimit: 10
-
 # -- Readiness probe configuration. All fields override chart defaults.
 # Defaults to '/api/admin/health/alive', which does NOT gate on MongoDB. The
 # image this chart pins opens its database connection on the first request that
@@ -22,7 +20,6 @@ readinessProbe: {}
 # Keep this on a MongoDB-independent path. Pointing it at readyz turns a
 # database outage into a crash-loop.
 livenessProbe: {}
-
 image:
   # -- Repository for the product-console container image
   repository: lerianstudio/product-console
@@ -30,7 +27,6 @@ image:
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)
   tag: "2.0.0"
-
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
 # - name: regcred
@@ -41,7 +37,6 @@ nameOverride: ""
 fullnameOverride: ""
 # -- Override the namespace
 namespaceOverride: "product-console"
-
 global:
   # -- Env-wide SHARED MongoDB connection mask (set once per environment; a
   # native configmap.<KEY> still overrides it). Consumed by
@@ -96,10 +91,8 @@ global:
       roles:
         - role: "readWrite"
           db: "midaz-console"
-
 # -- Annotations to be added to the Pod
 podAnnotations: {}
-
 podSecurityContext: {}
 # fsGroup: 2000
 
@@ -118,7 +111,6 @@ securityContext:
   readOnlyRootFilesystem: true
   seccompProfile:
     type: RuntimeDefault
-
 # -- PodDisruptionBudget configuration
 pdb:
   # -- Enable or disable PodDisruptionBudget
@@ -129,7 +121,6 @@ pdb:
   maxUnavailable: 1
   # -- Annotations for the PodDisruptionBudget
   annotations: {}
-
 # -- Deployment update strategy
 deploymentStrategy:
   # -- Type of deployment strategy
@@ -139,7 +130,6 @@ deploymentStrategy:
     maxSurge: 1
     # -- Maximum number of pods that can be unavailable during the update
     maxUnavailable: 0
-
 service:
   # -- Kubernetes service type
   type: ClusterIP
@@ -147,7 +137,6 @@ service:
   port: 8081
   # -- Service annotations
   annotations: {}
-
 ingress:
   # -- Enable or disable ingress
   enabled: false
@@ -165,7 +154,6 @@ ingress:
   # - secretName: product-console-tls
   #   hosts:
   #     - product-console.example.local
-
 resources:
   # -- CPU and memory limits for pods
   limits:
@@ -175,7 +163,6 @@ resources:
   requests:
     cpu: 512m
     memory: 512Mi
-
 autoscaling:
   # -- Enable or disable horizontal pod autoscaling
   enabled: false
@@ -187,16 +174,12 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # -- Target memory utilization percentage for autoscaling
   targetMemoryUtilizationPercentage: 80
-
 # -- Node selector for scheduling pods on specific nodes
 nodeSelector: {}
-
 # -- Tolerations for scheduling on tainted nodes
 tolerations: []
-
 # -- Affinity rules for pod scheduling
 affinity: {}
-
 serviceAccount:
   # -- Specifies whether a ServiceAccount should be created
   create: true
@@ -204,7 +187,6 @@ serviceAccount:
   annotations: {}
   # -- Name of the service account (defaults to fullname)
   name: ""
-
 # -- OpenTelemetry Configuration
 # When enabled or external, configures OTEL endpoints dynamically
 otel:
@@ -218,7 +200,6 @@ otel:
   host: ""
   # -- OTEL collector HTTP port (OTLP/HTTP protocol)
   port: 4318
-
 # -- ConfigMap for environment variables and configurations.
 # All values here will be set as environment variables in the deployment.
 # Every key and its shipped default live ONLY in templates/configmap.yaml
@@ -293,7 +274,6 @@ otel:
 #     to its own release name and namespace. TRACER_BASE_PATH is a bare origin
 #     with no /v1 — the console adds that itself; FLOWKER_BASE_PATH ends in /v1.
 configmap: {}
-
 # -- Extra environment variables from ConfigMap (merged with configmap values)
 # The passthrough for every console variable the chart does not declare above.
 # Each key is written into the same ConfigMap the pod loads, so it reaches the
@@ -304,7 +284,6 @@ configmap: {}
 # installs need no change, but a key set in both places is refused at render
 # time rather than emitted twice.
 extraEnvVars: {}
-
 # -- Secrets for storing sensitive data
 # All values here will be base64 encoded and set as environment variables
 secrets:
@@ -320,12 +299,10 @@ secrets:
   # mongodb.auth.rootPassword, or the password inside the Secret named by
   # mongodb.auth.existingSecret whenever you set that instead.
   MONGODB_PASS: ""
-
 # -- Use existing secret instead of creating one
 useExistingSecret: false
 # -- Name of the existing secret to use
 existingSecretName: ""
-
 # =============================================================================
 # Optional Dependencies
 # =============================================================================
@@ -350,24 +327,21 @@ existingSecretName: ""
 # auth error. The install notes say which of the two cases you are in.
 mongodb:
   enabled: true
-
   global:
     security:
       allowInsecureImages: true
-
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
-
   external: false
   auth:
     enabled: true
     rootUser: midaz
     rootPassword: ""
-
   resourcesPreset: "medium"
-
   persistence:
     size: 8Gi
-
+product-console:
+  image:
+    tag: 2.1.0
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

@@ -26,7 +26,7 @@ image:
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)
-  tag: "2.0.0"
+  tag: "2.2.1"
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
 # - name: regcred
@@ -341,7 +341,4 @@ mongodb:
   resourcesPreset: "medium"
   persistence:
     size: 8Gi
-product-console:
-  image:
-    tag: 2.2.1
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

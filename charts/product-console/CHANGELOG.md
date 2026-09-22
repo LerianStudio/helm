@@ -2,6 +2,20 @@
 
 ## [4.2.2](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.2)
 
+- **Fixes:**
+  - Updated product-console to version 2.1.0.
+
+- **Documentation:**
+  - Added upgrade guide for product-console v4.2.1.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.1...product-console-v4.2.2)
+
+---
+
+## [4.2.2](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.2)
+
 - **Fixes**
   - Updated product-console to version 2.1.0.
 

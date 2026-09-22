@@ -1,5 +1,19 @@
 # Midaz Changelog
 
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - crm/tracer default to maxUnavailable=0 for zero-downtime rollouts
+
+- Improvements:
+  - Added Helm upgrade guide for midaz v9.2.1
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
 ## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
 
 - **Fixes:**

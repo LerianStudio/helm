@@ -524,8 +524,13 @@ crm:
     type: RollingUpdate
     # -- Maximum number of pods that can be created over the desired number of pods
     maxSurge: 1
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 1
+    # -- Maximum number of pods that can be unavailable during the update.
+    # 0 = surge the new pod and wait for it Ready before terminating the old one,
+    # giving zero-downtime rollouts for single-replica components — matches the
+    # ledger default. Important where the replacement pod may briefly stay Pending
+    # (e.g. a required nodeAffinity that waits for a Karpenter node to be launched):
+    # with maxUnavailable=1 the old pod is torn down first and the service blips.
+    maxUnavailable: 0
   service:
     # -- Kubernetes service type
     type: ClusterIP
@@ -725,8 +730,13 @@ tracer:
     type: RollingUpdate
     # -- Maximum number of pods that can be created over the desired number of pods
     maxSurge: 1
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 1
+    # -- Maximum number of pods that can be unavailable during the update.
+    # 0 = surge the new pod and wait for it Ready before terminating the old one,
+    # giving zero-downtime rollouts for single-replica components — matches the
+    # ledger default. Important where the replacement pod may briefly stay Pending
+    # (e.g. a required nodeAffinity that waits for a Karpenter node to be launched):
+    # with maxUnavailable=1 the old pod is torn down first and the service blips.
+    maxUnavailable: 0
   service:
     # -- Kubernetes service type
     type: ClusterIP

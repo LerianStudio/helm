@@ -10,12 +10,13 @@ on:
 
 jobs:
   update:
-    # v1.55.0 honours the is_legacy_patch/version_line fields the senders already emit,
-    # routing a maintenance-line release to <prefix>/<chart>-<major>.<minor>.x (cut from
-    # main) instead of overwriting the mainline chart. release.yml releases from those
-    # branches, so this closes the loop. Contract is additive between the two versions:
-    # only the four legacy_* inputs appear, none removed or renamed, secrets unchanged.
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@v1.55.0
+    # v1.74.3 adds root-image handling for single-service charts: product-console keeps
+    # its image at the values root (.image.tag), so older versions wrote a bogus top-level
+    # `product-console:` block instead of the real tag (had to be hand-fixed on every bump —
+    # LerianStudio/helm #2157/#2187/#2193). Contract is unchanged for this caller: the inputs
+    # passed here (payload, base_branch, legacy_branch_prefix, slack_notification) and all
+    # secrets still exist, with `payload` the only required input.
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@v1.74.3
     with:
       payload: ${{ inputs.payload }}
       # develop is retired for this repo (see the PR template): mainline updates belong on main.

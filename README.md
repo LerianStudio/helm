@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `9.0.0` | 3.8.3 | 3.8.2 |
+| `9.2.1` | 4.0.3 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `9.2.0` | 3.1.0 | 3.1.0 | 1.2.0 |
+| `9.5.1` | 3.1.0 | 3.1.0 | 1.3.2 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `4.2.0` | 3.0.0 | 3.0.0 |
+| `4.3.4` | 4.1.0 | 4.1.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0 |
+| `2.0.2` | 1.0.0 |
 -----------------
 
 
@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.4.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
+| `0.4.5` | 1.13.0-beta.1 | 1.13.0-beta.1 |
 -----------------
 
 ### Plugin BR Pix Lerian
@@ -144,7 +144,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.1.0` | 3.0.2 | 3.0.2 |
+| `3.1.1` | 3.1.0 | 3.1.0 |
 -----------------
 
 ### Lender
@@ -181,7 +181,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `4.2.0` | 0.142.0 |
+| `4.3.0` | 0.142.0 |
 -----------------
 
 ### Product Console
@@ -194,7 +194,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `4.0.0` | 1.10.0 |
+| `4.2.2` | 2.0.0 |
 -----------------
 
 ### Plugin BC Correios

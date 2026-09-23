@@ -1,0 +1,119 @@
+{
+  "$comment": "Regras escritas a mao que a GERACAO NAO PODE APAGAR. O gerador reduz cada bloco a um objeto/tipo aberto, descartando description, pattern, enum e additionalProperties:false. Este arquivo e mesclado apos a geracao, com o overlay vencendo em conflito. A validacao de VALOR (origin.id, intervalos, perfil) vive nos helpers via fail(), que da mensagem acionavel; o schema aqui existe para o que fail() nao alcanca: tipo, chave desconhecida e documentacao inline.",
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "collection": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "destination": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "fleetManagement": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "global": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "inspection": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "kube-state-metrics": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "logging": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "nameOverride": {
+      "type": "string"
+    },
+    "node": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "node-exporter": {
+      "additionalProperties": true,
+      "description": "Subchart do node-exporter. `enabled: false` por padrao — ligar so em ambiente nosso, e junto com collection.nodeInfrastructure. Segue o padrao do guarda-chuva da Grafana: o exportador e um componente, o agente so raspa.",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "origin": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "profile": {
+      "description": "own = our environment (collects node infra); client = client cluster (does not). Required, no default. Validation lives in the chart, NOT as a schema enum: the enum fires first and reports \"value must be one of 'own','client'\", hiding the guard that actually explains the difference and what each profile collects — and the common case is a first install with no profile at all.",
+      "type": "string"
+    },
+    "receiver": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "singleton": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "spanMetrics": {
+      "additionalProperties": false,
+      "description": "RED metrics derived from spans (calls_total, duration_milliseconds_*). Replaces the connector that lived in the retiring otel-collector-client; disabling it stops those series from being produced at all.",
+      "properties": {
+        "buckets": {
+          "description": "Explicit histogram bucket boundaries. Changing them renames every _bucket series.",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "cardinalityLimit": {
+          "description": "Ceiling on distinct dimension combinations. Beyond it, further combinations fold into one entry labelled otel.metric.overflow=\"true\" (visible, not silently dropped). 0 disables.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "dimensions": {
+          "description": "Span attributes promoted to labels. Every dimension multiplies cardinality; k8s.pod.name and k8s.container.name are deliberately absent.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "expiration": {
+          "description": "Drop series with no new datapoint for this long.",
+          "type": "string"
+        },
+        "flushInterval": {
+          "description": "How often derived RED metrics are emitted. 60s floor enforced by the chart: it is the write rate of these series, and cost is series x writes per minute.",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Metric name prefix. Empty yields bare calls_total / duration_milliseconds_*, which is what the existing dashboards and alert rules query.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "destination",
+    "origin",
+    "profile"
+  ],
+  "type": "object"
+}

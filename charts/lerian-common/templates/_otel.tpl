@@ -30,7 +30,8 @@ OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (di
 {{/*
 lerian-common.otel.podEnv — OTEL runtime env for the Deployment container.
 Points OTEL_EXPORTER_OTLP_ENDPOINT at the node-local collector via the downward
-HOST_IP. With podAttributes=true it also adds POD_IP + OTEL_RESOURCE_ATTRIBUTES.
+HOST_IP, as a URL (`http://$(HOST_IP):4317`): the OTel SDK parses this env var
+with url.Parse and rejects a bare host:port. With podAttributes=true it also adds POD_IP + OTEL_RESOURCE_ATTRIBUTES.
 Caller gates on whether the collector is enabled and nindents (usually 10).
 
 Usage (in a component deployment.yaml, inside `env:`):
@@ -40,6 +41,8 @@ Usage (in a component deployment.yaml, inside `env:`):
 
 Inputs (dict):
   port          (opt)  OTLP port (default 4317)
+  scheme        (opt)  URL scheme, "http" (default) or "https"; a trailing "://"
+                       is accepted. gRPC collectors take http:// (plaintext) too.
   podAttributes (opt)  bool — also emit POD_IP + OTEL_RESOURCE_ATTRIBUTES
 */}}
 {{- define "lerian-common.otel.podEnv" -}}
@@ -48,7 +51,7 @@ Inputs (dict):
     fieldRef:
       fieldPath: status.hostIP
 - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-  value: "$(HOST_IP):{{ .port | default 4317 }}"
+  value: "{{ .scheme | default "http" | trimSuffix "://" }}://$(HOST_IP):{{ .port | default 4317 }}"
 {{- if .podAttributes }}
 - name: "POD_IP"
   valueFrom:

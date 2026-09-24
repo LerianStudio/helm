@@ -5,8 +5,52 @@ metadata:
   labels:
     {{- include "fetcher-worker.labels" . | nindent 4 }}
 data:
-  {{- range $key, $value := .Values.worker.configmap }}
+  {{- $wc := .Values.worker.configmap | default dict }}
+  {{- /* Every key this ConfigMap generates on its own — the storage/streaming
+     mask output plus VERSION/OTEL_RESOURCE_SERVICE_VERSION below — must be
+     excluded from the worker.configmap and worker.extraEnvVars passthrough
+     loops, otherwise an operator setting one there would emit it twice
+     (duplicate ConfigMap key, rejected server-side). Keep this list aligned
+     with every key emitted by this template. */ -}}
+  {{- $wcExplicit := list
+        "STREAMING_ENABLED" "STREAMING_BROKERS" "STREAMING_TLS_ENABLED"
+        "STREAMING_SASL_MECHANISM" "STREAMING_SASL_USERNAME" "STREAMING_CLOUDEVENTS_SOURCE"
+        "STREAMING_CLIENT_ID" "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_COMPRESSION"
+        "STREAMING_REQUIRED_ACKS" "STREAMING_BATCH_LINGER_MS" "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS"
+        "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_BUCKET" "OBJECT_STORAGE_USE_PATH_STYLE"
+        "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"
+  }}
+  {{- range $key, $value := $wc }}
+  {{- if not (has $key $wcExplicit) }}
   {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  # Storage (S3/SeaweedFS) via lerian-common.objectStorage.value (name "fetcher");
+  # see global.objectStorage.fetcher. worker.configmap.OBJECT_STORAGE_* still overrides.
+  OBJECT_STORAGE_ENDPOINT: {{ include "lerian-common.objectStorage.value" (dict "context" $ "configmap" $wc "name" "fetcher" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "") | quote }}
+  OBJECT_STORAGE_REGION: {{ include "lerian-common.objectStorage.value" (dict "context" $ "configmap" $wc "name" "fetcher" "field" "region" "nativeKey" "OBJECT_STORAGE_REGION" "default" "us-east-1") | quote }}
+  OBJECT_STORAGE_BUCKET: {{ include "lerian-common.objectStorage.value" (dict "context" $ "configmap" $wc "name" "fetcher" "field" "bucket" "nativeKey" "OBJECT_STORAGE_BUCKET" "default" "external-data") | quote }}
+  OBJECT_STORAGE_USE_PATH_STYLE: {{ include "lerian-common.objectStorage.value" (dict "context" $ "configmap" $wc "name" "fetcher" "field" "usePathStyle" "nativeKey" "OBJECT_STORAGE_USE_PATH_STYLE" "default" "false") | quote }}
+  # Streaming (lib-streaming/CloudEvents) - the worker hard-requires
+  # STREAMING_ENABLED=true at startup for mandatory job event notifications.
+  # brokers/SASL/TLS transport via global.streaming (lerian-common.streaming.env),
+  # gated on enabled AND a configured broker; worker.configmap.STREAMING_* still
+  # overrides. STREAMING_BROKERS has no working default in either place - it
+  # MUST be set (global.streaming.brokers or worker.configmap.STREAMING_BROKERS)
+  # to a real Kafka/Redpanda bootstrap address before installing with the
+  # bundled worker.
+  {{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled }}
+  {{- if hasKey $wc "STREAMING_ENABLED" }}{{- $streamingRaw = index $wc "STREAMING_ENABLED" }}{{- end }}
+  {{- if kindIs "invalid" $streamingRaw }}{{- $streamingRaw = "true" }}{{- end }}
+  STREAMING_ENABLED: {{ $streamingRaw | quote }}
+  {{- $streamingEnabled := eq (include "fetcher.isTrue" $streamingRaw) "true" }}
+  {{- if $streamingEnabled }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $wc
+        "clientId" ($wc.STREAMING_CLIENT_ID | default "fetcher-worker")
+        "cloudeventsSource" ($wc.STREAMING_CLOUDEVENTS_SOURCE | default "fetcher-worker")) | nindent 2 }}
   {{- end }}
   # Rate Limiting - Three-tier system with Redis backend
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
@@ -15,8 +59,14 @@ data:
   # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag
   VERSION: {{ .Values.worker.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.worker.image.tag | default .Chart.AppVersion | quote }}
+  {{- /* extraEnvVars is the escape hatch for keys the chart does not declare;
+     skip any key the storage/streaming masks already generated above, else an
+     operator redundantly setting one here produces a duplicate ConfigMap key
+     (rejected server-side). worker.configmap remains the supported override. */ -}}
   {{- with .Values.worker.extraEnvVars }}
   {{- range $key, $value := . }}
+  {{- if not (has $key $wcExplicit) }}
   {{ $key }}: {{ $value | quote }}
+  {{- end }}
   {{- end }}
   {{- end }}

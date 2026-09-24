@@ -182,7 +182,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.2"
+    tag: "2.2.0"
   # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
   # The chart-managed Secret is rendered as an earlier hook (weight -5 / sync-wave -5),
   # so it exists before this migration hook (weight -1) — migrations run against the
@@ -470,6 +470,13 @@ bankTransfer:
     # ("false") in templates/configmap.yaml.
     # FEES_TIMEOUT_MS: ""
 
+    # Courier (optional outbound integration, added in app 2.2.0). Set the base
+    # URL here; the CLIENT_ID/CLIENT_SECRET go under bankTransfer.secrets.
+    # COURIER_BASE_URL: ""
+
+    # TRUSTED_PROXIES (optional; complements SERVER_TRUSTED_PROXIES, added in app 2.2.0)
+    # TRUSTED_PROXIES: ""
+
     # JD-SPB (REQUIRED — no chart default, must be set — unless JD_SANDBOX_MODE=true)
     # JD_SANDBOX_MODE/JD_SOAP_PATH/JD_SIGNING_MODE/JD_POLLING_ENABLED are NOT
     # pinned — no mask reads them, and the chart already defaults them
@@ -572,6 +579,10 @@ bankTransfer:
   # Webhook secrets (when WEBHOOK_ENABLED=true)
   # WEBHOOK_SIGNING_SECRET: ""
   # WEBHOOK_BROKER_EVENT_SIGNING_SECRET: ""
+
+  # Courier outbound M2M credentials (courier integration, added in app 2.2.0)
+  # COURIER_CLIENT_ID: ""
+  # COURIER_CLIENT_SECRET: ""
 
   # -- Existing secrets name
   useExistingSecret: false

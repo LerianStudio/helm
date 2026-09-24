@@ -573,6 +573,9 @@ bankTransfer:
   # WEBHOOK_SIGNING_SECRET: ""
   # WEBHOOK_BROKER_EVENT_SIGNING_SECRET: ""
 
+  # Courier client secret (outbound courier credential, added in app 2.2.0)
+  # COURIER_CLIENT_SECRET: ""
+
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

@@ -1,5 +1,21 @@
 # Midaz Changelog
 
+## [9.2.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.3)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.5.
+  - Updated `midaz-tracer` to version 4.0.5.
+
+- **Documentation**
+  - Added Helm upgrade guide for midaz v9.2.2.
+  - Added upgrade guide for midaz v9.2.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.2...midaz-v9.2.3)
+
+---
+
 ## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
 
 - Fixes:

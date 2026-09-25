@@ -56,6 +56,8 @@ helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --ve
 
 ## Uninstalling the Chart
 
+The bundled RabbitMQ keeps its queued messages on a volume (PVC `reporter-rabbitmq`, set by `rabbitmq.storage`), so they survive a broker restart, an upgrade and an uninstall; a reinstall under the same release name finds them still queued. Deleting them is a separate, manual step after the uninstall: `kubectl delete pvc reporter-rabbitmq -n reporter`.
+
 ```bash
 helm uninstall reporter -n reporter
 ```

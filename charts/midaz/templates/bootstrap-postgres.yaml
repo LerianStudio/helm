@@ -162,15 +162,16 @@ spec:
             echo "Creating role 'midaz'..."
             # A CREATE ROLE that fails is written to the server log with its
             # password, so a superuser hides that log line first, and an admin
-            # that cannot create roles never sends the statement.
+            # that cannot create roles never sends the statement. The password
+            # reaches psql through its environment, never through argv.
             ADMIN=$(PGPASSWORD="$DB_ADMIN_PASSWORD" psql -At -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "SELECT rolsuper, rolcreaterole FROM pg_roles WHERE rolname = current_user")
             HIDE=""
             case "$ADMIN" in
-              t|*) HIDE="SET log_min_error_statement = panic;" ;;
-              *|t) ;;
+              "t|"*) HIDE="SET log_min_error_statement = panic;" ;;
+              *"|t") ;;
               *) echo "Admin user '$DB_USER_ADMIN' cannot create roles; grant it CREATEROLE." >&2; exit 1 ;;
             esac
-            printf '%s\n' "$HIDE" "CREATE ROLE midaz LOGIN PASSWORD :'pw'" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_MIDAZ" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
+            printf '%s\n' "$HIDE" '\getenv pw DB_PASSWORD_MIDAZ' "CREATE ROLE midaz LOGIN PASSWORD :'pw'" | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
           fi
 
           # Privileges (safe to run repeatedly)

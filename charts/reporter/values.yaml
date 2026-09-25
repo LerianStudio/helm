@@ -556,7 +556,7 @@ secrets:
   # Chart-managed path (default): leave `useExistingSecret: false` and set the values
   # below; the chart renders them into the `<manager.name>` Secret.
   #
-  # MONGO_PASSWORD is single-sourced from the Bitnami mongodb subchart Secret
+  # MONGO_PASSWORD is single-sourced from the chart's bundled-MongoDB Secret
   # (<release>-mongodb, key mongodb-root-password) and read via secretKeyRef — leave empty
   # with the bundled subchart; only set for an external MongoDB without
   # mongodb.auth.existingSecret. See docs/helm-chart-standard.md "Single-Source Infra Secrets".
@@ -768,8 +768,13 @@ mongodb:
     enabled: true
     rootUser: reporter
     rootPassword: ""
+    # -- Secret with the root password. The default points the subchart at the one this chart keeps
+    # across uninstall (templates/mongodb-secrets.yaml); reporter's own templates read it as empty. Name yours to replace it.
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   persistence:
     size: 8Gi
+    # -- The data volume outlives the release: helm uninstall keeps it.
+    resourcePolicy: keep
   resources:
     limits:
       cpu: 500m

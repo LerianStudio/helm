@@ -113,6 +113,27 @@ app:
 
 When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead).
 
+## Accounting routes
+
+The accounting-route resolver attaches a `routeId` to the plugin's Midaz transactions by resolving the tenant's operation and transaction routes. The chart sets none of its keys: the app owns their defaults, and omitted, the resolver stays **off**, which is the behaviour the plugin had before the feature existed.
+
+| Key | App default | Meaning |
+|---|---|---|
+| `ACCOUNTING_ROUTES_ENABLED` | `false` | Gates the resolver as a whole. |
+| `ACCOUNTING_ROUTES_CACHE_TTL_SEC` | `900` | Per-tenant route inventory cache TTL, in seconds; `<= 0` disables the cache. |
+| `ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC` | `60` | Budget for one full route resolution, in seconds; `<= 0` falls back to the default. |
+| `RECONCILIATION_WEBHOOK_CLAIM_LEASE` | `2h` | How long one replica's claim on a webhook row stays exclusive. |
+
+Turn it on per environment, one deployment at a time, after the per-tenant credentials exist — a tenant whose credential is not provisioned yet is taken down, not degraded, by the first request that reaches the resolver:
+
+```yaml
+app:
+  extraEnvVars:
+    ACCOUNTING_ROUTES_ENABLED: "true"
+```
+
+If you also disable the routes cache (`ACCOUNTING_ROUTES_CACHE_TTL_SEC` `<= 0`), raise `RECONCILIATION_WEBHOOK_CLAIM_LEASE` first, to at least `RECONCILIATION_MAX_MONEY_ITEMS_PER_CYCLE x (65s + ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC)` — `3h30m` at the defaults. The lease is a fencing token's lifetime, not a timeout: shorter than the batch it covers, it lets a second replica take rows the first is still working. The full rollout sequence is the plugin's accounting-routes runbook.
+
 ## Common values
 
 | Key | Default | Description |

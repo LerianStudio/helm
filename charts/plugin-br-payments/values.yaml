@@ -295,6 +295,16 @@ app:
     # now exactly the value that refuses to boot. Omitted, the deployment inherits
     # the validated default; override per environment via app.extraEnvVars.
     RECONCILIATION_LOOKBACK_HOURS: "24"
+    # Accounting routes: ACCOUNTING_ROUTES_ENABLED, ACCOUNTING_ROUTES_CACHE_TTL_SEC,
+    # ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC and RECONCILIATION_WEBHOOK_CLAIM_LEASE are
+    # deliberately NOT set here, same reason as RECONCILIATION_INTERVAL above. The
+    # app owns their defaults (false / 900 / 60 / 2h), and the lease is arithmetic
+    # it owns too: with the resolver on and the routes cache disabled
+    # (ACCOUNTING_ROUTES_CACHE_TTL_SEC <= 0) it must cover
+    # RECONCILIATION_MAX_MONEY_ITEMS_PER_CYCLE x (65s + ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC),
+    # 3h30m at the defaults, so a literal here would rot the day that sum moves.
+    # Omitted, the resolver stays off; turn it on per environment via
+    # app.extraEnvVars (see "Accounting routes" in README.md).
     # Rate Limiting
     RATE_LIMIT_ENABLED: "true"
     RATE_LIMIT_MAX: "500"

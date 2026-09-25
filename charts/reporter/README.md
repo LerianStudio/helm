@@ -3,9 +3,9 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), and `secrets.DATASOURCE_ONBOARDING_PASSWORD`. The MongoDB password is **not** operator-provided with the bundled subchart: it is auto-generated into the `<release>-mongodb` Secret (key `mongodb-root-password`) and read via `secretKeyRef`.
+- Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), and `secrets.DATASOURCE_ONBOARDING_PASSWORD`. The MongoDB password is **not** operator-provided with the bundled subchart: it is generated into the `<release>-mongodb` Secret (key `mongodb-root-password`), which this chart owns and keeps across uninstall, and read via `secretKeyRef`.
 - Required from app 3.0.0 on: `secrets.DATASOURCE_CRED_ENC_KEY` — a hex-encoded AES key (16/24/32 bytes; `openssl rand -hex 32`) that both components use to encrypt registered data-source credentials at rest. It must be **identical** on the manager and the worker, and it **cannot be rotated** in that release. The render fails when either component's `image.tag` is `>= 3.0.0` and the key is empty; app 2.4.x (the chart's default appVersion) ignores it. See `docs/UPGRADE-4.1.md`.
-- Single-source infra secrets: MongoDB follows Pattern A (app reads the subchart Secret). RabbitMQ follows Pattern B (the groundhog2k broker is pointed at the application `reporter-manager` Secret via `rabbitmq.authentication.existingSecret`, so the broker password lives only in `secrets.RABBITMQ_DEFAULT_PASS`; this also removes the prior `midaz`-vs-`plugin` user mismatch). Valkey: the valkey.io subchart exposes no Secret-based password mechanism (auth is an inline ACL) and ships with `auth.enabled: false`, so there is no single-source wiring for it here. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
+- Single-source infra secrets: MongoDB follows Pattern A, except that the chart, not the subchart, owns the `<release>-mongodb` Secret; the subchart reads it through `mongodb.auth.existingSecret`. RabbitMQ follows Pattern B (the groundhog2k broker is pointed at the application `reporter-manager` Secret via `rabbitmq.authentication.existingSecret`, so the broker password lives only in `secrets.RABBITMQ_DEFAULT_PASS`; this also removes the prior `midaz`-vs-`plugin` user mismatch). Valkey: the valkey.io subchart exposes no Secret-based password mechanism (auth is an inline ACL) and ships with `auth.enabled: false`, so there is no single-source wiring for it here. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
 - Release name: the hardcoded infra hosts and the `<release>-mongodb` / `reporter-manager` Secret references assume the release is installed as `reporter`. If you override `manager.name`/`manager.existingSecretName`, set `rabbitmq.authentication.existingSecret` to match.
 - Dependency notes: Uses local MongoDB and RabbitMQ dependency charts unless external services are configured.
 - Production overrides: Provide reporting database and messaging credentials through chart secrets or existing Secrets where supported; override manager/worker image tags, ingress, resources, KEDA settings, and persistence.
@@ -59,6 +59,8 @@ helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --ve
 ```bash
 helm uninstall reporter -n reporter
 ```
+
+Uninstall keeps the data. The bundled MongoDB volume (PVC `<release>-mongodb`) and its password Secret (`<release>-mongodb`) stay, as do the SeaweedFS report volumes (StatefulSet claims), so a reinstall under the same release name opens the same data with the same password. Deleting the data is a separate, manual step: `kubectl delete pvc <release>-mongodb -n reporter` and `kubectl delete secret <release>-mongodb -n reporter`. Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned. The chart, not the MongoDB subchart, owns that password: set `mongodb.auth.rootPassword` to choose it, or `mongodb.auth.existingSecret` to bring your own Secret (the chart then renders none).
 
 ## Configuration
 
@@ -175,7 +177,7 @@ secrets:
   # Generate once with: openssl rand -hex 32
   RABBITMQ_ERLANG_COOKIE: <stable-cookie>
   DATASOURCE_ONBOARDING_PASSWORD: lerian
-  # MONGO_PASSWORD is single-sourced from the bundled mongodb subchart Secret and read
+  # MONGO_PASSWORD is single-sourced from the chart's bundled-MongoDB Secret and read
   # via secretKeyRef — leave it unset; only set it for an EXTERNAL MongoDB.
   # REDIS_PASSWORD is omitted because the bundled valkey runs with auth disabled.
   # At-rest encryption of registered data-source credentials. Required by app >= 3.0.0

@@ -1,5 +1,17 @@
 # Midaz Changelog
 
+## [9.2.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.5)
+
+- Fixes:
+  - Send only the role password verifier to the server.
+  - Update midaz-ledger to version 4.0.7.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.4...midaz-v9.2.5)
+
+---
+
 ## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.4)
 
 - **Fixes:**

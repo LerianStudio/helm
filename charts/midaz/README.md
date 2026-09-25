@@ -10,7 +10,7 @@
 
 > **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` accordingly.
 
-> **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`<release>-mongodb`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets.
+> **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`<release>-mongodb`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets. Deleting only the Secrets resets nothing: a reinstall generates new passwords that the kept data never learned.
 
 > **Known limitation — RabbitMQ is not yet single-sourced.** `files/rabbitmq/load_definitions.json` bakes a static `password_hash` for the `midaz`, `transaction`, and `consumer` users, which the broker imports at boot. Because that file is a second, independent source of truth, the Bitnami single-source pattern cannot drive it. `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` therefore remain operator-provided and must match the hashes baked into the definitions file. Tracked as a follow-up.
 
@@ -331,7 +331,7 @@ kubectl create secret generic midaz-crm \
   -n midaz
 ```
 
-**Note:** `MONGO_PASSWORD` is only read when MongoDB is **external**; for the bundled Bitnami mongodb subchart it is single-sourced from the subchart Secret via `secretKeyRef`, so the key in this secret is ignored.
+**Note:** `MONGO_PASSWORD` is only read when MongoDB is **external**; for the bundled MongoDB it is single-sourced from the chart's `<release>-mongodb` Secret via `secretKeyRef`, so the key in this secret is ignored.
 
 Then configure the CRM service to use this existing secret:
 
@@ -353,7 +353,7 @@ crm:
     MONGO_HOST: "midaz-mongodb"  # Use your MongoDB host
     MONGO_NAME: "crm"
     MONGO_USER: "midaz"
-  # MONGO_PASSWORD is single-sourced from the bundled Bitnami mongodb subchart
+  # MONGO_PASSWORD is single-sourced from the chart's bundled-MongoDB Secret
   # (Secret `midaz-mongodb`, key `mongodb-root-password`) — only set it here when
   # using an EXTERNAL MongoDB (mongodb.enabled=false / mongodb.external=true).
   # secrets:
@@ -378,7 +378,7 @@ tracer:
     CORS_ALLOWED_ORIGINS: "https://app.example.com"
   secrets:
     API_KEY: "<your-api-key>"
-  # DB_PASSWORD is single-sourced from the bundled Bitnami postgresql subchart
+  # DB_PASSWORD is single-sourced from the chart's bundled-PostgreSQL Secret
   # (Secret `midaz-postgresql`, key `password`) — only set it here when using an
   # EXTERNAL PostgreSQL (postgresql.enabled=false / postgresql.external=true).
 ```

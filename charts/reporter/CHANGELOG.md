@@ -6,6 +6,21 @@
   - Updated `reporter-manager` to version 4.2.0.
   - Updated `reporter-worker` to version 4.2.0.
 
+- **Improvements**
+  - Added Helm upgrade guide for reporter v4.3.4.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.4...reporter-v4.3.5)
+
+---
+
+## [4.3.5](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.5)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 4.2.0.
+  - Updated `reporter-worker` to version 4.2.0.
+
 - **Documentation**
   - Added Helm upgrade guide for reporter v4.3.4.
   - Added upgrade guide for reporter v4.3.4.

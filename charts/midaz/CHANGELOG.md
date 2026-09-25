@@ -1,5 +1,20 @@
 # Midaz Changelog
 
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- **Fixes:**
+  - Ensure databases and their passwords are retained on uninstall.
+
+- **Documentation:**
+  - Indicate that the chart is responsible for managing database passwords.
+  - Update the required-secrets note to reference the maintained datastore secrets.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
 ## [9.2.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.5)
 
 - Fixes:

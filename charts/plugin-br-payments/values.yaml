@@ -244,6 +244,26 @@ app:
     # Reconciliation worker (in-process)
     RECONCILIATION_INTERVAL: "5m"
     RECONCILIATION_LOOKBACK_HOURS: "24"
+    # How long one replica's claim on a webhook row stays exclusive (app default
+    # 2h). Made explicit here — rather than left to the app default — because
+    # turning on the accounting-route resolver below with a disabled cache
+    # (ACCOUNTING_ROUTES_CACHE_TTL_SEC <= 0) needs this raised first: the
+    # runbook floor is RECONCILIATION_MAX_MONEY_ITEMS_PER_CYCLE x (65s +
+    # ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC), 3h30m at shipped defaults.
+    RECONCILIATION_WEBHOOK_CLAIM_LEASE: "2h"
+    # Accounting Routes resolver — gate + two independent cache knobs (app
+    # defaults: false / 900 / 60). The gate stays off by default on purpose:
+    # it reads a per-tenant runtime credential, so flipping it fleet-wide ahead
+    # of credential provisioning takes an unprovisioned tenant down instead of
+    # degrading it. Provision credentials first, then enable per deployment.
+    ACCOUNTING_ROUTES_ENABLED: "false"
+    # How long one tenant's resolved route inventory stays usable, in seconds.
+    # <= 0 disables the cache (every resolution re-reads the ledger) — see the
+    # RECONCILIATION_WEBHOOK_CLAIM_LEASE note above before doing that.
+    ACCOUNTING_ROUTES_CACHE_TTL_SEC: "900"
+    # Budget for ONE full route resolution (both listings, every page), in
+    # seconds. Can reach a caller's latency on an API-only pod or a cold entry.
+    ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC: "60"
     # Rate Limiting
     RATE_LIMIT_ENABLED: "true"
     RATE_LIMIT_MAX: "500"

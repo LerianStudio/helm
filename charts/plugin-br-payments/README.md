@@ -114,6 +114,37 @@ app:
 
 When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead).
 
+## Accounting routes
+
+The accounting-route resolver attaches a `routeId` to transactions by resolving
+Midaz operation/transaction routes for the tenant's ledger. It is off by default:
+
+```yaml
+app:
+  configmap:
+    ACCOUNTING_ROUTES_ENABLED: "false"           # off by default — see below
+    ACCOUNTING_ROUTES_CACHE_TTL_SEC: "900"        # 15m; "<= 0" disables the cache
+    ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC: "60"     # budget for one full resolution
+    RECONCILIATION_WEBHOOK_CLAIM_LEASE: "2h"      # re-size before disabling the cache
+```
+
+`ACCOUNTING_ROUTES_ENABLED` defaults to `"false"` because the resolver reads a
+per-tenant runtime credential; a tenant whose credential is not yet provisioned
+answers `AccessDenied` on the first request that reaches the resolver, taking that
+tenant down rather than degrading it. Provision the per-tenant credentials first,
+then enable this per deployment — never fleet-wide ahead of the credential
+inventory.
+
+`ACCOUNTING_ROUTES_CACHE_TTL_SEC` and `ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC` are two
+independent knobs and disagree on what a non-positive value means: the TTL treats
+`<= 0` as "disable the cache" (every resolution re-reads the ledger), while the
+timeout falls back to its own default instead. If you disable the cache while
+`ACCOUNTING_ROUTES_ENABLED=true`, raise `RECONCILIATION_WEBHOOK_CLAIM_LEASE` first —
+the app-side runbook floors it at
+`RECONCILIATION_MAX_MONEY_ITEMS_PER_CYCLE x (65s + ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC)`,
+3h30m at the shipped defaults — otherwise a webhook claim can expire mid-batch and
+reintroduce double-processing on the reconciliation drain.
+
 ## Common values
 
 | Key | Default | Description |
@@ -128,6 +159,10 @@ When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `prov
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.OUTBOX_ENABLED` | `"true"` | REQUIRED — the plugin won't register routes otherwise. |
 | `app.configmap.MULTI_TENANCY_ENABLED` | `"false"` | Toggle multi-tenant mode. |
+| `app.configmap.ACCOUNTING_ROUTES_ENABLED` | `"false"` | Toggle the accounting-route resolver. See "Accounting routes" below before enabling. |
+| `app.configmap.ACCOUNTING_ROUTES_CACHE_TTL_SEC` | `"900"` | Route inventory cache TTL, in seconds. `<= 0` disables the cache. |
+| `app.configmap.ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC` | `"60"` | Budget for one full route resolution, in seconds. |
+| `app.configmap.RECONCILIATION_WEBHOOK_CLAIM_LEASE` | `"2h"` | How long one replica's claim on a webhook row stays exclusive. Re-size before disabling the accounting-route cache — see below. |
 | `postgresql.enabled` | `true` | Deploy the in-cluster PostgreSQL subchart. |
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `global.externalPostgresDefinitions.enabled` | `false` | Run a bootstrap Job against an external PostgreSQL. |

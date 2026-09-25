@@ -1,5 +1,20 @@
 # Midaz Changelog
 
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- **Fixes:**
+  - Keep the databases and their passwords on uninstall to prevent data loss. (Commit: 2aeea307)
+
+- **Improvements:**
+  - Documentation update to indicate that the chart owns the database passwords. (Commit: ecc8369b)
+  - Updated the required-secrets note to point at the kept datastore secrets for better clarity. (Commit: d68c32cc)
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
 ## [9.2.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.5)
 
 - Fixes:

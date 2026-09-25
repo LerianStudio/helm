@@ -64,8 +64,7 @@ spec:
             {{/* MongoDB: CRM authenticates as root; MONGO_PASSWORD maps to `mongodb-root-password`. */}}
             {{- include "midaz.mongodbAuthRequired" . }}
             {{- $mongo := .Values.mongodb | default dict }}
-            {{- $mongoAuth := $mongo.auth | default dict }}
-            {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}
+            {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "mongodb")) }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_PASSWORD") | nindent 12 }}
             {{- else if .Values.crm.secrets.MONGO_PASSWORD }}
             - name: MONGO_PASSWORD

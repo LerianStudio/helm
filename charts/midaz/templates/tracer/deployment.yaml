@@ -83,8 +83,7 @@ spec:
             {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
             {{/* PostgreSQL: DB_PASSWORD is single-sourced from the Bitnami postgresql subchart Secret when internal. */}}
             {{- $pg := .Values.postgresql | default dict }}
-            {{- $pgAuth := $pg.auth | default dict }}
-            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") | nindent 12 }}
             {{- else if .Values.tracer.secrets.DB_PASSWORD }}
             - name: DB_PASSWORD

@@ -883,6 +883,9 @@ postgresql:
     database: "onboarding"
     replicationUsername: "replicator"
     replicationPassword: ""
+    # -- Secret with the passwords. The default points the subchart at the one this chart keeps across
+    # uninstall (templates/datastore-secrets.yaml); midaz's own templates read it as empty. Name yours to replace it.
+    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname" . }}{{ end }}'
   primary:
     extraVolumes:
       - name: init-script
@@ -954,9 +957,13 @@ mongodb:
     enabled: true
     rootUser: midaz
     rootPassword: ""
+    # -- Secret with the passwords, as postgresql.auth.existingSecret.
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
   persistence:
     size: 8Gi
+    # -- The data volume outlives the release, like the PostgreSQL ones.
+    resourcePolicy: keep
 rabbitmq:
   enabled: true
   image:

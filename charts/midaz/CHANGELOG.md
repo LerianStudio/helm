@@ -2,6 +2,19 @@
 
 ## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.4)
 
+- **Fixes:**
+  - Match the privilege check literally and read the password from the environment.
+  - Hide a failed CREATE ROLE from the server log.
+  - Quote the role password in the postgres bootstrap hook.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.3...midaz-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.4)
+
 - Fixes:
   - Match the privilege check literally and read the password from the environment.
   - Hide a failed CREATE ROLE from the server log.

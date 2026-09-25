@@ -2,6 +2,22 @@
 
 ## [4.2.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.3)
 
+- **Fixes**
+  - Bumped the real image.tag to 2.2.1 and removed obsolete values block.
+  - Updated product-console to version 2.2.1.
+
+- **Documentation**
+  - Added Helm upgrade guide for product-console v4.2.2.
+  - Added upgrade guide for product-console v4.2.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.2...product-console-v4.2.3)
+
+---
+
+## [4.2.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.3)
+
 - **Fixes:**
   - Bumped the real image.tag to 2.2.1 and removed obsolete values block.
   - Updated product-console to version 2.2.1.

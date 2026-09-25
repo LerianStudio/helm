@@ -97,8 +97,7 @@ spec:
             {{/* PostgreSQL: single role `midaz` backs both onboarding and transaction; both
                  module passwords map to Bitnami key `password`, both replicas to `replication-password`. */}}
             {{- $pg := .Values.postgresql | default dict }}
-            {{- $pgAuth := $pg.auth | default dict }}
-            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_ONBOARDING_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_ONBOARDING_REPLICA_PASSWORD") | nindent 12 }}
@@ -136,8 +135,7 @@ spec:
             {{/* MongoDB: app authenticates as root; both module passwords map to `mongodb-root-password`. */}}
             {{- include "midaz.mongodbAuthRequired" . }}
             {{- $mongo := .Values.mongodb | default dict }}
-            {{- $mongoAuth := $mongo.auth | default dict }}
-            {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}
+            {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "mongodb")) }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_ONBOARDING_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_TRANSACTION_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_CRM_PASSWORD") | nindent 12 }}

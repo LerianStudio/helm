@@ -15,8 +15,7 @@ the schema_migrations table, not on disk.
 {{- $migrations := .Values.tracer.migrations }}
 {{- $cm := .Values.tracer.configmap | default dict }}
 {{- $pg := .Values.postgresql | default dict }}
-{{- $pgAuth := $pg.auth | default dict }}
-{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
 {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
 {{- /* Resolve DB connection through the SAME datastore mask the tracer ConfigMap uses, so an
    operator who sets tracer.datastores.postgres.{host,name,...} migrates the SAME db the app then

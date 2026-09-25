@@ -3,12 +3,14 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided — see "Known limitation" below) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled Bitnami subcharts and are only required when the matching backend is external.
-- Dependency notes: PostgreSQL, MongoDB, and Valkey passwords are single-sourced from the bundled Bitnami subchart Secrets (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`, `<release>-valkey` key `valkey-password`) and injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
-- Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the bundled Bitnami subcharts own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
+- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided — see "Known limitation" below) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled datastores' Secrets (see Dependency notes) and are only required when the matching backend is external.
+- Dependency notes: PostgreSQL and MongoDB passwords are single-sourced from Secrets this chart keeps across uninstall (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`), Valkey's from the bundled Bitnami subchart Secret (`<release>-valkey` key `valkey-password`); all are injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
+- Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the chart own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
 > **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` accordingly.
+
+> **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`<release>-mongodb`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets. Deleting only the Secrets resets nothing: a reinstall generates new passwords that the kept data never learned.
 
 > **Known limitation — RabbitMQ is not yet single-sourced.** `files/rabbitmq/load_definitions.json` bakes a static `password_hash` for the `midaz`, `transaction`, and `consumer` users, which the broker imports at boot. Because that file is a second, independent source of truth, the Bitnami single-source pattern cannot drive it. `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` therefore remain operator-provided and must match the hashes baked into the definitions file. Tracked as a follow-up.
 
@@ -329,7 +331,7 @@ kubectl create secret generic midaz-crm \
   -n midaz
 ```
 
-**Note:** `MONGO_PASSWORD` is only read when MongoDB is **external**; for the bundled Bitnami mongodb subchart it is single-sourced from the subchart Secret via `secretKeyRef`, so the key in this secret is ignored.
+**Note:** `MONGO_PASSWORD` is only read when MongoDB is **external**; for the bundled MongoDB it is single-sourced from the chart's `<release>-mongodb` Secret via `secretKeyRef`, so the key in this secret is ignored.
 
 Then configure the CRM service to use this existing secret:
 
@@ -351,7 +353,7 @@ crm:
     MONGO_HOST: "midaz-mongodb"  # Use your MongoDB host
     MONGO_NAME: "crm"
     MONGO_USER: "midaz"
-  # MONGO_PASSWORD is single-sourced from the bundled Bitnami mongodb subchart
+  # MONGO_PASSWORD is single-sourced from the chart's bundled-MongoDB Secret
   # (Secret `midaz-mongodb`, key `mongodb-root-password`) — only set it here when
   # using an EXTERNAL MongoDB (mongodb.enabled=false / mongodb.external=true).
   # secrets:
@@ -376,7 +378,7 @@ tracer:
     CORS_ALLOWED_ORIGINS: "https://app.example.com"
   secrets:
     API_KEY: "<your-api-key>"
-  # DB_PASSWORD is single-sourced from the bundled Bitnami postgresql subchart
+  # DB_PASSWORD is single-sourced from the chart's bundled-PostgreSQL Secret
   # (Secret `midaz-postgresql`, key `password`) — only set it here when using an
   # EXTERNAL PostgreSQL (postgresql.enabled=false / postgresql.external=true).
 ```

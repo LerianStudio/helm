@@ -10,6 +10,15 @@
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
+> **⛔ SUPERSEDED IN PART — do not follow step 1 for the credential pair.** A later
+> chart release renames `app.secrets.BTG_CLIENT_ID` and `BTG_CLIENT_SECRET` BACK to
+> `PROVIDER_CLIENT_ID` and `PROVIDER_CLIENT_SECRET`, because the binary moved to
+> those names: the service is provider-agnostic and BTG is its first adapter, so a
+> client id and a client secret carry no vendor prefix while a BTG host and a BTG
+> webhook mechanism do. The other four keys in step 1 are unaffected and keep their
+> `BTG_*` prefix. See the CHANGELOG's `[Unreleased]` entry. This document is left
+> as the accurate record of what the `1.0.0` upgrade required.
+
 ## Overview
 
 This guide covers the `plugin-br-payments` chart upgrade from `0.1.0` to `1.0.0`. The application version remains `1.0.0-beta.9`; the chart bump to `1.0.0` carries a single breaking change: the provider integration value keys were renamed from the generic `PROVIDER_*` prefix to the vendor-specific `BTG_*` prefix to match the names the running binary actually reads.

@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -56,19 +56,18 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.configmap.OUTBOX_ENABLED` | Must be `"true"`. The plugin only registers HTTP routes when the outbox is enabled. |
 | `app.configmap.BTG_API_BASE_URL` | BTG API base URL. |
 | `app.configmap.BTG_AUTH_URL` | BTG OAuth2 token URL. |
-| `app.configmap.MIDAZ_ONBOARDING_URL` | Midaz onboarding service URL. |
-| `app.configmap.MIDAZ_TRANSACTION_URL` | Midaz transaction service URL. |
-| `app.secrets.BTG_CLIENT_ID` | BTG OAuth2 client ID. |
-| `app.secrets.BTG_CLIENT_SECRET` | BTG OAuth2 client secret. |
+| `app.configmap.MIDAZ_LEDGER_URL` | Midaz Ledger service URL (single plane). The deprecated `MIDAZ_ONBOARDING_URL` + `MIDAZ_TRANSACTION_URL` pair is still accepted as a fallback. |
+| `app.secrets.PROVIDER_CLIENT_ID` | Provider OAuth2 client ID. **Single-tenant only** — in multi-tenant it is resolved per tenant and must be left empty. Named for the role rather than the vendor; renamed from `BTG_CLIENT_ID`. |
+| `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. Same conditionality as above; renamed from `BTG_CLIENT_SECRET`. |
 | `app.secrets.BTG_WEBHOOK_SECRET` | Bearer token for incoming BTG webhooks. |
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |
 
-When `app.configmap.MULTI_TENANCY_ENABLED=true`, the following are additionally required:
+When `app.configmap.MULTI_TENANT_ENABLED=true`, the `PROVIDER_CLIENT_*` pair above stops being required — the app resolves it per tenant — and the following are additionally required:
 
 | Field | Description |
 |-------|-------------|
-| `app.configmap.MULTI_TENANT_MANAGER_URL` | Tenant Manager service URL. |
+| `app.configmap.MULTI_TENANT_URL` | Tenant Manager service URL. |
 | `app.secrets.MULTI_TENANT_SERVICE_API_KEY` | Tenant Manager service API key. |
 
 > **Database password:** with the bundled PostgreSQL subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` — leave `app.secrets.POSTGRES_PASSWORD` empty. Only set it for an external Postgres that has no `postgresql.auth.existingSecret`.
@@ -79,7 +78,7 @@ When `app.configmap.MULTI_TENANCY_ENABLED=true`, the following are additionally 
 |-------|------|-------|
 | Liveness | `/health` | Lightweight startup self-probe. Returns 200 once startup completes. |
 | Readiness | `/readyz` | Deep per-dependency checks (Postgres, Provider, Midaz, Tenant Manager). Returns 503 if any dep is `down`/`degraded`. |
-| Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANCY_ENABLED=true`. Anti-enumeration uniform shape. |
+| Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANT_ENABLED=true`. Anti-enumeration uniform shape. |
 
 Default probe values match the canonical Lerian readiness contract documented in [`plugin-br-payments/docs/readyz-guide.md`](https://github.com/LerianStudio/plugin-br-payments/blob/main/docs/readyz-guide.md):
 
@@ -105,14 +104,35 @@ The plugin supports schema-per-tenant via Lerian's Tenant Manager. To enable:
 ```yaml
 app:
   configmap:
-    MULTI_TENANCY_ENABLED: "true"
-    MULTI_TENANT_MANAGER_URL: "https://tenant-manager.example.com"
+    MULTI_TENANT_ENABLED: "true"
+    MULTI_TENANT_URL: "https://tenant-manager.example.com"
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
   secrets:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```
 
 When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead).
+
+## Accounting routes
+
+The accounting-route resolver attaches a `routeId` to the plugin's Midaz transactions by resolving the tenant's operation and transaction routes. The chart sets none of its keys: the app owns their defaults, and omitted, the resolver stays **off**, which is the behaviour the plugin had before the feature existed.
+
+| Key | App default | Meaning |
+|---|---|---|
+| `ACCOUNTING_ROUTES_ENABLED` | `false` | Gates the resolver as a whole. |
+| `ACCOUNTING_ROUTES_CACHE_TTL_SEC` | `900` | Per-tenant route inventory cache TTL, in seconds; `<= 0` disables the cache. |
+| `ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC` | `60` | Budget for one full route resolution, in seconds; `<= 0` falls back to the default. |
+| `RECONCILIATION_WEBHOOK_CLAIM_LEASE` | `2h` | How long one replica's claim on a webhook row stays exclusive. |
+
+Turn it on per environment, one deployment at a time, after the per-tenant credentials exist — a tenant whose credential is not provisioned yet is taken down, not degraded, by the first request that reaches the resolver:
+
+```yaml
+app:
+  extraEnvVars:
+    ACCOUNTING_ROUTES_ENABLED: "true"
+```
+
+If you also disable the routes cache (`ACCOUNTING_ROUTES_CACHE_TTL_SEC` `<= 0`), raise `RECONCILIATION_WEBHOOK_CLAIM_LEASE` first, to at least `RECONCILIATION_MAX_MONEY_ITEMS_PER_CYCLE x (65s + ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC)` — `3h30m` at the defaults. The lease is a fencing token's lifetime, not a timeout: shorter than the batch it covers, it lets a second replica take rows the first is still working. The full rollout sequence is the plugin's accounting-routes runbook.
 
 ## Common values
 
@@ -127,7 +147,7 @@ When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `prov
 | `app.terminationGracePeriodSeconds` | `60` | Required by the readyz contract. |
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.OUTBOX_ENABLED` | `"true"` | REQUIRED — the plugin won't register routes otherwise. |
-| `app.configmap.MULTI_TENANCY_ENABLED` | `"false"` | Toggle multi-tenant mode. |
+| `app.configmap.MULTI_TENANT_ENABLED` | unset (app default `false`) | Toggle multi-tenant mode. The chart ships NO value on purpose: a default would make the canonical name "set" and silently stop an overlay on the deprecated `MULTI_TENANCY_ENABLED` from taking effect. |
 | `postgresql.enabled` | `true` | Deploy the in-cluster PostgreSQL subchart. |
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `global.externalPostgresDefinitions.enabled` | `false` | Run a bootstrap Job against an external PostgreSQL. |

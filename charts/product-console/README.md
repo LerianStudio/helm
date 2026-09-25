@@ -364,7 +364,7 @@ is set. `gcp`/`azure` have no Mongo preset today.
 ## Uninstalling the Chart
 
 ```bash
-helm uninstall product-console
+helm uninstall product-console -n product-console
 ```
 
 **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB's
@@ -372,7 +372,7 @@ volume (PVC `<release>-mongodb`) and the Secret holding its root password
 (`<release>-mongodb`), so a reinstall under the same release name opens the same
 data with the same password. This chart, not the MongoDB subchart, owns that
 Secret. Deleting the data is a separate, manual step, in the namespace the
-bundled MongoDB runs in:
+bundled MongoDB runs in, once the uninstall has succeeded:
 
 ```bash
 kubectl delete pvc product-console-mongodb -n product-console

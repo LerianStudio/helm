@@ -2,6 +2,23 @@
 
 ## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
 
+- **Features:**
+  - Added Helm upgrade guide for plugin-access-manager v9.3.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.4.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.5.0.
+
+- **Fixes:**
+  - Delivered Caradhras 1.3.2 RBAC migrations.
+  - Bumped Caradhras images to version 1.3.2.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
 - **Fixes**
   - Deliver Caradhras 1.3.2 RBAC migrations.
   - Bump Caradhras images to 1.3.2.

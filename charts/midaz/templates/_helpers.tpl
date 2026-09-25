@@ -330,6 +330,113 @@ schema and the binary reading it can never drift when only one is bumped.
 {{- end -}}
 
 {{/*
+midaz-tracer.migrationsWaitForPostgresContainer — the wait-for-postgres container
+spec shared by the tracer migration Job and the tracer pod's initContainer, so
+both wait on the SAME database endpoint the runner then migrates. Call with the
+root context ($). Renders a single list item (`- name: wait-for-postgres`) with no
+leading indentation; the caller places it under `initContainers:` via `nindent 8`.
+DB host/port resolve through the SAME datastore mask the tracer ConfigMap uses.
+*/}}
+{{- define "midaz-tracer.migrationsWaitForPostgresContainer" -}}
+{{- $migrations := .Values.tracer.migrations -}}
+{{- $cm := .Values.tracer.configmap | default dict -}}
+{{- $dst := .Values.tracer.datastores -}}
+{{- $dvt := "lerian-common.datastore.value" -}}
+{{- $dbHost := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "midaz.postgresqlPrimaryHost" .)) -}}
+{{- if not $dbHost }}{{- fail "tracer Postgres host is required when PostgreSQL is external: set tracer.datastores.postgres.host, global.datastores.postgres.host, or tracer.configmap.DB_HOST" -}}{{- end }}
+{{- $dbPort := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") -}}
+- name: wait-for-postgres
+  image: {{ $migrations.waitForPostgres.image.repository }}:{{ $migrations.waitForPostgres.image.tag }}
+  imagePullPolicy: IfNotPresent
+  command:
+    - /bin/sh
+    - -c
+    - >
+      TIMEOUT={{ $migrations.activeDeadlineSeconds | default 600 }};
+      ELAPSED=0;
+      echo "Checking {{ $dbHost }}:{{ $dbPort }}...";
+      while ! nc -z {{ $dbHost }} {{ $dbPort }}; do
+        if [ $ELAPSED -ge $TIMEOUT ]; then
+          echo "Timeout waiting for {{ $dbHost }}:{{ $dbPort }} after ${TIMEOUT}s";
+          exit 1;
+        fi;
+        echo "{{ $dbHost }}:{{ $dbPort }} is not ready yet, waiting... (${ELAPSED}s/${TIMEOUT}s)";
+        sleep 5;
+        ELAPSED=$((ELAPSED + 5));
+      done;
+      echo "{{ $dbHost }}:{{ $dbPort }} is ready!";
+  {{- with .Values.tracer.securityContext }}
+  securityContext:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  resources:
+    limits:
+      cpu: 100m
+      memory: 32Mi
+    requests:
+      cpu: 10m
+      memory: 16Mi
+{{- end -}}
+
+{{/*
+midaz-tracer.migrationsRunnerContainer — the tracer schema-migration runner
+container spec, shared by the post-install/PreSync migration Job and the tracer
+pod's run-migrations initContainer so both target a byte-identical database. Call
+with the root context ($). Renders a single list item (`- name: migrations`) with
+no leading indentation; the caller places it under `containers:`/`initContainers:`
+via `nindent 8`. DB_* resolve through the SAME datastore mask the tracer ConfigMap
+uses, and DB_PASSWORD is single-sourced from the bundled PostgreSQL Secret when
+internal, else from the tracer Secret.
+*/}}
+{{- define "midaz-tracer.migrationsRunnerContainer" -}}
+{{- $migrations := .Values.tracer.migrations -}}
+{{- $cm := .Values.tracer.configmap | default dict -}}
+{{- $pg := .Values.postgresql | default dict -}}
+{{- $pgAuth := $pg.auth | default dict -}}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret -}}
+{{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret -}}
+{{- $dst := .Values.tracer.datastores -}}
+{{- $dvt := "lerian-common.datastore.value" -}}
+{{- $dbHost := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "midaz.postgresqlPrimaryHost" .)) -}}
+{{- if not $dbHost }}{{- fail "tracer Postgres host is required when PostgreSQL is external: set tracer.datastores.postgres.host, global.datastores.postgres.host, or tracer.configmap.DB_HOST" -}}{{- end }}
+{{- $dbPort := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") -}}
+{{- $dbName := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "tracer") -}}
+{{- $dbUser := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "midaz") -}}
+{{- $dbSsl := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSL_MODE" "default" "disable") -}}
+- name: migrations
+  image: {{ $migrations.image.repository }}:{{ include "midaz-tracer.migrationsTag" . }}
+  imagePullPolicy: {{ $migrations.image.pullPolicy | default "IfNotPresent" }}
+  {{- with .Values.tracer.securityContext }}
+  securityContext:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  env:
+    - name: DB_HOST
+      value: {{ $dbHost | quote }}
+    - name: DB_PORT
+      value: {{ $dbPort | quote }}
+    - name: DB_NAME
+      value: {{ $dbName | quote }}
+    - name: DB_USER
+      value: {{ $dbUser | quote }}
+    - name: DB_SSL_MODE
+      value: {{ $dbSsl | quote }}
+    {{/* Same single-source rule as the tracer Deployment: the bundled
+         PostgreSQL Secret when internal, the tracer Secret when external. */}}
+    {{- if $pgInternal }}
+    {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") | nindent 4 }}
+    {{- else if or .Values.tracer.useExistingSecret .Values.tracer.secrets.DB_PASSWORD }}
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ $secretName }}
+          key: DB_PASSWORD
+    {{- end }}
+  resources:
+    {{- toYaml $migrations.resources | nindent 4 }}
+{{- end -}}
+
+{{/*
 midaz-tracer.validate — render-time mirror of the tracer bootstrap validators
 (components/tracer/internal/bootstrap). Every rule below is a configuration the
 v4 process rejects at boot, so failing the render turns a CrashLoopBackOff into
@@ -498,10 +605,24 @@ behavior unchanged).
 {{- $crmHost := include "lerian-common.datastore.value" (dict "context" $ctx "dedicated" $ded "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") -}}
 {{- $feesHost := include "lerian-common.datastore.value" (dict "context" $ctx "dedicated" $ded "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") -}}
 {{- $unset := list -}}
-{{- if eq $crmHost "midaz-mongodb" -}}{{- $unset = append $unset "CRM" -}}{{- end -}}
-{{- if eq $feesHost "midaz-mongodb" -}}{{- $unset = append $unset "Fees" -}}{{- end -}}
+{{- /* A host is unusable if it is empty/blank, still the packaged
+       "midaz-mongodb" default, or contains ANY whitespace. The whitespace check
+       runs on the RAW value (not the trimmed one) because the ConfigMap passes
+       the host through verbatim — an untrimmed " mongo.example " reaches the
+       ledger with the spaces intact and fails at runtime, so it must be rejected
+       here even though its trimmed form looks valid. A real hostname never
+       contains whitespace; this also catches a padded " midaz-mongodb ".
+       The pattern is [\s\p{Z}] so it rejects ASCII whitespace AND Unicode space
+       separators (e.g. a non-breaking U+00A0) — a bare "\s" is ASCII-only and
+       would let a Unicode-space host through to the ledger. */ -}}
+{{- $crmRaw := $crmHost | toString -}}
+{{- $feesRaw := $feesHost | toString -}}
+{{- $crmClean := $crmRaw | trim -}}
+{{- $feesClean := $feesRaw | trim -}}
+{{- if or (eq $crmClean "") (eq $crmClean "midaz-mongodb") (regexMatch "[\\s\\p{Z}]" $crmRaw) -}}{{- $unset = append $unset "CRM" -}}{{- end -}}
+{{- if or (eq $feesClean "") (eq $feesClean "midaz-mongodb") (regexMatch "[\\s\\p{Z}]" $feesRaw) -}}{{- $unset = append $unset "Fees" -}}{{- end -}}
 {{- if $unset -}}
-{{- fail (printf "\n\nmidaz: managed/external Mongo is selected (mongodb.enabled=false) but the %s Mongo host is not set.\nThe ledger still needs a reachable Mongo for CRM and Fees (they are folded into the ledger binary), and the ledger init container hard-gates on MONGO_CRM_HOST and MONGO_FEES_HOST regardless of crm.enabled. With the packaged Mongo disabled and no host override, these default to the packaged Service \"midaz-mongodb\" (which is not deployed), so the ledger pod CrashLoops after ledger.initContainer.timeoutSeconds (default 300s).\n\nSet the host(s) explicitly, e.g.:\n  --set global.datastores.mongoCrm.host=<your-mongo-host> --set global.datastores.mongoFees.host=<your-mongo-host>\nor per-component:\n  ledger.datastores.mongoCrm.host / ledger.datastores.mongoFees.host\nor as a native override:\n  ledger.configmap.MONGO_CRM_HOST / ledger.configmap.MONGO_FEES_HOST\n\nSee charts/midaz/docs/UPGRADE-9.1.md section 6 (Ledger CRM and Fees module integration).\n" (join " and " $unset)) -}}
+{{- fail (printf "\n\nmidaz: managed/external Mongo is selected (mongodb.enabled=false) but the %s Mongo host is empty, blank, or still the packaged \"midaz-mongodb\" default.\nThe ledger still needs a reachable Mongo for CRM and Fees (they are folded into the ledger binary), and the ledger init container hard-gates on MONGO_CRM_HOST and MONGO_FEES_HOST regardless of crm.enabled. With the packaged Mongo disabled and no host override, these default to the packaged Service \"midaz-mongodb\" (which is not deployed), so the ledger pod CrashLoops after ledger.initContainer.timeoutSeconds (default 300s).\n\nSet the host(s) explicitly, e.g.:\n  --set global.datastores.mongoCrm.host=<your-mongo-host> --set global.datastores.mongoFees.host=<your-mongo-host>\nor per-component:\n  ledger.datastores.mongoCrm.host / ledger.datastores.mongoFees.host\nor as a native override:\n  ledger.configmap.MONGO_CRM_HOST / ledger.configmap.MONGO_FEES_HOST\n\nSee charts/midaz/docs/UPGRADE-9.1.md section 6 (Ledger CRM and Fees module integration).\n" (join " and " $unset)) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

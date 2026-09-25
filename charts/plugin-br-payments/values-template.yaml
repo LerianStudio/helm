@@ -44,7 +44,7 @@ app:
     # Multi-tenancy (set to "true" to enable)
     # Multi-tenancy: set MULTI_TENANT_ENABLED: "true" to turn it on. Left unset on
     # purpose — see values.yaml for why a default here would flip the mode silently.
-    # MULTI_TENANT_MANAGER_URL: ""
+    # MULTI_TENANT_URL: ""
     # OpenTelemetry (use otel-collector-lerian.enabled below for host injection)
     ENABLE_TELEMETRY: "true"
     OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"

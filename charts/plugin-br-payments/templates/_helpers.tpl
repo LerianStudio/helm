@@ -188,6 +188,29 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.configmap.MULTI_TENANCY_ENABLED was RENAMED to app.configmap.MULTI_TENANT_ENABLED.\n   The application deprecated the MULTI_TENANCY_ prefix; this chart now reads MULTI_TENANT_ENABLED only.\n   Rename the key in your values overlay — the value itself does not change.\n   Leaving both set is not supported: the app resolves the canonical name first, so the deprecated one would be ignored and a multi-tenant overlay would run single-tenant.\n" }}
 {{- end }}
 
+{{/* Same rename, same reason, for the five other MULTI_TENANT* keys the app
+     deprecated alongside MULTI_TENANCY_ENABLED
+     (internal/bootstrap/config_multitenant.go). The app still accepts each old
+     name as a WARN-logged alias at runtime, but this chart's own gates below
+     read the canonical name only — an overlay left on an old key becomes a
+     silent validation blind spot rather than a boot error, so refuse here and
+     name the exact replacement instead of guessing which spelling is live. */}}
+{{- if hasKey .Values.app.configmap "MULTI_TENANT_MANAGER_URL" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_MANAGER_URL was RENAMED to app.configmap.MULTI_TENANT_URL.\n   Rename the key in your values overlay — the value itself does not change.\n" }}
+{{- end }}
+{{- if hasKey .Values.app.configmap "MULTI_TENANT_CLIENT_TIMEOUT_SEC" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CLIENT_TIMEOUT_SEC was RENAMED to app.configmap.MULTI_TENANT_TIMEOUT.\n   Rename the key in your values overlay — the value itself does not change.\n" }}
+{{- end }}
+{{- if hasKey .Values.app.configmap "MULTI_TENANT_CACHE_TTL_MINUTES" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CACHE_TTL_MINUTES was RENAMED to app.configmap.MULTI_TENANT_CACHE_TTL_SEC.\n   Rename the key in your values overlay AND convert the unit: minutes -> seconds (e.g. 60 -> 3600).\n" }}
+{{- end }}
+{{- if hasKey .Values.app.configmap "MULTI_TENANT_CB_THRESHOLD" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CB_THRESHOLD was RENAMED to app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD.\n   Rename the key in your values overlay — the value itself does not change.\n" }}
+{{- end }}
+{{- if hasKey .Values.app.configmap "MULTI_TENANT_CB_TIMEOUT_SEC" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CB_TIMEOUT_SEC was RENAMED to app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC.\n   Rename the key in your values overlay — the value itself does not change.\n" }}
+{{- end }}
+
 {{/* The OAuth2 credential pair — named for the ROLE, not the vendor, and required
      only in SINGLE-TENANT mode.
 
@@ -266,8 +289,8 @@ plugin-br-payments README.
      (internal/bootstrap/config_multitenant.go), so the failure is a precise boot
      error rather than a missing check. */}}
 {{- if eq (.Values.app.configmap.MULTI_TENANT_ENABLED | default "" | toString) "true" }}
-{{- if not .Values.app.configmap.MULTI_TENANT_MANAGER_URL }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_MANAGER_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{- if not .Values.app.configmap.MULTI_TENANT_URL }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
 {{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}

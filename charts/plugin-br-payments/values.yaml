@@ -187,7 +187,7 @@ app:
     #
     # ⛔ DELIBERATELY NOT SET, AND NOT AS TIDINESS. Set it in your overlay:
     #   MULTI_TENANT_ENABLED: "true"
-    # When on, MULTI_TENANT_MANAGER_URL and MULTI_TENANT_SERVICE_API_KEY become
+    # When on, MULTI_TENANT_URL and MULTI_TENANT_SERVICE_API_KEY become
     # required; off is the app's own default.
     #
     # This line used to read MULTI_TENANCY_ENABLED: "false" — the app's DEPRECATED
@@ -198,14 +198,14 @@ app:
     # overlay still saying MULTI_TENANCY_ENABLED=true is NOT adopted and the
     # deployment silently runs SINGLE-TENANT. Declaring nothing is what keeps both
     # spellings working in overlays.
-    MULTI_TENANT_MANAGER_URL: ""
+    MULTI_TENANT_URL: ""
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_POSTGRES_MODULE: ""
     MULTI_TENANT_ALLOW_INSECURE_HTTP: "false"
-    MULTI_TENANT_CLIENT_TIMEOUT_SEC: "10"
-    MULTI_TENANT_CACHE_TTL_MINUTES: "60"
-    MULTI_TENANT_CB_THRESHOLD: "5"
-    MULTI_TENANT_CB_TIMEOUT_SEC: "30"
+    MULTI_TENANT_TIMEOUT: "10"
+    MULTI_TENANT_CACHE_TTL_SEC: "3600"
+    MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: "5"
+    MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: "30"
     MULTI_TENANT_MAX_TENANT_POOLS: "100"
     # Where per-tenant provider credentials are read from: "tenant_manager"
     # (default) or "vault" (AWS Secrets Manager, read directly). The default is

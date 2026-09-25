@@ -56,7 +56,7 @@ The following values MUST be set for the deployment to start successfully:
   - app.secrets.LICENSE_KEY               (recommended — required in production)
 
 When MULTI_TENANT_ENABLED=true, additionally:
-  - app.configmap.MULTI_TENANT_MANAGER_URL
+  - app.configmap.MULTI_TENANT_URL
   - app.secrets.MULTI_TENANT_SERVICE_API_KEY
 
 and the PROVIDER_CLIENT_* pair above is NOT required — it is resolved per tenant

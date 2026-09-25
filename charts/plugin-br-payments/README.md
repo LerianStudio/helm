@@ -67,7 +67,7 @@ When `app.configmap.MULTI_TENANT_ENABLED=true`, the `PROVIDER_CLIENT_*` pair abo
 
 | Field | Description |
 |-------|-------------|
-| `app.configmap.MULTI_TENANT_MANAGER_URL` | Tenant Manager service URL. |
+| `app.configmap.MULTI_TENANT_URL` | Tenant Manager service URL. |
 | `app.secrets.MULTI_TENANT_SERVICE_API_KEY` | Tenant Manager service API key. |
 
 > **Database password:** with the bundled PostgreSQL subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` — leave `app.secrets.POSTGRES_PASSWORD` empty. Only set it for an external Postgres that has no `postgresql.auth.existingSecret`.
@@ -105,7 +105,7 @@ The plugin supports schema-per-tenant via Lerian's Tenant Manager. To enable:
 app:
   configmap:
     MULTI_TENANT_ENABLED: "true"
-    MULTI_TENANT_MANAGER_URL: "https://tenant-manager.example.com"
+    MULTI_TENANT_URL: "https://tenant-manager.example.com"
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
   secrets:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"

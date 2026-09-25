@@ -103,8 +103,8 @@ spec:
             if [ "$ROLE_EXISTS" = "1" ]; then
               echo "Role 'tracer' already exists. Skipping creation."
             else
-              # \password reads the password and its confirmation as input lines, so it must be one line.
-              [ "$(printf '%s' "$DB_PASSWORD_TRACER" | wc -l)" -eq 0 ] || { echo "DB_PASSWORD_TRACER contains a newline (often a trailing one from a Secret made with echo); the tracer role password must be a single line." >&2; exit 1; }
+              # \password reads the password as input lines and strips a trailing CR, so it must hold no CR or LF.
+              [ "$(printf '%s' "$DB_PASSWORD_TRACER" | tr -d '\r\n')" = "$DB_PASSWORD_TRACER" ] || { echo "DB_PASSWORD_TRACER contains a carriage return or line feed (often a trailing one from a Secret made with echo or on Windows); the tracer role password must be a single line." >&2; exit 1; }
               echo "Creating role 'tracer'..."
               # \password hashes the password inside psql, so the server only receives its
               # verifier, never the plaintext; the transaction never leaves a passwordless role.

@@ -24,14 +24,15 @@ jobs:
     with:
       runner_type: "blacksmith-4vcpu-ubuntu-2404"
       filter_paths: |-
+        charts/br-sta
         charts/fetcher
         charts/lerian-notification
         charts/midaz
         charts/otel-collector-lerian
         charts/plugin-access-manager
-        charts/plugin-br-pix-direct-jd
+        charts/plugin-br-pix-jd
         charts/plugin-br-pix-indirect-btg
-        charts/plugin-br-pix-switch
+        charts/plugin-br-pix-lerian
         charts/plugin-crm
         charts/plugin-fees
         charts/product-console

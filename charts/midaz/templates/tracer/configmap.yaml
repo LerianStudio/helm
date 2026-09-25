@@ -1,0 +1,155 @@
+{{- if .Values.tracer.enabled }}
+{{- include "midaz-tracer.validate" . }}
+{{- $cm := .Values.tracer.configmap | default dict }}
+{{- /* Single-sourced so OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT can't drift from
+   ENV_NAME (same class of bug fixed in ledger/configmap.yaml). */ -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "midaz-tracer.fullname" . }}
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+data:
+  # -- Default Environment variables for Tracer
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ENV_NAME: {{ $envName | quote }}
+
+  # APP
+  SERVER_PORT: {{ $cm.SERVER_PORT | default "4020" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4020" | quote }}
+  VERSION: {{ .Values.tracer.image.tag | default .Chart.AppVersion | quote }}
+
+  # LOG LEVEL
+  LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
+
+  # AUTHENTICATION
+  API_KEY_ENABLED: {{ $cm.API_KEY_ENABLED | default "false" | quote }}
+
+  # CORS
+  CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "*" | quote }}
+
+  # AUTH PLUGIN (Access Manager) — via lerian-common.auth.env (global.auth contract)
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
+
+  # RI PERMISSION DECLARATION (IdP identity service :4001 — distinct from auth :4000)
+  # IDP_DECLARATION_ENABLED publishes the permission/role manifest at boot (default
+  # false, fail-open). Under DEPLOYMENT_MODE=saas, IDP_HOST MUST be an https:// URL
+  # or the tracer's ValidateSaaSDeclarationTLS gate refuses boot. The M2M client
+  # secret lives in the tracer Secret (see templates/tracer/secrets.yaml).
+  IDP_DECLARATION_ENABLED: {{ $cm.IDP_DECLARATION_ENABLED | default "false" | quote }}
+  IDP_HOST: {{ $cm.IDP_HOST | default "" | quote }}
+  IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
+
+  # RESERVATION gRPC SEAM (opt-in; empty keeps the seam off, as the app does)
+  {{- with $cm.TRACER_GRPC_PORT }}
+  TRACER_GRPC_PORT: {{ . | quote }}
+  {{- end }}
+
+  # PostgreSQL Database (host/user/port/ssl via lerian-common datastore mask)
+  {{- /* Resolve host through the mask FIRST (tracer.datastores.postgres.host › global.datastores.postgres
+     › configmap.DB_HOST › bundled primary). fail ONLY if the resolved host is empty — the old default
+     `include "midaz-tracer.dbHost"` was evaluated eagerly and failed even when the mask supplied a host. */ -}}
+  {{- $tracerDbHost := include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DB_HOST" "default" (include "midaz.postgresqlPrimaryHost" .)) -}}
+  {{- if not $tracerDbHost }}{{- fail "tracer Postgres host is required when PostgreSQL is external: set tracer.datastores.postgres.host, global.datastores.postgres.host, or tracer.configmap.DB_HOST" -}}{{- end }}
+  DB_HOST: {{ $tracerDbHost | quote }}
+  DB_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DB_PORT" "default" "5432") | quote }}
+  DB_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "tracer") | quote }}
+  DB_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "midaz") | quote }}
+  DB_SSL_MODE: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.tracer.datastores "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSL_MODE" "default" "disable") | quote }}
+  {{/* No MIGRATIONS_PATH: the v4 tracer does not read it. Schema is applied by
+       the midaz-tracer-migrations Job (templates/tracer/migrations-job.yaml). */}}
+
+  # GO RUNTIME
+  # GOMEMLIMIT must track resources.limits.memory (~90%); the image default of
+  # 1800MiB assumes a 2Gi container and would let the heap outgrow the cgroup.
+  GOMEMLIMIT: {{ $cm.GOMEMLIMIT | default "460MiB" | quote }}
+
+  # SWAGGER
+  SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "Tracer API" | quote }}
+  SWAGGER_DESCRIPTION: {{ $cm.SWAGGER_DESCRIPTION | default "Real-time transaction validation and fraud prevention API" | quote }}
+  SWAGGER_HOST: {{ $cm.SWAGGER_HOST | default ":4020" | quote }}
+  SWAGGER_BASE_PATH: {{ $cm.SWAGGER_BASE_PATH | default "/" | quote }}
+  SWAGGER_SCHEMES: {{ $cm.SWAGGER_SCHEMES | default "http" | quote }}
+
+  # CEL Expression Engine
+  CEL_COST_LIMIT: {{ $cm.CEL_COST_LIMIT | default "10000" | quote }}
+
+  # OPEN TELEMETRY (identity inline; shared endpoint/env/enable via global.observability)
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "midaz-tracer" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/tracer" | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.tracer.image.tag | default .Chart.AppVersion | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" $envName) | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
+
+  # CLEANUP WORKER
+  CLEANUP_WORKER_ENABLED: {{ $cm.CLEANUP_WORKER_ENABLED | default "false" | quote }}
+  CLEANUP_INTERVAL_HOURS: {{ $cm.CLEANUP_INTERVAL_HOURS | default "24" | quote }}
+
+  # MULTI-TENANT — knob inline; gated block via lerian-common.multiTenant.env
+  {{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+  MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict
+        "context" $
+        "configmap" $cm
+        "enabled" $mtEnabled
+        "requiredUrl" true
+        "requiredRedisHost" true
+        "emitRedis" true
+        "redisTlsDefault" "true"
+        "emitPool" true
+        "emitCache" true
+        "emitAllowInsecure" true) | nindent 2 }}
+  {{- if $mtEnabled }}
+  {{- with $cm.MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT }}
+  MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT: {{ . | quote }}
+  {{- end }}
+  {{- with $cm.MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT }}
+  MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT: {{ . | quote }}
+  {{- end }}
+  {{- end }}
+
+  # =============================================================================
+  # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,
+  # endpoints derived from this chart's own service/ingress (gated via helper).
+  # =============================================================================
+  {{- /* enabled precedence: configmap.SD_ENABLED > global.serviceDiscovery.enabled > false. */ -}}
+  {{- $sdGlobalEnabled := toString (((.Values.global | default dict).serviceDiscovery | default dict).enabled | default false) }}
+  {{- $sdRaw := $sdGlobalEnabled }}{{- if hasKey $cm "SD_ENABLED" }}{{- $sdRaw = toString (index $cm "SD_ENABLED") }}{{- end }}
+  {{- $sdEnabled := eq (include "midaz.isTrue" $sdRaw) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" $sdEnabled
+        "configmap" $cm
+        "name" (include "midaz-tracer.fullname" .)
+        "port" .Values.tracer.service.port
+        "namespace" (include "global.namespace" .)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.tracer.ingress))) | nindent 2 }}
+
+  # =============================================================================
+  # STREAMING — knob inline; brokers/SASL/TLS from global.streaming (gated via helper).
+  # =============================================================================
+  {{- /* enabled precedence: configmap.STREAMING_ENABLED > global.streaming.enabled > false. */ -}}
+  {{- $streamingGlobalEnabled := toString (((.Values.global | default dict).streaming | default dict).enabled | default false) }}
+  {{- $streamingRaw := $streamingGlobalEnabled }}{{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = toString (index $cm "STREAMING_ENABLED") }}{{- end }}
+  {{- $streamingEnabled := eq (include "midaz.isTrue" $streamingRaw) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  # Billing events use the Schema Registry independently of the Kafka broker endpoint.
+  # Empty is intentional: billing emission stays disabled until an operator configures it.
+  STREAMING_SCHEMA_REGISTRY_URL: {{ $cm.STREAMING_SCHEMA_REGISTRY_URL | default "" | quote }}
+  {{- include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamingEnabled
+        "configmap" $cm
+        "clientId" (include "midaz-tracer.fullname" .)
+        "cloudeventsSource" "tracer") | nindent 2 }}
+
+  # Extra Env Vars
+  {{- with .Values.tracer.extraEnvVars }}
+  {{- range $key, $value := . }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

@@ -11,12 +11,19 @@ spec:
   revisionHistoryLimit: {{ .Values.pix.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.pix.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.pix.autoscaling.enabled }}
   replicas: {{ .Values.pix.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-br-pix-indirect-btg.selectorLabels" (dict "context" . "name" .Values.pix.name) | nindent 6 }}
   template:
     metadata:
+      {{- if and .Values.mtls.enabled (index .Values.mtls "tls.crt") }}
+      annotations:
+        # Roll the pods when the chart-managed mTLS cert changes (app snapshots it at startup).
+        checksum/mtls: {{ include "plugin-br-pix-indirect-btg.mtlsChecksum" . }}
+      {{- end }}
       labels:
         {{- include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" .Values.pix.name ) | nindent 8 }}
     spec:
@@ -25,7 +32,11 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       securityContext:
-        {{- toYaml .Values.pix.podSecurityContext | nindent 8 }}
+        {{- $psc := .Values.pix.podSecurityContext | default dict }}
+        {{- if .Values.mtls.enabled }}
+        {{- $psc = mergeOverwrite (dict "fsGroup" (.Values.mtls.fsGroup | default 1000)) (deepCopy $psc) }}
+        {{- end }}
+        {{- toYaml $psc | nindent 8 }}
       containers:
         - name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
           securityContext:
@@ -79,6 +90,10 @@ spec:
             timeoutSeconds: {{ .Values.pix.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.pix.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.pix.livenessProbe.failureThreshold | default 3 }}
+          {{- if .Values.mtls.enabled }}
+          volumeMounts:
+            {{- include "plugin-br-pix-indirect-btg.mtlsVolumeMount" . | nindent 12 }}
+          {{- end }}
       {{- with .Values.pix.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -90,4 +105,8 @@ spec:
       {{- with .Values.pix.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mtls.enabled }}
+      volumes:
+        {{- include "plugin-br-pix-indirect-btg.mtlsVolume" . | nindent 8 }}
       {{- end }}

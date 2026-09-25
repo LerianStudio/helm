@@ -9,6 +9,19 @@ metadata:
   labels:
     {{- include "product-console.labels" . | nindent 4 }}
     app.kubernetes.io/component: bootstrap
+  annotations:
+    {{- /* Job's spec.template is immutable — any change to its pod template
+       (image, env vars, TLS flags, etc.) makes a plain `kubectl apply`/ArgoCD
+       Sync, OR a plain `helm upgrade`, fail to patch it in place, silently
+       leaving the stale Job running forever. Both native-Helm and ArgoCD
+       replace-on-upgrade mechanisms are set so this self-heals under either
+       deploy path without manual intervention (the Job is naturally
+       re-runnable: idempotent user create-or-update). */}}
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-options: Replace=true,Force=true
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -88,6 +101,18 @@ spec:
           {{- end }}
         - name: ROLES_JSON
           value: {{ $rolesJSON | quote }}
+        - name: MONGO_TLS_FLAGS
+          {{- /* Managed MongoDB (e.g. AWS DocumentDB) requires TLS on every
+             connection, including the admin/bootstrap one — without this,
+             mongosh hangs until "Server selection timed out" since the
+             wait-for-dependencies check above only proves the TCP port is
+             open, not that a plain (non-TLS) handshake will succeed.
+             mongosh has no single --tlsInsecure flag (that's a driver
+             connection-string option, e.g. the app's own MONGO_PARAMETERS
+             tlsInsecure=true cloud preset) — the CLI equivalent is these two
+             separate flags, matching the app's own trust posture for the
+             same managed instance. */}}
+          value: {{ if .Values.global.externalMongoDefinitions.tls }}"--tls --tlsAllowInvalidCertificates --tlsAllowInvalidHostnames"{{ else }}""{{ end }}
         command:
         - /bin/bash
         - -c
@@ -101,16 +126,16 @@ spec:
           echo "Checking existing MongoDB objects..."
           USER_EXISTS=0
 
-          if mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }' | grep -q "EXISTS"; then
+          if mongosh --host "$DB_HOST" --port "$DB_PORT" $MONGO_TLS_FLAGS -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'if (db.getSiblingDB("admin").getUser(process.env.MONGO_APP_USER) !== null) { print("EXISTS"); }' | grep -q "EXISTS"; then
             USER_EXISTS=1
           fi
 
           if [ "$USER_EXISTS" = "1" ]; then
             echo "User '$MONGO_APP_USER' already exists. Updating password and replacing roles..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").updateUser(process.env.MONGO_APP_USER, {pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
+            mongosh --host "$DB_HOST" --port "$DB_PORT" $MONGO_TLS_FLAGS -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").updateUser(process.env.MONGO_APP_USER, {pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
           else
             echo "Creating user '$MONGO_APP_USER'..."
-            mongosh --host "$DB_HOST" --port "$DB_PORT" -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").createUser({user: process.env.MONGO_APP_USER, pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
+            mongosh --host "$DB_HOST" --port "$DB_PORT" $MONGO_TLS_FLAGS -u "$MONGO_ROOT_USER" -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("admin").createUser({user: process.env.MONGO_APP_USER, pwd: process.env.MONGO_APP_PASSWORD, roles: JSON.parse(process.env.ROLES_JSON)})'
           fi
 
           echo ""

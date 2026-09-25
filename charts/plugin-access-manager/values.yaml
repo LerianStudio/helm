@@ -1,9 +1,86 @@
 
+global:
+  # -- Managed-cloud topology preset: aws | gcp | azure (unset = bundled
+  # in-cluster infra, plaintext). Sets the TOPOLOGY defaults (tls/scheme/ports/
+  # ssl/object-storage path-style) for the masks below — see
+  # lerian-common.cloud.table. Only ENDPOINTS (host/port/user) stay
+  # client-supplied via global.datastores; a cloud can't know your RDS host.
+  # Precedence: native configmap key > dedicated > shared (global.*) > this
+  # cloud preset > hardcoded default.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Env-wide SHARED datastore masks (set once per environment; a dedicated
+  # <release>.datastores or a native {auth,identity}.configmap.<KEY> overrides these).
+  # Fields: postgres.{host,port,user,ssl}, redis.{host,port,user,tls,caCert}.
+  # Example:
+  #   datastores:
+  #     postgres: { host: "my-rds.example.com", user: "access_manager" }
+  #     redis: { host: "my-elasticache.example.com", port: "6379", tls: "true" }
+  datastores: {}
+  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block "env").
+  # Fields: name. (configmap.ENV_NAME overrides.)
+  # Example: env: { name: "production" }
+  env: {}
+  # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block
+  # "multiTenant"). Fields: enabled. (configmap.MULTI_TENANT_ENABLED overrides.)
+  # Example: multiTenant: { enabled: true }
+  multiTenant: {}
+  # -- Env-wide service discovery (Consul) tuning, consumed by
+  # lerian-common.serviceDiscovery.env. Per-component activation stays with
+  # {auth,identity}.configmap.SD_ENABLED; every derived SD_* sibling (address,
+  # tls, internal/external endpoint) comes from here unless a legacy
+  # configmap.SD_* key is set. Fields: address, tls, tlsSkipVerify, workload,
+  # preferView, internalScheme, externalPort.
+  # Example: serviceDiscovery: { address: "consul.internal:8500", tls: "true" }
+  serviceDiscovery: {}
+  # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
+  # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  # Example: observability: { enabled: true }
+  observability: {}
+
 # Common configuration shared between components
 common:
   # Common secrets and configurations
   authorizer:
+    # -- Caradhras application client id, shared by the identity and auth components.
+    # Consumed by templates/{identity,auth}/configmap.yaml — values.yaml is NOT
+    # templated by Helm, so components must never self-reference this with `{{ }}`.
+    # Per-component override: {identity,auth}.configmap.AUTHORIZER_CLIENT_ID.
     clientId: "ac56c81d4d6d95c0ac12"
+  sso:
+    # -- Base the console is served from: scheme + host, plus a path prefix when
+    # the console is mounted under one. The DOMAIN IS YOURS — the chart cannot
+    # know or derive it. The CALLBACK PATH IS OURS: the chart appends
+    # "/signin/sso/callback", which is the console route the identity provider
+    # returns the browser to, and it must not be changed here.
+    #   baseUrl: "https://console.example.com"
+    #     -> https://console.example.com/signin/sso/callback
+    #   baseUrl: "https://apps.example.com/console"
+    #     -> https://apps.example.com/console/signin/sso/callback
+    # Setting this (or callbackUrl below) is REQUIRED to configure any SSO
+    # provider: identity refuses to save a provider without it, so the provider
+    # would look configurable while no login through it could ever complete.
+    # Empty (the default) omits PLUGIN_AUTH_SSO_CALLBACK_URL from both ConfigMaps.
+    # One value feeds identity AND auth, which MUST agree: identity registers the
+    # URL in the provider's redirect allow-list and auth sends it as the
+    # redirect_uri. The chart refuses to render when the two resolve differently.
+    # Not derivable from PLUGIN_AUTH_ADDRESS — that is the in-cluster address.
+    baseUrl: ""
+    # -- Literal full callback URL, replacing the composition above — set this OR
+    # baseUrl, never both. Must be an absolute http(s) URL AND must still end in
+    # "/signin/sso/callback": the host is yours, the path is ours. The chart
+    # refuses to render otherwise, because a near-miss (/sso/callback,
+    # /signin/callback) deploys cleanly and is then rejected by Caradhras at the
+    # first login as an unlisted redirect_uri, without saying what was wrong.
+    # Per-component override: {identity,auth}.configmap.PLUGIN_AUTH_SSO_CALLBACK_URL.
+    callbackUrl: ""
+    # -- Lift the path check above. ONLY for a deployment that genuinely answers
+    # SSO on another path — a console mounted on a custom route, or a proxy that
+    # rewrites it. You are leaving the supported contract: the path must then
+    # match whatever actually serves the console SSO callback, and getting it
+    # wrong surfaces only as a failed login. The absolute-http(s)-with-a-path
+    # requirement still applies; it is the binary's, not the chart's.
+    allowCustomCallbackPath: false
 identity:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -21,7 +98,10 @@ identity:
   # Declare variables to be passed into your templates.
   replicaCount: 1
   revisionHistoryLimit: 10
-  name: "plugin-access-manager-identity"
+  # -- Component name. Empty derives it from the release name (<release>-identity),
+  # which is what the cross-component DNS defaults resolve to. Set it only to pin a
+  # legacy name, and remember every other component reference must then be pinned too.
+  name: ""
   description: "Identity plugin for Midaz"
   image:
     # -- Repository for the container image
@@ -29,7 +109,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.4.5"
+    tag: "3.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -134,12 +214,15 @@ identity:
   # @default -- templates/identity/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment
-    ENV_NAME: "development"
-    AUTH_ENABLED: "true"
-    AUTH_PORT: "4000"
-    AUTH_ADDRESS: "http://plugin-access-manager-auth:4000"
-    AUTHORIZER_CLIENT_ID: "{{ .Values.common.authorizer.clientId }}"
+    # Environment name is resolved via the global mask (global.env.name) — same
+    # rule as the datastore masks: do NOT pin ENV_NAME here, it WINS over the
+    # mask and defeats it. The default ("development") lives in
+    # templates/identity/configmap.yaml.
+    # AUTH_ENABLED/AUTH_PORT are NOT pinned here — the chart already defaults
+    # them ("true"/"4000") in templates/identity/configmap.yaml; no mask reads
+    # them, so duplicating the value here was pure noise.
+    # AUTH_ADDRESS defaults to http://<auth component>:4000 (templates/identity/configmap.yaml).
+    # Set it only to point identity at an auth outside this release.
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -149,6 +232,8 @@ identity:
     AUTHORIZER_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+    # -- Consul ACL token for service discovery (empty = no ACL)
+    SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
 auth:
@@ -168,14 +253,15 @@ auth:
   # Declare variables to be passed into your templates.
   replicaCount: 3
   revisionHistoryLimit: 10
-  name: "plugin-access-manager-auth"
+  # -- Component name. Empty derives it from the release name (<release>-auth).
+  name: ""
   image:
     # -- Repository for the console service container image
     repository: ghcr.io/lerianstudio/plugin-auth
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "2.6.7"
+    tag: "3.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -278,19 +364,20 @@ auth:
   # @default -- templates/auth/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
-    # -- Default Environment variables for the postgres
-    DB_USER: "auth"
-    DB_HOST: "plugin-access-manager-auth-database"
-    DB_PORT: 5432
-    DB_NAME: "casdoor"
-    DB_SSLMODE: "disable"
-    # -- Default Environment
-    ENV_NAME: "development"
-    # -- Default Redis Settings
-    REDIS_HOST: "plugin-access-manager-valkey-primary"
-    REDIS_PORT: 6379
-    REDIS_USER: "auth"
-    AUTHORIZER_CLIENT_ID: "ac56c81d4d6d95c0ac12"
+    # DB connection (host/port/user/ssl) is resolved via the postgres datastore mask
+    # (global.datastores.postgres / dedicated .Values.datastores). Defaults live in
+    # templates/auth/configmap.yaml so a shared/managed profile can override them —
+    # do NOT pin them here (a native configmap.<KEY> WINS over the mask and defeats it).
+    # DB_NAME is NOT pinned either — it has no mask (deliberately native/per-module),
+    # and the chart already defaults it ("casdoor") in templates/auth/configmap.yaml.
+    # Redis connection (host/port/user/tls/caCert) is resolved via the redis datastore
+    # mask (global.datastores.redis) — same rule: do NOT pin the connection keys here.
+    # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
+    # do NOT pin it here, it WINS over the mask and defeats it. The default
+    # ("development") lives in templates/auth/configmap.yaml.
+    # -- Multi-factor authentication gate. Unset (the default) omits MFA_ENABLED
+    # from the ConfigMap, leaving the application's own default in force.
+    # MFA_ENABLED: "false"
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -305,93 +392,177 @@ auth:
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
+    # -- TOTP/MFA signing secret (empty = feature dormant)
+    MFA_SECRET: ""
+    # -- Consul ACL token for service discovery (empty = no ACL)
+    SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
-  backend:
-    # -- Readiness probe configuration. All fields override chart defaults.
-    readinessProbe: {}
-    # -- Liveness probe configuration. All fields override chart defaults.
-    livenessProbe: {}
-    replicaCount: 1
-    revisionHistoryLimit: 10
-    name: "plugin-access-manager-auth-backend"
-    # -- Whether to create database on startup (requires CREATEDB permission)
-    createDatabase: true
-    image:
-      # -- Repository for the auth backend (casdoor) container image
-      repository: ghcr.io/lerianstudio/casdoor
-      # -- Image pull policy
-      pullPolicy: Always
-      # -- Image tag used for deployment
-      tag: "2.6.7"
-    resources:
-      # -- CPU and memory limits for pods
-      limits:
-        cpu: 1
-        memory: 1024Mi
-      # -- Minimum CPU and memory requests
-      requests:
-        cpu: 500m
-        memory: 256Mi
-    autoscaling:
-      # -- Enable or disable horizontal pod autoscaling
-      enabled: true
-      # -- Minimum number of replicas
-      minReplicas: 1
-      # -- Maximum number of replicas
-      maxReplicas: 3
-      # -- Target CPU utilization percentage for autoscaling
-      targetCPUUtilizationPercentage: 80
-      targetMemoryUtilizationPercentage: 80
-    migrations:
-      image:
-        # -- Repository for the casdoor-migrations container image
-        repository: ghcr.io/lerianstudio/casdoor-migrations
-        # -- Image pull policy
-        pullPolicy: Always
-        # -- Image tag used for deployment
-        tag: "2.6.3"
-  # -- Init User Job configuration
-  # -- Creates admin user on FIRST INSTALL ONLY (not on upgrades)
-  # -- If the admin user is deleted by the customer, it will NOT be recreated
+  # -- Init User Job: creates the admin user on FIRST INSTALL ONLY (not on
+  # -- upgrades; if deleted by the customer, it is NOT recreated). Disabled
+  # -- by default and intentionally not advertised here — no environment
+  # -- across benedita/anacleto/AWS staging+production relies on the
+  # -- implicit default, every one of them sets this explicitly either way.
+  # -- All defaults (image, adminEmail/adminDisplayName, timeouts, resources)
+  # -- live in templates/auth/init_user.yaml — set initUser.enabled=true and
+  # -- adminPassword (or useExistingSecret + adminPasswordSecretName) to turn
+  # -- it on.
   initUser:
-    # -- Enable or disable the init user job
+    enabled: false
+
+# -- Caradhras: the auth backend/authorization service, promoted to a
+# top-level component sibling of `identity`/`auth` (formerly nested as
+# `auth.backend`, which ran the legacy Casdoor image). Lerian's Caradhras
+# product replaces Casdoor; the image family is renamed accordingly
+# (casdoor -> caradhras, casdoor-migrations -> caradhras-migrations).
+#
+# Backward-compat: helpers resolve image fields, service.port and replicaCount
+# using the precedence below. Server image defaults are explicit; migrations
+# image fields stay empty to preserve legacy overrides.
+#   1. caradhras.<field>       (this block, if set)
+#   2. auth.backend.<field>    (legacy path — only relevant for installs that
+#                               still set it in THEIR OWN values overrides;
+#                               this chart's own values.yaml no longer ships
+#                               a real `auth.backend` block)
+#   3. hardcoded chart default (see the helper in _helpers.tpl)
+caradhras:
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
+  # -- See "Backward-compat" note above — resolved via caradhras.replicaCount.
+  replicaCount: ""
+  revisionHistoryLimit: 10
+  # -- Component name. Empty derives it from the release name (<release>-caradhras).
+  name: ""
+  # -- Whether to create database on startup (requires CREATEDB permission).
+  # Defaults to false: most DB users granted to caradhras have no CREATEDB
+  # privilege, and the target database/schema is typically provisioned ahead
+  # of time (see benedita sandbox permission-denied incident, 2026-08-25).
+  createDatabase: false
+  # -- Caradhras (beego) config keys. Names are the beego literals, camelCase:
+  # caradhras reads them with conf.GetConfigString, which looks up the exact
+  # key in the environment. The auth/identity REDIS_* names are NOT read here.
+  configmap:
+    # -- Shared session store for a Redis that needs NO AUTH, `host:port` with
+    # no space. Empty (the default) keeps login sessions in a file on each pod's
+    # own filesystem, which only works with a single pod: above one replica a
+    # login started on one pod and finished on another fails with "unknown
+    # authentication type". REQUIRED whenever caradhras runs more than one
+    # replica — the chart refuses to render when replicas are pinned above 1
+    # without a session store on either channel.
+    # This value is rendered into a ConfigMap, so it must NOT carry a password:
+    # beego's endpoint is positional (host:port,poolsize,password,dbnum) and the
+    # chart refuses to render a third field here. For a Redis with AUTH use
+    # caradhras.secrets.redisEndpoint below.
+    redisEndpoint: ""
+    # -- Whether to reach the session store over TLS ("true"/"false"). Only
+    # emitted when an endpoint is configured on either channel. Also resolvable
+    # once for every component via the datastore mask
+    # (global.datastores.redis.tls).
+    redisTls: ""
+  # -- Sensitive caradhras configuration.
+  # @default -- templates/caradhras/secrets.yaml
+  secrets:
+    # -- Session store connection string for a Redis that requires AUTH, in
+    # beego's positional form `host:port,poolsize,password[,dbnum]`. Written to
+    # the caradhras Secret and injected with secretKeyRef, so the password never
+    # reaches a ConfigMap. Mutually exclusive with
+    # caradhras.configmap.redisEndpoint.
+    redisEndpoint: ""
+  # -- Set true to manage the caradhras Secret yourself: the chart creates none
+  # and reads key `redisEndpoint` from existingSecretName instead.
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Redis/Valkey AUTH password, injected as the beego config key
+  # `redisPassword` by secretKeyRef — the same delivery DB_PASSWORD already uses
+  # on this workload. Caradhras hands it to both redis consumers (the session
+  # store and the rate limiter), so the endpoint above stays a bare `host:port`
+  # and the password never has to be spliced into a connection string.
+  redisPassword:
+    # -- Opt-in. Off by default: a Redis without AUTH needs nothing here.
+    enabled: false
+    # -- Secret holding the password. Empty uses the auth Secret, which already
+    # carries REDIS_PASSWORD (auth.secrets.REDIS_PASSWORD) and is where the
+    # caradhras DB_PASSWORD already reads from.
+    secretName: ""
+    # -- Key inside that Secret.
+    secretKey: REDIS_PASSWORD
+  service:
+    # -- Kubernetes service type for the caradhras component
+    type: ClusterIP
+    # -- See "Backward-compat" note above — resolved via caradhras.servicePort.
+    port: ""
+    annotations: {}
+  # -- Ingress for the caradhras component itself (admin panel/API, port
+  # -- 8000). Disabled by default. Set caradhras.ingress.enabled=true plus
+  # -- className/annotations/hosts/tls (same shape as auth.ingress/
+  # -- identity.ingress) to turn it on — do not confuse with caradhras.ui.ingress,
+  # -- which fronts the separate SPA console.
+  ingress:
+    enabled: false
+  pdb:
+    # -- Enable or disable PodDisruptionBudget for the caradhras component.
+    # -- Own toggle: caradhras is now an independent top-level component, so
+    # -- it no longer shares (or is affected by) auth.pdb.
     enabled: true
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Minimum number of available pods
+    minAvailable: 0
+    # -- Annotations for PodDisruptionBudget
+    annotations: {}
+  image:
+    # -- NOTE: explicit (non-empty) on purpose, unlike migrations.image.* below.
+    # -- This means an install that only overrides the legacy
+    # -- auth.backend.image.repository/.tag path (and never sets
+    # -- caradhras.image.*) will NOT fall through to that legacy value anymore
+    # -- — this explicit default always wins. Set caradhras.image.* directly
+    # -- to override.
+    repository: ghcr.io/lerianstudio/caradhras
+    pullPolicy: Always
+    tag: "1.3.2"
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 1
+      memory: 1024Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling
+    enabled: true
+    # -- Minimum number of replicas
+    minReplicas: 1
+    # -- Maximum number of replicas
+    maxReplicas: 3
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  migrations:
     image:
-      # -- Repository for the casdoor-user-init container image
-      repository: ghcr.io/lerianstudio/casdoor-user-init
-      # -- Image pull policy
-      pullPolicy: Always
-      # -- Image tag used for deployment
-      tag: "2.6.1"
-    # -- Admin user email (default: admin@midaz.tech)
-    adminEmail: "admin@midaz.tech"
-    # -- Admin user display name
-    adminDisplayName: "Admin"
-    # -- Admin password (will be stored in a secret)
-    # -- IMPORTANT: Change this in production!
-    adminPassword: "Lerian@123"
-    # -- Use existing secret for admin password instead of creating one
-    # -- IMPORTANT: If set to true, adminPasswordSecretName MUST be specified
-    useExistingSecret: false
-    # -- Name of the existing secret containing ADMIN_PASSWORD
-    # -- REQUIRED when useExistingSecret is true
-    # -- The secret must exist in the same namespace and contain the key specified in adminPasswordSecretKey
-    adminPasswordSecretName: ""
-    # -- Key in the secret containing the admin password
-    adminPasswordSecretKey: "ADMIN_PASSWORD"
-    # -- Timeout waiting for Casdoor to be ready (in seconds)
-    casdoorTimeout: 120
-    # -- Timeout waiting for user table to exist (in seconds)
-    tableTimeout: 60
-    # -- Resources for the init user job
-    resources:
-      limits:
-        cpu: 100m
-        memory: 128Mi
-      requests:
-        cpu: 50m
-        memory: 64Mi
+      # -- Empty preserves auth.backend.migrations.image.repository overrides;
+      # -- otherwise defaults to ghcr.io/lerianstudio/caradhras-migrations.
+      # -- Use the Caradhras release line, not the legacy PAM/Casdoor applier.
+      repository: ""
+      # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
+      pullPolicy: ""
+      # -- Empty preserves auth.backend.migrations.image.tag overrides;
+      # -- otherwise defaults to 1.3.2 in templates/_helpers.tpl.
+      # -- Independent of caradhras.image.tag: override both when changing versions.
+      tag: ""
+  # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
+  # -- same-origin to the caradhras backend Service. Disabled by default.
+  # -- Caradhras console (SPA), disabled by default and intentionally not
+  # -- advertised here. All defaults (image, service port, resources, probes,
+  # -- ingress shape) live in templates/caradhras/ui-*.yaml — set
+  # -- caradhras.ui.enabled=true and any of the fields those templates read
+  # -- (image, service, ingress, resources, autoscaling, ...) to turn it on.
+  ui:
+    enabled: false
+
 auth-database:
   # Database dependency for identity and access management.
   # For more details, refer to the documentation:

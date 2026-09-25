@@ -1,0 +1,9 @@
+{{- if .Values.caradhras.pdb.enabled }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" .Values.caradhras.pdb
+      "name" (include "plugin-caradhras.fullname" .)
+      "labels" (include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name))
+      "selector" (include "plugin-caradhras.selectorLabels" (dict "context" . "name" .Values.caradhras.name))
+      "minAvailableDefault" 1
+    ) }}
+{{- end }}

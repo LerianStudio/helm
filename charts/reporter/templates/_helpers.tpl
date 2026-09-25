@@ -243,6 +243,375 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- end }}
 
 {{/*
+reporter.rabbitmqBundledDevPass / reporter.rabbitmqBundledDevHash — the SHIPPED
+dev credential pair for the BUNDLED groundhog2k rabbitmq subchart.
+
+The bundled broker imports files/rabbitmq/load_definitions.json at boot
+(rabbitmq.customConfig → management.load_definitions). Once a definitions file is
+configured, RabbitMQ STOPS seeding the default user from RABBITMQ_DEFAULT_USER/PASS —
+so the user MUST be declared inside the definitions, which requires a salted
+password_hash. Helm cannot compute RabbitMQ's rabbit_password_hashing_sha256 hash
+(raw-byte salt||sha256 concat then base64; sprig only gives hex sha256), so the hash
+is a VALUE, not derived from the plaintext password. The two are therefore coupled:
+change one, change the other.
+
+These two helpers are the single source of that shipped pair. values.yaml holds the
+SAME literals (secrets.RABBITMQ_DEFAULT_PASS and rabbitmq.loadDefinition.passwordHash);
+this helper backs the render-time consistency guard so the guard and the values default
+can never silently drift. Hash computed as base64(salt || sha256(salt||"reporter123"))
+with salt 0x31415926.
+DEV ONLY: production points at an EXTERNAL broker (rabbitmq.enabled=false) with real
+credentials, provisioned per tier.
+*/}}
+{{- define "reporter.rabbitmqBundledDevPass" -}}reporter123{{- end }}
+{{- define "reporter.rabbitmqBundledDevHash" -}}MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G{{- end }}
+
+{{/*
+reporter.rabbitmqLoadDefinitionConsistent — guard the coupled (password, password_hash)
+pair for the BUNDLED broker. Only active when the rabbitmq subchart is enabled (the
+external-broker path never imports load_definitions and is untouched).
+
+Footguns refused at render time:
+  1. Any custom bundled credential — secrets.RABBITMQ_DEFAULT_PASS or rabbitmq.loadDefinition.
+     passwordHash changed from the shipped dev defaults. A load_definitions import seeds the user
+     from a salted hash Helm cannot derive from the plaintext, so the chart cannot verify a custom
+     password and a custom hash are a matching pair; an unmatched pair passes render but is rejected
+     at runtime (403), which the TCP startup probe misses. The bundled broker is dev/local-only, so
+     it stays on the fixed dev credential; use the EXTERNAL broker for a real/custom credential.
+  2. manager/worker.useExistingSecret WITH the bundled broker — a component external Secret can
+     carry a RABBITMQ_DEFAULT_USER/PASS the bundled definitions never seed (the worker path is
+     invisible to the manager-name guard), so that workload authenticates with a rejected credential.
+*/}}
+{{- define "reporter.rabbitmqLoadDefinitionConsistent" -}}
+{{- $rmq := default dict .Values.rabbitmq -}}
+{{- $rmqEnabled := true -}}
+{{- if hasKey $rmq "enabled" -}}{{- $rmqEnabled = $rmq.enabled -}}{{- end -}}
+{{- if $rmqEnabled -}}
+{{- $hash := (default dict $rmq.loadDefinition).passwordHash | default "" | toString -}}
+{{- $pass := .Values.secrets.RABBITMQ_DEFAULT_PASS | default "" | toString -}}
+{{- $devPass := include "reporter.rabbitmqBundledDevPass" . -}}
+{{- $devHash := include "reporter.rabbitmqBundledDevHash" . -}}
+{{- if or (ne $pass $devPass) (ne $hash $devHash) -}}
+{{- fail "\n\nERROR: the BUNDLED rabbitmq broker (rabbitmq.enabled=true) uses a FIXED dev-only credential —\n   secrets.RABBITMQ_DEFAULT_PASS and rabbitmq.loadDefinition.passwordHash must stay at their shipped\n   defaults. A configured load_definitions import makes RabbitMQ seed the user from a salted\n   password_hash, and Helm CANNOT compute that hash from a plaintext password — so the chart cannot\n   verify that a custom password and a custom hash are a matching pair. An unmatched pair renders\n   fine but is rejected at runtime (403 \"username or password not allowed\"), which the TCP startup\n   probe does not catch. Rather than ship that footgun, a custom bundled credential is refused.\n   For a real / custom broker credential use the EXTERNAL broker instead:\n     rabbitmq.enabled=false  +  externalRabbitmqDefinitions.enabled=true   (provision the user per tier)\n" -}}
+{{- end -}}
+{{- $mgrExt := (default dict .Values.manager).useExistingSecret -}}
+{{- $wkrExt := (default dict .Values.worker).useExistingSecret -}}
+{{- if or $mgrExt $wkrExt -}}
+{{- fail "\n\nERROR: manager.useExistingSecret / worker.useExistingSecret is incompatible with the BUNDLED\n   rabbitmq subchart (rabbitmq.enabled=true). The bundled broker seeds its ONLY user from\n   secrets.RABBITMQ_DEFAULT_USER + rabbitmq.loadDefinition.passwordHash, but a component external\n   Secret carries its OWN RABBITMQ_DEFAULT_USER/PASS that the broker never learns — the workload\n   then authenticates with a credential the broker rejects (403), and the chart cannot compare\n   external-Secret contents at render time to catch it (worker path is invisible to the manager guard).\n   Use an EXTERNAL broker (rabbitmq.enabled=false + externalRabbitmqDefinitions.enabled=true) with\n   useExistingSecret, OR drop useExistingSecret so the chart single-sources the bundled broker credential.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmDeclared — true when an operator has supplied any CRM datasource
+configuration. CRM remains optional: installations that do not set a
+DATASOURCE_CRM_* key receive no validation or defaults.
+*/}}
+{{- define "reporter.crmDeclared" -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $declared := false -}}
+{{- range $key, $_ := $cm -}}
+{{- if or (hasPrefix "DATASOURCE_CRM_" $key) (eq $key "CRYPTO_HASH_SECRET_KEY_CRM") (eq $key "CRYPTO_ENCRYPT_SECRET_KEY_CRM") -}}{{- $declared = true -}}{{- end -}}
+{{- end -}}
+{{- if $declared -}}true{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmConfigRequired — validate Reporter CRM's non-secret datasource
+contract when, and only when, CRM is declared. These fields are deliberately in
+the shared ConfigMap because both workloads need them. The chart never guesses
+an organization ID or supplies a CRM connection default.
+*/}}
+{{- define "reporter.crmConfigRequired" -}}
+{{- if eq (include "reporter.crmDeclared" .) "true" -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $sensitive := list "DATASOURCE_CRM_PASSWORD" "CRYPTO_HASH_SECRET_KEY_CRM" "CRYPTO_ENCRYPT_SECRET_KEY_CRM" -}}
+{{- $misplaced := list -}}
+{{- range $key := $sensitive -}}
+{{- if hasKey $cm $key -}}{{- $misplaced = append $misplaced $key -}}{{- end -}}
+{{- end -}}
+{{- if gt (len $misplaced) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM secret keys must not be set in common.configmap: %s.\n   Put them under secrets: or in the matching external Secret.\n" (join ", " $misplaced)) -}}
+{{- end -}}
+{{- $required := list "DATASOURCE_CRM_CONFIG_NAME" "DATASOURCE_CRM_TYPE" "DATASOURCE_CRM_HOST" "DATASOURCE_CRM_PORT" "DATASOURCE_CRM_DATABASE" "DATASOURCE_CRM_USER" "DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID" -}}
+{{- $missing := list -}}
+{{- range $key := $required -}}
+{{- $value := index $cm $key -}}
+{{- if or (not (hasKey $cm $key)) (kindIs "invalid" $value) (eq (trim (toString $value)) "") -}}
+{{- $missing = append $missing $key -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $missing) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM is declared but its required non-secret configuration is incomplete: %s.\n   Set DATASOURCE_CRM_CONFIG_NAME=plugin_crm, DATASOURCE_CRM_TYPE=mongodb, HOST, PORT, DATABASE, USER and the correct DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID under common.configmap.\n   CRM is optional; remove all DATASOURCE_CRM_* keys to disable it.\n" (join ", " $missing)) -}}
+{{- end -}}
+{{- if ne (trim (toString (index $cm "DATASOURCE_CRM_CONFIG_NAME"))) "plugin_crm" -}}
+{{- fail "\n\nERROR: DATASOURCE_CRM_CONFIG_NAME must be \"plugin_crm\" when configuring Reporter CRM.\n   The plugin_crm datasource is reserved; do not substitute another name.\n" -}}
+{{- end -}}
+{{- if ne (trim (toString (index $cm "DATASOURCE_CRM_TYPE"))) "mongodb" -}}
+{{- fail "\n\nERROR: DATASOURCE_CRM_TYPE must be \"mongodb\" when configuring Reporter CRM.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmSecretsRequired — when CRM uses a chart-managed Secret, require its
+sensitive keys. This helper is intentionally called only from the manager/worker
+Secret templates; useExistingSecret remains opaque to Helm and valid external
+secret-manager inputs must not be blocked at render time.
+*/}}
+{{- define "reporter.crmSecretsRequired" -}}
+{{- if eq (include "reporter.crmDeclared" .context) "true" -}}
+{{- $secrets := .context.Values.secrets | default dict -}}
+{{- $required := list "DATASOURCE_CRM_PASSWORD" "CRYPTO_HASH_SECRET_KEY_CRM" "CRYPTO_ENCRYPT_SECRET_KEY_CRM" -}}
+{{- $missing := list -}}
+{{- range $key := $required -}}
+{{- $value := index $secrets $key -}}
+{{- if or (not (hasKey $secrets $key)) (kindIs "invalid" $value) (eq (trim (toString $value)) "") -}}
+{{- $missing = append $missing $key -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $missing) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM is declared and %s uses a chart-managed Secret, but these CRM secret keys are missing: %s.\n   Set them under secrets:, never common.configmap. When %s.useExistingSecret=true, provide the same keys in its external Secret instead.\n" .component (join ", " $missing) .component) -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.datasourceCredEncKeyRequired — gate secrets.DATASOURCE_CRED_ENC_KEY.
+
+The reporter app >= 3.0.0 stores registered data-source credentials ENCRYPTED at rest and
+REFUSES TO BOOT without this key (unconfigured at request time surfaces as RPT-0074). It
+must be byte-identical on the manager and the worker, and that release has NO rotation —
+changing it makes every already-registered data source undecryptable.
+
+Presence is enforced only when the COMPONENT'S OWN resolved image tag parses as semver and
+is >= 3.0.0-0, so the chart's default appVersion (2.x, which ignores the key) still renders
+and a floating tag ("latest", a digest) is left alone rather than guessed at. Format and the
+values-template.yaml "CHANGE_ME" placeholder are checked regardless of tag — neither can ever
+be a correct value, and catching it now beats catching it at the 3.x upgrade.
+
+Input (dict): context (root .), component ("manager"|"worker"), tag (resolved image tag).
+*/}}
+{{- define "reporter.datasourceCredEncKeyRequired" -}}
+{{- $key := default "" .context.Values.secrets.DATASOURCE_CRED_ENC_KEY | toString -}}
+{{- if eq $key "CHANGE_ME" -}}
+{{- fail "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY is still the values-template.yaml placeholder \"CHANGE_ME\".\n   Generate a real key and set it before deploying: openssl rand -hex 32\n" -}}
+{{- end -}}
+{{- $tag := .tag | toString | trimPrefix "v" -}}
+{{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+([-+].*)?$" $tag) (semverCompare ">=3.0.0-0" $tag) -}}
+{{- fail (printf "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY is REQUIRED for reporter app >= 3.0.0 (%s.image.tag is %q).\n   The app encrypts data-source credentials at rest and will NOT boot without it.\n   Generate once: openssl rand -hex 32\n   Use the SAME value for the manager and the worker. There is NO rotation — changing it\n   makes every already-registered data source undecryptable.\n   See charts/reporter/docs/UPGRADE-4.1.md.\n" .component .tag) -}}
+{{- end -}}
+{{- /* A value that is still an argocd-vault-plugin reference is not a key yet, so there is
+   nothing to validate: the rendering order is `helmfile template | argocd-vault-plugin
+   generate -`, which means this template runs BEFORE the reference is resolved. Without
+   the exemption every tier that sources this key from Vault fails the render outright --
+   and none had noticed, because no reporter deployment ran a chart carrying this guard.
+   The guarantee is not lost, it moves: the plugin exits non-zero and emits no manifest
+   when it cannot resolve a reference (measured on avp v1.18.1), so an unresolved
+   reference never reaches a cluster.
+   Only the inline `<path:...>` form is exempt. The annotation form, where the value is a
+   bare `<KEY>`, is NOT covered -- deliberately, because a broad `<...>` exemption would
+   also excuse a human placeholder like `<your-key-here>`, which is the very class the
+   CHANGE_ME check above exists to catch.
+   The rule this states, for whoever adds the next validator: a format validator must not
+   look at a value that can legitimately still be a placeholder. */}}
+{{- if and $key (not (hasPrefix "<path:" $key)) (not (regexMatch "^([0-9a-fA-F]{32}|[0-9a-fA-F]{48}|[0-9a-fA-F]{64})$" $key)) -}}
+{{- fail "\n\nERROR: secrets.DATASOURCE_CRED_ENC_KEY must be a hex-encoded AES key of 16, 24 or 32 bytes\n   (32, 48 or 64 hex characters). Generate one with: openssl rand -hex 32\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.isTrue — "true" when the value is a truthy token (case-insensitive).
+*/}}
+{{- define "reporter.isTrue" -}}
+{{- $v := lower (trim (toString .)) -}}
+{{- if or (eq $v "true") (eq $v "1") (eq $v "yes") (eq $v "on") -}}true{{- end -}}
+{{- end -}}
+
+{{/*
+reporter.commonConfigmapData — the SHARED (common) ConfigMap data block for both the
+manager and worker surfaces. Dependency CONNECTIONS are resolved through lerian-common
+typed masks/helpers (datastore.value / globalValue / streaming.env); everything else is
+an escape-hatch passthrough (`$cm.KEY | default "X"`). Native `common.configmap.<KEY>`
+still wins for every masked field (top mask precedence). An operator can add any other
+key under common.configmap and it flows through the guarded range at the end.
+Input: the root context ($).
+*/}}
+{{- define "reporter.commonConfigmapData" -}}
+{{- $ := . -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- include "reporter.crmConfigRequired" . -}}
+{{- $ded := .Values.datastores | default dict -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $osv := "lerian-common.objectStorage.value" -}}
+{{- /* Broker host+mgmt-port resolved once (via the datastore mask) — reused by RABBITMQ_HOST,
+   RABBITMQ_PORT_HOST and the derived RABBITMQ_HEALTH_CHECK_URL (single-source). */ -}}
+{{- $rmqHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq.reporter.svc.cluster.local") -}}
+{{- $rmqMgmtPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") -}}
+{{- /* Management API scheme mirrors the AMQP scheme (amqp→http, amqps→https) — a managed
+   broker (TLS AMQP) also serves its management API over HTTPS. */ -}}
+{{- $rmqScheme := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") -}}
+{{- $rmqMgmtScheme := ternary "https" "http" (eq $rmqScheme "amqps") -}}
+{{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled -}}
+{{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
+{{- $streamingEnabled := eq (include "reporter.isTrue" ($streamingRaw | default "false")) "true" -}}
+{{- /* Multi-tenant toggle: configmap override > global.multiTenant.enabled > false.
+   Presence-based (hasKey), not sprig `default` — `default` treats boolean
+   `false` as empty, so an explicit `common.configmap.MULTI_TENANT_ENABLED: false`
+   would silently fall through to global.multiTenant.enabled if that's true,
+   contradicting the precedence above. Same hasKey pattern already used for
+   STREAMING_ENABLED two lines up. */ -}}
+{{- $mtRaw := (($.Values.global | default dict).multiTenant | default dict).enabled -}}
+{{- if hasKey $cm "MULTI_TENANT_ENABLED" }}{{- $mtRaw = index $cm "MULTI_TENANT_ENABLED" -}}{{- end -}}
+{{- if kindIs "invalid" $mtRaw }}{{- $mtRaw = "false" -}}{{- end -}}
+{{- /* Keys emitted explicitly below; the guarded range must not re-emit them. */ -}}
+{{- $explicit := list
+    "ENV_NAME" "ALLOW_INSECURE_TLS" "LOG_LEVEL"
+    "RABBITMQ_URI" "RABBITMQ_HOST" "RABBITMQ_PORT_HOST" "RABBITMQ_PORT_AMQP"
+    "RABBITMQ_NUMBERS_OF_WORKERS" "RABBITMQ_EXCHANGE" "RABBITMQ_GENERATE_REPORT_QUEUE"
+    "RABBITMQ_GENERATE_REPORT_KEY" "RABBITMQ_HEALTH_CHECK_URL" "RABBITMQ_REPORT_EVENTS_EXCHANGE"
+    "REDIS_HOST" "REDIS_USER" "REDIS_MASTER_NAME" "REDIS_DB" "REDIS_PROTOCOL" "REDIS_TLS" "REDIS_CA_CERT"
+    "GOOGLE_APPLICATION_CREDENTIALS" "REDIS_SERVICE_ACCOUNT"
+    "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_USE_PATH_STYLE"
+    "OBJECT_STORAGE_DISABLE_SSL" "OBJECT_STORAGE_BUCKET"
+    "MONGO_URI" "MONGO_HOST" "MONGO_NAME" "MONGO_USER" "MONGO_PORT" "MONGO_MAX_POOL_SIZE"
+    "MONGO_TLS_CA_CERT" "MONGO_PARAMETERS"
+    "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" "ENABLE_TELEMETRY" "OTEL_INSECURE_EXPORTER"
+    "FETCHER_ENABLED" "FETCHER_URL" "MULTI_TENANT_ENABLED"
+    "MULTI_TENANT_URL" "MULTI_TENANT_ENVIRONMENT" "MULTI_TENANT_ALLOW_INSECURE_HTTP"
+    "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
+    "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
+    "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS" "MULTI_TENANT_REDIS_CA_CERT"
+    "MULTI_TENANT_TIMEOUT" "MULTI_TENANT_CACHE_TTL_SEC" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC"
+    "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS"
+    "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD"
+    "SD_TLS" "SD_TLS_SKIP_VERIFY" "STREAMING_ENABLED"
+    "STREAMING_BROKERS" "STREAMING_CLOUDEVENTS_SOURCE" "STREAMING_CLIENT_ID"
+    "STREAMING_COMPRESSION" "STREAMING_REQUIRED_ACKS"
+    "DATASOURCE_ONBOARDING_CONFIG_NAME" "DATASOURCE_ONBOARDING_HOST" "DATASOURCE_ONBOARDING_PORT"
+    "DATASOURCE_ONBOARDING_USER" "DATASOURCE_ONBOARDING_DATABASE" "DATASOURCE_ONBOARDING_TYPE"
+    "DATASOURCE_ONBOARDING_SSLMODE" "DATASOURCE_ONBOARDING_SSLROOTCERT"
+-}}
+{{- /* Reused below as OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT's default — the two
+   were previously independent hardcoded literals ("development" here,
+   "production" there), so a plain no-args install landed in ENV_NAME=development
+   but OTEL deployment_environment=production, and the app's own production
+   safety check then refused to boot with the bundled (non-https) OTel
+   endpoint. Keeping one source of truth avoids the chart contradicting its
+   own app on the happy path (helm install with no overrides). */ -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") -}}
+ENV_NAME: {{ $envName | quote }}
+{{/* The bundled/dev topology (mongo/redis/postgres/rabbitmq subcharts) has no
+   TLS on any of them — the app REQUIRES this flag to bypass, it isn't a
+   plain "don't use TLS" toggle (mongo hard-fails otherwise: "TLS required").
+   default "false" meant a plain `helm install` with zero overrides always
+   crashed. Same convention as plugin-access-manager: default "true" for the
+   bundled path; a managed-cloud profile flips it explicitly. */ -}}
+ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+{{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
+   topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker profile
+   (e.g. AmazonMQ over TLS) sets global.datastores.broker.{scheme,amqpPort,port}
+   once instead of scattering RABBITMQ_* into common.configmap. Defaults keep the
+   bundled amqp/5672/15672 topology → render-equivalent for existing users. */}}
+RABBITMQ_URI: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") | quote }}
+RABBITMQ_HOST: {{ $rmqHost | quote }}
+RABBITMQ_PORT_HOST: {{ $rmqMgmtPort | quote }}
+RABBITMQ_PORT_AMQP: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
+RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
+RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "reporter.generate-report.exchange" | quote }}
+RABBITMQ_GENERATE_REPORT_QUEUE: {{ $cm.RABBITMQ_GENERATE_REPORT_QUEUE | default "reporter.generate-report.queue" | quote }}
+RABBITMQ_GENERATE_REPORT_KEY: {{ $cm.RABBITMQ_GENERATE_REPORT_KEY | default "reporter.generate-report.key" | quote }}
+{{- /* Health-check URL single-sourced from the broker mask (host:mgmt-port); configmap override still wins. */}}
+RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "%s://%s:%s" $rmqMgmtScheme $rmqHost $rmqMgmtPort) | quote }}
+{{- /* Redis/Valkey connection via datastore mask (host carries host:port). */}}
+REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey.reporter.svc.cluster.local:6379") | quote }}
+REDIS_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") | quote }}
+REDIS_MASTER_NAME: {{ $cm.REDIS_MASTER_NAME | default "" | quote }}
+REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+REDIS_PROTOCOL: {{ $cm.REDIS_PROTOCOL | default "3" | quote }}
+{{- /* Redis TLS topology via the mask (tls + caCert) — a managed-cache profile
+   (e.g. ElastiCache in-transit encryption) sets global.datastores.redis.{tls,caCert}
+   once. Defaults keep plaintext → render-equivalent for existing users. */}}
+REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
+REDIS_CA_CERT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "caCert" "nativeKey" "REDIS_CA_CERT" "default" "") | quote }}
+GOOGLE_APPLICATION_CREDENTIALS: {{ $cm.GOOGLE_APPLICATION_CREDENTIALS | default "" | quote }}
+REDIS_SERVICE_ACCOUNT: {{ $cm.REDIS_SERVICE_ACCOUNT | default "" | quote }}
+{{- /* Object storage (S3/SeaweedFS) — non-secret fields passthrough; keys stay in the Secret. */}}
+{{- /* Object storage via lerian-common.objectStorage.value mask (name "s3"); non-secret
+   fields only — keys stay in the Secret. configmap.OBJECT_STORAGE_* overrides objectStorage.s3
+   / global.objectStorage.s3 / default. */}}
+OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "endpoint" "nativeKey" "OBJECT_STORAGE_ENDPOINT" "default" "http://seaweedfs-s3.reporter.svc.cluster.local:8333") | quote }}
+OBJECT_STORAGE_REGION: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "region" "nativeKey" "OBJECT_STORAGE_REGION" "default" "us-east-1") | quote }}
+OBJECT_STORAGE_USE_PATH_STYLE: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "usePathStyle" "nativeKey" "OBJECT_STORAGE_USE_PATH_STYLE" "default" "true") | quote }}
+OBJECT_STORAGE_DISABLE_SSL: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "disableSSL" "nativeKey" "OBJECT_STORAGE_DISABLE_SSL" "default" "true") | quote }}
+OBJECT_STORAGE_BUCKET: {{ include $osv (dict "context" $ "configmap" $cm "name" "s3" "field" "bucket" "nativeKey" "OBJECT_STORAGE_BUCKET" "default" "reporter-storage") | quote }}
+{{- /* MongoDB connection via datastore mask (host/port/user); name/tuning stay passthrough. */}}
+MONGO_URI: {{ $cm.MONGO_URI | default "mongodb" | quote }}
+MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "reporter-mongodb.reporter.svc.cluster.local") | quote }}
+MONGO_NAME: {{ $cm.MONGO_NAME | default "reporter-db" | quote }}
+MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "reporter") | quote }}
+MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
+MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "100" | quote }}
+MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
+MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") | quote }}
+{{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);
+   identity (library/port/insecure) stays inline. configmap.<KEY> still overrides via otel.env. */}}
+OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}
+OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote }}
+{{- include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "true" "endpointDefault" "otlp://midaz-otel-lgtm:4317" "deploymentEnvironmentDefault" $envName) | nindent 0 }}
+FETCHER_ENABLED: {{ $cm.FETCHER_ENABLED | default "false" | quote }}
+FETCHER_URL: {{ $cm.FETCHER_URL | default "" | quote }}
+MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
+{{- /* Multi-tenant (lib-commons/multitenancy) via lerian-common.multiTenant.env — gated on
+   MULTI_TENANT_ENABLED; emits nothing when off. RABBITMQ_MULTI_TENANT_* stay passthrough
+   (reporter-specific). configmap.MULTI_TENANT_* overrides global.multiTenant. */}}
+{{- include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm
+      "enabled" (eq (include "reporter.isTrue" $mtRaw) "true")
+      "emitRedis" true "emitRedisCaCert" true "emitPool" true "emitCache" true
+      "emitEnvironment" true "emitAllowInsecure" true) | nindent 0 }}
+{{- /* Auth (access-manager) via lerian-common.auth.env → global.auth.{enabled,host}. The reporter
+   app reads PLUGIN_AUTH_ADDRESS (NOT _HOST), so hostKey pins the correct native key. A native
+   common.configmap.PLUGIN_AUTH_ENABLED/_ADDRESS still overrides (globalValue precedence). */}}
+{{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 0 }}
+{{- /* Service discovery via lerian-common.serviceDiscovery.envFlat (lib-service-discovery
+   advertise contract: SD_ADDRESS + SD_ADVERTISE_* + SD_WORKLOAD + SD_TLS*). SD_ADDRESS default
+   "" (reporter) overrides the helper's "localhost:8500"; configmap.SD_* still overrides. */}}
+{{- include "lerian-common.serviceDiscovery.envFlat" (dict "configmap" $cm
+      "keys" (list "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD" "SD_TLS" "SD_TLS_SKIP_VERIFY")
+      "defaults" (dict "SD_ADDRESS" "")) | nindent 0 }}
+{{- /* Streaming: knob inline; brokers/SASL/TLS transport + identity via global.streaming
+   (gated — inert unless enabled AND global.streaming.brokers is set). RABBITMQ_REPORT_EVENTS_EXCHANGE
+   is reporter-specific (RabbitMQ transport) and stays passthrough. */}}
+STREAMING_ENABLED: {{ $streamingRaw | default "false" | quote }}
+RABBITMQ_REPORT_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_REPORT_EVENTS_EXCHANGE | default "reporter.events" | quote }}
+{{- if $streamingEnabled }}
+{{- include "lerian-common.streaming.env" (dict
+      "context" $
+      "enabled" $streamingEnabled
+      "configmap" $cm
+      "clientId" ($cm.STREAMING_CLIENT_ID | default "reporter")
+      "cloudeventsSource" ($cm.STREAMING_CLOUDEVENTS_SOURCE | default "//lerian.reporter")) | nindent 0 }}
+{{- end }}
+{{- /* External midaz datasource (direct-query mode) via postgres datastore mask. */}}
+DATASOURCE_ONBOARDING_CONFIG_NAME: {{ $cm.DATASOURCE_ONBOARDING_CONFIG_NAME | default "midaz_onboarding" | quote }}
+DATASOURCE_ONBOARDING_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "DATASOURCE_ONBOARDING_HOST" "default" "midaz-postgresql-replication.midaz.svc.cluster.local") | quote }}
+DATASOURCE_ONBOARDING_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "DATASOURCE_ONBOARDING_PORT" "default" "5432") | quote }}
+DATASOURCE_ONBOARDING_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DATASOURCE_ONBOARDING_USER" "default" "midaz") | quote }}
+DATASOURCE_ONBOARDING_DATABASE: {{ $cm.DATASOURCE_ONBOARDING_DATABASE | default "onboarding" | quote }}
+DATASOURCE_ONBOARDING_TYPE: {{ $cm.DATASOURCE_ONBOARDING_TYPE | default "postgresql" | quote }}
+DATASOURCE_ONBOARDING_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DATASOURCE_ONBOARDING_SSLMODE" "default" "disable") | quote }}
+DATASOURCE_ONBOARDING_SSLROOTCERT: {{ $cm.DATASOURCE_ONBOARDING_SSLROOTCERT | default "" | quote }}
+{{- /* Escape hatch: any OTHER key the operator adds under common.configmap. */}}
+{{- range $key, $value := $cm }}
+{{- if not (has $key $explicit) }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
 Secret/Service names render even when all bundled subcharts are disabled
 (external-infra path). Self-contained: no other common.* helpers required.

@@ -1,0 +1,11 @@
+{{- if and .Values.worker.enabled .Values.worker.pdb.enabled }}
+{{- /* Off by default: a single cron process has no availability target to protect, and
+   the jobs are idempotent per tick. Provided for operators who run >1 replica. */ -}}
+{{- include "lerian-common.pdb" (dict
+      "pdb" (fromYaml (include "plugin-br-pix-jd.withCommonAnnotations" (dict "root" $ "block" .Values.worker.pdb)))
+      "specStyle" "explicit"
+      "name" (include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "worker"))
+      "namespace" (include "plugin-br-pix-jd.namespace" $)
+      "labels" (include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "worker"))
+      "selector" (include "plugin-br-pix-jd.componentSelectorLabels" (dict "root" $ "name" "worker"))) }}
+{{- end }}

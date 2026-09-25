@@ -8,7 +8,9 @@ spec:
   revisionHistoryLimit: {{ .Values.fees.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.fees.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.fees.autoscaling.enabled }}
   replicas: {{ .Values.fees.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-fees.selectorLabels" (dict "context" . "name" .Values.fees.name) | nindent 6 }}

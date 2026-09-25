@@ -1,0 +1,205 @@
+# =============================================================================
+# Lerian Consul wrapper — curated overrides for the official hashicorp/consul
+# chart (pinned at 1.6.10 -> Consul 1.20.6 in Chart.yaml).
+#
+# WHY THIS CHART EXISTS
+# ---------------------
+# Consul is consumed ONLY by lib-service-discovery, which uses a tiny slice of
+# Consul's API surface:
+#   - Agent register / deregister
+#   - Health checks (TTL heartbeat + HTTP)
+#   - Health().Service() to resolve instances, plus a blocking-query watch
+# It does NOT use KV, Connect / service mesh, namespaces, or the catalog-sync.
+#
+# DESIGN STANCE (BYOC "facilitator, not a blocker")
+# -------------------------------------------------
+# A SINGLE Consul server (non-HA) by default. Resilience is delegated to the
+# library: lib-service-discovery's DynamicResolver keeps a last-known-good
+# cache, so a brief Consul outage degrades gracefully instead of hard-failing.
+# This keeps the client's footprint minimal; scale to 3/5 servers only when
+# real HA is required.
+#
+# CURATED SURFACE
+# ---------------
+# Everything below lives under the `consul:` key (the subchart name), so it is
+# passed straight through to the official chart. We intentionally expose ONLY
+# the small BYOC subset (replicas, image, persistence, ACL, TLS, resources) and
+# leave the thousands of upstream knobs at their chart defaults — except the
+# features we explicitly DISABLE here because Lerian never uses them.
+# =============================================================================
+
+consul:
+  global:
+    # Resource name prefix. Left null -> upstream defaults to
+    # "<release-name>-consul". Uncomment to pin a stable prefix.
+    # name: consul
+
+    # ---- Container image (BYOC-exposed knob) --------------------------------
+    # Pinned by DIGEST (not just the mutable :1.20.6 tag) so the deployed binary
+    # is reproducible — the "reproducible" promise the Chart.lock makes for the
+    # chart, extended to the image. Bump BOTH the tag and the digest together
+    # (docker buildx imagetools inspect hashicorp/consul:<tag>) to change Consul.
+    image: "hashicorp/consul:1.20.6@sha256:200471c74bc0965cd20c81eacc31a209873d5d9e599fe637ceb856b0cbbc518d"
+
+    # ---- Control-plane image (ACL / TLS / gossip Jobs) ----------------------
+    # The server-acl-init, tls-init and gossip-key Jobs run this image. They
+    # manage Secrets and carry RBAC, so pin it by DIGEST too — not just the
+    # mutable :1.6.10 tag. Bump together with the chart dependency.
+    imageK8S: "hashicorp/consul-k8s-control-plane:1.6.10@sha256:9be63ef67b2271f090f26d56e4984604605c10265b91cac97a169e65acba0af7"
+
+    # ---- ACL system ---------------------------------------------------------
+    # Kept ON: the upstream chart bootstraps the ACL system (server-acl-init
+    # Job) and writes the bootstrap token into a Kubernetes Secret named
+    # "<release>-consul-bootstrap-acl-token". lib-service-discovery presents
+    # this token on register/deregister/health calls.
+    # Set `manageSystemACLs: false` only for a fully open dev cluster.
+    acls:
+      manageSystemACLs: true
+
+    # ---- Gossip encryption --------------------------------------------------
+    # OFF at replicas: 1 — a single-member gossip pool has no server-to-server
+    # gossip to encrypt, and autoGenerate creates the key via an install hook
+    # Job whose Secret is not part of the static render (the repo render-gate
+    # rejects the resulting dangling secret reference).
+    # RE-ENABLE (autoGenerate: true) when scaling to replicas: 3 for HA, where
+    # inter-server gossip actually exists.
+    gossipEncryption:
+      autoGenerate: false
+
+    # ---- TLS ----------------------------------------------------------------
+    # DEFAULT: OFF. Rationale for the "minimal facilitator" posture:
+    #   * The server is reachable only in-cluster over ClusterIP (no external
+    #     exposure), so the HTTP API on :8500 stays inside the pod network.
+    #   * Enabling TLS pulls in the tls-init Job (CA + server cert generation),
+    #     forces the library onto the HTTPS port (:8501) and requires the CA to
+    #     be distributed to every consumer — extra moving parts that raise the
+    #     BYOC barrier for little gain on an in-cluster-only endpoint.
+    # TO ENABLE (recommended when Consul must be reached across trust
+    # boundaries): set `consul.global.tls.enabled=true`. The upstream chart's
+    # tls-init Job then auto-generates the CA and server certificates; point
+    # lib-service-discovery's SD_ADDRESS at the ClusterIP on port 8501 and give
+    # it the generated CA. `httpsOnly`/`verify` keep their secure upstream
+    # defaults (true) once enabled.
+    tls:
+      enabled: false
+
+  # ===========================================================================
+  # SERVER — the only Consul workload we actually run (a StatefulSet).
+  # ===========================================================================
+  server:
+    # ---- Quorum / HA (BYOC-exposed knob) ------------------------------------
+    # RAFT QUORUM RULES — READ BEFORE CHANGING:
+    #   * Only ODD server counts give a sane quorum: 1, 3, 5.
+    #   * 1  = intentionally NON-HA. Loss of the server = outage of Consul
+    #          (mitigated by the library's last-known-good cache). This is the
+    #          deliberate "facilitator, not blocker" default.
+    #   * 2  = FORBIDDEN. Quorum of 2 tolerates ZERO failures AND risks
+    #          split-brain — strictly worse than 1. Never set replicas: 2.
+    #   * 3  = tolerates 1 failure. 5 = tolerates 2. Use for real HA.
+    # bootstrapExpect MUST equal replicas (both here).
+    replicas: 1
+    bootstrapExpect: 1
+
+    # ---- Persistence (BYOC-exposed knob) ------------------------------------
+    # PVC for the Raft data dir. Default 5Gi is plenty for SD-only usage
+    # (no KV). storageClass empty -> use the cluster's default StorageClass.
+    storage: 5Gi
+    storageClass: ""
+
+    # ---- PodDisruptionBudget ------------------------------------------------
+    # Disabled by default: with a single, non-HA server there is nothing to
+    # protect, and a PDB would only block node drains/upgrades — the opposite
+    # of "facilitator, not blocker". Set to true when running 3/5 replicas so
+    # rolling node maintenance preserves quorum.
+    disruptionBudget:
+      enabled: false
+
+    # ---- Port exposure ------------------------------------------------------
+    # Keep gossip/RPC ports OFF the pod host — the server is reached only via
+    # the in-cluster ClusterIP Service. This must stay false so no hostPort is
+    # opened on the node.
+    exposeGossipAndRPCPorts: false
+
+    # ---- Connect / service mesh (server side) -------------------------------
+    # OFF. lib-service-discovery uses the HTTP API only; it needs no Connect
+    # (mesh CA, xDS). The upstream server default is connect ENABLED, which
+    # stands up the Connect CA and exposes the xDS gRPC port (8502) — matching
+    # `connectInject.enabled: false` below is not enough, the SERVER flag is
+    # separate. Disable it so the render carries no mesh surface.
+    connect: false
+
+    # ---- Security context ---------------------------------------------------
+    # Confirmed non-root (matches the upstream secure default; restated here so
+    # it is explicit and cannot silently regress on a subchart bump).
+    securityContext:
+      runAsNonRoot: true
+      runAsGroup: 1000
+      runAsUser: 100
+      fsGroup: 1000
+
+    # ---- Resources (BYOC-exposed knob) --------------------------------------
+    # Modest footprint sized for SD-only traffic. Tune per environment.
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
+
+    # ---- Agent config: disable the DNS listener -----------------------------
+    # lib-service-discovery uses the Consul HTTP API, never Consul DNS. Setting
+    # the DNS port to -1 stops the agent from listening on :8600 (the upstream
+    # Service still declares the port, but nothing binds it) — one less open
+    # listener on the SD backend. Extend this JSON for any other agent tuning.
+    extraConfig: |
+      {"ports": {"dns": -1}}
+
+  # ===========================================================================
+  # DISABLED COMPONENTS — Lerian's usage needs none of these. Turning them off
+  # keeps the deployment to a single StatefulSet + its ClusterIP Services and
+  # guarantees no LoadBalancer / NodePort / Ingress / DaemonSet is created.
+  # ===========================================================================
+
+  # Agentless / central model: lib-service-discovery uses outbound TTL
+  # heartbeats to the server, so there is no need for a Consul client agent
+  # DaemonSet on every node.
+  client:
+    enabled: false
+
+  # No web UI, and therefore no UI Service of any kind (prevents any
+  # LoadBalancer/NodePort UI exposure).
+  ui:
+    enabled: false
+    service:
+      enabled: false
+
+  # No Kubernetes<->Consul catalog sync.
+  syncCatalog:
+    enabled: false
+
+  # No service mesh / sidecar injection.
+  connectInject:
+    enabled: false
+
+  # No gateways of any kind.
+  meshGateway:
+    enabled: false
+  ingressGateways:
+    enabled: false
+  terminatingGateways:
+    enabled: false
+
+# =============================================================================
+# NetworkPolicy (Lerian-owned; opt-in) — ClusterIP is not a trust boundary.
+# =============================================================================
+networkPolicy:
+  # OFF by default: the "facilitator, not blocker" posture, and not every CNI
+  # enforces NetworkPolicies. ENABLE for shared or externally-distributed
+  # clusters — otherwise any pod can reach the Consul API/RPC/gossip ports.
+  # External distribution should ALSO enable TLS (consul.global.tls.enabled=true).
+  enabled: false
+  # Extra namespaces allowed to reach the Consul HTTP/HTTPS API (8500/8501),
+  # matched on the `kubernetes.io/metadata.name` label. Same-namespace pods are
+  # always allowed; list here the namespaces of the SD-consuming Lerian services.
+  allowedNamespaces: []

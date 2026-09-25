@@ -18,7 +18,9 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  {{- if not .Values.app.autoscaling.enabled }}
   replicas: {{ .Values.app.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-br-payments.selectorLabels" (dict "context" .) | nindent 6 }}

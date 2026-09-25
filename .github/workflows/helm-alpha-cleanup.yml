@@ -4,7 +4,20 @@ name: Helm Alpha Cleanup
 # github-actions-shared-workflows. Enforces the TTL (~3 days) of alpha releases:
 # deletes GHCR packages under alpha/* with tag *-alpha* older than 3 days.
 # Real releases (lerianstudio/*-helm) are out of scope via the alpha/ guard.
-# Authenticates with a PAT that has delete:packages (GHCR_CLEANUP_PAT).
+#
+# This workflow had never once run. It died at startup on every schedule, which
+# produces no job and no log, so there was nothing to notice. Two independent
+# causes, both fixed here:
+#
+#   1. GHCR_CLEANUP_PAT does not exist as a secret in this repository or at the
+#      organisation level, and a required secret that does not resolve is a
+#      startup failure. It now uses MANAGE_TOKEN, the org service-account PAT.
+#
+#   2. Job-level permissions REPLACE the workflow-level set rather than merging
+#      with it. Granting only `packages: write` on the calling job left the
+#      reusable workflow unable to satisfy its own `contents: read`, and a
+#      called workflow cannot hold more than its caller was granted. Both are
+#      now granted together.
 
 on:
   schedule:
@@ -22,11 +35,11 @@ permissions:
 jobs:
   cleanup:
     permissions:
+      contents: read # the reusable workflow asks for it; job-level replaces, so it must be repeated
       packages: write # delete alpha version packages from GHCR
-    # Testing: @develop. Once stable: @vX.Y.Z.
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-cleanup.yml@develop
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-cleanup.yml@tier-2
     with:
       # schedule deletes for real; manual dispatch previews unless you turn dry_run off
       dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
     secrets:
-      GHCR_CLEANUP_PAT: ${{ secrets.GHCR_CLEANUP_PAT }}
+      GHCR_CLEANUP_PAT: ${{ secrets.MANAGE_TOKEN }}

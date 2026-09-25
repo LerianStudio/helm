@@ -11,5 +11,18 @@ permissions:
 
 jobs:
   upgrade-doc:
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-upgrade-doc.yml@v1.29.0
-    secrets: inherit
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-upgrade-doc.yml@v1.50.1
+    # Explicit mapping (not `inherit`) so the channel secret SLACK_CHANNEL_OPS feeds
+    # the workflow's generic SLACK_CHANNEL. inherit matches by name and can't remap.
+    secrets:
+      LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+      LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+      LERIAN_CI_CD_USER_GPG_KEY: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
+      LERIAN_CI_CD_USER_GPG_KEY_PASSWORD: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY_PASSWORD }}
+      LERIAN_CI_CD_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
+      LERIAN_CI_CD_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL_OPS }}
+      SLACK_GROUP_TECH_SUPPORT: ${{ secrets.SLACK_GROUP_TECH_SUPPORT }}

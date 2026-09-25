@@ -1,5 +1,1374 @@
 # Reporter Changelog
 
+## [4.3.5](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.5)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 4.2.0.
+  - Updated `reporter-worker` to version 4.2.0.
+
+- **Documentation**
+  - Added Helm upgrade guide for reporter v4.3.4.
+  - Added upgrade guide for reporter v4.3.4.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.4...reporter-v4.3.5)
+
+---
+
+## [4.3.5](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.5)
+
+- **Fixes**
+  - Updated reporter-manager to version 4.2.0.
+  - Updated reporter-worker to version 4.2.0.
+
+- **Documentation**
+  - Added Helm upgrade guide for reporter v4.3.4.
+  - Added upgrade guide for reporter v4.3.4.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.4...reporter-v4.3.5)
+
+---
+
+## [4.3.5](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.5)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 4.2.0.
+  - Updated `reporter-worker` to version 4.2.0.
+
+- **Improvements**
+  - Added Helm upgrade guide for reporter v4.3.4.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.4...reporter-v4.3.5)
+
+---
+
+## [4.3.5](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.5)
+
+- **Fixes:**
+  - Updated `reporter-manager` to version 4.2.0.
+  - Updated `reporter-worker` to version 4.2.0.
+
+- **Documentation:**
+  - Added Helm upgrade guide for reporter v4.3.4.
+  - Added upgrade guide for reporter v4.3.4.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.4...reporter-v4.3.5)
+
+---
+
+## [4.3.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.4)
+
+- Fixes:
+  - Updated reporter-manager to version 4.1.0.
+  - Updated reporter-worker to version 4.1.0.
+
+- Improvements:
+  - Added Helm upgrade guide for reporter v4.3.3.
+  - Added upgrade guide for reporter v4.3.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.3...reporter-v4.3.4)
+
+---
+
+## [4.3.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.4)
+
+- **Fixes:**
+  - Updated dependencies: reporter-manager to version 4.1.0 and reporter-worker to version 4.1.0.
+
+- **Improvements:**
+  - Added Helm upgrade guide for version 4.3.3.
+  - Added upgrade guide for version 4.3.3.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.3...reporter-v4.3.4)
+
+---
+
+## [4.3.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.4)
+
+- Fixes:
+  - Updated reporter-manager to version 4.1.0 and reporter-worker to version 4.1.0.
+
+- Improvements:
+  - Added Helm upgrade guide for reporter v4.3.3.
+  - Added upgrade guide for reporter v4.3.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.3...reporter-v4.3.4)
+
+---
+
+## [4.3.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.4)
+
+- Fixes:
+  - Updated reporter-manager to version 4.1.0.
+  - Updated reporter-worker to version 4.1.0.
+
+- Improvements:
+  - Added Helm upgrade guide for reporter v4.3.3.
+  - Added upgrade guide for reporter v4.3.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.3...reporter-v4.3.4)
+
+---
+
+## [4.3.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.4)
+
+- Fixes:
+  - Updated reporter-manager to version 4.1.0.
+  - Updated reporter-worker to version 4.1.0.
+
+- Improvements:
+  - Added Helm upgrade guide for reporter v4.3.3.
+  - Added upgrade guide for reporter v4.3.3.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.3...reporter-v4.3.4)
+
+---
+
+## [4.3.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.4)
+
+- Fixes:
+  - Updated reporter-manager to version 4.1.0 and reporter-worker to version 4.1.0.
+
+- Improvements:
+  - Added Helm upgrade guide for reporter v4.3.3.
+  - Added upgrade guide for reporter v4.3.3.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.3...reporter-v4.3.4)
+
+---
+
+## [4.3.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.4)
+
+- **Fixes**
+  - Updated reporter-manager to version 4.1.0.
+  - Updated reporter-worker to version 4.1.0.
+
+- **Improvements**
+  - Added Helm upgrade guide for reporter v4.3.3.
+  - Added upgrade guide for reporter v4.3.3.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.3...reporter-v4.3.4)
+
+---
+
+## [4.3.4](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.4)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 4.1.0.
+  - Updated `reporter-worker` to version 4.1.0.
+
+- **Improvements**
+  - Added Helm upgrade guide for reporter v4.3.3.
+  - Added upgrade guide for reporter v4.3.3.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.3...reporter-v4.3.4)
+
+---
+
+## [4.3.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.3)
+
+- **Fixes:**
+  - Updated `reporter-manager` to version 4.0.0.
+  - Updated `reporter-worker` to version 4.0.0.
+
+- **Documentation:**
+  - Added Helm upgrade guide for reporter v4.3.2.
+  - Added upgrade guide for reporter v4.3.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.2...reporter-v4.3.3)
+
+---
+
+## [4.3.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.3)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 4.0.0.
+  - Updated `reporter-worker` to version 4.0.0.
+
+- **Documentation**
+  - Added Helm upgrade guide for reporter v4.3.2.
+  - Added upgrade guide for reporter v4.3.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.2...reporter-v4.3.3)
+
+---
+
+## [4.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.2)
+
+- **Fixes:**
+  - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
+  - Corrected bundled-RabbitMQ hash recipe and rejected the use of `useExistingSecret`.
+  - Provisioned the app user on the bundled RabbitMQ broker.
+
+- **Improvements:**
+  - Pinned the app image to version 3.0.2, which includes the #849 inline-CA release.
+
+- **Documentation:**
+  - Added a recipe to fetch the regional AWS CA for CRM inline TLS.
+  - Documented CRM datasource over TLS with an inline CA bundle.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.1...reporter-v4.3.2)
+
+---
+
+## [4.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.2)
+
+- **Fixes:**
+  - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
+  - Corrected bundled-RabbitMQ hash recipe and rejected the use of `useExistingSecret`.
+  - Provisioned the app user on the bundled RabbitMQ broker.
+
+- **Improvements:**
+  - Pinned app image to version 3.0.2, which includes the inline-CA release.
+
+- **Documentation:**
+  - Added a recipe to fetch the regional AWS CA for CRM inline TLS.
+  - Documented CRM datasource over TLS with an inline CA bundle.
+  - Added a Helm upgrade guide for reporter v4.3.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.1...reporter-v4.3.2)
+
+---
+
+## [4.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.2)
+
+- **Fixes:**
+  - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
+  - Corrected the bundled-RabbitMQ hash recipe and rejected the use of existing secrets.
+  - Provisioned the app user on the bundled RabbitMQ broker.
+
+- **Improvements:**
+  - Pinned the app image to version 3.0.2, which includes the inline-CA release.
+
+- **Documentation:**
+  - Added a recipe to fetch the regional AWS CA for CRM inline TLS.
+  - Documented CRM datasource over TLS with an inline CA bundle.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.1...reporter-v4.3.2)
+
+---
+
+## [4.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.2)
+
+- **Fixes:**
+  - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
+  - Corrected bundled-RabbitMQ hash recipe and rejected the use of existing secrets.
+  - Provisioned the app user on the bundled RabbitMQ broker.
+
+- **Improvements:**
+  - Pinned app image to version 3.0.2, which includes the inline-CA release.
+
+- **Documentation:**
+  - Added a recipe to fetch the regional AWS CA for CRM inline TLS.
+  - Documented CRM datasource over TLS with an inline CA bundle.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.1...reporter-v4.3.2)
+
+---
+
+## [4.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.2)
+
+- **Fixes:**
+  - Locked bundled RabbitMQ to its fixed development credential and fixed the mongosh recipe.
+  - Corrected the bundled-RabbitMQ hash recipe and rejected the use of `useExistingSecret`.
+  - Provisioned the app user on the bundled RabbitMQ broker.
+
+- **Improvements:**
+  - Pinned app image to version 3.0.2, which includes the inline-CA release.
+
+- **Documentation:**
+  - Added a recipe to fetch the regional AWS CA for CRM inline TLS.
+  - Documented CRM datasource over TLS with an inline CA bundle.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.1...reporter-v4.3.2)
+
+---
+
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
+
+- **Fixes**
+  - Guard opt-in CRM configuration to prevent potential errors.
+  - Pin stable 3.0.1 release to ensure consistent performance.
+
+- **Improvements**
+  - Added a getting-started installation runbook available in both English and Portuguese.
+  - Addressed CodeRabbit guidelines regarding release-name rules, AWS-only broker preset, and port-forward readiness.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.0...reporter-v4.3.1)
+
+---
+
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
+
+- **Features**
+  - Added a getting-started installation runbook available in English and Portuguese (pt-br).
+
+- **Fixes**
+  - Implemented a guard for opt-in CRM configuration to enhance stability.
+  - Pinned stable release to version 3.0.1 to ensure reliability.
+
+- **Improvements**
+  - Addressed CodeRabbit guidelines, including release-name rules, AWS-only broker preset, and port-forward readiness.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.0...reporter-v4.3.1)
+
+---
+
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
+
+- **Fixes**
+  - Guard opt-in CRM configuration to prevent potential issues.
+  - Pin stable 3.0.1 release for improved stability.
+
+- **Improvements**
+  - Added a getting-started installation runbook in both English and Portuguese.
+  - Addressed CodeRabbit feedback regarding release-name rules, AWS-only broker preset, and port-forward readiness.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.0...reporter-v4.3.1)
+
+---
+
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.1)
+
+- **Fixes**
+  - Guard opt-in CRM configuration to enhance stability and prevent potential issues.
+  - Pin stable 3.0.1 release to ensure consistent performance and reliability.
+
+- **Improvements**
+  - Added a getting-started installation runbook available in both English and Portuguese (pt-br).
+  - Addressed CodeRabbit feedback regarding release-name rules, AWS-only broker preset, and port-forward readiness.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.0...reporter-v4.3.1)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features:**
+  - Declared the `reporter.events` exchange.
+  - Defaulted the Job to use the app broker credential.
+
+- **Fixes:**
+  - Ensured the Job credential is carried in a PreSync Secret.
+  - Prevented the validation of a Vault reference as a hex key.
+  - Avoided mounting the service account token.
+
+- **Improvements:**
+  - Applied RabbitMQ topology per object at PreSync.
+  - Passed topology labels through environment variables.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features**
+  - Default the Job to the app broker credential.
+  - Declare the `reporter.events` exchange.
+
+- **Fixes**
+  - Do not validate a Vault reference as a hex key.
+  - Carry the Job credential in a PreSync Secret.
+  - Do not mount the service account token.
+
+- **Improvements**
+  - Apply RabbitMQ topology per object at PreSync.
+  - Pass topology labels through environment variables.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features**
+  - Default the Job to the app broker credential.
+  - Declare the `reporter.events` exchange.
+
+- **Fixes**
+  - Do not validate a Vault reference as a hex key.
+  - Carry the Job credential in a PreSync Secret.
+  - Do not mount the service account token.
+
+- **Improvements**
+  - Apply RabbitMQ topology per object at PreSync.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features:**
+  - Default the Job to the app broker credential.
+  - Declare the `reporter.events` exchange.
+
+- **Fixes:**
+  - Do not validate a Vault reference as a hex key.
+  - Carry the Job credential in a PreSync Secret.
+  - Do not mount the service account token.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features:**
+  - Introduced the ability to declare the `reporter.events` exchange.
+  - Defaulted the Job to use the app broker credential.
+  
+- **Fixes:**
+  - Resolved an issue where a Vault reference was incorrectly validated as a hex key.
+  - Ensured that the service account token is not mounted.
+  - Passed topology labels through environment variables.
+
+- **Improvements:**
+  - Applied RabbitMQ topology per object at PreSync.
+  - Pinned the seccomp profile on the bootstrap Job.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features:**
+  - Default the Job to the app broker credential.
+  - Declare the `reporter.events` exchange.
+
+- **Fixes:**
+  - Do not validate a Vault reference as a hex key.
+  - Carry the Job credential in a PreSync Secret.
+  - Do not mount the service account token.
+
+- **Improvements:**
+  - Apply RabbitMQ topology per object at PreSync.
+  - Pass topology labels through environment variables.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features**
+  - Default the Job to the app broker credential.
+  - Declare the `reporter.events` exchange.
+
+- **Fixes**
+  - Do not validate a Vault reference as a hex key.
+  - Carry the Job credential in a PreSync Secret.
+  - Do not mount the service account token.
+
+- **Improvements**
+  - Apply RabbitMQ topology per object at PreSync.
+  - Pass topology labels through environment variables.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features**
+  - Default the Job to the app broker credential.
+  - Declare the `reporter.events` exchange.
+
+- **Fixes**
+  - Do not validate a Vault reference as a hex key.
+  - Carry the Job credential in a PreSync Secret.
+  - Do not mount the service account token.
+
+- **Improvements**
+  - Apply RabbitMQ topology per object at PreSync.
+  - Pass topology labels through environment variables.
+  - Pin the seccomp profile on the bootstrap Job.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features**
+  - Default the Job to the app broker credential.
+  - Declare the `reporter.events` exchange.
+
+- **Fixes**
+  - Do not validate a Vault reference as a hex key.
+  - Carry the Job credential in a PreSync Secret.
+  - Do not mount the service account token.
+
+- **Improvements**
+  - Apply RabbitMQ topology per object at PreSync.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.0)
+
+- **Features**
+  - Implemented RabbitMQ topology bootstrap for improved initialization.
+  - Declared the `reporter.events` exchange for enhanced event handling.
+  - Defaulted the Job to use the app broker credential for streamlined operations.
+
+- **Fixes**
+  - Resolved an issue where Vault references were incorrectly validated as hex keys.
+  - Ensured the Job credential is carried in a PreSync Secret to maintain security.
+  - Prevented the mounting of the service account token to enhance security.
+  - Passed topology labels through environment variables for consistent configuration.
+  - Pinned the seccomp profile on the bootstrap Job for improved security.
+
+- **Improvements**
+  - Applied RabbitMQ topology per object at PreSync for optimized performance.
+  - Documented the topology-only bootstrap Job for better understanding and usage.
+  - Improved documentation to keep the admin credential out of argv for security.
+  - Enhanced documentation to make the broker check example runnable and clear.
+
+Contributors: @brunobls, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.2.0...reporter-v4.3.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- Fixes:
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated to `reporter-manager@3.0.0` and `reporter-worker@3.0.0` to resolve compatibility issues.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes:**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes:**
+  - Updated to `reporter-manager@3.0.0` and `reporter-worker@3.0.0` for improved stability and performance.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes:**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated to use `reporter-manager@3.0.0` and `reporter-worker@3.0.0`.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.2.0)
+
+- **Fixes**
+  - Updated `reporter-manager` to version 3.0.0.
+  - Updated `reporter-worker` to version 3.0.0.
+
+Contributors: @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.1.0...reporter-v4.2.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
+  - Made the datasource credential-encryption key a first-class feature.
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
+  - Made the datasource credential-encryption key a first-class feature.
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
+  - Made the datasource credential-encryption key a first-class feature.
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
+  - Made the datasource credential-encryption key a first-class entity.
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
+  - Made the datasource credential-encryption key a first-class feature. (#1943)
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
+  - Made the datasource credential-encryption key a first-class feature, enhancing security and management of credentials. (#1943)
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0 to assist users in transitioning smoothly to the new version.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
+  - Made the datasource credential-encryption key a first-class feature.
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features**
+  - Made the datasource credential-encryption key a first-class feature. (#1943)
+
+- **Improvements**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.1.0)
+
+- **Features:**
+  - Made the datasource credential-encryption key a first-class feature.
+
+- **Improvements:**
+  - Added a Helm upgrade guide for reporter v4.0.0.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.0.0...reporter-v4.1.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.0.0)
+
+- **Features:**
+  - Added global environment mask and single-sourcing for `ENV_NAME`.
+  - Introduced datastore topology masks, global.cloud, and service account cloud authentication.
+  - Adopted lerian-common rolesAnywhere, otel, and objectStorage for enhanced observability and storage management.
+  - Implemented STREAMING_ENABLED to honor global.streaming.enabled.
+  - Added RABBITMQ_HEALTH_CHECK_URL derivation from the broker mask.
+
+- **Fixes:**
+  - Bounded RabbitMQ bootstrap curl calls with connect/max timeouts.
+  - JSON-escaped RabbitMQ password and fixed bootstrap hook timing.
+  - Decoupled reporter user/permissions from non-atomic definitions import.
+  - Reconciled RabbitMQ bootstrap on every run and restored CORS schema keys.
+  - Addressed critical worker deployment image-tag fallback issue.
+
+- **Improvements:**
+  - Consolidated to a single starter file and fixed OTEL_LIBRARY_NAME typo.
+  - Added Managed Cloud section to README and updated values-template.yaml.
+  - Enhanced schema with missing multiTenant/serviceDiscovery declarations.
+  - Provided copy-paste examples under each global.* mask in values.yaml.
+  - Improved chart defaults for leaner environment values.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.2.0...reporter-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.0.0)
+
+- **Features:**
+  - Added global environment mask and single-sourced `ENV_NAME`.
+  - Introduced datastore topology masks and global cloud support with service account cloud authentication.
+  - Adopted `lerian-common` configurations for multi-tenant environments, roles, observability, object storage, and service discovery.
+  - Implemented `STREAMING_ENABLED` to honor `global.streaming.enabled`.
+  - Derived `RABBITMQ_HEALTH_CHECK_URL` from the broker mask.
+
+- **Fixes:**
+  - Bounded RabbitMQ bootstrap curl calls with connect and max timeouts.
+  - Used `jq` for RabbitMQ user JSON body and fixed ArgoCD PostSync hook.
+  - JSON-escaped RabbitMQ password and fixed bootstrap hook timing.
+  - Reconciled RabbitMQ bootstrap on every run and restored CORS schema keys.
+  - Fixed critical issue with worker deployment image-tag fallback.
+
+- **Improvements:**
+  - Consolidated to a single starter file and corrected `OTEL_LIBRARY_NAME` typo.
+  - Updated documentation with Managed Cloud section and added copy-paste examples for global masks.
+  - Declared global object storage in `values.yaml/schema`.
+  - Dropped dead CORS configuration and fixed `RABBITMQ_HEALTH_CHECK_URL` scheme.
+  - Rejected `CHANGE_ME` placeholder password and added KEDA image tag fallback.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.2.0...reporter-v4.0.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled to prevent unexpected scaling issues.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0 for improved stability.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update reporter-manager to version 2.3.0 and reporter-worker to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Improvements**
+  - Added an upgrade guide for `reporter` version 3.1.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Improvements:**
+  - Add upgrade guide for reporter v3.1.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update reporter-manager to version 2.3.0 and reporter-worker to version 2.3.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update reporter-manager to version 2.3.0 and reporter-worker to version 2.3.0.
+  - Update reporter-manager to version 2.2.0 and reporter-worker to version 2.2.0.
+
+- **Documentation**
+  - Added upgrade guide for reporter v3.1.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update reporter-manager to version 2.3.0 and reporter-worker to version 2.3.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes:**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.2.0)
+
+- **Fixes**
+  - Guard replicas when autoscaling is enabled.
+  - Update `reporter-manager` to version 2.3.0 and `reporter-worker` to version 2.3.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.1...reporter-v3.2.0)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated reporter-manager to version 2.1.2.
+  - Updated reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated `reporter-manager` to version 2.1.2.
+  - Updated `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Update `reporter-manager` to version 2.1.2.
+  - Update `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated reporter-manager to version 2.1.2.
+  - Updated reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated reporter-manager to version 2.1.2.
+  - Updated reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated reporter-manager to version 2.1.2.
+  - Updated reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated reporter-manager to version 2.1.2.
+  - Updated reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated `reporter-manager` to version 2.1.2.
+  - Updated `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated reporter-manager to version 2.1.2.
+  - Updated reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated `reporter-manager` to version 2.1.2.
+  - Updated `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated dependencies: reporter-manager to version 2.1.2 and reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Update reporter-manager to version 2.1.2.
+  - Update reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated `reporter-manager` to version 2.1.2.
+  - Updated `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated `reporter-manager` to version 2.1.2.
+  - Updated `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated reporter-manager to version 2.1.2.
+  - Updated reporter-worker to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Update `reporter-manager` to version 2.1.2.
+  - Update `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
+
+- Fixes:
+  - Updated `reporter-manager` to version 2.1.2.
+  - Updated `reporter-worker` to version 2.1.2.
+
+Contributors: @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v3.1.0...reporter-v3.1.1)
+
+---
+
 ## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v3.1.1)
 
 - Fixes:

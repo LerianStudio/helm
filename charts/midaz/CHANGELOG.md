@@ -1,5 +1,1308 @@
 # Midaz Changelog
 
+## [9.2.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.5)
+
+- Fixes:
+  - Send only the role password verifier to the server.
+  - Update midaz-ledger to version 4.0.7.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.4...midaz-v9.2.5)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.4)
+
+- **Fixes:**
+  - Match the privilege check literally and read the password from the environment.
+  - Hide a failed CREATE ROLE from the server log.
+  - Quote the role password in the postgres bootstrap hook.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.3...midaz-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.4)
+
+- Fixes:
+  - Match the privilege check literally and read the password from the environment.
+  - Hide a failed CREATE ROLE from the server log.
+  - Quote the role password in the postgres bootstrap hook.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.3...midaz-v9.2.4)
+
+---
+
+## [9.2.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.3)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.5.
+  - Updated `midaz-tracer` to version 4.0.5.
+
+- **Documentation:**
+  - Added Helm upgrade guide for midaz v9.2.2.
+  - Added upgrade guide for midaz v9.2.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.2...midaz-v9.2.3)
+
+---
+
+## [9.2.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.3)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.5.
+  - Updated `midaz-tracer` to version 4.0.5.
+
+- **Documentation**
+  - Added Helm upgrade guide for midaz v9.2.2.
+  - Added upgrade guide for midaz v9.2.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.2...midaz-v9.2.3)
+
+---
+
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - CRM/Tracer default set to `maxUnavailable=0` for zero-downtime rollouts.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - CRM/Tracer default set to `maxUnavailable=0` for zero-downtime rollouts.
+
+- Improvements:
+  - Added Helm upgrade guide for midaz v9.2.1.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - CRM/Tracer default to `maxUnavailable=0` for zero-downtime rollouts.
+
+- Improvements:
+  - Added Helm upgrade guide for Midaz v9.2.1.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - crm/tracer default to maxUnavailable=0 for zero-downtime rollouts
+
+- Improvements:
+  - Added Helm upgrade guide for midaz v9.2.1
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Documentation**
+  - Added upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- Fixes:
+  - Updated midaz-ledger to version 4.0.3.
+  - Updated midaz-tracer to version 4.0.3.
+
+- Improvements:
+  - Added an upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for `midaz` version 9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated midaz-ledger to version 4.0.3.
+  - Updated midaz-tracer to version 4.0.3.
+
+- **Documentation:**
+  - Added upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz version 9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Contributors:** @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Documentation:**
+  - Added upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Documentation:**
+  - Added upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Documentation**
+  - Added upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.0)
+
+- **Features**
+  - Fail fast when managed Mongo is missing CRM/Fees hosts.
+
+- **Improvements**
+  - Correct datastore precedence (native > dedicated > shared).
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.2...midaz-v9.2.0)
+
+---
+
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.0)
+
+- **Features:**
+  - Fail fast when managed Mongo is missing CRM/Fees hosts.
+
+- **Improvements:**
+  - Corrected datastore precedence documentation (native > dedicated > shared).
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.2...midaz-v9.2.0)
+
+---
+
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.0)
+
+- **Features**
+  - Fail fast when managed Mongo is missing CRM/Fees hosts.
+
+- **Improvements**
+  - Corrected datastore precedence documentation (native > dedicated > shared).
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.2...midaz-v9.2.0)
+
+---
+
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.0)
+
+- **Features**
+  - Fail fast when managed Mongo is missing CRM/Fees hosts.
+
+- **Improvements**
+  - Correct datastore precedence (native > dedicated > shared).
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.2...midaz-v9.2.0)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+- Improvements:
+  - Added an upgrade guide for Midaz v9.1.1.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block.
+  - Deleted the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+- Improvements:
+  - Added an upgrade guide for Midaz v9.1.1.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.1)
+
+- **Fixes:**
+  - Updated midaz-ledger to version 4.0.2.
+  - Updated midaz-tracer to version 4.0.2.
+
+- **Improvements:**
+  - Added an upgrade guide for midaz v9.1.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.0...midaz-v9.1.1)
+
+---
+
+## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.0)
+
+- **Features:**
+  - Bumped `lerian-common-helm` to stable version 2.1.0.
+  - Removed four ledger configmap knobs.
+  - Added IDP_* RI declaration environment variables to ledger and tracer.
+  - Exposed ledger schema registry URL.
+  - Restored standalone CRM component (opt-in, `crm.enabled=false`).
+
+- **Fixes:**
+  - Updated `midaz-crm` and `midaz-ledger` to version 3.8.4.
+  - Aligned HPA sync-wave with its Deployment.
+  - Replaced removed `--tlsInsecure` mongosh flag with the modern equivalent.
+  - Supported TLS in the MongoDB bootstrap job (required for DocumentDB).
+  - Resolved `RABBITMQ_PROTOCOL` via the broker mask.
+
+Contributors: @Ygohr, @andreimatiazi, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.0.0...midaz-v9.1.0)
+
+---
+
+## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.0)
+
+- **Features:**
+  - Bumped `lerian-common-helm` to stable version 2.1.0.
+  - Removed four ledger configmap knobs.
+  - Added IDP_* RI declaration environment variables to ledger and tracer.
+  - Exposed ledger schema registry URL.
+  - Restored standalone CRM component (opt-in, `crm.enabled=false`).
+
+- **Fixes:**
+  - Updated `midaz-crm` and `midaz-ledger` to version 3.8.4.
+  - Aligned HPA sync-wave with its Deployment.
+  - Replaced removed `--tlsInsecure` mongosh flag with the modern equivalent.
+  - Added native `helm.sh/hook` alongside `argocd.argoproj.io/hook` on all Jobs.
+  - Supported TLS in the MongoDB bootstrap job (required for DocumentDB).
+
+Contributors: @Ygohr, @andreimatiazi, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.0.0...midaz-v9.1.0)
+
+---
+
+## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.0)
+
+- **Features:**
+  - Bumped `lerian-common-helm` to stable version 2.1.0.
+  - Removed four ledger configmap knobs.
+  - Added IDP_* RI declaration environment variables to ledger and tracer.
+  - Exposed ledger schema registry URL.
+  - Restored standalone CRM component (opt-in, `crm.enabled=false`).
+
+- **Fixes:**
+  - Updated `midaz-crm` and `midaz-ledger` to version 3.8.4.
+  - Aligned HPA sync-wave with its Deployment.
+  - Tolerated embedded port in redis mask host.
+  - Replaced removed `--tlsInsecure` mongosh flag with the modern equivalent.
+  - Supported TLS in the MongoDB bootstrap job (required for DocumentDB).
+
+Contributors: @Ygohr, @andreimatiazi, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.0.0...midaz-v9.1.0)
+
+---
+
+## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.0)
+
+- **Features**
+  - Bumped `lerian-common-helm` to stable version 2.1.0.
+  - Added IDP_* RI declaration environment variables to ledger and tracer.
+  - Exposed ledger schema registry URL.
+  - Restored standalone CRM component as an opt-in feature.
+  - Promoted datastore 'name' to masks with didactic scaffolds in values.
+
+- **Fixes**
+  - Updated `midaz-crm` and `midaz-ledger` to version 3.8.4.
+  - Aligned HPA sync-wave with its Deployment.
+  - Replaced removed `--tlsInsecure` mongosh flag with the modern equivalent.
+  - Supported TLS in the MongoDB bootstrap job, required for DocumentDB.
+  - Resolved `RABBITMQ_PROTOCOL` via the broker mask.
+
+Contributors: @Ygohr, @andreimatiazi, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.0.0...midaz-v9.1.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.0.0)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 3.8.3.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.9.0...midaz-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.0.0)
+
+- **Features**
+  - Released midaz version 9.0.0.
+
+- **Fixes**
+  - Updated midaz-ledger to version 3.8.3.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.9.0...midaz-v9.0.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Features**
+  - Released midaz version 8.9.0.
+
+- **Fixes**
+  - Updated midaz-crm to version 3.8.2.
+  - Updated midaz-ledger to version 3.8.2.
+
+- **Improvements**
+  - Added an upgrade guide for midaz version 8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Features**
+  - Released version 8.9.0 of midaz.
+
+- **Fixes**
+  - Updated midaz-crm to version 3.8.2.
+  - Updated midaz-ledger to version 3.8.2.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Features**
+  - Released version 8.9.0 of Midaz.
+
+- **Fixes**
+  - Updated midaz-crm to version 3.8.2.
+  - Updated midaz-ledger to version 3.8.2.
+
+- **Improvements**
+  - Added an upgrade guide for Midaz v8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+- **Improvements:**
+  - Added an upgrade guide for `midaz` version 8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Features**
+  - Released version 8.9.0 of midaz.
+
+- **Fixes**
+  - Updated midaz-crm to version 3.8.2.
+  - Updated midaz-ledger to version 3.8.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+- **Documentation:**
+  - Added an upgrade guide for midaz v8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Fixes:**
+  - Updated `midaz-crm` to version 3.8.2.
+  - Updated `midaz-ledger` to version 3.8.2.
+
+- **Improvements:**
+  - Added an upgrade guide for midaz v8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Features:**
+  - Released version 8.9.0 of midaz.
+
+- **Fixes:**
+  - Updated midaz-crm to version 3.8.2.
+  - Updated midaz-ledger to version 3.8.2.
+
+- **Improvements:**
+  - Added an upgrade guide for midaz version 8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.8.0)
+
+- **Fixes**
+  - Updated `midaz-crm` to version 3.8.1.
+  - Updated `midaz-ledger` to version 3.8.1.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.7.0...midaz-v8.8.0)
+
+---
+
+## [8.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.8.0)
+
+- **Fixes**
+  - Updated `midaz-crm` to version 3.8.1.
+  - Updated `midaz-ledger` to version 3.8.1.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.7.0...midaz-v8.8.0)
+
+---
+
+## [8.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.8.0)
+
+- **Fixes**
+  - Updated `midaz-crm` to version 3.8.1.
+  - Updated `midaz-ledger` to version 3.8.1.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.7.0...midaz-v8.8.0)
+
+---
+
+## [8.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.8.0)
+
+- **Fixes**
+  - Updated `midaz-crm` to version 3.8.1.
+  - Updated `midaz-ledger` to version 3.8.1.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.7.0...midaz-v8.8.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Documentation**
+  - Added upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features:**
+  - Updated midaz-crm to version 3.8.0.
+  - Updated midaz-ledger to version 3.8.0.
+
+- **Improvements:**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors:** @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors:** @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features:**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors:** @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features:**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated midaz-crm to version 3.8.0.
+  - Updated midaz-ledger to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features:**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated midaz-crm to version 3.8.0.
+  - Updated midaz-ledger to version 3.8.0.
+
+- **Improvements**
+  - Added an upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+
+- **Features**
+  - Updated `midaz-crm` to version 3.8.0.
+  - Updated `midaz-ledger` to version 3.8.0.
+
+- **Improvements**
+  - Added upgrade guide for midaz v8.6.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+
+---
+
+## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
+
+- **Features:**
+  - Render streaming SASL/TLS secrets in midaz.
+  - Integration with plugin-fees Secrets.
+
+- **Documentation:**
+  - Added upgrade guide for midaz v8.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
+
+---
+
+## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
+
+- **Features**
+  - Render streaming SASL/TLS secrets in midaz + plugin-fees Secrets.
+
+- **Documentation**
+  - Add upgrade guide for midaz v8.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
+
+---
+
 ## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
 
 - **Features**

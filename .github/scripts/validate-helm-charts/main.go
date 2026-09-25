@@ -24,6 +24,7 @@ var allowedChartTypes = map[string]bool{
 	"single-service":     true,
 	"multi-component":    true,
 	"dependency-wrapper": true,
+	"library":            true,
 }
 
 var credentialURLPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/@]+:[^\s/@]+@`)
@@ -61,6 +62,15 @@ var allowlistedCredentialDefaults = map[string]bool{
 	// plugin-access-manager ships a default initUser.adminPassword so existing releases keep
 	// their admin login across upgrades; operators are expected to override it in production.
 	"plugin-access-manager:auth.initUser.adminPassword": true,
+	// reporter's BUNDLED groundhog2k RabbitMQ (rabbitmq.enabled=true) is dev/local-only —
+	// production points at an EXTERNAL broker with real, per-tier credentials. A configured
+	// load_definitions import makes RabbitMQ skip seeding the default user, so the reporter
+	// user must be declared in the definitions with a salted password_hash Helm cannot derive
+	// from the plaintext; both are shipped as a matching dev pair so a from-scratch one-command
+	// `helm install` reaches 1/1. A render-time guard forces operators who change one to change
+	// the other. Not a production credential.
+	"reporter:secrets.RABBITMQ_DEFAULT_PASS":        true,
+	"reporter:rabbitmq.loadDefinition.passwordHash": true,
 }
 
 type chartYAML struct {
@@ -243,11 +253,18 @@ func collectViolations(root string) ([]violation, error) {
 
 		chartType := chart.Annotations[chartTypeAnnotation]
 		if !allowedChartTypes[chartType] {
-			violations = append(violations, newViolation(chartName, "invalid-chart-type", chartRel, "Chart.yaml must set annotations.lerian.studio/chart-type to single-service, multi-component, or dependency-wrapper"))
+			violations = append(violations, newViolation(chartName, "invalid-chart-type", chartRel, "Chart.yaml must set annotations.lerian.studio/chart-type to single-service, multi-component, dependency-wrapper, or library"))
 		}
 
-		if chart.Type != "application" {
-			violations = append(violations, newViolation(chartName, "invalid-chart-kind", chartRel, "Chart.yaml type must be application"))
+		isLibrary := chart.Type == "library"
+		if chart.Type != "application" && !isLibrary {
+			violations = append(violations, newViolation(chartName, "invalid-chart-kind", chartRel, "Chart.yaml type must be application or library"))
+		}
+
+		// The library annotation and the Helm chart kind must agree, so an
+		// application chart cannot claim chart-type: library to skip requirements.
+		if (chartType == "library") != isLibrary {
+			violations = append(violations, newViolation(chartName, "chart-type-mismatch", chartRel, "annotations.lerian.studio/chart-type: library requires (and only applies to) Chart.yaml type: library"))
 		}
 
 		for _, required := range []string{"README.md", "values.yaml"} {
@@ -258,7 +275,7 @@ func collectViolations(root string) ([]violation, error) {
 		}
 		violations = append(violations, validateReadmeContract(root, chartDir, chartName, chartType)...)
 
-		if chartType != "dependency-wrapper" {
+		if chartType != "dependency-wrapper" && !isLibrary {
 			valuesTemplate := filepath.Join(chartDir, "values-template.yaml")
 			if !fileExists(valuesTemplate) {
 				violations = append(violations, newViolation(chartName, "missing-values-template", rel(root, valuesTemplate), "application charts must provide values-template.yaml"))
@@ -425,7 +442,7 @@ var configMapKindPattern = regexp.MustCompile(`(?m)^\s*kind:\s*ConfigMap\s*$`)
 // configMapDataKeyPattern captures a data-block key/value in a ConfigMap
 // template, e.g.
 //
-//	  SOME_PASSWORD: {{ .Values.x }}
+//	SOME_PASSWORD: {{ .Values.x }}
 //
 // Group 1 is the key name, group 2 the (template) value text. Pure-template
 // lines ({{- if ... }}, comments) do not match because they lack the `KEY:`
@@ -1021,6 +1038,18 @@ func buildRenderInventory(root string) ([]renderRow, error) {
 	return buildRenderRows(root, nil, "")
 }
 
+func isLibraryChart(chartDir string) bool {
+	data, err := os.ReadFile(filepath.Join(chartDir, "Chart.yaml"))
+	if err != nil {
+		return false
+	}
+	var c chartYAML
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return false
+	}
+	return c.Type == "library"
+}
+
 func buildRenderGate(root string, chartSelection map[string]bool, sampleValuesDir string) ([]renderRow, error) {
 	rows, err := buildRenderRows(root, chartSelection, sampleValuesDir)
 	if err != nil {
@@ -1056,6 +1085,16 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 		}
 		row := renderRow{Chart: chartName}
 
+		// Library charts are not installable (helm template fails); their helpers
+		// are exercised through the consumer charts, so skip the render gate.
+		if isLibraryChart(chartDir) {
+			row.Status = "ok"
+			row.Class = "skipped-library"
+			row.Detail = "library chart — not installable; helpers validated via consumer charts"
+			rows = append(rows, row)
+			continue
+		}
+
 		deps, err := chartDependencies(chartDir)
 		if err != nil {
 			return nil, err
@@ -1071,13 +1110,25 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			return nil, err
 		}
 
+		// Local library dependencies referenced via `file://<relpath>` (e.g.
+		// lerian-common) live outside the copied chart, so `helm dependency
+		// build` cannot resolve them in the isolated temp workspace. Materialize
+		// each such sibling at the same relative location so the file:// path
+		// resolves exactly as it does in the source tree.
+		if err := materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart, deps); err != nil {
+			_ = os.RemoveAll(tmpRoot)
+			return nil, err
+		}
+
 		helmEnv, err := isolatedHelmEnv(tmpRoot)
 		if err != nil {
 			_ = os.RemoveAll(tmpRoot)
 			return nil, err
 		}
 
-		if out, err := addDependencyRepositories(tmpChart, tmpRoot, helmEnv); err != nil {
+		if out, err := retryHelm(func() (string, error) {
+			return addDependencyRepositories(tmpChart, tmpRoot, helmEnv)
+		}); err != nil {
 			row.Status = "fail"
 			row.Class = "missing-dependency"
 			row.Detail = oneLine(out)
@@ -1086,7 +1137,9 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
-		if out, err := runHelmWithEnv(tmpRoot, helmEnv, "dependency", "build", tmpChart); err != nil {
+		if out, err := retryHelm(func() (string, error) {
+			return runHelmWithEnv(tmpRoot, helmEnv, "dependency", "build", tmpChart)
+		}); err != nil {
 			row.Status = "fail"
 			row.Class = "missing-dependency"
 			row.Detail = oneLine(out)
@@ -1140,16 +1193,31 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
+		// A chart that pins its own namespace renders into two at once here: the
+		// pinned one and whatever helm was given. This assertion catches a
+		// workload that landed in one while its ServiceAccount landed in the
+		// other, which no `helm template` exit code reports and which stops the
+		// pod being created at all. The renders above pass no -n, so "default"
+		// is the namespace an unset metadata.namespace resolves to.
+		if msg := serviceAccountNamespaceMessage(normalOut, "default"); msg != "" {
+			row.Status = "fail"
+			row.Class = "service-account-namespace"
+			row.Detail = appendDetail(row.Detail, "release "+chartName+": "+msg)
+			rows = append(rows, row)
+			_ = os.RemoveAll(tmpRoot)
+			continue
+		}
+
 		// H1: Bitnami release-name collapse. When the release name equals a
 		// bundled Bitnami subchart name (or alias), common.names.dependency.fullname
 		// collapses <release>-<subchart> to just <subchart>; any app helper that
 		// hardcodes <release>-<subchart> instead would then reference a Secret that
 		// no longer exists. Render once per Bitnami dependency under that release
 		// name and re-run the dangling-ref assertion to catch that whole bug class.
-		collapseDetail, collapseFailed := runCollapseRenders(tmpRoot, tmpChart, helmEnv, chartName, bitnamiReleaseNames(chartName, deps), templateArgs)
+		collapseDetail, collapseClass, collapseFailed := runCollapseRenders(tmpRoot, tmpChart, helmEnv, chartName, bitnamiReleaseNames(chartName, deps), templateArgs)
 		if collapseFailed {
 			row.Status = "fail"
-			row.Class = "dangling-secret-ref"
+			row.Class = collapseClass
 			row.Detail = appendDetail(row.Detail, collapseDetail)
 			rows = append(rows, row)
 			_ = os.RemoveAll(tmpRoot)
@@ -1206,24 +1274,29 @@ func bitnamiReleaseNames(chartName string, deps []chartDependency) []string {
 }
 
 // runCollapseRenders renders the chart once per collapse release name and runs
-// the dangling-ref assertion on each. It returns a one-line detail describing
-// the renders performed (or the first failure) and whether any render exposed a
-// dangling secret reference.
-func runCollapseRenders(tmpRoot, tmpChart string, env []string, chartName string, releaseNames []string, baseArgs []string) (string, bool) {
+// the dangling-ref assertions on each. It returns a one-line detail describing
+// the renders performed (or the first failure), the failure class for that
+// failure, and whether any render failed. A host that resolves nowhere is not a
+// dangling Secret, so the two carry different classes: reading "secret" in the
+// summary column sends whoever triages it looking for the wrong thing.
+func runCollapseRenders(tmpRoot, tmpChart string, env []string, chartName string, releaseNames []string, baseArgs []string) (string, string, bool) {
 	if len(releaseNames) == 0 {
-		return "", false
+		return "", "", false
 	}
 	for _, release := range releaseNames {
 		args := append([]string{"template", release, tmpChart}, baseArgs[3:]...)
 		out, err := runHelmWithEnv(tmpRoot, env, args...)
 		if err != nil {
-			return fmt.Sprintf("collapse render (release %q) failed: %s", release, oneLine(out)), true
+			return fmt.Sprintf("collapse render (release %q) failed: %s", release, oneLine(out)), classifyTemplateFailure(out), true
 		}
 		if msg := danglingSecretRefMessage(out); msg != "" {
-			return fmt.Sprintf("collapse render (release %q): %s", release, msg), true
+			return fmt.Sprintf("collapse render (release %q): %s", release, msg), "dangling-secret-ref", true
+		}
+		if msg := danglingCollapseHostMessage(out, release, chartName); msg != "" {
+			return fmt.Sprintf("collapse render (release %q): %s", release, msg), "dangling-host-ref", true
 		}
 	}
-	return fmt.Sprintf("collapse renders passed for release name(s) %s", strings.Join(releaseNames, ", ")), false
+	return fmt.Sprintf("collapse renders passed for release name(s) %s", strings.Join(releaseNames, ", ")), "", false
 }
 
 // chartDependencies reads the dependency list from a chart's Chart.yaml.
@@ -1301,6 +1374,276 @@ func danglingSecretRefMessage(rendered string) string {
 	}
 	sort.Strings(missing)
 	return "secret reference(s) point at non-rendered Secret(s): " + strings.Join(missing, ", ")
+}
+
+// serviceAccountNamespaceMessage returns a non-empty message when a rendered
+// workload names a ServiceAccount that the same release renders into a
+// different namespace from the workload itself.
+//
+// A ServiceAccount is namespaced, so the kubelet resolves it in the workload's
+// own namespace and nowhere else. A chart that pins its workloads to a fixed
+// namespace and leaves its ServiceAccount on the release namespace therefore
+// renders, installs, reports STATUS: deployed, and then never creates a pod:
+// the ReplicaSet fails admission with "serviceaccount not found", where nobody
+// looks. product-console shipped exactly that. A missing namespace on both
+// sides is fine, since both then take the release namespace.
+//
+// A ServiceAccount this release does not render is left alone: it is either
+// "default" or provisioned out of band, and this gate has nothing to say about
+// either.
+//
+// releaseNamespace is what an unset metadata.namespace resolves to, and it has
+// to be supplied rather than assumed: a chart that writes .Release.Namespace on
+// one side and nothing on the other agrees with itself in every install, and
+// reading that as a mismatch is a false positive, which is exactly what the
+// reporter chart produced.
+func serviceAccountNamespaceMessage(rendered, releaseNamespace string) string {
+	rendered = stripNonManifest(rendered)
+	saNamespaces := map[string]map[string]bool{}
+	type workload struct{ kind, name, namespace, account string }
+	var workloads []workload
+
+	dec := yaml.NewDecoder(strings.NewReader(rendered))
+	for {
+		var doc yaml.Node
+		if err := dec.Decode(&doc); err != nil {
+			break
+		}
+		var m map[string]interface{}
+		if err := doc.Decode(&m); err != nil || m == nil {
+			continue
+		}
+		kind, _ := m["kind"].(string)
+		name := nestedString(m, "metadata", "name")
+		namespace := nestedString(m, "metadata", "namespace")
+		if namespace == "" {
+			namespace = releaseNamespace
+		}
+		if kind == "ServiceAccount" {
+			if name != "" {
+				if saNamespaces[name] == nil {
+					saNamespaces[name] = map[string]bool{}
+				}
+				saNamespaces[name][namespace] = true
+			}
+			continue
+		}
+		// Read the account off any pod template, however deeply nested (a
+		// CronJob carries two levels), rather than naming every workload kind.
+		if account := findServiceAccountName(m); account != "" {
+			workloads = append(workloads, workload{kind, name, namespace, account})
+		}
+	}
+
+	seen := map[string]bool{}
+	var missing []string
+	for _, w := range workloads {
+		rendered, ok := saNamespaces[w.account]
+		if !ok || rendered[w.namespace] {
+			continue
+		}
+		var namespaces []string
+		for ns := range rendered {
+			namespaces = append(namespaces, ns)
+		}
+		sort.Strings(namespaces)
+		entry := fmt.Sprintf("%s/%s in %s uses ServiceAccount %q, rendered in %s",
+			w.kind, w.name, w.namespace, w.account, strings.Join(namespaces, ", "))
+		if seen[entry] {
+			continue
+		}
+		seen[entry] = true
+		missing = append(missing, entry)
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(missing)
+	return "ServiceAccount(s) rendered outside the namespace of the workload using them: " + strings.Join(missing, "; ")
+}
+
+// findServiceAccountName returns the first serviceAccountName found anywhere in
+// a decoded manifest, which is the pod spec's in every workload kind.
+func findServiceAccountName(node interface{}) string {
+	switch v := node.(type) {
+	case map[string]interface{}:
+		if account, ok := v["serviceAccountName"].(string); ok && account != "" {
+			return account
+		}
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			if account := findServiceAccountName(v[key]); account != "" {
+				return account
+			}
+		}
+	case []interface{}:
+		for _, child := range v {
+			if account := findServiceAccountName(child); account != "" {
+				return account
+			}
+		}
+	}
+	return ""
+}
+
+// collapseHostPattern matches an in-cluster Service FQDN
+// (<name>.<namespace>.svc.cluster.local) anywhere inside a rendered value, so a
+// host written bare and a host written inside a URL are read the same way.
+// Group 1 is the Service name, group 2 its namespace.
+var collapseHostPattern = regexp.MustCompile(`([a-z0-9][a-z0-9.-]*?)\.([a-z0-9][a-z0-9-]*)\.svc\.cluster\.local`)
+
+// knownCollapseHostDrift lists "<chart>:<KEY>" pairs that still build their host
+// by hand and are known to miss the collapse, where KEY is the ConfigMap data
+// key or the container env name carrying the host. Each entry MUST carry a
+// justification, and it is a queue of work rather than an exemption: fix the
+// chart and delete the line. The waiver is per key, so any OTHER host in the same
+// chart is still asserted.
+var knownCollapseHostDrift = map[string]bool{
+	// plugin-br-bank-transfer builds both of these with
+	// printf "%s-<subchart>-primary" .Release.Name (templates/configmap.yaml,
+	// templates/migrations.yaml), so a release named after the datastore renders
+	// postgresql-postgresql-primary / valkey-valkey-primary while the subchart
+	// creates postgresql-primary / valkey-primary. Real defects, the same class
+	// as the one this assertion was added for, but they belong to that chart's
+	// own change: both are fixed by resolving the name through
+	// lerian-common.dependency.fullname.
+	"plugin-br-bank-transfer:POSTGRES_HOST": true,
+	"plugin-br-bank-transfer:REDIS_HOST":    true,
+}
+
+// danglingCollapseHostMessage is the second half of the H1 assertion, for hosts
+// rather than Secret references. It returns a non-empty message when a rendered
+// value names an in-cluster Service FQDN built from the release name that the
+// same render does not create.
+//
+// Both places a chart writes a host are read: ConfigMap data, and container env
+// entries with a literal value. The second is not hypothetical -- the waived
+// plugin-br-bank-transfer entries below build the same wrong host in a Job's env
+// as in its ConfigMap, and a ConfigMap-only scan would call that fixed once half
+// of it was.
+//
+// Only the collapse renders call it, which is what keeps it narrow: there the
+// release name IS a bundled subchart name, so a host starting with it is the
+// chart addressing its own bundled datastore, and the only question is whether
+// the helper honoured the collapse or rebuilt "<release>-<subchart>" by hand. An
+// ordinary cross-release FQDN (a sibling product in its own namespace) does not
+// start with the release name and is left alone.
+func danglingCollapseHostMessage(rendered, release, chartName string) string {
+	rendered = stripNonManifest(rendered)
+	// Keyed "<name>.<namespace>": a Service of the right name in the wrong
+	// namespace is still a host that resolves nowhere, and that half of the bug
+	// is what a name-only set would hide. A Service rendered without an explicit
+	// namespace takes whichever one helm is given, which the caller does not pass
+	// here, so it is recorded under every namespace instead of guessed at.
+	serviceKeys := map[string]bool{}
+	serviceNamesAnyNamespace := map[string]bool{}
+	type configValue struct{ key, value string }
+	var configValues []configValue
+
+	dec := yaml.NewDecoder(strings.NewReader(rendered))
+	for {
+		var doc yaml.Node
+		if err := dec.Decode(&doc); err != nil {
+			// EOF or a decode error: stop scanning rather than crash the gate,
+			// matching danglingSecretRefMessage.
+			break
+		}
+		var m map[string]interface{}
+		if err := doc.Decode(&m); err != nil || m == nil {
+			continue
+		}
+		switch kind, _ := m["kind"].(string); kind {
+		case "Service":
+			if name := nestedString(m, "metadata", "name"); name != "" {
+				if ns := nestedString(m, "metadata", "namespace"); ns != "" {
+					serviceKeys[name+"."+ns] = true
+				} else {
+					serviceNamesAnyNamespace[name] = true
+				}
+			}
+		case "ConfigMap":
+			data, _ := m["data"].(map[string]interface{})
+			for key, value := range data {
+				if s, ok := value.(string); ok {
+					configValues = append(configValues, configValue{key, s})
+				}
+			}
+		default:
+			for _, e := range collectLiteralEnv(m) {
+				configValues = append(configValues, configValue{e[0], e[1]})
+			}
+		}
+	}
+
+	seen := map[string]bool{}
+	var missing []string
+	for _, cv := range configValues {
+		for _, match := range collapseHostPattern.FindAllStringSubmatch(cv.value, -1) {
+			name, namespace := match[1], match[2]
+			if !strings.HasPrefix(name, release) {
+				continue
+			}
+			if serviceKeys[name+"."+namespace] || serviceNamesAnyNamespace[name] {
+				continue
+			}
+			if knownCollapseHostDrift[chartName+":"+cv.key] {
+				continue
+			}
+			entry := cv.key + "=" + match[0]
+			if seen[entry] {
+				continue
+			}
+			seen[entry] = true
+			missing = append(missing, entry)
+		}
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(missing)
+	return "rendered host(s) point at non-rendered Service(s): " + strings.Join(missing, ", ")
+}
+
+// collectLiteralEnv walks a decoded manifest and returns every container env
+// entry written as a literal value, as {name, value} pairs. An entry sourcing a
+// Secret, a ConfigMap or a field carries no value and is skipped; the dangling
+// Secret assertion covers those. Every `env:` list is read wherever it sits, so
+// an init container, a Job's pod template and a CronJob's doubly nested one are
+// all included without this having to name each shape.
+func collectLiteralEnv(node interface{}) [][2]string {
+	var out [][2]string
+	var walk func(interface{})
+	walk = func(n interface{}) {
+		switch v := n.(type) {
+		case map[string]interface{}:
+			if entries, ok := v["env"].([]interface{}); ok {
+				for _, entry := range entries {
+					m, ok := entry.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					name, _ := m["name"].(string)
+					value, _ := m["value"].(string)
+					if name != "" && value != "" {
+						out = append(out, [2]string{name, value})
+					}
+				}
+			}
+			for _, child := range v {
+				walk(child)
+			}
+		case []interface{}:
+			for _, child := range v {
+				walk(child)
+			}
+		}
+	}
+	walk(node)
+	return out
 }
 
 // stripNonManifest drops leading non-YAML banner lines (helm warnings, NOTES)
@@ -1447,6 +1790,32 @@ func addDependencyRepositories(chartDir, workDir string, env []string) (string, 
 	return "", nil
 }
 
+// retryHelm runs a helm network operation (repo add/update, dependency build) up
+// to 3 times with a short linear backoff. These operations pull external subcharts
+// from remote (Bitnami/OCI) repositories whose availability is flaky in CI; a
+// transient fetch failure would otherwise fail the whole `--all` render gate and
+// red an unrelated chart's PR. A genuinely missing/unresolvable dependency still
+// fails all attempts and is reported exactly as before — the retry smooths
+// transient errors, it does not mask deterministic breakage.
+func retryHelm(fn func() (string, error)) (string, error) {
+	const attempts = 5
+	var (
+		out string
+		err error
+	)
+	for i := 1; i <= attempts; i++ {
+		if out, err = fn(); err == nil {
+			return out, nil
+		}
+		if i < attempts {
+			// Linear backoff (3s, 6s, 9s, 12s -> ~30s total) to ride out a
+			// rate-limited or briefly-unavailable upstream chart repository.
+			time.Sleep(time.Duration(i) * 3 * time.Second)
+		}
+	}
+	return out, err
+}
+
 func runHelmWithEnv(workDir string, env []string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -1485,6 +1854,58 @@ func writeRenderInventory(path string, rows []renderRow) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(builder.String()), 0o644)
+}
+
+// materializeLocalDependencies copies each `file://<relpath>` dependency source
+// into the temp workspace at the same relative path the chart references, so an
+// isolated `helm dependency build` resolves local library charts (e.g.
+// lerian-common) exactly as it would in the repository tree. Missing sources are
+// left to `helm dependency build` to report as a normal missing-dependency.
+func materializeLocalDependencies(root, chartDir, tmpRoot, tmpChart string, deps []chartDependency) error {
+	for _, dependency := range deps {
+		repository := strings.TrimSpace(dependency.Repository)
+		if !strings.HasPrefix(repository, "file://") {
+			continue
+		}
+		relPath := strings.TrimPrefix(repository, "file://")
+		// Reject absolute paths (e.g. file:///tmp/lib → "/tmp/lib"): Helm resolves
+		// them verbatim at render time, escaping the repo, whereas filepath.Join
+		// below would fold the leading slash and pass the containment check — a
+		// mismatch that would let an absolute dependency read outside root.
+		if filepath.IsAbs(relPath) {
+			return fmt.Errorf("local dependency %q uses an absolute path, which is not supported", repository)
+		}
+		srcDir := filepath.Clean(filepath.Join(chartDir, relPath))
+		// Containment: a crafted `file://../../..` path in Chart.yaml must not let
+		// the copy read outside the repository tree or write outside the isolated
+		// render workspace. Legitimate local libraries (e.g. file://../lerian-common)
+		// still resolve to a sibling under root/tmpRoot and pass the check.
+		if !withinDir(root, srcDir) {
+			return fmt.Errorf("local dependency %q resolves outside the repository root (%s)", repository, srcDir)
+		}
+		if !dirExists(srcDir) {
+			continue
+		}
+		destDir := filepath.Clean(filepath.Join(tmpChart, relPath))
+		if !withinDir(tmpRoot, destDir) {
+			return fmt.Errorf("local dependency %q resolves outside the render workspace (%s)", repository, destDir)
+		}
+		if err := copyDir(srcDir, destDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// withinDir reports whether target is base itself or nested under it (after path
+// cleaning), used to contain `file://` dependency paths so a crafted Chart.yaml
+// cannot escape the repo/workspace via `..` traversal.
+func withinDir(base, target string) bool {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
 }
 
 func copyDir(src, dst string) error {

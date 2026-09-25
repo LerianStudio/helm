@@ -1,5 +1,1297 @@
 # Otel-collector-lerian Changelog
 
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Exposed rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Exposed rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors:**
+  - @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Expose `rollouts-pod-template-hash` on spanmetrics for enhanced observability and tracking.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Exposed rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Expose `rollouts-pod-template-hash` on spanmetrics.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements**
+  - Added an upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements**
+  - Added an upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Exposed rollouts-pod-template-hash on spanmetrics for better traceability and monitoring.
+
+- **Improvements:**
+  - Added an upgrade guide for otel-collector-lerian v4.2.0 to assist users with the transition.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements**
+  - Added upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements**
+  - Added upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Exposed rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements**
+  - Added upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements**
+  - Added upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements**
+  - Added upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Exposed `rollouts-pod-template-hash` on spanmetrics to enhance observability and debugging capabilities.
+
+- **Improvements**
+  - Added an upgrade guide for otel-collector-lerian v4.2.0 to assist users in transitioning smoothly to the new version.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics for enhanced observability and tracking.
+
+- **Improvements**
+  - Updated CHANGELOG for version 4.3.0 to reflect recent changes and enhancements.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements:**
+  - Added upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose `rollouts-pod-template-hash` on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose `rollouts-pod-template-hash` on spanmetrics for enhanced traceability and analysis.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Exposed `rollouts-pod-template-hash` on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features:**
+  - Expose `rollouts-pod-template-hash` on spanmetrics.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose `rollouts-pod-template-hash` on spanmetrics for enhanced observability.
+
+- **Improvements**
+  - Added an upgrade guide for otel-collector-lerian v4.2.0 to assist users with the transition.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Improvements**
+  - Added upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose `rollouts-pod-template-hash` on spanmetrics.
+
+- **Improvements**
+  - Added upgrade guide for otel-collector-lerian v4.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose `rollouts-pod-template-hash` on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
+
+- **Features**
+  - Expose rollouts-pod-template-hash on spanmetrics.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.2.0...otel-collector-lerian-v4.3.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity.
+  - Dropped volatile spanmetrics dimensions to improve stability.
+  - Removed duplicate GOMEMLIMIT setting and reduced kubeletstats DPM by half.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Addressed duplicate GOMEMLIMIT issue and reduced kubeletstats DPM by half.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Addressed duplicate GOMEMLIMIT issue and reduced kubeletstats DPM by half to improve performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Resolved duplicate GOMEMLIMIT issue and halved kubeletstats DPM for improved performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Addressed duplicate GOMEMLIMIT issue and reduced kubeletstats DPM by half for improved performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Features**
+  - Released version 4.2.0.
+
+- **Fixes**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Features**
+  - Released version 4.2.0 of otel-collector-lerian.
+
+- **Fixes**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Removed duplicate GOMEMLIMIT and halved kubeletstats DPM to optimize performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Removed duplicate GOMEMLIMIT and reduced kubeletstats DPM by half to optimize performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Addressed duplicate GOMEMLIMIT issue and reduced kubeletstats DPM by half.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Features**
+  - Released version 4.2.0 of otel-collector-lerian.
+
+- **Fixes**
+  - Pinned spanmetrics resource key and refreshed the README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Removed duplicate GOMEMLIMIT and reduced kubeletstats DPM by half to improve performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Features:**
+  - Released version 4.2.0.
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and updated README.
+  - Dropped volatile spanmetrics dimensions.
+  - Removed duplicate GOMEMLIMIT and reduced kubeletstats DPM by half.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+- **Contributors:**
+  - @gauchito91
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and accuracy.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Addressed duplicate GOMEMLIMIT issue and halved kubeletstats DPM for improved performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README for improved documentation.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Addressed duplicate GOMEMLIMIT issue and reduced kubeletstats DPM by half for better performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README to ensure accurate documentation and functionality.
+  - Dropped volatile spanmetrics dimensions to improve stability and performance.
+  - Removed duplicate GOMEMLIMIT and halved kubeletstats DPM to optimize memory usage and processing efficiency.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes**
+  - Pinned spanmetrics resource key and refreshed README for better clarity and usability.
+  - Dropped volatile spanmetrics dimensions to enhance stability.
+  - Removed duplicate GOMEMLIMIT setting and halved kubeletstats DPM for optimized performance.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.2.0)
+
+- **Fixes:**
+  - Pinned spanmetrics resource key and refreshed README.
+  - Dropped volatile spanmetrics dimensions.
+  - Dropped duplicate GOMEMLIMIT and halved kubeletstats DPM.
+
+Contributors: @gauchito91, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.1.0...otel-collector-lerian-v4.2.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and performed a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals with a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention (semconv) transformation.
+
+- **Improvements:**
+  - Refreshed README for otel-collector-lerian for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and introduced a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed README for otel-collector-lerian for the 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Standardized processors, pod identity, and semantic convention transformation in otel-collector-lerian.
+  - Applied midaz namespace filter across all signals with a deprecation rename.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Standardized processors, pod identity, and semantic convention transformation in otel-collector-lerian.
+  - Applied midaz namespace filter across all signals with a deprecation rename.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment variable injection scope and transform/normalize_http_semconv scope.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and introduced a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transform.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and performed deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed README for otel-collector-lerian for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied Midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention (semconv) transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention (semconv) transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename. (Commit: 6521ba7d)
+  - Standardized processors, pod identity, and semantic convention transformation. (Commit: 3e18fa66)
+
+- **Improvements:**
+  - Refreshed the otel-collector-lerian README for the 4.1 release. (Commit: 52c8f603)
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and performed a deprecation rename in otel-collector-lerian.
+  - Standardized processors, pod identity, and semantic convention (semconv) transform for otel-collector-lerian.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed README for otel-collector-lerian for version 4.1 release.
+  - Clarified OTEL environment injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Added an upgrade guide for otel-collector-lerian v4.0.0.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented a deprecation rename.
+  - Standardized processors, pod identity, and semantic conventions transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and deprecated certain names.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for version 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and implemented deprecation rename.
+  - Standardized processors, pod identity, and semantic convention transformation.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
+
+- **Features:**
+  - Applied midaz namespace filter across all signals and renamed deprecated elements in otel-collector-lerian.
+  - Standardized processors, pod identity, and semantic convention (semconv) transformations in otel-collector-lerian.
+
+- **Improvements:**
+  - Refreshed otel-collector-lerian README for the 4.1 release.
+  - Clarified OTEL environment variable injection scope and transform/normalize_http_semconv scope in documentation.
+
+Contributors: @gauchito91, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.0.0...otel-collector-lerian-v4.1.0)
+
+---
+
 ## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.1.0)
 
 - **Features:**

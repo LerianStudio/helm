@@ -5,7 +5,27 @@
   "properties": {
     "common": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "sso": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "baseUrl": {
+              "type": "string",
+              "description": "Scheme + host (plus path prefix) the console is served from. The chart appends the console SSO callback route. Empty omits the key."
+            },
+            "callbackUrl": {
+              "type": "string",
+              "description": "Literal full callback URL, replacing composition from baseUrl. Absolute http(s) URL ending in the console SSO callback route. Mutually exclusive with baseUrl."
+            },
+            "allowCustomCallbackPath": {
+              "type": "boolean",
+              "description": "Lift the console-route path check on callbackUrl. Only for a deployment that answers SSO on another path."
+            }
+          }
+        }
+      }
     },
     "identity": {
       "type": "object",
@@ -31,6 +51,22 @@
       },
       "additionalProperties": true
     },
+    "caradhras": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        },
+        "ui": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
     "auth-database": {
       "type": "object",
       "additionalProperties": true
@@ -45,7 +81,84 @@
     },
     "global": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "cloud": {
+          "type": "string",
+          "enum": [
+            "",
+            "aws",
+            "gcp",
+            "azure"
+          ],
+          "description": "Managed-cloud topology preset. Empty = bundled in-cluster infra (plaintext)."
+        },
+        "datastores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host": {},
+              "port": {},
+              "user": {},
+              "ssl": {},
+              "tls": {},
+              "caCert": {}
+            }
+          },
+          "description": "Env-wide SHARED datastore masks (set once per environment)."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {}
+          },
+          "description": "Env-wide environment name. Consumed by lerian-common.globalValue (block \"env\")."
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue (block \"multiTenant\")."
+        },
+        "serviceDiscovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "address": {},
+            "tls": {},
+            "tlsSkipVerify": {},
+            "workload": {},
+            "preferView": {},
+            "internalScheme": {},
+            "externalPort": {}
+          },
+          "description": "Env-wide service discovery (Consul) tuning. Consumed by lerian-common.serviceDiscovery.env."
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {}
+          },
+          "description": "Env-wide telemetry gate. Consumed by lerian-common.globalValue (block \"observability\")."
+        },
+        "ingress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "className": {},
+            "annotations": {},
+            "tls": {},
+            "domain": {}
+          },
+          "description": "Env-wide ingress shared contract (className/annotations/tls/domain). Consumed by lerian-common.ingress; per-component ingress.* always wins."
+        }
+      }
     }
   }
 }

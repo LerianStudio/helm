@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-caradhras.fullname" . }}
+  labels:
+    {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.caradhras.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.caradhras.autoscaling.enabled }}
+  replicas: {{ include "caradhras.replicaCount" . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-caradhras.selectorLabels" (dict "context" . "name" .Values.caradhras.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 8 }}
+    spec:
+      {{- with .Values.auth.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-dependencies
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
+          image: busybox
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-auth.fullname" . }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              for svc in "$DB_HOST:$DB_PORT" "$REDIS_HOST:$REDIS_PORT";
+              do
+                echo "Checking $svc...";
+                while ! nc -z $(echo $svc | cut -d: -f1) $(echo $svc | cut -d: -f2); do
+                  echo "$svc is not ready yet, waiting...";
+                  sleep 5;
+                done;
+                echo "$svc is ready!";
+              done;
+      containers:
+        - name: {{ include "plugin-caradhras.fullname" . }}
+          # Caradhras (beego) writes to its working dir at runtime — logs/caradhras.log and
+          # tmp/<session> files — so it cannot run on a read-only root. Disable it for THIS
+          # container only; the init container and the other components keep
+          # readOnlyRootFilesystem=true.
+          securityContext:
+            {{- toYaml (omit .Values.auth.securityContext "readOnlyRootFilesystem") | nindent 12 }}
+            readOnlyRootFilesystem: false
+          image: "{{ include "caradhras.imageRepository" . }}:{{ include "caradhras.imageTag" . }}"
+          imagePullPolicy: {{ include "caradhras.imagePullPolicy" . }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} dbname=${DB_NAME}"
+              exec /server --createDatabase={{- if hasKey .Values.caradhras "createDatabase" }}{{ .Values.caradhras.createDatabase }}{{- else }}false{{- end }}
+          envFrom:
+          - configMapRef:
+              name: {{ include "plugin-caradhras.fullname" . }}
+          env:
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_HOST
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_PORT
+          - name: DB_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_NAME
+          - name: DB_USER
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_USER
+          - name: DB_SSLMODE
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "plugin-auth.fullname" . }}
+                key: DB_SSLMODE
+          {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
+          {{- if include "plugin-caradhras.sessionFromSecret" . }}
+          # Beego session store. Delivered by Secret, never by ConfigMap: the
+          # connection string's third field is the Redis password.
+          - name: redisEndpoint
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "plugin-caradhras.sessionSecretName" . }}
+                key: redisEndpoint
+          {{- end }}
+          {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
+          {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}
+          {{- end }}
+          {{ if (index .Values "otel-collector-lerian").enabled }}
+          - name: "HOST_IP"
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value: "$(HOST_IP):4317"
+          {{ end }}
+          resources:
+            {{- toYaml .Values.caradhras.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.caradhras.readinessProbe.path | default "/api/readyz" }}
+              port: 8000
+            initialDelaySeconds: {{ .Values.caradhras.readinessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.caradhras.readinessProbe.periodSeconds | default 5 }}
+            timeoutSeconds: {{ include "caradhras.readinessProbeTimeoutSeconds" . }}
+            successThreshold: {{ .Values.caradhras.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.caradhras.readinessProbe.failureThreshold | default 3 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.caradhras.livenessProbe.path | default "/api/health" }}
+              port: 8000
+            initialDelaySeconds: {{ .Values.caradhras.livenessProbe.initialDelaySeconds | default 20 }}
+            periodSeconds: {{ .Values.caradhras.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ include "caradhras.livenessProbeTimeoutSeconds" . }}
+            successThreshold: {{ .Values.caradhras.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.caradhras.livenessProbe.failureThreshold | default 3 }}
+      {{- with .Values.auth.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

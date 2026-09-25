@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.6.0` | 3.7.8 | 3.7.8 |
+| `9.0.0` | 3.8.3 | 3.8.2 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -35,9 +35,9 @@ For implementation and configuration details, see the [README](https://charts.le
 
 #### Application Version Mapping
 
-| Chart Version | Auth Version | Identity Version |
-| :---: | :---: | :---: |
-| `8.3.0` | 2.6.7 | 2.4.5 |
+| Chart Version | Auth Version | Identity Version | Caradhras Version |
+| :---: | :---: | :---: | :---: |
+| `9.2.0` | 3.1.0 | 3.1.0 | 1.2.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -50,7 +50,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `7.3.0` | 3.4.0 | `3.0.0` |
+| `8.0.1` | 3.4.0 | `3.0.0` |
 
 -----------------
 
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.1.1` | 2.1.2 | 2.1.2 |
+| `4.2.0` | 3.0.0 | 3.0.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -77,33 +77,36 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `1.3.0` | 1.0.0 |
+| `2.0.0` | 1.0.0 |
 -----------------
 
 
 
-### Plugin BR Pix Direct JD
+### Plugin BR Pix JD
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/direct-pix-jd) for details.
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-jd).
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-direct-jd).
+Multi-component chart (`api` + `worker`) for the Go PIX Direct plugin.
+The app publishes one image per entry point — `plugin-br-pix-jd` (`cmd/app`) and
+`plugin-br-pix-jd-worker` (`cmd/worker`) — and the release pipeline builds only the
+component that changed, so their tags may legitimately differ.
 
 #### Application Version Mapping
 
-| Chart Version | Pix Version | Job Version |
+| Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.0.0` | 1.2.1-beta.11 | 1.2.1-beta.12 |
+| `0.4.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
 -----------------
 
-### Plugin BR Pix Switch
+### Plugin BR Pix Lerian
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-switch).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-lerian).
 
 #### Application Version Mapping
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0-beta.1 |
+| `1.0.0` | 1.0.0-beta.337 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -116,7 +119,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `3.5.0` | 1.8.0 | 1.8.0 | 1.8.0 | 1.8.0 | 1.8.0 |
+| `4.0.0` | 1.10.0 | 1.10.0 | 1.10.0 | 1.10.0 | 1.10.0 |
 
 -----------------
 
@@ -128,7 +131,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0-beta.3` | 1.0.0-beta.9 |
+| `1.1.0` | 1.0.0-beta.9 |
 -----------------
 
 ### Fetcher
@@ -142,6 +145,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
 | `3.1.0` | 3.0.2 | 3.0.2 |
+-----------------
+
+### Lender
+
+For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
+
+#### Application Version Mapping
+
+| Chart Version | Lender Version |
+| :---: | :---: |
+| `1.0.0-beta.1` | 1.0.0-beta.48 |
 -----------------
 
 ### Tracer
@@ -165,7 +181,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `4.1.0` | 0.142.0 |
+| `4.2.0` | 0.142.0 |
 -----------------
 
 ### Product Console
@@ -178,7 +194,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `3.2.0` | 1.10.0 |
+| `4.0.0` | 1.10.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -191,16 +207,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: |
 | `2.2.0` | 1.0.0 |
 
-
-### Go Boilerplate DDD
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/go-boilerplate-ddd).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `2.2.0-beta.1` | 1.0.0 |
 -----------------
 
 ### Notifications
@@ -214,13 +220,28 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0-beta.4` | 0.1.0 |
 -----------------
 
-### BR SISBAJUD
+### BR Consignado GW
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sisbajud).
+API gateway and same-origin operator console for the Dataprev consignado rail.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-consignado-gw).
 
 #### Application Version Mapping
 
-| Chart Version | App Version | Migrations Version |
-| :---: | :---: | :---: |
-| `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.1.0` | `1.3.0-beta.36` |
+-----------------
+
+### Lerian Common (Library)
+
+Library chart consumed by other Lerian charts — renders nothing on its own.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-common).
+
+#### Application Version Mapping
+
+| Chart Version |
+| :---: |
+| `2.1.0` |
 -----------------

@@ -1,37 +1,44 @@
+{{- $cm := .Values.fees.configmap | default dict }}
+{{- $ded := .Values.datastores | default dict }}
+{{- $dv := "lerian-common.datastore.value" }}
+{{- /* Single-sourced so OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT can't drift from
+   ENV_NAME (same fix already applied to midaz/ledger and midaz/crm). */ -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "plugin-fees.fullname" . }}
   labels:
-    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }} 
+    {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }}
 data:
   # -- Default Environment variables for the plugin-fees
-  ALLOW_INSECURE_TLS: {{ .Values.fees.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  ENV_NAME: {{ .Values.fees.configmap.ENV_NAME | default "development" | quote }}
-  APPLICATION_NAME: {{ .Values.fees.configmap.APPLICATION_NAME | default "plugin-fees" | quote }}
-  DEPLOYMENT_MODE: {{ .Values.fees.configmap.DEPLOYMENT_MODE | default "local" | quote }}
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ENV_NAME: {{ $envName | quote }}
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "plugin-fees" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
 
   # APP
-  SERVER_PORT: {{ .Values.fees.configmap.SERVER_PORT | default "4002" | quote }}
-  SERVER_ADDRESS: {{ .Values.fees.configmap.SERVER_ADDRESS | default ":4002" | quote }}
+  SERVER_PORT: {{ $cm.SERVER_PORT | default "4002" | quote }}
+  SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4002" | quote }}
   VERSION: {{ .Values.fees.image.tag | default .Chart.AppVersion | quote }}
 
   # READYZ
-  READYZ_DEPENDENCY_TIMEOUT_SECONDS: {{ .Values.fees.configmap.READYZ_DEPENDENCY_TIMEOUT_SECONDS | default "1" | quote }}
-  READYZ_LICENSE_TIMEOUT_SECONDS: {{ .Values.fees.configmap.READYZ_LICENSE_TIMEOUT_SECONDS | default "5" | quote }}
-  READYZ_DRAIN_GRACE_SECONDS: {{ .Values.fees.configmap.READYZ_DRAIN_GRACE_SECONDS | default "10" | quote }}
+  READYZ_DEPENDENCY_TIMEOUT_SECONDS: {{ $cm.READYZ_DEPENDENCY_TIMEOUT_SECONDS | default "1" | quote }}
+  READYZ_LICENSE_TIMEOUT_SECONDS: {{ $cm.READYZ_LICENSE_TIMEOUT_SECONDS | default "5" | quote }}
+  READYZ_DRAIN_GRACE_SECONDS: {{ $cm.READYZ_DRAIN_GRACE_SECONDS | default "10" | quote }}
 
-  # Mongo DB
-  MONGO_URI: {{ .Values.fees.configmap.MONGO_URI | default "mongodb" | quote }}
-  MONGO_HOST: {{ .Values.fees.configmap.MONGO_HOST | default (include "plugin-fees.mongoHost" .) | quote }}
-  MONGO_PORT: {{ .Values.fees.configmap.MONGO_PORT | default "27017" | quote }}
-  MONGO_NAME: {{ .Values.fees.configmap.MONGO_NAME | default "plugin-fees-db" | quote }}
-  MONGO_USER: {{ .Values.fees.configmap.MONGO_USER | default "plugin-fees" | quote }}
-  MONGO_MAX_POOL_SIZE: {{ .Values.fees.configmap.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
-  MONGO_PARAMETERS: {{ .Values.fees.configmap.MONGO_PARAMETERS | default "" | quote }}
-  MONGO_TLS_CA_CERT: {{ .Values.fees.configmap.MONGO_TLS_CA_CERT | default "" | quote }}
-  MONGO_MIN_POOL_SIZE: {{ .Values.fees.configmap.MONGO_MIN_POOL_SIZE | default "10" | quote }}
-  MONGO_MAX_CONN_IDLE_TIME_SECONDS: {{ .Values.fees.configmap.MONGO_MAX_CONN_IDLE_TIME_SECONDS | default "300" | quote }}
+  # Mongo DB (host/port/user/params via lerian-common datastore mask; the rest
+  # stays native passthrough — same split as midaz/crm's productized configmap)
+  MONGO_URI: {{ $cm.MONGO_URI | default "mongodb" | quote }}
+  MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" (include "plugin-fees.mongoHost" .)) | quote }}
+  MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
+  MONGO_NAME: {{ $cm.MONGO_NAME | default "plugin-fees-db" | quote }}
+  MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "user" "nativeKey" "MONGO_USER" "default" "plugin-fees") | quote }}
+  MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
+  MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") | quote }}
+  MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
+  MONGO_MIN_POOL_SIZE: {{ $cm.MONGO_MIN_POOL_SIZE | default "10" | quote }}
+  MONGO_MAX_CONN_IDLE_TIME_SECONDS: {{ $cm.MONGO_MAX_CONN_IDLE_TIME_SECONDS | default "300" | quote }}
 
   # NETWORK
   TRUSTED_PROXIES: {{ .Values.fees.configmap.TRUSTED_PROXIES | default "" | quote }}
@@ -49,81 +56,107 @@ data:
   # LOG LEVEL
   LOG_LEVEL: {{ .Values.fees.configmap.LOG_LEVEL | default "debug" | quote }}
 
-  # OPEN TELEMETRY
-  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.fees.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-fees" | quote }}
-  OTEL_LIBRARY_NAME: {{ .Values.fees.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-fees" | quote }}
+  # OPEN TELEMETRY (identity inline; shared endpoint/env/enable via global.observability)
+  OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "plugin-fees" | quote }}
+  OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-fees" | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.fees.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.fees.configmap.ENV_NAME | default "development" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.fees.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.fees.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.fees.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" $envName) | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
 
-  # AUTH
-  PLUGIN_AUTH_ADDRESS: {{ .Values.fees.configmap.PLUGIN_AUTH_ADDRESS | default "plugin-auth" | quote }}
-  PLUGIN_AUTH_ENABLED: {{ .Values.fees.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
+  # AUTH (shared) — wired to the global.auth contract (native key still wins)
+  PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth:4000") | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
 
-  # MIDAZ COMMUNICATION
-  CLIENT_ID: {{ .Values.fees.configmap.CLIENT_ID | default "ac56c81d4d6d95c0ac12" | quote }}
-  MIDAZ_ONBOARDING_URL: {{ .Values.fees.configmap.MIDAZ_ONBOARDING_URL | default "http://midaz-onboarding.midaz.svc.cluster.local:3000/v1/" | quote }}
-  MIDAZ_TRANSACTION_URL: {{ .Values.fees.configmap.MIDAZ_TRANSACTION_URL | default "http://midaz-transaction.midaz.svc.cluster.local:3002/v1/" | quote }}
+  # MIDAZ COMMUNICATION — defaults match the standard in-cluster Midaz ledger
+  # service name (midaz-ledger.midaz), a single unified service in the
+  # current Midaz topology (the previous defaults assumed separate
+  # "midaz-onboarding"/"midaz-transaction" services from an older split).
+  # CLIENT_ID travels in the Secret next to CLIENT_SECRET (see secrets.yaml)
+  # rather than here — same pairing as MIDAZ_CLIENT_ID/SECRET in other charts.
+  MIDAZ_ONBOARDING_URL: {{ $cm.MIDAZ_ONBOARDING_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1/" | quote }}
+  MIDAZ_TRANSACTION_URL: {{ $cm.MIDAZ_TRANSACTION_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002/v1/" | quote }}
 
   # CORS & RATE LIMIT
-  CORS_ALLOW_ORIGINS: {{ .Values.fees.configmap.CORS_ALLOW_ORIGINS | default "http://localhost:3000" | quote }}
-  RATE_LIMIT_MAX: {{ .Values.fees.configmap.RATE_LIMIT_MAX | default "100" | quote }}
-  RATE_LIMIT_WINDOW_SECONDS: {{ .Values.fees.configmap.RATE_LIMIT_WINDOW_SECONDS | default "60" | quote }}
-  RATE_LIMIT_ENABLED: {{ .Values.fees.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  CORS_ALLOW_ORIGINS: {{ $cm.CORS_ALLOW_ORIGINS | default "http://localhost:3000" | quote }}
+  RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "100" | quote }}
+  RATE_LIMIT_WINDOW_SECONDS: {{ $cm.RATE_LIMIT_WINDOW_SECONDS | default "60" | quote }}
+  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
 
   # CURRENCY
-  DEFAULT_CURRENCY: {{ .Values.fees.configmap.DEFAULT_CURRENCY | default "BRL" | quote }}
+  DEFAULT_CURRENCY: {{ $cm.DEFAULT_CURRENCY | default "BRL" | quote }}
 
   # CACHE
-  PACKAGE_CACHE_ENABLED: {{ .Values.fees.configmap.PACKAGE_CACHE_ENABLED | default "true" | quote }}
-  PACKAGE_CACHE_TTL_SECONDS: {{ .Values.fees.configmap.PACKAGE_CACHE_TTL_SECONDS | default "180" | quote }}
-  BILLING_PACKAGE_CACHE_ENABLED: {{ .Values.fees.configmap.BILLING_PACKAGE_CACHE_ENABLED | default "true" | quote }}
-  BILLING_PACKAGE_CACHE_TTL_SECONDS: {{ .Values.fees.configmap.BILLING_PACKAGE_CACHE_TTL_SECONDS | default "180" | quote }}
-  ACCOUNT_CACHE_ENABLED: {{ .Values.fees.configmap.ACCOUNT_CACHE_ENABLED | default "true" | quote }}
-  ACCOUNT_CACHE_TTL_SECONDS: {{ .Values.fees.configmap.ACCOUNT_CACHE_TTL_SECONDS | default "300" | quote }}
+  PACKAGE_CACHE_ENABLED: {{ $cm.PACKAGE_CACHE_ENABLED | default "true" | quote }}
+  PACKAGE_CACHE_TTL_SECONDS: {{ $cm.PACKAGE_CACHE_TTL_SECONDS | default "180" | quote }}
+  BILLING_PACKAGE_CACHE_ENABLED: {{ $cm.BILLING_PACKAGE_CACHE_ENABLED | default "true" | quote }}
+  BILLING_PACKAGE_CACHE_TTL_SECONDS: {{ $cm.BILLING_PACKAGE_CACHE_TTL_SECONDS | default "180" | quote }}
+  ACCOUNT_CACHE_ENABLED: {{ $cm.ACCOUNT_CACHE_ENABLED | default "true" | quote }}
+  ACCOUNT_CACHE_TTL_SECONDS: {{ $cm.ACCOUNT_CACHE_TTL_SECONDS | default "300" | quote }}
 
   # M2M (Machine-to-Machine)
-  M2M_TARGET_SERVICE: {{ .Values.fees.configmap.M2M_TARGET_SERVICE | default "" | quote }}
-  M2M_CREDENTIAL_CACHE_TTL_SEC: {{ .Values.fees.configmap.M2M_CREDENTIAL_CACHE_TTL_SEC | default "30" | quote }}
+  M2M_TARGET_SERVICE: {{ $cm.M2M_TARGET_SERVICE | default "" | quote }}
+  M2M_CREDENTIAL_CACHE_TTL_SEC: {{ $cm.M2M_CREDENTIAL_CACHE_TTL_SEC | default "30" | quote }}
 
   # AWS
-  AWS_REGION: {{ .Values.fees.configmap.AWS_REGION | default "" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "" | quote }}
 
-  # MULTI TENANT
-  MULTI_TENANT_ENABLED: {{ .Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  {{- if eq (.Values.fees.configmap.MULTI_TENANT_ENABLED | default "false" | toString) "true" }}
-  MULTI_TENANT_URL: {{ required "fees.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_URL | quote }}
-  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.fees.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
-  MULTI_TENANT_ENVIRONMENT: {{ .Values.fees.configmap.MULTI_TENANT_ENVIRONMENT | default "" | quote }}
-  MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.fees.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
-  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ .Values.fees.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
-  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
-  MULTI_TENANT_REDIS_HOST: {{ required "fees.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.fees.configmap.MULTI_TENANT_REDIS_HOST | quote }}
-  MULTI_TENANT_REDIS_PORT: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
-  MULTI_TENANT_REDIS_TLS: {{ .Values.fees.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
-  MULTI_TENANT_TIMEOUT: {{ .Values.fees.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}
-  MULTI_TENANT_CACHE_TTL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
-  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ .Values.fees.configmap.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
+  # MULTI TENANT (gate via global.multiTenant mask; sub-fields stay native —
+  # unlike midaz/crm, this app actually implements full MT, so nothing here
+  # is trimmed, only the toggle is wired to the shared mask)
+  {{- $multiTenantEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") }}
+  MULTI_TENANT_ENABLED: {{ $multiTenantEnabledRaw | quote }}
+  {{- if eq (lower (toString $multiTenantEnabledRaw)) "true" }}
+  MULTI_TENANT_URL: {{ required "fees.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" $cm.MULTI_TENANT_URL | quote }}
+  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ $cm.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
+  MULTI_TENANT_ENVIRONMENT: {{ $cm.MULTI_TENANT_ENVIRONMENT | default "" | quote }}
+  MULTI_TENANT_MAX_TENANT_POOLS: {{ $cm.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
+  MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD | default "5" | quote }}
+  MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ $cm.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC | default "30" | quote }}
+  MULTI_TENANT_REDIS_HOST: {{ required "fees.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" $cm.MULTI_TENANT_REDIS_HOST | quote }}
+  MULTI_TENANT_REDIS_PORT: {{ $cm.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ $cm.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
+  MULTI_TENANT_TIMEOUT: {{ $cm.MULTI_TENANT_TIMEOUT | default "30" | quote }}
+  MULTI_TENANT_CACHE_TTL_SEC: {{ $cm.MULTI_TENANT_CACHE_TTL_SEC | default "120" | quote }}
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "30" | quote }}
   {{- end }}
 
-  SD_ADDRESS: {{ .Values.fees.configmap.SD_ADDRESS | default "localhost:8500       " | quote }}
-  SD_ENABLED: {{ .Values.fees.configmap.SD_ENABLED | default "false" | quote }}
-  SD_EXTERNAL_ADDRESS: {{ .Values.fees.configmap.SD_EXTERNAL_ADDRESS | default "            " | quote }}
-  SD_EXTERNAL_PORT: {{ .Values.fees.configmap.SD_EXTERNAL_PORT | default "               " | quote }}
-  SD_TLS: {{ .Values.fees.configmap.SD_TLS | default "false" | quote }}
-  SD_TLS_SKIP_VERIFY: {{ .Values.fees.configmap.SD_TLS_SKIP_VERIFY | default "false" | quote }}
-  SD_WORKLOAD: {{ .Values.fees.configmap.SD_WORKLOAD | default "                    " | quote }}
-  STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.fees.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "lerian.midaz.fees" | quote }}
-  STREAMING_ENABLED: {{ .Values.fees.configmap.STREAMING_ENABLED | default "false" | quote }}
-  STREAMING_IMPORTANT_EMIT_TIMEOUT_MS: {{ .Values.fees.configmap.STREAMING_IMPORTANT_EMIT_TIMEOUT_MS | default "5000" | quote }}
-  STREAMING_SASL_ALLOW_PLAINTEXT: {{ .Values.fees.configmap.STREAMING_SASL_ALLOW_PLAINTEXT | default "false" | quote }}
-  STREAMING_SASL_MECHANISM: {{ .Values.fees.configmap.STREAMING_SASL_MECHANISM | default "" | quote }}
-  STREAMING_SASL_USERNAME: {{ .Values.fees.configmap.STREAMING_SASL_USERNAME | default "" | quote }}
-  STREAMING_TLS_CA_CERT: {{ .Values.fees.configmap.STREAMING_TLS_CA_CERT | default "     " | quote }}
-  STREAMING_TLS_ENABLED: {{ .Values.fees.configmap.STREAMING_TLS_ENABLED | default "false" | quote }}
+  # =============================================================================
+  # SERVICE DISCOVERY — knob resolves global.serviceDiscovery.enabled as a
+  # fallback (configmap.SD_ENABLED still wins), same fix as STREAMING_ENABLED
+  # below — passing a pre-resolved native-only `enabled` bypasses the helper's
+  # own global.serviceDiscovery.enabled fallback entirely. Server config from
+  # global.serviceDiscovery, endpoints derived from this chart's own
+  # service/ingress. Replaces the previous native SD_* block, which had
+  # whitespace-only (functionally empty) defaults for
+  # EXTERNAL_ADDRESS/EXTERNAL_PORT/WORKLOAD.
+  # =============================================================================
+  {{- $sdEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "serviceDiscovery" "field" "enabled" "nativeKey" "SD_ENABLED" "default" "false") }}
+  {{- $sdEnabled := eq (lower (toString $sdEnabledRaw)) "true" }}
+  SD_ENABLED: {{ $sdEnabledRaw | quote }}
+  {{- include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" $sdEnabled
+        "configmap" $cm
+        "name" (include "plugin-fees.fullname" .)
+        "port" .Values.fees.service.port
+        "namespace" (include "global.namespace" .)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" .Values.fees.ingress))) | nindent 2 }}
+
+  # =============================================================================
+  # STREAMING — knob + cloudevents source inline; brokers/SASL/TLS/tuning from
+  # global.streaming (gated via helper). STREAMING_ENABLED now resolves
+  # global.streaming.enabled as a fallback (configmap.STREAMING_ENABLED still
+  # wins) — the previous native-only read meant global.streaming.enabled alone
+  # could never turn streaming on for this chart.
+  # =============================================================================
+  {{- $streamingEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") }}
+  {{- $streamingEnabled := eq (lower (toString $streamingEnabledRaw)) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabledRaw | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ $cm.STREAMING_CLOUDEVENTS_SOURCE | default "lerian.midaz.fees" | quote }}
+  {{- include "lerian-common.streaming.env" (dict "context" $ "enabled" $streamingEnabled "configmap" $cm) | nindent 2 }}
   # Extra Env Vars
   {{- with .Values.fees.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

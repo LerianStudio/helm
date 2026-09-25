@@ -8,7 +8,9 @@ spec:
   revisionHistoryLimit: {{ .Values.identity.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.identity.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.identity.autoscaling.enabled }}
   replicas: {{ .Values.identity.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name) | nindent 6 }}

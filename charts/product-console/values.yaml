@@ -4,23 +4,29 @@
 
 # -- Number of replicas for the deployment
 replicaCount: 1
-
 # -- Number of old ReplicaSets to retain for deployment rollback
 revisionHistoryLimit: 10
-
 # -- Readiness probe configuration. All fields override chart defaults.
+# Defaults to '/api/admin/health/alive', which does NOT gate on MongoDB. The
+# image this chart pins opens its database connection on the first request that
+# needs one, so readiness on '/api/admin/health/readyz' deadlocks a fresh pod:
+# not Ready, no traffic, no connection, never Ready. Set
+#   readinessProbe:
+#     path: /api/admin/health/readyz
+# once you run an image that connects at startup, to gate readiness on the
+# database again.
 readinessProbe: {}
 # -- Liveness probe configuration. All fields override chart defaults.
+# Keep this on a MongoDB-independent path. Pointing it at readyz turns a
+# database outage into a crash-loop.
 livenessProbe: {}
-
 image:
   # -- Repository for the product-console container image
   repository: lerianstudio/product-console
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)
-  tag: "1.10.0"
-
+  tag: "2.2.1"
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
 # - name: regcred
@@ -31,12 +37,32 @@ nameOverride: ""
 fullnameOverride: ""
 # -- Override the namespace
 namespaceOverride: "product-console"
-
 global:
+  # -- Env-wide SHARED MongoDB connection mask (set once per environment; a
+  # native configmap.<KEY> still overrides it). Consumed by
+  # lerian-common.datastore.value (type "mongo"). Fields: host, port, user,
+  # uri, params. MONGODB_DB_NAME is NOT masked (per-app database name).
+  datastores: {}
+  # -- Env-wide Access Manager (plugin-auth) gate/host. Consumed by
+  # lerian-common.globalValue (block "auth"). Fields: enabled, host.
+  # (configmap.PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST override.)
+  # Precedence: configmap.PLUGIN_AUTH_ENABLED, then global.auth.enabled, then
+  # the chart default "false" (AUTHORIZATION OFF). The console only enforces
+  # permissions when the rendered value is the word "true". Set enabled: true
+  # explicitly on every staging/production release (see README, "Authorization
+  # is OFF").
+  auth: {}
+  # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
+  # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  observability: {}
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
     enabled: false
+    # -- Connect mongosh with --tls --tlsInsecure (needed for managed MongoDB
+    # like AWS DocumentDB, which requires TLS on every connection — mirrors
+    # the app's own MONGO_PARAMETERS tlsInsecure=true cloud preset)
+    tls: false
     # -- MongoDB connection settings
     connection:
       # -- MongoDB host
@@ -65,10 +91,8 @@ global:
       roles:
         - role: "readWrite"
           db: "midaz-console"
-
 # -- Annotations to be added to the Pod
 podAnnotations: {}
-
 podSecurityContext: {}
 # fsGroup: 2000
 
@@ -87,7 +111,6 @@ securityContext:
   readOnlyRootFilesystem: true
   seccompProfile:
     type: RuntimeDefault
-
 # -- PodDisruptionBudget configuration
 pdb:
   # -- Enable or disable PodDisruptionBudget
@@ -98,7 +121,6 @@ pdb:
   maxUnavailable: 1
   # -- Annotations for the PodDisruptionBudget
   annotations: {}
-
 # -- Deployment update strategy
 deploymentStrategy:
   # -- Type of deployment strategy
@@ -108,7 +130,6 @@ deploymentStrategy:
     maxSurge: 1
     # -- Maximum number of pods that can be unavailable during the update
     maxUnavailable: 0
-
 service:
   # -- Kubernetes service type
   type: ClusterIP
@@ -116,7 +137,6 @@ service:
   port: 8081
   # -- Service annotations
   annotations: {}
-
 ingress:
   # -- Enable or disable ingress
   enabled: false
@@ -134,7 +154,6 @@ ingress:
   # - secretName: product-console-tls
   #   hosts:
   #     - product-console.example.local
-
 resources:
   # -- CPU and memory limits for pods
   limits:
@@ -144,7 +163,6 @@ resources:
   requests:
     cpu: 512m
     memory: 512Mi
-
 autoscaling:
   # -- Enable or disable horizontal pod autoscaling
   enabled: false
@@ -156,16 +174,12 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # -- Target memory utilization percentage for autoscaling
   targetMemoryUtilizationPercentage: 80
-
 # -- Node selector for scheduling pods on specific nodes
 nodeSelector: {}
-
 # -- Tolerations for scheduling on tainted nodes
 tolerations: []
-
 # -- Affinity rules for pod scheduling
 affinity: {}
-
 serviceAccount:
   # -- Specifies whether a ServiceAccount should be created
   create: true
@@ -173,7 +187,6 @@ serviceAccount:
   annotations: {}
   # -- Name of the service account (defaults to fullname)
   name: ""
-
 # -- OpenTelemetry Configuration
 # When enabled or external, configures OTEL endpoints dynamically
 otel:
@@ -187,106 +200,145 @@ otel:
   host: ""
   # -- OTEL collector HTTP port (OTLP/HTTP protocol)
   port: 4318
-
-# -- ConfigMap for environment variables and configurations
-# All values here will be set as environment variables in the deployment
-configmap:
-  # Application Configuration
-  NODE_ENV: "production"
-  MIDAZ_CONSOLE_PORT: "8081"
-
-  # OpenTelemetry Configuration
-  # Note: When otel.enabled=true or otel.external=true, OTEL_HOST and OTEL_URL_* are injected dynamically
-  ENABLE_TELEMETRY: "false"
-  OTEL_RECEIVER_HTTP_PORT: "4318"
-
-  # NextAuth Configuration
-  NEXTAUTH_URL: "http://localhost:8081"
-
-  # Midaz API Configuration
-  MIDAZ_API_HOST: "midaz-onboarding"
-  MIDAZ_API_PORT: "3000"
-  MIDAZ_BASE_PATH: "http://midaz-onboarding:3000/v1"
-  MIDAZ_TRANSACTION_BASE_HOST: "midaz-transaction"
-  MIDAZ_TRANSACTION_BASE_PORT: "3001"
-  MIDAZ_TRANSACTION_BASE_PATH: "http://midaz-transaction:3001/v1"
-
-  # Plugin Auth Configuration
-  PLUGIN_AUTH_ENABLED: "false"
-  PLUGIN_AUTH_CLIENT_ID: ""
-  PLUGIN_AUTH_HOST: "plugin-access-manager-auth"
-  PLUGIN_AUTH_PORT: "4000"
-  PLUGIN_AUTH_BASE_PATH: "http://plugin-access-manager-auth:4000/v1"
-
-  # Plugin Identity Configuration
-  PLUGIN_IDENTITY_HOST: "plugin-access-manager-identity"
-  PLUGIN_IDENTITY_PORT: "4001"
-  PLUGIN_IDENTITY_BASE_PATH: "http://plugin-access-manager-identity:4001/v1"
-
-  # MongoDB Configuration
-  MONGODB_URI: "mongodb"
-  MONGO_HOST: "mongodb"
-  MONGO_PORT: "27017"
-  MONGODB_DB_NAME: "midaz-console"
-  MONGODB_USER: "midaz"
-  # -- Additional MongoDB connection parameters (e.g., "tls=true&authSource=admin")
-  MONGO_PARAMETERS: ""
-
-  # CRM Plugin Configuration
-  CRM_BASE_PATH: "http://crm-plugin:4003/v1/"
-
-  # Reporter Configuration
-  REPORTER_BASE_PATH: "http://reporter:3002/v1"
-
-  # Account Type Validation
-  MIDAZ_ACCOUNT_TYPE_VALIDATION_ENABLED: "false"
-  MIDAZ_ACCOUNT_TYPE_VALIDATION: ""
-
-  # NextJS Public Configuration
-  NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: "jpeg,jpg,png,svg"
-  NEXT_PUBLIC_MIDAZ_APPLICATION_OPTIONS: "midaz,plugin-fees,plugin-crm,plugin-smart-templates"
-  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: "false"
-  NEXT_PUBLIC_MIDAZ_VERSION: ""
-
+# -- ConfigMap for environment variables and configurations.
+# All values here will be set as environment variables in the deployment.
+# Every key and its shipped default live ONLY in templates/configmap.yaml
+# (as `KEY | default "X"`, or via a lerian-common mask for
+# ENABLE_TELEMETRY/PLUGIN_AUTH_*/MONGODB_*/MONGO_*) — none are declared here.
+# Add a key below only when you need to override its shipped default, e.g.:
+#   NODE_ENV: "development"
+# A key the chart does NOT declare is accepted here and silently dropped: this
+# map is an explicit allowlist, not a passthrough. Use extraEnvVars below for
+# anything else the console reads.
+#
+# The keys below are declared but ship NO default, because no default is safe
+# to invent for them. Leave one out and the chart writes nothing: the console
+# falls back to whatever its own image does, which for an address means "no
+# such page works" rather than "wrong page". Setting one through BOTH this map
+# and extraEnvVars is refused at render time, because both write into the same
+# ConfigMap and the surviving value would be whatever the YAML parser kept.
+#
+#   TRUSTED_PROXIES: "198.51.100.0/24"
+#     Comma list of CIDRs the console treats as its own infrastructure hops
+#     while reading X-Forwarded-For, so it can tell which address in that chain
+#     is the real caller. Set it to the ingress / load-balancer addresses
+#     actually in front of this service, never the pod or service CIDR.
+#     Left unset the console names NO caller at all, so a tenant IP allowlist
+#     has nothing to judge and either lets everyone through or no one. Set it
+#     WRONG — to a range that covers real callers — and it hides those callers
+#     and can let a caller choose the address it is judged by. Read the README
+#     section "Client IP resolution" before choosing a range.
+#
+#   MIDAZ_V2_BASE_PATH: "http://midaz-ledger.midaz.svc.cluster.local:3002/v2/"
+#     The address of the midaz ledger's SECOND API contract, /v2. Fees — fee
+#     packages, billing packages, billing runs and the fees statement — are
+#     served there and nowhere else: they stopped being a separate plugin and
+#     now live inside the ledger itself, under /v2. The rest of the console
+#     keeps talking to /v1 through MIDAZ_BASE_PATH, so the two coexist.
+#     Same host and port as MIDAZ_BASE_PATH, with /v1 swapped for /v2 — point
+#     it at the midaz release you deployed, in its own namespace.
+#     Set it wherever the fees screens are meant to work. Unset, the console
+#     has no address for them: every fees page fails, and the console's own
+#     health check reports "MIDAZ_V2_BASE_PATH is not set".
+#     Write it WITH the trailing slash. The console builds each call by
+#     resolving a relative path against this address, and that resolution only
+#     keeps the /v2 part when the address ends in a slash — without it, /v2 is
+#     dropped and the call lands on a contract that serves no fees, with no
+#     error to explain it. The console does add the missing slash for you, so
+#     both forms work today; the form above is the one to write.
+#
+#   PLUGIN_AUTH_PUBLIC_BASE_PATH: "https://auth.example.com/v1"
+#     The BROWSER-facing address of the Access Manager, as opposed to
+#     PLUGIN_AUTH_BASE_PATH, which is the cluster-internal one the console
+#     calls server-to-server. Single sign-on redirects the user's browser to
+#     this address, so a cluster-local name cannot serve: it must be absolute,
+#     https and end in /v1. Unset, the console falls back to the internal
+#     address and every SSO login lands on a host the browser cannot resolve.
+#     Only local development, where both addresses are the same localhost, can
+#     leave it out.
+#
+#   MFA_ENABLED: "true"
+#     An assertion about the DEPLOYMENT, not a per-user switch: it tells the
+#     console that the Access Manager in front of it may answer a correct
+#     password with an MFA challenge. It does not turn MFA on for anybody —
+#     that is per user, in the Access Manager. Leave it unset where MFA is off.
+#     Set it wherever MFA is on: without it the console does not recognise the
+#     challenge, and a user who has MFA enabled cannot sign in at all.
+#
+#   FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
+#   TRACER_BASE_PATH:  "http://midaz-tracer.midaz.svc.cluster.local:4020"
+#     Addresses of two OPTIONAL sibling services. Unlike the ledger and the
+#     Access Manager, these may simply not be installed, which is why the chart
+#     invents no address for them: a default would turn "this feature is not
+#     installed" into a connection error on the page. Set the one you deployed,
+#     to its own release name and namespace. TRACER_BASE_PATH is a bare origin
+#     with no /v1 — the console adds that itself; FLOWKER_BASE_PATH ends in /v1.
+configmap: {}
 # -- Extra environment variables from ConfigMap (merged with configmap values)
+# The passthrough for every console variable the chart does not declare above.
+# Each key is written into the same ConfigMap the pod loads, so it reaches the
+# container.
+# TRUSTED_PROXIES, MFA_ENABLED and PLUGIN_AUTH_PUBLIC_BASE_PATH used to belong
+# here because the chart had no name for them. They are declared under
+# configmap above now; delivering them from here still works, so existing
+# installs need no change, but a key set in both places is refused at render
+# time rather than emitted twice.
 extraEnvVars: {}
-
 # -- Secrets for storing sensitive data
 # All values here will be base64 encoded and set as environment variables
 secrets:
+  # -- Optional: set instead of configmap.PLUGIN_AUTH_CLIENT_ID when the
+  # client_id shouldn't sit in a ConfigMap. When non-empty, templates/configmap.yaml
+  # omits its own PLUGIN_AUTH_CLIENT_ID key so the env var isn't declared twice.
+  PLUGIN_AUTH_CLIENT_ID: ""
   PLUGIN_AUTH_CLIENT_SECRET: ""
   NEXTAUTH_SECRET: ""
+  # -- MongoDB password. Leave it empty with the bundled MongoDB: the console
+  # reads the subchart's own generated password. Setting it here takes over, so
+  # it then has to match the password the subchart actually runs with: that is
+  # mongodb.auth.rootPassword, or the password inside the Secret named by
+  # mongodb.auth.existingSecret whenever you set that instead.
   MONGODB_PASS: ""
-
 # -- Use existing secret instead of creating one
 useExistingSecret: false
 # -- Name of the existing secret to use
 existingSecretName: ""
-
 # =============================================================================
 # Optional Dependencies
 # =============================================================================
 
+# The bundled MongoDB does not inherit this chart's namespaceOverride: it lands
+# in global.namespaceOverride when that is set and in the RELEASE namespace
+# otherwise. configmap.MONGO_HOST defaults to the Service the subchart really
+# creates, following mongodb.nameOverride, mongodb.fullnameOverride and the
+# release-name collapse, so the console finds it unconfigured.
+# That default covers the topology shipped here, a STANDALONE subchart under its
+# own Service name. Set mongodb.architecture to anything else, or rename the
+# Service with mongodb.service.nameOverride, and there is no single right
+# default: the chart then REFUSES TO RENDER until you set configmap.MONGO_HOST
+# yourself, and the refusal prints the value to set.
+# Its PASSWORD is read for you, straight from the Secret the subchart generates
+# (key mongodb-root-password), whenever that Secret lands in the same namespace
+# as the console pods: install with '-n product-console', the namespace this
+# chart pins, and leave global.namespaceOverride unset, and it does. Split them,
+# with a different -n or with global.namespaceOverride, and a Secret cannot be
+# read across the split, so set mongodb.auth.rootPassword and
+# secrets.MONGODB_PASS to the same value or every Mongo-backed page fails on an
+# auth error. The install notes say which of the two cases you are in.
 mongodb:
   enabled: true
-
   global:
     security:
       allowInsecureImages: true
-
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
-
   external: false
   auth:
     enabled: true
     rootUser: midaz
     rootPassword: ""
-
   resourcesPreset: "medium"
-
   persistence:
     size: 8Gi
-
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

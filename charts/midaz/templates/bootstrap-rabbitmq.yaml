@@ -121,7 +121,7 @@ spec:
                   --data "{\"password\":\"$PASS\",\"tags\":\"administrator\"}" \
                   "$BASE_URL/api/users/$1")
                 if [ "$HTTP_CODE" = 401 ]; then
-                  echo "RabbitMQ refused the login of user $RABBITMQ_ADMIN_USER (HTTP 401).{{ if $bundled }} The broker holds another password than the one this chart gave it: restart the broker pod ($RABBITMQ_HOST-0, which boots with the chart's passwords and drops queued messages), then upgrade or sync again.{{ end }}"
+                  echo "RabbitMQ refused the login of user $RABBITMQ_ADMIN_USER (HTTP 401).{{ if $bundled }} The broker holds another password than the one this chart gave it: restart the broker pod ($RABBITMQ_HOST-0, which boots with the chart's passwords and drops queued messages), then upgrade or sync again. Once that succeeds, restart the ledger, whose pods keep the password they started with: kubectl -n {{ .Release.Namespace }} rollout restart deployment/{{ include "midaz-ledger.fullname" . }}{{ end }}"
                   exit 1
                 fi
                 if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then

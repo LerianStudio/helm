@@ -574,6 +574,8 @@ auth-database:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+    # latest (PostgreSQL 18.6.0), pinned: PostgreSQL refuses a data directory of another major.
+    digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
   auth:
     enabled: true
     enablePostgresUser: false
@@ -617,6 +619,8 @@ valkey:
   image:
     repository: bitnamisecure/valkey
     tag: "latest"
+    # latest (Valkey 9.1.2), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:26e25932c8e8026708cff3360032efc1978588da5ea680e151b3315913a3a38d"
   architecture: standalone
   auth:
     enabled: false

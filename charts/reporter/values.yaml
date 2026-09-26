@@ -564,18 +564,9 @@ secrets:
   # RabbitMQ is single-sourced here (Pattern B): the broker is pointed at this Secret via
   # rabbitmq.authentication.existingSecret, so these are the only copies of the broker creds.
   RABBITMQ_DEFAULT_USER: reporter
-  # BUNDLED broker: this plaintext is BOTH what the workloads authenticate with AND (via its
-  # hash) what the broker seeds the user from. When rabbitmq.enabled, the broker imports
-  # load_definitions at boot, which makes RabbitMQ skip seeding the default user — so the
-  # reporter user is declared in the definitions with rabbitmq.loadDefinition.passwordHash,
-  # which is the hash of THIS value (the two are coupled). The bundled broker is DEV/LOCAL-ONLY
-  # and ships a FIXED dev credential so a from-scratch `helm install` reaches 1/1 — do NOT
-  # override it: Helm cannot verify a custom password matches a custom hash, so a mismatched pair
-  # would only surface as a runtime 403 (a render-time guard refuses any change). For a real /
-  # custom broker credential use the EXTERNAL broker (rabbitmq.enabled=false +
-  # externalRabbitmqDefinitions.enabled=true) — set your real password here (or via a component
-  # existingSecret) and provision the user per tier.
-  RABBITMQ_DEFAULT_PASS: "reporter123"
+  # REQUIRED. With the bundled broker (rabbitmq.enabled) it is also the broker's only login, and
+  # passwords printed in this chart (reporter123, Lerian@123, CHANGE_ME) are refused.
+  RABBITMQ_DEFAULT_PASS: ""
   # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
   # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the
   # cluster. Generate once with: openssl rand -hex 32
@@ -869,19 +860,6 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
-  # -- Bundled-broker boot definitions (templates/manager/secrets_rabbitmq_definitions.yaml).
-  loadDefinition:
-    # -- RabbitMQ salted password_hash for the reporter user seeded into the bundled broker
-    # via load_definitions. REQUIRED when rabbitmq.enabled. Because a configured definitions
-    # import makes RabbitMQ stop seeding the default user from RABBITMQ_DEFAULT_USER/PASS, the
-    # user is declared in the definitions instead — and RabbitMQ definitions accept only a
-    # pre-computed hash, never a plaintext password. Helm cannot derive this hash from the
-    # plaintext, so it cannot verify a custom password/hash pair actually matches — an unmatched
-    # pair would render fine but fail at runtime with a 403. The bundled broker is DEV/LOCAL-ONLY,
-    # so it ships a FIXED dev credential (this hash matches the shipped RABBITMQ_DEFAULT_PASS
-    # "reporter123") and a render-time guard REFUSES any override. For a real / custom credential
-    # use the EXTERNAL broker (rabbitmq.enabled=false + externalRabbitmqDefinitions.enabled=true).
-    passwordHash: "MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G"
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store

@@ -8,6 +8,7 @@
 - Single-source infra secrets: MongoDB follows Pattern A, except that the chart, not the subchart, owns the `<release>-mongodb` Secret; the subchart reads it through `mongodb.auth.existingSecret`. RabbitMQ follows Pattern B (the groundhog2k broker is pointed at the application `reporter-manager` Secret via `rabbitmq.authentication.existingSecret`, so the broker password lives only in `secrets.RABBITMQ_DEFAULT_PASS`; this also removes the prior `midaz`-vs-`plugin` user mismatch). Valkey: the valkey.io subchart exposes no Secret-based password mechanism (auth is an inline ACL) and ships with `auth.enabled: false`, so there is no single-source wiring for it here. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
 - Release name: the hardcoded infra hosts and the `<release>-mongodb` / `reporter-manager` Secret references assume the release is installed as `reporter`. If you override `manager.name`/`manager.existingSecretName`, set `rabbitmq.authentication.existingSecret` to match.
 - Broker volume: the bundled RabbitMQ keeps its queues on PVC `reporter-rabbitmq`. The first upgrade to a chart version that renders it restarts the broker once, and messages still queued in the old in-pod directory (emptyDir) are lost; let the queues drain before that upgrade.
+- Bundled broker login: with `rabbitmq.enabled` the broker's only user is `secrets.RABBITMQ_DEFAULT_USER` (tag `administrator` as before; the app's health check needs a management tag) with `secrets.RABBITMQ_DEFAULT_PASS`. The render refuses an empty password, the passwords printed in this chart (`reporter123` and `Lerian@123`, defaults of earlier versions, and the `CHANGE_ME` placeholder), and `manager.useExistingSecret` or `worker.useExistingSecret` (the broker never learns an external Secret's password). The broker takes the password when its pod starts: after changing it, or after upgrading from a version that shipped `reporter123`, run `kubectl -n <namespace> rollout restart statefulset/<release>-rabbitmq`. The broker's volume keeps the users it already has: after renaming `secrets.RABBITMQ_DEFAULT_USER`, delete the old one with `kubectl -n <namespace> exec <release>-rabbitmq-0 -- rabbitmqctl delete_user <old-user>`.
 - Dependency notes: Uses local MongoDB and RabbitMQ dependency charts unless external services are configured.
 - Production overrides: Provide reporting database and messaging credentials through chart secrets or existing Secrets where supported; override manager/worker image tags, ingress, resources, KEDA settings, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -173,7 +174,7 @@ The `secrets` section in `values.yaml` is fully dynamic. Any key/value pair adde
 ```yaml
 secrets:
   RABBITMQ_DEFAULT_USER: reporter
-  RABBITMQ_DEFAULT_PASS: Lerian@123
+  RABBITMQ_DEFAULT_PASS: <your-rabbitmq-password>
   # Stable Erlang cookie for the bundled RabbitMQ (required when rabbitmq.enabled).
   # Generate once with: openssl rand -hex 32
   RABBITMQ_ERLANG_COOKIE: <stable-cookie>

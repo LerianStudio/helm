@@ -146,18 +146,15 @@ Allows overriding it for multi-namespace deployments in combined charts.
 
 {{/*
 reporter.infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` entry
-pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+pointing at a bundled datastore's password Secret (or the operator's existingSecret override).
 Inputs (dict): context (root .), subchart ("mongodb"), key, envName.
 See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 */}}
 {{- define "reporter.infraSecretRef" -}}
 {{- $ctx := .context -}}
 {{- $sub := .subchart -}}
-{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
-{{- $secretName := "" -}}
-{{- if $auth.existingSecret -}}
-{{- $secretName = $auth.existingSecret -}}
-{{- else -}}
+{{- $secretName := include "reporter.operatorSecret" . -}}
+{{- if not $secretName -}}
 {{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
@@ -165,6 +162,14 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
     secretKeyRef:
       name: {{ $secretName }}
       key: {{ .key }}
+{{- end }}
+
+{{/*
+reporter.operatorSecret — the Secret an operator named in <subchart>.auth.existingSecret, "" when none.
+The chart default renders a name only inside the subchart (templates/mongodb-secrets.yaml).
+*/}}
+{{- define "reporter.operatorSecret" -}}
+{{- tpl (dig "auth" "existingSecret" "" (index .context.Values .subchart | default dict) | toString) .context -}}
 {{- end }}
 
 {{/*
@@ -181,9 +186,7 @@ external MongoDB without an existingSecret (the operator supplies it inline). Fo
 subchart the password lives in <release>-mongodb and this emits nothing.
 */}}
 {{- define "reporter.mongoExternalSecretData" -}}
-{{- $mongo := default dict .Values.mongodb -}}
-{{- $mongoAuth := default dict $mongo.auth -}}
-{{- if and (ne (include "reporter.mongoInternal" .) "true") (not $mongoAuth.existingSecret) .Values.secrets.MONGO_PASSWORD -}}
+{{- if and (ne (include "reporter.mongoInternal" .) "true") (not (include "reporter.operatorSecret" (dict "context" . "subchart" "mongodb"))) .Values.secrets.MONGO_PASSWORD -}}
 MONGO_PASSWORD: {{ .Values.secrets.MONGO_PASSWORD | toString | b64enc | quote }}
 {{- end -}}
 {{- end }}
@@ -196,9 +199,7 @@ Input (dict): context (root .), secretName (the app Secret name for the external
 */}}
 {{- define "reporter.mongoPasswordEnv" -}}
 {{- $ctx := .context -}}
-{{- $mongo := default dict $ctx.Values.mongodb -}}
-{{- $mongoAuth := default dict $mongo.auth -}}
-{{- if or (eq (include "reporter.mongoInternal" $ctx) "true") $mongoAuth.existingSecret -}}
+{{- if or (eq (include "reporter.mongoInternal" $ctx) "true") (include "reporter.operatorSecret" (dict "context" $ctx "subchart" "mongodb")) -}}
 {{ include "reporter.infraSecretRef" (dict "context" $ctx "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_PASSWORD") }}
 {{- else if $ctx.Values.secrets.MONGO_PASSWORD -}}
 - name: MONGO_PASSWORD

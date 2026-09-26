@@ -56,13 +56,11 @@ helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --ve
 
 ## Uninstalling the Chart
 
-The bundled RabbitMQ keeps its queued messages on a volume (PVC `reporter-rabbitmq`, set by `rabbitmq.storage`), so they survive a broker restart, an upgrade and an uninstall; a reinstall under the same release name finds them still queued. Deleting them is a separate, manual step after the uninstall: `kubectl delete pvc reporter-rabbitmq -n reporter`.
-
 ```bash
 helm uninstall reporter -n reporter
 ```
 
-Uninstall keeps the data. The bundled MongoDB volume (PVC `<release>-mongodb`) and its password Secret (`<release>-mongodb`) stay, as do the SeaweedFS report volumes (StatefulSet claims), so a reinstall under the same release name opens the same data with the same password. Deleting the data is a separate, manual step: `kubectl delete pvc <release>-mongodb -n reporter` and `kubectl delete secret <release>-mongodb -n reporter`. Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned. The chart, not the MongoDB subchart, owns that password: set `mongodb.auth.rootPassword` to choose it, or `mongodb.auth.existingSecret` to bring your own Secret (the chart then renders none).
+Uninstall keeps the data. The bundled MongoDB volume (PVC `<release>-mongodb`) and its password Secret (`<release>-mongodb`) stay, as do the SeaweedFS report volumes (StatefulSet claims) and the RabbitMQ volume with its queued messages (PVC `reporter-rabbitmq`), so a reinstall under the same release name opens the same data with the same password. The RabbitMQ claim keeps that fixed name under any release name, so an install under another release name in the same namespace is refused until the claim is deleted. Deleting the data is a separate, manual step: `kubectl delete pvc <release>-mongodb -n reporter`, `kubectl delete pvc reporter-rabbitmq -n reporter` and `kubectl delete secret <release>-mongodb -n reporter`. Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned. The chart, not the MongoDB subchart, owns that password: set `mongodb.auth.rootPassword` to choose it, or `mongodb.auth.existingSecret` to bring your own Secret (the chart then renders none).
 
 ## Configuration
 

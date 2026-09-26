@@ -829,7 +829,6 @@ rabbitmq:
   image:
     tag: "3.13.6"
   # -- The broker's data directory: a claim this chart renders and keeps on uninstall (templates/rabbitmq-pvc.yaml).
-  # An empty requestedSize renders none: the broker then uses a claim of that name you made, or emptyDir without a name.
   storage:
     persistentVolumeClaimName: reporter-rabbitmq
     requestedSize: 8Gi

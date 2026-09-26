@@ -317,7 +317,7 @@ architectures. Used as the REDIS_HOST default.
 {{/*
 plugin-auth.dbPasswordEnv — emit a single `- name: <envName> valueFrom: secretKeyRef: {name,key}`
 entry for the auth database password, single-sourced. With the bundled `auth-database`
-(aliased Bitnami postgresql) subchart, it reads the generated Secret
+(aliased Bitnami postgresql) subchart, it reads the Secret this chart keeps across uninstall
 (<release>-auth-database, key "password"); honors auth-database.auth.existingSecret; and
 falls back to the app's plugin-auth Secret (key DB_PASSWORD) only for an external database.
 Used by the auth, caradhras, and migrations/init-user workloads.
@@ -327,13 +327,13 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- define "plugin-auth.dbPasswordEnv" -}}
 {{- $ctx := .context -}}
 {{- $db := default dict (index $ctx.Values "auth-database") -}}
-{{- $dbAuth := default dict $db.auth -}}
+{{- $opSecret := include "plugin-access-manager.operatorDbSecret" $ctx -}}
 {{- $internal := and (ne (toString $db.enabled) "false") (not $db.external) -}}
 - name: {{ .envName }}
   valueFrom:
     secretKeyRef:
-    {{- if $dbAuth.existingSecret }}
-      name: {{ $dbAuth.existingSecret }}
+    {{- if $opSecret }}
+      name: {{ $opSecret }}
       key: password
     {{- else if $internal }}
       name: {{ include "common.names.dependency.fullname" (dict "chartName" "auth-database" "chartValues" (index $ctx.Values "auth-database") "context" $ctx) }}
@@ -343,6 +343,14 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
       name: {{ if $ctx.Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding DB_PASSWORD.\n" $ctx.Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" $ctx }}{{ end }}
       key: DB_PASSWORD
     {{- end }}
+{{- end }}
+
+{{/*
+plugin-access-manager.operatorDbSecret — the Secret an operator named in auth-database.auth.existingSecret,
+"" when none. The chart default renders a name only inside the subchart (templates/auth-database/secrets.yaml).
+*/}}
+{{- define "plugin-access-manager.operatorDbSecret" -}}
+{{- tpl (dig "auth" "existingSecret" "" (index .Values "auth-database" | default dict) | toString) . -}}
 {{- end }}
 
 

@@ -383,7 +383,7 @@ auth:
   # -- Secrets for storing sensitive data
   # @default -- templates/auth/secrets.yaml
   secrets:
-    # DB_PASSWORD is single-sourced from the auth-database subchart Secret
+    # DB_PASSWORD is single-sourced from the auth-database Secret this chart keeps
     # (<release>-auth-database, key "password"), read via secretKeyRef. Leave empty with
     # the bundled subchart. Only set this for an EXTERNAL database (auth-database.external=true)
     # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
@@ -580,6 +580,9 @@ auth-database:
     username: "auth"
     password: ""
     database: "casdoor"
+    # -- Secret with the password. The default points the subchart at the one this chart keeps across
+    # uninstall (templates/auth-database/secrets.yaml); this chart's own templates read it as empty.
+    existingSecret: '{{ if eq .Chart.Name "auth-database" }}{{ include "common.names.fullname" . }}{{ end }}'
   primary:
     persistence:
       size: 8Gi

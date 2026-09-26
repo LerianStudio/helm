@@ -106,6 +106,12 @@ spec:
                 echo "A RabbitMQ app password (transaction or consumer) contains a control character; choose one without."
                 exit 1;;
               esac
+              {{- if not $bundled }}
+              case "$RABBITMQ_ADMIN_USER" in transaction|consumer)
+                echo "The broker admin login global.externalRabbitmqDefinitions.rabbitmqAdminLogin is $RABBITMQ_ADMIN_USER, a ledger user this Job would demote to management; log in with a separate admin account on the broker."
+                exit 1;;
+              esac
+              {{- end }}
 
               RABBITMQ_ADMIN_PASS=${RABBITMQ_APPLIED_PASS:-$RABBITMQ_ADMIN_PASS}
 

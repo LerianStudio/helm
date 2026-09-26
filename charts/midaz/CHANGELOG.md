@@ -3,6 +3,17 @@
 ## [9.2.8](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.8)
 
 - Fixes:
+  - Ensure RabbitMQ bootstrap runs on upgrade and rotation.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.7...midaz-v9.2.8)
+
+---
+
+## [9.2.8](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.8)
+
+- Fixes:
   - Ensure the RabbitMQ bootstrap runs on upgrade and rotation.
 
 Contributors: @fredcamaral, @lerian-studio

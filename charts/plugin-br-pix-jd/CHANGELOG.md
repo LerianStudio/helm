@@ -2,6 +2,21 @@
 
 ## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
 
+- **Features**
+  - Aligned migration guidance with job behavior to ensure consistency in the plugin's documentation.
+
+- **Fixes**
+  - Bumped the application version to 2.0.1.
+  - Pinned published migrations to prevent unexpected changes and ensure stability.
+
+Contributors: @gandalf-at-lerian, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.4...plugin-br-pix-jd-v0.4.5)
+
+---
+
+## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
+
 - **Fixes**
   - Bumped app version to 2.0.1 and pinned published migrations to ensure stability.
 

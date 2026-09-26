@@ -95,9 +95,8 @@ tracer:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 1
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods. To use minAvailable instead, set
+    # this to null: the API server refuses a PDB that sets both.
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}

@@ -93,7 +93,7 @@ spec:
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
-                --data "{\"password\":\"$PASS\",\"tags\":\"administrator\"}" \
+                --data "{\"password\":\"$PASS\",\"tags\":\"\"}" \
                 "$BASE_URL/api/users/plugin")
               HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then

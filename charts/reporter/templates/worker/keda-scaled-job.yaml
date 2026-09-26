@@ -36,6 +36,18 @@ spec:
         - name: {{ include "plugin-worker.fullname" . }}
           image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default (include "plugin.version" .) }}"
           imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          {{- /* Pod Security "restricted" admits the Job pods only with this profile. 1001 is the image's
+             appuser (its USER is a name, which runAsNonRoot cannot verify). The root filesystem stays
+             writable: Chromium and the PDF writer use /tmp and $HOME. */}}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
           envFrom:
             - configMapRef:
                 name: {{ include "plugin-worker.fullname" . }}

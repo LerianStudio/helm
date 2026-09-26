@@ -1,5 +1,20 @@
 # Reporter Changelog
 
+## [4.3.7](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.7)
+
+- Fixes:
+  - Keep the bundled broker's queued messages on restart.
+
+- Improvements:
+  - Warn that the first upgrade drops what the old broker queued.
+  - List the kept broker claim with the uninstall notes.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.6...reporter-v4.3.7)
+
+---
+
 ## [4.3.6](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.6)
 
 - Fixes:

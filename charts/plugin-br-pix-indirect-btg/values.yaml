@@ -829,6 +829,8 @@ postgresql:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+    # latest as of 2026-09-26 (PostgreSQL 18.6.0), pinned: PostgreSQL refuses a data directory of another major.
+    digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
   auth:
     enabled: true
     enablePostgresUser: false
@@ -872,6 +874,8 @@ mongodb:
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
+    # latest as of 2026-09-26 (MongoDB 8.3.11), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:c8babafb7d15a7412543a9a391ffee8ba206c4d10dd6a1ba2ae2bf74fdfe538b"
   auth:
     enabled: true
     rootUser: pix_btg

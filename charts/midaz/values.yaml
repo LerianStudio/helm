@@ -968,7 +968,7 @@ rabbitmq:
   enabled: true
   image:
     tag: "3.13.6"
-  # -- No volume: queues and messages are lost when the broker pod restarts. The StatefulSet
+  # -- No persistent volume (emptyDir): queues and messages are lost when the broker pod is recreated. The StatefulSet
   # spec is immutable, so adding `storage.requestedSize` later needs the StatefulSet deleted first.
   resources:
     requests:

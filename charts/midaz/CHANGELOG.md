@@ -1,5 +1,18 @@
 # Midaz Changelog
 
+## [9.2.10](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.10)
+
+- Fixes:
+  - Stopped promising a volume for the bundled broker.
+  - Precisely named the immutable StatefulSet field.
+  - Indicated that the broker loses messages when its pod is recreated.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.9...midaz-v9.2.10)
+
+---
+
 ## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
 
 - Fixes:

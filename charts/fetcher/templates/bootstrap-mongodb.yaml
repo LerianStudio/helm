@@ -4,11 +4,15 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "fetcher.fullname" . }}-bootstrap-mongodb
+  # spec.template is immutable: a new Job per Helm revision, an Argo CD hook re-created per sync
+  name: {{ include "fetcher.fullname" . }}-bootstrap-mongodb-{{ .Release.Revision }}
   namespace: {{ include "fetcher.namespace" . }}
   labels:
     {{- include "fetcher.labels" . | nindent 4 }}
     app.kubernetes.io/component: bootstrap
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -17,9 +21,15 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
+        securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}
@@ -45,6 +55,7 @@ spec:
       containers:
       - name: mongosh
         image: mongo:8
+        securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}

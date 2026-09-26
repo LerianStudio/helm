@@ -13,8 +13,12 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fetcher-bootstrap-rabbitmq
+  # spec.template is immutable: a new Job per Helm revision, an Argo CD hook re-created per sync
+  name: fetcher-bootstrap-rabbitmq-{{ .Release.Revision }}
   namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
   ttlSecondsAfterFinished: 300
   completions: 1
@@ -23,9 +27,15 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-dependencies
           image: busybox:1.37
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
           env:
             - name: RABBITMQ_HOST
               value: {{ .Values.externalRabbitmqDefinitions.connection.host | quote }}
@@ -51,6 +61,7 @@ spec:
       containers:
         - name: apply-definitions
           image: curlimages/curl:8.7.1
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
           command:
             - sh
             - -c
@@ -70,46 +81,32 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              echo "Checking if RabbitMQ definitions already exist..."
-
-              # Check if plugin user already exists
-              PLUGIN_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/users/plugin" 2>/dev/null || echo "not_found")
-
-              # Check if fetcher queue exists
-              QUEUE_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/queues/%2F/fetcher.generate-fetcher.queue" 2>/dev/null || echo "not_found")
-
-              if echo "$PLUGIN_EXISTS" | grep -q '"name":"plugin"' && \
-                 echo "$QUEUE_EXISTS" | grep -q '"name":"fetcher.generate-fetcher.queue"'; then
-                echo "RabbitMQ definitions already applied (user plugin and fetcher queues exist). Skipping."
-                exit 0
-              fi
-
               echo "Applying RabbitMQ definitions from file..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              RESPONSE=$(curl -sSk -w "\n%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X POST \
                 --data-binary @/definitions/load_definitions.json \
                 "$BASE_URL/api/definitions")
+              HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error applying definitions (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
+                echo "$RESPONSE" | sed '$d'
                 exit 1
               fi
               echo "Done."
 
               echo "Updating RabbitMQ user: plugin..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+              RESPONSE=$(curl -sSk -w "\n%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
                 -H "content-type: application/json" \
                 -X PUT \
                 --data "{\"password\":\"$RABBITMQ_PLUGIN_PASS\",\"tags\":\"administrator\"}" \
                 "$BASE_URL/api/users/plugin")
+              HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error updating plugin user (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
+                echo "$RESPONSE" | sed '$d'
                 exit 1
               fi
               echo "Done."

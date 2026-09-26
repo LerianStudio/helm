@@ -3,9 +3,7 @@
 lerian-common — AWS IAM Roles Anywhere pod-spec fragments.
 
 The `aws-signing-helper` sidecar + IMDS env + iam-certs volume + fsGroup pod
-securityContext are BYTE-IDENTICAL across the inline implementations in
-fetcher (manager/worker), matcher and plugin-fees. These helpers reproduce
-those blocks exactly so callers can drop the copy-paste.
+securityContext, shared by the charts that run the Roles Anywhere sidecar.
 
 Indentation contract (same convention as _deployment.tpl): each helper emits
 its keys at base indent 0; the caller supplies the real indent via `nindent`.
@@ -24,9 +22,6 @@ the caller with the standard guard so they render only when enabled:
   {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
       {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
   {{- end }}
-
-NOTE: excludes reporter, whose inline block intentionally differs (no `required`
-wrappers, extra runAsGroup, `$.`-prefixed context). Align reporter before reuse.
 */}}
 
 {{/*

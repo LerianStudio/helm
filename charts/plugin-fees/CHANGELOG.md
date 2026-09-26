@@ -1,5 +1,16 @@
 # Plugin-fees Changelog
 
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
 ## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
 
 **Changelog for plugin-fees**

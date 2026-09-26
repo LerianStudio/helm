@@ -1,5 +1,16 @@
 # Midaz Changelog
 
+## [9.2.11](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.11)
+
+- Fixes:
+  - Log the ledger into the replica with its own password.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.10...midaz-v9.2.11)
+
+---
+
 ## [9.2.10](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.10)
 
 - Fixes:

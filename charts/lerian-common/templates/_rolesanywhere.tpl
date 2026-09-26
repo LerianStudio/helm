@@ -3,7 +3,7 @@
 lerian-common — AWS IAM Roles Anywhere pod-spec fragments.
 
 The `aws-signing-helper` sidecar + IMDS env + iam-certs volume + fsGroup pod
-securityContext, shared by the charts that run the Roles Anywhere sidecar.
+securityContext.
 
 Indentation contract (same convention as _deployment.tpl): each helper emits
 its keys at base indent 0; the caller supplies the real indent via `nindent`.

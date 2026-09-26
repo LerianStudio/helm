@@ -3,6 +3,20 @@
 ## [9.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.2)
 
 - **Fixes:**
+  - Keep the database password on uninstall to prevent data loss. (#2227)
+  - Refuse an empty `auth-database existingSecret` to ensure proper authentication configuration.
+
+- **Contributors:**
+  - @fredcamaral
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.1...plugin-access-manager-v9.5.2)
+
+---
+
+## [9.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.2)
+
+- **Fixes:**
   - Keep the database password on uninstall to prevent data loss.
   - Refuse an empty `auth-database existingSecret` to ensure proper authentication setup.
 

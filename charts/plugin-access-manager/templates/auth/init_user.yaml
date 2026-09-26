@@ -24,6 +24,10 @@ spec:
       labels:
         {{- include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name) | nindent 8 }}
         app.kubernetes.io/component: init-user
+      # A mesh proxy injected as a regular container never exits and the Job never completes.
+      annotations:
+        sidecar.istio.io/nativeSidecar: "true"
+        config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
     spec:
       {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:

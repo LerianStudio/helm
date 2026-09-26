@@ -53,6 +53,8 @@ spec:
       initContainers:
         - name: wait-for-dependencies
           image: busybox:1.37
+          securityContext:
+            {{- toYaml .Values.ledger.securityContext | nindent 12 }}
           envFrom:
           - configMapRef:
               name: {{ include "midaz-ledger.fullname" . }}

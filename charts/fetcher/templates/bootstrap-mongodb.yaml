@@ -20,8 +20,7 @@ spec:
   backoffLimit: 3
   template:
     metadata:
-      # A mesh proxy injected as a regular container never exits and the Job never completes;
-      # a native sidecar stops with the Job and keeps its mTLS identity (Istio >= 1.24, Linkerd >= 2.15)
+      # A mesh proxy injected as a regular container never exits and the Job never completes.
       annotations:
         sidecar.istio.io/nativeSidecar: "true"
         config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"

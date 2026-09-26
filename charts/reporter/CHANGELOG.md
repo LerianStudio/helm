@@ -4,6 +4,19 @@
 
 - Fixes:
   - Run init containers under pod security restricted.
+  - Give the worker a writable /tmp under its own profile.
+  - Run job pods under pod security restricted.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.7...reporter-v4.3.8)
+
+---
+
+## [4.3.8](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.8)
+
+- Fixes:
+  - Run init containers under pod security restricted.
   - Ensure job pods operate under pod security restricted.
   - Provide the worker with a writable /tmp directory under its own profile.
 

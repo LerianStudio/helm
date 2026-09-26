@@ -23,9 +23,15 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100 # the curl image's own user
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-dependencies
           image: busybox:1.37
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
           env:
             - name: RABBITMQ_HOST
               value: {{ .Values.externalRabbitmqDefinitions.connection.host | quote }}
@@ -51,6 +57,7 @@ spec:
       containers:
         - name: apply-definitions
           image: curlimages/curl:8.7.1
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
           command:
             - sh
             - -c

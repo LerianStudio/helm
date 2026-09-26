@@ -17,9 +17,15 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999 # the mongo image's own user
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
+        securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}
@@ -45,6 +51,7 @@ spec:
       containers:
       - name: mongosh
         image: mongo:8
+        securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}

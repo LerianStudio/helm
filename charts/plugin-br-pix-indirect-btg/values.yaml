@@ -880,6 +880,9 @@ mongodb:
     enabled: true
     rootUser: pix_btg
     rootPassword: ""
+  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
+  updateStrategy:
+    type: Recreate
 otel-collector-lerian:
   enabled: true
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

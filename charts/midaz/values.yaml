@@ -968,8 +968,8 @@ rabbitmq:
   enabled: true
   image:
     tag: "3.13.6"
-  persistence:
-    size: 8Gi
+  # -- No persistent volume (emptyDir): queues and messages are lost when the broker pod is recreated. Kubernetes
+  # refuses changes to a StatefulSet's volumeClaimTemplates, so adding `storage.requestedSize` later needs it deleted first.
   resources:
     requests:
       cpu: 250m

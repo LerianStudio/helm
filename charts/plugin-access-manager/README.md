@@ -214,7 +214,7 @@ ingress:
 | `service.port` | Service port | `4000` |
 | `deploymentStrategy` | Deployment strategy | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1}}` |
 | `podSecurityContext` | Pod security context | `{}` |
-| `securityContext` | Security context for the container | `{}` |
+| `securityContext` | Security context for every auth-side container: auth, caradhras and its UI, the migrations and init-user Jobs, and their init containers | See `values.yaml` |
 | `pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
 | `pdb.maxUnavailable` | Maximum number of unavailable pods | `1` |
 | `pdb.minAvailable` | Minimum number of available pods | `0` |

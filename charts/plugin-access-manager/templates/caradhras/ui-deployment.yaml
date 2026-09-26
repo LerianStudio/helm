@@ -38,14 +38,9 @@ spec:
         runAsGroup: 0
       containers:
         - name: {{ include "plugin-caradhras-ui.fullname" . }}
+          # runAsGroup comes from the pod (gid 0, see above).
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 0
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
+            {{- toYaml (omit .Values.auth.securityContext "readOnlyRootFilesystem" "runAsGroup") | nindent 12 }}
             # The bundled nginx (SPA + same-origin reverse proxy to the caradhras
             # backend) writes its default cache/pid paths at runtime, so the root
             # filesystem is left writable for this container only — same rationale

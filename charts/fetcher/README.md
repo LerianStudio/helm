@@ -289,11 +289,10 @@ externalRabbitmqDefinitions:
     pluginPassword: "securepassword"  # Password for 'plugin' user (will be created)
 ```
 
-The bootstrap job will:
+The bootstrap job will, on every install and upgrade:
 1. Wait for RabbitMQ to be ready
-2. Check if definitions already exist (idempotent)
-3. Apply queues, exchanges, and bindings from `load_definitions.json`
-4. Create/update the `plugin` user with the specified password
+2. Create or update the `plugin` user with the specified password (a password containing a control character is refused)
+3. Apply the vhost, permissions, queues, exchanges, and bindings from `load_definitions.json` (never its `users` entry)
 
 ## Important Notes
 

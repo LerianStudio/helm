@@ -7,8 +7,8 @@ metadata:
   name: fetcher-bootstrap-rabbitmq-definitions
   namespace: {{ .Release.Namespace }}
 data:
-  load_definitions.json: |
-{{ .Files.Get "files/rabbitmq/load_definitions.json" | indent 4 }}
+  {{- /* No users: the Job PUTs plugin with the operator's password, and a POSTed user resets it to the file's public hash. */}}
+  load_definitions.json: {{ omit (.Files.Get "files/rabbitmq/load_definitions.json" | fromJson) "users" | toJson | quote }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -81,6 +81,28 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
+              case "$RABBITMQ_PLUGIN_PASS" in *[[:cntrl:]]*)
+                echo "The RabbitMQ plugin password contains a control character (newline, tab, carriage return or DEL); choose one without."
+                exit 1;;
+              esac
+
+              # plugin is PUT before the definitions (their permissions need it), with the password JSON-escaped.
+              echo "Updating RabbitMQ user: plugin..."
+              PASS=$(printf '%s' "$RABBITMQ_PLUGIN_PASS" | sed 's/[\\"]/\\&/g')
+              RESPONSE=$(curl -sSk -w "\n%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                -H "content-type: application/json" \
+                -X PUT \
+                --data "{\"password\":\"$PASS\",\"tags\":\"administrator\"}" \
+                "$BASE_URL/api/users/plugin")
+              HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                echo "Error updating plugin user (HTTP $HTTP_CODE):"
+                echo "$RESPONSE" | sed '$d'
+                exit 1
+              fi
+              echo "Done."
+
               echo "Applying RabbitMQ definitions from file..."
               RESPONSE=$(curl -sSk -w "\n%{http_code}" \
                 -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
@@ -91,21 +113,6 @@ spec:
               HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error applying definitions (HTTP $HTTP_CODE):"
-                echo "$RESPONSE" | sed '$d'
-                exit 1
-              fi
-              echo "Done."
-
-              echo "Updating RabbitMQ user: plugin..."
-              RESPONSE=$(curl -sSk -w "\n%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X PUT \
-                --data "{\"password\":\"$RABBITMQ_PLUGIN_PASS\",\"tags\":\"administrator\"}" \
-                "$BASE_URL/api/users/plugin")
-              HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error updating plugin user (HTTP $HTTP_CODE):"
                 echo "$RESPONSE" | sed '$d'
                 exit 1
               fi

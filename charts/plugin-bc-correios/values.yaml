@@ -301,11 +301,12 @@ bc-correios:
 # Valkey (Redis-compatible) configuration
 valkey:
   enabled: true
+  # Here and in postgresql: bitnami/* tags are gone; bitnamilegacy serves the same tags, so data stays readable.
   global:
     security:
-      allowInsecureImages: false
+      allowInsecureImages: true
   image:
-    repository: bitnami/valkey
+    repository: bitnamilegacy/valkey
     tag: "8.0.2"
   external: false
   architecture: standalone
@@ -328,9 +329,9 @@ postgresql:
   enabled: true
   global:
     security:
-      allowInsecureImages: false
+      allowInsecureImages: true
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: "17.4.0"
   external: false
   architecture: standalone

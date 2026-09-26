@@ -1559,9 +1559,9 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "minAvailable": {
+            "maxUnavailable": {
               "default": 1,
-              "description": "Minimum number of available pods. Setting `maxUnavailable` in an"
+              "description": "Maximum number of unavailable pods; ignored when minAvailable is set."
             },
             "annotations": {
               "type": "object",

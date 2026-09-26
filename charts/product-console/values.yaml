@@ -294,7 +294,7 @@ secrets:
   PLUGIN_AUTH_CLIENT_SECRET: ""
   NEXTAUTH_SECRET: ""
   # -- MongoDB password. Leave it empty with the bundled MongoDB: the console
-  # reads the subchart's own generated password. Setting it here takes over, so
+  # reads the password this chart keeps for it. Setting it here takes over, so
   # it then has to match the password the subchart actually runs with: that is
   # mongodb.auth.rootPassword, or the password inside the Secret named by
   # mongodb.auth.existingSecret whenever you set that instead.
@@ -317,7 +317,7 @@ existingSecretName: ""
 # Service with mongodb.service.nameOverride, and there is no single right
 # default: the chart then REFUSES TO RENDER until you set configmap.MONGO_HOST
 # yourself, and the refusal prints the value to set.
-# Its PASSWORD is read for you, straight from the Secret the subchart generates
+# Its PASSWORD is read for you, straight from the Secret this chart keeps for it
 # (key mongodb-root-password), whenever that Secret lands in the same namespace
 # as the console pods: install with '-n product-console', the namespace this
 # chart pins, and leave global.namespaceOverride unset, and it does. Split them,
@@ -338,7 +338,13 @@ mongodb:
     enabled: true
     rootUser: midaz
     rootPassword: ""
+    # -- Secret with the root password. The default points the subchart at the one
+    # this chart keeps across uninstall (templates/mongodb-secret.yaml); the
+    # console's templates read it as empty. Name your own Secret to replace it.
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
   persistence:
     size: 8Gi
+    # -- The data volume outlives the release: helm uninstall keeps it.
+    resourcePolicy: keep
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

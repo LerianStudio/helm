@@ -1,9 +1,18 @@
-{{- if .Values.global.externalRabbitmqDefinitions.enabled }}
-{{- /* No users: the Job PUTs transaction and consumer with the operator's passwords.
-   A POSTed user overwrites the live password with the file's public default. */}}
-{{- $defs := .Files.Get "files/rabbitmq/load_definitions.json" | fromJson }}
-{{- $perms := list }}
-{{- range $defs.permissions }}{{ if has .user (list "transaction" "consumer") }}{{ $perms = append $perms . }}{{ end }}{{ end }}
+{{- $ext := .Values.global.externalRabbitmqDefinitions }}
+{{- $bundled := and .Values.rabbitmq.enabled .Values.ledger.enabled (not $ext.enabled) }}
+{{- if or $ext.enabled $bundled }}
+{{- $appSecret := $ext.appCredentials.useExistingSecret.name }}
+{{- $txPass := $ext.appCredentials.transactionPassword }}
+{{- $consPass := $ext.appCredentials.consumerPassword }}
+{{- $adminSecret := $ext.rabbitmqAdminLogin.useExistingSecret.name }}
+{{- if $bundled }}
+{{- /* Logged in as transaction with the password the definitions Secret last gave the broker,
+   else (upgrade from a chart without that key) the one the ledger runs on. */}}
+{{- $appSecret = ternary .Values.ledger.existingSecretName "" .Values.ledger.useExistingSecret }}
+{{- $txPass = .Values.ledger.secrets.RABBITMQ_DEFAULT_PASS }}
+{{- $consPass = .Values.ledger.secrets.RABBITMQ_CONSUMER_PASS }}
+{{- $adminSecret = ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -18,7 +27,7 @@ metadata:
     helm.sh/hook-weight: "-1"
     helm.sh/hook-delete-policy: before-hook-creation
 data:
-  load_definitions.json: {{ set (omit $defs "users") "permissions" $perms | toJson | quote }}
+  load_definitions.json: {{ .Files.Get "files/rabbitmq/load_definitions.json" | quote }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -26,22 +35,19 @@ metadata:
   name: midaz-bootstrap-rabbitmq
   namespace: {{ .Release.Namespace }}
   annotations:
-    {{- /* Fixed name — a Job's spec.template is immutable, so ANY chart bump
-       (e.g. the helm.sh/chart label) makes a plain `helm upgrade` fail
-       outright without this. Hook annotations for BOTH delivery paths: each
-       controller reads only its own, safe to coexist. */}}
+    {{- /* Recreated at every run: a Job's spec.template is immutable, so any chart bump would fail a
+       plain upgrade. Annotations for both delivery paths; each controller reads only its own. */}}
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
     helm.sh/hook: post-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
-  ttlSecondsAfterFinished: 300
   completions: 1
   parallelism: 1
   backoffLimit: 3
   template:
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Never
       securityContext:
         runAsNonRoot: true
         runAsUser: 100 # the curl image's own user
@@ -101,6 +107,8 @@ spec:
                 exit 1;;
               esac
 
+              RABBITMQ_ADMIN_PASS=${RABBITMQ_APPLIED_PASS:-$RABBITMQ_ADMIN_PASS}
+
               # Every run PUTs both users, then POSTs the definitions (their permissions need the users),
               # so a rotated password converges. The password is JSON-escaped.
               put_user() {
@@ -112,11 +120,17 @@ spec:
                   -X PUT \
                   --data "{\"password\":\"$PASS\",\"tags\":\"administrator\"}" \
                   "$BASE_URL/api/users/$1")
+                if [ "$HTTP_CODE" = 401 ]; then
+                  echo "RabbitMQ refused the login of user $RABBITMQ_ADMIN_USER (HTTP 401).{{ if $bundled }} The broker holds another password than the one this chart gave it: restart the broker pod ($RABBITMQ_HOST-0, which boots with the chart's passwords and drops queued messages), then upgrade or sync again. Once that succeeds, restart the ledger, whose pods keep the password they started with: kubectl -n {{ .Release.Namespace }} rollout restart deployment/{{ include "midaz-ledger.fullname" . }}{{ end }}"
+                  exit 1
+                fi
                 if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                   echo "Error updating $1 user (HTTP $HTTP_CODE):"
                   cat /tmp/response.txt
                   exit 1
                 fi
+                # An admin that just changed its own password logs in with the new one.
+                if [ "$1" = "$RABBITMQ_ADMIN_USER" ]; then RABBITMQ_ADMIN_PASS=$2; fi
                 echo "Done."
               }
               put_user transaction "$RABBITMQ_TRANSACTION_PASS"
@@ -135,6 +149,13 @@ spec:
                 exit 1
               fi
               echo "Done."
+              {{- if $bundled }}
+
+              # The subchart never seeds midaz beside boot-time definitions; drop the one the old file made.
+              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" -X DELETE "$BASE_URL/api/users/midaz")
+              case "$HTTP_CODE" in 2??|404) ;; *) echo "Error deleting midaz (HTTP $HTTP_CODE):"; cat /tmp/response.txt; exit 1;; esac
+              {{- end }}
 
               echo ""
               echo "=== RabbitMQ Bootstrap completed successfully ==="
@@ -146,40 +167,50 @@ spec:
             - name: RABBITMQ_PORT
               value: {{ .Values.global.externalRabbitmqDefinitions.connection.port | quote }}
             - name: RABBITMQ_TRANSACTION_PASS
-              {{- if .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name }}
+              {{- if $appSecret }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name | quote }}
+                  name: {{ $appSecret | quote }}
                   key: RABBITMQ_DEFAULT_PASS
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.transactionPassword | quote }}
+              value: {{ $txPass | quote }}
               {{- end }}
             - name: RABBITMQ_CONSUMER_PASS
-              {{- if .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name }}
+              {{- if $appSecret }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.useExistingSecret.name | quote }}
+                  name: {{ $appSecret | quote }}
                   key: RABBITMQ_CONSUMER_PASS
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.appCredentials.consumerPassword | quote }}
+              value: {{ $consPass | quote }}
               {{- end }}
             - name: RABBITMQ_ADMIN_PASS
-              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+              {{- if $adminSecret }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name | quote }}
-                  key: RABBITMQ_ADMIN_PASS
+                  name: {{ $adminSecret | quote }}
+                  key: {{ if $bundled }}RABBITMQ_DEFAULT_PASS{{ else }}RABBITMQ_ADMIN_PASS{{ end }}
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.password | quote }}
+              value: {{ $ext.rabbitmqAdminLogin.password | quote }}
               {{- end }}
-            - name: RABBITMQ_ADMIN_USER
-              {{- if .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name }}
+            {{- if $bundled }}
+            - name: RABBITMQ_APPLIED_PASS
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name | quote }}
+                  name: midaz-rabbitmq-load-definition
+                  key: transaction-password
+                  optional: true
+            {{- end }}
+            - name: RABBITMQ_ADMIN_USER
+              {{- if $bundled }}
+              value: transaction
+              {{- else if $adminSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $adminSecret | quote }}
                   key: RABBITMQ_ADMIN_USER
               {{- else }}
-              value: {{ .Values.global.externalRabbitmqDefinitions.rabbitmqAdminLogin.username | quote }}
+              value: {{ $ext.rabbitmqAdminLogin.username | quote }}
               {{- end }}
           volumeMounts:
             - name: definitions

@@ -307,8 +307,6 @@ The RabbitMQ configuration has been updated with new definitions:
 ```json
 {
   "name": "consumer",
-  "password_hash": "/xSX/E+2TzPfqRPYnPIdviUpNiXnoQWnAdQR7TS47cJc6GuM",
-  "hashing_algorithm": "rabbit_password_hashing_sha256",
   "tags": "administrator"
 }
 ```

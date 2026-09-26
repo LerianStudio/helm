@@ -3,16 +3,14 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided — see "Known limitation" below) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled datastores' Secrets (see Dependency notes) and are only required when the matching backend is external.
-- Dependency notes: PostgreSQL and MongoDB passwords are single-sourced from Secrets this chart keeps across uninstall (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`), Valkey's from the bundled Bitnami subchart Secret (`<release>-valkey` key `valkey-password`); all are injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
+- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled datastores' Secrets (see Dependency notes) and are only required when the matching backend is external.
+- Dependency notes: PostgreSQL and MongoDB passwords are single-sourced from Secrets this chart keeps across uninstall (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`), Valkey's from the bundled Bitnami subchart Secret (`<release>-valkey` key `valkey-password`); all are injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. The bundled RabbitMQ gives its only users, `transaction` and `consumer`, the ledger's `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` (from `ledger.secrets`, or from `ledger.existingSecretName`, which the chart reads at render: that path needs `helm install`/`helm upgrade` against the cluster, and `helm template` or Argo CD refuse it). When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
 - Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the chart own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
 > **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` accordingly.
 
 > **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`<release>-mongodb`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets. Deleting only the Secrets resets nothing: a reinstall generates new passwords that the kept data never learned.
-
-> **Known limitation — RabbitMQ is not yet single-sourced.** `files/rabbitmq/load_definitions.json` bakes a static `password_hash` for the `midaz`, `transaction`, and `consumer` users, which the broker imports at boot. Because that file is a second, independent source of truth, the Bitnami single-source pattern cannot drive it. `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` therefore remain operator-provided and must match the hashes baked into the definitions file. Tracked as a follow-up.
 
 Source code can be found here:
 * https://github.com/LerianStudio/helm/tree/main/charts/midaz
@@ -524,7 +522,7 @@ Notes:
 - **Repository:** https://groundhog2k.github.io/helm-charts
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
   
-- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (users, queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
+- **Important:** When using an external RabbitMQ instance, it is essential to create the `transaction` and `consumer` users and load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (the two users' permissions, queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
 
 - **You have two options to load the definitions:**
 
@@ -538,10 +536,14 @@ Enable the bootstrap job in your values.yaml to automatically apply the RabbitMQ
       ```
 
 2. **Manually:**
-You can also manually apply the definitions using RabbitMQ's HTTP API with the following command:
+You can also apply them with RabbitMQ's HTTP API. First create the two users with your own passwords, the ones you give the ledger as `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` (JSON-escape a `"` or `\` in them), then load the definitions, whose permissions need those users:
 
     ```console
-    curl -u {user}:{pass} -X POST -H "Content-Type: application/json" \
+    curl -u {admin-user}:{admin-pass} -X PUT -H "Content-Type: application/json" \
+      -d '{"password":"{transaction-pass}","tags":"administrator"}' http://{host}:{port}/api/users/transaction
+    curl -u {admin-user}:{admin-pass} -X PUT -H "Content-Type: application/json" \
+      -d '{"password":"{consumer-pass}","tags":"administrator"}' http://{host}:{port}/api/users/consumer
+    curl -u {admin-user}:{admin-pass} -X POST -H "Content-Type: application/json" \
       -d @load_definitions.json http://{host}:{port}/api/definitions
     ```
     The load_definitions.json file is located at:
@@ -557,7 +559,6 @@ To streamline external RabbitMQ setup, this chart provides a one-shot Job that:
 - Applies the standard definitions file (`charts/midaz/files/rabbitmq/load_definitions.json`) via the HTTP API.
 - Creates/updates the `transaction` and `consumer` users with custom passwords.
 - Waits for AMQP connectivity with a 300s timeout.
-- Is idempotent: if users already exist, it skips and exits.
 
 - Template: `charts/midaz/templates/bootstrap-rabbitmq.yaml`
 - Job name: `midaz-bootstrap-rabbitmq`
@@ -596,8 +597,7 @@ global:
 
 Notes:
 - All secrets must be in the same namespace as the release.
-- The Job has a TTL of 300 seconds after completion.
-- Users created: `midaz` (admin), `transaction`, `consumer`.
+- A successful Job is deleted; a failed one keeps its pods, so `kubectl logs job/midaz-bootstrap-rabbitmq` shows the reason.
 
  
 #### RabbitMQ over TLS/SSL

@@ -29,12 +29,11 @@ spec:
     metadata:
       labels:
         {{- include "plugin-worker.labels" (dict "context" . "name" .Values.worker.name ) | nindent 8 }}
-      {{- with .Values.worker.podAnnotations }}
       annotations:
-        {{- range $key, $value := . }}
+        checksum/secret: {{ include (print $.Template.BasePath "/worker/secrets.yaml") . | sha256sum }}
+        {{- range $key, $value := .Values.worker.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
-      {{- end }}
     spec:
       {{- with .Values.worker.imagePullSecrets }}
       imagePullSecrets:

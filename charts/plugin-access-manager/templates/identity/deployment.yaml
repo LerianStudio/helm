@@ -18,6 +18,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/identity/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
       labels:
        {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 8 }} 
     spec:

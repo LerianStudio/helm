@@ -540,9 +540,9 @@ You can also apply them with RabbitMQ's HTTP API. First create the two users wit
 
     ```console
     curl -u {admin-user}:{admin-pass} -X PUT -H "Content-Type: application/json" \
-      -d '{"password":"{transaction-pass}","tags":"administrator"}' http://{host}:{port}/api/users/transaction
+      -d '{"password":"{transaction-pass}","tags":"management"}' http://{host}:{port}/api/users/transaction
     curl -u {admin-user}:{admin-pass} -X PUT -H "Content-Type: application/json" \
-      -d '{"password":"{consumer-pass}","tags":"administrator"}' http://{host}:{port}/api/users/consumer
+      -d '{"password":"{consumer-pass}","tags":"management"}' http://{host}:{port}/api/users/consumer
     curl -u {admin-user}:{admin-pass} -X POST -H "Content-Type: application/json" \
       -d @load_definitions.json http://{host}:{port}/api/definitions
     ```

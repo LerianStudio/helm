@@ -1,13 +1,24 @@
 {{- if .Values.global.externalRabbitmqDefinitions.enabled }}
+{{- /* No users: the Job PUTs transaction and consumer with the operator's passwords.
+   A POSTed user overwrites the live password with the file's public default. */}}
+{{- $defs := .Files.Get "files/rabbitmq/load_definitions.json" | fromJson }}
+{{- $perms := list }}
+{{- range $defs.permissions }}{{ if has .user (list "transaction" "consumer") }}{{ $perms = append $perms . }}{{ end }}{{ end }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: midaz-bootstrap-rabbitmq-definitions
   namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- /* A hook sorted before the Job: pre-upgrade hooks run before plain resources exist.
+       Never hook-succeeded, or it is deleted before the Job mounts it. */}}
+    argocd.argoproj.io/hook: Sync
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-weight: "-1"
+    helm.sh/hook-delete-policy: before-hook-creation
 data:
-  load_definitions.json: |
-{{ .Files.Get "files/rabbitmq/load_definitions.json" | indent 4 }}
+  load_definitions.json: {{ set (omit $defs "users") "permissions" $perms | toJson | quote }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -85,19 +96,31 @@ spec:
               echo "API URL: $BASE_URL"
               echo ""
 
-              echo "Checking if RabbitMQ users already exist..."
+              case "$RABBITMQ_TRANSACTION_PASS$RABBITMQ_CONSUMER_PASS" in *[[:cntrl:]]*)
+                echo "A RabbitMQ app password (transaction or consumer) contains a control character; choose one without."
+                exit 1;;
+              esac
 
-              # Check if key users exist (transaction, consumer)
-              TRANSACTION_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/users/transaction" 2>/dev/null || echo "not_found")
-              CONSUMER_EXISTS=$(curl -sSk -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                "$BASE_URL/api/users/consumer" 2>/dev/null || echo "not_found")
-
-              if echo "$TRANSACTION_EXISTS" | grep -q '"name":"transaction"' && \
-                 echo "$CONSUMER_EXISTS" | grep -q '"name":"consumer"'; then
-                echo "RabbitMQ definitions already applied (users transaction and consumer exist). Skipping."
-                exit 0
-              fi
+              # Every run PUTs both users, then POSTs the definitions (their permissions need the users),
+              # so a rotated password converges. The password is JSON-escaped.
+              put_user() {
+                echo "Updating RabbitMQ user: $1..."
+                PASS=$(printf '%s' "$2" | sed 's/[\\"]/\\&/g')
+                HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
+                  -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
+                  -H "content-type: application/json" \
+                  -X PUT \
+                  --data "{\"password\":\"$PASS\",\"tags\":\"administrator\"}" \
+                  "$BASE_URL/api/users/$1")
+                if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+                  echo "Error updating $1 user (HTTP $HTTP_CODE):"
+                  cat /tmp/response.txt
+                  exit 1
+                fi
+                echo "Done."
+              }
+              put_user transaction "$RABBITMQ_TRANSACTION_PASS"
+              put_user consumer "$RABBITMQ_CONSUMER_PASS"
 
               echo "Applying RabbitMQ definitions from file..."
               HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
@@ -108,34 +131,6 @@ spec:
                 "$BASE_URL/api/definitions")
               if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                 echo "Error applying definitions (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                exit 1
-              fi
-              echo "Done."
-
-              echo "Updating RabbitMQ user: transaction..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X PUT \
-                --data "{\"password\":\"$RABBITMQ_TRANSACTION_PASS\",\"tags\":\"administrator\"}" \
-                "$BASE_URL/api/users/transaction")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error updating transaction user (HTTP $HTTP_CODE):"
-                cat /tmp/response.txt
-                exit 1
-              fi
-              echo "Done."
-
-              echo "Updating RabbitMQ user: consumer..."
-              HTTP_CODE=$(curl -sSk -o /tmp/response.txt -w "%{http_code}" \
-                -u "$RABBITMQ_ADMIN_USER:$RABBITMQ_ADMIN_PASS" \
-                -H "content-type: application/json" \
-                -X PUT \
-                --data "{\"password\":\"$RABBITMQ_CONSUMER_PASS\",\"tags\":\"administrator\"}" \
-                "$BASE_URL/api/users/consumer")
-              if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-                echo "Error updating consumer user (HTTP $HTTP_CODE):"
                 cat /tmp/response.txt
                 exit 1
               fi

@@ -3,6 +3,18 @@
 ## [4.3.6](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.6)
 
 - Fixes:
+  - Refuse an empty MongoDB existingSecret.
+  - Keep the database and its password on uninstall.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.5...reporter-v4.3.6)
+
+---
+
+## [4.3.6](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.6)
+
+- Fixes:
   - Refuse an empty MongoDB existingSecret to prevent configuration errors.
   - Keep the database and its password on uninstall to ensure data integrity.
 

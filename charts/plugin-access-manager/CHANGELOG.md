@@ -1,5 +1,17 @@
 # Plugin-access-manager Changelog
 
+## [9.5.5](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.5)
+
+- **Fixes:**
+  - Let the init job finish under a mesh sidecar to ensure proper initialization.
+  - Restart pods when their secret changes to maintain security and functionality.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.4...plugin-access-manager-v9.5.5)
+
+---
+
 ## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
 
 - **Fixes:**

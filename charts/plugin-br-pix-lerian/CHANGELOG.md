@@ -2,6 +2,27 @@
 
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
 
+- **Features:**
+  - Added support to drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+  - Consolidated `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+- **Fixes:**
+  - Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Corrected prefixed probe paths and updated license client information in documentation.
+  - Fixed access to the real access-manager service.
+
+- **Improvements:**
+  - Rewrote runbook tone and added an English version.
+  - Productized configmap surface with defaults in template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
 Features:
 - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
 - Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.

@@ -6,6 +6,20 @@
   - Stopped the bundled RabbitMQ from shipping public passwords.
   - Shipped RabbitMQ definitions without users or hashes.
   - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and retained job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
   - Refused a broker boot file without users and kept job logs.
 
 Contributors: @fredcamaral, @lerian-studio

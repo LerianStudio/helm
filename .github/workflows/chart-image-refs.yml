@@ -261,8 +261,6 @@ jobs:
                   : '_no image references_\n\n';
             }
             body += '</details>\n\n';
-            body += 'Third-party subchart images are reported as skipped: they are not ours to publish, '
-                  + 'and checking them spends the anonymous registry rate limit.\n\n';
 
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             body += `---\n<sub>🖼️ [View full logs](${runUrl})</sub>\n`;

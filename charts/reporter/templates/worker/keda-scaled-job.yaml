@@ -20,6 +20,11 @@ spec:
     ttlSecondsAfterFinished: {{ .Values.worker.keda.scaledJob.ttlSecondsAfterFinished }}
     activeDeadlineSeconds: {{ .Values.worker.keda.scaledJob.activeDeadlineSeconds | default 300 }}
     template:
+      metadata:
+        # A mesh proxy injected as a regular container never exits and the Job never completes.
+        annotations:
+          sidecar.istio.io/nativeSidecar: "true"
+          config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
       spec:
         {{- with .Values.worker.imagePullSecrets }}
         imagePullSecrets:

@@ -11,6 +11,17 @@ Contributors: @fredcamaral, @lerian-studio
 
 ---
 
+## [4.3.10](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.10)
+
+- Fixes:
+  - Run the credential sidecar under runtime seccomp.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.9...reporter-v4.3.10)
+
+---
+
 ## [4.3.9](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.9)
 
 - **Fixes:**

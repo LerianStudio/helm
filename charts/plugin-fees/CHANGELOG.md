@@ -1,5 +1,22 @@
 # Plugin-fees Changelog
 
+## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
+
+- **Fixes**
+  - Run the credential sidecar under runtime seccomp to enhance security. (#2277, 9c0efc01)
+
+- **Documentation**
+  - Addressed CodeRabbit findings on UPGRADE-8.0.md to improve clarity and accuracy. (1b9f9648)
+  - Added an upgrade guide for plugin-fees v8.0.1 to assist users with the transition. (58c4162c)
+  - Clarified that the CLIENT_ID move is backward-compatible, not breaking, to prevent confusion. (f0fbaa07)
+  - Created UPGRADE-8.0.md with strict guidelines to ensure focus and clarity on plugin-fees updates. (340710ee)
+
+**Contributors:** @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.1...plugin-fees-v8.0.2)
+
+---
+
 ## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
 
 - Fixes:

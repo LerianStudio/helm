@@ -36,10 +36,11 @@ spec:
       {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.ledger.name ) | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.ledger.podAnnotations }}
       annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/ledger/secrets.yaml") . | sha256sum }}
+        {{- with .Values.ledger.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 8 }}
     spec:

@@ -1,5 +1,20 @@
 # Midaz Changelog
 
+## [9.2.13](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.13)
+
+- Fixes:
+  - Restart pods when their configmap changes.
+  - Give the ledger's broker users management, not admin.
+  - Pin the bundled databases to the major they run today.
+  - Refuse an external broker admin named like a ledger user.
+  - Recreate the bundled mongodb pod on upgrade.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.12...midaz-v9.2.13)
+
+---
+
 ## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
 
 - Fixes:

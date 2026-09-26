@@ -6,8 +6,12 @@ metadata:
     {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.caradhras.revisionHistoryLimit | default 10 }}
+  # A new pod must migrate before an old one leaves, so auth.deploymentStrategy does not apply here.
   strategy:
-    {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   {{- if not .Values.caradhras.autoscaling.enabled }}
   replicas: {{ include "caradhras.replicaCount" . }}
   {{- end }}

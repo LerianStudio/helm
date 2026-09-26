@@ -320,7 +320,7 @@ entry for the auth database password, single-sourced. With the bundled `auth-dat
 (aliased Bitnami postgresql) subchart, it reads the Secret this chart keeps across uninstall
 (<release>-auth-database, key "password"); honors auth-database.auth.existingSecret; and
 falls back to the app's plugin-auth Secret (key DB_PASSWORD) only for an external database.
-Used by the auth, caradhras, and migrations/init-user workloads.
+Used by the auth, caradhras, and init-user workloads.
 Input (dict): context (root .), envName (container env var name, e.g. DB_PASSWORD or DB_PASS).
 See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 */}}

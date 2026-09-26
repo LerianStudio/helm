@@ -325,6 +325,12 @@ mongodb:
   # MongoDB’s flexibility and scalability make it the perfect choice for managing evolving and less structured data.
   enabled: true
   external: false
+  # bitnami/mongodb tags are gone; bitnamilegacy serves the subchart's same tag, so data stays readable.
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/mongodb
   auth:
     enabled: true
     rootUser: "plugin-fees"

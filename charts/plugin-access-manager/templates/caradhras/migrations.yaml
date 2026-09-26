@@ -18,6 +18,8 @@ spec:
     {{- end }}
       initContainers:
       - name: wait-for-dependencies
+        securityContext:
+          {{- toYaml .Values.auth.securityContext | nindent 10 }}
         image: busybox
         envFrom:
         - configMapRef:
@@ -37,6 +39,10 @@ spec:
             done;
       containers:
         - name: migrate
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
+          # The image's workdir /home/nonroot is 0700 for uid 65532; any other uid panics reading conf/ there.
+          workingDir: /tmp
           image: "{{ include "caradhras.migrationsImageRepository" . }}:{{ include "caradhras.migrationsImageTag" . }}"
           imagePullPolicy: {{ include "caradhras.migrationsImagePullPolicy" . }}
           env:

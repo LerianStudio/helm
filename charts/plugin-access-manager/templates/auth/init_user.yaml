@@ -46,11 +46,7 @@ spec:
           imagePullPolicy: {{ $initUserImage.pullPolicy | default "Always" }}
           {{- end }}
           securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
           env:
             # Database configuration
             - name: DB_HOST

@@ -17,6 +17,7 @@
 #   hook or upgrade error in that chart still fails the gate. For a chart that is
 #   sound but needs a datastore kind does not run.
 #
+tracer readiness      # Needs a PostgreSQL the kind cluster does not run: the fixture's database host does not resolve, so the pod never becomes Ready.
 reporter              # References external KEDA custom resources (keda.sh/v1alpha1: ScaledObject / ScaledJob / TriggerAuthentication) whose CRDs are not present in a bare kind cluster. Needs the KEDA CRDs pre-installed (a future enhancement) or the chart guarded behind a toggle.
 otel-collector-lerian # DaemonSet renders a DUPLICATE env var GOMEMLIMIT — server-side apply rejects it ("duplicate entries for key GOMEMLIMIT"). Real chart bug: drop the duplicate (likely set in both the chart values and the opentelemetry-collector subchart).
 plugin-br-pix-lerian  # 15-component Pix chart (spi/dict/cob/pixauto + systemplane adapters) needs real PostgreSQL, a broker and RSFN connectivity; migration/bootstrap hooks and readiness never complete against the fixture's postgres.example.invalid in a bare kind cluster. Manifests + admission are validated (helm template + --dry-run=server pass); full deploy is exercised via alpha + a real environment. Same class as reporter (external backing/CRDs).

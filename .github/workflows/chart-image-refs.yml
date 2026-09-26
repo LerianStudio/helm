@@ -114,6 +114,7 @@ jobs:
           chart-path: charts/${{ matrix.chart }}
           values-file: .github/configs/helm-render-values/${{ matrix.chart }}.yaml
           on-unknown: ${{ github.event.pull_request.head.repo.fork && 'warn' || 'fail' }}
+          include-dependencies: true
 
       - name: Record the verdict
         env:

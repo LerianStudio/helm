@@ -4,19 +4,22 @@
 {{- $pass = dict }}
 {{- range $k, $v := (lookup "v1" "Secret" .Release.Namespace .Values.ledger.existingSecretName).data }}{{ $_ := set $pass $k (b64dec $v) }}{{ end }}
 {{- end }}
-{{- $users := list }}
+{{- $defs := include "midaz.rabbitmqDefinitions" . | fromJson }}
 {{- if and $pass.RABBITMQ_DEFAULT_PASS $pass.RABBITMQ_CONSUMER_PASS }}
-{{- $users = list (dict "name" "transaction" "password" $pass.RABBITMQ_DEFAULT_PASS "tags" "administrator") (dict "name" "consumer" "password" $pass.RABBITMQ_CONSUMER_PASS "tags" "administrator") }}
+{{- $_ := set $defs "users" (list (dict "name" "transaction" "password" $pass.RABBITMQ_DEFAULT_PASS "tags" "administrator") (dict "name" "consumer" "password" $pass.RABBITMQ_CONSUMER_PASS "tags" "administrator")) }}
+{{- else if and .Values.ledger.enabled .Values.ledger.useExistingSecret }}
+{{- fail (printf "ledger.useExistingSecret with the bundled RabbitMQ: the chart reads RABBITMQ_DEFAULT_PASS and RABBITMQ_CONSUMER_PASS from Secret %q at render and found none (helm template and Argo CD render without cluster access). Create that Secret with both keys and render with cluster access (helm install or helm upgrade), or put both passwords in ledger.secrets with ledger.useExistingSecret=false." .Values.ledger.existingSecretName) }}
+{{- else }}
+{{- $_ := set $defs "permissions" (list) }}
 {{- end }}
 kind: Secret
 apiVersion: v1
 metadata:
   name: "midaz-rabbitmq-load-definition"
 data:
-  {{- /* The bundled broker imports this at every boot. Unknown passwords (helm template over an
-     existing Secret) leave the users out, so a boot never blanks a live password. */}}
-  load_definition.json: {{ merge (dict "users" $users) (include "midaz.rabbitmqDefinitions" . | fromJson) | toJson | b64enc | quote }}
-  {{- if $users }}
+  {{- /* The bundled broker imports this at every boot: a permission for a user the file lacks fails the boot. */}}
+  load_definition.json: {{ $defs | toJson | b64enc | quote }}
+  {{- if $defs.users }}
   transaction-password: {{ $pass.RABBITMQ_DEFAULT_PASS | b64enc | quote }}
   {{- end }}
 {{- end }}

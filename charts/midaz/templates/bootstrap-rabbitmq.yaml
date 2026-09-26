@@ -35,22 +35,19 @@ metadata:
   name: midaz-bootstrap-rabbitmq
   namespace: {{ .Release.Namespace }}
   annotations:
-    {{- /* Fixed name — a Job's spec.template is immutable, so ANY chart bump
-       (e.g. the helm.sh/chart label) makes a plain `helm upgrade` fail
-       outright without this. Hook annotations for BOTH delivery paths: each
-       controller reads only its own, safe to coexist. */}}
+    {{- /* Recreated at every run: a Job's spec.template is immutable, so any chart bump would fail a
+       plain upgrade. Annotations for both delivery paths; each controller reads only its own. */}}
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
     helm.sh/hook: post-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
-  ttlSecondsAfterFinished: 300
   completions: 1
   parallelism: 1
   backoffLimit: 3
   template:
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Never
       securityContext:
         runAsNonRoot: true
         runAsUser: 100 # the curl image's own user
@@ -123,6 +120,10 @@ spec:
                   -X PUT \
                   --data "{\"password\":\"$PASS\",\"tags\":\"administrator\"}" \
                   "$BASE_URL/api/users/$1")
+                if [ "$HTTP_CODE" = 401 ]; then
+                  echo "RabbitMQ refused the login of user $RABBITMQ_ADMIN_USER (HTTP 401).{{ if $bundled }} The broker holds another password than the one this chart gave it: restart the broker pod ($RABBITMQ_HOST-0, which boots with the chart's passwords and drops queued messages), then upgrade or sync again.{{ end }}"
+                  exit 1
+                fi
                 if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
                   echo "Error updating $1 user (HTTP $HTTP_CODE):"
                   cat /tmp/response.txt

@@ -4,7 +4,7 @@
 
 - Chart type: `multi-component`
 - Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided) plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled datastores' Secrets (see Dependency notes) and are only required when the matching backend is external.
-- Dependency notes: PostgreSQL and MongoDB passwords are single-sourced from Secrets this chart keeps across uninstall (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`), Valkey's from the bundled Bitnami subchart Secret (`<release>-valkey` key `valkey-password`); all are injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. The bundled RabbitMQ gives its only users, `transaction` and `consumer`, the ledger's `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` (from `ledger.secrets` or `ledger.existingSecretName`). When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
+- Dependency notes: PostgreSQL and MongoDB passwords are single-sourced from Secrets this chart keeps across uninstall (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`), Valkey's from the bundled Bitnami subchart Secret (`<release>-valkey` key `valkey-password`); all are injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. The bundled RabbitMQ gives its only users, `transaction` and `consumer`, the ledger's `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` (from `ledger.secrets`, or from `ledger.existingSecretName`, which the chart reads at render: that path needs `helm install`/`helm upgrade` against the cluster, and `helm template` or Argo CD refuse it). When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
 - Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the chart own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
@@ -555,7 +555,6 @@ To streamline external RabbitMQ setup, this chart provides a one-shot Job that:
 - Applies the standard definitions file (`charts/midaz/files/rabbitmq/load_definitions.json`) via the HTTP API.
 - Creates/updates the `transaction` and `consumer` users with custom passwords.
 - Waits for AMQP connectivity with a 300s timeout.
-- Is idempotent: if users already exist, it skips and exits.
 
 - Template: `charts/midaz/templates/bootstrap-rabbitmq.yaml`
 - Job name: `midaz-bootstrap-rabbitmq`
@@ -594,8 +593,7 @@ global:
 
 Notes:
 - All secrets must be in the same namespace as the release.
-- The Job has a TTL of 300 seconds after completion.
-- Users created: `midaz` (admin), `transaction`, `consumer`.
+- A successful Job is deleted; a failed one keeps its pods, so `kubectl logs job/midaz-bootstrap-rabbitmq` shows the reason.
 
  
 #### RabbitMQ over TLS/SSL

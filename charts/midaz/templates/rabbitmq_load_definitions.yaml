@@ -6,7 +6,7 @@
 {{- end }}
 {{- $defs := .Files.Get "files/rabbitmq/load_definitions.json" | fromJson }}
 {{- if and $pass.RABBITMQ_DEFAULT_PASS $pass.RABBITMQ_CONSUMER_PASS }}
-{{- $_ := set $defs "users" (list (dict "name" "transaction" "password" $pass.RABBITMQ_DEFAULT_PASS "tags" "administrator") (dict "name" "consumer" "password" $pass.RABBITMQ_CONSUMER_PASS "tags" "administrator")) }}
+{{- $_ := set $defs "users" (list (dict "name" "transaction" "password" $pass.RABBITMQ_DEFAULT_PASS "tags" "administrator") (dict "name" "consumer" "password" $pass.RABBITMQ_CONSUMER_PASS "tags" "management")) }}
 {{- else if and .Values.ledger.enabled .Values.ledger.useExistingSecret }}
 {{- fail (printf "ledger.useExistingSecret with the bundled RabbitMQ: the chart reads RABBITMQ_DEFAULT_PASS and RABBITMQ_CONSUMER_PASS from Secret %q at render and found none (helm template and Argo CD render without cluster access). Create that Secret with both keys and render with cluster access (helm install or helm upgrade), or put both passwords in ledger.secrets with ledger.useExistingSecret=false." .Values.ledger.existingSecretName) }}
 {{- else }}

@@ -2,6 +2,27 @@
 
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
 
+- **Features:**
+  - Introduced STREAMING_ENABLED configuration driven by `global.streaming.enabled`.
+  - Consolidated SD_* configurations via `global.serviceDiscovery` using a chart-local helper.
+
+- **Fixes:**
+  - Ensured the plugin points to the real access-manager service.
+  - Prefixed provider-mock callback URLs to prevent conflicts.
+  - Ensured telemetry is gated on the resolved flag.
+
+- **Improvements:**
+  - Refactored to always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Adopted `lerian-common` masks and workload fragments for consistency and efficiency.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
 Features:
 - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
 - Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).

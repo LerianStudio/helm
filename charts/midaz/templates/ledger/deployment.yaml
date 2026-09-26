@@ -96,14 +96,17 @@ spec:
               name: {{ include "midaz-ledger.fullname" . }}
           env:
             {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
-            {{/* PostgreSQL: single role `midaz` backs both onboarding and transaction; both
-                 module passwords map to Bitnami key `password`, both replicas to `replication-password`. */}}
+            {{/* PostgreSQL: single role `midaz` backs both modules, key `password`. The bundled read replica
+                 copies the primary's roles, so its replicas use `password` too; an operator Secret for an
+                 external PostgreSQL keeps `replication-password`, the password of its own replica user. */}}
             {{- $pg := .Values.postgresql | default dict }}
-            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
+            {{- $pgBundled := and (ne (toString $pg.enabled) "false") (not $pg.external) }}
+            {{- if or $pgBundled (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
+            {{- $replicaKey := ternary "password" "replication-password" $pgBundled }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_ONBOARDING_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 12 }}
-            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_ONBOARDING_REPLICA_PASSWORD") | nindent 12 }}
-            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_TRANSACTION_REPLICA_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" $replicaKey "envName" "DB_ONBOARDING_REPLICA_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" $replicaKey "envName" "DB_TRANSACTION_REPLICA_PASSWORD") | nindent 12 }}
             {{- else }}
             {{- if .Values.ledger.secrets.DB_ONBOARDING_PASSWORD }}
             - name: DB_ONBOARDING_PASSWORD

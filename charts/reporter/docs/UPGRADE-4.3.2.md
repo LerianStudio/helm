@@ -27,35 +27,26 @@ This is a patch release that fixes the bundled RabbitMQ broker's credential hand
 
 ### 1. Bundled RabbitMQ credential now explicitly documented and guarded
 
-The bundled RabbitMQ broker (enabled via `rabbitmq.enabled=true`) now ships with an explicit, documented dev-only credential and enforces it at render time. Prior releases left `secrets.RABBITMQ_DEFAULT_PASS` empty by default, which caused the bundled broker to fail at boot (the user was declared in the imported definitions file with a password hash, but the application Secret had no matching plaintext password for the workloads to authenticate with). This release sets a fixed dev credential and adds render-time guards to prevent mismatched password/hash pairs.
-
-| Setting | v4.3.1 | v4.3.2 |
-|---------|--------|--------|
-| `secrets.RABBITMQ_DEFAULT_PASS` | `""` (empty, caused boot failure) | `"reporter123"` (fixed dev credential) |
-| `rabbitmq.loadDefinition.passwordHash` | not present | `"MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G"` (hash of `reporter123`) |
+The bundled RabbitMQ broker (enabled via `rabbitmq.enabled=true`) takes its only login from the operator's `secrets.RABBITMQ_DEFAULT_PASS`, and the render refuses an empty password. Prior releases left `secrets.RABBITMQ_DEFAULT_PASS` empty by default, which caused the bundled broker to fail at boot (the user was declared in the imported definitions file with a password hash, but the application Secret had no matching plaintext password for the workloads to authenticate with).
 
 **Before (v4.3.1):**
 
 The bundled broker imported a definitions file that declared a `reporter` user with a salted password hash, but `secrets.RABBITMQ_DEFAULT_PASS` was empty. The manager and worker pods attempted to authenticate with an empty password, which the broker rejected (403). The TCP startup probe did not catch this, so the pods appeared healthy but could not connect to the broker.
 
-**After (v4.3.2):**
+**After:**
 
-The chart now ships a fixed dev credential pair (`reporter123` / its hash) and enforces it at render time. The bundled broker is dev/local-only — production deployments must use an external broker (`rabbitmq.enabled=false` + `externalRabbitmqDefinitions.enabled=true`) with real credentials provisioned per tier.
+The broker imports the operator's password with its definitions at every boot, so the workloads and the broker share one credential and there is no password hash to keep in step. See the README's "Bundled broker login" for the passwords the render refuses, the characters the apps accept, and the broker restart a password change needs.
 
-**Rendered values (v4.3.2):**
+**Rendered values:**
 
 ```yaml
 secrets:
   RABBITMQ_DEFAULT_USER: reporter
-  RABBITMQ_DEFAULT_PASS: "reporter123"
+  RABBITMQ_DEFAULT_PASS: <your-rabbitmq-password>
 
 rabbitmq:
   enabled: true
-  loadDefinition:
-    passwordHash: "MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G"
 ```
-
-> **Warning:** The bundled broker credential is now FIXED at `reporter123`. Any attempt to override `secrets.RABBITMQ_DEFAULT_PASS` or `rabbitmq.loadDefinition.passwordHash` when `rabbitmq.enabled=true` will fail at render time with an error message. This is intentional: Helm cannot compute RabbitMQ's salted password hash from a plaintext password, so the chart cannot verify that a custom password and a custom hash are a matching pair. An unmatched pair would render successfully but fail at runtime (403), which the TCP startup probe does not catch. For a real / custom broker credential, use the external broker path (`rabbitmq.enabled=false` + `externalRabbitmqDefinitions.enabled=true`) and provision the user per tier.
 
 > **Important:** The render-time guard also refuses `manager.useExistingSecret` or `worker.useExistingSecret` when `rabbitmq.enabled=true`. A component external Secret can carry its own `RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS` that the bundled broker never learns (the worker path is invisible to the manager-name guard), so that workload would authenticate with a credential the broker rejects. Use an external broker with `useExistingSecret`, or drop `useExistingSecret` so the chart single-sources the bundled broker credential.
 
@@ -97,7 +88,7 @@ Events:
   Warning  FailedScheduling  5m    default-scheduler  0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector.
 ```
 
-**After (v4.3.2):**
+**After:**
 
 The bundled SeaweedFS components schedule on any architecture. amd64 clusters are unaffected (no selector still matches amd64 nodes). To re-pin to a specific architecture, set a real selector per component:
 
@@ -175,15 +166,13 @@ mongosh "mongodb://<DATASOURCE_CRM_HOST>:27017/?tls=true&tlsCAFile=${REGION}-bun
 
 No `values.yaml` keys were added, removed, or renamed. The changes are:
 
-1. `secrets.RABBITMQ_DEFAULT_PASS` now defaults to `"reporter123"` (was `""`).
-2. `rabbitmq.loadDefinition.passwordHash` is a new field that defaults to the hash of `reporter123`.
-3. `seaweedfs.master.nodeSelector`, `seaweedfs.volume.nodeSelector`, `seaweedfs.filer.nodeSelector`, and `seaweedfs.s3.nodeSelector` now default to `""` (unpinned, was hardcoded `kubernetes.io/arch: amd64` in the subchart).
-4. `common.configmap` now accepts `DATASOURCE_CRM_SSLCA_BASE64` (inline Base64 CA bundle) as an alternative to `DATASOURCE_CRM_SSLROOTCERT` (file path).
+1. `secrets.RABBITMQ_DEFAULT_PASS` is required with the bundled broker: it is the broker's only login.
+2. `seaweedfs.master.nodeSelector`, `seaweedfs.volume.nodeSelector`, `seaweedfs.filer.nodeSelector`, and `seaweedfs.s3.nodeSelector` now default to `""` (unpinned, was hardcoded `kubernetes.io/arch: amd64` in the subchart).
+3. `common.configmap` now accepts `DATASOURCE_CRM_SSLCA_BASE64` (inline Base64 CA bundle) as an alternative to `DATASOURCE_CRM_SSLROOTCERT` (file path).
 
 | Setting | v4.3.1 | v4.3.2 | Notes |
 |---------|--------|--------|-------|
-| `secrets.RABBITMQ_DEFAULT_PASS` | `""` | `"reporter123"` | Fixed dev credential for bundled broker; render-time guard refuses overrides |
-| `rabbitmq.loadDefinition.passwordHash` | not present | `"MUFZJnvzY2bazWkfRR7p0lSPa0TNRf/ievZm4fG46s/5lu7G"` | Hash of `reporter123`; render-time guard refuses overrides |
+| `secrets.RABBITMQ_DEFAULT_PASS` | `""` | your password (required) | The bundled broker's only login; the render refuses an empty one |
 | `seaweedfs.master.nodeSelector` | `kubernetes.io/arch: amd64` (subchart default) | `""` | Unpinned; set a real selector to re-pin |
 | `seaweedfs.volume.nodeSelector` | `kubernetes.io/arch: amd64` (subchart default) | `""` | Unpinned; set a real selector to re-pin |
 | `seaweedfs.filer.nodeSelector` | `kubernetes.io/arch: amd64` (subchart default) | `""` | Unpinned; set a real selector to re-pin |
@@ -199,8 +188,7 @@ This upgrade requires no mandatory values changes for most deployments. The Helm
 1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
 
 2. **If you are using the bundled RabbitMQ broker (`rabbitmq.enabled=true`):**
-   - The broker credential is now fixed at `reporter123`. If you have overridden `secrets.RABBITMQ_DEFAULT_PASS` in your values, remove the override — the render-time guard will refuse it.
-   - If you require a custom broker credential, migrate to the external broker path (`rabbitmq.enabled=false` + `externalRabbitmqDefinitions.enabled=true`) and provision the user per tier.
+   - Set `secrets.RABBITMQ_DEFAULT_PASS` to your own password; the render refuses an empty one.
 
 3. **If you are using the bundled SeaweedFS object storage on an arm64 cluster (e.g., Apple Silicon minikube):**
    - The upgrade will unpin the architecture selector and allow the pods to schedule. No action required.
@@ -230,7 +218,7 @@ kubectl logs -n reporter -l app.kubernetes.io/name=reporter-manager --tail=50 | 
 kubectl logs -n reporter -l app.kubernetes.io/name=reporter-worker --tail=50 | grep -i rabbitmq
 ```
 
-> **Note:** The upgrade triggers a rolling restart of both the manager and worker deployments. If you are using the bundled RabbitMQ broker and have overridden the credential, the render will fail before any resources are applied.
+> **Note:** The upgrade triggers a rolling restart of both the manager and worker deployments. If you are using the bundled RabbitMQ broker without `secrets.RABBITMQ_DEFAULT_PASS`, the render will fail before any resources are applied.
 
 ## Preview changes before upgrading
 

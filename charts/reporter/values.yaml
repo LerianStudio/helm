@@ -566,6 +566,7 @@ secrets:
   RABBITMQ_DEFAULT_USER: reporter
   # REQUIRED. With the bundled broker (rabbitmq.enabled) it is also the broker's only login, and
   # passwords printed in this chart (reporter123, Lerian@123, CHANGE_ME) are refused.
+  # Only letters, digits and -._~ are safe: the apps put it unescaped in their broker URL.
   RABBITMQ_DEFAULT_PASS: ""
   # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
   # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the

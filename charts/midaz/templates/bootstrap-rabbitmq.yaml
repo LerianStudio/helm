@@ -27,7 +27,7 @@ metadata:
     helm.sh/hook-weight: "-1"
     helm.sh/hook-delete-policy: before-hook-creation
 data:
-  load_definitions.json: {{ include "midaz.rabbitmqDefinitions" . | quote }}
+  load_definitions.json: {{ .Files.Get "files/rabbitmq/load_definitions.json" | quote }}
 ---
 apiVersion: batch/v1
 kind: Job

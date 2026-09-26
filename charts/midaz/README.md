@@ -522,7 +522,7 @@ Notes:
 - **Repository:** https://groundhog2k.github.io/helm-charts
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
   
-- **Important:** When using an external RabbitMQ instance, it is essential to load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (users, queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
+- **Important:** When using an external RabbitMQ instance, it is essential to create the `transaction` and `consumer` users and load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (the two users' permissions, queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
 
 - **You have two options to load the definitions:**
 
@@ -536,10 +536,14 @@ Enable the bootstrap job in your values.yaml to automatically apply the RabbitMQ
       ```
 
 2. **Manually:**
-You can also manually apply the definitions using RabbitMQ's HTTP API with the following command:
+You can also apply them with RabbitMQ's HTTP API. First create the two users with your own passwords, the ones you give the ledger as `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` (JSON-escape a `"` or `\` in them), then load the definitions, whose permissions need those users:
 
     ```console
-    curl -u {user}:{pass} -X POST -H "Content-Type: application/json" \
+    curl -u {admin-user}:{admin-pass} -X PUT -H "Content-Type: application/json" \
+      -d '{"password":"{transaction-pass}","tags":"administrator"}' http://{host}:{port}/api/users/transaction
+    curl -u {admin-user}:{admin-pass} -X PUT -H "Content-Type: application/json" \
+      -d '{"password":"{consumer-pass}","tags":"administrator"}' http://{host}:{port}/api/users/consumer
+    curl -u {admin-user}:{admin-pass} -X POST -H "Content-Type: application/json" \
       -d @load_definitions.json http://{host}:{port}/api/definitions
     ```
     The load_definitions.json file is located at:

@@ -4,7 +4,7 @@
 {{- $pass = dict }}
 {{- range $k, $v := (lookup "v1" "Secret" .Release.Namespace .Values.ledger.existingSecretName).data }}{{ $_ := set $pass $k (b64dec $v) }}{{ end }}
 {{- end }}
-{{- $defs := include "midaz.rabbitmqDefinitions" . | fromJson }}
+{{- $defs := .Files.Get "files/rabbitmq/load_definitions.json" | fromJson }}
 {{- if and $pass.RABBITMQ_DEFAULT_PASS $pass.RABBITMQ_CONSUMER_PASS }}
 {{- $_ := set $defs "users" (list (dict "name" "transaction" "password" $pass.RABBITMQ_DEFAULT_PASS "tags" "administrator") (dict "name" "consumer" "password" $pass.RABBITMQ_CONSUMER_PASS "tags" "administrator")) }}
 {{- else if and .Values.ledger.enabled .Values.ledger.useExistingSecret }}

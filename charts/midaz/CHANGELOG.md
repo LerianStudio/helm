@@ -6,6 +6,20 @@
   - Run init containers under pod security restricted.
 
 - **Improvements:**
+  - Updated documentation to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- **Fixes:**
+  - Run init containers under pod security restricted.
+
+- **Improvements:**
   - Documentation update to indicate that `ledger.securityContext` also covers the init container.
 
 Contributors: @fredcamaral, @lerian-studio

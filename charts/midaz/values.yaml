@@ -870,6 +870,8 @@ postgresql:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+    # latest (PostgreSQL 18.6.0), pinned: PostgreSQL refuses a data directory of another major.
+    digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
   external: false
   architecture: replication
   replication:
@@ -952,6 +954,8 @@ mongodb:
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
+    # latest (MongoDB 8.3.11), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:c8babafb7d15a7412543a9a391ffee8ba206c4d10dd6a1ba2ae2bf74fdfe538b"
   external: false
   auth:
     enabled: true
@@ -960,6 +964,10 @@ mongodb:
     # -- Secret with the passwords, as postgresql.auth.existingSecret.
     existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
+  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
+  # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+  updateStrategy:
+    type: Recreate
   persistence:
     size: 8Gi
     # -- The data volume outlives the release, like the PostgreSQL ones.

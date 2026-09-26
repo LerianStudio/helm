@@ -1,5 +1,16 @@
 # Midaz Changelog
 
+## [9.2.8](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.8)
+
+- **Fixes**
+  - Made the RabbitMQ bootstrap run on upgrade and rotation.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.7...midaz-v9.2.8)
+
+---
+
 ## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
 
 - **Fixes**

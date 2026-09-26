@@ -2,6 +2,25 @@
 
 ## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
 
+- **Features:**
+  - Added Helm upgrade guide for product-console v4.2.3.
+
+- **Fixes:**
+  - Ensured the database and its password are retained on uninstall.
+  - Corrected the lookup for the retained password to its correct location.
+  - Prevented the acceptance of an empty MongoDB existingSecret.
+
+- **Improvements:**
+  - Updated documentation to include uninstall instructions within its namespace before data deletion.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
 - **Fixes:**
   - Ensure the database and its password are retained on uninstall.
   - Correctly locate the stored password where it is written.

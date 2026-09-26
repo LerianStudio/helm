@@ -1,5 +1,16 @@
 # Fetcher Changelog
 
+## [3.1.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.3)
+
+- Fixes:
+  - RabbitMQ bootstrap now sets the configured password first.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.2...fetcher-v3.1.3)
+
+---
+
 ## [3.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.2)
 
 - **Fixes**

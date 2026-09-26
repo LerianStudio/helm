@@ -1,5 +1,18 @@
 # Plugin-access-manager Changelog
 
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- Fixes:
+  - Keep Caradhras up while a new pod migrates.
+  - Keep an old pod serving during rollouts.
+  - Let helm install --wait complete.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
 ## [9.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.3)
 
 - Fixes:

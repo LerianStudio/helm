@@ -1,7 +1,22 @@
+{{- if .Values.rabbitmq.enabled }}
+{{- $pass := .Values.ledger.secrets }}
+{{- if .Values.ledger.useExistingSecret }}
+{{- $pass = dict }}
+{{- range $k, $v := (lookup "v1" "Secret" .Release.Namespace .Values.ledger.existingSecretName).data }}{{ $_ := set $pass $k (b64dec $v) }}{{ end }}
+{{- end }}
+{{- $users := list }}
+{{- if and $pass.RABBITMQ_DEFAULT_PASS $pass.RABBITMQ_CONSUMER_PASS }}
+{{- $users = list (dict "name" "transaction" "password" $pass.RABBITMQ_DEFAULT_PASS "tags" "administrator") (dict "name" "consumer" "password" $pass.RABBITMQ_CONSUMER_PASS "tags" "administrator") }}
+{{- end }}
 kind: Secret
 apiVersion: v1
 metadata:
   name: "midaz-rabbitmq-load-definition"
 data:
-  load_definition.json: |
-    {{ .Files.Get "files/rabbitmq/load_definitions.json" | b64enc | nindent 4 }}
+  {{- /* The bundled broker imports this at every boot. Unknown passwords (helm template over an
+     existing Secret) leave the users out, so a boot never blanks a live password. */}}
+  load_definition.json: {{ merge (dict "users" $users) (include "midaz.rabbitmqDefinitions" . | fromJson) | toJson | b64enc | quote }}
+  {{- if $users }}
+  transaction-password: {{ $pass.RABBITMQ_DEFAULT_PASS | b64enc | quote }}
+  {{- end }}
+{{- end }}

@@ -510,3 +510,14 @@ behavior unchanged).
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+The RabbitMQ definitions without their users, permissions for transaction and consumer only:
+a file user would overwrite the live password with the file's public default.
+*/}}
+{{- define "midaz.rabbitmqDefinitions" -}}
+{{- $defs := .Files.Get "files/rabbitmq/load_definitions.json" | fromJson }}
+{{- $perms := list }}
+{{- range $defs.permissions }}{{ if has .user (list "transaction" "consumer") }}{{ $perms = append $perms . }}{{ end }}{{ end }}
+{{- set (omit $defs "users") "permissions" $perms | toJson }}
+{{- end }}

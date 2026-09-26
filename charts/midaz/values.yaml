@@ -438,8 +438,8 @@ ledger:
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
     # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
-    # existingSecret override. RABBITMQ_* remain operator-provided (see README
-    # "Known limitation" — RabbitMQ is not yet single-sourced).
+    # existingSecret override. RABBITMQ_* are operator-provided; the bundled
+    # RabbitMQ gives them to its transaction and consumer users.
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""
     RABBITMQ_CONSUMER_PASS: ""

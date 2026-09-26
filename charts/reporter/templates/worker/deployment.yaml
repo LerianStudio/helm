@@ -74,6 +74,9 @@ spec:
             {{- toYaml .Values.worker.securityContext | nindent 12 }}
           image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default (include "plugin.version" .) }}"
           imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           ports:
             - name: http
               containerPort: {{ .Values.worker.service.port }}
@@ -84,6 +87,8 @@ spec:
             - secretRef:
                 name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "plugin-worker.fullname" . }}{{ end }}
           env:
+          - name: HOME
+            value: /tmp
           {{- include "reporter.mongoPasswordEnv" (dict "context" $ "secretName" (ternary .Values.worker.existingSecretName (include "plugin-worker.fullname" .) .Values.worker.useExistingSecret)) | nindent 10 }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
@@ -119,8 +124,11 @@ spec:
         {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
         {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" $.Values.aws) | nindent 8 }}
         {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
       {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
-      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" "reporter-iam-tls") | nindent 6 }}
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" "reporter-iam-tls") | trimPrefix "volumes:\n" | nindent 6 }}
       {{- end }}
       {{- with .Values.worker.nodeSelector }}
       nodeSelector:

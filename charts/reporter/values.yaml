@@ -157,7 +157,6 @@ manager:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
-  podSecurityContext: {}
   securityContext:
     runAsGroup: 1000
     runAsUser: 1000
@@ -336,7 +335,6 @@ worker:
     requests:
       cpu: 100m
       memory: 128Mi
-  podSecurityContext: {}
   securityContext:
     runAsGroup: 1000
     runAsUser: 1000

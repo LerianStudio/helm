@@ -36,24 +36,19 @@ spec:
         - name: {{ include "plugin-worker.fullname" . }}
           image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default (include "plugin.version" .) }}"
           imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
-          {{- /* Pod Security "restricted" admits the Job pods only with this profile. 1001 is the image's
-             appuser (its USER is a name, which runAsNonRoot cannot verify). The root filesystem stays
-             writable: Chromium and the PDF writer use /tmp and $HOME. */}}
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1001
-            allowPrivilegeEscalation: false
-            seccompProfile:
-              type: RuntimeDefault
-            capabilities:
-              drop:
-                - ALL
+            {{- toYaml .Values.worker.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
                 name: {{ include "plugin-worker.fullname" . }}
             - secretRef:
                 name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "plugin-worker.fullname" . }}{{ end }}
           env:
+          - name: HOME
+            value: /tmp
           {{- include "reporter.mongoPasswordEnv" (dict "context" $ "secretName" (ternary .Values.worker.existingSecretName (include "plugin-worker.fullname" .) .Values.worker.useExistingSecret)) | nindent 10 }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
@@ -76,8 +71,11 @@ spec:
         {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
         {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" $.Values.aws) | nindent 8 }}
         {{- end }}
+        volumes:
+          - name: tmp
+            emptyDir: {}
         {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
-        {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" "reporter-iam-tls") | nindent 8 }}
+        {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" "reporter-iam-tls") | trimPrefix "volumes:\n" | nindent 8 }}
         {{- end }}
         restartPolicy: Never
         {{- with .Values.worker.nodeSelector }}

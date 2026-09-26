@@ -26,6 +26,7 @@ spec:
         {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 8 }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/crm/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/crm/configmap.yaml") . | sha256sum }}
         {{- with .Values.crm.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

@@ -4,6 +4,18 @@
 
 - Fixes:
   - Pass pod security restricted (#2243)
+  - Drop a comment as the pod block already states the necessary information
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.2...plugin-access-manager-v9.5.3)
+
+---
+
+## [9.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.3)
+
+- Fixes:
+  - Pass pod security restricted (#2243)
   - Drop a comment as the pod block already states
 
 Contributors: @fredcamaral, @lerian-studio,

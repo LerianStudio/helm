@@ -1,5 +1,17 @@
 # Fetcher Changelog
 
+## [3.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.2)
+
+- **Fixes**
+  - Pass pod security restricted to ensure compliance with security policies.
+  - Implement new bootstrap jobs per revision and converge RabbitMQ retries for improved stability.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.1...fetcher-v3.1.2)
+
+---
+
 ## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
 
 - **Features:**

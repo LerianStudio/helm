@@ -37,6 +37,7 @@ spec:
         {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 8 }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/tracer/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/tracer/configmap.yaml") . | sha256sum }}
         {{- with .Values.tracer.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

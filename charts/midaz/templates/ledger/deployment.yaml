@@ -38,6 +38,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/ledger/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/ledger/configmap.yaml") . | sha256sum }}
         {{- with .Values.ledger.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

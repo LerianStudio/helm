@@ -7,8 +7,7 @@ metadata:
   name: fetcher-bootstrap-rabbitmq-definitions
   namespace: {{ .Release.Namespace }}
 data:
-  {{- /* No users: the Job PUTs plugin with the operator's password, and a POSTed user resets it to the file's public hash. */}}
-  load_definitions.json: {{ omit (.Files.Get "files/rabbitmq/load_definitions.json" | fromJson) "users" | toJson | quote }}
+  load_definitions.json: {{ .Files.Get "files/rabbitmq/load_definitions.json" | quote }}
 ---
 apiVersion: batch/v1
 kind: Job

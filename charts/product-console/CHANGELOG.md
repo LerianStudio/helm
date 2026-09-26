@@ -1,5 +1,16 @@
 # Product-console Changelog
 
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- Fixes:
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
 ## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
 
 - **Fixes**

@@ -1,5 +1,18 @@
 # Reporter Changelog
 
+## [4.3.9](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.9)
+
+- **Fixes:**
+  - Restart pods when their secret changes.
+  - Drop the MongoDB root password hash from pod annotations.
+  - Restart pods when the MongoDB root password changes.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.8...reporter-v4.3.9)
+
+---
+
 ## [4.3.8](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.8)
 
 - Fixes:

@@ -72,6 +72,8 @@ Input: (dict "aws" .Values.aws). Caller: nindent 8.
       drop:
         - ALL
     readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     {{- toYaml $ra.sidecar.resources | nindent 4 }}
 {{- end -}}

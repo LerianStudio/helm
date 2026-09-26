@@ -3,6 +3,19 @@
 ## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
 
 - Fixes:
+  - Restart pods when their secret changes to ensure proper configuration updates.
+  - Keep the manual ledger restart in the broker refusal to maintain intended behavior.
+  - Drop the manual ledger restart from the broker refusal to streamline the process.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.11...midaz-v9.2.12)
+
+---
+
+## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
+
+- Fixes:
   - Restart pods when their secret changes to ensure updated configurations are applied.
   - Keep the manual ledger restart in the broker refusal to maintain system integrity.
   - Drop the manual ledger restart from the broker refusal to streamline operations.

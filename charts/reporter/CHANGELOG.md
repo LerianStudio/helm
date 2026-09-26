@@ -2,6 +2,20 @@
 
 ## [4.3.11](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.11)
 
+- **Fixes**
+  - Restart pods when their configmap changes.
+  - Allow jobs to finish under a mesh sidecar.
+  - Ensure the KEDA worker job completes under a mesh sidecar.
+  - Allow bootstrap jobs to finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.10...reporter-v4.3.11)
+
+---
+
+## [4.3.11](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.11)
+
 - **Fixes:**
   - Restart pods when their configmap changes.
   - Ensure jobs finish under a mesh sidecar.

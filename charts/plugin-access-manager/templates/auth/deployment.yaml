@@ -16,6 +16,8 @@ spec:
       {{- include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/auth/secrets.yaml") . | sha256sum }}
       labels:
         {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 8 }}
     spec:

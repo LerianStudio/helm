@@ -16,6 +16,8 @@ spec:
       {{- include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/identity/secrets.yaml") . | sha256sum }}
       labels:
        {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 8 }} 
     spec:

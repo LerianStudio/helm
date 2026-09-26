@@ -408,7 +408,7 @@ ledger:
   secrets:
     # -- Onboarding module passwords.
     # DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from
-    # the Bitnami postgresql subchart Secret (keys `password` / `replication-password`)
+    # the Bitnami postgresql subchart Secret (key `password`, replicas included)
     # and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret
     # (key `mongodb-root-password`). Only set these for an EXTERNAL backend
     # (subchart disabled / .external=true) without an existingSecret override.

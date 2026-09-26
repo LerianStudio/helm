@@ -3,6 +3,17 @@
 ## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
 
 - Fixes:
+  - Restart pods when their configmap changes to ensure configuration updates are applied correctly.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.5...plugin-access-manager-v9.5.6)
+
+---
+
+## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
+
+- Fixes:
   - Restart pods when their configmap changes to ensure updated configurations are applied.
 
 Contributors: @fredcamaral, @lerian-studio,

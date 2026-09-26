@@ -26,6 +26,7 @@ spec:
        {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 8 }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/manager/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/manager/configmap.yaml") . | sha256sum }}
         {{- range $key, $value := .Values.manager.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}

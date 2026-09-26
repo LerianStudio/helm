@@ -212,7 +212,7 @@ ingress:
 | `ingress.tls` | TLS configuration for ingress | `[]` |
 | `service.type` | Kubernetes service type | `ClusterIP` |
 | `service.port` | Service port | `4000` |
-| `deploymentStrategy` | Deployment strategy | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1}}` |
+| `deploymentStrategy` | Deployment strategy, shared by auth and caradhras | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 0}}` |
 | `podSecurityContext` | Pod security context | `{}` |
 | `securityContext` | Security context for every auth-side container: auth, caradhras (including its migrate init container) and its UI, the init-user Job, and their init containers | See `values.yaml` |
 | `pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
@@ -487,7 +487,7 @@ caradhras both.
 | `otel-collector-lerian.enabled` | Enable the OpenTelemetry collector | `false` |
 
 | `auth.deploymentStrategy.rollingUpdate.maxSurge` | Maximum number of pods that can be created over the desired number of pods.              | `1`                                            |
-| `auth.deploymentStrategy.rollingUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during the update.                        | `1`                                            |
+| `auth.deploymentStrategy.rollingUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during the update.                        | `0`                                            |
 | `auth.pdb.enabled`                            | Specifies whether PodDisruptionBudget is enabled.                                         | `true`                                         |
 | `auth.pdb.minAvailable`                       | Minimum number of available pods.                                                        | `0`                                            |
 | `auth.pdb.maxUnavailable`                     | Maximum number of unavailable pods.                                                      | `1`                                            |

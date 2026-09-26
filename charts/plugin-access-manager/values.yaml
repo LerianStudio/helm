@@ -292,11 +292,13 @@ auth:
     type: ClusterIP
     # -- Service port
     port: 4000
+  # -- Shared by auth and caradhras. maxUnavailable 0 keeps an old pod serving until a new
+  # -- one is Ready, so a caradhras pod stuck migrating never takes the service down.
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
-      maxUnavailable: 1
+      maxUnavailable: 0
   podSecurityContext: {}
   # fsGroup: 2000
 

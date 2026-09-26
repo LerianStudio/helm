@@ -26,10 +26,6 @@ spec:
        {{- include "plugin-manager.labels" (dict "context" . "name" .Values.manager.name ) | nindent 8 }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/manager/secrets.yaml") . | sha256sum }}
-        {{- /* A provided root password is the value the bundled MongoDB Secret holds; an empty one renders random per template. */}}
-        {{- if and (eq (include "reporter.mongoInternal" .) "true") .Values.mongodb.auth.rootPassword }}
-        checksum/mongodb-root-password: {{ .Values.mongodb.auth.rootPassword | toString | sha256sum }}
-        {{- end }}
         {{- range $key, $value := .Values.manager.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}

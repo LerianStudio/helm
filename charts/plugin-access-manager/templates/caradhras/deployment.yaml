@@ -6,8 +6,12 @@ metadata:
     {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.caradhras.revisionHistoryLimit | default 10 }}
+  # A new pod must migrate before an old one leaves, so auth.deploymentStrategy does not apply here.
   strategy:
-    {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   {{- if not .Values.caradhras.autoscaling.enabled }}
   replicas: {{ include "caradhras.replicaCount" . }}
   {{- end }}
@@ -46,6 +50,42 @@ spec:
                 done;
                 echo "$svc is ready!";
               done;
+        # Migrates or no-ops before /server boots; concurrent pods serialise on the migrator's advisory lock.
+        - name: migrate
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
+          # The image's workdir /home/nonroot is 0700 for uid 65532; any other uid panics reading conf/ there.
+          workingDir: /tmp
+          image: "{{ include "caradhras.migrationsImageRepository" . }}:{{ include "caradhras.migrationsImageTag" . }}"
+          imagePullPolicy: {{ include "caradhras.migrationsImagePullPolicy" . }}
+          # caradhras-migrations reads the lib-commons POSTGRES_* names; the source keys stay DB_*.
+          env:
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_USER
+            {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            - name: POSTGRES_SSLMODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-auth.fullname" . }}
+                  key: DB_SSLMODE
       containers:
         - name: {{ include "plugin-caradhras.fullname" . }}
           # Caradhras (beego) writes to its working dir at runtime — logs/caradhras.log and

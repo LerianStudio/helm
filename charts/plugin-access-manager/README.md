@@ -212,9 +212,9 @@ ingress:
 | `ingress.tls` | TLS configuration for ingress | `[]` |
 | `service.type` | Kubernetes service type | `ClusterIP` |
 | `service.port` | Service port | `4000` |
-| `deploymentStrategy` | Deployment strategy | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1}}` |
+| `deploymentStrategy` | Deployment strategy of auth; caradhras always rolls with `maxSurge: 1`, `maxUnavailable: 0` | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1}}` |
 | `podSecurityContext` | Pod security context | `{}` |
-| `securityContext` | Security context for every auth-side container: auth, caradhras and its UI, the migrations and init-user Jobs, and their init containers | See `values.yaml` |
+| `securityContext` | Security context for every auth-side container: auth, caradhras (including its migrate init container) and its UI, the init-user Job, and their init containers | See `values.yaml` |
 | `pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
 | `pdb.maxUnavailable` | Maximum number of unavailable pods | `1` |
 | `pdb.minAvailable` | Minimum number of available pods | `0` |

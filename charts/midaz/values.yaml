@@ -719,9 +719,8 @@ tracer:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods. Setting `maxUnavailable` in an
-    # override takes precedence over this value.
-    minAvailable: 1
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
+    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
   # -- Deployment update strategy

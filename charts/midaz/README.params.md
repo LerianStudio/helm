@@ -209,7 +209,7 @@
 | `tracer.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `tracer.pdb` | object | `{}` | PodDisruptionBudget configuration |
 | `tracer.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `tracer.pdb.minAvailable` | int | `1` | Minimum number of available pods. Setting `maxUnavailable` in an override takes precedence over this value. |
+| `tracer.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `tracer.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
 | `tracer.deploymentUpdate` | object | `{}` | Deployment update strategy |
 | `tracer.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |

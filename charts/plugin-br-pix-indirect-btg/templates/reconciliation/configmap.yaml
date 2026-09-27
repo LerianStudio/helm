@@ -64,7 +64,7 @@ data:
   MIDAZ_ORGANIZATION_ID: {{ .Values.reconciliation.configmap.MIDAZ_ORGANIZATION_ID | default "" | quote }}
 
   # PIX BTG API Configuration
-  PLUGIN_PIX_BTG_BASE_URL: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_BASE_URL | default "http://plugin-br-pix-indirect-btg.midaz-plugins.svc.cluster.local:4014" | quote }}
+  PLUGIN_PIX_BTG_BASE_URL: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_BASE_URL | default (include "plugin-br-pix-indirect-btg.apiURL" .) | quote }}
   PLUGIN_PIX_BTG_TIMEOUT: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_TIMEOUT | default "30s" | quote }}
 
   # Circuit Breaker Configuration

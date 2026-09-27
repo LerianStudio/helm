@@ -396,6 +396,14 @@ because common.names.dependency.fullname is Bitnami-specific.
 {{- end }}
 
 {{/*
+plugin-br-pix-indirect-btg.apiURL — this release's API Service, which the inbound, reconciliation and
+schedule workers call.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.apiURL" -}}
+{{- printf "http://%s.%s.svc.cluster.local:%v" (include "plugin-br-pix-indirect-btg.fullname" .) .Release.Namespace .Values.pix.service.port -}}
+{{- end }}
+
+{{/*
 plugin-br-pix-indirect-btg.dbPasswordRequired — fail-loud gate. When the bundled postgresql
 subchart is NOT the source (external or disabled) and no operator credential or existingSecret is
 supplied, fail the render naming the exact value. On the bundled path the password comes from the
@@ -612,6 +620,20 @@ Validate required configuration fields
 {{/* Organization IDs - Required */}}
 {{- if not .Values.pix.configmap.ORGANIZATION_IDS }}
 {{- fail "\n\nERROR: pix.configmap.ORGANIZATION_IDS is required. Set your organization IDs (comma-separated list or 'global' for all organizations).\n" }}
+{{- end }}
+
+{{/* Worker boot requirements - the workers refuse to start without these */}}
+{{- if not .Values.outbound.configmap.WEBHOOK_DEFAULT_URL }}
+{{- fail "\n\nERROR: outbound.configmap.WEBHOOK_DEFAULT_URL is required. Set the URL that receives outbound webhooks for every entity without a URL of its own.\n" }}
+{{- end }}
+
+{{- if not .Values.reconciliation.useExistingSecrets }}
+{{- if not .Values.reconciliation.secrets.BTG_CLIENT_ID }}
+{{- fail "\n\nERROR: reconciliation.secrets.BTG_CLIENT_ID is required. Set the BTG client ID the reconciliation worker uses.\n" }}
+{{- end }}
+{{- if not .Values.reconciliation.secrets.BTG_CLIENT_SECRET }}
+{{- fail "\n\nERROR: reconciliation.secrets.BTG_CLIENT_SECRET is required. Set the BTG client secret the reconciliation worker uses.\n" }}
+{{- end }}
 {{- end }}
 
 

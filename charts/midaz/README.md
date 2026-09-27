@@ -198,8 +198,7 @@ Midaz deploys the following core services:
 | `ledger.podSecurityContext` | Security context applied at the pod level. | `{}` |
 | `ledger.securityContext.*` | Security context for every ledger container: the application, its `wait-for-dependencies` init container and the migration Job. | See `values.yaml` |
 | `ledger.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
-| `ledger.pdb.minAvailable` | Minimum number of available pods. | `1` |
-| `ledger.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
+| `ledger.pdb.maxUnavailable` | Maximum number of unavailable pods; ignored when `minAvailable` is set. | `1` |
 | `ledger.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
 | `ledger.deploymentUpdate.*` | Deployment update strategy. | See `values.yaml` |
 | `ledger.service.type` | Kubernetes service type. | `"ClusterIP"` |
@@ -289,8 +288,7 @@ For more details, refer to the official documentation: [CRM Documentation](https
 | `crm.podSecurityContext` | Security context applied at the pod level. | `{}` |
 | `crm.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
 | `crm.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
-| `crm.pdb.minAvailable` | Minimum number of available pods. | `1` |
-| `crm.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
+| `crm.pdb.maxUnavailable` | Maximum number of unavailable pods; ignored when `minAvailable` is set. | `1` |
 | `crm.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
 | `crm.deploymentUpdate.type` | Type of deployment strategy. | `"RollingUpdate"` |
 | `crm.deploymentUpdate.maxSurge` | Maximum number of pods that can be created over the desired number of pods. | `1` |

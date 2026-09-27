@@ -306,9 +306,7 @@ ledger:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 1
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
@@ -512,9 +510,7 @@ crm:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 0
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}

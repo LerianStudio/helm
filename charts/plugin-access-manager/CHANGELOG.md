@@ -3,6 +3,20 @@
 ## [9.5.7](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.7)
 
 - Fixes:
+  - Pin the bundled database majors to ensure compatibility. (#2324)
+
+- Improvements:
+  - Removed the date from the pin comments for clarity.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.6...plugin-access-manager-v9.5.7)
+
+---
+
+## [9.5.7](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.7)
+
+- Fixes:
   - Pin the bundled database majors to ensure compatibility (#2324).
   - Removed the date from the pin comments for better clarity.
 

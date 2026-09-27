@@ -1,5 +1,16 @@
 # Midaz Changelog
 
+## [9.2.14](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.14)
+
+- Fixes:
+  - Allow a node drain to evict the single tracer pod.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.13...midaz-v9.2.14)
+
+---
+
 ## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
 
 - Fixes:

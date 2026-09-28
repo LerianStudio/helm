@@ -15,7 +15,3 @@ pix:
 outbound:
   configmap:
     WEBHOOK_DEFAULT_URL: "https://example.test/webhooks"
-reconciliation:
-  secrets:
-    BTG_CLIENT_ID: "sample"
-    BTG_CLIENT_SECRET: "sample"

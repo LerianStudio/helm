@@ -622,20 +622,6 @@ Validate required configuration fields
 {{- fail "\n\nERROR: pix.configmap.ORGANIZATION_IDS is required. Set your organization IDs (comma-separated list or 'global' for all organizations).\n" }}
 {{- end }}
 
-{{/* Worker boot requirements - the workers refuse to start without these */}}
-{{- if not .Values.outbound.configmap.WEBHOOK_DEFAULT_URL }}
-{{- fail "\n\nERROR: outbound.configmap.WEBHOOK_DEFAULT_URL is required. Set the URL that receives outbound webhooks for every entity without a URL of its own.\n" }}
-{{- end }}
-
-{{- if not .Values.reconciliation.useExistingSecrets }}
-{{- if not .Values.reconciliation.secrets.BTG_CLIENT_ID }}
-{{- fail "\n\nERROR: reconciliation.secrets.BTG_CLIENT_ID is required. Set the BTG client ID the reconciliation worker uses.\n" }}
-{{- end }}
-{{- if not .Values.reconciliation.secrets.BTG_CLIENT_SECRET }}
-{{- fail "\n\nERROR: reconciliation.secrets.BTG_CLIENT_SECRET is required. Set the BTG client secret the reconciliation worker uses.\n" }}
-{{- end }}
-{{- end }}
-
 
 {{- end }}
 
@@ -685,21 +671,6 @@ Generate warning annotations for secrets using default values
 {{- end -}}
 {{- if gt (len $warnings) 0 -}}
 lerian.studio/security-warnings: {{ $warnings | join "; " | quote }}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Generate warning annotations for missing webhook configuration
-*/}}
-{{- define "plugin-br-pix-indirect-btg.webhookWarnings" -}}
-{{- $warnings := list -}}
-{{- if .Values.outbound -}}
-{{- if not .Values.outbound.configmap.WEBHOOK_CLIENT_URL -}}
-{{- $warnings = append $warnings "WEBHOOK_CLIENT_URL is empty - outbound notifications disabled" -}}
-{{- end -}}
-{{- end -}}
-{{- if gt (len $warnings) 0 -}}
-lerian.studio/webhook-warnings: {{ $warnings | join "; " | quote }}
 {{- end -}}
 {{- end -}}
 

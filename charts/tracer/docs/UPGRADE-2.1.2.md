@@ -59,14 +59,18 @@ The `checksum/secret` annotation computes a SHA256 hash of the rendered `secrets
 
 | Scenario | v2.1.1 | v2.1.2 |
 |----------|--------|--------|
-| Update `tracer.secrets.DB_PASSWORD` via `helm upgrade` | Pods continue running with old secret values | Pods automatically restart and pick up new secret values |
+| Update a value under `tracer.secrets` via `helm upgrade` | Pods continue running with old secret values | Pods automatically restart and pick up new secret values |
 | Manual intervention required after secret change | Yes (kubectl rollout restart) | No (automatic) |
+
+> **Warning: changing `DB_PASSWORD` does not rotate the database password.** The bootstrap job (`global.externalPostgresDefinitions.enabled=true`) creates the `tracer` role only when it does not exist. For an existing role it skips creation and never changes the role's password. If you change `tracer.secrets.DB_PASSWORD` without changing the password in PostgreSQL, v2.1.2 restarts the tracer pods right away, and the new pods fail with `password authentication failed for user "tracer"`. v2.1.1 kept running on the old password until the next restart. Rotate the password in PostgreSQL first (for example with `\password tracer` in `psql` as an admin), then update the value and run `helm upgrade`.
+
+> **Note:** The checksum covers only the Secret this chart renders. With `tracer.useExistingSecret: true`, the chart renders no Secret, so changes to your own Secret still require `kubectl rollout restart deployment/tracer -n tracer`.
 
 > **Note:** The annotation block is now always present, even if `tracer.podAnnotations` is empty. Custom annotations defined in `tracer.podAnnotations` are merged below the checksum annotation.
 
 **Example scenario:**
 
-If you update a secret value in your values file:
+If you update a secret value in your values file (after changing the password in PostgreSQL, see the warning above):
 
 ```yaml
 tracer:
@@ -109,7 +113,7 @@ This upgrade is fully backward-compatible and requires no configuration changes.
 5. Check service logs for any startup issues:
 
    ```bash
-   kubectl logs -n tracer -l app.kubernetes.io/name=tracer-helm --tail=50
+   kubectl logs -n tracer -l app.kubernetes.io/name=tracer,app.kubernetes.io/component=tracer --tail=50
    ```
 
 > **Note:** The first upgrade to v2.1.2 will trigger a rolling restart of all tracer pods due to the new checksum annotation being added. Subsequent upgrades will only restart pods if secret values actually change.

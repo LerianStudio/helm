@@ -141,12 +141,17 @@ class StartupContract(unittest.TestCase):
         self.fails(values, 'identity requires')
 
     def test_invalid_https(self):
-        for url in ['https://', 'http://idp.test', 'https://bad host', 'https://bad:port/keys']:
+        for url, message in [
+            ('https://', 'requires an HTTPS JWKS'),
+            ('http://idp.test', 'requires an HTTPS JWKS'),
+            ('https://bad host', 'unable to parse url'),
+            ('https://bad:port/keys', 'unable to parse url'),
+        ]:
             with self.subTest(url=url):
                 for component in ['auth', 'identity']:
                     values = production()
                     values[component]['configmap']['AUTHORIZER_ADDRESS'] = url
-                    self.assertNotEqual(render(values).returncode, 0)
+                    self.fails(values, message)
 
     def test_ipv6_identity_is_deferred_to_runtime(self):
         values = production()

@@ -23,20 +23,20 @@ This is a patch release that fixes service mesh sidecar compatibility for Job re
 
 ### 1. Service mesh sidecar compatibility for Jobs
 
-Three Job resources now include annotations that enable native sidecar support for Istio and Linkerd service meshes. Without these annotations, mesh proxies injected as regular containers never exit, preventing Jobs from completing successfully.
+Three Job pod templates now carry annotations that ask Istio and Linkerd to inject their proxy as a Kubernetes native sidecar (an init container with `restartPolicy: Always`). A proxy injected as a regular container never exits, so the Job never reaches `Complete`; a native sidecar is stopped by Kubernetes once the Job's containers finish.
 
 **Affected resources:**
 
-- `bootstrap-mongodb` Job
-- `bootstrap-rabbitmq` Job
-- `worker` KEDA ScaledJob (when `worker.keda.enabled=true`)
+- `reporter-bootstrap-mongodb` Job — rendered only when `global.externalMongoDefinitions.enabled=true` (hook: `post-install,pre-upgrade`)
+- `reporter-bootstrap-rabbitmq` Job — rendered only when `externalRabbitmqDefinitions.enabled=true` (hook: `pre-install,pre-upgrade`)
+- `reporter-worker` KEDA ScaledJob — rendered when KEDA is enabled (`keda.enabled` or `keda.external`) and `worker.keda.scaledJob.enabled=true`
 
 **Added annotations:**
 
-| Annotation | Value | Purpose |
+| Annotation | Value | Read by |
 |------------|-------|---------|
-| `sidecar.istio.io/nativeSidecar` | `"true"` | Enables Istio native sidecar mode (Istio 1.22+) |
-| `config.alpha.linkerd.io/proxy-enable-native-sidecar` | `"true"` | Enables Linkerd native sidecar mode (Linkerd 2.14+) |
+| `sidecar.istio.io/nativeSidecar` | `"true"` | Istio sidecar injector |
+| `config.alpha.linkerd.io/proxy-enable-native-sidecar` | `"true"` | Linkerd proxy injector |
 
 **Before (v4.3.10):**
 
@@ -45,8 +45,6 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      containers:
-        - name: bootstrap
 ```
 
 **After (v4.3.11):**
@@ -55,39 +53,21 @@ spec:
 spec:
   template:
     metadata:
+      # A mesh proxy injected as a regular container never exits and the Job never completes.
       annotations:
         sidecar.istio.io/nativeSidecar: "true"
         config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
     spec:
       restartPolicy: Never
-      containers:
-        - name: bootstrap
 ```
 
-> **Note:** These annotations are harmless when no service mesh is installed. If you are running Istio < 1.22 or Linkerd < 2.14, native sidecar mode is not supported and Jobs may still hang. In that case, disable sidecar injection for Job pods using namespace or pod-level annotations (e.g., `sidecar.istio.io/inject: "false"`).
+> **Note:** Native sidecars need Kubernetes 1.28 or later: on 1.28 the `SidecarContainers` feature gate must be turned on, from 1.29 it is on by default, and a mesh version whose injector honours the annotation above. Check your mesh's documentation for the minimum version. Where either is missing, the annotations are ignored and a Job with an injected proxy can still hang, exactly as in v4.3.10.
 
 **Operational impact:**
 
-- **Istio users:** Jobs will now complete successfully when using Istio 1.22+ with native sidecar support enabled. The sidecar container will terminate after the Job container exits.
-- **Linkerd users:** Jobs will now complete successfully when using Linkerd 2.14+ with native sidecar support enabled. The proxy container will terminate after the Job container exits.
-- **No mesh installed:** No impact. The annotations are ignored.
-- **Older mesh versions:** If you are running an older version of Istio or Linkerd that does not support native sidecars, you must disable sidecar injection for Job pods to prevent them from hanging. Add the following to your values:
-
-```yaml
-bootstrap:
-  podAnnotations:
-    sidecar.istio.io/inject: "false"
-    linkerd.io/inject: disabled
-
-worker:
-  keda:
-    scaledJob:
-      podAnnotations:
-        sidecar.istio.io/inject: "false"
-        linkerd.io/inject: disabled
-```
-
-> **Important:** The chart does not currently expose `bootstrap.podAnnotations` or `worker.keda.scaledJob.podAnnotations` fields in `values.yaml`. If you need to disable sidecar injection for older mesh versions, you may need to patch the Job resources after upgrade or request this feature from the chart maintainers.
+- **No mesh installed:** No impact. Nothing reads these annotations.
+- **Istio or Linkerd with injection enabled, native sidecars supported:** The Jobs now complete instead of hanging with a running proxy.
+- **Mesh or Kubernetes without native sidecar support:** Behaviour is unchanged. The chart does not expose a values key to add pod annotations to these Jobs, so to avoid a hanging Job either exclude the namespace or these pods from injection on the mesh side, or keep the Jobs disabled (both bootstrap Jobs are off by default).
 
 ### 2. ConfigMap change detection for manager and worker
 
@@ -125,7 +105,8 @@ spec:
 
 - **Manager:** Changes to `manager.configmap` values will now trigger a rolling restart of the manager Deployment automatically.
 - **Worker:** Changes to `worker.configmap` values will now trigger a rolling restart of the worker Deployment automatically.
-- **Upgrade behavior:** On upgrade to v4.3.11, the annotation will be added but the ConfigMap content is unchanged, so no restart will occur unless you also modify ConfigMap values.
+- **Upgrade behavior:** Adding the `checksum/config` annotation changes the pod template, so the upgrade to v4.3.11 itself rolls the manager Deployment and the worker Deployment once, even if no ConfigMap value changed.
+- **Worker scope:** The worker Deployment exists only when KEDA is disabled (`keda.enabled=false` and `keda.external=false`). With the default KEDA ScaledJob, each worker Job is a new pod that already reads the current ConfigMap, so no annotation is needed there.
 
 > **Note:** This change ensures that configuration updates are applied without requiring manual pod restarts. The checksum is computed at template render time, so any change to the ConfigMap template (including changes to values that populate the ConfigMap) will result in a new checksum and trigger a restart.
 
@@ -136,32 +117,25 @@ This upgrade requires no mandatory values changes or operator action. The change
 **Recommended upgrade process:**
 
 1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
-2. If you are running a service mesh, verify your mesh version supports native sidecars:
-   - **Istio:** Version 1.22 or later
-   - **Linkerd:** Version 2.14 or later
-   
-   If you are running an older version, see the note in [Fix #1](#1-service-mesh-sidecar-compatibility-for-jobs) for workaround instructions.
-
-3. Run the upgrade command during a maintenance window.
+2. If Istio or Linkerd injects into this namespace, confirm your cluster runs Kubernetes 1.29 or later (or 1.28 with the `SidecarContainers` feature gate) and that your mesh version supports native sidecars (see the note in [Fix #1](#1-service-mesh-sidecar-compatibility-for-jobs)).
+3. Run the upgrade command. The manager Deployment (and the worker Deployment, when KEDA is disabled) restarts once.
 4. Verify all pods are running and healthy after the upgrade:
 
 ```bash
 kubectl get pods -n <namespace>
 ```
 
-5. Verify that bootstrap Jobs completed successfully:
+5. If the bootstrap Jobs are enabled, confirm the upgrade finished: both are Helm hooks deleted on success (`hook-delete-policy: before-hook-creation,hook-succeeded`), so a successful `helm upgrade` means they completed. A Job still listed as running points at a proxy that did not exit:
 
 ```bash
-kubectl get jobs -n <namespace> -l app.kubernetes.io/name=reporter
+kubectl get jobs -n <namespace> reporter-bootstrap-mongodb reporter-bootstrap-rabbitmq
 ```
 
-6. If using KEDA ScaledJobs, verify that worker Jobs complete successfully:
+6. If using the KEDA ScaledJob, verify that worker Jobs reach `Complete`:
 
 ```bash
-kubectl get jobs -n <namespace> -l app.kubernetes.io/component=worker
+kubectl get jobs -n <namespace>
 ```
-
-> **Note:** The upgrade will trigger a rolling restart of the manager and worker Deployments due to the new `checksum/config` annotation. No downtime is expected for the manager (assuming multiple replicas or a readiness probe grace period). Worker restarts will temporarily pause job processing.
 
 ## Preview changes before upgrading
 

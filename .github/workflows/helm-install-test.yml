@@ -123,6 +123,27 @@ jobs:
           echo "Files changed by this pull request:"; sed 's/^/  /' /tmp/changed.txt
           python3 .github/scripts/changed-charts.py
 
+      # Fail explicitly before registry login or cluster creation. The published
+      # Access Manager binary requires a real license; sample values and runtime
+      # TEST/ENV flags cannot provide one. This is NOT an allow-listed failure.
+      - name: Test licensed install preflight
+        run: python3 -m unittest discover -s .github/scripts/tests -p 'test_plugin_access_manager_install_preflight.py' -v
+
+      - name: Check licensed install prerequisites
+        if: steps.scope.outputs.has-charts == 'true'
+        shell: bash
+        env:
+          CHARTS: ${{ steps.scope.outputs.charts-list }}
+          MODE: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || github.event.pull_request.head.repo.full_name != github.repository) && 'shallow' || 'deep' }}
+          # Never expose licensing to forks or workflow_dispatch refs. Missing
+          # secrets resolve to empty strings and are a blocking prerequisite.
+          PLUGIN_ACCESS_MANAGER_CI_LICENSE_KEY: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.head.repo.fork && secrets.PLUGIN_ACCESS_MANAGER_CI_LICENSE_KEY || '' }}
+          PLUGIN_ACCESS_MANAGER_CI_ORGANIZATION_IDS: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.head.repo.fork && secrets.PLUGIN_ACCESS_MANAGER_CI_ORGANIZATION_IDS || '' }}
+        run: |
+          set -euo pipefail
+          read -r -a charts <<< "$CHARTS"
+          bash .github/scripts/plugin-access-manager-install-preflight.sh "$MODE" "${charts[@]}"
+
       - name: Setup Helm
         if: steps.scope.outputs.has-charts == 'true'
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
@@ -159,7 +180,9 @@ jobs:
         env:
           CHARTS: ${{ steps.scope.outputs.charts-list }}
           HAS_CHARTS: ${{ steps.scope.outputs.has-charts }}
-          IT_PULL_SECRET: ${{ !github.event.pull_request.head.repo.fork && 'it-registry' || '' }}
+          IT_PULL_SECRET: ${{ (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.head.repo.fork)) && 'it-registry' || '' }}
+          PLUGIN_ACCESS_MANAGER_CI_LICENSE_KEY: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.head.repo.fork && secrets.PLUGIN_ACCESS_MANAGER_CI_LICENSE_KEY || '' }}
+          PLUGIN_ACCESS_MANAGER_CI_ORGANIZATION_IDS: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.head.repo.fork && secrets.PLUGIN_ACCESS_MANAGER_CI_ORGANIZATION_IDS || '' }}
         run: |
           set -uo pipefail
           if [[ -z "${CHARTS// }" ]]; then

@@ -3,6 +3,18 @@
 ## [4.3.12](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.12)
 
 - Fixes:
+  - Stopped the bundled RabbitMQ from shipping with a public password.
+  - Updated the bundled broker user to have the management tag only.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.11...reporter-v4.3.12)
+
+---
+
+## [4.3.12](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.12)
+
+- Fixes:
   - Stop the bundled RabbitMQ from shipping with a public password.
   - Give the bundled broker user the management tag only.
 

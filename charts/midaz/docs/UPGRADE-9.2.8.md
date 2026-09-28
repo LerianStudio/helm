@@ -126,30 +126,45 @@ This change addresses several operational and security concerns:
 
 #### Impact
 
-- **Behavior change**: The bootstrap job will now run on every upgrade, not just when users don't exist
+- **Scope**: The bootstrap job only renders when `global.externalRabbitmqDefinitions.enabled: true` (an external broker). Installs that use the bundled RabbitMQ subchart are not affected by this release.
+- **Behavior change**: The bootstrap job no longer skips when the `transaction` and `consumer` users already exist. On every `helm upgrade` it sets both users' passwords on the broker to the values in `global.externalRabbitmqDefinitions.appCredentials` (or the Secret named in `appCredentials.useExistingSecret.name`, keys `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS`).
 - **Password rotation**: Operators can now rotate RabbitMQ passwords by updating Helm values and running `helm upgrade`
 - **Validation**: The job will fail early if passwords contain control characters (newlines, tabs, etc.)
-- **Downtime**: Minimal — the job updates user passwords before applying definitions, so existing connections remain valid until services reconnect with new credentials
+- **Connections**: The ledger authenticates with `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (or `ledger.existingSecretName`), which are separate values from `appCredentials`. If the two differ, the broker is switched to the `appCredentials` passwords and the ledger fails to authenticate the next time it connects.
 - **ArgoCD compatibility**: The ConfigMap now uses sync hooks to ensure proper ordering in ArgoCD-managed deployments
 
-> **Important:** If you have previously rotated RabbitMQ passwords outside of Helm (e.g., via the RabbitMQ management UI or API), those passwords will be overwritten with the values in your Helm configuration during the next upgrade. Ensure your `values.yaml` contains the correct current passwords before upgrading.
+> **Warning:** If you have previously rotated RabbitMQ passwords outside of Helm (e.g., via the RabbitMQ management UI or API), or if `appCredentials` still holds placeholder or outdated values because v9.2.7 skipped existing users, those values will overwrite the live passwords during this upgrade.
 
 > **Warning:** If your RabbitMQ passwords contain control characters (ASCII 0-31 or 127), the bootstrap job will fail with a validation error. Update your passwords to use only printable characters before upgrading.
 
-#### Migration steps
+#### Action required
 
-No action is required for most operators. The upgrade will automatically apply the improved bootstrap logic.
+**If you use an external broker (`global.externalRabbitmqDefinitions.enabled: true`)**, before upgrading make sure the bootstrap credentials match the passwords the ledger uses and the broker holds today:
+
+| Bootstrap value | Must equal |
+|-----------------|------------|
+| `global.externalRabbitmqDefinitions.appCredentials.transactionPassword` | `ledger.secrets.RABBITMQ_DEFAULT_PASS` |
+| `global.externalRabbitmqDefinitions.appCredentials.consumerPassword` | `ledger.secrets.RABBITMQ_CONSUMER_PASS` |
+
+If you use Secrets instead, `appCredentials.useExistingSecret.name` must point to a Secret whose `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` keys hold the same passwords as the ledger's.
+
+**If you use the bundled RabbitMQ:** No action required.
 
 **To rotate RabbitMQ passwords during upgrade:**
 
-1. Update your `values.yaml` or secrets with new passwords for the `transaction` and `consumer` users:
+1. Update both the bootstrap credentials and the ledger's passwords to the same new values:
 
 ```yaml
 global:
   externalRabbitmqDefinitions:
     enabled: true
-    transactionPassword: "new-secure-password-1"
-    consumerPassword: "new-secure-password-2"
+    appCredentials:
+      transactionPassword: "new-secure-password-1"
+      consumerPassword: "new-secure-password-2"
+ledger:
+  secrets:
+    RABBITMQ_DEFAULT_PASS: "new-secure-password-1"
+    RABBITMQ_CONSUMER_PASS: "new-secure-password-2"
 ```
 
 2. Run the upgrade:
@@ -164,7 +179,11 @@ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 
 kubectl logs -n midaz -l job-name=midaz-bootstrap-rabbitmq --tail=100 -f
 ```
 
-4. After the job completes, the `ledger` and `tracer` services will reconnect with the new passwords on their next restart or connection retry.
+4. Restart the ledger so its pods pick up the new passwords (v9.2.8 does not restart pods when their Secret changes):
+
+```bash
+kubectl -n midaz rollout restart deployment/midaz-ledger
+```
 
 **If the bootstrap job fails after upgrade:**
 
@@ -176,9 +195,9 @@ kubectl logs -n midaz -l job-name=midaz-bootstrap-rabbitmq --tail=50
 
 2. If you see "A RabbitMQ app password contains a control character", update your passwords to remove control characters and re-run the upgrade.
 
-3. If you see HTTP errors during user updates, verify that your RabbitMQ admin credentials are correct and that the admin user has sufficient privileges.
+3. If you see HTTP errors during user updates, verify the credentials in `global.externalRabbitmqDefinitions.rabbitmqAdminLogin` (`username`/`password`, or `useExistingSecret.name` with keys `RABBITMQ_ADMIN_USER`/`RABBITMQ_ADMIN_PASS`) and that this user has the `administrator` tag.
 
-> **Note:** This change does not modify the structure of your `values.yaml` configuration. All existing RabbitMQ settings remain compatible.
+> **Note:** This change does not modify the structure of your `values.yaml` configuration.
 
 ## Preview changes before upgrading
 

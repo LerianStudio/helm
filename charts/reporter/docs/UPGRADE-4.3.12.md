@@ -17,7 +17,7 @@
 
 This is a patch release that removes the fixed development credential from the bundled RabbitMQ broker (`rabbitmq.enabled: true`) and requires operators to set a custom password before installing or upgrading. The bundled broker's user-seeding mechanism has changed from a pre-computed salted hash to plaintext password import, eliminating the coupled password/hash pair that could not be customized safely.
 
-If you do not enable the bundled RabbitMQ subchart (the chart default is `rabbitmq.enabled: false`, and every Lerian-operated tier uses an external broker), this release does not affect you beyond requiring that `secrets.RABBITMQ_DEFAULT_PASS` be set to a non-empty value.
+**The bundled broker is the chart default (`rabbitmq.enabled: true`).** Any installation that does not set `rabbitmq.enabled: false` runs the bundled broker on the fixed `reporter123` credential (v4.3.11 refused any other value), so it must set a new password **and** restart the broker after the upgrade. Installations that point at an external broker (`rabbitmq.enabled: false`) only need `secrets.RABBITMQ_DEFAULT_PASS` to be non-empty.
 
 | Field | v4.3.11 | v4.3.12 |
 |-------|---------|---------|
@@ -52,7 +52,7 @@ secrets:
 The render error when the value is empty:
 
 ```text
-Error: execution error at (reporter/templates/manager/secrets.yaml): secrets.RABBITMQ_DEFAULT_PASS is required. With the bundled broker it is the broker's only login; when it replaces the reporter123 of earlier versions, restart the broker after the upgrade: kubectl -n <namespace> rollout restart statefulset/<release-name>-rabbitmq
+Error: execution error at (reporter-helm/templates/worker/secrets.yaml:2:10): secrets.RABBITMQ_DEFAULT_PASS is required. With the bundled broker it is the broker's only login; when it replaces the reporter123 of earlier versions, restart the broker after the upgrade: kubectl -n <namespace> rollout restart statefulset/<release-name>-rabbitmq
 ```
 
 **Why this matters:**
@@ -94,7 +94,7 @@ The `rabbitmq.loadDefinition.passwordHash` value and the template logic that inj
 {{- $_ := set $defs "users" (list (dict "name" $user "password" $pass "tags" "management")) }}
 ```
 
-The definitions Secret is still emitted at the same name (`<release-name>-bootstrap-rabbitmq-definitions`), mounted at `/etc/rabbitmq/definitions`, and imported by the broker at boot via `management.load_definitions`. What changed is the structure of the `users` array inside that JSON: RabbitMQ accepts either a pre-hashed `password_hash` or a plaintext `password`, and the chart now uses the latter.
+The definitions Secret is still emitted at the same name (`reporter-manager-load-definitions`, from `manager.name`), mounted at `/etc/rabbitmq/definitions`, and imported by the broker at boot via `management.load_definitions`. What changed is the structure of the `users` array inside that JSON: RabbitMQ accepts either a pre-hashed `password_hash` or a plaintext `password`, and the chart now uses the latter.
 
 **Why this matters:**
 
@@ -123,7 +123,7 @@ The check is case-sensitive and matches the exact string. A password of `Reporte
 **Error message when a weak password is detected:**
 
 ```text
-Error: execution error at (reporter/templates/manager/secrets_rabbitmq_definitions.yaml): rabbitmq.enabled: secrets.RABBITMQ_DEFAULT_PASS is reporter123, a password printed in this chart (a default of earlier versions, or the values-template placeholder). Set another and upgrade, then restart the broker, which keeps its old password until its pod restarts: kubectl -n <namespace> rollout restart statefulset/<release-name>-rabbitmq
+Error: execution error at (reporter-helm/templates/manager/secrets_rabbitmq_definitions.yaml:9:4): rabbitmq.enabled: secrets.RABBITMQ_DEFAULT_PASS is reporter123, a password printed in this chart (a default of earlier versions, or the values-template placeholder). Set another and upgrade, then restart the broker, which keeps its old password until its pod restarts: kubectl -n <namespace> rollout restart statefulset/<release-name>-rabbitmq
 ```
 
 **Why this matters:**
@@ -150,12 +150,17 @@ No new values keys were added. The `rabbitmq.loadDefinition` block and its `pass
 
 **Installations using the bundled RabbitMQ broker (`rabbitmq.enabled: true`) must also:**
 
-1. Change the password from `reporter123` if it was left at the v4.3.11 default
-2. Restart the broker pod after upgrading, so it imports the new password
+1. Replace `reporter123` (the only password v4.3.11 accepted with the bundled broker) with a new one
+2. Restart the broker pod after upgrading, so it imports the new password. The upgrade does not change the broker StatefulSet's pod template, so the broker is **not** restarted by Helm, while the manager and worker pods are (their `checksum/secret` annotation changes). Until the broker restarts, the workloads are refused with `403 ACCESS_REFUSED`.
 
 **Installations using an external broker (`rabbitmq.enabled: false`) are not affected by the broker-seeding changes** (items 2 and 3), but they must still set the password to a non-empty value to satisfy the render-time check. If the password was already set to a custom value in v4.3.11, no change is required.
 
-**Measured — Lerian-operated tiers:** Across the 12 reporter tier values files in the Lerian gitops repositories, `rabbitmq.enabled` does not appear in any of them, so the bundled broker runs in **0 of 12** tiers (the chart default is `false`). All 12 tiers use an external broker and are unaffected by the broker-seeding changes. However, **2 of 12** tiers do not set `secrets.RABBITMQ_DEFAULT_PASS` explicitly and rely on the chart default; those two tiers will fail the render in v4.3.12 until the password is set.
+**How to tell which case you are in:** if your values do not set `rabbitmq.enabled`, you are on the bundled broker (the default is `true`). Check the rendered release:
+
+```bash
+helm get values <release-name> -n <namespace> --all | grep -A1 '^rabbitmq:'
+kubectl get statefulset <release-name>-rabbitmq -n <namespace>
+```
 
 ## Migration Steps
 

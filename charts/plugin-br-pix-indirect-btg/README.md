@@ -376,6 +376,9 @@ This Chart has the following dependencies for the project's default installation
   reconciliation:
     configmap:
       REDIS_HOST: { your-host }:{ your-host-port }
+
+    secrets:
+      REDIS_PASSWORD: { your-host-pass }
   ```
   
 ### PostgreSQL

@@ -44,8 +44,13 @@ mutate that package.
   end-to-end upgrade, TLS trust, licenses, or existing users' MFA recovery paths.
   See the [9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md) before rollout.
 
-The offline regression suite in `tests/` runs in CI; locally, after
-`helm dependency build`: `python3 charts/plugin-access-manager/tests/test_startup_contract.py` (requires PyYAML).
+The offline regression suite in `tests/` runs in CI. Locally, from the repository root
+(requires PyYAML):
+
+```bash
+helm dependency build charts/plugin-access-manager
+python3 charts/plugin-access-manager/tests/test_startup_contract.py
+```
 
 ## Install Plugin Access Manager Helm Chart:
 

@@ -4,17 +4,19 @@
 
 - **[Overview](#overview)**
 - **[Fixes](#fixes)**
-  - [1. RabbitMQ persistence configuration migrated to explicit PVC management](#1-rabbitmq-persistence-configuration-migrated-to-explicit-pvc-management)
+  - [1. The bundled RabbitMQ broker now keeps its data on a PersistentVolumeClaim](#1-the-bundled-rabbitmq-broker-now-keeps-its-data-on-a-persistentvolumeclaim)
 - **[Configuration Changes](#configuration-changes)**
+- **[Who is affected](#who-is-affected)**
 - **[Migration Steps](#migration-steps)**
-  - [Option 1: Keep existing RabbitMQ data (recommended)](#option-1-keep-existing-rabbitmq-data-recommended)
-  - [Option 2: Fresh RabbitMQ installation](#option-2-fresh-rabbitmq-installation)
+  - [Default installations (no `rabbitmq.storage` override)](#default-installations-no-rabbitmqstorage-override)
+  - [Installations that set `rabbitmq.storage.requestedSize`](#installations-that-set-rabbitmqstoragerequestedsize)
+  - [Installations using an external broker](#installations-using-an-external-broker)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
 
-This is a patch release that changes how RabbitMQ persistence is managed. The chart now renders an explicit PersistentVolumeClaim with a `helm.sh/resource-policy: keep` annotation to prevent data loss during uninstall operations. The application version remains unchanged.
+This is a patch release that gives the bundled RabbitMQ broker (`rabbitmq.enabled: true`, the chart default) a persistent data directory. Until v4.3.6 the broker's data directory was an `emptyDir`, so queued messages were lost on every broker pod restart. The chart now renders a PersistentVolumeClaim with `helm.sh/resource-policy: keep` and points the broker StatefulSet at it. The application version is unchanged.
 
 | Field | v4.3.6 | v4.3.7 |
 |-------|--------|--------|
@@ -23,41 +25,47 @@ This is a patch release that changes how RabbitMQ persistence is managed. The ch
 
 ## Fixes
 
-### 1. RabbitMQ persistence configuration migrated to explicit PVC management
-
-The RabbitMQ subchart's persistence configuration has been replaced with an explicit PersistentVolumeClaim rendered by the parent chart. This change ensures that queued messages survive `helm uninstall` operations and prevents accidental data loss.
+### 1. The bundled RabbitMQ broker now keeps its data on a PersistentVolumeClaim
 
 **What changed:**
 
-- The `rabbitmq.persistence` block has been removed from `values.yaml`
-- A new `rabbitmq.storage` block defines the PVC name, size, and optional storage class
-- A new template file `templates/rabbitmq-pvc.yaml` renders the PVC with `helm.sh/resource-policy: keep`
-- The RabbitMQ StatefulSet now references the pre-existing PVC instead of creating its own via `volumeClaimTemplates`
-
-| Setting | v4.3.6 | v4.3.7 |
-|---------|--------|--------|
-| `rabbitmq.persistence.size` | `8Gi` | removed |
-| `rabbitmq.storage.persistentVolumeClaimName` | not present | `reporter-rabbitmq` |
-| `rabbitmq.storage.requestedSize` | not present | `8Gi` |
-| `rabbitmq.storage.className` | not present | `""` (optional) |
+- The `rabbitmq.persistence` block was removed from `values.yaml`. It was never read by the bundled RabbitMQ subchart, which configures storage through `rabbitmq.storage`, so in v4.3.6 the broker ran on an `emptyDir`.
+- A new `rabbitmq.storage` block sets `persistentVolumeClaimName: reporter-rabbitmq` and `requestedSize: 8Gi`.
+- A new template, `templates/rabbitmq-pvc.yaml`, renders that PVC with `helm.sh/resource-policy: keep`.
+- The broker StatefulSet mounts the PVC as a regular pod volume (`persistentVolumeClaim.claimName: reporter-rabbitmq`). It does **not** use `volumeClaimTemplates`, so a default upgrade only changes the pod template, which Kubernetes allows on an existing StatefulSet.
 
 **Before (v4.3.6):**
 
 ```yaml
+# values.yaml
 rabbitmq:
   enabled: true
   persistence:
-    size: 8Gi
+    size: 8Gi   # not read by the subchart
+```
+
+```yaml
+# Rendered StatefulSet reporter-rabbitmq (volumes)
+- name: rabbitmq-volume
+  emptyDir: {}
 ```
 
 **After (v4.3.7):**
 
 ```yaml
+# values.yaml
 rabbitmq:
   enabled: true
   storage:
     persistentVolumeClaimName: reporter-rabbitmq
     requestedSize: 8Gi
+```
+
+```yaml
+# Rendered StatefulSet reporter-rabbitmq (volumes)
+- name: rabbitmq-volume
+  persistentVolumeClaim:
+    claimName: reporter-rabbitmq
 ```
 
 **Rendered PVC (v4.3.7):**
@@ -81,198 +89,89 @@ spec:
       storage: 8Gi
 ```
 
-> **Important:** The `helm.sh/resource-policy: keep` annotation ensures the PVC and its underlying PersistentVolume are retained when the chart is uninstalled. This prevents accidental loss of queued messages.
-
-**Why this matters:**
-
-In v4.3.6, the RabbitMQ StatefulSet created its own PVC via `volumeClaimTemplates`. When the chart was uninstalled, the PVC was deleted along with all queued messages. In v4.3.7, the chart renders the PVC explicitly and marks it for retention, ensuring data survives uninstall operations.
-
 **Operational impact:**
 
-- **New installations:** The chart will create a PVC named `reporter-rabbitmq` (or the value of `rabbitmq.storage.persistentVolumeClaimName`) before deploying the RabbitMQ StatefulSet.
-- **Upgrades from v4.3.6:** If a PVC already exists from the previous StatefulSet, the upgrade will fail unless you migrate the existing PVC or create a new one. See [Migration Steps](#migration-steps) for detailed instructions.
+- **One-time loss of in-flight messages.** The upgrade replaces the broker pod. Messages queued in the old `emptyDir` are lost at that moment, and the new pod starts on an empty volume. From then on, queued messages survive pod restarts, upgrades and `helm uninstall`. Drain the queues or run the upgrade when no reports are pending.
+- **A StorageClass is now required.** The PVC sets no `storageClassName` unless you set `rabbitmq.storage.className`, so it binds through the cluster's default StorageClass. With no default StorageClass the PVC stays `Pending` and the broker pod does not start.
+- **The PVC name is fixed.** The default name is `reporter-rabbitmq` whatever the release name is. Because the PVC is kept on uninstall, installing a release with a **different name** in the same namespace fails with `invalid ownership metadata` until the kept PVC is deleted or `rabbitmq.storage.persistentVolumeClaimName` is changed. Reinstalling with the **same** release name reuses the PVC.
+- **One broker replica only.** The claim is `ReadWriteOnce` and shared by every broker pod, so keep `rabbitmq.replicaCount` at `1` (the default).
+- To delete the broker data for good, remove the PVC after uninstalling:
+
+```bash
+kubectl delete pvc reporter-rabbitmq -n <namespace>
+```
 
 ## Configuration Changes
 
 | Setting | v4.3.6 | v4.3.7 | Notes |
 |---------|--------|--------|-------|
-| `rabbitmq.persistence.size` | `8Gi` | removed | Replaced by `rabbitmq.storage.requestedSize` |
-| `rabbitmq.storage.persistentVolumeClaimName` | not present | `reporter-rabbitmq` | Name of the PVC rendered by the chart |
-| `rabbitmq.storage.requestedSize` | not present | `8Gi` | Size of the PVC |
-| `rabbitmq.storage.className` | not present | `""` (optional) | Storage class for the PVC; omit to use cluster default |
+| `rabbitmq.persistence.size` | `8Gi` | removed | Was never read by the subchart |
+| `rabbitmq.storage.persistentVolumeClaimName` | not set | `reporter-rabbitmq` | The PVC the chart renders and the broker mounts |
+| `rabbitmq.storage.requestedSize` | not set | `8Gi` | Size of that PVC |
+| `rabbitmq.storage.className` | not set | not set (optional) | StorageClass for the PVC; unset uses the cluster default |
 
-**New configuration fields:**
+## Who is affected
 
-| Field | Default | Description |
-|-------|---------|-------------|
-| `rabbitmq.storage.persistentVolumeClaimName` | `reporter-rabbitmq` | Name of the PVC that will be created and referenced by the RabbitMQ StatefulSet |
-| `rabbitmq.storage.requestedSize` | `8Gi` | Size of the PVC (must match or exceed the size of any existing PVC being migrated) |
-| `rabbitmq.storage.className` | `""` | Storage class name; if empty, the cluster's default storage class is used |
+| Installation | Result of `helm upgrade` |
+|--------------|--------------------------|
+| Bundled broker, no `rabbitmq.storage` override (default) | Succeeds. Broker pod restarts on a new, empty PVC (one-time loss of in-flight messages). |
+| Bundled broker with `rabbitmq.storage.requestedSize` set in your values | **Fails** — see below. |
+| External broker (`rabbitmq.enabled: false`) | Not affected. The PVC is not rendered. |
 
 ## Migration Steps
 
-This upgrade requires manual intervention to handle the existing RabbitMQ PVC. Choose one of the following options based on your requirements.
+### Default installations (no `rabbitmq.storage` override)
 
-### Option 1: Keep existing RabbitMQ data (recommended)
+No values change is required.
 
-If you want to preserve queued messages and RabbitMQ state, you must rename the existing PVC to match the new chart-managed PVC name.
+1. Make sure the cluster has a default StorageClass, or set `rabbitmq.storage.className`:
 
-> **Warning:** This procedure requires downtime. RabbitMQ will be unavailable while the PVC is being renamed.
+   ```bash
+   kubectl get storageclass
+   ```
 
-**Step 1: Identify the existing PVC**
+2. Drain or wait for pending report jobs (queued messages in the old `emptyDir` are lost when the broker pod is replaced).
+3. Run the upgrade (see [Command to upgrade](#command-to-upgrade)).
+4. Verify the PVC is bound and the broker is running:
 
-```bash
-kubectl get pvc -n reporter -l app.kubernetes.io/name=rabbitmq
+   ```bash
+   kubectl get pvc reporter-rabbitmq -n <namespace>
+   kubectl get pods -n <namespace> -l app.kubernetes.io/name=rabbitmq
+   ```
+
+> **Warning:** Do not create the `reporter-rabbitmq` PVC by hand before upgrading. A PVC that Helm did not create has no Helm ownership metadata, and the upgrade fails with `invalid ownership metadata`.
+
+### Installations that set `rabbitmq.storage.requestedSize`
+
+If your values already set `rabbitmq.storage.requestedSize` (the subchart's own way to get a persistent volume), v4.3.6 rendered the broker StatefulSet with `volumeClaimTemplates`, and the PVC is named `rabbitmq-volume-<release>-rabbitmq-0`. In v4.3.7 the new default `persistentVolumeClaimName` is merged into your values, which removes `volumeClaimTemplates` from the StatefulSet. Kubernetes refuses that change and the upgrade fails:
+
+```text
+Error: UPGRADE FAILED: cannot patch "<release>-rabbitmq" with kind StatefulSet: StatefulSet.apps "<release>-rabbitmq" is invalid: spec: Forbidden: updates to statefulset spec for fields other than 'replicas', 'ordinals', 'template', 'updateStrategy', 'persistentVolumeClaimRetentionPolicy' and 'minReadySeconds' are forbidden
 ```
 
-The PVC name will typically be `data-reporter-rabbitmq-0` (where `reporter` is your release name).
+The release is then marked `failed`, and resources applied before the StatefulSet (for example the `reporter-manager` and `reporter-worker` Secrets, which are pre-upgrade hooks) are already updated.
 
-**Step 2: Scale down the RabbitMQ StatefulSet**
-
-```bash
-kubectl scale statefulset reporter-rabbitmq --replicas=0 -n reporter
-```
-
-Wait for the RabbitMQ pod to terminate:
-
-```bash
-kubectl get pods -n reporter -l app.kubernetes.io/name=rabbitmq
-```
-
-**Step 3: Rename the existing PVC**
-
-Kubernetes does not support renaming PVCs directly. You must create a new PVC with the desired name and copy the data from the old PVC.
-
-**Option A: Use a temporary pod to copy data**
-
-Create a temporary pod that mounts both the old and new PVCs:
+To keep your existing volume and its data, unset the new claim name so the subchart keeps its `volumeClaimTemplates`:
 
 ```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: reporter-rabbitmq
-  namespace: reporter
-  annotations:
-    helm.sh/resource-policy: keep
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 8Gi
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: pvc-migrator
-  namespace: reporter
-spec:
-  containers:
-  - name: migrator
-    image: busybox
-    command: ["sh", "-c", "cp -a /old-data/. /new-data/ && echo 'Migration complete'"]
-    volumeMounts:
-    - name: old-data
-      mountPath: /old-data
-    - name: new-data
-      mountPath: /new-data
-  volumes:
-  - name: old-data
-    persistentVolumeClaim:
-      claimName: data-reporter-rabbitmq-0
-  - name: new-data
-    persistentVolumeClaim:
-      claimName: reporter-rabbitmq
-  restartPolicy: Never
+rabbitmq:
+  storage:
+    persistentVolumeClaimName: null
+    requestedSize: 8Gi   # your existing size
 ```
 
-Apply the manifest:
+or on the command line, alongside your usual values files:
 
 ```bash
-kubectl apply -f pvc-migrator.yaml
+helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 4.3.7 -n <namespace> \
+  -f <your-values.yaml> --set rabbitmq.storage.persistentVolumeClaimName=null
 ```
 
-Wait for the migration to complete:
+With `persistentVolumeClaimName: null`, `templates/rabbitmq-pvc.yaml` renders nothing and the StatefulSet spec is unchanged.
 
-```bash
-kubectl logs -n reporter pvc-migrator -f
-```
+### Installations using an external broker
 
-Delete the temporary pod:
-
-```bash
-kubectl delete pod pvc-migrator -n reporter
-```
-
-**Option B: Manually edit the PVC and PV**
-
-If your storage backend supports it, you can manually rename the PVC by editing the PVC and PV resources. This approach is storage-specific and may not work with all provisioners.
-
-**Step 4: Delete the old PVC**
-
-```bash
-kubectl delete pvc data-reporter-rabbitmq-0 -n reporter
-```
-
-**Step 5: Run the Helm upgrade**
-
-```bash
-helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 4.3.7 -n reporter
-```
-
-The upgrade will detect the existing `reporter-rabbitmq` PVC and mount it to the RabbitMQ StatefulSet.
-
-**Step 6: Verify RabbitMQ is running**
-
-```bash
-kubectl get pods -n reporter -l app.kubernetes.io/name=rabbitmq
-```
-
-Check RabbitMQ logs:
-
-```bash
-kubectl logs -n reporter reporter-rabbitmq-0 --tail=50
-```
-
-Verify that queued messages are intact:
-
-```bash
-kubectl exec -n reporter -it reporter-rabbitmq-0 -- rabbitmqctl list_queues
-```
-
-### Option 2: Fresh RabbitMQ installation
-
-If you do not need to preserve existing RabbitMQ data, you can delete the old PVC and let the chart create a new one.
-
-> **Warning:** This will delete all queued messages and RabbitMQ state. Only use this option if you can afford to lose in-flight messages.
-
-**Step 1: Delete the RabbitMQ StatefulSet and PVC**
-
-```bash
-kubectl delete statefulset reporter-rabbitmq -n reporter
-kubectl delete pvc data-reporter-rabbitmq-0 -n reporter
-```
-
-**Step 2: Run the Helm upgrade**
-
-```bash
-helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 4.3.7 -n reporter
-```
-
-The chart will create a new PVC named `reporter-rabbitmq` and deploy a fresh RabbitMQ instance.
-
-**Step 3: Verify RabbitMQ is running**
-
-```bash
-kubectl get pods -n reporter -l app.kubernetes.io/name=rabbitmq
-```
-
-Check RabbitMQ logs:
-
-```bash
-kubectl logs -n reporter reporter-rabbitmq-0 --tail=50
-```
+No action required.
 
 ## Preview changes before upgrading
 

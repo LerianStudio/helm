@@ -1,0 +1,50 @@
+# Template values for the br-sisbajud (SISBAJUD plugin) chart.
+# Copy this file and fill in the values for your environment. Postgres and Redis
+# are external on the target environments — point the service at the shared
+# managed instances.
+
+imagePullSecrets:
+  - name: ghcr-credential
+
+brSisbajud:
+  image:
+    tag: ""  # optional — defaults to Chart.appVersion
+  configmap:
+    ENV_NAME: "development"
+    POSTGRES_HOST: ""             # REQUIRED — managed Postgres host
+    POSTGRES_USER: "br_sisbajud"
+    POSTGRES_NAME: "br_sisbajud"
+    POSTGRES_SSLMODE: "disable"
+    REDIS_HOST: ""               # REQUIRED — managed Valkey host:port
+    KMS_PROVIDER: "vault"
+    VAULT_ADDR: ""               # REQUIRED — Vault address
+    VAULT_AUTH_METHOD: "approle"
+    VAULT_TRANSIT_MOUNT_PATH: "transit-st"
+    STREAMING_ENABLED: "true"
+    STREAMING_BROKERS: ""        # REQUIRED when STREAMING_ENABLED=true
+    STREAMING_CLOUDEVENTS_SOURCE: "br-sisbajud"
+    MIDAZ_BASE_URL: ""           # REQUIRED — Midaz ledger URL
+  secrets:
+    POSTGRES_PASSWORD: ""        # REQUIRED for external Postgres
+    REDIS_PASSWORD: ""           # set if the external Redis requires auth
+    SECRET_STORE_PROVIDER: "local"  # vault | aws-secrets-manager | local
+  extraEnvVars:
+    - name: VAULT_APPROLE_ROLE_ID
+      value: ""                  # REQUIRED when VAULT_AUTH_METHOD=approle
+    - name: VAULT_APPROLE_SECRET_ID
+      value: ""                  # REQUIRED when VAULT_AUTH_METHOD=approle
+
+migrations:
+  enabled: true
+  postgres:
+    host: ""                     # defaults to brSisbajud.configmap.POSTGRES_HOST
+    password: ""                 # defaults to brSisbajud.secrets.POSTGRES_PASSWORD
+
+# External infra (default). Enable only for a self-contained install.
+postgresql:
+  enabled: false
+  external: true
+
+valkey:
+  enabled: false
+  external: true

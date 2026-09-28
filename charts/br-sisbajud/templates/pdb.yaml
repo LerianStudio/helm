@@ -1,0 +1,22 @@
+{{- if and .Values.brSisbajud.enabled .Values.brSisbajud.pdb.enabled -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "br-sisbajud.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud.labels" . | nindent 4 }}
+  {{- with .Values.brSisbajud.pdb.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not (kindIs "invalid" .Values.brSisbajud.pdb.maxUnavailable) }}
+  maxUnavailable: {{ .Values.brSisbajud.pdb.maxUnavailable }}
+  {{- else }}
+  minAvailable: {{ .Values.brSisbajud.pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "br-sisbajud.selectorLabels" . | nindent 6 }}
+{{- end -}}

@@ -53,8 +53,17 @@ printf '%s\n' 'BEGIN;' 'CREATE ROLE tracer LOGIN;' '\password tracer' "$DB_PASSW
 
 **Operational impact:**
 
-- **Existing deployments:** If the tracer role already exists, the bootstrap job skips role creation and this change has no effect. The upgrade is safe and requires no action.
+- **Existing deployments:** If the tracer role already exists, the bootstrap job skips role creation and the new password logic does not run. The password of an existing role is never changed. If the bootstrap Job object still exists, delete it before upgrading (see below).
 - **New deployments or re-bootstrapping:** The tracer role password must not contain carriage return (`\r`) or line feed (`\n`) characters. If the password contains these characters (often from secrets created with `echo` without `-n`, or on Windows systems), the bootstrap job will fail with a clear error message.
+
+> **Action required if the bootstrap Job still exists:** `tracer-bootstrap-postgres` (rendered when `global.externalPostgresDefinitions.enabled=true`) is a regular Kubernetes Job, not a Helm hook. It is removed only by `ttlSecondsAfterFinished: 300`, which starts counting after the Job finishes. This release changes the Job's pod template, and a Job's `spec.template` is immutable. If the Job object is still in the namespace, `helm upgrade` (or an Argo CD sync) fails with `spec.template: Invalid value: ... field is immutable`. The Job is still there when it finished less than 5 minutes ago, or when it never finished. In particular, in a namespace with an Istio or Linkerd sidecar injected as a regular container, the proxy keeps the Job `Running` forever. Check for the Job and delete it before upgrading:
+>
+> ```bash
+> kubectl get job tracer-bootstrap-postgres -n tracer
+> kubectl delete job tracer-bootstrap-postgres -n tracer --ignore-not-found
+> ```
+>
+> The upgrade then recreates the Job. The bootstrap is idempotent: it skips an existing `tracer` role and database and only re-applies grants. The Job name is `<fullnameOverride or tracer>-bootstrap-postgres`.
 
 > **Warning:** If you are using a secret management tool or script that appends a newline to secret values, ensure the tracer password is stored without trailing whitespace. Use `echo -n` or equivalent when creating secrets manually.
 
@@ -79,57 +88,63 @@ If you encounter the validation error, recreate the secret without trailing newl
 ```bash
 # Correct: no trailing newline
 kubectl create secret generic tracer-db-secret \
-  --from-literal=password="your-secure-password" \
+  --from-literal=DB_PASSWORD_TRACER="your-secure-password" \
   -n tracer --dry-run=client -o yaml | kubectl apply -f -
 
 # Or using echo -n
 echo -n "your-secure-password" | kubectl create secret generic tracer-db-secret \
-  --from-file=password=/dev/stdin \
+  --from-file=DB_PASSWORD_TRACER=/dev/stdin \
   -n tracer --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-Then trigger a new bootstrap job or upgrade.
+The Secret named in `global.externalPostgresDefinitions.tracerCredentials.useExistingSecret.name` must hold the password under the key `DB_PASSWORD_TRACER`. To re-run the bootstrap, delete the `tracer-bootstrap-postgres` Job (its template is immutable), then run `helm upgrade` again.
 
 ## Migration Steps
 
-This upgrade is backward-compatible and requires no configuration changes for existing deployments.
+This upgrade requires no configuration changes. If `global.externalPostgresDefinitions.enabled=true` and the `tracer-bootstrap-postgres` Job still exists, delete it first (step 2).
 
 **Recommended upgrade process:**
 
 1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
 
-2. If you are deploying to a fresh database or plan to re-run the bootstrap job, verify that your tracer password does not contain carriage return or line feed characters:
+2. If the bootstrap Job is enabled, delete any existing `tracer-bootstrap-postgres` Job so the upgrade can recreate it:
+
+   ```bash
+   kubectl delete job tracer-bootstrap-postgres -n tracer --ignore-not-found
+   ```
+
+3. If you are deploying to a fresh database or plan to re-run the bootstrap job, verify that your tracer password does not contain carriage return or line feed characters:
 
    ```bash
    # Check if the password contains CR or LF
-   kubectl get secret tracer-db-secret -n tracer -o jsonpath='{.data.password}' | base64 -d | od -c
+   kubectl get secret tracer-db-secret -n tracer -o jsonpath='{.data.DB_PASSWORD_TRACER}' | base64 -d | od -c
    ```
 
    Look for `\r` or `\n` in the output. If present, recreate the secret without trailing whitespace.
 
-3. Apply the upgrade:
+4. Apply the upgrade:
 
    ```bash
    helm upgrade tracer oci://registry-1.docker.io/lerianstudio/tracer-helm --version 2.1.1 -n tracer
    ```
 
-4. Verify the bootstrap job completes successfully (only relevant if the job runs):
+5. Verify the bootstrap job completes successfully (only relevant if the job runs):
 
    ```bash
-   kubectl get jobs -n tracer -l app.kubernetes.io/name=tracer-helm
+   kubectl get jobs -n tracer -l app.kubernetes.io/name=tracer,app.kubernetes.io/component=bootstrap
    kubectl logs -n tracer -l job-name=tracer-bootstrap-postgres --tail=50
    ```
 
-5. Verify all pods are running and healthy:
+6. Verify all pods are running and healthy:
 
    ```bash
    kubectl get pods -n tracer
    ```
 
-6. Check application logs for any startup issues:
+7. Check application logs for any startup issues:
 
    ```bash
-   kubectl logs -n tracer -l app.kubernetes.io/name=tracer-helm --tail=50
+   kubectl logs -n tracer -l app.kubernetes.io/name=tracer,app.kubernetes.io/component=tracer --tail=50
    ```
 
 > **Note:** For existing deployments where the tracer role is already created, this upgrade only updates the bootstrap job template. The job will skip role creation and the new password-setting logic will not execute.

@@ -214,6 +214,13 @@ identity:
   # @default -- templates/identity/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
+    # SSO probe and self-service flags (default "false" in templates/identity/configmap.yaml):
+    # PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: "false"  # only for an IdP with no TLS
+    # PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: "false"    # BYOC/on-prem IdP on RFC1918 only
+    # ENABLE_FORGOT_PASSWORD: "false"                     # needs an email provider linked to the app
+    # Optional keys, omitted from the ConfigMap unless set:
+    # AUTH_M2M_JWKS_URL: ""  # empty derives it from the Casdoor address
+    # AUTH_M2M_JWKS_REFRESH_INTERVAL: "5m"
     # Environment name is resolved via the global mask (global.env.name) — same
     # rule as the datastore masks: do NOT pin ENV_NAME here, it WINS over the
     # mask and defeats it. The default ("development") lives in
@@ -378,6 +385,9 @@ auth:
     # -- Multi-factor authentication gate. Unset (the default) omits MFA_ENABLED
     # from the ConfigMap, leaving the application's own default in force.
     # MFA_ENABLED: "false"
+    # Optional keys, omitted from the ConfigMap unless set:
+    # PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: ""  # BYOC single-tenant SSO org; refused when MULTI_TENANT_ENABLED=true
+    # AUTH_JWKS_CACHE_TTL: "5m"
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data

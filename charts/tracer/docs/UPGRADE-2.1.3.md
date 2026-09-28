@@ -70,15 +70,23 @@ spec:
 
 - No service mesh is installed
 - Sidecar injection is disabled for the tracer namespace
-- Kubernetes version is older than 1.29 (annotations are ignored)
 
-> **Note:** If you are running Kubernetes 1.28 or earlier, these annotations will be ignored and the bootstrap job will continue to exhibit the hanging behavior in mesh environments. Consider upgrading to Kubernetes 1.29+ or disabling sidecar injection for the bootstrap job using mesh-specific annotations (e.g., `sidecar.istio.io/inject: "false"`).
+> **Note:** On a cluster or mesh version without native sidecar support, the mesh may not honor these annotations, and the bootstrap job can keep hanging in mesh environments. Check your mesh's documentation for native sidecar support before relying on this fix.
 
 > **Important:** Native sidecar mode requires Kubernetes 1.29+ and a compatible service mesh version. For Istio, native sidecar support is available in Istio 1.22+. For Linkerd, check your version's compatibility with native sidecars.
 
 ## Migration Steps
 
-This upgrade is backward-compatible and requires no configuration changes. The new annotations are automatically applied to the bootstrap job.
+This upgrade requires no configuration changes. The new annotations are applied to the bootstrap job automatically. **But if you run a service mesh, the Job that hung on the previous version is still in the namespace, and you must delete it before upgrading.**
+
+> **Action required if the bootstrap Job still exists:** `tracer-bootstrap-postgres` (rendered when `global.externalPostgresDefinitions.enabled=true`) is a regular Kubernetes Job, not a Helm hook. It is removed only by `ttlSecondsAfterFinished: 300`, which starts counting after the Job finishes. This release changes the Job's pod template, and a Job's `spec.template` is immutable. If the Job object is still in the namespace, `helm upgrade` (or an Argo CD sync) fails with `spec.template: Invalid value: ... field is immutable`. The Job is still there when it finished less than 5 minutes ago, or when it never finished. In particular, in a namespace with an Istio or Linkerd sidecar injected as a regular container, the proxy keeps the Job `Running` forever. Check for the Job and delete it before upgrading:
+>
+> ```bash
+> kubectl get job tracer-bootstrap-postgres -n tracer
+> kubectl delete job tracer-bootstrap-postgres -n tracer --ignore-not-found
+> ```
+>
+> The upgrade then recreates the Job. The bootstrap is idempotent: it skips an existing `tracer` role and database and only re-applies grants. The Job name is `<fullnameOverride or tracer>-bootstrap-postgres`.
 
 **Recommended upgrade process:**
 
@@ -92,12 +100,18 @@ This upgrade is backward-compatible and requires no configuration changes. The n
 
    Confirm Kubernetes version is 1.29 or later for native sidecar support.
 
-3. Apply the upgrade in a non-production environment first if you are running a service mesh.
+3. Delete the existing bootstrap Job, if any. With a mesh, the previous Job is still `Running`, and upgrading over it fails with `field is immutable`:
+
+   ```bash
+   kubectl delete job tracer-bootstrap-postgres -n tracer --ignore-not-found
+   ```
+
+   Apply the upgrade in a non-production environment first if you are running a service mesh.
 
 4. After upgrading, verify the bootstrap job completes successfully:
 
    ```bash
-   kubectl get jobs -n tracer -l app.kubernetes.io/name=tracer-helm,app.kubernetes.io/component=bootstrap
+   kubectl get jobs -n tracer -l app.kubernetes.io/name=tracer,app.kubernetes.io/component=bootstrap
    ```
 
    The job should show `COMPLETIONS: 1/1` instead of remaining in `Running` state.

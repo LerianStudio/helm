@@ -52,7 +52,21 @@ spec:
 
 - **More flexible disruption handling**: With `maxUnavailable: 1`, Kubernetes can maintain availability based on your actual replica count. For example, with 3 replicas, 2 pods will always remain available during disruptions.
 - **Better scaling behavior**: The `maxUnavailable` strategy scales better with different replica counts compared to a fixed `minAvailable` value.
-- **Backward compatibility preserved**: If you explicitly set `minAvailable` in your values, it will continue to take precedence over `maxUnavailable`.
+- **Node drains with one tracer pod**: `tracer.replicaCount` defaults to `1`. With the previous default `minAvailable: 1` the PDB allowed zero disruptions, so a node drain could not evict the tracer pod; `maxUnavailable: 1` lets it.
+- **Precedence flipped**: In v9.2.13 `maxUnavailable` won whenever it was set (`hasKey`). In v9.2.14 a non-zero `minAvailable` wins. This matters only if your values set both.
+
+#### Action required
+
+If your values set **both** `tracer.pdb.minAvailable` and `tracer.pdb.maxUnavailable` (for example a copy of the chart's full `values.yaml`, which listed `minAvailable: 1`), v9.2.13 rendered `maxUnavailable` and v9.2.14 renders `minAvailable`. With one tracer replica that blocks node drains again. Remove the key you do not want:
+
+```yaml
+tracer:
+  pdb:
+    enabled: true
+    maxUnavailable: 1   # and no minAvailable
+```
+
+If you set only one of the two keys, the rendered PDB does not change.
 
 #### Migration options
 
@@ -62,7 +76,7 @@ No action required. The new default `maxUnavailable: 1` will be applied automati
 
 #### Option 2: Keep the previous behavior
 
-If you need to maintain the exact previous behavior with `minAvailable: 1`, explicitly set it in your values:
+If you need to maintain the exact previous behavior with `minAvailable: 1`, explicitly set it in your values. With `tracer.replicaCount: 1` this blocks node drains, as before:
 
 ```yaml
 tracer:
@@ -71,7 +85,7 @@ tracer:
     minAvailable: 1
 ```
 
-> **Note:** Setting `minAvailable` will override `maxUnavailable` in the template logic. You cannot use both settings simultaneously.
+> **Note:** A non-zero `minAvailable` overrides `maxUnavailable` in the template logic; only one of them is rendered.
 
 #### Option 3: Customize maxUnavailable
 

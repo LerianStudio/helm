@@ -348,3 +348,7 @@ mongodb:
     # -- The data volume outlives the release: helm uninstall keeps it.
     resourcePolicy: keep
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)
+
+product-console:
+  image:
+    tag: 2.4.1

@@ -195,7 +195,7 @@ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 
 5. Restart the ledger to pick up the new passwords (v9.2.9 does not restart pods when their Secret changes):
 
 ```bash
-kubectl rollout restart deployment/<release>-ledger -n midaz
+kubectl rollout restart deployment/midaz-ledger -n midaz
 ```
 
 #### Template changes

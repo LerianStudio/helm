@@ -5,7 +5,7 @@
 - **[Fixes](#fixes)**
   - [1. PostgreSQL and MongoDB image digests pinned](#1-postgresql-and-mongodb-image-digests-pinned)
   - [2. MongoDB updateStrategy set to Recreate](#2-mongodb-updatestrategy-set-to-recreate)
-  - [3. RabbitMQ consumer user downgraded from administrator to management](#3-rabbitmq-consumer-user-downgraded-from-administrator-to-management)
+  - [3. RabbitMQ ledger users downgraded from administrator to management](#3-rabbitmq-ledger-users-downgraded-from-administrator-to-management)
   - [4. RabbitMQ bootstrap job prevents admin user collision](#4-rabbitmq-bootstrap-job-prevents-admin-user-collision)
   - [5. ConfigMap changes now trigger pod restarts](#5-configmap-changes-now-trigger-pod-restarts)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
@@ -42,7 +42,32 @@ mongodb:
     digest: "sha256:c8babafb7d15a7412543a9a391ffee8ba206c4d10dd6a1ba2ae2bf74fdfe538b"
 ```
 
-> **Note:** If you override `postgresql.image.tag` or `mongodb.image.tag` to a specific version, the digest will be ignored. The digest only applies when using `latest`.
+> **Warning:** The digest takes precedence over every other image setting. The Bitnami subcharts render `<registry>/<repository>@<digest>` whenever a digest is set, so an override of `image.tag`, `image.repository`, `image.registry` or `global.imageRegistry` no longer selects the image on its own. For example, `postgresql.image.tag: 17.6.0` renders `docker.io/bitnamisecure/postgresql@sha256:7045…` (PostgreSQL 18.6.0), and `global.imageRegistry: myreg.example.com` renders `myreg.example.com/bitnamisecure/postgresql@sha256:7045…`. The result is either an image pull failure (the digest does not exist in your repository or mirror) or a different major version that refuses your data directory.
+
+#### Action required
+
+- **If you override the PostgreSQL or MongoDB image** (tag, repository, registry or `global.imageRegistry`), clear the digest so your override applies again:
+
+  ```yaml
+  postgresql:
+    image:
+      tag: "17.6.0"   # your pinned version
+      digest: ""
+  mongodb:
+    image:
+      tag: "8.0.12"   # your pinned version
+      digest: ""
+  ```
+
+- **If you run the default `latest` tag**, check the major version your bundled databases run today before upgrading. The image reference changes from `latest` to the digest, so the pods are recreated on PostgreSQL 18.6.0 and MongoDB 8.3.11. If the data directory is not on 18, set `postgresql.image.tag` to your current version with `postgresql.image.digest: ""`:
+
+  ```bash
+  # major version of the PostgreSQL data directory
+  kubectl -n midaz exec <release>-postgresql-primary-0 -- cat /bitnami/postgresql/data/PG_VERSION
+  kubectl -n midaz exec deploy/<release>-mongodb -- mongod --version
+  ```
+
+- **Plan a maintenance window:** because the image reference changes, this upgrade restarts the PostgreSQL primary and read replica StatefulSets and the MongoDB pod. The ledger cannot reach the database while they restart.
 
 ### 2. MongoDB updateStrategy set to Recreate
 
@@ -64,11 +89,23 @@ mongodb:
     type: Recreate
 ```
 
-> **Important:** This change only applies to standalone MongoDB deployments (`architecture: standalone`). If you use `architecture: replicaset` or `useStatefulSet: true`, the chart will use `RollingUpdate` because StatefulSets do not support `Recreate`.
+> **Warning:** The default is not adjusted for StatefulSets. With `mongodb.architecture: replicaset` or `mongodb.useStatefulSet: true`, the chart renders the MongoDB StatefulSet with `updateStrategy.type: Recreate`, which Kubernetes rejects (a StatefulSet accepts only `RollingUpdate` or `OnDelete`), and the upgrade fails.
 
-### 3. RabbitMQ consumer user downgraded from administrator to management
+#### Action required
 
-The RabbitMQ `consumer` user now receives the `management` tag instead of `administrator`.
+If you use `mongodb.architecture: replicaset` or `mongodb.useStatefulSet: true`, set the strategy back before upgrading:
+
+```yaml
+mongodb:
+  updateStrategy:
+    type: RollingUpdate
+```
+
+With the default standalone Deployment, `Recreate` stops the old MongoDB pod before starting the new one, so MongoDB is unavailable for the duration of every pod replacement.
+
+### 3. RabbitMQ ledger users downgraded from administrator to management
+
+The RabbitMQ `consumer` user now receives the `management` tag instead of `administrator`. On an external broker (`global.externalRabbitmqDefinitions.enabled: true`) the `transaction` user is downgraded to `management` too; on the bundled broker it stays `administrator`, because the bootstrap Job logs in as `transaction`.
 
 | User | v9.2.12 Tags | v9.2.13 Tags |
 |------|--------------|--------------|
@@ -139,8 +176,12 @@ rabbitmqctl set_permissions -p / admin ".*" ".*" ".*"
 ```yaml
 global:
   externalRabbitmqDefinitions:
-    rabbitmqAdminLogin: admin
-    rabbitmqAdminPassword: <secure-password>
+    rabbitmqAdminLogin:
+      username: admin
+      password: <secure-password>
+      # or, from a Secret with keys RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS:
+      # useExistingSecret:
+      #   name: my-rabbitmq-admin
 ```
 
 3. Proceed with the upgrade.
@@ -168,7 +209,7 @@ metadata:
     checksum/config: {{ include (print $.Template.BasePath "/ledger/configmap.yaml") . | sha256sum }}
 ```
 
-> **Note:** This change applies to `ledger`, `crm`, and `tracer` only. The `console`, `onboarding`, and `transaction` components already had this annotation in v9.2.12.
+> **Note:** This change applies to the `ledger`, `crm`, and `tracer` Deployments, the only Deployments this chart renders from its own templates. The first upgrade to v9.2.13 restarts their pods once.
 
 ## Preview changes before upgrading
 

@@ -96,55 +96,57 @@ spec:
 
 #### Why this matters
 
-The previous logic had ambiguous behavior when both `minAvailable` and `maxUnavailable` were set. The new logic:
+Until v9.2.14, `ledger.pdb.minAvailable` and `crm.pdb.minAvailable` were **silently ignored**: the template rendered `maxUnavailable` whenever it was non-zero, and the chart default was `maxUnavailable: 1`, so `minAvailable` only applied if you also set `maxUnavailable` to `0` or `null`. From v9.2.15 a non-zero `minAvailable` is rendered and `maxUnavailable` is ignored:
 
-1. **Prioritizes `minAvailable`** if explicitly set by the operator
+1. **Prioritizes `minAvailable`** when it is set to a non-zero value
 2. **Falls back to `maxUnavailable`** if `minAvailable` is not set
-3. **Provides a safe default** (`maxUnavailable: 1`) if `maxUnavailable` is also undefined or invalid
-
-This ensures predictable PDB behavior and prevents misconfigurations that could block cluster maintenance operations.
+3. **Provides a default** (`maxUnavailable: 1`) if `maxUnavailable` is also unset or `null`
 
 #### Operational impact
 
-For most operators, **no action is required**. The default behavior remains:
+With the chart defaults, the rendered PDBs do not change:
 
 ```yaml
 spec:
   maxUnavailable: 1
 ```
 
-This allows one pod to be unavailable during rolling updates or node drains, which is appropriate for most deployments.
+If your values set `minAvailable`, this upgrade **changes the rendered PDB** from `maxUnavailable` to `minAvailable`. When `minAvailable` is equal to or greater than the number of running pods, the PDB allows zero disruptions and `kubectl drain` (cluster upgrades, node rotation, autoscaler scale-down) can no longer evict those pods. Examples: `crm.pdb.minAvailable: 1` with the default `crm.replicaCount: 1`, or `ledger.pdb.minAvailable: 1` with `ledger.replicaCount: 1`.
 
 #### Migration scenarios
 
 ##### Scenario 1: You use default values (no customization)
 
-**No action required.** The upgrade will apply `maxUnavailable: 1` for both services, which is the same effective behavior as before.
+**No action required.** The upgrade renders `maxUnavailable: 1` for both services, as before.
 
-##### Scenario 2: You explicitly set `minAvailable` in your values
+##### Scenario 2: Your values set `minAvailable`
 
-If you have customized `minAvailable` in your `values.yaml`:
+This includes values files copied from the chart's full `values.yaml`, which listed `ledger.pdb.minAvailable: 1` and `crm.pdb.minAvailable: 0` next to `maxUnavailable: 1`.
+
+| Your values | v9.2.14 renders | v9.2.15 renders |
+|-------------|-----------------|-----------------|
+| `minAvailable: 1`, `maxUnavailable: 1` | `maxUnavailable: 1` | `minAvailable: 1` |
+| `minAvailable: 2` (with the default `maxUnavailable: 1`) | `maxUnavailable: 1` | `minAvailable: 2` |
+| `minAvailable: 0`, `maxUnavailable: 1` | `maxUnavailable: 1` | `maxUnavailable: 1` |
+
+**Action required:** Before upgrading, decide which budget you want and keep only that key. To keep the behavior you had in v9.2.14, remove `minAvailable`:
 
 ```yaml
 ledger:
   pdb:
-    minAvailable: 2
+    maxUnavailable: 1
 ```
 
-**Action required:** The field still works, but you must now explicitly set it in your values override since it's no longer in the default values:
+Keep `minAvailable` only if it is lower than the replica count that is always running (`replicaCount`, or `autoscaling.minReplicas` when the HPA is enabled):
 
 ```yaml
 ledger:
+  replicaCount: 3
   pdb:
     minAvailable: 2
-    # maxUnavailable will be ignored when minAvailable is set
 ```
 
-> **Important:** When `minAvailable` is set, `maxUnavailable` is completely ignored. This is standard Kubernetes PDB behavior.
-
-##### Scenario 3: You explicitly set `maxUnavailable` in your values
-
-If you have customized `maxUnavailable`:
+##### Scenario 3: Your values set only `maxUnavailable`
 
 ```yaml
 crm:
@@ -152,37 +154,7 @@ crm:
     maxUnavailable: 2
 ```
 
-**No action required.** This will continue to work as expected. Just ensure you don't also set `minAvailable`, as it would take precedence.
-
-##### Scenario 4: You set both `minAvailable` and `maxUnavailable`
-
-**Before v9.2.15:** The behavior was unpredictable depending on which value was set.
-
-**After v9.2.15:** `minAvailable` always takes precedence. If you have both set:
-
-```yaml
-ledger:
-  pdb:
-    minAvailable: 2
-    maxUnavailable: 1  # This will be ignored
-```
-
-**Action required:** Review your configuration and remove one of the fields to make your intent explicit:
-
-```yaml
-# Option 1: Use minAvailable (guarantees minimum pods always available)
-ledger:
-  pdb:
-    minAvailable: 2
-
-# Option 2: Use maxUnavailable (allows up to N pods to be unavailable)
-ledger:
-  pdb:
-    maxUnavailable: 1
-```
-
-> **Note:** For high-availability deployments with 3+ replicas, `minAvailable` is typically preferred. For smaller deployments, `maxUnavailable: 1` is usually sufficient.
-
+**No action required.** This renders exactly as before.
 #### Verification after upgrade
 
 After upgrading, verify your PDB configuration:

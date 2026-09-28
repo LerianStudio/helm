@@ -305,13 +305,9 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "minAvailable": {
-              "default": 1,
-              "description": "Minimum number of available pods"
-            },
             "maxUnavailable": {
               "default": 1,
-              "description": "Maximum number of unavailable pods"
+              "description": "Maximum number of unavailable pods; ignored when minAvailable is set."
             },
             "annotations": {
               "type": "object",
@@ -879,13 +875,9 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "minAvailable": {
-              "default": 0,
-              "description": "Minimum number of available pods"
-            },
             "maxUnavailable": {
               "default": 1,
-              "description": "Maximum number of unavailable pods"
+              "description": "Maximum number of unavailable pods; ignored when minAvailable is set."
             },
             "annotations": {
               "type": "object",

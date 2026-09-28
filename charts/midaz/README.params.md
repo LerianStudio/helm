@@ -86,8 +86,7 @@
 | `ledger.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `ledger.pdb` | object | `{}` | PodDisruptionBudget configuration |
 | `ledger.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `ledger.pdb.minAvailable` | int | `1` | Minimum number of available pods |
-| `ledger.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods |
+| `ledger.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `ledger.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
 | `ledger.deploymentUpdate` | object | `{}` | Deployment update strategy |
 | `ledger.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
@@ -143,8 +142,7 @@
 | `crm.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `crm.pdb` | string | `{}` | PodDisruptionBudget configuration |
 | `crm.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `crm.pdb.minAvailable` | int | `0` | Minimum number of available pods |
-| `crm.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods |
+| `crm.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `crm.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
 | `crm.deploymentUpdate` | string | `{}` | Deployment update strategy |
 | `crm.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |

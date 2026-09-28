@@ -3,124 +3,73 @@
 ## Topics
 
 - **[Fixes](#fixes)**
-  - [1. RabbitMQ persistence configuration update](#1-rabbitmq-persistence-configuration-update)
+  - [1. RabbitMQ persistence setting removed (no rendered change)](#1-rabbitmq-persistence-setting-removed-no-rendered-change)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
 ## Fixes
 
-### 1. RabbitMQ persistence configuration update
+### 1. RabbitMQ persistence setting removed (no rendered change)
 
-The RabbitMQ persistence configuration has been updated to remove the default persistent volume size specification. This change addresses a Kubernetes limitation where StatefulSet `volumeClaimTemplates` cannot be modified after creation.
+The chart's default values no longer set `rabbitmq.persistence.size`. The bundled RabbitMQ subchart (`groundhog2k/rabbitmq` 2.1.11) never read a `persistence` key: its storage is configured under `rabbitmq.storage.*`, and with `storage.requestedSize` and `storage.persistentVolumeClaimName` both empty it mounts an `emptyDir`. The removed value only suggested a volume that was never created.
 
 #### What changed
 
 | Setting | v9.2.9 | v9.2.10 |
 |---------|--------|---------|
-| `rabbitmq.persistence.size` | `8Gi` | *removed* |
+| `rabbitmq.persistence.size` | `8Gi` (ignored by the subchart) | *removed* |
+| Bundled broker data volume | `emptyDir` | `emptyDir` (unchanged) |
 
 **Before (v9.2.9):**
 
 ```yaml
 rabbitmq:
-  enabled: true
-  image:
-    tag: "3.13.6"
   persistence:
     size: 8Gi
-  resources:
-    requests:
-      cpu: 250m
 ```
 
 **After (v9.2.10):**
 
 ```yaml
 rabbitmq:
-  enabled: true
-  image:
-    tag: "3.13.6"
   # -- No persistent volume (emptyDir): queues and messages are lost when the broker pod is recreated. Kubernetes
   # refuses changes to a StatefulSet's volumeClaimTemplates, so adding `storage.requestedSize` later needs it deleted first.
-  resources:
-    requests:
-      cpu: 250m
 ```
-
-#### Why this matters
-
-By default, RabbitMQ now uses an `emptyDir` volume instead of a PersistentVolumeClaim. This means:
-
-- **Queues and messages are ephemeral** — they will be lost when the RabbitMQ pod is recreated (e.g., during upgrades, node failures, or pod evictions)
-- **No PVC conflicts** — operators can add persistent storage later by setting `rabbitmq.storage.requestedSize` without encountering Kubernetes StatefulSet immutability errors
-- **Simpler initial deployment** — no need to provision PersistentVolumes for development or testing environments
-
-> **Warning:** This configuration is **not suitable for production** environments where message durability is required. For production deployments, you must explicitly configure persistent storage.
-
-#### Migration options
-
-##### Option 1: Continue with ephemeral storage (development/testing)
-
-If you are running a development or testing environment where message loss is acceptable, no action is required. The upgrade will proceed with ephemeral storage.
-
-> **Important:** After upgrade, the RabbitMQ pod will restart with an empty queue. Any messages in flight will be lost.
-
-##### Option 2: Add persistent storage (production)
-
-If you need persistent storage for RabbitMQ, configure it explicitly in your `values.yaml`:
-
-```yaml
-rabbitmq:
-  enabled: true
-  storage:
-    requestedSize: 8Gi
-    className: ""  # Use default storage class, or specify your preferred class
-    accessModes:
-      - ReadWriteOnce
-```
-
-> **Note:** If you are upgrading an existing installation that was using the default `8Gi` PVC from v9.2.9, the existing PVC will remain attached and continue to be used. The removal of the default size only affects new installations.
-
-##### Option 3: Use external RabbitMQ (recommended for production)
-
-For production environments, we recommend using a managed RabbitMQ service or a separately managed RabbitMQ cluster:
-
-```yaml
-rabbitmq:
-  enabled: false
-
-onboarding:
-  configmap:
-    RABBITMQ_HOST: "your-rabbitmq-host:5672"
-    RABBITMQ_VHOST: "/"
-
-transaction:
-  configmap:
-    RABBITMQ_HOST: "your-rabbitmq-host:5672"
-    RABBITMQ_VHOST: "/"
-```
-
-> **Note:** See the [Midaz Production Best Practices](https://docs.lerian.studio/docs/midaz-production-best-practices) for guidance on operating RabbitMQ in production.
 
 #### Operational impact
 
-- **Existing installations with PVCs:** If your v9.2.9 installation already has a RabbitMQ PVC, it will continue to be used after upgrade. No data loss will occur.
-- **New installations:** Will use ephemeral storage by default. You must explicitly configure `rabbitmq.storage.requestedSize` to enable persistence.
-- **Adding persistence later:** If you deploy with ephemeral storage and later want to add persistence, you must delete the RabbitMQ StatefulSet (not the pod) and redeploy:
+- **No rendered change:** the RabbitMQ StatefulSet and every other manifest render the same as in v9.2.9. The upgrade does not restart the broker, and no PVC is created, kept or removed.
+- **Existing behavior, now documented:** the bundled broker has always stored its data in an `emptyDir`. Queues and messages are lost whenever the broker pod is recreated (node drain, eviction, rescheduling), in this and in earlier versions.
+
+#### Action required
+
+No action is required for the upgrade itself.
+
+If you need durable messages from the bundled broker, configure storage explicitly. Either reference a PVC you create yourself; this changes only the pod's volumes and is applied by a normal upgrade (the broker pod restarts):
+
+```yaml
+rabbitmq:
+  storage:
+    persistentVolumeClaimName: "my-rabbitmq-data"
+```
+
+Or let the subchart create a PVC per replica. This adds `volumeClaimTemplates`, which Kubernetes refuses to change on an existing StatefulSet, so delete the StatefulSet (keeping its pod) before upgrading:
+
+```yaml
+rabbitmq:
+  storage:
+    requestedSize: 8Gi
+    className: ""  # empty uses the default StorageClass
+```
 
 ```bash
-# Back up RabbitMQ definitions first
-kubectl exec -n midaz midaz-rabbitmq-0 -- rabbitmqctl export_definitions /tmp/definitions.json
-kubectl cp midaz/midaz-rabbitmq-0:/tmp/definitions.json ./rabbitmq-backup.json
-
-# Delete the StatefulSet (preserves pods)
-kubectl delete statefulset midaz-rabbitmq -n midaz --cascade=orphan
-
-# Update values.yaml with storage configuration, then upgrade
+kubectl delete statefulset <release>-rabbitmq -n midaz --cascade=orphan
 helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 9.2.10 -n midaz -f values.yaml
 ```
 
-> **Warning:** The above procedure will cause RabbitMQ downtime. Plan accordingly and ensure you have backed up your RabbitMQ definitions and critical messages.
+> **Warning:** Either way the broker pod is recreated on the new volume, starting empty: messages queued in the `emptyDir` are lost. Drain the queues first.
+
+For production, an external broker (`rabbitmq.enabled: false` with the ledger's `RABBITMQ_*` settings pointing at it) avoids running a single-pod broker inside the release.
 
 ## Preview changes before upgrading
 

@@ -13,7 +13,7 @@ judicial secrecy (liminares / LC 105) and LGPD.
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `brCcs.secrets.CCS_CRYPTO_MASTER_KEY` (AES-256-GCM, 64 hex chars — empty fails fast at boot). `POSTGRES_PASSWORD` and `REDIS_PASSWORD` are single-sourced from the bundled `<release>-{postgresql,valkey}` Secrets via `secretKeyRef` when those subcharts are enabled; supply them (or `<subchart>.auth.existingSecret`) for external infra. `FETCHER_CRYPTO_KEY` is optional (empty = passthrough). See `docs/helm-chart-standard.md`.
+- Required secrets: `brCcs.secrets.CCS_CRYPTO_MASTER_KEY` (AES-256-GCM, 64 hex chars — empty fails fast at boot) and `brCcs.secrets.IDEMPOTENCY_RESPONSE_ENCRYPTION_KEY` (32 raw bytes or base64 of 32 — empty fails fast at boot). `POSTGRES_PASSWORD` and `REDIS_PASSWORD` are single-sourced from the bundled `<release>-{postgresql,valkey}` Secrets via `secretKeyRef` when those subcharts are enabled; supply them (or `<subchart>.auth.existingSecret`) for external infra. `FETCHER_CRYPTO_KEY` is optional (empty = passthrough). See `docs/helm-chart-standard.md`.
 - Dependency notes: Bundled PostgreSQL and Valkey subcharts are used unless external services are configured; RabbitMQ is optional and disabled by default. No MongoDB.
 - Production overrides: Disable the bundled subcharts (`<subchart>.enabled=false`, `.external=true`), set `POSTGRES_HOST`/`REDIS_HOST`, and supply secrets via a secrets manager or `brCcs.useExistingSecret`; override image tags, ingress, resources, and integration endpoints (Fetcher/STA/Reporter).
 - Source/license: Source is in `github.com/LerianStudio/helm` and `github.com/LerianStudio/br-ccs`; license is Apache-2.0.
@@ -26,7 +26,8 @@ helm install br-ccs charts/br-ccs \
   --set brCcs.configmap.ENV_NAME=production \
   --set brCcs.secrets.POSTGRES_PASSWORD=... \
   --set brCcs.secrets.REDIS_PASSWORD=... \
-  --set brCcs.secrets.CCS_CRYPTO_MASTER_KEY=$(openssl rand -hex 32)
+  --set brCcs.secrets.CCS_CRYPTO_MASTER_KEY=$(openssl rand -hex 32) \
+  --set brCcs.secrets.IDEMPOTENCY_RESPONSE_ENCRYPTION_KEY=$(openssl rand -base64 32)
 ```
 
 ## Service topology
@@ -68,6 +69,7 @@ set via `brCcs.extraEnvVars`.
 | `REDIS_PASSWORD` | Yes | Single-sourced from the bundled valkey Secret when `valkey.enabled=true`; supply here for external Redis. |
 | `CCS_CRYPTO_MASTER_KEY` | Yes | AES-256-GCM master key, 64 hex chars (`openssl rand -hex 32`). Empty fails fast at boot. |
 | `FETCHER_CRYPTO_KEY` | No | Optional. Empty = passthrough / plaintext (dev/staging); set to the Fetcher `APP_ENC_KEY` to decrypt snapshots. |
+| `IDEMPOTENCY_RESPONSE_ENCRYPTION_KEY` | Yes | AES-256 key sealing the idempotent replay bodies cached in Valkey: 32 raw bytes or base64 of 32 (`openssl rand -base64 32`). Empty or malformed fails fast at boot. |
 
 ### Migrations
 

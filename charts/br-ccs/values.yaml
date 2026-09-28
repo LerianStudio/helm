@@ -587,6 +587,8 @@ brCcs:
     # FETCHER_CRYPTO_KEY — Fetcher snapshot decryption key (base64; same as Fetcher APP_ENC_KEY).
     CCS_CRYPTO_MASTER_KEY: ""
     FETCHER_CRYPTO_KEY: ""
+    # IDEMPOTENCY_RESPONSE_ENCRYPTION_KEY — seals replay bodies cached in Valkey; 32 raw bytes or base64 of 32 (openssl rand -base64 32). Empty fails fast at boot.
+    IDEMPOTENCY_RESPONSE_ENCRYPTION_KEY: ""
 
     # License (lib-license-go) — validated at boot against the Lerian license
     # gateway (fail-closed). ORGANIZATION_IDS selects enforcement scope (e.g.

@@ -29,7 +29,9 @@ mutate that package.
   does not. IPv6 loopback classification is deferred to lib-auth (Helm has no
   equivalent IP parser), so an IPv6 HTTP URL passing render is not proof it will
   pass runtime enforcement. TLS certificate trust, reachability and discovered
-  endpoints still require runtime verification. The static discovery fallback is checked too.
+  endpoints still require runtime verification. With `auth.configmap.SD_ENABLED=true`
+  the auth address is not checked here: auth validates the discovered address at
+  boot and refuses an `http` fallback.
 - `auth.configmap.MFA_ENABLED` (or its legacy `extraEnvVars` form) requires
   `auth.secrets.MFA_SECRET` when the chart creates the Secret. With
   `auth.useExistingSecret=true`, provide `auth.existingSecretName` and ensure the
@@ -42,8 +44,8 @@ mutate that package.
   end-to-end upgrade, TLS trust, licenses, or existing users' MFA recovery paths.
   See the [9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md) before rollout.
 
-Run the offline regression suite after `helm dependency build`:
-`python3 charts/plugin-access-manager/tests/test_startup_contract.py` (requires PyYAML).
+The offline regression suite in `tests/` runs in CI; locally, after
+`helm dependency build`: `python3 charts/plugin-access-manager/tests/test_startup_contract.py` (requires PyYAML).
 
 ## Install Plugin Access Manager Helm Chart:
 

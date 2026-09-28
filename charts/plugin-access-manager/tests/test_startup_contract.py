@@ -130,9 +130,15 @@ class StartupContract(unittest.TestCase):
         values['auth']['configmap']['AUTHORIZER_ADDRESS'] = 'http://localhost:8000'
         self.fails(values, 'auth requires')
 
-    def test_discovery_does_not_hide_insecure_fallback(self):
-        self.fails({'global': {'env': {'name': 'production'}},
-                    'auth': {'configmap': {'SD_ENABLED': 'true'}}}, 'auth requires')
+    def test_auth_discovery_defers_to_runtime(self):
+        # auth validates the discovered address at boot; identity never uses discovery.
+        values = {'global': {'env': {'name': 'production'}},
+                  'auth': {'configmap': {'SD_ENABLED': 'true'}},
+                  'identity': {'configmap': {'AUTHORIZER_ADDRESS': 'https://idp.example.test'}}}
+        self.succeeds(values)
+        values['identity']['configmap']['SD_ENABLED'] = 'true'
+        values['identity']['configmap']['AUTHORIZER_ADDRESS'] = 'http://idp.example.test'
+        self.fails(values, 'identity requires')
 
     def test_invalid_https(self):
         for url in ['https://', 'http://idp.test', 'https://bad host', 'https://bad:port/keys']:

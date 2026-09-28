@@ -14,8 +14,6 @@
 #            Used when there are no credentials to give the cluster (a fork PR).
 #
 # Usage: install-test.sh <chart-dir> [values-file]
-# Never trace secret-derived data, even if the caller enables bash -x.
-set +x
 set -uo pipefail
 
 CHART_DIR="$1"
@@ -67,41 +65,6 @@ else
   TIMEOUT="${IT_TIMEOUT:-180s}"
 fi
 echo "  mode: $MODE"
-
-# Runtime-only licensing is narrowly scoped to Access Manager deep installs.
-# The same last-wins overlay is appended to each revision's OWN fixture values.
-LICENSE_VALUES=""
-cleanup_license_values() {
-  [[ -z "$LICENSE_VALUES" ]] || rm -f -- "$LICENSE_VALUES"
-}
-trap cleanup_license_values EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-if [[ "$CHART" == plugin-access-manager ]]; then
-  SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-  bash "$SCRIPT_DIR/plugin-access-manager-install-preflight.sh" "$MODE" "$CHART" || exit 1
-  if [[ "$MODE" == deep ]]; then
-    LICENSE_VALUES="$(python3 "$SCRIPT_DIR/plugin-access-manager-ci-values.py" create)" || exit 1
-    VARGS+=(-f "$LICENSE_VALUES")
-    # Helm errors/NOTES and workload diagnostics can repeat values. Scrub raw,
-    # JSON-escaped and Secret base64 forms without relying on GitHub log masking.
-    # Credential env is not needed by Helm/kubectl: only Helm reads the 0600 file.
-    helm() {
-      command env -u PLUGIN_ACCESS_MANAGER_CI_LICENSE_KEY -u PLUGIN_ACCESS_MANAGER_CI_ORGANIZATION_IDS \
-        helm "$@" 2> >(python3 "$SCRIPT_DIR/plugin-access-manager-ci-values.py" redact >&2) \
-        | python3 "$SCRIPT_DIR/plugin-access-manager-ci-values.py" redact
-    }
-    kubectl() {
-      command env -u PLUGIN_ACCESS_MANAGER_CI_LICENSE_KEY -u PLUGIN_ACCESS_MANAGER_CI_ORGANIZATION_IDS \
-        kubectl "$@" 2> >(python3 "$SCRIPT_DIR/plugin-access-manager-ci-values.py" redact >&2) \
-        | python3 "$SCRIPT_DIR/plugin-access-manager-ci-values.py" redact
-    }
-  else
-    unset PLUGIN_ACCESS_MANAGER_CI_LICENSE_KEY PLUGIN_ACCESS_MANAGER_CI_ORGANIZATION_IDS
-  fi
-else
-  unset PLUGIN_ACCESS_MANAGER_CI_LICENSE_KEY PLUGIN_ACCESS_MANAGER_CI_ORGANIZATION_IDS
-fi
 
 # Library charts are not installable.
 if grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "$CHART_DIR/Chart.yaml"; then
@@ -325,9 +288,6 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
     echo "  baseline values (from origin/main):"
     printf '    %s\n' "${BASE_VARGS[@]}" | grep -v '^    -f$'
   fi
-
-  # Only licensing is shared with the PR; all other baseline values stay intact.
-  [[ -z "$LICENSE_VALUES" ]] || BASE_VARGS+=(-f "$LICENSE_VALUES")
 
   # Same retry the PR chart's build gets above: a dependency fetch is network
   # flaky, and the baseline half has no more business failing the run for that

@@ -30,7 +30,11 @@ GitOps/offline rendering must remain deterministic. Runtime validates them.
 {{- $explicit := $cm.AUTH_M2M_JWKS_URL | default (get $extra "AUTH_M2M_JWKS_URL") | default "" | toString | trim -}}
 {{- $url = $explicit | default (printf "%s/.well-known/jwks" (regexReplaceAll `/+$` $address "")) -}}
 {{- end -}}
-{{- if and $enabled (not (has $env (list "development" "staging" "local"))) -}}
+{{- /* Auth resolves Casdoor through service discovery first and only falls back to
+AUTHORIZER_ADDRESS when discovery fails; the runtime gate checks the resolved
+address and fails closed on an http fallback, so the static value is not judged here. */ -}}
+{{- $discovered := and (eq $component "auth") (eq (toString ($cm.SD_ENABLED | default "false")) "true") -}}
+{{- if and $enabled (not $discovered) (not (has $env (list "development" "staging" "local"))) -}}
 {{- /* Parse like the Go runtime (including scheme normalization and invalid ports).
 Helm has no net.ParseIP equivalent. Do not reject IPv6 identity endpoints using
 an incomplete regex: defer their loopback classification to lib-auth, which
@@ -41,7 +45,7 @@ still enforces TLS. Auth has no loopback exception. */ -}}
 {{- $ipv4Loopback := regexMatch `^127(\.(0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])){3}$` $host -}}
 {{- $identityLocalOrIPv6 := and (eq $component "identity") (eq $scheme "http") (or (eq $host "localhost") $ipv4Loopback (contains ":" $host)) -}}
 {{- if not (or $identityLocalOrIPv6 (and (eq $scheme "https") (ne $host ""))) -}}
-{{- fail (printf "%s requires an HTTPS JWKS upstream outside development/staging/local. Set %s.configmap.AUTHORIZER_ADDRESS to a reachable HTTPS Caradhras endpoint with trusted TLS (identity may override AUTH_M2M_JWKS_URL). Do not relabel production or disable authentication to bypass this requirement. Service-discovery endpoints must also satisfy it." $component $component) -}}
+{{- fail (printf "%s requires an HTTPS JWKS upstream outside development/staging/local. Set %s.configmap.AUTHORIZER_ADDRESS to a reachable HTTPS Caradhras endpoint with trusted TLS (identity may override AUTH_M2M_JWKS_URL). Do not relabel production or disable authentication to bypass this requirement." $component $component) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

@@ -42,17 +42,19 @@ auth-database:
     digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
 ```
 
-> **Important:** If you have overridden the `auth-database.image.repository` or `auth-database.image.tag` in your values, the digest pinning will still apply. To use a different PostgreSQL version, you must explicitly override the digest as well:
+> **Action required if you override the image:** When a digest is set, the Bitnami image helper renders `<registry>/<repository>@<digest>` and **ignores `tag`**. If your values override `auth-database.image.repository`, `auth-database.image.tag`, `auth-database.image.registry` or `global.imageRegistry` (for example a private mirror, or `bitnamilegacy/postgresql:17.6.0` to stay on PostgreSQL 17), v9.5.7 renders your repository with the chart's digest, for example `docker.io/bitnamilegacy/postgresql@sha256:7045d816...`. That digest does not exist in another repository or in a re-pushed mirror, so the database pod fails with `ImagePullBackOff`. The single-replica StatefulSet replaces its only pod, so the identity database and login stay down until you fix it. Clear the digest together with your override:
 
 ```yaml
 auth-database:
   image:
-    repository: bitnamisecure/postgresql
-    tag: "16.0.0"
-    digest: "sha256:your-custom-digest-here"
+    repository: bitnamilegacy/postgresql   # your override
+    tag: "17.6.0"                          # your override
+    digest: ""                             # required: otherwise the chart digest wins over the tag
 ```
 
-> **Note:** This change does not affect existing persistent volumes. Your data remains intact and compatible with PostgreSQL 18.6.0.
+> **Note:** The pinned digest is PostgreSQL **18.6.0**. PostgreSQL refuses a data directory written by another major version. An install whose data was created by PostgreSQL 18 (every install that has run the chart's `latest` default since v5.2.0) opens it unchanged. A data directory created by PostgreSQL 17 is **not** compatible: that install must stay on its own major using an override with `digest: ""`, as shown above.
+
+> **Note:** The image reference changes, so upgrading restarts the `auth-database` StatefulSet pod once. It runs a single replica by default, so expect a short identity-database outage (and failed logins) while the pod restarts. Plan a maintenance window.
 
 ### 2. Valkey Image Digest Pinning
 
@@ -86,17 +88,17 @@ valkey:
     digest: "sha256:26e25932c8e8026708cff3360032efc1978588da5ea680e151b3315913a3a38d"
 ```
 
-> **Important:** If you have overridden the `valkey.image.repository` or `valkey.image.tag` in your values, the digest pinning will still apply. To use a different Valkey version, you must explicitly override the digest as well:
+> **Action required if you override the image:** As with PostgreSQL, the digest replaces the tag. If your values override `valkey.image.repository`, `valkey.image.tag`, `valkey.image.registry` or `global.imageRegistry`, v9.5.7 renders your repository with the chart's digest (for example `myregistry.example.com/mirror/valkey@sha256:26e25932...`). The pull fails unless that exact digest exists there. Clear the digest together with your override:
 
 ```yaml
 valkey:
   image:
-    repository: bitnamisecure/valkey
-    tag: "8.0.0"
-    digest: "sha256:your-custom-digest-here"
+    repository: mirror/valkey   # your override
+    tag: "<your-tag>"           # your override
+    digest: ""                  # required: otherwise the chart digest wins over the tag
 ```
 
-> **Note:** This change does not affect existing Valkey data. Your cache data remains intact and compatible with Valkey 9.1.2.
+> **Note:** The image reference changes, so upgrading restarts the Valkey StatefulSet pod once. Data kept on its volume is read by the pinned Valkey 9.1.2. Do not point an existing volume at an older Valkey major: an older server may not read data written by a newer one.
 
 # Preview changes before upgrading
 

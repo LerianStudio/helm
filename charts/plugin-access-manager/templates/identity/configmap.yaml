@@ -129,6 +129,11 @@ data:
   # SSO
   PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
   {{- end }}
+  PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: {{ .Values.identity.configmap.PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE | default "false" | quote }}
+  PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: {{ .Values.identity.configmap.PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS | default "false" | quote }}
+
+  # FORGOT PASSWORD (public self-service routes; off unless explicitly "true")
+  ENABLE_FORGOT_PASSWORD: {{ .Values.identity.configmap.ENABLE_FORGOT_PASSWORD | default "false" | quote }}
 
   # RUNTIME
   DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
@@ -137,6 +142,12 @@ data:
 
   # M2M (lib-auth/v3 middleware — identity authorizes inbound M2M calls)
   AUTH_M2M_INVERSION_ENABLED: {{ .Values.identity.configmap.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
+  {{- with .Values.identity.configmap.AUTH_M2M_JWKS_URL }}
+  AUTH_M2M_JWKS_URL: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.identity.configmap.AUTH_M2M_JWKS_REFRESH_INTERVAL }}
+  AUTH_M2M_JWKS_REFRESH_INTERVAL: {{ . | quote }}
+  {{- end }}
 
   # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false). SD_ENABLED is the
   # only key owned here. While disabled, the legacy static SD_* keys stay

@@ -148,6 +148,12 @@ data:
   # SSO
   PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
   {{- end }}
+  {{- with .Values.auth.configmap.PLUGIN_AUTH_SSO_STATIC_ORGANIZATION }}
+  PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.auth.configmap.AUTH_JWKS_CACHE_TTL }}
+  AUTH_JWKS_CACHE_TTL: {{ . | quote }}
+  {{- end }}
 
   # RUNTIME
   DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}

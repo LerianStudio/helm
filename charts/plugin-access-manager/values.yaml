@@ -382,8 +382,8 @@ auth:
     # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
     # do NOT pin it here, it WINS over the mask and defeats it. The default
     # ("development") lives in templates/auth/configmap.yaml.
-    # -- Multi-factor authentication gate. Unset (the default) omits MFA_ENABLED
-    # from the ConfigMap, leaving the application's own default in force.
+    # -- MFA deployment assertion: true requires MFA_SECRET at Auth startup.
+    # Enrollment remains per user; unset omits MFA_ENABLED (app default false).
     # MFA_ENABLED: "false"
     # Optional keys, omitted from the ConfigMap unless set:
     # PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: ""  # BYOC single-tenant SSO org; refused when MULTI_TENANT_ENABLED=true
@@ -402,7 +402,7 @@ auth:
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
-    # -- TOTP/MFA signing secret (empty = feature dormant)
+    # -- TOTP/MFA signing secret; required when MFA_ENABLED=true. Deliver securely.
     MFA_SECRET: ""
     # -- Consul ACL token for service discovery (empty = no ACL)
     SD_TOKEN: ""

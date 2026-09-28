@@ -72,6 +72,9 @@ jobs:
           fetch-depth: 0 # full history so the script can `git archive origin/main` for the baseline upgrade
           persist-credentials: false
 
+      - name: Test install license fixture plumbing
+        run: python3 .github/scripts/install-test-license-values_test.py
+
       - name: Fetch base branch
         run: git fetch --no-tags --depth=1 origin main
 
@@ -160,6 +163,12 @@ jobs:
           CHARTS: ${{ steps.scope.outputs.charts-list }}
           HAS_CHARTS: ${{ steps.scope.outputs.has-charts }}
           IT_PULL_SECRET: ${{ !github.event.pull_request.head.repo.fork && 'it-registry' || '' }}
+          # CI-only licenses for the plugin-access-manager resource used by both
+          # binaries. Missing credentials fail deep installs before cluster writes.
+          IT_AUTH_LICENSE_KEY: ${{ secrets.HELM_IT_AUTH_LICENSE_KEY }}
+          IT_AUTH_ORGANIZATION_IDS: ${{ secrets.HELM_IT_AUTH_ORGANIZATION_IDS }}
+          IT_IDENTITY_LICENSE_KEY: ${{ secrets.HELM_IT_IDENTITY_LICENSE_KEY }}
+          IT_IDENTITY_ORGANIZATION_IDS: ${{ secrets.HELM_IT_IDENTITY_ORGANIZATION_IDS }}
         run: |
           set -uo pipefail
           if [[ -z "${CHARTS// }" ]]; then

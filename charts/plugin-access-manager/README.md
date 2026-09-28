@@ -229,7 +229,7 @@ ingress:
 | `tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
-| `configmap.MFA_ENABLED` | Multi-factor authentication gate. Unset omits the key and leaves the application default in force | unset |
+| `configmap.MFA_ENABLED` | Deployment assertion: `true` requires a non-empty `MFA_SECRET` at Auth startup. Enrollment remains per user; unset omits the key (application 3.9.0 defaults to `false`) | unset |
 | `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Literal callback URL for this component, overriding `common.sso.*`. Must match the identity component — see [Single sign-on](#single-sign-on-commonssobaseurl) | unset |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
@@ -327,11 +327,83 @@ the end user's browser, and they are not the same host.
 
 #### Multi-factor authentication (`auth.configmap.MFA_ENABLED`)
 
-`MFA_ENABLED` gates multi-factor authentication on the auth component. It is unset
-by default: the key is then absent from the ConfigMap and the application's own
-default stays in force. Set `auth.configmap.MFA_ENABLED: "true"` to turn it on.
+In application `3.9.0`, `MFA_ENABLED` is a deployment assertion for the startup
+check, not a switch that enrolls users or disables their factors. MFA is configured
+per user in the authorization server. The chart omits the key unless set; the
+application default is `false`.
+
+For deployments using MFA, set `auth.configmap.MFA_ENABLED: "true"` and supply a
+non-empty `MFA_SECRET` in the Auth Secret **before upgrading**; Auth refuses startup
+when that assertion is true and the secret is empty. Use `auth.secrets.MFA_SECRET`
+through your secure values-delivery mechanism, or include `MFA_SECRET` in the
+Secret selected by `auth.useExistingSecret` / `auth.existingSecretName`. Never put
+the secret in a ConfigMap, `extraEnvVars`, or committed values. Omitting the
+assertion does not make MFA login work without the secret.
+
 The `MFA_SESSION_TTL_SEC` / `MFA_REMEMBER_TTL_SEC` / `MFA_MAX_ATTEMPTS` /
-`MFA_MAX_RESEND_ATTEMPTS` keys tune it and already have chart defaults.
+`MFA_MAX_RESEND_ATTEMPTS` keys tune the challenge flow. Application `3.9.0` supports
+`app` and `email`; legacy SMS-only users need migration or authorized
+administrative recovery, not a global MFA bypass. See the
+[9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md#mfa-prerequisite-and-legacy-sms-migration).
+
+#### Production JWKS prerequisite (application 3.9.0)
+
+Production Auth needs a reachable, trusted HTTPS Casdoor/Caradhras upstream for
+its JWKS cache; the chart's bundled `AUTHORIZER_ADDRESS` defaults are HTTP and do
+not provision TLS. Identity also uses dynamic JWKS whenever
+`identity.configmap.AUTH_ENABLED` (rendered as `PLUGIN_AUTH_ENABLED`) is true,
+independently of `AUTH_M2M_INVERSION_ENABLED`. Its optional `AUTH_M2M_JWKS_URL`
+override does not change Auth's upstream or the expected token issuer.
+
+The application gates plaintext JWKS on effective `ENV_NAME`, not
+`DEPLOYMENT_MODE`; only `development`, `staging`, and `local` allow it through this
+configuration gate. Check service-discovery results as well as fallback addresses.
+Do not disable authentication or relabel production to bypass the gate. See the
+[production checklist](docs/UPGRADE-9.5.8.md#production-prerequisite-https-jwks-upstream).
+`PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE` only permits plain HTTP SSO preflight
+probes: it does not disable certificate verification or configure JWKS transport.
+
+#### Offline startup validation (next chart release)
+
+The source adds render-time checks for the next chart release; **these checks are
+not retroactively present in the published `9.5.8` artifact**. They reject a
+static non-HTTPS JWKS upstream or an empty hostname (including `https://:443`)
+outside effective `development` / `staging` / `local`, using native/global
+environment precedence. Identity's check honors `AUTH_ENABLED` (including YAML
+boolean `false`) and an explicit `AUTH_M2M_JWKS_URL`, independently of inversion
+or discovery. **Additional chart policy:** static URLs must use HTTPS even for
+loopback hosts; this is intentionally stricter than Identity's lib-auth loopback
+exception. Configure a reachable HTTPS endpoint with trusted TLS rather than
+relabeling production or disabling authentication.
+
+When Auth's effective discovery flag is enabled, Helm defers Auth's upstream
+check to the application, which validates the **resolved URL or static fallback**
+at startup. Application `3.9.0` uses lib-service-discovery `v2.0.0`: only the exact
+string `"true"` enables `SD_ENABLED` (YAML `true` renders as that string), not the
+other spellings accepted by Go's `ParseBool`. The legacy
+`auth.extraEnvVars.SERVICE_DISCOVERY_ENABLED: "true"` also enables it, even with
+`SD_ENABLED=false`. This is not a runtime bypass: an HTTP discovered result, or
+a discovery failure that selects an HTTP fallback, still fails Auth's production
+startup validation. Prefer an HTTPS fallback as well as an HTTPS discovered
+endpoint.
+
+Named or legacy `extraEnvVars` MFA assertions require either a non-blank
+`auth.secrets.MFA_SECRET` or `auth.useExistingSecret=true` with a non-blank
+`auth.existingSecretName`. Helm validates only the existing Secret's **reference**:
+the operator must verify that it exists in the release namespace and contains a
+non-empty `MFA_SECRET`, without exposing the value. Application startup remains
+the final check.
+
+Duplicate `ENV_NAME` / `AUTHORIZER_ADDRESS` / `SD_ENABLED` keys in either component's
+`extraEnvVars`, and Identity's duplicate `PLUGIN_AUTH_ENABLED`, are rejected; use
+the named `configmap` settings (`AUTH_ENABLED` for Identity). Do not configure
+`AUTH_M2M_JWKS_URL` or `MFA_ENABLED` through both channels. Plaintext
+`auth.extraEnvVars.MFA_SECRET` is rejected because that map becomes a ConfigMap.
+
+These are static checks, backed by real Helm render regressions. They do not
+resolve service discovery, verify DNS/TLS reachability or certificate trust, read
+external Secret contents, or prove login readiness. A discovered endpoint can
+still fail the application's runtime check even after a successful render.
 
 #### Moving these keys off `extraEnvVars`
 

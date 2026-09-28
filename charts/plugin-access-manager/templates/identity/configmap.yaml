@@ -33,7 +33,7 @@ data:
   AUTHORIZER_APPLICATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
 
   # AUTH
-  PLUGIN_AUTH_ENABLED: {{ .Values.identity.configmap.AUTH_ENABLED | default "true" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "plugin-access-manager.identityAuthEnabled" . | quote }}
   PLUGIN_AUTH_PORT: {{ .Values.identity.configmap.AUTH_PORT | default "4000" | quote }}
   PLUGIN_AUTH_ADDRESS: {{ .Values.identity.configmap.AUTH_ADDRESS | default (printf "http://%s:4000" (include "plugin-auth.fullname" .)) | quote }}
 

@@ -22,7 +22,8 @@ REL="$CHART"
 NS="it-${CHART}"          # release namespace (helm -n); also created
 TARGETS=""                # every distinct namespace the chart's manifests reference (created too)
 
-# Values: an explicit argument replaces everything. Otherwise the render gate's
+# Values: an explicit argument replaces checked-in fixtures. Runtime license
+# credentials (deep Access Manager only) are always layered last. Otherwise the render gate's
 # vetted sample values go on first, and the install-specific file is layered on
 # top rather than replacing them, so neither file has to repeat the other. That
 # file trims a chart to fit a single-node cluster, or picks which supported
@@ -65,6 +66,18 @@ else
   TIMEOUT="${IT_TIMEOUT:-180s}"
 fi
 echo "  mode: $MODE"
+
+# The published Access Manager validates licenses even in development. Its
+# render fixture has no license credentials; supply real CI-only credentials
+# at runtime rather than committing a sample key or bypassing enforcement.
+# This prerequisite must fail BEFORE dependency/cluster work, not after a
+# ten-minute CrashLoopBackOff timeout. Shallow fork validation needs no secrets.
+LICENSE_VALUES=""
+if [[ "$CHART" == plugin-access-manager && "$MODE" == deep ]]; then
+  LICENSE_VALUES="$(python3 "$(dirname "${BASH_SOURCE[0]}")/install-test-license-values.py")" || exit 1
+  trap '[[ -z "$LICENSE_VALUES" ]] || rm -f -- "$LICENSE_VALUES"' EXIT
+  VARGS+=(-f "$LICENSE_VALUES")
+fi
 
 # Library charts are not installable.
 if grep -qiE '^type:[[:space:]]*library([[:space:]]|$)' "$CHART_DIR/Chart.yaml"; then
@@ -288,6 +301,10 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
     echo "  baseline values (from origin/main):"
     printf '    %s\n' "${BASE_VARGS[@]}" | grep -v '^    -f$'
   fi
+
+  # Runtime credentials are not versioned chart values. Both revisions need
+  # the same licensed CI identity, including a baseline predating this fixture.
+  [[ -z "$LICENSE_VALUES" ]] || BASE_VARGS+=(-f "$LICENSE_VALUES")
 
   # Same retry the PR chart's build gets above: a dependency fetch is network
   # flaky, and the baseline half has no more business failing the run for that

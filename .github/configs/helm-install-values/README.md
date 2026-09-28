@@ -50,4 +50,43 @@ in `../helm-install-test-allow-failure.txt` with a one-line reason and leave the
 gate reporting it as a known failure.
 
 A chart with no file here is installed with its render values alone, or with chart
-defaults when it has none.
+defaults when it has none, except for runtime credentials described below.
+
+## Access Manager: licensed runtime fixture
+
+`plugin-access-manager` v3.9.0 uses `lib-license-go/v4` v4.1.0. The published
+binaries enforce licensing in development too. The render fixture supplies no
+`ORGANIZATION_IDS`; the license constructor returns nil and middleware startup
+panics with `LicenseClient is nil`. Setting a made-up organization only moves the
+failure to the license gateway; it does not provide a license.
+
+Deep installs therefore require these Actions secrets (CI-only licenses, never
+production credentials):
+
+| Actions secret | Local script environment | Helm value |
+| --- | --- | --- |
+| `HELM_IT_AUTH_LICENSE_KEY` | `IT_AUTH_LICENSE_KEY` | `auth.secrets.LICENSE_KEY` |
+| `HELM_IT_AUTH_ORGANIZATION_IDS` | `IT_AUTH_ORGANIZATION_IDS` | `auth.secrets.ORGANIZATION_IDS` |
+| `HELM_IT_IDENTITY_LICENSE_KEY` | `IT_IDENTITY_LICENSE_KEY` | `identity.secrets.LICENSE_KEY` |
+| `HELM_IT_IDENTITY_ORGANIZATION_IDS` | `IT_IDENTITY_ORGANIZATION_IDS` | `identity.secrets.ORGANIZATION_IDS` |
+
+The license issuer must authorize the configured organizations for the
+`plugin-access-manager` resource: both auth and identity pass that application
+name to the license client. Separate inputs allow distinct credentials, or the
+same CI license can be used for both when its scope permits. Use `global` only
+if the issued license is actually scoped that way. A non-empty key is a
+prerequisite, not proof of validity:
+the published binaries still validate against their normal gateway. There is no
+mock gateway, `licensetest` build, authorization disable, or readiness exemption.
+
+`install-test.sh` generates a mode-0600 temporary values overlay and applies it
+last to all four install/upgrade legs, including the `origin/main` baseline. Only
+these runtime credentials are shared; baseline chart fixtures still come from
+`origin/main`. The overlay is removed on script exit and never printed. Missing
+credentials fail before Helm or Kubernetes work rather than waiting for a crash
+loop. Do not enable shell tracing or Helm debug output while handling credentials.
+Fork/shallow runs remain manifest-only and do not require or inject licenses.
+
+Run `python3 .github/scripts/install-test-license-values_test.py` for regression
+coverage. Its Helm/Kubernetes command doubles check argument flow and cleanup;
+they do not claim the application started or that a license is valid.

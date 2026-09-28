@@ -420,6 +420,7 @@ data:
   # CASDOOR
   # =============================================================================
   CASDOOR_JWK_ADDRESS: {{ $cm.CASDOOR_JWK_ADDRESS | default "" | quote }}
+  TRANSACTION_BATCH_MAX_SIZE: {{ .Values.ledger.configmap.TRANSACTION_BATCH_MAX_SIZE | default "10" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -2,24 +2,58 @@
 
 ## Topics
 
+- **[Known issue — read before upgrading](#known-issue--read-before-upgrading)**
 - **[Overview](#overview)**
 - **[Fixes](#fixes)**
-  - [1. RabbitMQ plugin user tags corrected](#1-rabbitmq-plugin-user-tags-corrected)
+  - [1. RabbitMQ plugin user tags removed](#1-rabbitmq-plugin-user-tags-removed)
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
+## Known issue — read before upgrading
+
+> **Warning:** In v3.1.4 the RabbitMQ `plugin` user is left with **no tags**. The fetcher manager and worker check the broker health through the RabbitMQ **management API** (`RABBITMQ_HEALTH_CHECK_URL`, default `http://rabbitmq:15672`) using the `plugin` credentials. A user without a management-capable tag gets `401 Unauthorized` from that API, the health check fails, and the RabbitMQ connection is refused. New pods, and existing pods that reconnect, cannot connect to RabbitMQ.
+
+Who is affected:
+
+| Setup | When it breaks |
+|-------|----------------|
+| External broker with `externalRabbitmqDefinitions.enabled: true` | During this upgrade: the bootstrap Job re-applies the `plugin` user with `tags: ""` |
+| Bundled broker (`rabbitmq.enabled: true`) | On the next broker restart: the definitions loaded at boot set `tags: ""` on `plugin` |
+| External broker whose `plugin` user is managed outside this chart (`externalRabbitmqDefinitions.enabled: false`) | Not affected by this change |
+
+What to do:
+
+- **Recommended:** do not upgrade to v3.1.4. Stay on v3.1.3 until a fixed release is published.
+- **If you already upgraded:** give the `plugin` user the `management` tag again (it is the minimum tag the health check accepts), then restart the manager and worker:
+
+```bash
+# Run with a RabbitMQ administrator account; keep the plugin user's current password
+curl -u "<admin-user>:<admin-password>" -H "content-type: application/json" \
+  -X PUT --data '{"password":"<plugin-password>","tags":"management"}' \
+  "http(s)://<rabbitmq-management-host>:15672/api/users/plugin"
+
+kubectl rollout restart deployment/fetcher-manager deployment/fetcher-worker -n fetcher
+```
+
+> **Note:** With an external broker, every later `helm upgrade` / Argo CD sync of v3.1.4 runs the bootstrap Job again and removes the tag again. Repeat the step above after each sync until you move to a fixed release.
+
 ## Overview
 
-This guide covers the `fetcher` chart upgrade from `3.1.3` to `3.1.4`. This is a **patch** release that fixes the RabbitMQ bootstrap configuration for the plugin user.
+This guide covers the `fetcher` chart upgrade from `3.1.3` to `3.1.4`. It is a **patch** release that removes the `administrator` tag from the RabbitMQ `plugin` user.
 
-The application version (`appVersion: 3.1.0`) is unchanged. No breaking changes, no required `values.yaml` modifications, and no data migration are needed.
+The application version (`appVersion: 3.1.0`) is unchanged. Because of the known issue above, this release **is not safe to apply** to installations that let the chart manage the `plugin` user.
 
 ## Fixes
 
-### 1. RabbitMQ plugin user tags corrected
+### 1. RabbitMQ plugin user tags removed
 
-The RabbitMQ bootstrap Job previously assigned `administrator` tags to the `plugin` user. This has been corrected to assign no tags (empty string), following the principle of least privilege.
+The `plugin` user previously had the `administrator` tag. It now has no tags, in both places the chart defines it.
+
+| Where | v3.1.3 | v3.1.4 |
+|-------|--------|--------|
+| Bootstrap Job PUT (`templates/bootstrap-rabbitmq.yaml`, external broker) | `"tags":"administrator"` | `"tags":""` |
+| `files/rabbitmq/load_definitions.json` (bundled broker boot definitions) | `"tags": "administrator"` | `"tags": ""` |
 
 **Before (v3.1.3):**
 
@@ -33,65 +67,34 @@ The RabbitMQ bootstrap Job previously assigned `administrator` tags to the `plug
 --data "{\"password\":\"$PASS\",\"tags\":\"\"}"
 ```
 
-| Setting | v3.1.3 | v3.1.4 |
-|---------|--------|--------|
-| RabbitMQ plugin user tags | `"administrator"` | `""` (empty) |
+**Why it was changed:** `administrator` grants full control of the broker (users, vhosts, policies), which the fetcher does not need. The intended least-privilege target is `management`, not "no tags": the application still needs management API access for its health check.
 
-> **Note:** The `plugin` user is created by the `bootstrap-rabbitmq` Job and is used by the fetcher application to connect to RabbitMQ. Administrator privileges are not required for normal operation.
+**How the bootstrap Job runs (external broker):**
 
-**Why this matters:**
-
-The `administrator` tag grants full management API access, including the ability to create/delete users, vhosts, and policies. The fetcher application only needs to publish and consume messages, not manage RabbitMQ infrastructure. Removing the administrator tag reduces the security risk if the plugin user credentials are compromised.
-
-**Operational impact:**
-
-- **New installations:** The plugin user will be created without administrator privileges. No action required.
-- **Existing installations:** The bootstrap Job runs as a post-install/post-upgrade hook. On upgrade, it will attempt to update the existing `plugin` user to remove the administrator tag. This operation is idempotent and safe.
-
-> **Important:** If your deployment relies on the plugin user having administrator privileges for custom automation or monitoring, you will need to either:
-> - Create a separate RabbitMQ user with administrator privileges for those tasks, or
-> - Manually restore the administrator tag after the upgrade using the RabbitMQ management UI or API
-
-To verify the plugin user tags after upgrade:
-
-```bash
-# Port-forward to RabbitMQ management interface
-kubectl port-forward -n fetcher svc/fetcher-rabbitmq 15672:15672
-
-# Check user tags via API (requires admin credentials)
-curl -u guest:your-admin-password http://localhost:15672/api/users/plugin
-```
-
-The response should show `"tags": ""` or `"tags": []`.
+- It is rendered only when `externalRabbitmqDefinitions.enabled: true` and `rabbitmq.enabled: false`.
+- It is a plain Kubernetes Job, **not** a Helm hook. Its name carries the release revision (`fetcher-bootstrap-rabbitmq-<revision>`), so every `helm upgrade` creates a new Job.
+- Under Argo CD it is a `Sync` hook (`BeforeHookCreation,HookSucceeded`), so it runs on every sync.
+- The Job has no labels; find it by name.
 
 ## Migration Steps
 
-This upgrade requires no manual migration steps. The Helm upgrade will update the `bootstrap-rabbitmq` Job template, and the Job will run automatically as a post-upgrade hook to update the plugin user configuration.
-
-**Recommended upgrade process:**
+Only if you decide to upgrade despite the known issue (for example, your `plugin` user is not managed by this chart):
 
 1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
-2. Run the upgrade command during a maintenance window.
-3. Verify the bootstrap Job completed successfully:
+2. Run the upgrade.
+3. If `externalRabbitmqDefinitions.enabled: true`, check the bootstrap Job of this revision:
 
 ```bash
-kubectl get jobs -n fetcher -l app.kubernetes.io/component=bootstrap-rabbitmq
+kubectl get jobs -n fetcher | grep fetcher-bootstrap-rabbitmq
+kubectl logs -n fetcher job/fetcher-bootstrap-rabbitmq-<revision> --all-containers
 ```
 
-4. Check the bootstrap Job logs to confirm the plugin user was updated:
+4. Restore the `management` tag as described in [Known issue](#known-issue--read-before-upgrading), then confirm the manager and worker are Ready and their logs show no `rabbitmq health check failed`:
 
 ```bash
-kubectl logs -n fetcher -l app.kubernetes.io/component=bootstrap-rabbitmq --tail=100
+kubectl get pods -n fetcher
+kubectl logs -n fetcher deploy/fetcher-manager | grep -i rabbitmq
 ```
-
-5. Verify the manager and worker pods are healthy and connecting to RabbitMQ:
-
-```bash
-kubectl get pods -n fetcher -l app.kubernetes.io/component=manager
-kubectl get pods -n fetcher -l app.kubernetes.io/component=worker
-```
-
-> **Note:** The plugin user permissions change does not affect existing RabbitMQ connections. The manager and worker pods do not need to be restarted unless the bootstrap Job fails.
 
 ## Preview changes before upgrading
 

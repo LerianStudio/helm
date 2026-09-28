@@ -3,6 +3,17 @@
 ## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
 
 - Fixes:
+  - Honor the ledger and CRM disruption budgets as configured.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
   - Honor the ledger and CRM disruption budgets as configured
 
 Contributors: @fredcamaral, @lerian-studio,

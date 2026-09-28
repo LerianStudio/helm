@@ -23,6 +23,8 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/am-startup-tests"
           "$RUNNER_TEMP/am-startup-tests/bin/pip" install 'PyYAML==6.0.2'
       - name: Build chart dependencies
-        run: helm dependency build charts/plugin-access-manager
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm dependency build charts/plugin-access-manager
       - name: Verify startup prerequisites and rendered manifests
         run: '"$RUNNER_TEMP/am-startup-tests/bin/python" charts/plugin-access-manager/tests/test_startup_contract.py'

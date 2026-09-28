@@ -127,6 +127,27 @@ jobs:
         if: steps.scope.outputs.has-charts == 'true'
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
+      # Offline chart suites (charts/<chart>/tests/test_*.py) run before any cluster
+      # exists: they cover value combinations a single kind install never reaches
+      # (production-only branches, refused configs) and fail in seconds, not minutes.
+      # A chart opts in by having the directory; nothing per chart lives here.
+      - name: Run chart tests
+        if: steps.scope.outputs.has-charts == 'true'
+        shell: bash
+        env:
+          CHARTS: ${{ steps.scope.outputs.charts-list }}
+        run: |
+          set -uo pipefail
+          python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --quiet 'PyYAML==6.0.2'
+          failed=()
+          for c in $CHARTS; do
+            bash .github/scripts/chart-tests.sh "charts/$c" || failed+=("$c")
+          done
+          if [[ ${#failed[@]} -gt 0 ]]; then
+            echo "::error::Chart tests failed for: ${failed[*]}"
+            exit 1
+          fi
+
       # Both logins write to the runner's docker config, which the script turns into
       # a single image pull Secret per namespace. A pull request from a fork gets
       # neither the org secrets nor a token that can read private packages, so the

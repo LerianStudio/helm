@@ -64,7 +64,12 @@ kubectl -n <namespace> get configmap plugin-access-manager-auth plugin-access-ma
   -o custom-columns='NAME:.metadata.name,ENV_NAME:.data.ENV_NAME,AUTHORIZER_ADDRESS:.data.AUTHORIZER_ADDRESS,AUTH_M2M_JWKS_URL:.data.AUTH_M2M_JWKS_URL'
 ```
 
-You are affected when `ENV_NAME` is not `development`, `staging` or `local` and the address is not `https://`. On identity, `AUTH_M2M_JWKS_URL` replaces the address when it is set (`<none>` means it is not). To check the values you are about to apply instead of the running ones, render them:
+A component is affected when its `ENV_NAME` is not `development`, `staging` or `local`, its image is `3.3.0` or later, and its JWKS URL (the table above) is not `https://`, with these exceptions:
+
+- **identity:** `AUTH_M2M_JWKS_URL` replaces the address when it is set (`<none>` means it is not). identity is not affected while `PLUGIN_AUTH_ENABLED` is false, or when its JWKS URL is `http` to a loopback host.
+- **auth with `SD_ENABLED=true`:** the ConfigMap address is not the one auth uses, so this check cannot clear it. Confirm separately that service discovery resolves Caradhras to an `https` address. Discovery does not exempt auth from the requirement; the chart simply cannot see the resolved address.
+
+To check the values you are about to apply instead of the running ones, render them:
 
 ```bash
 helm template plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 9.5.8 -f <your-values.yaml> \

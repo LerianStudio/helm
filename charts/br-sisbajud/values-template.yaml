@@ -1,46 +1,117 @@
-# Template values for the br-sisbajud (SISBAJUD plugin) chart.
-# Copy this file and fill in the values for your environment. Postgres and Redis
-# are external on the target environments — point the service at the shared
-# managed instances.
+# br-sisbajud — values-template.yaml (the operator fill-in surface)
+#
+# Copy this file, fill the REQUIRED fields and the credential placeholders, and
+# install:
+#   helm install br-sisbajud oci://registry-1.docker.io/lerianstudio/br-sisbajud-helm -f values-template.yaml
+#
+# STYLE (canonical global-first shape): the env-wide contract lives in ONE
+# `global:` block, FIRST. Set each dependency connection ONCE with its typed
+# mask; the chart renders the app's native env keys from it. Do NOT repeat
+# POSTGRES_*/REDIS_*/VAULT_*/STREAMING_* keys under brSisbajud.configmap: a
+# native key there WINS over its mask and defeats it. Credentials go under
+# brSisbajud.secrets (use AVP <path:...> placeholders in GitOps), or in an
+# existing Secret (brSisbajud.useExistingSecret).
+
+# --- The env-wide contract ------------------------------------------------------
+global:
+  # -- aws | gcp | azure presets TLS/ssl for the masks below ("" = self-managed).
+  cloud: ""
+  # -- local | development | staging | e2e | test relax the app's production
+  # gates (license, TLS). Anything else, including the default, is production.
+  env:
+    name: "production"
+  datastores:
+    postgres: { host: "", port: "5432", user: "br_sisbajud", name: "br_sisbajud", ssl: "require" }  # <- REQUIRED: host
+    redis:    { host: "", tls: "true" }                                                          # <- REQUIRED: host:port
+  objectStorage:
+    # SeaweedFS / S3 bucket for the (already encrypted) seizure artifacts.
+    sisbajud: { endpoint: "", region: "us-east-1", bucket: "sisbajud" }
+    # br-sta's transfer bucket for the tier (REQUIRED, no default by policy).
+    # The endpoint defaults to the sisbajud endpoint (the app refuses a mismatch).
+    sta: { bucket: "" }                                                                          # <- REQUIRED
+  kms:
+    vendor: "hashicorp-vault"          # hashicorp-vault | aws
+    vaultAddr: ""                      # <- REQUIRED for hashicorp-vault
+    vaultAuthMethod: "approle"         # approle (recommended) | token
+    vaultRoleId: ""                    # <- REQUIRED for approle
+    vaultMount: "transit"
+    # awsRegion: "sa-east-1"           # <- REQUIRED for vendor: aws
+  streaming:
+    brokers: ""                        # <- REQUIRED (streaming is on by default)
+    tlsEnabled: true                   # required in production
+    saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
+    saslUsername: "br-sisbajud"
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
+  observability:
+    enabled: false                     # true => node-local collector http://$(HOST_IP):4317
+  multiTenant:
+    enabled: false
+    # url: "http://tenant-manager.tenant-manager.svc.cluster.local:4026"
+    # redisHost: "valkey.internal"
 
 imagePullSecrets:
   - name: ghcr-credential
 
 brSisbajud:
   image:
-    tag: ""  # optional — defaults to Chart.appVersion
-  configmap:
-    ENV_NAME: "development"
-    POSTGRES_HOST: ""             # REQUIRED — managed Postgres host
-    POSTGRES_USER: "br_sisbajud"
-    POSTGRES_NAME: "br_sisbajud"
-    POSTGRES_SSLMODE: "disable"
-    REDIS_HOST: ""               # REQUIRED — managed Valkey host:port
-    KMS_PROVIDER: "vault"
-    VAULT_ADDR: ""               # REQUIRED — Vault address
-    VAULT_AUTH_METHOD: "approle"
-    VAULT_TRANSIT_MOUNT_PATH: "transit-st"
-    STREAMING_ENABLED: "true"
-    STREAMING_BROKERS: ""        # REQUIRED when STREAMING_ENABLED=true
-    STREAMING_CLOUDEVENTS_SOURCE: "br-sisbajud"
-    MIDAZ_BASE_URL: ""           # REQUIRED — Midaz ledger URL
+    tag: ""                            # optional — defaults to Chart.appVersion
+  ingress:
+    enabled: false
+    className: "nginx"
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+  cors:
+    allowedOrigins: ""                 # <- REQUIRED in production: your UI origins (CSV)
+  server:
+    tlsTerminatedUpstream: true        # TLS ends at the ingress
+  auth:
+    trustedProxies: ""                 # CIDRs of the ingress/proxy in front, never the pod network
+  midaz:
+    balanceTopic: "lerian.streaming.ledger"
+    crmMode: "legacy"                  # legacy | embedded (deployment-wide default)
+  sta:
+    consumerEnabled: false
+    expectedTenantSt: ""               # = br-sta's DEFAULT_TENANT_ID when the consumer is on
+    transfersEnabled: false
+    transfersBaseUrl: ""               # <- REQUIRED when transfersEnabled
+    clientId: ""                       # <- REQUIRED when transfersEnabled
+  identity:
+    declarationEnabled: false
+    host: ""                           # plugin-access-manager identity URL
+    m2mClientId: ""
+  workers:
+    execution: { enabled: false }
+    returnFile: { enabled: false, environment: "HOMOLOGATION" }   # PRODUCTION on a production tier
+    reconciliation: { enabled: false }
   secrets:
-    POSTGRES_PASSWORD: ""        # REQUIRED for external Postgres
-    REDIS_PASSWORD: ""           # set if the external Redis requires auth
-    SECRET_STORE_PROVIDER: "local"  # vault | aws-secrets-manager | local
-  extraEnvVars:
-    - name: VAULT_APPROLE_ROLE_ID
-      value: ""                  # REQUIRED when VAULT_AUTH_METHOD=approle
-    - name: VAULT_APPROLE_SECRET_ID
-      value: ""                  # REQUIRED when VAULT_AUTH_METHOD=approle
+    POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres in production
+    REDIS_PASSWORD: ""
+    LICENSE_KEY: ""                    # <- REQUIRED in production
+    VAULT_APPROLE_SECRET_ID: ""        # <- REQUIRED for approle
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when saslMechanism is set
+    STREAMING_TLS_CA_CERT: ""          # base64 PEM; the topics Job needs it when tlsEnabled
+    SEAWEEDFS_ACCESS_KEY: ""
+    SEAWEEDFS_SECRET_KEY: ""
+    STA_CLIENT_SECRET: ""              # <- REQUIRED when sta.transfersEnabled
+    IDP_M2M_CLIENT_SECRET: ""          # <- REQUIRED when identity.declarationEnabled
+    # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on
+  # Or keep every credential in an operator-managed Secret:
+  useExistingSecret: false
+  existingSecretName: ""
 
 migrations:
-  enabled: true
-  postgres:
-    host: ""                     # defaults to brSisbajud.configmap.POSTGRES_HOST
-    password: ""                 # defaults to brSisbajud.secrets.POSTGRES_PASSWORD
+  enabled: true                        # connection follows global.datastores.postgres
 
-# External infra (default). Enable only for a self-contained install.
+topics:
+  enabled: true
+  replicationFactor: 3                 # must not exceed the broker count
+
+# External infra is the production path. Enable only for a self-contained install.
 postgresql:
   enabled: false
   external: true

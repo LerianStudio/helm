@@ -752,6 +752,11 @@
             }
           },
           "additionalProperties": true
+        },
+        "aws": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "AWS credential source (IAM Roles Anywhere sidecar) for the multi-tenant ledger's Secrets Manager reads"
         }
       },
       "additionalProperties": true

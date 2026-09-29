@@ -460,6 +460,56 @@ ledger:
     # -- Name of the service account
     # @default -- `midaz-ledger.fullname`
     name: ""
+  # -- AWS credential source for the multi-tenant ledger, which reads its
+  # per-tenant Tracer M2M credential from Secrets Manager at runtime
+  # (tenants/{env}/{tenant}/ledger/m2m/tracer/credentials).
+  #
+  # TWO MUTUALLY EXCLUSIVE OPTIONS — pick by cluster, never enable both:
+  #
+  #   EKS            -> IRSA. Leave rolesAnywhere.enabled=false and put the role ARN
+  #                     in ledger.serviceAccount.annotations["eks.amazonaws.com/role-arn"].
+  #   anywhere else  -> IAM Roles Anywhere (below). An aws-signing-helper sidecar
+  #                     trades an X.509 client certificate for temporary credentials
+  #                     and serves them on a loopback IMDS endpoint that the AWS SDK
+  #                     inside the ledger picks up.
+  #
+  # Enabling this adds the sidecar to the ledger pod only, mounts the certificate
+  # Secret read-only, and replaces ledger.podSecurityContext with fsGroup 65532 so
+  # the sidecar can read it. The certificate is NOT created by this chart —
+  # provision it (cert-manager or otherwise) into a Secret with tls.crt / tls.key.
+  # The ledger refuses to boot multi-tenant without a region: set AWS_REGION in
+  # ledger.extraEnvVars to the region the credentials live in.
+  aws:
+    rolesAnywhere:
+      # -- Enable the aws-signing-helper sidecar on the ledger. Keep false on EKS.
+      enabled: false
+      # -- Required when enabled; the render fails without them.
+      trustAnchorArn: ""
+      profileArn: ""
+      roleArn: ""
+      # -- Region the credentials are minted in.
+      region: "us-east-2"
+      # -- Credential lifetime in seconds; the helper refreshes before expiry.
+      sessionDuration: 3600
+      # -- Secret holding tls.crt / tls.key.
+      # @default -- `<midaz-ledger.fullname>-iam-tls`
+      certificateSecretName: ""
+      sidecar:
+        image:
+          # Same floating, amd64-only tag the sibling charts use. Pin a digest
+          # for production.
+          repository: public.ecr.aws/rolesanywhere/credential-helper
+          tag: latest-amd64
+          pullPolicy: IfNotPresent
+        # -- Loopback port the IMDS shim listens on.
+        port: 9911
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
 crm:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}

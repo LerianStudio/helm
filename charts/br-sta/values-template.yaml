@@ -1,0 +1,120 @@
+# br-sta — values-template.yaml (the operator fill-in surface)
+#
+# Copy this file, fill the REQUIRED fields and the credential placeholders, and
+# install:
+#   helm install br-sta oci://ghcr.io/lerianstudio/br-sta-helm -f values-template.yaml
+#
+# STYLE (canonical global-first shape): the env-wide contract lives in ONE
+# `global:` block, FIRST. Set each dependency connection ONCE with its typed
+# mask; the chart renders the app's native env keys from it. Do NOT repeat
+# POSTGRES_*/REDIS_*/RABBITMQ_*/TRANSFER_S3_*/STREAMING_* keys under
+# common.configmap: a native key there WINS over its mask and defeats it.
+# Credentials go under common.secrets (use AVP <path:...> placeholders in
+# GitOps), or in an existing Secret (common.useExistingSecret).
+
+# --- The env-wide contract ------------------------------------------------------
+global:
+  # -- aws | gcp | azure presets TLS/ssl/scheme for the masks below ("" = self-managed).
+  cloud: ""
+  # -- production (the default) turns on the app's production gates: TLS,
+  # license, mandatory audit transport, transfer bucket. development | develop |
+  # dev | local | test are the development class (auth may be off).
+  env:
+    name: "production"
+  datastores:
+    postgres: { host: "", port: "5432", user: "br_sta", name: "br_sta", ssl: "require" }       # <- REQUIRED: host
+    redis:    { host: "", tls: "true" }                                                    # <- REQUIRED: host:port
+    broker:   { host: "", amqpPort: "5671", scheme: "amqps", user: "br_sta" }             # <- REQUIRED: host (or secrets.RABBITMQ_URL)
+  objectStorage:
+    # The transfer bucket: holds BOTH directions (outbound sources + BACEN
+    # downloads). br-sisbajud reads the SAME block for its STA inbound bucket.
+    sta: { endpoint: "", region: "us-east-1", bucket: "", usePathStyle: "false" }          # <- REQUIRED in production: bucket
+    # Audit exports (the worker writes, the manager serves downloads).
+    staAuditExports: { bucket: "" }
+  kms:
+    vendor: "envvar"                   # envvar (hex MASTER_KEYS) | aws (KMS-wrapped MASTER_KEYS)
+    # keyId: "arn:aws:kms:<region>:<account>:key/<id>"   # <- REQUIRED for vendor: aws
+  auth:
+    enabled: true                      # the app accepts false only in a development-class env
+    host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
+  streaming:
+    enabled: false                     # true => business facts on lerian.streaming.br-sta (br-sisbajud consumes it)
+    brokers: ""                        # <- REQUIRED when enabled (topics lerian.streaming.br-sta + .dlq must exist)
+    tlsEnabled: true
+    saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
+    saslUsername: "br-sta"
+  observability:
+    enabled: false                     # true => node-local collector http://$(HOST_IP):4317
+  multiTenant:
+    enabled: false
+    # url: "http://tenant-manager.tenant-manager.svc.cluster.local:4026"
+    # redisHost: "valkey.internal"
+
+imagePullSecrets:
+  - name: ghcr-credential
+
+manager:
+  image:
+    tag: ""                            # optional — defaults to Chart.appVersion
+  replicaCount: 2
+  ingress:
+    enabled: false
+    className: "nginx"
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+
+worker:
+  image:
+    tag: ""                            # optional — defaults to manager.image.tag
+
+common:
+  cors:
+    allowedOrigins: ""                 # <- REQUIRED in production: your UI origins (CSV)
+  server:
+    tlsTerminatedUpstream: true        # TLS ends at the ingress
+    trustedProxies: ""                 # ingress/LB CIDR (SERVER_TRUSTED_PROXIES)
+  auth:
+    trustedProxies: ""                 # same CIDR (TRUSTED_PROXIES, lib-auth client-IP forwarding)
+  license:
+    organizationIds: ""                # <- REQUIRED in production
+  bacen:
+    environment: "homologation"        # production => the live BACEN STA host
+  transfer:
+    schedulerEnabled: true             # the ONLY path that uploads to BACEN (worker)
+    inboundEnabled: false              # BACEN-pulled files
+  secrets:
+    MASTER_KEYS: ""                    # <- REQUIRED: "v1:<openssl rand -hex 32>" (never rotate by replacing)
+    POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres (production + migrations)
+    REDIS_PASSWORD: ""
+    RABBITMQ_DEFAULT_PASS: ""          # <- REQUIRED in production (or a full RABBITMQ_URL)
+    LICENSE_KEY: ""                    # <- REQUIRED in production
+    AWS_ACCESS_KEY_ID: ""              # or an IRSA / workload-identity service account
+    AWS_SECRET_ACCESS_KEY: ""
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when a SASL mechanism is set
+    STREAMING_TLS_CA_CERT: ""          # broker CA not in the system pool
+    # IDP_M2M_CLIENT_SECRET: ""        # <- REQUIRED when identity.declarationEnabled
+    # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on
+  # Or keep every credential in an operator-managed Secret:
+  useExistingSecret: false
+  existingSecretName: ""
+
+serviceAccount:
+  annotations: {}                      # e.g. IRSA: eks.amazonaws.com/role-arn: <role-arn>
+
+migrations:
+  enabled: true                        # single-tenant only; connection follows global.datastores.postgres
+
+# External infra is the production path. For a fully self-contained dev install
+# (PostgreSQL, Valkey, RabbitMQ, SeaweedFS, Redpanda, mock STA) use
+# values-dev.yaml instead of this file.
+postgresql:
+  enabled: false
+valkey:
+  enabled: false
+rabbitmq:
+  enabled: false
+seaweedfs:
+  enabled: false

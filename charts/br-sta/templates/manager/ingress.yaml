@@ -1,0 +1,38 @@
+{{- if and .Values.manager.enabled .Values.manager.ingress.enabled -}}
+{{- $svcName := include "br-sta.componentFullname" (dict "root" . "component" "manager") -}}
+{{- $svcPort := .Values.manager.service.port | default 4028 -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $svcName }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "root" . "component" "manager") | nindent 4 }}
+  {{- with .Values.manager.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.manager.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with .Values.manager.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.manager.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $svcName }}
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end -}}

@@ -1,0 +1,115 @@
+{{- if .Values.manager.enabled -}}
+{{- $m := .Values.manager -}}
+{{- $fullname := include "br-sta.componentFullname" (dict "root" . "component" "manager") -}}
+{{- $shared := include "br-sta.fullname" . -}}
+{{- $pullSecrets := $m.imagePullSecrets | default .Values.imagePullSecrets -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "root" . "component" "manager") | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $m.revisionHistoryLimit | default 10 }}
+  {{- if not $m.autoscaling.enabled }}
+  {{- /* hasKey, not `default`: an explicit 0 (scale to zero) must not coerce to 1. */}}
+  replicas: {{ ternary $m.replicaCount 1 (hasKey $m "replicaCount") }}
+  {{- end }}
+  strategy:
+    type: {{ $m.deploymentUpdate.type | default "RollingUpdate" }}
+    {{- if eq ($m.deploymentUpdate.type | default "RollingUpdate") "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ $m.deploymentUpdate.maxSurge | default 1 }}
+      maxUnavailable: {{ $m.deploymentUpdate.maxUnavailable | default 0 }}
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "br-sta.selectorLabels" (dict "root" . "component" "manager") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # Roll the pods when the rendered env changes.
+        checksum/config: {{ include (print $.Template.BasePath "/common/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.common.useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/common/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with $m.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "br-sta.selectorLabels" (dict "root" . "component" "manager") | nindent 8 }}
+    spec:
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "br-sta.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: {{ .Values.waitImage | default "busybox:1.36" }}
+          envFrom:
+            - configMapRef:
+                name: {{ $shared }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              {{- include "br-sta.waitScript" . | nindent 14 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+      containers:
+        - name: manager
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ $m.image.repository }}:{{ $m.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ $m.image.pullPolicy | default "IfNotPresent" }}
+          # ConfigMap first, Secret second: on a duplicate key the later source
+          # wins, so a credential in the Secret is never shadowed by a ConfigMap
+          # default. Explicit `env:` below wins over both.
+          envFrom:
+            - configMapRef:
+                name: {{ $shared }}
+            - secretRef:
+                name: {{ include "br-sta.secretName" . }}
+          {{- $env := include "br-sta.appEnv" . | trim }}
+          {{- if or $env $m.extraEnvVars }}
+          env:
+            {{- with $env }}
+            {{- . | nindent 12 }}
+            {{- end }}
+            {{- with $m.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $m.service.port | default 4028 }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ $m.livenessProbe.path | default "/health" }}
+              port: http
+            initialDelaySeconds: {{ $m.livenessProbe.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ $m.livenessProbe.periodSeconds | default 20 }}
+            timeoutSeconds: {{ $m.livenessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ $m.livenessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $m.livenessProbe.failureThreshold | default 3 }}
+          readinessProbe:
+            httpGet:
+              path: {{ $m.readinessProbe.path | default "/readyz" }}
+              port: http
+            initialDelaySeconds: {{ $m.readinessProbe.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ $m.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $m.readinessProbe.timeoutSeconds | default 5 }}
+            successThreshold: {{ $m.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ $m.readinessProbe.failureThreshold | default 3 }}
+          resources:
+            {{- toYaml $m.resources | nindent 12 }}
+      {{- if or $m.nodeSelector $m.affinity $m.tolerations }}
+      {{- include "lerian-common.scheduling" $m | nindent 6 }}
+      {{- end }}
+{{- end -}}

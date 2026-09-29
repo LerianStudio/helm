@@ -1,0 +1,22 @@
+{{- if .Values.manager.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "br-sta.componentFullname" (dict "root" . "component" "manager") }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "root" . "component" "manager") | nindent 4 }}
+  {{- with .Values.manager.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.manager.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.manager.service.port | default 4028 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "br-sta.selectorLabels" (dict "root" . "component" "manager") | nindent 4 }}
+{{- end -}}

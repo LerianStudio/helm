@@ -488,11 +488,19 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "tlsTerminatedUpstream" "k" "TLS_TERMINATED_UPSTREAM" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "tlsCertFile" "k" "SERVER_TLS_CERT_FILE" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "tlsKeyFile" "k" "SERVER_TLS_KEY_FILE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $b.cors "f" "allowedOrigins" "k" "CORS_ALLOWED_ORIGINS" "d" "") }}
-{{ include $kv (dict "cm" $cm "p" $b.cors "f" "allowedMethods" "k" "CORS_ALLOWED_METHODS" "d" "GET,POST,PUT,PATCH,DELETE,OPTIONS") }}
-{{ include $kv (dict "cm" $cm "p" $b.cors "f" "allowedHeaders" "k" "CORS_ALLOWED_HEADERS" "d" "Origin,Content-Type,Accept,Authorization,X-Request-ID") }}
-{{ include $kv (dict "cm" $cm "p" $b.cors "f" "exposeHeaders" "k" "CORS_EXPOSE_HEADERS" "d" "") }}
-{{ include $kv (dict "cm" $cm "p" $b.cors "f" "allowCredentials" "k" "CORS_ALLOW_CREDENTIALS" "d" "false") }}
+{{- /* CORS. The app's config binds CORS_* (config.go ServerConfig, re-exported by
+   syncRuntimeEnvironment), but the middleware that enforces CORS is lib-commons
+   v7.9.0 commons/net/http/withCORS.go, which reads ACCESS_CONTROL_ALLOW_ORIGIN /
+   _METHODS / _HEADERS / _EXPOSE_HEADERS / _CREDENTIALS. Both families are emitted
+   from ONE resolution: configmap.ACCESS_CONTROL_* > configmap.CORS_* (the 1.1.x
+   escape hatch maps through) > brSisbajud.cors.<field> > default. With no origin
+   the middleware falls back to "*" and then denies all (fail-closed). */}}
+{{- $cors := list (list "allowedOrigins" "CORS_ALLOWED_ORIGINS" "ACCESS_CONTROL_ALLOW_ORIGIN" "") (list "allowedMethods" "CORS_ALLOWED_METHODS" "ACCESS_CONTROL_ALLOW_METHODS" "GET,POST,PUT,PATCH,DELETE,OPTIONS") (list "allowedHeaders" "CORS_ALLOWED_HEADERS" "ACCESS_CONTROL_ALLOW_HEADERS" "Origin,Content-Type,Accept,Authorization,X-Request-ID") (list "exposeHeaders" "CORS_EXPOSE_HEADERS" "ACCESS_CONTROL_EXPOSE_HEADERS" "") (list "allowCredentials" "CORS_ALLOW_CREDENTIALS" "ACCESS_CONTROL_ALLOW_CREDENTIALS" "false") }}
+{{- range $row := $cors }}
+{{- $v := include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" (index $row 1) "params" $b.cors "field" (index $row 0) "default" (index $row 3)) }}
+{{ index $row 1 }}: {{ $v | quote }}
+{{ index $row 2 }}: {{ (hasKey $cm (index $row 2) | ternary (index $cm (index $row 2)) $v) | quote }}
+{{- end }}
 # --- lib-commons security toggles -------------------------------------------
 ALLOW_INSECURE_TLS: {{ include "br-sisbajud.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.security "f" "allowCorsWildcard" "k" "ALLOW_CORS_WILDCARD" "opt" true) }}

@@ -34,6 +34,9 @@ brSisbajud:
     transfersEnabled: false
   identity:
     declarationEnabled: false
+  cors:
+    # A concrete dev origin: with none, the CORS middleware denies all.
+    allowedOrigins: "http://localhost:3000"
   swagger:
     enabled: true
   vault:

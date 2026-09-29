@@ -385,11 +385,34 @@ lerian-common-helm: {}
 # the production path: wire them via global.datastores (or
 # brSisbajud.datastores). Enable these only for a self-contained install; their
 # passwords are then single-sourced from the subchart Secrets.
+#
+# Images: the bitnami/* tags the pinned subcharts default to were removed from
+# Docker Hub; bitnamilegacy/* serves the SAME tags (checked with a registry
+# manifest HEAD). Pinned by TAG, never by digest — a digest would silently win
+# over an operator's registry/tag override. allowInsecureImages only lifts the
+# Bitnami "unrecognized image" guard for the non-bitnami repository name.
 # =============================================================================
 postgresql:
   enabled: false
   external: true
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/postgresql
+    tag: "17.2.0-debian-12-r5"
+  # When bundled, create the app role + database the chart defaults point at.
+  auth:
+    username: br_sisbajud
+    database: br_sisbajud
 
 valkey:
   enabled: false
   external: true
+  architecture: standalone
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/valkey
+    tag: "8.0.2-debian-12-r6"

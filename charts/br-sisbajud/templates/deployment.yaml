@@ -24,7 +24,8 @@ metadata:
 spec:
   revisionHistoryLimit: {{ .Values.brSisbajud.revisionHistoryLimit | default 10 }}
   {{- if not .Values.brSisbajud.autoscaling.enabled }}
-  replicas: {{ .Values.brSisbajud.replicaCount | default 1 }}
+  {{- /* hasKey, not `default`: an explicit 0 (scale to zero) must not coerce to 1. */}}
+  replicas: {{ ternary .Values.brSisbajud.replicaCount 1 (hasKey .Values.brSisbajud "replicaCount") }}
   {{- end }}
   strategy:
     type: {{ .Values.brSisbajud.deploymentUpdate.type | default "RollingUpdate" }}

@@ -1,6 +1,5 @@
 nameOverride: ""
 fullnameOverride: ""
-
 # One image for every role and for the migration Job. Keyed `jd-courier`
 # because that is the block the br-jd-courier release dispatch bumps
 # (helm_values_key_mappings, applied by .github/workflows/app-sync.yml as
@@ -9,11 +8,9 @@ jd-courier:
   image:
     repository: ghcr.io/lerianstudio/br-jd-courier
     # Registry tags have no leading `v`. Empty falls back to the chart's appVersion.
-    tag: "1.0.0-rc.1"
+    tag: "1.0.0"
     pullPolicy: IfNotPresent
-
 imagePullSecrets: []
-
 # Non-secret environment shared by every role, rendered into one ConfigMap.
 # COURIER_ROLES is set by the chart per Deployment and is refused here, and so
 # is every secret key: those arrive through `secrets.existingSecret` only.
@@ -34,7 +31,6 @@ imagePullSecrets: []
 # systemplane jd-courier.pix/vendor_subjects; without it its pods refuse to boot.
 config:
   PLUGIN_AUTH_ENABLED: "true"
-
 secrets:
   # Name of the Secret loaded into every role (envFrom, and LICENSE_KEY by name
   # through secretKeyRef); defaults to the release fullname. It must exist
@@ -42,7 +38,6 @@ secrets:
   # POSTGRES_PASSWORD and, for the migration Job, DATABASE_URL. The chart never
   # renders a Secret or a secret value.
   existingSecret: ""
-
 telemetry:
   # Where every role sends OTLP (metrics and traces): by default the collector
   # on the pod's own node, the Lerian convention. That hop never leaves the
@@ -51,7 +46,6 @@ telemetry:
   # with OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=production it must be https://, or
   # config.ALLOW_INSECURE_OTEL must carry the operator's own reason.
   otlpEndpoint: "$(NODE_IP):4317"
-
 ports:
   # JSON surfaces and the probes (/health, /readyz, /version). Metrics leave
   # over OTLP (OTEL_EXPORTER_OTLP_ENDPOINT); nothing is scraped.
@@ -59,7 +53,6 @@ ports:
   # The mirrored SPB SOAP surface — a separate stdlib net/http listener,
   # served by the spb-sender only.
   soap: 8081
-
 roles:
   # SINGLE WRITER: drains a destructive vendor queue. Exactly one replica,
   # Recreate strategy; the chart refuses to render more than one.
@@ -85,7 +78,6 @@ roles:
     resources: {}
     service:
       type: ClusterIP
-
 migrations:
   # A pre-install/pre-upgrade Job running `migrate up` against the Courier's own
   # database. Single-tenant only: the chart refuses it under
@@ -95,7 +87,6 @@ migrations:
   backoffLimit: 3
   activeDeadlineSeconds: 600
   resources: {}
-
 podAnnotations: {}
 nodeSelector: {}
 tolerations: []

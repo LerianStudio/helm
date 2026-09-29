@@ -79,7 +79,7 @@ spec:
                 name: {{ $shared }}
             - secretRef:
                 name: {{ include "br-sta.secretName" . }}
-          {{- $env := include "br-sta.appEnv" . | trim }}
+          {{- $env := include "br-sta.appEnv" (dict "root" . "component" "manager") | trim }}
           {{- if or $env $m.extraEnvVars }}
           env:
             {{- with $env }}

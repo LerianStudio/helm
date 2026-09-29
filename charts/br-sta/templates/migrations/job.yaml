@@ -47,7 +47,7 @@ upgrade, under Helm and ArgoCD alike.
 {{- end -}}
 {{- /* ALLOW_INSECURE_TLS: lib-commons' migrator refuses non-TLS Postgres unless this
    is true; sslmode=disable alone is not enough. Resolution:
-   migrations.allowInsecureTLS > manager.extraEnvVars > the app's resolved
+   migrations.allowInsecureTLS > extraEnvVars on every app pod > the app's resolved
    ALLOW_INSECURE_TLS (configmap > common.security.allowInsecureTls > default). */ -}}
 {{- $x := include "br-sta.extraEnv" . | fromYaml -}}
 {{- $allowInsecureTLS := include "br-sta.allowInsecureTLS" . -}}

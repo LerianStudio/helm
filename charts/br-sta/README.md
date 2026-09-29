@@ -93,7 +93,7 @@ Every application env key is resolved with this precedence (lerian-common):
 
 `common.configmap`, `common.secrets` and `worker.configmap` are empty by default. Pinning a native key there shadows the grouped/global parameter for that key.
 
-`manager.extraEnvVars` / `worker.extraEnvVars` (lists of `{name, value|valueFrom}`) are rendered as explicit pod `env:` and win over the ConfigMaps and the Secret. The fail-fast gates also read `manager.extraEnvVars`.
+`manager.extraEnvVars` / `worker.extraEnvVars` (lists of `{name, value|valueFrom}`) are rendered as explicit pod `env:` and win over the ConfigMaps and the Secret. The fail-fast gates count an `extraEnvVars` entry only when it reaches every enabled app pod (set on both `manager` and `worker`), since both binaries need the same configuration.
 
 ### Global contract
 
@@ -136,6 +136,8 @@ Shared (`common.*`):
 | `server.trustedProxies` | `SERVER_TRUSTED_PROXIES` | `""` (trust no proxy) |
 | `cors.allowedOrigins` / `allowedMethods` / `allowedHeaders` | `CORS_ALLOWED_ORIGINS` / `CORS_ALLOWED_METHODS` / `CORS_ALLOWED_HEADERS` | `""` / `GET,POST,PUT,PATCH,DELETE,OPTIONS` / `Origin,Content-Type,Accept,Authorization,X-Request-ID` |
 | `cors.exposeHeaders` / `allowCredentials` | `CORS_EXPOSE_HEADERS` / `CORS_ALLOW_CREDENTIALS` | `""` / `false` |
+
+The `cors` group also renders the keys lib-commons' CORS middleware actually reads: `ACCESS_CONTROL_ALLOW_ORIGIN` always (from `allowedOrigins`), and `ACCESS_CONTROL_ALLOW_METHODS` / `_HEADERS` / `ACCESS_CONTROL_EXPOSE_HEADERS` / `ACCESS_CONTROL_ALLOW_CREDENTIALS` only when the matching field (or native `CORS_*` key) is set — otherwise the middleware keeps its own defaults. An empty origin list means deny-all (the default, fail-closed); `*` needs `security.allowCorsWildcard: true` (the chart fails the render otherwise, since the middleware would silently deny everything). A native `ACCESS_CONTROL_*` key under `common.configmap` wins.
 | `security.allowInsecureTls` | `ALLOW_INSECURE_TLS` | `true` only with a bundled plaintext datastore, else `false` |
 | `security.allowCorsWildcard` / `allowInsecureOtel` | `ALLOW_CORS_WILDCARD` / `ALLOW_INSECURE_OTEL` | unset |
 | `license.organizationIds` / `isDevelopment` | `ORGANIZATION_IDS` / `IS_DEVELOPMENT` | unset (organizationIds required in production) |
@@ -226,9 +228,9 @@ The render fails with the exact value to set (mirroring the app's boot validatio
 - streaming is on without `STREAMING_BROKERS`, a SASL mechanism is set without a username/password or without TLS, or `STREAMING_CLOUDEVENTS_SOURCE` is anything but `br-sta`;
 - multi-tenancy is on without the tenant-manager URL, its Redis host, the service API key or inbound auth;
 - the declaration publisher or the reporter bridge is on without its host / credentials / exchange / resolver (`static` is refused in production and outside homologation);
-- the server TLS cert/key are not set together, or `M2M_TARGET_SERVICE` contains `:`.
+- the CORS origin is `*` without `security.allowCorsWildcard`, the server TLS cert/key are not set together, or `M2M_TARGET_SERVICE` contains `:`.
 
-A value supplied through `manager.extraEnvVars` satisfies the gate. With `common.useExistingSecret`, the gates skip the Secret keys.
+A value supplied through `extraEnvVars` satisfies the gate only when it is set on both `manager.extraEnvVars` and `worker.extraEnvVars` (or the worker is disabled). With `common.useExistingSecret`, the gates skip the Secret keys.
 
 ---
 

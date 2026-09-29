@@ -259,13 +259,13 @@ operator Secret via common.useExistingSecret).
 {{- end -}}
 
 {{/*
-br-sta.extraEnv — manager.extraEnvVars as a YAML map {NAME: value}, with
-"__valueFrom__" for entries sourced via valueFrom. Lets the fail-fast gates see
-values an operator supplies as explicit pod env.
+br-sta.componentExtraEnv — one component's extraEnvVars as a YAML map
+{NAME: value}, with "__valueFrom__" for entries sourced via valueFrom.
+Input: dict root, component (manager | worker).
 */}}
-{{- define "br-sta.extraEnv" -}}
+{{- define "br-sta.componentExtraEnv" -}}
 {{- $out := dict -}}
-{{- range ((.Values.manager | default dict).extraEnvVars | default list) -}}
+{{- range ((index .root.Values .component | default dict).extraEnvVars | default list) -}}
 {{- if .name -}}
 {{- if hasKey . "valueFrom" -}}
 {{- $_ := set $out .name "__valueFrom__" -}}
@@ -278,9 +278,36 @@ values an operator supplies as explicit pod env.
 {{- end -}}
 
 {{/*
+br-sta.extraEnv — the extraEnvVars entries that reach EVERY enabled app pod:
+the intersection of manager.extraEnvVars and worker.extraEnvVars (only the
+enabled components count). Both binaries read the same configuration, so a
+key set on one pod only must not satisfy the fail-fast gates (nor suppress the
+chart's own Secret copy) for the other. The value is the manager's entry when
+both carry it. Output: YAML map {NAME: value | "__valueFrom__"}.
+*/}}
+{{- define "br-sta.extraEnv" -}}
+{{- $maps := list -}}
+{{- range $comp := list "manager" "worker" -}}
+{{- if (index $.Values $comp | default dict).enabled -}}
+{{- $maps = append $maps (include "br-sta.componentExtraEnv" (dict "root" $ "component" $comp) | fromYaml | default dict) -}}
+{{- end -}}
+{{- end -}}
+{{- $out := dict -}}
+{{- if $maps -}}
+{{- range $k, $v := first $maps -}}
+{{- $inAll := true -}}
+{{- range $m := rest $maps -}}{{- if not (hasKey $m $k) -}}{{- $inAll = false -}}{{- end -}}{{- end -}}
+{{- if $inAll -}}{{- $_ := set $out $k $v -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- toYaml $out -}}
+{{- end -}}
+
+{{/*
 br-sta.provided — "true" when env KEY reaches the pods from ANY source: the
-resolved ConfigMap value passed in (value), common.secrets.<KEY>, or a
-manager.extraEnvVars entry (literal or valueFrom). Inputs: context, key, value (opt).
+resolved ConfigMap value passed in (value), common.secrets.<KEY>, or an
+extraEnvVars entry every enabled app pod receives (br-sta.extraEnv). Inputs:
+context, key, value (opt).
 */}}
 {{- define "br-sta.provided" -}}
 {{- $ctx := .context -}}
@@ -495,6 +522,21 @@ ENV_NAME: {{ $envName | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.cors "f" "allowedHeaders" "k" "CORS_ALLOWED_HEADERS" "d" "Origin,Content-Type,Accept,Authorization,X-Request-ID") }}
 {{ include $kv (dict "cm" $cm "p" $c.cors "f" "exposeHeaders" "k" "CORS_EXPOSE_HEADERS" "d" "") }}
 {{ include $kv (dict "cm" $cm "p" $c.cors "f" "allowCredentials" "k" "CORS_ALLOW_CREDENTIALS" "d" "false") }}
+{{- /* lib-commons' CORS middleware (WithCORS, v7) reads the ACCESS_CONTROL_* keys,
+   NOT CORS_*. The origin is always rendered from cors.allowedOrigins (a native
+   CORS_ALLOWED_ORIGINS maps too): empty/unset means "*" to the middleware, which
+   it turns into deny-all unless ALLOW_CORS_WILDCARD=true. Methods, headers,
+   expose headers and credentials render only when set through the cors group
+   (or a native CORS_* key); otherwise the middleware keeps its own defaults.
+   A native ACCESS_CONTROL_* key always wins. */}}
+{{- range $pair := list (list "allowedOrigins" "CORS_ALLOWED_ORIGINS" "ACCESS_CONTROL_ALLOW_ORIGIN" false) (list "allowedMethods" "CORS_ALLOWED_METHODS" "ACCESS_CONTROL_ALLOW_METHODS" true) (list "allowedHeaders" "CORS_ALLOWED_HEADERS" "ACCESS_CONTROL_ALLOW_HEADERS" true) (list "exposeHeaders" "CORS_EXPOSE_HEADERS" "ACCESS_CONTROL_EXPOSE_HEADERS" true) (list "allowCredentials" "CORS_ALLOW_CREDENTIALS" "ACCESS_CONTROL_ALLOW_CREDENTIALS" true) }}
+{{- $field := index $pair 0 }}{{- $corsKey := index $pair 1 }}{{- $acKey := index $pair 2 }}{{- $optional := index $pair 3 }}
+{{- if hasKey $cm $acKey }}
+{{ $acKey }}: {{ index $cm $acKey | toString | quote }}
+{{- else if or (not $optional) (hasKey $cm $corsKey) (hasKey ($c.cors | default dict) $field) }}
+{{ $acKey }}: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" $corsKey "params" $c.cors "field" $field "default" "") | toString | quote }}
+{{- end }}
+{{- end }}
 # --- lib-commons security toggles -------------------------------------------
 ALLOW_INSECURE_TLS: {{ include "br-sta.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowCorsWildcard" "k" "ALLOW_CORS_WILDCARD" "opt" true) }}
@@ -855,7 +897,7 @@ why (condition text), set (where to set it).
 {{- $ctx := .context -}}
 {{- $skip := and .secret $ctx.Values.common.useExistingSecret -}}
 {{- if and (not $skip) (not (include "br-sta.provided" (dict "context" $ctx "key" .key "value" .value))) -}}
-{{- fail (printf "\n\nERROR: br-sta: %s is required %s.\n  set: %s\n  (or pass it as a manager.extraEnvVars entry%s)\n" .key .why .set (ternary " / via common.useExistingSecret" "" (eq (toString .secret) "true"))) -}}
+{{- fail (printf "\n\nERROR: br-sta: %s is required %s.\n  set: %s\n  (or pass it as an extraEnvVars entry on BOTH manager and worker%s)\n" .key .why .set (ternary " / via common.useExistingSecret" "" (eq (toString .secret) "true"))) -}}
 {{- end -}}
 {{- end -}}
 
@@ -913,8 +955,8 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- fail "\n\nERROR: br-sta: PLUGIN_AUTH_ENABLED must be true when MULTI_TENANT_ENABLED=true.\n  set: global.auth.enabled=true + global.auth.host\n" -}}
 {{- end -}}
 {{- /* A wildcard CORS origin needs lib-commons' explicit opt-in. */ -}}
-{{- if and (has "*" (splitList "," (nospace (toString (index $data "CORS_ALLOWED_ORIGINS"))))) (ne (include $isTrue (index $data "ALLOW_CORS_WILDCARD" | default "")) "true") -}}
-{{- fail "\n\nERROR: br-sta: CORS_ALLOWED_ORIGINS contains \"*\" without ALLOW_CORS_WILDCARD=true (the app refuses a wildcard origin at boot).\n  set: common.cors.allowedOrigins to the real origins (recommended), or common.security.allowCorsWildcard=true\n" -}}
+{{- if and (has "*" (splitList "," (nospace (toString (index $data "ACCESS_CONTROL_ALLOW_ORIGIN"))))) (ne (include $isTrue (index $data "ALLOW_CORS_WILDCARD" | default "")) "true") -}}
+{{- fail "\n\nERROR: br-sta: the CORS origin is \"*\" without ALLOW_CORS_WILDCARD=true (lib-commons' CORS middleware would silently fall back to deny-all).\n  set: common.cors.allowedOrigins to the real origins (recommended), or common.security.allowCorsWildcard=true\n" -}}
 {{- end -}}
 {{- /* Server TLS: both files or neither. */ -}}
 {{- if ne (empty (index $data "SERVER_TLS_CERT_FILE")) (empty (index $data "SERVER_TLS_KEY_FILE")) -}}
@@ -1067,13 +1109,16 @@ echo "dependencies ready"
 {{- end -}}
 
 {{/*
-br-sta.appEnv — the explicit `env:` entries shared by the manager and worker
-pods: bundled (or existingSecret) infra passwords single-sourced from the
-subchart Secrets, and the node-local OTLP endpoint. Input: the root context.
+br-sta.appEnv — the explicit `env:` entries of the manager and worker pods: bundled (or existingSecret) infra passwords single-sourced from the
+subchart Secrets, and the node-local OTLP endpoint. Input: dict root, component.
 */}}
 {{- define "br-sta.appEnv" -}}
+{{- $component := .component -}}
+{{- with .root -}}
 {{- $cm := .Values.common.configmap | default dict -}}
-{{- $x := include "br-sta.extraEnv" . | fromYaml -}}
+{{- /* This pod's own extraEnvVars: an explicit endpoint there replaces the
+   node-local default for this pod only. */ -}}
+{{- $x := include "br-sta.componentExtraEnv" (dict "root" . "component" $component) | fromYaml | default dict -}}
 {{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
 {{- if or (eq (include "br-sta.postgresInternal" .) "true") $pgAuth.existingSecret }}
 {{ include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") }}
@@ -1089,6 +1134,7 @@ subchart Secrets, and the node-local OTLP endpoint. Input: the root context.
 {{- if and $telemetry (not (or (hasKey $cm "OTEL_EXPORTER_OTLP_ENDPOINT") $obs.otlpEndpoint (hasKey $x "OTEL_EXPORTER_OTLP_ENDPOINT"))) }}
 {{ include "lerian-common.otel.podEnv" (dict "port" 4317) }}
 {{- end }}
+{{- end -}}
 {{- end -}}
 
 {{/*

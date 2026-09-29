@@ -78,7 +78,7 @@ spec:
                 name: {{ include "br-sta.secretName" . }}
             - configMapRef:
                 name: {{ $fullname }}
-          {{- $env := include "br-sta.appEnv" . | trim }}
+          {{- $env := include "br-sta.appEnv" (dict "root" . "component" "worker") | trim }}
           {{- if or $env $w.extraEnvVars }}
           env:
             {{- with $env }}

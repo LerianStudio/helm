@@ -4,6 +4,9 @@
 # chart's production-like default (ENVIRONMENT_NAME=production), so every
 # fail-fast gate that production enforces (LICENSE_KEY, POSTGRES_PASSWORD,
 # VAULT AppRole, STA bucket, streaming brokers) has to be satisfied here.
+# Object storage uses the BUNDLED SeaweedFS with no explicit endpoint, so the
+# render gate also proves the derived SEAWEEDFS_S3_ENDPOINT /
+# STA_OBJECT_STORAGE_ENDPOINT and the bucket bootstrap Job.
 global:
   datastores:
     postgres:
@@ -14,7 +17,6 @@ global:
       tls: "true"
   objectStorage:
     sisbajud:
-      endpoint: "https://s3.example.invalid"
       region: "us-east-1"
       bucket: "sisbajud"
     sta:
@@ -44,3 +46,6 @@ brSisbajud:
     VAULT_APPROLE_SECRET_ID: "sample"
     STREAMING_SASL_PASSWORD: "sample"
     STREAMING_TLS_CA_CERT: "c2FtcGxlLWNh"  # base64("sample-ca"), dummy
+
+seaweedfs:
+  enabled: true

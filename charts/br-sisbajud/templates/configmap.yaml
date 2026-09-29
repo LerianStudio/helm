@@ -1,13 +1,11 @@
 {{- if .Values.brSisbajud.enabled -}}
-{{- $pgHost := .Values.brSisbajud.configmap.POSTGRES_HOST -}}
-{{- if and (not $pgHost) (ne (toString .Values.postgresql.enabled) "false") -}}
-{{-   $pgHost = printf "%s.%s.svc.cluster.local." (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .)) (include "global.namespace" .) -}}
-{{- end -}}
-{{- $redisHost := .Values.brSisbajud.configmap.REDIS_HOST -}}
-{{- if and (not $redisHost) (ne (toString .Values.valkey.enabled) "false") -}}
-{{-   $redisHost = printf "%s-primary.%s.svc.cluster.local.:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) (include "global.namespace" .) -}}
-{{- end }}
-{{- $reserved := list "POSTGRES_HOST" "REDIS_HOST" }}
+{{- include "br-sisbajud.validate" . -}}
+{{- /* Chart-modeled keys (templates/_helpers.tpl br-sisbajud.configmapData), then
+   the escape hatch: any other brSisbajud.configmap key is emitted verbatim,
+   except the keys app 1.0.x no longer reads (br-sisbajud.removedKeys). */ -}}
+{{- $body := include "br-sisbajud.configmapData" . -}}
+{{- $emitted := fromYaml $body -}}
+{{- $removed := include "br-sisbajud.removedKeys" . | fromJsonArray -}}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -16,11 +14,21 @@ metadata:
   labels:
     {{- include "br-sisbajud.labels" . | nindent 4 }}
 data:
-  POSTGRES_HOST: {{ $pgHost | default "" | quote }}
-  REDIS_HOST: {{ $redisHost | default "" | quote }}
-  {{- range $k, $v := .Values.brSisbajud.configmap }}
-  {{- if not (has $k $reserved) }}
-  {{ $k }}: {{ $v | quote }}
+  {{- range $line := splitList "\n" $body }}
+  {{- if trim $line }}
+  {{ $line }}
+  {{- end }}
+  {{- end }}
+  {{- $extra := list }}
+  {{- range $k, $v := (.Values.brSisbajud.configmap | default dict) }}
+  {{- if and (not (hasKey $emitted $k)) (not (has $k $removed)) }}
+  {{- $extra = append $extra $k }}
+  {{- end }}
+  {{- end }}
+  {{- if $extra }}
+  # --- Escape hatch: brSisbajud.configmap keys not modeled by the chart ----------
+  {{- range $k := $extra }}
+  {{ $k }}: {{ index $.Values.brSisbajud.configmap $k | toString | quote }}
   {{- end }}
   {{- end }}
 {{- end -}}

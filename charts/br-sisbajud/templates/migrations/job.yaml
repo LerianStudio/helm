@@ -1,41 +1,41 @@
 {{- if .Values.migrations.enabled }}
-# PreSync migration Job. Runs the dedicated br-sisbajud-migrations image, whose
-# entrypoint applies the golang-migrate SQL migrations against the br_sisbajud
-# database. hook-weight -1 puts this after the PreSync Secret (-2) and before
-# the main-sync Deployment, so the app never boots unmigrated.
-{{- $pgHost := .Values.migrations.postgres.host | default .Values.brSisbajud.configmap.POSTGRES_HOST -}}
-{{- if and (not $pgHost) (ne (toString .Values.postgresql.enabled) "false") -}}
-{{-   $pgHost = printf "%s.%s.svc.cluster.local." (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .)) (include "global.namespace" .) -}}
-{{- end }}
-{{- $pgPort := .Values.migrations.postgres.port | default .Values.brSisbajud.configmap.POSTGRES_PORT | default "5432" }}
-{{- $pgUser := .Values.migrations.postgres.user | default .Values.brSisbajud.configmap.POSTGRES_USER | default "br_sisbajud" }}
-{{- $pgDb := .Values.migrations.postgres.database | default .Values.brSisbajud.configmap.POSTGRES_NAME | default "br_sisbajud" }}
-{{- $pgSslMode := .Values.migrations.postgres.sslMode | default .Values.brSisbajud.configmap.POSTGRES_SSLMODE | default "disable" }}
+{{- /* PreSync migration Job. Runs the dedicated br-sisbajud-migrations image, whose
+   entrypoint applies the golang-migrate SQL migrations against the br_sisbajud
+   database. hook-weight -1 puts this after the PreSync Secret (-2) and before
+   the main-sync Deployment, so the app never boots unmigrated. */ -}}
+{{- /* Connection: migrations.postgres.* override > the app's resolved POSTGRES_*
+   (br-sisbajud.postgres: configmap > datastores > global > cloud > default), so
+   the Job and the app can never point at different databases. */ -}}
+{{- $app := include "br-sisbajud.postgres" . | fromYaml -}}
+{{- $mp := .Values.migrations.postgres | default dict -}}
+{{- $pgHost := $mp.host | default $app.host -}}
+{{- $pgPort := $mp.port | default $app.port | toString -}}
+{{- $pgUser := $mp.user | default $app.user -}}
+{{- $pgDb := $mp.database | default $app.name -}}
+{{- $pgSslMode := $mp.sslMode | default $app.ssl -}}
+{{- $pgConnectTimeout := $mp.connectTimeoutSec | default (include "lerian-common.cfgValue" (dict "configmap" (.Values.brSisbajud.configmap | default dict) "nativeKey" "POSTGRES_CONNECT_TIMEOUT_SEC" "params" .Values.brSisbajud.postgres "field" "connectTimeoutSec" "default" "10")) -}}
+{{- if not $pgHost -}}
+{{- fail "\n\nERROR: br-sisbajud: the migrations Job needs a Postgres host.\n  set: global.datastores.postgres.host (or migrations.postgres.host), or disable it with migrations.enabled=false\n" -}}
+{{- end -}}
 {{- if and .Values.migrations.useExistingSecret (not .Values.migrations.existingSecretName) -}}
 {{- fail "migrations.existingSecretName is required when migrations.useExistingSecret is true" -}}
 {{- end -}}
 {{- $secretName := ternary .Values.migrations.existingSecretName (include "br-sisbajud-migrations.fullname" .) .Values.migrations.useExistingSecret }}
 {{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets }}
-# ALLOW_INSECURE_TLS: lib-commons' migrator refuses non-TLS Postgres unless this
-# is true; sslmode=disable alone is not enough. Mirrors the app deployment's
-# ALLOW_INSECURE_TLS. Resolution: migrations.allowInsecureTLS override →
-# brSisbajud.extraEnvVars → brSisbajud.configmap. Emitted only when set so TLS
-# tiers stay secure by default.
-{{- $extraEnv := .Values.brSisbajud.extraEnvVars | default list -}}
-{{- $allowInsecureTLS := "" -}}
+{{- /* Bundled (or existingSecret) Postgres: the password is single-sourced from the
+   subchart Secret, same as the app. */ -}}
+{{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
+{{- $pgFromSubchart := and (not .Values.migrations.useExistingSecret) (or (eq (include "br-sisbajud.postgresInternal" .) "true") $pgAuth.existingSecret) -}}
+{{- /* ALLOW_INSECURE_TLS: lib-commons' migrator refuses non-TLS Postgres unless this
+   is true; sslmode=disable alone is not enough. Resolution:
+   migrations.allowInsecureTLS > brSisbajud.extraEnvVars > the app's resolved
+   ALLOW_INSECURE_TLS (configmap > brSisbajud.security.allowInsecureTls > default). */ -}}
+{{- $x := include "br-sisbajud.extraEnv" . | fromYaml -}}
+{{- $allowInsecureTLS := include "br-sisbajud.allowInsecureTLS" . -}}
 {{- if hasKey .Values.migrations "allowInsecureTLS" -}}
 {{- $allowInsecureTLS = toString .Values.migrations.allowInsecureTLS -}}
-{{- else -}}
-{{- range $extraEnv -}}
-{{- if eq .name "ALLOW_INSECURE_TLS" -}}
-{{- $allowInsecureTLS = toString .value -}}
-{{- end -}}
-{{- end -}}
-{{- if eq $allowInsecureTLS "" -}}
-{{- if hasKey .Values.brSisbajud.configmap "ALLOW_INSECURE_TLS" -}}
-{{- $allowInsecureTLS = toString (index .Values.brSisbajud.configmap "ALLOW_INSECURE_TLS") -}}
-{{- end -}}
-{{- end -}}
+{{- else if and (hasKey $x "ALLOW_INSECURE_TLS") (ne (index $x "ALLOW_INSECURE_TLS") "__valueFrom__") -}}
+{{- $allowInsecureTLS = index $x "ALLOW_INSECURE_TLS" -}}
 {{- end }}
 apiVersion: batch/v1
 kind: Job
@@ -104,19 +104,21 @@ spec:
               value: {{ $pgDb | quote }}
             - name: POSTGRES_SSLMODE
               value: {{ $pgSslMode | quote }}
-            {{- if $allowInsecureTLS }}
             - name: ALLOW_INSECURE_TLS
               value: {{ $allowInsecureTLS | quote }}
-            {{- end }}
             - name: ENV_NAME
-              value: {{ .Values.brSisbajud.configmap.ENV_NAME | default "development" | quote }}
+              value: {{ include "br-sisbajud.envName" . | quote }}
             - name: POSTGRES_CONNECT_TIMEOUT_SEC
-              value: {{ .Values.migrations.postgres.connectTimeoutSec | default .Values.brSisbajud.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
+              value: {{ $pgConnectTimeout | quote }}
+            {{- if $pgFromSubchart }}
+            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else }}
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ $secretName }}
                   key: POSTGRES_PASSWORD
+            {{- end }}
           securityContext:
             runAsUser: 65532
             runAsGroup: 65532

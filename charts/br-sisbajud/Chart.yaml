@@ -19,9 +19,10 @@ maintainers:
 
 version: 1.1.0
 
-# NOTE: appVersion is the default image tag for the app and the migration Job.
-# Override via brSisbajud.image.tag when needed.
-appVersion: "1.0.0-beta.109"
+# NOTE: appVersion is the default image tag for the app, the migrations Job and
+# the topics Job. Override via brSisbajud.image.tag / migrations.image.tag /
+# topics.image.tag when needed.
+appVersion: "1.0.2"
 
 keywords:
   - br-sisbajud
@@ -33,10 +34,14 @@ keywords:
 
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 
-# Bitnami subcharts are DECLARED (exact pins, condition-gated) so the chart can
-# optionally bundle infra, but they default to disabled: on the target
-# environments Postgres and Redis are EXTERNAL and pre-provisioned.
+# lerian-common-helm is the shared library (env contracts, datastore/KMS/object
+# storage masks). Bitnami subcharts are DECLARED (exact pins, condition-gated) so
+# the chart can optionally bundle infra, but they default to disabled: on the
+# target environments Postgres and Redis are EXTERNAL and pre-provisioned.
 dependencies:
+  - name: lerian-common-helm
+    version: "2.1.2"
+    repository: "oci://ghcr.io/lerianstudio"
   - name: postgresql
     version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"

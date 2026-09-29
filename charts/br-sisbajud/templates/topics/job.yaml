@@ -1,46 +1,61 @@
-{{- if .Values.topics.enabled }}
-# PreSync topics Job. Runs the dedicated br-sisbajud-topics image (rpk), whose
-# entrypoint idempotently ensures the reactive-bridge Redpanda topics and their
-# .dlq siblings exist before the app boots. hook-weight -1 puts it in the same
-# wave as the migration Job (they are independent — Kafka vs Postgres) and
-# before the main-sync Deployment, so the Midaz balance translator never
-# halt-loops (UNKNOWN_TOPIC_OR_PARTITION) and DLQ publishes never fail on a
-# fresh broker.
-#
-# STREAMING_* config is resolved from brSisbajud.extraEnvVars (wins) then
-# brSisbajud.configmap — the same idiom the migration Job uses for
-# ALLOW_INSECURE_TLS — so gitops needs no duplicated secret refs. extraEnvVars
-# entries are rendered VERBATIM, preserving `valueFrom` (secretKeyRef/configMapKeyRef)
-# sources so secret-backed SASL/TLS settings reach this Job exactly as the
-# Deployment receives them; configmap fallbacks and defaults are emitted as plain
-# `value`. STREAMING_BROKERS/STREAMING_TLS_ENABLED always render (with defaults);
-# the optional SASL/CA entries render only when set.
-{{- $extraEnv := .Values.brSisbajud.extraEnvVars | default list -}}
-{{- $cfg := .Values.brSisbajud.configmap | default dict -}}
+{{- $streamingOn := eq (include "br-sisbajud.isTrue" (include "br-sisbajud.streamingEnabledRaw" .)) "true" -}}
+{{- if and .Values.topics.enabled $streamingOn }}
+{{- /* PreSync topics Job. Runs the dedicated br-sisbajud-topics image (rpk), whose
+   entrypoint idempotently ensures the Redpanda topics in topics.list (and the
+   .dlq siblings listed there) exist before the app boots. hook-weight -1 puts it
+   in the same wave as the migration Job (independent: Kafka vs Postgres) and
+   before the main-sync Deployment. Rendered only while streaming is enabled.
+
+   Connection (the same values the app receives):
+     STREAMING_BROKERS / TLS_ENABLED / SASL_MECHANISM / SASL_USERNAME:
+       brSisbajud.extraEnvVars entry (verbatim, keeps valueFrom) > the app's
+       resolved ConfigMap value (configmap > global.streaming) > default.
+     STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT:
+       brSisbajud.extraEnvVars entry (verbatim) > the existing Secret
+       (brSisbajud.useExistingSecret, optional keys) > the dedicated PreSync
+       topics Secret (templates/topics/secrets.yaml). PreSync runs before the app
+       Secret exists on a first install, hence the dedicated hook Secret. */ -}}
 {{- $envByName := dict -}}
-{{- range $extraEnv -}}
+{{- range (.Values.brSisbajud.extraEnvVars | default list) -}}
 {{- if .name -}}
 {{- $_ := set $envByName .name . -}}
 {{- end -}}
 {{- end -}}
-{{- $streamingSpecs := list -}}
-{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_BROKERS" "default" "" "required" true) -}}
-{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_TLS_ENABLED" "default" "false" "required" true) -}}
-{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_SASL_MECHANISM" "default" "" "required" false) -}}
-{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_SASL_USERNAME" "default" "" "required" false) -}}
-{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_SASL_PASSWORD" "default" "" "required" false) -}}
-{{- $streamingSpecs = append $streamingSpecs (dict "name" "STREAMING_TLS_CA_CERT" "default" "" "required" false) -}}
+{{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
 {{- $streamingEnv := list -}}
-{{- range $spec := $streamingSpecs -}}
+{{- range $spec := list (dict "name" "STREAMING_BROKERS" "default" "" "required" true) (dict "name" "STREAMING_TLS_ENABLED" "default" "false" "required" true) (dict "name" "STREAMING_SASL_MECHANISM" "default" "" "required" false) (dict "name" "STREAMING_SASL_USERNAME" "default" "" "required" false) -}}
 {{- $entry := index $envByName $spec.name -}}
 {{- if $entry -}}
 {{- $streamingEnv = append $streamingEnv $entry -}}
 {{- else -}}
-{{- $val := index $cfg $spec.name | default $spec.default -}}
+{{- $val := index $data $spec.name | default $spec.default | toString -}}
 {{- if or $spec.required $val -}}
-{{- $streamingEnv = append $streamingEnv (dict "name" $spec.name "value" (toString $val)) -}}
+{{- $streamingEnv = append $streamingEnv (dict "name" $spec.name "value" $val) -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+{{- $s := .Values.brSisbajud.secrets | default dict -}}
+{{- range $key := list "STREAMING_SASL_PASSWORD" "STREAMING_TLS_CA_CERT" -}}
+{{- $entry := index $envByName $key -}}
+{{- if $entry -}}
+{{- $streamingEnv = append $streamingEnv $entry -}}
+{{- else if $.Values.brSisbajud.useExistingSecret -}}
+{{- $streamingEnv = append $streamingEnv (dict "name" $key "valueFrom" (dict "secretKeyRef" (dict "name" $.Values.brSisbajud.existingSecretName "key" $key "optional" true))) -}}
+{{- else if index $s $key -}}
+{{- $streamingEnv = append $streamingEnv (dict "name" $key "valueFrom" (dict "secretKeyRef" (dict "name" (include "br-sisbajud-topics.fullname" $) "key" $key))) -}}
+{{- end -}}
+{{- end -}}
+{{- /* The topics image's entrypoint refuses TLS without a CA
+   (scripts/topics-entrypoint.sh: STREAMING_TLS_CA_CERT is required when
+   STREAMING_TLS_ENABLED=true) — fail here instead of wedging the PreSync phase. */ -}}
+{{- $tlsOn := false -}}
+{{- $caSet := false -}}
+{{- range $streamingEnv -}}
+{{- if and (eq .name "STREAMING_TLS_ENABLED") (hasKey . "value") (eq (include "br-sisbajud.isTrue" .value) "true") -}}{{- $tlsOn = true -}}{{- end -}}
+{{- if eq .name "STREAMING_TLS_CA_CERT" -}}{{- $caSet = true -}}{{- end -}}
+{{- end -}}
+{{- if and $tlsOn (not $caSet) -}}
+{{- fail "\n\nERROR: br-sisbajud: the topics Job needs STREAMING_TLS_CA_CERT when STREAMING_TLS_ENABLED=true (its rpk entrypoint takes the CA as a file).\n  set: brSisbajud.secrets.STREAMING_TLS_CA_CERT (base64 PEM), or provision the topics out of band and set topics.enabled=false\n" -}}
 {{- end -}}
 {{- $pullSecrets := .Values.topics.imagePullSecrets | default .Values.imagePullSecrets }}
 apiVersion: batch/v1

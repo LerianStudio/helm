@@ -5,7 +5,15 @@
 {{- end -}}
 {{- $secretName := ternary .Values.brSisbajud.existingSecretName $fullname .Values.brSisbajud.useExistingSecret -}}
 {{- $pullSecrets := .Values.brSisbajud.imagePullSecrets | default .Values.imagePullSecrets -}}
-{{- $telemetry := eq (toString .Values.brSisbajud.configmap.ENABLE_TELEMETRY) "true" -}}
+{{- $cm := .Values.brSisbajud.configmap | default dict -}}
+{{- $x := include "br-sisbajud.extraEnv" . | fromYaml -}}
+{{- /* Telemetry: same global.observability mask the ConfigMap resolves. With
+   telemetry on and NO explicit endpoint (configmap / global.observability /
+   extraEnvVars), the pod ships to the node-local collector at
+   http://$(HOST_IP):4317 (lerian-common.otel.podEnv) — the 1.1.x behavior. */ -}}
+{{- $telemetry := eq (include "br-sisbajud.isTrue" (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" -}}
+{{- $obs := (.Values.global | default dict).observability | default dict -}}
+{{- $explicitEndpoint := or (hasKey $cm "OTEL_EXPORTER_OTLP_ENDPOINT") $obs.otlpEndpoint (hasKey $x "OTEL_EXPORTER_OTLP_ENDPOINT") -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,10 +38,15 @@ spec:
       {{- include "br-sisbajud.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.brSisbajud.podAnnotations }}
       annotations:
+        # Roll the pods when the rendered env changes.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.brSisbajud.useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.brSisbajud.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "br-sisbajud.selectorLabels" . | nindent 8 }}
     spec:
@@ -81,41 +94,27 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.brSisbajud.image.repository }}:{{ .Values.brSisbajud.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.brSisbajud.image.pullPolicy | default "IfNotPresent" }}
+          # ConfigMap first, Secret second: on a duplicate key the later source
+          # wins, so a credential in the Secret is never shadowed by a ConfigMap
+          # default. Explicit `env:` below wins over both.
           envFrom:
-            - secretRef:
-                name: {{ $secretName }}
             - configMapRef:
                 name: {{ $fullname }}
+            - secretRef:
+                name: {{ $secretName }}
           env:
-            {{- $pg := .Values.postgresql | default dict }}
-            {{- $pgAuth := $pg.auth | default dict }}
-            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
-            {{- include "br-sisbajud.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
-            {{- else if .Values.brSisbajud.secrets.POSTGRES_PASSWORD }}
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secretName }}
-                  key: POSTGRES_PASSWORD
+            {{- /* Bundled (or existingSecret) infra passwords are single-sourced from the
+               subchart Secret; the external path reads them from the app Secret via envFrom. */}}
+            {{- $pgAuth := (.Values.postgresql | default dict).auth | default dict }}
+            {{- if or (eq (include "br-sisbajud.postgresInternal" .) "true") $pgAuth.existingSecret }}
+            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
             {{- end }}
-            {{- $vk := .Values.valkey | default dict }}
-            {{- $vkAuth := $vk.auth | default dict }}
-            {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
-            {{- include "br-sisbajud.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
-            {{- else if .Values.brSisbajud.secrets.REDIS_PASSWORD }}
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secretName }}
-                  key: REDIS_PASSWORD
+            {{- $vkAuth := (.Values.valkey | default dict).auth | default dict }}
+            {{- if or (eq (include "br-sisbajud.valkeyInternal" .) "true") $vkAuth.existingSecret }}
+            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
             {{- end }}
-            {{- if $telemetry }}
-            - name: HOST_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://$(HOST_IP):4317"
+            {{- if and $telemetry (not $explicitEndpoint) }}
+            {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 12 }}
             {{- end }}
             {{- with .Values.brSisbajud.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
@@ -144,16 +143,7 @@ spec:
             failureThreshold: {{ .Values.brSisbajud.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.brSisbajud.resources | nindent 12 }}
-      {{- with .Values.brSisbajud.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.brSisbajud.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.brSisbajud.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- if or .Values.brSisbajud.nodeSelector .Values.brSisbajud.affinity .Values.brSisbajud.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.brSisbajud | nindent 6 }}
       {{- end }}
 {{- end -}}

@@ -1,17 +1,88 @@
 # Default values for the br-sisbajud (SISBAJUD plugin) chart.
 # Single-service chart: one Go binary (HTTP API + background workers in one
-# process). The configmap map is emitted VERBATIM into the ConfigMap (not a
-# fixed allowlist), so any extra env can be added under brSisbajud.configmap
-# without a chart change.
+# process).
+#
+# Configuration precedence for every application env key (lerian-common):
+#
+#   brSisbajud.configmap.<KEY>          escape hatch — the native env key, wins over everything
+#   > brSisbajud.<group>.<field>        grouped chart parameter (cfgValue)
+#   > brSisbajud.datastores / kms / objectStorage   dedicated connection masks
+#   > global.<block>.<field>            env-wide contract, set once per environment
+#   > global.cloud preset               managed-cloud topology defaults (aws | gcp | azure)
+#   > chart default                     lives in templates/_helpers.tpl, NOT here
+#
+# brSisbajud.configmap and brSisbajud.secrets are EMPTY by default on purpose:
+# a key set there shadows the grouped/global API for that key. Any key the chart
+# does not model can still be added there and is emitted verbatim.
 nameOverride: "br-sisbajud"
 fullnameOverride: ""
 namespaceOverride: ""
 
+# =============================================================================
+# global — the env-wide contract (lerian-common). Set these ONCE per environment
+# (umbrella / GitOps layer). Every block is empty by default, so the chart falls
+# back to its own defaults. A native brSisbajud.configmap.<KEY> still wins.
+# =============================================================================
 global:
   imageRegistry: ""
   imagePullSecrets: []
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets TLS/ssl defaults
+  # for the masks below in one knob (e.g. "aws" => POSTGRES_SSLMODE=require,
+  # REDIS_TLS=true). Leave "" for self-managed / bundled infra. Endpoints
+  # (host/port/user) still come from global.datastores.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Shared datastore masks (lerian-common.datastore.value).
+  # postgres: host | port | user | name | ssl | replicaHost
+  # redis:    host ("host:port") | tls | caCert
+  # Example:
+  #   datastores:
+  #     postgres: { host: "postgresql.internal", user: "br_sisbajud", name: "br_sisbajud", ssl: "require" }
+  #     redis:    { host: "valkey.internal:6379", tls: "true" }
+  datastores: {}
+  # -- Shared object storage masks (lerian-common.objectStorage.value).
+  # sisbajud: endpoint | region | bucket   -> SEAWEEDFS_S3_ENDPOINT / SEAWEEDFS_REGION / SEAWEEDFS_BUCKET
+  # sta:      endpoint | bucket            -> STA_OBJECT_STORAGE_ENDPOINT / STA_INBOUND_BUCKET
+  #                                           (+ TRANSFER_OBJECT_STORAGE_BUCKET, same bucket)
+  # Access keys are secrets: brSisbajud.secrets.SEAWEEDFS_ACCESS_KEY / SEAWEEDFS_SECRET_KEY.
+  # Example:
+  #   objectStorage:
+  #     sisbajud: { endpoint: "https://s3.sa-east-1.amazonaws.com", region: "sa-east-1", bucket: "sisbajud" }
+  #     sta:      { bucket: "br-sta-transfer" }
+  objectStorage: {}
+  # -- Env-wide environment name -> ENVIRONMENT_NAME, ENV_NAME and (by default)
+  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT. local | development | staging | e2e |
+  # test relax the app's production gates; anything else is production-like.
+  # Example: env: { name: "staging" }
+  env: {}
+  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
+  # With enabled=true and no otlpEndpoint, the pod ships to the node-local
+  # collector at http://$(HOST_IP):4317.
+  # Example: observability: { enabled: true }
+  observability: {}
+  # -- Env-wide auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
+  # Example: auth: { enabled: true, host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" }
+  auth: {}
+  # -- Env-wide streaming (lib-streaming / Redpanda / Kafka): enabled | brokers |
+  # tlsEnabled | saslMechanism | saslUsername | saslAllowPlaintext | compression |
+  # requiredAcks | batchLingerMs | importantEmitTimeoutMs. SASL password and CA
+  # cert are secrets: brSisbajud.secrets.STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT.
+  # Example:
+  #   streaming: { brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sisbajud" }
+  streaming: {}
+  # -- Env-wide multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls.
+  # The service API key is a secret: brSisbajud.secrets.MULTI_TENANT_SERVICE_API_KEY.
+  # Example: multiTenant: { enabled: true, url: "http://tenant-manager:4026", redisHost: "valkey.internal" }
+  multiTenant: {}
+  # -- Env-wide KMS (lerian-common.kms.value): vendor | vaultAddr | vaultAuthMethod |
+  # vaultRoleId | vaultMount. vendor: hashicorp-vault (default) | aws.
+  # br-sisbajud also reads awsRegion here when vendor=aws. The AppRole secret-id
+  # and the Vault token are secrets: brSisbajud.secrets.VAULT_APPROLE_SECRET_ID / VAULT_TOKEN.
+  # Example:
+  #   kms: { vendor: "hashicorp-vault", vaultAddr: "https://vault.internal:8200", vaultAuthMethod: "approle", vaultRoleId: "<role-id>", vaultMount: "transit" }
+  kms: {}
 
-# -- Default pull secret for the app + migration Job (single GHCR credential).
+# -- Default pull secret for the app + migrations/topics Jobs (single GHCR credential).
 imagePullSecrets:
   - name: ghcr-credential
 
@@ -45,6 +116,7 @@ brSisbajud:
   revisionHistoryLimit: 10
   image:
     repository: ghcr.io/lerianstudio/br-sisbajud
+    # -- Defaults to Chart.appVersion.
     tag: ""
     pullPolicy: IfNotPresent
   imagePullSecrets: []
@@ -56,7 +128,7 @@ brSisbajud:
     maxUnavailable: 1
   service:
     type: ClusterIP
-    # Matches the Dockerfile EXPOSE 4029 and SERVER_ADDRESS=:4029.
+    # Matches the Dockerfile EXPOSE 4029; SERVER_ADDRESS defaults to 0.0.0.0:<port>.
     port: 4029
     annotations: {}
   ingress:
@@ -104,41 +176,148 @@ brSisbajud:
     successThreshold: 1
     failureThreshold: 3
   nodeSelector: {}
-  tolerations: {}
+  tolerations: []
   affinity: {}
-  # -- ConfigMap entries emitted verbatim into the ConfigMap.
-  configmap:
-    ENV_NAME: "development"
-    SERVER_ADDRESS: "0.0.0.0:4029"
-    LOG_LEVEL: "info"
-  # -- Secrets emitted into the app Secret (base64-encoded by the template).
-  # Use AVP <path:...> placeholders in GitOps values, never real credentials.
-  secrets:
-    POSTGRES_PASSWORD: ""
-    REDIS_PASSWORD: ""
-  # -- Use an operator-provided Secret instead of the chart-managed one.
+
+  # ---------------------------------------------------------------------------
+  # Dedicated connection masks — override global.datastores / global.kms /
+  # global.objectStorage for THIS release only. Same fields as the global blocks.
+  # Keep empty unless this release talks to its own instance.
+  # ---------------------------------------------------------------------------
+  datastores: {}
+  kms: {}
+  objectStorage: {}
+
+  # ---------------------------------------------------------------------------
+  # Grouped parameters (lerian-common.cfgValue). Each field maps to ONE env key;
+  # the defaults are in templates/_helpers.tpl and listed in README.md. Leave a
+  # group empty to keep every default.
+  # ---------------------------------------------------------------------------
+  # -- ENVIRONMENT_NAME/ENV_NAME come from global.env.name. Fields: logLevel,
+  # defaultTenantId, deploymentMode, version, systemplaneEnabled,
+  # infraConnectTimeoutSec, dbMetricsIntervalSec, idempotencyRetryWindowSec,
+  # circuitBreakerEnabled.
+  app: {}
+  # -- address, bodyLimitBytes, tlsTerminatedUpstream, tlsCertFile, tlsKeyFile.
+  server: {}
+  # -- allowedOrigins, allowedMethods, allowedHeaders, exposeHeaders, allowCredentials.
+  # Production MUST set allowedOrigins to the real UI origins.
+  cors: {}
+  # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
+  # a bundled subchart is enabled), allowCorsWildcard, allowInsecureOtel,
+  # allowWebhookPrivateNetwork.
+  security: {}
+  # -- organizationIds (must be "global"), isDevelopment (routes the license SDK
+  # to the dev gateway). LICENSE_KEY is a secret.
+  license: {}
+  # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
+  # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
+  postgres: {}
+  # -- Redis tuning: db, protocol, poolSize, minIdleConns, readTimeout,
+  # writeTimeout, dialTimeout, poolTimeout, maxRetries, minRetryBackoff,
+  # maxRetryBackoff, masterName. Connection identity lives in datastores.
+  redis: {}
+  # -- KMS knobs not covered by the kms mask: timeoutSec, tokenRenewEnabled,
+  # tokenRenewMinIntervalSec, awsEndpointUrl (LocalStack only).
+  vault: {}
+  # -- Envelope-encryption layer: dekCacheTtl, dekCacheMaxEntries, hmacCoexistenceWindow.
+  crypto: {}
+  # -- Remittance layout: responseLayout (auto|v111|v2026), remittanceLayouts (CSV of v111,v2026).
+  layout: {}
+  # -- STA integration (br-sta): fileLockTtl, consumerEnabled, consumerGroup,
+  # consumerRetryBudget, sourceProduct, bacenSystemCode, expectedTenantSt,
+  # maxInboundSizeBytes, transfersEnabled, transfersBaseUrl, documentTypeAjud302,
+  # documentTypeAjud309, clientId. STA_CLIENT_SECRET is a secret. The buckets and
+  # endpoint come from objectStorage.sta.
+  sta: {}
+  # -- Background workers. One sub-map per worker:
+  #   permanentBlockExpiry:  { enabled, scanInterval, batchSize }
+  #   kekRewrapBackfill:     { enabled, scanInterval, batchSize }
+  #   rehashBackfill:        { enabled, scanInterval, batchSize, dropPreviousKeyEnabled }
+  #   reconciliation:        { enabled, scanInterval, batchSize, intensifiedEnabled,
+  #                            intensifiedScanInterval, nearDeadlinePercent }
+  #   slaAlert:              { enabled, scanInterval }
+  #   returnFile:            { enabled, scanInterval, limit, environment }
+  #   informationReturnFile: { enabled, scanInterval, limit }
+  #   informationRequest:    { enabled, scanInterval, batchSize, lockTtl }   (opt-in)
+  #   monitoringExpiry:      { enabled, scanInterval, batchSize }            (opt-in)
+  #   execution:             { enabled, orchestratorLockTtl, orchestratorRenewInterval,
+  #                            unblockScanInterval, unblockBatchSize }
+  #   processingLockReaper:  { enabled, intervalSec }
+  workers: {}
+  # -- Transactional outbox: enabled, tableName, dispatchIntervalSec, batchSize,
+  # publishMaxAttempts, publishBackoffMs, retryWindowSec, maxDispatchAttempts,
+  # processingTimeoutSec, maxFailedPerBatch, includeTenantMetrics,
+  # priorityEventTypes, allowEmptyTenant.
+  outbox: {}
+  # -- Per-app streaming identity: cloudeventsSource (must stay "br-sisbajud"),
+  # clientId, healthCheckTimeout. Brokers/TLS/SASL come from global.streaming.
+  streaming: {}
+  # -- Core balance consumer (all optional): group, dedupTtl, retryBudget.
+  balanceConsumer: {}
+  # -- Midaz ledger integration: balanceTopic, balanceConsumerGroup,
+  # balanceDefaultAccountType, crmMode (legacy|embedded), manifestCheckInterval.
+  midaz: {}
+  # -- Inbound auth extras: trustedProxies, productName. enabled/host come from global.auth.
+  auth: {}
+  # -- Access-manager declaration publisher (lib-auth WireFromEnv):
+  # declarationEnabled, host, m2mClientId. IDP_M2M_CLIENT_SECRET is a secret.
+  identity: {}
+  # -- M2M credential provider (multi-tenant): targetService, credentialCacheTtlSec.
+  m2m: {}
+  # -- OTEL identity: serviceName, libraryName. enabled/endpoint come from global.observability.
+  observability: {}
+  # -- Rate limiting (lerian-common.rateLimit.env): enabled, max, windowSec,
+  # aggressiveMax, aggressiveWindowSec, relaxedMax, relaxedWindowSec,
+  # allowFailOpen, allowDisabled, redisTimeoutMs.
+  rateLimit: {}
+  # -- Swagger: enabled, title, description, version, host, schemes, basePath, leftDelim, rightDelim.
+  swagger: {}
+  # -- Pagination: maxLimit, maxMonthDateRange.
+  pagination: {}
+  # -- Admin read API: maxFileContentBytes, maxAuditVerifyWindow.
+  admin: {}
+
+  # -- Escape hatch: native env keys emitted verbatim into the ConfigMap. A key
+  # here wins over the grouped/global parameters above. Empty by default.
+  configmap: {}
+  # -- Secret keys (stringData). Credentials only, never in configmap. Use AVP
+  # <path:...> placeholders in GitOps values, never real credentials. Keys the
+  # chart models: POSTGRES_PASSWORD, POSTGRES_REPLICA_PASSWORD, REDIS_PASSWORD,
+  # LICENSE_KEY, VAULT_TOKEN, VAULT_APPROLE_SECRET_ID, SEAWEEDFS_ACCESS_KEY,
+  # SEAWEEDFS_SECRET_KEY, STA_CLIENT_SECRET, IDP_M2M_CLIENT_SECRET,
+  # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
+  # MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
+  secrets: {}
+  # -- Use an operator-provided Secret instead of the chart-managed one. The
+  # chart then skips its secret fail-fast checks: the Secret must carry every
+  # credential the enabled features need.
   useExistingSecret: false
   existingSecretName: ""
-  # -- Extra env vars rendered as explicit `env:` entries on the pod.
+  # -- Extra env vars rendered as explicit `env:` entries on the pod (a list of
+  # {name, value|valueFrom}). They win over the ConfigMap and the Secret.
   extraEnvVars: []
 
 # =============================================================================
 # Detached migrations — ArgoCD PreSync Secret + Job that applies the SQL schema
 # to the br_sisbajud database before the app boots. The br-sisbajud-migrations
-# image runs golang-migrate against the /migrations directory.
+# image runs golang-migrate against the /migrations directory. The connection
+# follows the app's resolved POSTGRES_* values unless overridden here.
 # =============================================================================
 migrations:
   enabled: true
   image:
     repository: ghcr.io/lerianstudio/br-sisbajud-migrations
+    # -- Defaults to Chart.appVersion.
     tag: ""
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   waitImage: busybox:1.36
   useExistingSecret: false
   existingSecretName: ""
-  # -- Postgres connection for the migration Job. Empty fields fall back to
-  # brSisbajud.configmap / brSisbajud.secrets values.
+  # -- Postgres connection for the migration Job. Empty fields fall back to the
+  # app's resolved POSTGRES_* values (configmap > datastores > global > default)
+  # and brSisbajud.secrets.POSTGRES_PASSWORD.
   postgres:
     host: ""
     port: ""
@@ -158,17 +337,22 @@ migrations:
 
 # =============================================================================
 # Detached topic provisioning — ArgoCD PreSync Job that idempotently ensures the
-# reactive-bridge Redpanda topics (and their .dlq siblings) exist before the app
-# boots. The br-sisbajud-topics image runs `rpk topic create` (list-then-create)
-# reusing the same STREAMING_* env the app consumes (resolved from
-# brSisbajud.extraEnvVars / brSisbajud.configmap — no duplicated secret refs).
-# midaz.balance.changed is NOT listed: Midaz owns and creates it; br-sisbajud
-# only consumes it.
+# Redpanda topics exist before the app boots (list-then-create `rpk`). It reuses
+# the app's resolved STREAMING_* connection (global.streaming / configmap /
+# extraEnvVars); SASL password and CA cert come from a dedicated PreSync Secret
+# (or from the existing Secret / extraEnvVars valueFrom).
+#
+# lib-streaming v4 topics (app 1.0.x): the app's own `lerian.streaming.br-sisbajud`
+# and `.dlq` are also created by the app's Builder when its principal holds the
+# CreateTopics ACL; `.commands` is NOT — a consumer on a broker with auto-create
+# off never creates it and the balance trigger fails silently. All three are
+# listed here. `lerian.streaming.ledger` is Midaz's to create; never list it.
 # =============================================================================
 topics:
   enabled: true
   image:
     repository: ghcr.io/lerianstudio/br-sisbajud-topics
+    # -- Defaults to Chart.appVersion.
     tag: ""
     pullPolicy: IfNotPresent
   imagePullSecrets: []
@@ -176,12 +360,9 @@ topics:
   replicationFactor: 1        # per-env; 3 on multi-broker prod
   retentionMs: ""             # optional; empty = broker default
   list:
-    - br-sisbajud.ledger.balance.changed
-    - br-sisbajud.ledger.balance.changed.dlq
-    - br-sisbajud.block_account.created
-    - br-sisbajud.block_account.created.dlq
-    - br-sisbajud.kek.rotated
-    - br-sisbajud.kek.rotated.dlq
+    - lerian.streaming.br-sisbajud
+    - lerian.streaming.br-sisbajud.dlq
+    - lerian.streaming.br-sisbajud.commands
   backoffLimit: 3
   activeDeadlineSeconds: 600
   ttlSecondsAfterFinished: 600
@@ -192,11 +373,18 @@ topics:
     limits:
       memory: 256Mi
 
+# -- Values block for the lerian-common library dependency. INERT (a library
+# chart renders nothing and reads no values), but it must be declared: Helm
+# injects a values key for every declared dependency, and the closed root schema
+# (additionalProperties: false) would otherwise reject the render with
+# "additional properties 'lerian-common-helm' not allowed".
+lerian-common-helm: {}
+
 # =============================================================================
-# Bundled infra subcharts — DISABLED by default. On the target environments
-# Postgres and Redis are external and pre-provisioned; wire hosts via
-# brSisbajud.configmap.POSTGRES_HOST / REDIS_HOST. Enable these only for a
-# self-contained install.
+# Bundled infra subcharts — DISABLED by default. External Postgres and Redis are
+# the production path: wire them via global.datastores (or
+# brSisbajud.datastores). Enable these only for a self-contained install; their
+# passwords are then single-sourced from the subchart Secrets.
 # =============================================================================
 postgresql:
   enabled: false

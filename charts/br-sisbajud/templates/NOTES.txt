@@ -1,4 +1,5 @@
-br-sisbajud (SISBAJUD plugin) has been deployed to namespace {{ include "global.namespace" . }}.
+br-sisbajud {{ .Values.brSisbajud.image.tag | default .Chart.AppVersion }} (SISBAJUD plugin) has been deployed to namespace {{ include "global.namespace" . }}.
+Environment: ENVIRONMENT_NAME={{ include "br-sisbajud.envName" . }}
 
 Verify:
   kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
@@ -7,6 +8,27 @@ Verify:
 {{- if .Values.migrations.enabled }}
 
 Migrations: an ArgoCD PreSync Job ({{ include "br-sisbajud-migrations.fullname" . }})
-applies the SQL schema to the `br_sisbajud` database before the app boots.
+applies the SQL schema to the database before the app boots.
 Under plain `helm install` (no ArgoCD) the PreSync hook Job still runs as a normal Job.
 {{- end }}
+{{- if and .Values.topics.enabled (eq (include "br-sisbajud.isTrue" (include "br-sisbajud.streamingEnabledRaw" .)) "true") }}
+
+Topics: a PreSync Job ({{ include "br-sisbajud-topics.fullname" . }}) ensures: {{ join ", " .Values.topics.list }}.
+{{- end }}
+{{- $removed := include "br-sisbajud.removedKeys" . | fromJsonArray }}
+{{- $set := list }}
+{{- range $k := $removed }}
+{{- if or (hasKey ($.Values.brSisbajud.configmap | default dict) $k) (hasKey ($.Values.brSisbajud.secrets | default dict) $k) }}
+{{- $set = append $set $k }}
+{{- end }}
+{{- end }}
+{{- if $set }}
+
+WARNING: these keys are set but app 1.0.x no longer reads them, so the chart no
+longer emits them: {{ join ", " $set }}.
+The Midaz/CRM connector routing and credentials now live per institution in
+institution_config.connector_metadata (admin API). See docs/UPGRADE-2.0.md.
+{{- end }}
+
+Institution onboarding is NOT configured here: seed one institution_config row per
+institution via the admin API (POST /v1/institutions) before orders can execute.

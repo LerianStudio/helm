@@ -1,3 +1,4 @@
+{{- include "plugin-access-manager.validateJwksTls" (dict "context" . "component" "identity") -}}
 {{- /* Datastore masks (lerian-common): redis connection identity + TOPOLOGY via
    global.datastores.redis (shared) — set ONCE, both auth+identity consume. Native
    identity.configmap.<KEY> and dedicated .Values.datastores still win. Defaults keep

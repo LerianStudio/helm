@@ -710,3 +710,79 @@ which the auth component alone reads.
 {{- fail "MFA_ENABLED is set both in auth.configmap and in auth.extraEnvVars. Both render into the same ConfigMap data map, so the key would be emitted twice and the effective value is whatever the YAML parser keeps — undefined behavior. Keep it in auth.configmap.MFA_ENABLED and remove it from auth.extraEnvVars." -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+plugin-access-manager.validateJwksTls — refuse to render a component that the
+application would refuse to boot: the Caradhras JWKS reached over plain http in
+an environment the application treats as production.
+
+Since app 3.3.0, auth and identity fetch the Caradhras JWKS (the trust root for
+token verification) over https only, unless ENV_NAME is development, staging or
+local, case-insensitive. Any other value — production, an empty value, a typo —
+fails closed, and the application reads nothing but ENV_NAME to decide, so no
+setting relaxes it:
+  - auth re-serves the Caradhras JWKS from <AUTHORIZER_ADDRESS>/.well-known/jwks
+    and exits at startup when that is not https ("jwks cache upstream must use
+    https").
+  - identity verifies M2M tokens against AUTH_M2M_JWKS_URL or, when that is
+    empty, <AUTHORIZER_ADDRESS>/.well-known/jwks; lib-auth refuses a plaintext
+    URL that is not loopback.
+Caradhras itself serves plain http, and the chart's default AUTHORIZER_ADDRESS is
+its in-cluster Service over http, so a production-like install that keeps the
+default crash-loops on the upgrade that crosses 3.3.0. The process exits before
+its telemetry flushes: the reason is only in `kubectl logs --previous`, and
+`helm upgrade --wait/--atomic` reports a timeout. Failing here names the fix.
+
+Skipped where the application boots anyway:
+  - ENV_NAME resolves to development, staging or local (same resolution as the
+    ConfigMap: native key, then global.env.name, then the cloud preset);
+  - the component's image tag is a semantic version below 3.3.0. A tag that is
+    not a plain version is checked, since it cannot be placed before the gate;
+  - auth with SD_ENABLED=true: service discovery may resolve Caradhras to an
+    https endpoint at runtime, which the chart cannot see;
+  - identity with AUTH_ENABLED other than "true": the pass-through authenticator
+    fetches no JWKS;
+  - identity with a loopback JWKS URL, which lib-auth accepts over http.
+
+Input (dict): context (root .), component ("auth" | "identity").
+*/}}
+{{- define "plugin-access-manager.validateJwksTls" -}}
+{{- $ctx := .context -}}
+{{- $component := .component -}}
+{{- $values := index $ctx.Values $component -}}
+{{- $cm := $values.configmap | default dict -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ctx "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") | trim | lower -}}
+{{- $skip := has $envName (list "development" "staging" "local") -}}
+{{- $tag := ($values.image | default dict).tag | default (include "plugin.version" $ctx) | toString -}}
+{{- if regexMatch `^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$` $tag -}}
+{{- if semverCompare "<3.3.0-0" $tag -}}
+{{- $skip = true -}}
+{{- end -}}
+{{- end -}}
+{{- $addr := $cm.AUTHORIZER_ADDRESS | default (printf "http://%s:%v" (include "plugin-caradhras.fullname" $ctx) (include "caradhras.servicePort" $ctx)) | toString | trim -}}
+{{- $jwks := printf "%s/.well-known/jwks" (trimSuffix "/" $addr) -}}
+{{- $source := printf "%s.configmap.AUTHORIZER_ADDRESS" $component -}}
+{{- if not $cm.AUTHORIZER_ADDRESS -}}
+{{- $source = printf "the chart default for %s.configmap.AUTHORIZER_ADDRESS, the in-cluster Caradhras Service" $component -}}
+{{- end -}}
+{{- if eq $component "auth" -}}
+{{- if eq (toString ($cm.SD_ENABLED | default "false")) "true" -}}
+{{- $skip = true -}}
+{{- end -}}
+{{- else -}}
+{{- if ne (toString ($cm.AUTH_ENABLED | default "true")) "true" -}}
+{{- $skip = true -}}
+{{- end -}}
+{{- $explicit := toString ($cm.AUTH_M2M_JWKS_URL | default "") | trim -}}
+{{- if $explicit -}}
+{{- $jwks = $explicit -}}
+{{- $source = "identity.configmap.AUTH_M2M_JWKS_URL" -}}
+{{- end -}}
+{{- if regexMatch `^[A-Za-z][A-Za-z0-9+.-]*://(localhost|127\.[0-9.]+|\[::1\])(:[0-9]+)?(/|$)` $jwks -}}
+{{- $skip = true -}}
+{{- end -}}
+{{- end -}}
+{{- if and (not $skip) (not (hasPrefix "https://" (lower $jwks))) -}}
+{{- fail (printf "%s would crash-loop at startup: ENV_NAME resolves to %q and the Caradhras JWKS it fetches is %q, from %s. Since app 3.3.0 the JWKS must be fetched over https whenever ENV_NAME is not development, staging or local, and no setting relaxes this; the process exits before its telemetry flushes, so the reason shows only in `kubectl logs --previous` and helm reports a timeout. Caradhras serves plain http, so put TLS in front of it — caradhras.ingress, with a certificate from a public CA, because the images trust only the default CA bundle — and set auth.configmap.AUTHORIZER_ADDRESS and identity.configmap.AUTHORIZER_ADDRESS to the SAME https URL: identity also pins that address as the expected token issuer. If this environment is really not production, set global.env.name to development, staging or local instead. See docs/UPGRADE-9.5.8.md." $component $envName $jwks $source) -}}
+{{- end -}}
+{{- end }}

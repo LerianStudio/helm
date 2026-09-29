@@ -249,9 +249,35 @@ helm.sh/hook-delete-policy: before-hook-creation
 argocd.argoproj.io/hook: Sync
 argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 {{- else -}}
+helm.sh/hook: pre-install,pre-upgrade
+helm.sh/hook-weight: "-1"
+helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 argocd.argoproj.io/hook: PreSync
 argocd.argoproj.io/hook-weight: "-1"
 argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+{{- end -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.presyncSecretAnnotations — the dedicated migrations/topics hook
+Secrets: created one weight BEFORE their Job, and never deleted on success (the
+Job still has to read them); replaced on the next run. Input: dict "bundled".
+*/}}
+{{- define "br-sisbajud.presyncSecretAnnotations" -}}
+{{- if .bundled -}}
+helm.sh/hook: post-install,post-upgrade
+helm.sh/hook-weight: "-1"
+helm.sh/hook-delete-policy: before-hook-creation
+argocd.argoproj.io/hook: Sync
+argocd.argoproj.io/hook-weight: "-1"
+argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+{{- else -}}
+helm.sh/hook: pre-install,pre-upgrade
+helm.sh/hook-weight: "-2"
+helm.sh/hook-delete-policy: before-hook-creation
+argocd.argoproj.io/hook: PreSync
+argocd.argoproj.io/hook-weight: "-2"
+argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 {{- end -}}
 {{- end -}}
 
@@ -875,6 +901,53 @@ allowInsecureTLS: {{ $allowInsecureTLS | quote }}
 fromSubchart: {{ ternary "true" "false" (eq (toString $pgFromSubchart) "true") | quote }}
 bundled: {{ ternary "true" "false" $pgFromSubchartBundled | quote }}
 secretName: {{ $secretName | quote }}
+{{- /* POSTGRES_PASSWORD source for the migrations container — the SAME credential
+   the app uses, so the two can never drift:
+     1. bundled subchart / postgresql.auth.existingSecret -> that Secret (secretKeyRef)
+     2. migrations.useExistingSecret                    -> migrations.existingSecretName
+     3. migrations.postgres.password (explicit override) -> the dedicated hook Secret
+     4. brSisbajud.extraEnvVars POSTGRES_PASSWORD        -> the same entry, verbatim
+     5. brSisbajud.useExistingSecret                     -> brSisbajud.existingSecretName
+     6. brSisbajud.secrets.POSTGRES_PASSWORD             -> copied into the hook Secret
+   (the app Secret does not exist yet during PreSync/pre-install)
+   otherwise the render fails instead of migrating with an empty password. */ -}}
+{{- $envByName := dict -}}
+{{- range (.Values.brSisbajud.extraEnvVars | default list) -}}{{- if .name -}}{{- $_ := set $envByName .name . -}}{{- end -}}{{- end -}}
+{{- $appSecrets := .Values.brSisbajud.secrets | default dict -}}
+{{- $pwEnv := dict -}}
+{{- $hookPassword := "" -}}
+{{- if $pgFromSubchart -}}
+{{- $pwEnv = include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | fromYamlArray | first -}}
+{{- else if .Values.migrations.useExistingSecret -}}
+{{- $pwEnv = dict "name" "POSTGRES_PASSWORD" "valueFrom" (dict "secretKeyRef" (dict "name" .Values.migrations.existingSecretName "key" "POSTGRES_PASSWORD")) -}}
+{{- else if $mp.password -}}
+{{- $hookPassword = $mp.password -}}
+{{- else if index $envByName "POSTGRES_PASSWORD" -}}
+{{- $pwEnv = index $envByName "POSTGRES_PASSWORD" -}}
+{{- else if .Values.brSisbajud.useExistingSecret -}}
+{{- $pwEnv = dict "name" "POSTGRES_PASSWORD" "valueFrom" (dict "secretKeyRef" (dict "name" .Values.brSisbajud.existingSecretName "key" "POSTGRES_PASSWORD")) -}}
+{{- else if $appSecrets.POSTGRES_PASSWORD -}}
+{{- $hookPassword = $appSecrets.POSTGRES_PASSWORD -}}
+{{- else -}}
+{{- fail "\n\nERROR: br-sisbajud: the migrations Job has no Postgres password: none of the app's sources is set (bundled postgresql, postgresql.auth.existingSecret, brSisbajud.useExistingSecret, brSisbajud.extraEnvVars POSTGRES_PASSWORD, brSisbajud.secrets.POSTGRES_PASSWORD).\n  set: brSisbajud.secrets.POSTGRES_PASSWORD (or migrations.postgres.password / migrations.useExistingSecret), or disable it with migrations.enabled=false\n" -}}
+{{- end -}}
+{{- if $hookPassword -}}
+{{- $pwEnv = dict "name" "POSTGRES_PASSWORD" "valueFrom" (dict "secretKeyRef" (dict "name" (include "br-sisbajud-migrations.fullname" .) "key" "POSTGRES_PASSWORD")) -}}
+{{- end }}
+passwordEnv: {{ toJson $pwEnv | quote }}
+hookSecret: {{ ternary "true" "false" (ne (toString $hookPassword) "") | quote }}
+{{- end -}}
+
+{{/*
+br-sisbajud.migrationsHookPassword — the value the dedicated migrations hook
+Secret carries (sources 3 and 6 above); empty when another source is used.
+*/}}
+{{- define "br-sisbajud.migrationsHookPassword" -}}
+{{- $mp := .Values.migrations.postgres | default dict -}}
+{{- $c := include "br-sisbajud.migrationsConn" . | fromYaml -}}
+{{- if eq $c.hookSecret "true" -}}
+{{- $mp.password | default (.Values.brSisbajud.secrets | default dict).POSTGRES_PASSWORD -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -910,15 +983,7 @@ an app initContainer so the app never boots on an unmigrated schema.
       value: {{ include "br-sisbajud.envName" . | quote }}
     - name: POSTGRES_CONNECT_TIMEOUT_SEC
       value: {{ $pgConnectTimeout | quote }}
-    {{- if $pgFromSubchart }}
-    {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 4 }}
-    {{- else }}
-    - name: POSTGRES_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: {{ $secretName }}
-          key: POSTGRES_PASSWORD
-    {{- end }}
+    - {{ $c.passwordEnv | fromJson | toYaml | nindent 6 | trim }}
   securityContext:
     runAsUser: 65532
     runAsGroup: 65532

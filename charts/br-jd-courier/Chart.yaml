@@ -1,9 +1,10 @@
 apiVersion: v2
 name: br-jd-courier-helm
 description: >-
-  Helm chart for br-jd-courier — the Lerian JD Courier, which carries SPB and Pix
-  traffic between JD Consultores and the Lerian rail engines. One binary, four role
-  Deployments (spb-consumer, spb-sender, pix-ingress, admin) off ONE image.
+  Helm chart for br-jd-courier — the Lerian JD Courier, which carries SPB and
+  Pix traffic between JD Consultores and the Lerian rail engines. One binary,
+  four role Deployments (spb-consumer, spb-sender, pix-ingress, admin) off ONE
+  image.
 
 type: application
 annotations:

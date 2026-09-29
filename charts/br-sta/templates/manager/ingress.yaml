@@ -4,7 +4,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "br-sta.componentFullname" (dict "root" . "component" "manager") }}
+  name: {{ $svcName }}
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-sta.labels" (dict "root" . "component" "manager") | nindent 4 }}

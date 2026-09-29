@@ -274,6 +274,8 @@ manager:
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   podAnnotations: {}
+  # -- Annotations on the Deployment object itself (e.g. an ArgoCD sync-option).
+  deploymentAnnotations: {}
   deploymentUpdate:
     type: RollingUpdate
     maxSurge: 1
@@ -358,6 +360,8 @@ worker:
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   podAnnotations: {}
+  # -- Annotations on the Deployment object itself (e.g. an ArgoCD sync-option).
+  deploymentAnnotations: {}
   terminationGracePeriodSeconds: 60
   # -- The probe-server bind (WorkerMode serves /health, /readyz, /version,
   # /metrics only). No Service is rendered for the worker.

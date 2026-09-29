@@ -68,6 +68,8 @@ manager:
     port: 8080          # Service port -> targetPort http (4028)
 ```
 
+The manager Ingress follows the Service name, so an existing Ingress is updated in place (no duplicate host). `manager.deploymentAnnotations` / `worker.deploymentAnnotations` annotate the Deployment objects, e.g. a one-off `argocd.argoproj.io/sync-options: Replace=true,Force=true` when an older release left a same-named Deployment with a different (immutable) selector.
+
 ## Uninstalling
 
 ```console

@@ -11,6 +11,10 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-sta.labels" (dict "root" . "component" "worker") | nindent 4 }}
+  {{- with .Values.worker.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   revisionHistoryLimit: {{ $w.revisionHistoryLimit | default 10 }}
   # Background jobs without leader election for every loop: exactly ONE replica,

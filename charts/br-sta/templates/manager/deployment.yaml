@@ -10,6 +10,10 @@ metadata:
   namespace: {{ include "global.namespace" . }}
   labels:
     {{- include "br-sta.labels" (dict "root" . "component" "manager") | nindent 4 }}
+  {{- with .Values.manager.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   revisionHistoryLimit: {{ $m.revisionHistoryLimit | default 10 }}
   {{- if not $m.autoscaling.enabled }}

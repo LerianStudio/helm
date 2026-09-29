@@ -783,7 +783,9 @@ it:
     service discovery resolves when it is on; there is no loopback exemption.
     Boot fails with "jwks cache upstream must use https".
   - identity, only when PLUGIN_AUTH_ENABLED parses true (strconv.ParseBool:
-    1, t, T, TRUE, true, True): AUTH_M2M_JWKS_URL (trimmed) or, when empty, the
+    1, t, T, TRUE, true, True): AUTH_M2M_JWKS_URL (trimmed; from
+    identity.configmap, else identity.extraEnvVars, which renders into the
+    same ConfigMap) or, when empty, the
     same derivation from AUTHORIZER_ADDRESS. lib-auth accepts https, or http
     to a loopback host. Boot fails with "initializing m2m jwks key source".
 
@@ -837,12 +839,23 @@ Input (dict): context (root .), component ("auth" | "identity").
 {{- if not (has (toString ($cm.AUTH_ENABLED | default "true")) (list "1" "t" "T" "TRUE" "true" "True")) -}}
 {{- $check = false -}}
 {{- end -}}
+{{- $extra := $values.extraEnvVars | default dict -}}
 {{- $explicit := trim (toString ($cm.AUTH_M2M_JWKS_URL | default "")) -}}
+{{- $explicitFrom := "identity.configmap.AUTH_M2M_JWKS_URL" -}}
+{{- if and (not $explicit) (kindIs "map" $extra) -}}
+{{- $explicit = trim (toString (index $extra "AUTH_M2M_JWKS_URL" | default "")) -}}
+{{- $explicitFrom = "identity.extraEnvVars.AUTH_M2M_JWKS_URL" -}}
+{{- end -}}
 {{- if $explicit -}}
 {{- $url = $explicit -}}
-{{- $source = "identity.configmap.AUTH_M2M_JWKS_URL, which overrides the URL derived from AUTHORIZER_ADDRESS: make it https too, or remove it" -}}
+{{- $source = printf "%s, which overrides the URL derived from AUTHORIZER_ADDRESS: make it https too, or remove it" $explicitFrom -}}
 {{- end -}}
 {{- $loopbackOk = true -}}
+{{- end -}}
+{{- if $check -}}
+{{- /* The application url.Parse-s this URL and exits on an error; urlParse is
+       the same parser and aborts the render with "unable to parse url". */ -}}
+{{- $_ := urlParse $url -}}
 {{- end -}}
 {{- $scheme := trimSuffix ":" (regexFind `^[A-Za-z][A-Za-z0-9+.-]*:` $url) | lower -}}
 {{- $bootsAnyway := or (eq $scheme "https") (and $loopbackOk (eq $scheme "http") (include "plugin-access-manager.jwksUrlHostIsLoopback" $url)) -}}

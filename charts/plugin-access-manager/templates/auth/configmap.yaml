@@ -5,6 +5,7 @@
 {{- end -}}
 {{- include "plugin-access-manager.validateSsoCallbackUrl" . -}}
 {{- include "plugin-access-manager.validateMfaEnabled" . -}}
+{{- include "plugin-access-manager.validateStartup" . -}}
 {{- include "plugin-access-manager.validateJwksTls" . -}}
 {{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
    global.datastores.<type> (shared, env-wide) with native auth.configmap.<KEY> and

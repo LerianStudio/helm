@@ -5,7 +5,7 @@
 - Chart type: `multi-component`
 - Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
-- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence.
+- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render otherwise (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - Initial admin: the bootstrap admin (`admin@midaz.tech`) is first seeded from `init_data.json` baked into the `ghcr.io/lerianstudio/caradhras` image at first boot, with a placeholder password. While `auth.initUser.enabled` is true, a `post-install` hook Job then sets that account's password to the operator-supplied credential: `auth.initUser.adminPassword` when `auth.initUser.useExistingSecret=false`, otherwise the `adminPasswordSecretKey` value from the Secret named by `auth.initUser.adminPasswordSecretName`. The hook runs on `helm install` only, never on upgrades, so upgrades and later value changes neither reset the password nor recreate a deleted admin account, and passwords rotated inside Caradhras are preserved. If `auth.initUser.enabled=false`, the chart never touches the account and the image placeholder stays live; rotate it immediately after the first login.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
@@ -377,6 +377,7 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
 | `caradhras.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
 | `caradhras.service.port` | Service port | `8000` |
+| `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
 | `caradhras.migrations.image.tag` | Image tag — MUST stay on the `1.2.0-beta.x` train, not the unrelated `3.2.0-beta.x` train also present in this GHCR repo | `1.2.0-beta.59` |
@@ -393,6 +394,23 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
+
+#### Production: reach Caradhras over HTTPS
+
+Since application `3.3.0`, auth and identity fetch the Caradhras JWKS over
+`https` only, unless `ENV_NAME` is `development`, `staging` or `local`; no
+setting relaxes this. Caradhras serves plain http, and the default
+`AUTHORIZER_ADDRESS` is its in-cluster Service, so a production install has to
+put TLS in front of it with `caradhras.ingress`, using a certificate from a
+public CA, and set `auth.configmap.AUTHORIZER_ADDRESS` and
+`identity.configmap.AUTHORIZER_ADDRESS` to the **same** `https` URL (identity
+also pins that address as the M2M token issuer). Keep that ingress internal:
+it exposes the Caradhras admin panel and API.
+
+The chart **refuses to render** an `ENV_NAME` outside that list together with a
+JWKS URL the application would reject, because the pods would otherwise
+crash-loop before logging anything to your collector. Worked example, pre-upgrade
+check and caveats: `docs/UPGRADE-9.5.8.md`.
 
 #### Session store (required above one replica)
 

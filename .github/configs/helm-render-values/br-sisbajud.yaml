@@ -1,0 +1,46 @@
+# CI-only render fixture for charts/br-sisbajud (render gate + install test).
+# NOT a production example: every host is a placeholder and every credential is
+# a dummy "sample" value. It exercises the canonical global-first shape with the
+# chart's production-like default (ENVIRONMENT_NAME=production), so every
+# fail-fast gate that production enforces (LICENSE_KEY, POSTGRES_PASSWORD,
+# VAULT AppRole, STA bucket, streaming brokers) has to be satisfied here.
+global:
+  datastores:
+    postgres:
+      host: "postgres.example.invalid"
+      ssl: "require"
+    redis:
+      host: "valkey.example.invalid:6379"
+      tls: "true"
+  objectStorage:
+    sisbajud:
+      endpoint: "https://s3.example.invalid"
+      region: "us-east-1"
+      bucket: "sisbajud"
+    sta:
+      bucket: "br-sta-transfer"
+  streaming:
+    brokers: "redpanda.example.invalid:9093"
+    tlsEnabled: true
+    saslMechanism: "SCRAM-SHA-256"
+    saslUsername: "br-sisbajud"
+  kms:
+    vendor: "hashicorp-vault"
+    vaultAddr: "https://vault.example.invalid:8200"
+    vaultAuthMethod: "approle"
+    vaultRoleId: "sample-role-id"
+    vaultMount: "transit"
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth.example.invalid:4000"
+
+brSisbajud:
+  cors:
+    allowedOrigins: "https://br-sisbajud.example.invalid"
+  secrets:
+    POSTGRES_PASSWORD: "sample"
+    REDIS_PASSWORD: "sample"
+    LICENSE_KEY: "sample"
+    VAULT_APPROLE_SECRET_ID: "sample"
+    STREAMING_SASL_PASSWORD: "sample"
+    STREAMING_TLS_CA_CERT: "c2FtcGxlLWNh"  # base64("sample-ca"), dummy

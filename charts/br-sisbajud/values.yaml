@@ -381,10 +381,11 @@ topics:
 lerian-common-helm: {}
 
 # =============================================================================
-# Bundled infra subcharts — DISABLED by default. External Postgres and Redis are
-# the production path: wire them via global.datastores (or
-# brSisbajud.datastores). Enable these only for a self-contained install; their
-# passwords are then single-sourced from the subchart Secrets.
+# Bundled infra subcharts — DISABLED by default. External PostgreSQL, Valkey and
+# S3 object storage are the production path: wire them via global.datastores /
+# global.objectStorage (or the brSisbajud.* dedicated masks). Enable these only
+# for a self-contained (dev / evaluation) install. Kafka/Redpanda and the KMS
+# (Vault / AWS KMS) are ALWAYS external.
 #
 # Images: the bitnami/* tags the pinned subcharts default to were removed from
 # Docker Hub; bitnamilegacy/* serves the SAME tags (checked with a registry
@@ -416,3 +417,85 @@ valkey:
   image:
     repository: bitnamilegacy/valkey
     tag: "8.0.2-debian-12-r6"
+
+# -- Bundled SeaweedFS (S3-compatible object storage), DISABLED by default.
+# When enabled and no endpoint is set explicitly, SEAWEEDFS_S3_ENDPOINT and
+# STA_OBJECT_STORAGE_ENDPOINT derive from this subchart's S3 Service
+# (http://<seaweedfs.nameOverride|seaweedfs>-s3.<release namespace>.svc.cluster.local:<s3.port>).
+# The app never creates buckets: the chart's own bucket Job (seaweedfsBuckets
+# below) creates SEAWEEDFS_BUCKET and STA_INBOUND_BUCKET/TRANSFER bucket from the
+# resolved values on every install/upgrade.
+# DEV-ONLY: S3 auth is OFF (s3.enableAuth: false). To turn it on, set
+# s3.enableAuth: true + s3.existingConfigSecret (the SeaweedFS identities JSON)
+# and put the matching keys in brSisbajud.secrets.SEAWEEDFS_ACCESS_KEY /
+# SEAWEEDFS_SECRET_KEY (Secret only, never the ConfigMap).
+seaweedfs:
+  enabled: false
+  global:
+    # The subchart otherwise creates a FIXED-NAME cluster-scoped ClusterRole that
+    # collides across releases; it only backs an optional post-migration hack.
+    createClusterRole: false
+    serviceAccountName: "br-sisbajud-seaweedfs"
+  master:
+    enabled: true
+    replicas: 1
+    # The subchart pins kubernetes.io/arch: amd64; "" drops it (multi-arch).
+    nodeSelector: ""
+    data:
+      type: "persistentVolumeClaim"
+      size: "1Gi"
+      storageClass: ""
+    logs:
+      type: "emptyDir"
+  volume:
+    enabled: true
+    replicas: 1
+    nodeSelector: ""
+    dataDirs:
+      - name: data
+        type: "persistentVolumeClaim"
+        size: "10Gi"
+        storageClass: ""
+        maxVolumes: 0
+    # The resize hook pulls bitnami/kubectl:latest (unpinned); off for the dev bundle.
+    resizeHook:
+      enabled: false
+  filer:
+    enabled: true
+    replicas: 1
+    nodeSelector: ""
+    data:
+      type: "persistentVolumeClaim"
+      size: "5Gi"
+      storageClass: ""
+    logs:
+      type: "emptyDir"
+  s3:
+    enabled: true
+    nodeSelector: ""
+    port: 8333
+    enableAuth: false
+    logs:
+      type: "emptyDir"
+
+# -- Bucket bootstrap Job for the bundled SeaweedFS (rendered only when
+# seaweedfs.enabled). Idempotent list-then-create via `weed shell`, run as a
+# Helm post-install/post-upgrade hook (ArgoCD PostSync). The bucket names come
+# from the app's resolved SEAWEEDFS_BUCKET / STA_INBOUND_BUCKET /
+# TRANSFER_OBJECT_STORAGE_BUCKET, plus any extraBuckets.
+seaweedfsBuckets:
+  image:
+    # Same image/tag the pinned seaweedfs 4.0.393 subchart runs (appVersion 3.93).
+    repository: chrislusf/seaweedfs
+    tag: "3.93"
+    pullPolicy: IfNotPresent
+  extraBuckets: []
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi

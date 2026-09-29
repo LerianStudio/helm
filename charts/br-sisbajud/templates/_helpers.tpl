@@ -130,6 +130,33 @@ standard (an explicit `false` must not coerce back to true).
 {{- end -}}
 
 {{/*
+Bundled SeaweedFS (seaweedfs subchart). The subchart names its Services after
+`seaweedfs.name` (nameOverride | "seaweedfs", NOT release-prefixed) and deploys
+into the release namespace.
+  seaweedfsEnabled  : "true" when the subchart renders.
+  seaweedfsName     : the subchart's resource-name prefix.
+  seaweedfsS3Endpoint: the in-cluster S3 URL (standalone s3 Deployment when
+                       seaweedfs.s3.enabled, else the filer-embedded S3).
+*/}}
+{{- define "br-sisbajud.seaweedfsEnabled" -}}
+{{- $sw := .Values.seaweedfs | default dict -}}
+{{- ternary "true" "false" (eq (toString $sw.enabled) "true") -}}
+{{- end -}}
+
+{{- define "br-sisbajud.seaweedfsName" -}}
+{{- $sw := .Values.seaweedfs | default dict -}}
+{{- default "seaweedfs" $sw.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "br-sisbajud.seaweedfsS3Endpoint" -}}
+{{- $sw := .Values.seaweedfs | default dict -}}
+{{- $s3 := $sw.s3 | default dict -}}
+{{- $filerS3 := ($sw.filer | default dict).s3 | default dict -}}
+{{- $port := ternary ($s3.port | default 8333) ($filerS3.port | default 8333) (eq (toString $s3.enabled) "true") -}}
+{{- printf "http://%s-s3.%s.svc.cluster.local:%v" (include "br-sisbajud.seaweedfsName" .) .Release.Namespace $port -}}
+{{- end -}}
+
+{{/*
 br-sisbajud.extraEnv — brSisbajud.extraEnvVars as a YAML map {NAME: value},
 with "__valueFrom__" for entries sourced via valueFrom. Lets the fail-fast gates
 and the topics Job see values an operator supplies as explicit pod env (the
@@ -308,7 +335,14 @@ LerianStudio/br-sisbajud config/.env.example + internal/bootstrap/config.go.
 {{- $pg := include "br-sisbajud.postgres" . | fromYaml -}}
 {{- $streamingRaw := include "br-sisbajud.streamingEnabledRaw" . -}}
 {{- $streamingOn := eq (include "br-sisbajud.isTrue" $streamingRaw) "true" -}}
-{{- $seaweedEndpoint := include $osv (dict "context" $ "dedicated" $osDed "configmap" $cm "name" "sisbajud" "field" "endpoint" "nativeKey" "SEAWEEDFS_S3_ENDPOINT" "default" "") -}}
+{{- /* Bundled SeaweedFS: with no explicit endpoint (configmap / dedicated / global
+   objectStorage), derive it from the subchart's S3 Service, same idea as the
+   bundled POSTGRES_HOST/REDIS_HOST. STA_OBJECT_STORAGE_ENDPOINT follows it. */ -}}
+{{- $seaweedDefault := "" -}}
+{{- if eq (include "br-sisbajud.seaweedfsEnabled" .) "true" -}}
+{{- $seaweedDefault = include "br-sisbajud.seaweedfsS3Endpoint" . -}}
+{{- end -}}
+{{- $seaweedEndpoint := include $osv (dict "context" $ "dedicated" $osDed "configmap" $cm "name" "sisbajud" "field" "endpoint" "nativeKey" "SEAWEEDFS_S3_ENDPOINT" "default" $seaweedDefault) -}}
 {{- $staBucket := include $osv (dict "context" $ "dedicated" $osDed "configmap" $cm "name" "sta" "field" "bucket" "nativeKey" "STA_INBOUND_BUCKET" "default" "") -}}
 {{- $telemetryDefault := "false" }}
 # --- Application -------------------------------------------------------------

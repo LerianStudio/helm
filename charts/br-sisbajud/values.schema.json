@@ -62,6 +62,14 @@
     "valkey": {
       "type": "object",
       "additionalProperties": true
+    },
+    "seaweedfs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "seaweedfsBuckets": {
+      "type": "object",
+      "additionalProperties": true
     }
   }
 }

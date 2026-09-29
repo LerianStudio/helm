@@ -8,5 +8,8 @@ dependencies:
 - name: valkey
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 2.4.7
-digest: sha256:6f094727cae2cb8fe33d33c72a1c0577571ad08fa6a393b118c6c2b494d29db0
-generated: "2026-09-29T09:41:06.003517-03:00"
+- name: seaweedfs
+  repository: https://seaweedfs.github.io/seaweedfs/helm
+  version: 4.0.393
+digest: sha256:3bd54f505db04b996675a1ae834ede136f7339c64ba081cd0e877cdb0f14fc2d
+generated: "2026-09-29T10:19:47.327388-03:00"

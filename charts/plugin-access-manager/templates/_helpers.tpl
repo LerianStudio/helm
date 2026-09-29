@@ -805,7 +805,8 @@ application boots anyway:
   - identity with an http JWKS URL on a loopback host (jwksUrlHostIsLoopback).
 It is also skipped where the chart cannot see the address, although the
 requirement still applies:
-  - auth with service discovery on (SD_ENABLED, or the legacy
+  - auth with service discovery on (SD_ENABLED, taken from auth.extraEnvVars
+    when set there like every other input, or the legacy
     SERVICE_DISCOVERY_ENABLED in auth.extraEnvVars, exactly "true"): the
     Caradhras address is resolved at runtime and goes through the same https
     gate, so discovery must resolve Caradhras to https or auth still
@@ -854,7 +855,11 @@ Input (dict): context (root .), component ("auth" | "identity").
 {{- $hint := "" -}}
 {{- if eq $component "auth" -}}
 {{- $legacySd := toString (index $extra "SERVICE_DISCOVERY_ENABLED" | default "") -}}
-{{- if or (eq (toString ($cm.SD_ENABLED | default "false")) "true") (eq $legacySd "true") -}}
+{{- $sd := toString ($cm.SD_ENABLED | default "false") -}}
+{{- if hasKey $extra "SD_ENABLED" -}}
+{{- $sd = toString (index $extra "SD_ENABLED") -}}
+{{- end -}}
+{{- if or (eq $sd "true") (eq $legacySd "true") -}}
 {{- $check = false -}}
 {{- end -}}
 {{- else -}}

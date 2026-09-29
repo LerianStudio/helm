@@ -5,6 +5,6 @@ JD Courier {{ .Chart.AppVersion }} — roles rendered:
 {{- end }}
 
 spb-consumer is a single writer: never scale it above one.
-{{- if eq (lower (toString (get .Values.config "MULTI_TENANT_ENABLED" | default "false"))) "true" }}
+{{- if include "br-jd-courier.multiTenant" . }}
 Multi-tenant: per-tenant migrations are NOT applied by this chart.
 {{- end }}

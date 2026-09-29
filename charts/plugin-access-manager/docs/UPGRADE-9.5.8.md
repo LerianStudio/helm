@@ -2,6 +2,7 @@
 
 # Topics
 
+- **[Breaking change: production installs need Caradhras over HTTPS](#breaking-change-production-installs-need-caradhras-over-https)**
 - **[Fixes](#fixes)**
   - [1. Application Version Update](#1-application-version-update)
   - [2. User Initialization Image Update](#2-user-initialization-image-update)
@@ -18,6 +19,85 @@
   - [Auth Service JWKS Configuration](#auth-service-jwks-configuration)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
+
+# Breaking change: production installs need Caradhras over HTTPS
+
+> **Warning:** Read this section before upgrading an install whose `ENV_NAME` is not `development`, `staging` or `local` — including environments that are not production but must run with the production configuration.
+
+**What changed:**
+
+Since application `3.3.0`, auth and identity fetch the Caradhras JWKS — the key set every token is verified against — **only over `https`**, unless `ENV_NAME` is `development`, `staging` or `local` (case-insensitive). v9.5.8 is the first chart release that ships an application past `3.3.0` (`3.1.0` → `3.9.0`), so this is the upgrade where the requirement lands.
+
+The chart's default `AUTHORIZER_ADDRESS` is the in-cluster Caradhras Service over plain http (`http://<release>-caradhras:8000`), and Caradhras itself has no TLS listener.
+
+| `ENV_NAME` | Caradhras address | v9.5.7 (app `3.1.0`) | v9.5.8 (app `3.9.0`) |
+|------------|-------------------|----------------------|----------------------|
+| `development` / `staging` / `local` | `http://…` (chart default) | Starts | Starts |
+| Anything else (`production`, empty, a typo) | `http://…` (chart default) | Starts | **auth and identity exit at startup** |
+| Anything else | `https://…` | Starts | Starts |
+
+**Who is affected:**
+
+Every install whose `ENV_NAME` — set in `global.env.name`, or per component in `auth.configmap.ENV_NAME` / `identity.configmap.ENV_NAME` — is not `development`, `staging` or `local`, and whose `AUTHORIZER_ADDRESS` is still an `http://` URL.
+
+**What happens if you upgrade anyway:**
+
+- auth exits with `validating jwks cache upstream url: SaaS TLS enforcement: jwks cache upstream must use https`; identity exits while building its M2M JWKS key source (`initializing m2m jwks key source`).
+- Both exit before their telemetry is flushed. The reason is only in `kubectl logs --previous`; nothing reaches your log collector.
+- The pods go into `CrashLoopBackOff`, and `helm upgrade --wait` ends in `context deadline exceeded` (`--atomic` then rolls back).
+- identity runs one replica with `maxUnavailable: 1`, so it is unavailable for the whole wait.
+
+**No setting relaxes this.** The application decides on `ENV_NAME` alone. Setting it to `staging` makes the pods start, but it also turns off production behavior: panic details are no longer redacted, the OTLP exporter may run without TLS, and the JWKS is accepted over plain http. Do that only for an environment that really is not production.
+
+**Check before upgrading** (names for a release called `plugin-access-manager`):
+
+```bash
+kubectl -n <namespace> get configmap plugin-access-manager-auth plugin-access-manager-identity \
+  -o custom-columns='NAME:.metadata.name,ENV_NAME:.data.ENV_NAME,AUTHORIZER_ADDRESS:.data.AUTHORIZER_ADDRESS,AUTH_M2M_JWKS_URL:.data.AUTH_M2M_JWKS_URL'
+```
+
+You are affected when `ENV_NAME` is not `development`, `staging` or `local` and the address is `http://`.
+
+**How to fix: reach Caradhras over HTTPS**
+
+Terminate TLS in front of Caradhras with the chart's own `caradhras.ingress`, and point both components at that address:
+
+```yaml
+caradhras:
+  ingress:
+    enabled: true
+    className: "nginx-internal"   # prefer an internal-only ingress class
+    annotations: {}
+    hosts:
+      - host: caradhras.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: caradhras-tls
+        hosts:
+          - caradhras.example.com
+
+auth:
+  configmap:
+    AUTHORIZER_ADDRESS: "https://caradhras.example.com"
+
+identity:
+  configmap:
+    AUTHORIZER_ADDRESS: "https://caradhras.example.com"
+```
+
+Things to get right:
+
+- **Certificate from a public CA.** The auth and identity images trust only the default CA bundle, and the chart cannot mount a custom CA, so a self-signed or private-CA certificate fails the TLS handshake.
+- **The same URL on both components.** identity also uses `AUTHORIZER_ADDRESS` as the expected issuer (`iss`) of M2M tokens. After the switch, confirm that an M2M call to identity is still accepted.
+- **Keep the ingress internal.** `caradhras.ingress` exposes the Caradhras admin panel and API. Use an internal ingress class or load balancer, or restrict source ranges (for example `nginx.ingress.kubernetes.io/whitelist-source-range`).
+- **Every auth → Caradhras call goes through it**, not only the JWKS, so the ingress becomes part of the login path.
+- **IP allowlist.** The platform now reaches Caradhras through the ingress. If your organizations use an IP allowlist, review `PLATFORM_INTERNAL_CIDRS` against that path.
+
+auth's `wait-for-dependencies` init container already works with an `https` address (it uses `curl`), and identity's only checks TCP reachability of plugin-auth.
+
+**Render-time check:** chart releases after v9.5.8 refuse to render this combination, with a message that names the component, the resolved `ENV_NAME` and the JWKS URL, instead of letting the pods crash-loop. The check is skipped where the application starts anyway: `ENV_NAME` is `development`, `staging` or `local`; the component's image tag is pinned below `3.3.0`; auth uses service discovery (`SD_ENABLED=true`); identity has `AUTH_ENABLED` off; or identity's JWKS URL is loopback.
 
 # Fixes
 
@@ -81,7 +161,7 @@ auth:
 
 **What operators need to do:**
 
-No action required for most deployments. The image version update is automatic and backward-compatible. All new configuration options default to safe values that preserve existing behavior.
+No action required when `ENV_NAME` is `development`, `staging` or `local`. **Any other `ENV_NAME`, including `production`, needs an `https` Caradhras address before upgrading** — see [Breaking change: production installs need Caradhras over HTTPS](#breaking-change-production-installs-need-caradhras-over-https). All new configuration options default to safe values that preserve existing behavior.
 
 > **Note:** If you have explicitly pinned `identity.image.tag` or `auth.image.tag` to `3.1.0` in your values overrides, you should update both to `3.9.0` to benefit from the latest features and fixes.
 

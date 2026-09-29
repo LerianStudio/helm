@@ -377,6 +377,7 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
 | `caradhras.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
 | `caradhras.service.port` | Service port | `8000` |
+| `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress, same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
 | `caradhras.migrations.image.tag` | Image tag — MUST stay on the `1.2.0-beta.x` train, not the unrelated `3.2.0-beta.x` train also present in this GHCR repo | `1.2.0-beta.59` |
@@ -393,6 +394,18 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
+
+#### Production: reach Caradhras over HTTPS
+
+Since app `3.3.0`, auth and identity fetch the Caradhras JWKS over `https` only,
+unless `ENV_NAME` is `development`, `staging` or `local`. Caradhras serves plain
+http, and the default `AUTHORIZER_ADDRESS` is its in-cluster Service, so a
+production install has to put TLS in front of it — `caradhras.ingress`, with a
+certificate from a public CA — and set `auth.configmap.AUTHORIZER_ADDRESS` and
+`identity.configmap.AUTHORIZER_ADDRESS` to the same `https` URL. No application
+setting relaxes this. The chart **refuses to render** such an `ENV_NAME` with an
+`http` address, because the pods would otherwise crash-loop without logging why.
+Worked example and caveats in `docs/UPGRADE-9.5.8.md`.
 
 #### Session store (required above one replica)
 

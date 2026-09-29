@@ -44,7 +44,7 @@ app.kubernetes.io/component: {{ .component }}
 {{- /*
 The render-time guards. Every template includes this, so any render refuses.
 
-LAYER 3 of TRD §4.3. The chart CANNOT read the rail registry, so the list of
+The third layer of the single-writer defence. The chart CANNOT read the rail registry, so the list of
 single-writer roles below duplicates a fact the rail descriptor owns. That is why
 there are three layers and not one: the boot guard reads the registry and catches
 what the chart cannot, and the chart catches what never reaches a boot.
@@ -197,7 +197,7 @@ spec:
               containerPort: {{ $ctx.Values.ports.soap }}
             {{- end }}
           # /health answers on every role, the consumer included. A revoked
-          # licence never fails it (RF-28): the pod stays up and says why. It
+          # licence never fails it: the pod stays up and says why. It
           # fails when a started single-writer rail worker has ended (the SPB
           # drain died or lost its lease): only a restart re-claims the lease,
           # and nothing is read from the vendor meanwhile. A channel halt, a

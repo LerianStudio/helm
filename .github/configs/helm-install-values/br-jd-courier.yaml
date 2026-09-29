@@ -1,7 +1,16 @@
 # The chart renders no Secret: every role and the pre-install migration Job read
 # one operator-provisioned Secret and a PostgreSQL this kind cluster does not run.
-# With the hook on, the install fails in the hook and the gate cannot tell that
-# from a chart defect; with it off, every manifest is applied server-side and the
-# pods fail only on the missing Secret, which the allow-list absorbs as readiness.
+# The hook stays off and every role runs zero replicas, so the gate applies every
+# manifest server-side and exercises the install and in-place upgrade without
+# starting a pod that could only fail on the missing Secret.
 migrations:
   enabled: false
+roles:
+  spbConsumer:
+    replicas: 0
+  spbSender:
+    replicas: 0
+  pixIngress:
+    replicas: 0
+  admin:
+    replicas: 0

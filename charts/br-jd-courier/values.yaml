@@ -7,7 +7,7 @@ fullnameOverride: ""
 # `.jd-courier.image.tag`). Renaming this block breaks every release bump.
 jd-courier:
   image:
-    repository: lerianstudio/br-jd-courier
+    repository: ghcr.io/lerianstudio/br-jd-courier
     # Registry tags have no leading `v`. Empty falls back to the chart's appVersion.
     tag: "1.0.0-rc.1"
     pullPolicy: IfNotPresent
@@ -56,8 +56,8 @@ ports:
   # JSON surfaces and the probes (/health, /readyz, /version). Metrics leave
   # over OTLP (OTEL_EXPORTER_OTLP_ENDPOINT); nothing is scraped.
   http: 8080
-  # The mirrored SPB SOAP surface — a separate stdlib net/http listener
-  # (TRD §9.2), served by the spb-sender only.
+  # The mirrored SPB SOAP surface — a separate stdlib net/http listener,
+  # served by the spb-sender only.
   soap: 8081
 
 roles:

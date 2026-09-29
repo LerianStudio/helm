@@ -17,8 +17,8 @@ Lerian rail engines.
 On a stable tag the Courier release dispatches `app-sync.yml` here, which writes the
 new version to `jd-courier.image.tag` (the `helm_values_key_mappings` of the Courier
 release workflow) and to `appVersion`. The image is
-`lerianstudio/br-jd-courier` on Docker Hub (the release publishes the same tag to
-`ghcr.io/lerianstudio/br-jd-courier`); registry tags have no leading `v`.
+`ghcr.io/lerianstudio/br-jd-courier` (the release publishes the same tag to
+Docker Hub as `lerianstudio/br-jd-courier`); registry tags have no leading `v`.
 
 ## Roles
 
@@ -52,7 +52,7 @@ release fullname — which must exist before install and carry:
 
 | Key | Read by |
 |---|---|
-| `LICENSE_KEY` | every role (RF-28) |
+| `LICENSE_KEY` | every role |
 | `POSTGRES_PASSWORD` | every role |
 | `DATABASE_URL` | the migration Job (`postgres://…?sslmode=…`) |
 
@@ -118,8 +118,8 @@ leaves the node, so for the default endpoint alone the chart sets
 plaintext under `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=production`. A remote
 endpoint must be `https://`, or `config.ALLOW_INSECURE_OTEL` must carry its own
 reason; otherwise the boot refuses and names both fixes.
-The Courier repository ships the alert that pages when no Courier telemetry
-arrives (`config/alerts/telemetry.rules.yaml`).
+Page on the absence of Courier telemetry: a silent Courier is otherwise
+indistinguishable from an idle one.
 
 ## Not provided
 

@@ -5,7 +5,7 @@
 - Chart type: `multi-component`
 - Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
-- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render otherwise (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
+- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - Initial admin: the bootstrap admin (`admin@midaz.tech`) is first seeded from `init_data.json` baked into the `ghcr.io/lerianstudio/caradhras` image at first boot, with a placeholder password. While `auth.initUser.enabled` is true, a `post-install` hook Job then sets that account's password to the operator-supplied credential: `auth.initUser.adminPassword` when `auth.initUser.useExistingSecret=false`, otherwise the `adminPasswordSecretKey` value from the Secret named by `auth.initUser.adminPasswordSecretName`. The hook runs on `helm install` only, never on upgrades, so upgrades and later value changes neither reset the password nor recreate a deleted admin account, and passwords rotated inside Caradhras are preserved. If `auth.initUser.enabled=false`, the chart never touches the account and the image placeholder stays live; rotate it immediately after the first login.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
@@ -399,7 +399,10 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 
 Since application `3.3.0`, auth and identity fetch the Caradhras JWKS over
 `https` only, unless `ENV_NAME` is `development`, `staging` or `local`; no
-setting relaxes this. Caradhras serves plain http, and the default
+setting relaxes this. Precisely: identity also accepts http to a loopback host
+and fetches no JWKS when `PLUGIN_AUTH_ENABLED` is false, auth has no loopback
+exemption, and images below `3.3.0` are unaffected. Caradhras serves plain
+http, and the default
 `AUTHORIZER_ADDRESS` is its in-cluster Service, so a production install has to
 put TLS in front of it with `caradhras.ingress`, using a certificate from a
 public CA, and set `auth.configmap.AUTHORIZER_ADDRESS` and
@@ -409,8 +412,10 @@ it exposes the Caradhras admin panel and API.
 
 The chart **refuses to render** an `ENV_NAME` outside that list together with a
 JWKS URL the application would reject, because the pods would otherwise
-crash-loop before logging anything to your collector. Worked example, pre-upgrade
-check and caveats: `docs/UPGRADE-9.5.8.md`.
+crash-loop before logging anything to your collector. With service discovery
+on (`SD_ENABLED=true`) the chart cannot see the address auth resolves, so it
+does not check auth; discovery must still resolve Caradhras to `https`. Worked
+example, pre-upgrade check and caveats: `docs/UPGRADE-9.5.8.md`.
 
 #### Session store (required above one replica)
 

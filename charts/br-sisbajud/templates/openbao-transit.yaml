@@ -7,13 +7,12 @@
    the mount is absent. Runs as a Helm post-install/post-upgrade hook (ArgoCD
    PostSync) — dev mode is in-memory, so it also re-mounts Transit after an
    OpenBao restart on the next upgrade/sync. Authenticates with the dev root
-   token from the app Secret (never a ConfigMap). */ -}}
+   token from the chart's generated dev-token Secret (never a ConfigMap). */ -}}
 {{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
 {{- $mount := index $data "VAULT_TRANSIT_MOUNT_PATH" | default "transit" -}}
 {{- $addr := index $data "VAULT_ADDR" -}}
 {{- $job := .Values.openbaoTransit -}}
 {{- $name := printf "%s-openbao-transit" (include "br-sisbajud.fullname" . | trunc 45 | trimSuffix "-") -}}
-{{- $secretName := ternary .Values.brSisbajud.existingSecretName (include "br-sisbajud.fullname" .) .Values.brSisbajud.useExistingSecret -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -69,8 +68,8 @@ spec:
             - name: BAO_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ $secretName }}
-                  key: VAULT_TOKEN
+                  name: {{ include "br-sisbajud.openbaoTokenSecret" . }}
+                  key: token
           command:
             - /bin/sh
             - -ec
@@ -80,13 +79,13 @@ spec:
                 i=$((i + 1)); [ "$i" -ge 60 ] && { echo "timeout waiting for $BAO_ADDR"; exit 1; }
                 echo "waiting for $BAO_ADDR..."; sleep 5
               done
-              if bao secrets list -format=json | grep -q "\"${TRANSIT_MOUNT}/\""; then
+              if bao secrets list -format=json | grep -Fq -- "\"${TRANSIT_MOUNT}/\""; then
                 echo "transit already mounted at ${TRANSIT_MOUNT}/"
               else
                 bao secrets enable -path="$TRANSIT_MOUNT" transit
                 echo "transit enabled at ${TRANSIT_MOUNT}/"
               fi
-              bao secrets list -format=json | grep -q "\"${TRANSIT_MOUNT}/\"" || { echo "transit mount missing"; exit 1; }
+              bao secrets list -format=json | grep -Fq -- "\"${TRANSIT_MOUNT}/\"" || { echo "transit mount missing"; exit 1; }
           securityContext:
             runAsNonRoot: true
             runAsUser: 65532

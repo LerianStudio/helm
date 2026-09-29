@@ -117,6 +117,15 @@ spec:
             {{- if or (eq (include "br-sisbajud.valkeyInternal" .) "true") $vkAuth.existingSecret }}
             {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
             {{- end }}
+            {{- /* Bundled OpenBao: the app authenticates with the generated dev root
+               token (unless the operator supplies VAULT_TOKEN explicitly). */}}
+            {{- if and (eq (include "br-sisbajud.openbaoEnabled" .) "true") (not (.Values.brSisbajud.secrets | default dict).VAULT_TOKEN) (not (hasKey $x "VAULT_TOKEN")) }}
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "br-sisbajud.openbaoTokenSecret" . }}
+                  key: token
+            {{- end }}
             {{- if and $telemetry (not $explicitEndpoint) }}
             {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 12 }}
             {{- end }}

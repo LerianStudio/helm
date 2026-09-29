@@ -6,8 +6,8 @@
 # endpoints (POSTGRES_HOST, REDIS_HOST, SEAWEEDFS_S3_ENDPOINT, VAULT_ADDR,
 # STREAMING_BROKERS) and the bootstrap Jobs (buckets, Transit, migrations and
 # topics as bundle-aware hooks). OpenBao/Redpanda are refused in a production-like
-# environment, so this fixture runs in development. The dev root token is the
-# public dev-only value from the app's config/.env.example.
+# environment, so this fixture runs in development. The OpenBao dev root token is
+# generated at render (no reusable credential in this file).
 global:
   env:
     name: "development"
@@ -29,8 +29,5 @@ seaweedfs:
   enabled: true
 openbao:
   enabled: true
-  server:
-    dev:
-      devRootToken: "dev-root-token"
 redpandaBundle:
   enabled: true

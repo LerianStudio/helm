@@ -172,16 +172,23 @@ port 8200, plain HTTP (global.tlsDisable default), in the release namespace.
 {{- end -}}
 
 {{/*
-br-sisbajud.openbaoDevToken — the dev root token the bundled OpenBao starts
-with (openbao.server.dev.devRootToken). Required when the bundle is on: the
-chart copies it into the app Secret (VAULT_TOKEN), so it must be explicit.
+br-sisbajud.openbaoTokenSecret — the Secret that carries the bundled OpenBao's
+dev root token (key "token"). Its NAME is the one openbao.server.
+extraSecretEnvironmentVars feeds to BAO_DEV_ROOT_TOKEN_ID (single source: the
+subchart reads it, and the app / Transit Job / wait-for-transit read the same
+Secret). BAO_DEV_ROOT_TOKEN_ID wins over the subchart's plaintext
+VAULT_DEV_ROOT_TOKEN_ID (OpenBao api.ReadBaoVariable prefers BAO_*), so the
+subchart's default "root" is not a working credential.
 */}}
-{{- define "br-sisbajud.openbaoDevToken" -}}
-{{- $dev := (((.Values.openbao | default dict).server | default dict).dev | default dict) -}}
-{{- if not $dev.devRootToken -}}
-{{- fail "\n\nERROR: br-sisbajud: openbao.enabled needs openbao.server.dev.devRootToken (the dev root token; the chart writes it to the app Secret as VAULT_TOKEN). See values-dev.yaml.\n" -}}
+{{- define "br-sisbajud.openbaoTokenSecret" -}}
+{{- $name := "" -}}
+{{- range ((((.Values.openbao | default dict).server | default dict).extraSecretEnvironmentVars) | default list) -}}
+{{- if eq .envName "BAO_DEV_ROOT_TOKEN_ID" -}}{{- $name = .secretName -}}{{- end -}}
 {{- end -}}
-{{- $dev.devRootToken -}}
+{{- if not $name -}}
+{{- fail "\n\nERROR: br-sisbajud: openbao.enabled needs an openbao.server.extraSecretEnvironmentVars entry for BAO_DEV_ROOT_TOKEN_ID (secretName/secretKey: token); the chart creates that Secret. See values.yaml.\n" -}}
+{{- end -}}
+{{- $name -}}
 {{- end -}}
 
 {{/*
@@ -729,10 +736,6 @@ POSTGRES_PASSWORD: {{ $s.POSTGRES_PASSWORD | quote }}
 {{- if and (not $vkInternal) (not $vkAuth.existingSecret) $s.REDIS_PASSWORD }}
 REDIS_PASSWORD: {{ $s.REDIS_PASSWORD | quote }}
 {{- end }}
-{{- if and (eq (include "br-sisbajud.openbaoEnabled" .) "true") (not $s.VAULT_TOKEN) (not (hasKey $x "VAULT_TOKEN")) }}
-{{- /* Bundled OpenBao (dev mode): the app authenticates with its dev root token. */}}
-VAULT_TOKEN: {{ include "br-sisbajud.openbaoDevToken" . | quote }}
-{{- end }}
 {{- range $k := list "POSTGRES_REPLICA_PASSWORD" "LICENSE_KEY" "VAULT_TOKEN" "VAULT_APPROLE_SECRET_ID" "SEAWEEDFS_ACCESS_KEY" "SEAWEEDFS_SECRET_KEY" "STA_CLIENT_SECRET" "IDP_M2M_CLIENT_SECRET" }}
 {{- with index $s $k }}
 {{ $k }}: {{ . | quote }}
@@ -1076,8 +1079,8 @@ migrations/topics Jobs are PreSync hooks and already run first.
     - name: VAULT_TOKEN
       valueFrom:
         secretKeyRef:
-          name: {{ $secretName }}
-          key: VAULT_TOKEN
+          name: {{ include "br-sisbajud.openbaoTokenSecret" . }}
+          key: token
   command:
     - /bin/sh
     - -c

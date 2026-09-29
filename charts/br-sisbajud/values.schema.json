@@ -75,6 +75,10 @@
       "type": "object",
       "additionalProperties": true
     },
+    "openbaoDevToken": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "openbaoTransit": {
       "type": "object",
       "additionalProperties": true

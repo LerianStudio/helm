@@ -506,8 +506,9 @@ seaweedfsBuckets:
 # unrecoverable — so the chart refuses to render it in a production-like
 # environment. When enabled and no explicit address is set, VAULT_ADDR derives
 # from the subchart Service (http://<release>-openbao.<release namespace>.svc.cluster.local:8200),
-# KMS_PROVIDER=vault, VAULT_AUTH_METHOD=token, and VAULT_TOKEN is written to the
-# app SECRET from server.dev.devRootToken (set it; see values-dev.yaml).
+# KMS_PROVIDER=vault, VAULT_AUTH_METHOD=token, and the app reads VAULT_TOKEN from
+# the chart-generated dev-token Secret (random per install, kept across upgrades
+# via lookup; openbaoDevToken.token to supply one, e.g. under GitOps).
 # openbaoTransit below enables the Transit engine the app uses; the app itself
 # creates its KEKs (sisbajud-kek-<institution>) at boot.
 openbao:
@@ -523,6 +524,13 @@ openbao:
       enabled: false
     dev:
       enabled: true
+    # The dev root token comes from the chart-generated Secret named here
+    # (BAO_* wins over the subchart's plaintext VAULT_DEV_ROOT_TOKEN_ID
+    # default). The chart reads this entry to know which Secret to create.
+    extraSecretEnvironmentVars:
+      - envName: BAO_DEV_ROOT_TOKEN_ID
+        secretName: br-sisbajud-openbao-dev-token
+        secretKey: token
     standalone:
       enabled: false
     ha:
@@ -535,6 +543,13 @@ openbao:
         memory: 64Mi
       limits:
         memory: 256Mi
+
+# -- Dev root token of the bundled OpenBao. Empty (default) = random per install,
+# stored in the Secret named in openbao.server.extraSecretEnvironmentVars and
+# reused on upgrade via lookup. Set it (an AVP placeholder, never a literal) when
+# rendering without cluster access (GitOps/ArgoCD), or the token rotates.
+openbaoDevToken:
+  token: ""
 
 # -- Transit bootstrap Job for the bundled OpenBao (rendered only when
 # openbao.enabled). Idempotent: enables the Transit engine at the resolved

@@ -53,12 +53,8 @@ seaweedfs:
   enabled: true
 openbao:
   enabled: true
-  server:
-    dev:
-      # Public, dev-only root token (the same value the app's own
-      # config/.env.example uses). The chart copies it into the app Secret as
-      # VAULT_TOKEN; it never lands in a ConfigMap.
-      devRootToken: "dev-root-token"
+  # The dev root token is generated per install (chart Secret, kept across
+  # upgrades); nothing reusable is committed here.
 redpandaBundle:
   enabled: true
 

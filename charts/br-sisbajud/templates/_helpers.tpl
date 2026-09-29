@@ -825,3 +825,195 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- fail (printf "\n\nERROR: br-sisbajud: ORGANIZATION_IDS must be \"global\" (got %q): the app supports GLOBAL license mode only.\n" $org) -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+br-sisbajud.migrationsConn — the resolved migrations connection, shared by the
+migrations Job and (bundled Postgres) the app's migrations initContainer.
+*/}}
+{{- define "br-sisbajud.migrationsConn" -}}
+{{- /* Connection: migrations.postgres.* override > the app's resolved POSTGRES_*
+   (br-sisbajud.postgres: configmap > datastores > global > cloud > default), so
+   the Job and the app can never point at different databases. */ -}}
+{{- $app := include "br-sisbajud.postgres" . | fromYaml -}}
+{{- $mp := .Values.migrations.postgres | default dict -}}
+{{- $pgHost := $mp.host | default $app.host -}}
+{{- $pgPort := $mp.port | default $app.port | toString -}}
+{{- $pgUser := $mp.user | default $app.user -}}
+{{- $pgDb := $mp.database | default $app.name -}}
+{{- $pgSslMode := $mp.sslMode | default $app.ssl -}}
+{{- $pgConnectTimeout := $mp.connectTimeoutSec | default (include "lerian-common.cfgValue" (dict "configmap" (.Values.brSisbajud.configmap | default dict) "nativeKey" "POSTGRES_CONNECT_TIMEOUT_SEC" "params" .Values.brSisbajud.postgres "field" "connectTimeoutSec" "default" "10")) -}}
+{{- if not $pgHost -}}
+{{- fail "\n\nERROR: br-sisbajud: the migrations Job needs a Postgres host.\n  set: global.datastores.postgres.host (or migrations.postgres.host), or disable it with migrations.enabled=false\n" -}}
+{{- end -}}
+{{- if and .Values.migrations.useExistingSecret (not .Values.migrations.existingSecretName) -}}
+{{- fail "migrations.existingSecretName is required when migrations.useExistingSecret is true" -}}
+{{- end -}}
+{{- $secretName := ternary .Values.migrations.existingSecretName (include "br-sisbajud-migrations.fullname" .) .Values.migrations.useExistingSecret }}
+{{- /* Bundled (or existingSecret) Postgres: the password is single-sourced from the
+   subchart Secret, same as the app. */ -}}
+{{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
+{{- $pgFromSubchartBundled := eq (include "br-sisbajud.postgresInternal" .) "true" -}}
+{{- $pgFromSubchart := and (not .Values.migrations.useExistingSecret) (or (eq (include "br-sisbajud.postgresInternal" .) "true") $pgAuth.existingSecret) -}}
+{{- /* ALLOW_INSECURE_TLS: lib-commons' migrator refuses non-TLS Postgres unless this
+   is true; sslmode=disable alone is not enough. Resolution:
+   migrations.allowInsecureTLS > brSisbajud.extraEnvVars > the app's resolved
+   ALLOW_INSECURE_TLS (configmap > brSisbajud.security.allowInsecureTls > default). */ -}}
+{{- $x := include "br-sisbajud.extraEnv" . | fromYaml -}}
+{{- $allowInsecureTLS := include "br-sisbajud.allowInsecureTLS" . -}}
+{{- if hasKey .Values.migrations "allowInsecureTLS" -}}
+{{- $allowInsecureTLS = toString .Values.migrations.allowInsecureTLS -}}
+{{- else if and (hasKey $x "ALLOW_INSECURE_TLS") (ne (index $x "ALLOW_INSECURE_TLS") "__valueFrom__") -}}
+{{- $allowInsecureTLS = index $x "ALLOW_INSECURE_TLS" -}}
+{{- end }}
+host: {{ $pgHost | quote }}
+port: {{ $pgPort | quote }}
+user: {{ $pgUser | quote }}
+db: {{ $pgDb | quote }}
+ssl: {{ $pgSslMode | quote }}
+connectTimeout: {{ $pgConnectTimeout | quote }}
+allowInsecureTLS: {{ $allowInsecureTLS | quote }}
+fromSubchart: {{ ternary "true" "false" (eq (toString $pgFromSubchart) "true") | quote }}
+bundled: {{ ternary "true" "false" $pgFromSubchartBundled | quote }}
+secretName: {{ $secretName | quote }}
+{{- end -}}
+
+{{/*
+br-sisbajud.migrationsContainer — the migrations container (golang-migrate `up`,
+idempotent and lock-protected). Used by the Job and, with a bundled Postgres, as
+an app initContainer so the app never boots on an unmigrated schema.
+*/}}
+{{- define "br-sisbajud.migrationsContainer" -}}
+{{- $c := include "br-sisbajud.migrationsConn" . | fromYaml -}}
+{{- $pgHost := $c.host -}}{{- $pgPort := $c.port -}}{{- $pgUser := $c.user -}}{{- $pgDb := $c.db -}}{{- $pgSslMode := $c.ssl -}}
+{{- $pgConnectTimeout := $c.connectTimeout -}}{{- $allowInsecureTLS := $c.allowInsecureTLS -}}{{- $secretName := $c.secretName -}}
+{{- $pgFromSubchart := eq $c.fromSubchart "true" -}}
+
+- name: migrations
+  image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Chart.AppVersion }}"
+  imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default "IfNotPresent" }}
+  env:
+    - name: MIGRATIONS_PATH
+      value: "/migrations"
+    - name: POSTGRES_HOST
+      value: {{ $pgHost | quote }}
+    - name: POSTGRES_PORT
+      value: {{ $pgPort | quote }}
+    - name: POSTGRES_USER
+      value: {{ $pgUser | quote }}
+    - name: POSTGRES_NAME
+      value: {{ $pgDb | quote }}
+    - name: POSTGRES_SSLMODE
+      value: {{ $pgSslMode | quote }}
+    - name: ALLOW_INSECURE_TLS
+      value: {{ $allowInsecureTLS | quote }}
+    - name: ENV_NAME
+      value: {{ include "br-sisbajud.envName" . | quote }}
+    - name: POSTGRES_CONNECT_TIMEOUT_SEC
+      value: {{ $pgConnectTimeout | quote }}
+    {{- if $pgFromSubchart }}
+    {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 4 }}
+    {{- else }}
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ $secretName }}
+          key: POSTGRES_PASSWORD
+    {{- end }}
+  securityContext:
+    runAsUser: 65532
+    runAsGroup: 65532
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    {{- toYaml .Values.migrations.resources | nindent 4 }}
+{{- end -}}
+
+{{/*
+br-sisbajud.bundleInitContainers — boot ordering for the dev bundle. The bundled
+Postgres, Redpanda and OpenBao are created in the SAME install/sync as the app,
+and their bootstrap Jobs are post-install hooks that start only after the
+Deployment exists. Without these initContainers, the app boots:
+  - before the schema exists (outbox queries fail),
+  - before its streaming topics exist (the balance consumer on `.commands` would
+    subscribe to a missing topic and fail silently),
+  - before Transit is mounted (KEK provisioning fails the boot).
+Each step is idempotent: `migrate up` is lock-protected, the topics entrypoint
+lists then creates, and the Transit step only WAITS for the mount the
+openbao-transit Job creates. Nothing renders against external infra: there the
+migrations/topics Jobs are PreSync hooks and already run first.
+*/}}
+{{- define "br-sisbajud.bundleInitContainers" -}}
+{{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
+{{- $sc := dict "runAsUser" 65532 "runAsGroup" 65532 "runAsNonRoot" true "allowPrivilegeEscalation" false "readOnlyRootFilesystem" true "capabilities" (dict "drop" (list "ALL")) -}}
+{{- $wait := .Values.brSisbajud.waitImage | default "busybox:1.36" -}}
+{{- $secretName := ternary .Values.brSisbajud.existingSecretName (include "br-sisbajud.fullname" .) .Values.brSisbajud.useExistingSecret -}}
+{{- if and .Values.migrations.enabled (eq (include "br-sisbajud.postgresInternal" .) "true") }}
+{{ include "br-sisbajud.migrationsContainer" . }}
+{{- end }}
+{{- $streamingOn := eq (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true" }}
+{{- if and .Values.topics.enabled $streamingOn (eq (include "br-sisbajud.redpandaEnabled" .) "true") }}
+{{- $first := first (splitList "," (index $data "STREAMING_BROKERS" | default "")) | trim }}
+- name: wait-for-broker
+  image: {{ $wait }}
+  command:
+    - /bin/sh
+    - -c
+    - >
+      HP="{{ $first }}"; H="${HP%:*}"; P="${HP##*:}";
+      until nc -z "$H" "$P"; do echo "broker $H:$P not ready, waiting..."; sleep 5; done;
+      echo "broker is ready"
+  securityContext:
+    {{- toYaml $sc | nindent 4 }}
+- name: topics
+  image: "{{ .Values.topics.image.repository }}:{{ .Values.topics.image.tag | default .Chart.AppVersion }}"
+  imagePullPolicy: {{ .Values.topics.image.pullPolicy | default "IfNotPresent" }}
+  env:
+    - name: HOME
+      value: /tmp
+    - name: TOPICS
+      value: {{ join " " .Values.topics.list | quote }}
+    - name: TOPIC_PARTITIONS
+      value: {{ .Values.topics.partitions | default 1 | quote }}
+    - name: TOPIC_REPLICAS
+      value: {{ .Values.topics.replicationFactor | default 1 | quote }}
+    - name: STREAMING_BROKERS
+      value: {{ index $data "STREAMING_BROKERS" | quote }}
+    - name: STREAMING_TLS_ENABLED
+      value: {{ index $data "STREAMING_TLS_ENABLED" | default "false" | quote }}
+  securityContext:
+    {{- toYaml $sc | nindent 4 }}
+  volumeMounts:
+    - name: bundle-tmp
+      mountPath: /tmp
+  resources:
+    {{- toYaml .Values.topics.resources | nindent 4 }}
+{{- end }}
+{{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" }}
+- name: wait-for-transit
+  image: {{ $wait }}
+  env:
+    - name: VAULT_ADDR
+      value: {{ index $data "VAULT_ADDR" | quote }}
+    - name: TRANSIT_MOUNT
+      value: {{ index $data "VAULT_TRANSIT_MOUNT_PATH" | default "transit" | quote }}
+    - name: VAULT_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: {{ $secretName }}
+          key: VAULT_TOKEN
+  command:
+    - /bin/sh
+    - -c
+    - >
+      until wget -q -O /dev/null --header "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/sys/mounts/$TRANSIT_MOUNT"; do
+        echo "transit mount $TRANSIT_MOUNT not ready at $VAULT_ADDR, waiting..."; sleep 5;
+      done;
+      echo "transit mount $TRANSIT_MOUNT is ready"
+  securityContext:
+    {{- toYaml $sc | nindent 4 }}
+{{- end }}
+{{- end -}}

@@ -89,6 +89,9 @@ spec:
               echo "dependencies ready"
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+        {{- with (include "br-sisbajud.bundleInitContainers" . | trim) }}
+        {{- . | nindent 8 }}
+        {{- end }}
       containers:
         - name: {{ $fullname }}
           securityContext:
@@ -144,6 +147,12 @@ spec:
             failureThreshold: {{ .Values.brSisbajud.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.brSisbajud.resources | nindent 12 }}
+      {{- if and .Values.topics.enabled (eq (include "br-sisbajud.redpandaEnabled" .) "true") }}
+      volumes:
+        # Writable HOME for the bundled topics initContainer (rpk), read-only rootfs.
+        - name: bundle-tmp
+          emptyDir: {}
+      {{- end }}
       {{- if or .Values.brSisbajud.nodeSelector .Values.brSisbajud.affinity .Values.brSisbajud.tolerations }}
       {{- include "lerian-common.scheduling" .Values.brSisbajud | nindent 6 }}
       {{- end }}

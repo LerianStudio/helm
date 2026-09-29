@@ -3,41 +3,11 @@
    entrypoint applies the golang-migrate SQL migrations against the br_sisbajud
    database. hook-weight -1 puts this after the PreSync Secret (-2) and before
    the main-sync Deployment, so the app never boots unmigrated. */ -}}
-{{- /* Connection: migrations.postgres.* override > the app's resolved POSTGRES_*
-   (br-sisbajud.postgres: configmap > datastores > global > cloud > default), so
-   the Job and the app can never point at different databases. */ -}}
-{{- $app := include "br-sisbajud.postgres" . | fromYaml -}}
-{{- $mp := .Values.migrations.postgres | default dict -}}
-{{- $pgHost := $mp.host | default $app.host -}}
-{{- $pgPort := $mp.port | default $app.port | toString -}}
-{{- $pgUser := $mp.user | default $app.user -}}
-{{- $pgDb := $mp.database | default $app.name -}}
-{{- $pgSslMode := $mp.sslMode | default $app.ssl -}}
-{{- $pgConnectTimeout := $mp.connectTimeoutSec | default (include "lerian-common.cfgValue" (dict "configmap" (.Values.brSisbajud.configmap | default dict) "nativeKey" "POSTGRES_CONNECT_TIMEOUT_SEC" "params" .Values.brSisbajud.postgres "field" "connectTimeoutSec" "default" "10")) -}}
-{{- if not $pgHost -}}
-{{- fail "\n\nERROR: br-sisbajud: the migrations Job needs a Postgres host.\n  set: global.datastores.postgres.host (or migrations.postgres.host), or disable it with migrations.enabled=false\n" -}}
-{{- end -}}
-{{- if and .Values.migrations.useExistingSecret (not .Values.migrations.existingSecretName) -}}
-{{- fail "migrations.existingSecretName is required when migrations.useExistingSecret is true" -}}
-{{- end -}}
-{{- $secretName := ternary .Values.migrations.existingSecretName (include "br-sisbajud-migrations.fullname" .) .Values.migrations.useExistingSecret }}
+{{- $c := include "br-sisbajud.migrationsConn" . | fromYaml -}}
+{{- $pgHost := $c.host -}}
+{{- $pgPort := $c.port -}}
+{{- $pgFromSubchartBundled := eq $c.bundled "true" -}}
 {{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets }}
-{{- /* Bundled (or existingSecret) Postgres: the password is single-sourced from the
-   subchart Secret, same as the app. */ -}}
-{{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
-{{- $pgFromSubchartBundled := eq (include "br-sisbajud.postgresInternal" .) "true" -}}
-{{- $pgFromSubchart := and (not .Values.migrations.useExistingSecret) (or (eq (include "br-sisbajud.postgresInternal" .) "true") $pgAuth.existingSecret) -}}
-{{- /* ALLOW_INSECURE_TLS: lib-commons' migrator refuses non-TLS Postgres unless this
-   is true; sslmode=disable alone is not enough. Resolution:
-   migrations.allowInsecureTLS > brSisbajud.extraEnvVars > the app's resolved
-   ALLOW_INSECURE_TLS (configmap > brSisbajud.security.allowInsecureTls > default). */ -}}
-{{- $x := include "br-sisbajud.extraEnv" . | fromYaml -}}
-{{- $allowInsecureTLS := include "br-sisbajud.allowInsecureTLS" . -}}
-{{- if hasKey .Values.migrations "allowInsecureTLS" -}}
-{{- $allowInsecureTLS = toString .Values.migrations.allowInsecureTLS -}}
-{{- else if and (hasKey $x "ALLOW_INSECURE_TLS") (ne (index $x "ALLOW_INSECURE_TLS") "__valueFrom__") -}}
-{{- $allowInsecureTLS = index $x "ALLOW_INSECURE_TLS" -}}
-{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -87,46 +57,5 @@ spec:
               drop:
                 - ALL
       containers:
-        - name: migrations
-          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default "IfNotPresent" }}
-          env:
-            - name: MIGRATIONS_PATH
-              value: "/migrations"
-            - name: POSTGRES_HOST
-              value: {{ $pgHost | quote }}
-            - name: POSTGRES_PORT
-              value: {{ $pgPort | quote }}
-            - name: POSTGRES_USER
-              value: {{ $pgUser | quote }}
-            - name: POSTGRES_NAME
-              value: {{ $pgDb | quote }}
-            - name: POSTGRES_SSLMODE
-              value: {{ $pgSslMode | quote }}
-            - name: ALLOW_INSECURE_TLS
-              value: {{ $allowInsecureTLS | quote }}
-            - name: ENV_NAME
-              value: {{ include "br-sisbajud.envName" . | quote }}
-            - name: POSTGRES_CONNECT_TIMEOUT_SEC
-              value: {{ $pgConnectTimeout | quote }}
-            {{- if $pgFromSubchart }}
-            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
-            {{- else }}
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secretName }}
-                  key: POSTGRES_PASSWORD
-            {{- end }}
-          securityContext:
-            runAsUser: 65532
-            runAsGroup: 65532
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          resources:
-            {{- toYaml .Values.migrations.resources | nindent 12 }}
+        {{- include "br-sisbajud.migrationsContainer" . | nindent 8 }}
 {{- end }}

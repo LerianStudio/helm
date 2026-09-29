@@ -102,7 +102,7 @@ spec:
               list() { echo "s3.bucket.list" | weed shell 2>/dev/null | sed 's/^[> ]*//' | awk '{print $1}'; }
               existing="$(list)"
               for b in $BUCKETS; do
-                if printf '%s\n' "$existing" | grep -qx "$b"; then
+                if printf '%s\n' "$existing" | grep -Fqx -- "$b"; then
                   echo "bucket exists: $b"
                 else
                   echo "creating bucket: $b"
@@ -111,7 +111,7 @@ spec:
               done
               existing="$(list)"
               for b in $BUCKETS; do
-                printf '%s\n' "$existing" | grep -qx "$b" || { echo "bucket missing after create: $b"; exit 1; }
+                printf '%s\n' "$existing" | grep -Fqx -- "$b" || { echo "bucket missing after create: $b"; exit 1; }
               done
               echo "buckets ready: $BUCKETS"
           securityContext:

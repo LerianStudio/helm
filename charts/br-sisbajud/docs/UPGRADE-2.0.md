@@ -6,9 +6,9 @@
 
 - **[Overview](#overview)**
 - **[Breaking Changes](#breaking-changes)**
-  - [1. Application 1.0.2: the Midaz connector moved into the database](#1-application-102-the-midaz-connector-moved-into-the-database)
+  - [1. Application 1.1.0: the Midaz connector moved into the database](#1-application-110-the-midaz-connector-moved-into-the-database)
   - [2. Production-like environment by default](#2-production-like-environment-by-default)
-  - [3. Keys app 1.0.x no longer reads are dropped](#3-keys-app-10x-no-longer-reads-are-dropped)
+  - [3. Keys app 1.x no longer reads are dropped](#3-keys-app-1x-no-longer-reads-are-dropped)
   - [4. Topics Job provisions the lib-streaming v4 topics](#4-topics-job-provisions-the-lib-streaming-v4-topics)
   - [5. Fail-fast render gates](#5-fail-fast-render-gates)
 - **[New Features](#new-features)**
@@ -20,26 +20,32 @@
 
 ## Overview
 
-Chart 2.0 moves br-sisbajud to application **1.0.2** and productizes the chart on the `lerian-common-helm` library (2.1.2):
+Chart 2.0 moves br-sisbajud to application **1.1.0** and productizes the chart on the `lerian-common-helm` library (2.1.2):
 
 | Setting | v1.1.x | v2.0.0 |
 |---------|--------|--------|
-| Application | `1.0.0-beta.109` (default) | `1.0.2` (app, migrations and topics images) |
+| Application | `1.0.0-beta.109` (default) | `1.1.0` (app, migrations and topics images) |
 | Configuration | `brSisbajud.configmap` emitted verbatim | Global-first contract (`global.*`) + grouped params; `configmap` stays as the escape hatch |
-| Env coverage | Only what the operator set | Every key of `config/.env.example@v1.0.2`, with defaults |
+| Env coverage | Only what the operator set | Every key of `config/.env.example@v1.1.0` (unchanged from v1.0.2), with defaults |
 | Default environment | `ENV_NAME=development` | `ENVIRONMENT_NAME=ENV_NAME=production` |
 | Topics Job | Pre-1.1 per-event topics | `lerian.streaming.br-sisbajud` (+ `.dlq`, `.commands`) |
 | envFrom order | Secret, then ConfigMap | ConfigMap, then Secret (Secret wins) |
 
-**Backward compatibility.** Every key a 1.1.x install sets under `brSisbajud.configmap`, `brSisbajud.secrets` or `brSisbajud.extraEnvVars` keeps reaching the pod with the same value: the native key wins over every new parameter. The only exceptions are the keys the application no longer reads ([section 3](#3-keys-app-10x-no-longer-reads-are-dropped)). Rendering the dev-st, stg-st and stg-mt values of chart 1.1.0 with 2.0 and comparing the effective pod env (ConfigMap, Secret and `env:`) gives zero changed values. Only the new defaults are added, and `LEDGER_BALANCE_TOPIC` is removed.
+**Backward compatibility.** Every key a 1.1.x install sets under `brSisbajud.configmap`, `brSisbajud.secrets` or `brSisbajud.extraEnvVars` keeps reaching the pod with the same value: the native key wins over every new parameter. The only exceptions are the keys the application no longer reads ([section 3](#3-keys-app-1x-no-longer-reads-are-dropped)). Rendering the dev-st, stg-st and stg-mt values of chart 1.1.0 with 2.0 and comparing the effective pod env (ConfigMap, Secret and `env:`) gives zero changed values. Only the new defaults are added, and `LEDGER_BALANCE_TOPIC` is removed.
 
 ## Breaking Changes
 
-### 1. Application 1.0.2: the Midaz connector moved into the database
+### 1. Application 1.1.0: the Midaz connector moved into the database
 
 The Midaz ledger and CRM connector routing (base URL, auth address, CRM URL) and credentials are **per institution** in `institution_config.connector_metadata`, sealed under the credentials KEK. No env var configures them anymore. Before the first order runs, seed one row per institution through the admin API (`POST /v1/institutions`). A row without `baseUrl` fails closed. `MIDAZ_CRM_MODE` (`legacy` | `embedded`) is the only deployment-wide connector setting left. It is inherited by rows without their own `crmMode`.
 
-Other 1.0.x application requirements the chart now wires:
+**1.1.0 on top of 1.0.2.** 1.1.0 has the same env contract as 1.0.2: `config/.env.example` and `internal/bootstrap/config*.go` are byte-identical, with no new migrations and no topic or Dockerfile runtime changes (only the Go toolchain bump to 1.27.1). What changed is the **per-institution connector credential contract**, written through the admin API:
+- `crmMode: embedded` now accepts a **ledger-only** credential set (`ledger_client_id` / `ledger_client_secret`, no `crm_*`).
+- `legacy` now **requires** the `crm_client_id` / `crm_client_secret` pair.
+
+Check existing `institution_config.connector_metadata.credentials` against the institution's effective CRM mode before upgrading. The access-manager permission manifest also declares `credential_kek` and `sta_dlq` (relevant when `identity.declarationEnabled` is on). Grant those permissions in plugin-access-manager.
+
+Other 1.x application requirements the chart now wires:
 
 - `STA_INBOUND_BUCKET` is **required** at boot (br-sta's transfer bucket for the tier). When the STA consumer or transfers are on, `TRANSFER_OBJECT_STORAGE_BUCKET` must equal it and `STA_OBJECT_STORAGE_ENDPOINT` must equal `SEAWEEDFS_S3_ENDPOINT`. The chart defaults both to those values.
 - Runtime license validation: `LICENSE_KEY` and `ORGANIZATION_IDS=global` are required in production.
@@ -57,7 +63,7 @@ global:
 
 A `brSisbajud.configmap.ENV_NAME` or `ENVIRONMENT_NAME` from 1.1.x keeps working and wins.
 
-### 3. Keys app 1.0.x no longer reads are dropped
+### 3. Keys app 1.x no longer reads are dropped
 
 The chart no longer emits these keys, even when they are set under `brSisbajud.configmap` / `brSisbajud.secrets` (NOTES.txt lists any that are still set). Remove them from your values:
 
@@ -68,7 +74,7 @@ The chart no longer emits these keys, even when they are set under `brSisbajud.c
 | `CONNECTOR_CREDS_USE_SECRET_STORE`, `SECRET_STORE_PROVIDER`, `VAULT_KV_MOUNT` | None: credentials are sealed in the database |
 | `STA_INSTITUTION_ID`, `STA_INSTITUTION_CODE` | The `institution_config` table (multi-institution) |
 | `LEDGER_BALANCE_TOPIC`, `BALANCE_CONSUMER_DLQ_SUFFIX` | Derived by lib-streaming: `lerian.streaming.br-sisbajud.commands` / `.dlq` |
-| `OTEL_RESOURCE_SERVICE_VERSION` | None (not read by 1.0.x) |
+| `OTEL_RESOURCE_SERVICE_VERSION` | None (not read by 1.x) |
 
 `brSisbajud.extraEnvVars` is still rendered verbatim, so clean these keys out of it as well.
 
@@ -156,7 +162,7 @@ The 1.1.x native keys keep working. Move to the right-hand column to use the pro
 
 ## Migration Steps
 
-### Step 1: Prepare application 1.0.2
+### Step 1: Prepare application 1.1.0
 
 1. Seed `institution_config` for every institution (admin API), including `connector_metadata.baseUrl`, `authAddress` and the sealed `credentials` when the ledger requires auth.
 2. Confirm br-sta's transfer bucket for the tier and set `global.objectStorage.sta.bucket`.
@@ -165,7 +171,7 @@ The 1.1.x native keys keep working. Move to the right-hand column to use the pro
 
 ### Step 2: Render with your current values, unchanged
 
-Keep your 1.1.x values. Pin the environment explicitly if you relied on the old default (`global.env.name`), remove the keys from [section 3](#3-keys-app-10x-no-longer-reads-are-dropped), and diff the render (next section). The expected difference is the new default keys plus the removed ones.
+Keep your 1.1.x values. Pin the environment explicitly if you relied on the old default (`global.env.name`), remove the keys from [section 3](#3-keys-app-1x-no-longer-reads-are-dropped), and diff the render (next section). The expected difference is the new default keys plus the removed ones.
 
 ### Step 3: Move to the global-first shape (optional, recommended)
 

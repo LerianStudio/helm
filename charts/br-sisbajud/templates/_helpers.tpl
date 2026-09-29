@@ -416,7 +416,7 @@ Inputs (dict): cm, p (params map), f (field), k (env key), d (default), opt.
 {{- end -}}
 
 {{/*
-br-sisbajud.removedKeys — env keys app 1.0.x no longer reads. They are dropped
+br-sisbajud.removedKeys — env keys app 1.x no longer reads. They are dropped
 from the ConfigMap/Secret escape hatch (NOTES.txt lists any that are still set).
 The Midaz/CRM connector routing and credentials moved to the per-institution
 institution_config.connector_metadata row; STA institution identity moved to

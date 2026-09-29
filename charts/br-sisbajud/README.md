@@ -10,7 +10,7 @@
 - Production overrides: `global.datastores` (postgres, redis), `global.objectStorage` (sisbajud, sta), `global.kms`, `global.streaming`, `global.auth`, `global.env`, the Secret keys above (or `brSisbajud.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `brSisbajud.cors.allowedOrigins`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Apache-2.0. The `br-sisbajud` service source is `github.com/LerianStudio/br-sisbajud`.
 
-Deploys **br-sisbajud**, the Lerian SISBAJUD plugin (judicial asset blocking and unblocking with BACEN SISBAJUD). The service is a single Go binary that runs the HTTP API and the background workers in one process. The chart tracks application **1.0.2** (`appVersion`); the app, migrations and topics images follow `appVersion` unless pinned.
+Deploys **br-sisbajud**, the Lerian SISBAJUD plugin (judicial asset blocking and unblocking with BACEN SISBAJUD). The service is a single Go binary that runs the HTTP API and the background workers in one process. The chart tracks application **1.1.0** (`appVersion`); the app, migrations and topics images follow `appVersion` unless pinned.
 
 ---
 
@@ -28,7 +28,7 @@ Deploys **br-sisbajud**, the Lerian SISBAJUD plugin (judicial asset blocking and
 | br-sta | Remittance intake (business facts) and return-file submission | `brSisbajud.sta`, `global.objectStorage.sta` |
 | S3-compatible object storage | Encrypted seizure artifacts and the br-sta transfer bucket | `global.objectStorage` + `secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY` |
 
-The Midaz ledger and CRM connectors are **not** configured through this chart: since app 1.0.x each institution carries its own routing and sealed credentials in `institution_config.connector_metadata`. Seed one institution per tenant through the admin API (`POST /v1/institutions`) before orders can execute.
+The Midaz ledger and CRM connectors are **not** configured through this chart: since app 1.x each institution carries its own routing and sealed credentials in `institution_config.connector_metadata`. Seed one institution per tenant through the admin API (`POST /v1/institutions`) before orders can execute.
 
 ---
 

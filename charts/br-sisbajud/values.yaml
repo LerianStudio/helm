@@ -342,7 +342,7 @@ migrations:
 # extraEnvVars); SASL password and CA cert come from a dedicated PreSync Secret
 # (or from the existing Secret / extraEnvVars valueFrom).
 #
-# lib-streaming v4 topics (app 1.0.x): the app's own `lerian.streaming.br-sisbajud`
+# lib-streaming v4 topics (app 1.x): the app's own `lerian.streaming.br-sisbajud`
 # and `.dlq` are also created by the app's Builder when its principal holds the
 # CreateTopics ACL; `.commands` is NOT — a consumer on a broker with auto-create
 # off never creates it and the balance trigger fails silently. All three are

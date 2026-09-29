@@ -2,7 +2,7 @@
 {{- include "br-sisbajud.validate" . -}}
 {{- /* Chart-modeled keys (templates/_helpers.tpl br-sisbajud.configmapData), then
    the escape hatch: any other brSisbajud.configmap key is emitted verbatim,
-   except the keys app 1.0.x no longer reads (br-sisbajud.removedKeys). */ -}}
+   except the keys app 1.x no longer reads (br-sisbajud.removedKeys). */ -}}
 {{- $body := include "br-sisbajud.configmapData" . -}}
 {{- $emitted := fromYaml $body -}}
 {{- $removed := include "br-sisbajud.removedKeys" . | fromJsonArray -}}

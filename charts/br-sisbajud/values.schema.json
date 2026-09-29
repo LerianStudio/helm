@@ -70,6 +70,22 @@
     "seaweedfsBuckets": {
       "type": "object",
       "additionalProperties": true
+    },
+    "openbao": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "openbaoTransit": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "redpandaBundle": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "redpanda": {
+      "type": "object",
+      "additionalProperties": true
     }
   }
 }

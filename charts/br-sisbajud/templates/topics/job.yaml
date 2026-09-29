@@ -66,9 +66,7 @@ metadata:
   labels:
     {{- include "br-sisbajud-topics.labels" . | nindent 4 }}
   annotations:
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-weight: "-1"
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    {{- include "br-sisbajud.presyncJobAnnotations" (dict "bundled" (eq (include "br-sisbajud.redpandaEnabled" .) "true")) | nindent 4 }}
 spec:
   backoffLimit: {{ .Values.topics.backoffLimit | default 3 }}
   activeDeadlineSeconds: {{ .Values.topics.activeDeadlineSeconds | default 600 }}
@@ -86,6 +84,31 @@ spec:
       {{- with $pullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if eq (include "br-sisbajud.redpandaEnabled" .) "true" }}
+      {{- $brokers := index $data "STREAMING_BROKERS" | default "" }}
+      {{- $first := first (splitList "," $brokers) | trim }}
+      initContainers:
+        # Bundled Redpanda starts in the same sync: wait for its Kafka listener.
+        - name: wait-for-broker
+          image: {{ .Values.brSisbajud.waitImage | default "busybox:1.36" }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              HP="{{ $first }}"; H="${HP%:*}"; P="${HP##*:}";
+              echo "waiting for broker $H:$P...";
+              until nc -z "$H" "$P"; do echo "broker not ready, waiting..."; sleep 5; done;
+              echo "broker is ready"
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
       {{- end }}
       containers:
         - name: topics

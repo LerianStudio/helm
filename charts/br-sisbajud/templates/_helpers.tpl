@@ -157,6 +157,105 @@ into the release namespace.
 {{- end -}}
 
 {{/*
+Bundled OpenBao (openbao subchart, dev mode). Service = openbao.fullname
+(collapse-aware "<release>-openbao", honoring fullnameOverride/nameOverride),
+port 8200, plain HTTP (global.tlsDisable default), in the release namespace.
+*/}}
+{{- define "br-sisbajud.openbaoEnabled" -}}
+{{- ternary "true" "false" (eq (toString (.Values.openbao | default dict).enabled) "true") -}}
+{{- end -}}
+
+{{- define "br-sisbajud.openbaoAddr" -}}
+{{- $ob := .Values.openbao | default dict -}}
+{{- $port := (($ob.server | default dict).service | default dict).port | default 8200 -}}
+{{- printf "http://%s.%s.svc.cluster.local:%v" (include "lerian-common.dependency.fullname" (dict "chartName" "openbao" "chartValues" $ob "context" .)) .Release.Namespace $port -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.openbaoDevToken — the dev root token the bundled OpenBao starts
+with (openbao.server.dev.devRootToken). Required when the bundle is on: the
+chart copies it into the app Secret (VAULT_TOKEN), so it must be explicit.
+*/}}
+{{- define "br-sisbajud.openbaoDevToken" -}}
+{{- $dev := (((.Values.openbao | default dict).server | default dict).dev | default dict) -}}
+{{- if not $dev.devRootToken -}}
+{{- fail "\n\nERROR: br-sisbajud: openbao.enabled needs openbao.server.dev.devRootToken (the dev root token; the chart writes it to the app Secret as VAULT_TOKEN). See values-dev.yaml.\n" -}}
+{{- end -}}
+{{- $dev.devRootToken -}}
+{{- end -}}
+
+{{/*
+Bundled Redpanda (redpanda subchart). It names its Services after
+fullnameOverride, else the RELEASE name (no suffix). Internal Kafka listener
+port = listeners.kafka.port (9093).
+*/}}
+{{- define "br-sisbajud.redpandaEnabled" -}}
+{{- ternary "true" "false" (eq (toString (.Values.redpandaBundle | default dict).enabled) "true") -}}
+{{- end -}}
+
+{{- define "br-sisbajud.redpandaBrokers" -}}
+{{- $rp := .Values.redpanda | default dict -}}
+{{- $name := $rp.fullnameOverride | default .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- $port := (($rp.listeners | default dict).kafka | default dict).port | default 9093 -}}
+{{- printf "%s.%s.svc.cluster.local.:%v" $name .Release.Namespace $port -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.streamingContext — the context handed to lerian-common.streaming.env.
+With the bundled Redpanda on and no global.streaming.brokers, it injects the
+derived brokers at the global tier, so configmap.STREAMING_BROKERS still wins
+and an explicit global value is untouched.
+*/}}
+{{- define "br-sisbajud.streamingGlobal" -}}
+{{- $gs := deepCopy (((.Values.global | default dict).streaming) | default dict) -}}
+{{- if and (eq (include "br-sisbajud.redpandaEnabled" .) "true") (not $gs.brokers) -}}
+{{- $_ := set $gs "brokers" (include "br-sisbajud.redpandaBrokers" .) -}}
+{{- end -}}
+{{- toYaml $gs -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.bundleGuard — OpenBao (dev mode: in-memory keys; a restart makes
+encrypted data unrecoverable) and Redpanda (single broker, no TLS/SASL) are
+dev-only and refused in a production-like environment. The postgresql/valkey/
+seaweedfs bundles are allowed, as in the sibling charts, but NOTES.txt warns.
+*/}}
+{{- define "br-sisbajud.bundleGuard" -}}
+{{- if eq (include "br-sisbajud.productionLike" .) "true" -}}
+{{- $bad := list -}}
+{{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" -}}{{- $bad = append $bad "openbao (dev mode: keys live in memory; a pod restart loses them and every value encrypted under them becomes unrecoverable)" -}}{{- end -}}
+{{- if eq (include "br-sisbajud.redpandaEnabled" .) "true" -}}{{- $bad = append $bad "redpandaBundle / redpanda (single broker, no TLS, no SASL)" -}}{{- end -}}
+{{- if $bad -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: dev-only bundle enabled in a production-like environment (ENVIRONMENT_NAME=%q):\n  - %s\n  Use external Vault/AWS KMS and Kafka/Redpanda (global.kms / global.streaming), or set global.env.name to local|development|staging|e2e|test for a dev install (values-dev.yaml).\n" (include "br-sisbajud.envName" .) (join "\n  - " $bad)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.presyncJobAnnotations — hook annotations for the migrations/topics
+Jobs. Against EXTERNAL infra they are ArgoCD PreSync hooks (the dependency
+already exists, so the app never boots unmigrated / without topics). When the
+dependency is BUNDLED it is created in the same sync, so a PreSync hook would
+wait forever: the Job then runs as a Helm post-install/post-upgrade hook /
+ArgoCD Sync hook next to the subchart and waits for it in its initContainer.
+before-hook-creation replaces the Job each run, so the immutable spec.template
+never blocks an upgrade. Input: dict "bundled" bool.
+*/}}
+{{- define "br-sisbajud.presyncJobAnnotations" -}}
+{{- if .bundled -}}
+helm.sh/hook: post-install,post-upgrade
+helm.sh/hook-weight: "0"
+helm.sh/hook-delete-policy: before-hook-creation
+argocd.argoproj.io/hook: Sync
+argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+{{- else -}}
+argocd.argoproj.io/hook: PreSync
+argocd.argoproj.io/hook-weight: "-1"
+argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+{{- end -}}
+{{- end -}}
+
+{{/*
 br-sisbajud.extraEnv — brSisbajud.extraEnvVars as a YAML map {NAME: value},
 with "__valueFrom__" for entries sourced via valueFrom. Lets the fail-fast gates
 and the topics Job see values an operator supplies as explicit pod env (the
@@ -424,7 +523,7 @@ REDIS_CA_CERT: {{ $redisCa | quote }}
 # --- KMS / Vault Transit (lerian-common.kms.value); token + secret-id in the Secret --
 {{- $kmsProvider := include "br-sisbajud.kmsProvider" . }}
 KMS_PROVIDER: {{ $kmsProvider | quote }}
-VAULT_ADDR: {{ include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "vaultAddr" "nativeKey" "VAULT_ADDR" "default" "") | quote }}
+VAULT_ADDR: {{ include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "vaultAddr" "nativeKey" "VAULT_ADDR" "default" (ternary (include "br-sisbajud.openbaoAddr" .) "" (eq (include "br-sisbajud.openbaoEnabled" .) "true"))) | quote }}
 VAULT_AUTH_METHOD: {{ include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "vaultAuthMethod" "nativeKey" "VAULT_AUTH_METHOD" "default" "token") | quote }}
 VAULT_APPROLE_ROLE_ID: {{ include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "vaultRoleId" "nativeKey" "VAULT_APPROLE_ROLE_ID" "default" "") | quote }}
 VAULT_TRANSIT_MOUNT_PATH: {{ include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "vaultMount" "nativeKey" "VAULT_TRANSIT_MOUNT_PATH" "default" "transit") | quote }}
@@ -527,7 +626,7 @@ STREAMING_ENABLED: {{ $streamingRaw | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "cloudeventsSource" "k" "STREAMING_CLOUDEVENTS_SOURCE" "d" "br-sisbajud") }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "clientId" "k" "STREAMING_CLIENT_ID" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "healthCheckTimeout" "k" "STREAMING_HEALTH_CHECK_TIMEOUT" "d" "2s") }}
-{{ include "lerian-common.streaming.env" (dict "context" $ "enabled" $streamingOn "configmap" $cm) }}
+{{ include "lerian-common.streaming.env" (dict "context" (dict "Values" (dict "global" (dict "streaming" (include "br-sisbajud.streamingGlobal" . | fromYaml)))) "enabled" $streamingOn "configmap" $cm) }}
 {{ include $kv (dict "cm" $cm "p" $b.balanceConsumer "f" "group" "k" "BALANCE_CONSUMER_GROUP" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.balanceConsumer "f" "dedupTtl" "k" "BALANCE_DEDUP_TTL" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.balanceConsumer "f" "retryBudget" "k" "BALANCE_CONSUMER_RETRY_BUDGET" "opt" true) }}
@@ -596,6 +695,10 @@ POSTGRES_PASSWORD: {{ $s.POSTGRES_PASSWORD | quote }}
 {{- if and (not $vkInternal) (not $vkAuth.existingSecret) $s.REDIS_PASSWORD }}
 REDIS_PASSWORD: {{ $s.REDIS_PASSWORD | quote }}
 {{- end }}
+{{- if and (eq (include "br-sisbajud.openbaoEnabled" .) "true") (not $s.VAULT_TOKEN) (not (hasKey $x "VAULT_TOKEN")) }}
+{{- /* Bundled OpenBao (dev mode): the app authenticates with its dev root token. */}}
+VAULT_TOKEN: {{ include "br-sisbajud.openbaoDevToken" . | quote }}
+{{- end }}
 {{- range $k := list "POSTGRES_REPLICA_PASSWORD" "LICENSE_KEY" "VAULT_TOKEN" "VAULT_APPROLE_SECRET_ID" "SEAWEEDFS_ACCESS_KEY" "SEAWEEDFS_SECRET_KEY" "STA_CLIENT_SECRET" "IDP_M2M_CLIENT_SECRET" }}
 {{- with index $s $k }}
 {{ $k }}: {{ . | quote }}
@@ -652,6 +755,7 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- $ := . -}}
 {{- $b := .Values.brSisbajud -}}
 {{- $cm := $b.configmap | default dict -}}
+{{- include "br-sisbajud.bundleGuard" . -}}
 {{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
 {{- $req := "br-sisbajud.required" -}}
 {{- $prodLike := eq (include "br-sisbajud.productionLike" .) "true" -}}

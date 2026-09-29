@@ -11,5 +11,11 @@ dependencies:
 - name: seaweedfs
   repository: https://seaweedfs.github.io/seaweedfs/helm
   version: 4.0.393
-digest: sha256:3bd54f505db04b996675a1ae834ede136f7339c64ba081cd0e877cdb0f14fc2d
-generated: "2026-09-29T10:19:47.327388-03:00"
+- name: openbao
+  repository: https://openbao.github.io/openbao-helm
+  version: 0.30.0
+- name: redpanda
+  repository: https://charts.redpanda.com
+  version: 26.2.4
+digest: sha256:a894ac18e2e754574df317a988eef57e2c0758e0c79b96146f56b30bce5aef01
+generated: "2026-09-29T10:36:48.211491-03:00"

@@ -55,3 +55,14 @@ dependencies:
     version: "4.0.393"
     repository: "https://seaweedfs.github.io/seaweedfs/helm"
     condition: seaweedfs.enabled
+  # DEV-ONLY bundles (the chart refuses them in a production-like environment).
+  - name: openbao
+    version: "0.30.0"
+    repository: "https://openbao.github.io/openbao-helm"
+    condition: openbao.enabled
+  - name: redpanda
+    version: "26.2.4"
+    repository: "https://charts.redpanda.com"
+    # The redpanda chart's values schema is closed (no `enabled` key), so the
+    # toggle lives outside its values block.
+    condition: redpandaBundle.enabled

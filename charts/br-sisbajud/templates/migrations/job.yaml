@@ -25,6 +25,7 @@
 {{- /* Bundled (or existingSecret) Postgres: the password is single-sourced from the
    subchart Secret, same as the app. */ -}}
 {{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
+{{- $pgFromSubchartBundled := eq (include "br-sisbajud.postgresInternal" .) "true" -}}
 {{- $pgFromSubchart := and (not .Values.migrations.useExistingSecret) (or (eq (include "br-sisbajud.postgresInternal" .) "true") $pgAuth.existingSecret) -}}
 {{- /* ALLOW_INSECURE_TLS: lib-commons' migrator refuses non-TLS Postgres unless this
    is true; sslmode=disable alone is not enough. Resolution:
@@ -45,9 +46,7 @@ metadata:
   labels:
     {{- include "br-sisbajud-migrations.labels" . | nindent 4 }}
   annotations:
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-weight: "-1"
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    {{- include "br-sisbajud.presyncJobAnnotations" (dict "bundled" $pgFromSubchartBundled) | nindent 4 }}
 spec:
   backoffLimit: {{ .Values.migrations.backoffLimit | default 3 }}
   activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds | default 600 }}

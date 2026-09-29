@@ -29,6 +29,24 @@ longer emits them: {{ join ", " $set }}.
 The Midaz/CRM connector routing and credentials now live per institution in
 institution_config.connector_metadata (admin API). See docs/UPGRADE-2.0.md.
 {{- end }}
+{{- if eq (include "br-sisbajud.productionLike" .) "true" }}
+{{- $bundled := list }}
+{{- if eq (include "br-sisbajud.postgresEnabled" .) "true" }}{{ $bundled = append $bundled "postgresql" }}{{ end }}
+{{- if eq (include "br-sisbajud.valkeyEnabled" .) "true" }}{{ $bundled = append $bundled "valkey" }}{{ end }}
+{{- if eq (include "br-sisbajud.seaweedfsEnabled" .) "true" }}{{ $bundled = append $bundled "seaweedfs" }}{{ end }}
+{{- if $bundled }}
+
+WARNING: bundled {{ join ", " $bundled }} enabled in a production-like environment.
+These single-replica, plaintext subcharts are meant for dev/evaluation; use
+managed PostgreSQL / Valkey / S3 in production (global.datastores / global.objectStorage).
+{{- end }}
+{{- end }}
+{{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" }}
+
+OpenBao runs in DEV mode: its Transit keys live in memory. Restarting the
+OpenBao pod loses them and every value encrypted under them becomes
+unrecoverable. Dev/evaluation only.
+{{- end }}
 
 Institution onboarding is NOT configured here: seed one institution_config row per
 institution via the admin API (POST /v1/institutions) before orders can execute.

@@ -1,0 +1,63 @@
+# br-sisbajud — values-dev.yaml: a SELF-CONTAINED dev / evaluation install.
+#
+#   helm install br-sisbajud charts/br-sisbajud -f charts/br-sisbajud/values-dev.yaml -n sisb-dev --create-namespace
+#
+# Bundles PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, dev mode)
+# and Redpanda (Kafka API) in the release namespace. NEVER use it for
+# production: OpenBao dev mode keeps its keys in memory (a restart makes the
+# encrypted data unrecoverable), S3 auth is off, TLS is off everywhere, and the
+# chart refuses to render OpenBao/Redpanda in a production-like environment.
+#
+# What development relaxes in the app (internal/bootstrap/config_validation.go):
+# an empty LICENSE_KEY disables license validation (dev bypass),
+# POSTGRES_SSLMODE=disable and a plaintext broker are allowed. Features that
+# need services this bundle does not provide are OFF: inbound auth
+# (plugin-access-manager), the access-manager declaration publisher, the br-sta
+# consumer/transfers client, multi-tenancy. The Midaz ledger is not bundled:
+# institutions (and their connector_metadata) are still seeded via the admin API.
+global:
+  env:
+    name: "development"
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+  auth:
+    enabled: false
+  multiTenant:
+    enabled: false
+  observability:
+    enabled: false
+
+brSisbajud:
+  sta:
+    consumerEnabled: false
+    transfersEnabled: false
+  identity:
+    declarationEnabled: false
+  swagger:
+    enabled: true
+  vault:
+    # The dev root token never expires; renewal would be a no-op.
+    tokenRenewEnabled: false
+
+postgresql:
+  enabled: true
+  external: false
+valkey:
+  enabled: true
+  external: false
+seaweedfs:
+  enabled: true
+openbao:
+  enabled: true
+  server:
+    dev:
+      # Public, dev-only root token (the same value the app's own
+      # config/.env.example uses). The chart copies it into the app Secret as
+      # VAULT_TOKEN; it never lands in a ConfigMap.
+      devRootToken: "dev-root-token"
+redpandaBundle:
+  enabled: true
+
+topics:
+  replicationFactor: 1

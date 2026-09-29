@@ -499,3 +499,105 @@ seaweedfsBuckets:
       memory: 64Mi
     limits:
       memory: 256Mi
+
+# -- Bundled OpenBao (Vault-API compatible KMS), DISABLED by default. DEV ONLY:
+# it runs in dev mode (in-memory storage, auto-unsealed, root token). A pod
+# restart LOSES every Transit key, and data encrypted under them becomes
+# unrecoverable — so the chart refuses to render it in a production-like
+# environment. When enabled and no explicit address is set, VAULT_ADDR derives
+# from the subchart Service (http://<release>-openbao.<release namespace>.svc.cluster.local:8200),
+# KMS_PROVIDER=vault, VAULT_AUTH_METHOD=token, and VAULT_TOKEN is written to the
+# app SECRET from server.dev.devRootToken (set it; see values-dev.yaml).
+# openbaoTransit below enables the Transit engine the app uses; the app itself
+# creates its KEKs (sisbajud-kek-<institution>) at boot.
+openbao:
+  enabled: false
+  injector:
+    enabled: false
+  csi:
+    enabled: false
+  server:
+    # No Kubernetes auth method in the dev bundle: skip the cluster-scoped
+    # auth-delegator ClusterRoleBinding.
+    authDelegator:
+      enabled: false
+    dev:
+      enabled: true
+    standalone:
+      enabled: false
+    ha:
+      enabled: false
+    dataStorage:
+      enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+
+# -- Transit bootstrap Job for the bundled OpenBao (rendered only when
+# openbao.enabled). Idempotent: enables the Transit engine at the resolved
+# VAULT_TRANSIT_MOUNT_PATH when it is not mounted yet. Helm
+# post-install/post-upgrade hook (ArgoCD PostSync).
+openbaoTransit:
+  image:
+    # The OpenBao server image of the pinned subchart (openbao 0.30.0, app v2.7.0).
+    repository: quay.io/openbao/openbao
+    tag: "2.7.0"
+    pullPolicy: IfNotPresent
+  backoffLimit: 6
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+# -- Toggle for the bundled Redpanda below. It lives OUTSIDE the redpanda block
+# because the redpanda chart's values schema is closed and rejects `enabled`.
+redpandaBundle:
+  enabled: false
+
+# -- Bundled Redpanda (Kafka API), DISABLED by default (redpandaBundle.enabled). DEV ONLY: one broker,
+# no TLS, no SASL, no external listener, no cert-manager — the chart refuses to
+# render it in a production-like environment. When enabled and no explicit
+# brokers are set, STREAMING_BROKERS derives from the subchart Service
+# (<fullnameOverride|release>.<release namespace>.svc.cluster.local.:<kafka port>)
+# and the topics Job waits for the broker instead of running as a PreSync hook.
+redpanda:
+  # The subchart names its Services after the RELEASE (no suffix); pin a name so
+  # it can never collide with this chart's own Service.
+  fullnameOverride: "redpanda"
+  console:
+    enabled: false
+  statefulset:
+    replicas: 1
+    podAntiAffinity:
+      type: soft
+  tls:
+    enabled: false
+  auth:
+    sasl:
+      enabled: false
+  external:
+    enabled: false
+  # Privileged tuning container — not for a dev bundle.
+  tuning:
+    tune_aio_events: false
+  resources:
+    cpu:
+      cores: 1
+      overprovisioned: true
+    memory:
+      container:
+        max: 2Gi
+  storage:
+    persistentVolume:
+      enabled: true
+      size: 5Gi
+  # Runs rpk cluster-config against the broker after install; not needed here.
+  post_install_job:
+    enabled: false

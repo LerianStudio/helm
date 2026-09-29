@@ -721,7 +721,8 @@ ignored. Only a semantic version whose MAJOR.MINOR is below 3.3 counts: every
 3.3.0 prerelease already carries the gate. Anything that is not a semantic
 version (latest, a branch or commit tag) returns "", because the chart cannot
 place it before the gate. The version is matched by a strict regex (each
-number at most nine digits) and compared as integers, never with
+number at most nine digits, so atoi cannot overflow; no `+build` group, since
+an image tag cannot contain `+`) and compared as integers, never with
 semverCompare, which errors on input it cannot parse and would break the render
 instead of answering.
 
@@ -736,7 +737,7 @@ Input (dict): context (root .), component ("auth" | "identity").
 {{- $tag = regexReplaceAll "@.*$" ($tag | default (include "plugin.version" .context)) "" -}}
 {{- $num := `(0|[1-9][0-9]{0,8})` -}}
 {{- $ids := `[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*` -}}
-{{- if regexMatch (printf `^v?%s\.%s\.%s(-%s)?(\+%s)?$` $num $num $num $ids $ids) $tag -}}
+{{- if regexMatch (printf `^v?%s\.%s\.%s(-%s)?$` $num $num $num $ids) $tag -}}
 {{- $core := splitList "." (regexFind `^[0-9]+\.[0-9]+` (trimPrefix "v" $tag)) -}}
 {{- $major := atoi (index $core 0) -}}
 {{- $minor := atoi (index $core 1) -}}
@@ -748,7 +749,9 @@ Input (dict): context (root .), component ("auth" | "identity").
 plugin-access-manager.jwksUrlHostIsLoopback — "true" when the host of the URL
 passed as `.` is a loopback literal as lib-auth decides it, with no DNS: the
 name `localhost` (exact, case-sensitive) or an IP literal in 127.0.0.0/8 or
-::1. The host is cut out the way net/url does it: query and fragment dropped,
+::1 (IPv4-mapped forms such as ::ffff:127.0.0.1 are deliberately not
+recognized: nobody points a JWKS URL at one, and missing them only fails
+closed). The host is cut out the way net/url does it: query and fragment dropped,
 the authority after `//` up to the first `/`, minus userinfo, port and the IPv6
 brackets. Only identity's JWKS client honors this exemption; auth has none.
 */}}
@@ -762,7 +765,7 @@ brackets. Only identity's JWKS client honors this exemption; auth has none.
 {{- end -}}
 {{- $octet := `(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])` -}}
 {{- $v4 := printf `127\.%s\.%s\.%s` $octet $octet $octet -}}
-{{- if or (eq $host "localhost") (regexMatch (printf `^%s$` $v4) $host) (regexMatch `^[0:]*:0{0,3}1$` $host) (regexMatch (printf `^[0:]*:ffff:%s$` $v4) $host) (regexMatch `^[0:]*:ffff:7f[0-9a-f]{2}:[0-9a-f]{1,4}$` $host) -}}true{{- end -}}
+{{- if or (eq $host "localhost") (regexMatch (printf `^%s$` $v4) $host) (regexMatch `^[0:]*:0{0,3}1$` $host) -}}true{{- end -}}
 {{- end -}}
 {{- end }}
 
@@ -787,10 +790,15 @@ it:
     same derivation from AUTHORIZER_ADDRESS. lib-auth accepts https, or http
     to a loopback host. Boot fails with "initializing m2m jwks key source".
 
-Every input is resolved exactly as the component ConfigMap renders it. The
-check is skipped where the application boots anyway:
+Every input is resolved exactly as the pod receives it: the value the
+component ConfigMap renders, except that a key also set in
+<component>.extraEnvVars takes the extraEnvVars value, because extraEnvVars is
+rendered last in the same data map and the last duplicate wins when the
+manifest is parsed (identity's PLUGIN_AUTH_ENABLED is looked up in
+extraEnvVars under that rendered name). The check is skipped where the
+application boots anyway:
   - ENV_NAME is development, staging or local (same lerian-common.globalValue
-    call as the ConfigMap: native key, global.env.name, cloud preset, default);
+    call as the ConfigMap: native key, global.env.name, default);
   - the component image predates the gate (imageBeforeJwksGate);
   - identity with PLUGIN_AUTH_ENABLED not true: the pass-through authenticator
     fetches no JWKS;
@@ -812,48 +820,71 @@ Input (dict): context (root .), component ("auth" | "identity").
 {{- $component := .component -}}
 {{- $values := index $ctx.Values $component -}}
 {{- $cm := $values.configmap | default dict -}}
+{{- $extra := $values.extraEnvVars | default dict -}}
+{{- if not (kindIs "map" $extra) -}}
+{{- $extra = dict -}}
+{{- end -}}
 {{- $envName := include "lerian-common.globalValue" (dict "context" $ctx "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") -}}
+{{- $envSource := "the chart default" -}}
+{{- $envFix := "set global.env.name" -}}
+{{- if hasKey $extra "ENV_NAME" -}}
+{{- $envName = toString (index $extra "ENV_NAME") -}}
+{{- $envSource = printf "%s.extraEnvVars.ENV_NAME, which overrides the ConfigMap value" $component -}}
+{{- $envFix = printf "set %s.extraEnvVars.ENV_NAME" $component -}}
+{{- else if hasKey $cm "ENV_NAME" -}}
+{{- $envSource = printf "%s.configmap.ENV_NAME" $component -}}
+{{- $envFix = printf "set %s.configmap.ENV_NAME (it takes precedence over global.env.name)" $component -}}
+{{- else if hasKey (($ctx.Values.global | default dict).env | default dict) "name" -}}
+{{- $envSource = "global.env.name" -}}
+{{- end -}}
 {{- $check := not (has (lower (trim $envName)) (list "development" "staging" "local")) -}}
 {{- if include "plugin-access-manager.imageBeforeJwksGate" (dict "context" $ctx "component" $component) -}}
 {{- $check = false -}}
 {{- end -}}
 {{- $addr := $cm.AUTHORIZER_ADDRESS | default (printf "http://%s:%v" (include "plugin-caradhras.fullname" $ctx) (include "caradhras.servicePort" $ctx)) | toString -}}
-{{- $url := printf "%s/.well-known/jwks" (regexReplaceAll "/+$" $addr "") -}}
 {{- $source := printf "the chart default for %s.configmap.AUTHORIZER_ADDRESS, the in-cluster Caradhras Service over plain http" $component -}}
-{{- if $cm.AUTHORIZER_ADDRESS -}}
+{{- if hasKey $extra "AUTHORIZER_ADDRESS" -}}
+{{- $addr = toString (index $extra "AUTHORIZER_ADDRESS") -}}
+{{- $source = printf "%s.extraEnvVars.AUTHORIZER_ADDRESS, which overrides the ConfigMap value" $component -}}
+{{- else if $cm.AUTHORIZER_ADDRESS -}}
 {{- $source = printf "%s.configmap.AUTHORIZER_ADDRESS" $component -}}
 {{- end -}}
+{{- $url := printf "%s/.well-known/jwks" (regexReplaceAll "/+$" $addr "") -}}
 {{- $loopbackOk := false -}}
+{{- $hint := "" -}}
 {{- if eq $component "auth" -}}
-{{- $extra := $values.extraEnvVars | default dict -}}
-{{- $legacySd := "" -}}
-{{- if kindIs "map" $extra -}}
-{{- $legacySd = toString (index $extra "SERVICE_DISCOVERY_ENABLED" | default "") -}}
-{{- end -}}
+{{- $legacySd := toString (index $extra "SERVICE_DISCOVERY_ENABLED" | default "") -}}
 {{- if or (eq (toString ($cm.SD_ENABLED | default "false")) "true") (eq $legacySd "true") -}}
 {{- $check = false -}}
 {{- end -}}
 {{- else -}}
-{{- if not (has (toString ($cm.AUTH_ENABLED | default "true")) (list "1" "t" "T" "TRUE" "true" "True")) -}}
+{{- $authEnabled := toString ($cm.AUTH_ENABLED | default "true") -}}
+{{- if hasKey $extra "PLUGIN_AUTH_ENABLED" -}}
+{{- $authEnabled = toString (index $extra "PLUGIN_AUTH_ENABLED") -}}
+{{- end -}}
+{{- if not (has $authEnabled (list "1" "t" "T" "TRUE" "true" "True")) -}}
 {{- $check = false -}}
 {{- end -}}
 {{- $explicit := trim (toString ($cm.AUTH_M2M_JWKS_URL | default "")) -}}
+{{- $explicitSource := "identity.configmap.AUTH_M2M_JWKS_URL" -}}
+{{- if hasKey $extra "AUTH_M2M_JWKS_URL" -}}
+{{- $explicit = trim (toString (index $extra "AUTH_M2M_JWKS_URL" | default "")) -}}
+{{- $explicitSource = "identity.extraEnvVars.AUTH_M2M_JWKS_URL" -}}
+{{- end -}}
 {{- if $explicit -}}
 {{- $url = $explicit -}}
-{{- $source = "identity.configmap.AUTH_M2M_JWKS_URL, which overrides the URL derived from AUTHORIZER_ADDRESS: make it https too, or remove it" -}}
+{{- $source = printf "%s, which overrides the URL derived from AUTHORIZER_ADDRESS: make it https too, or remove it" $explicitSource -}}
+{{- else if $values.useExistingSecret -}}
+{{- $hint = "\n      If identity's existing Secret sets AUTH_M2M_JWKS_URL, the chart cannot see it: move it to identity.configmap.AUTH_M2M_JWKS_URL." -}}
 {{- end -}}
 {{- $loopbackOk = true -}}
 {{- end -}}
 {{- $scheme := trimSuffix ":" (regexFind `^[A-Za-z][A-Za-z0-9+.-]*:` $url) | lower -}}
 {{- $bootsAnyway := or (eq $scheme "https") (and $loopbackOk (eq $scheme "http") (include "plugin-access-manager.jwksUrlHostIsLoopback" $url)) -}}
 {{- if and $check (not $bootsAnyway) -}}
-{{- $envSource := "the chart default" -}}
-{{- if hasKey $cm "ENV_NAME" -}}
-{{- $envSource = printf "%s.configmap.ENV_NAME" $component -}}
-{{- else if hasKey (($ctx.Values.global | default dict).env | default dict) "name" -}}
-{{- $envSource = "global.env.name" -}}
-{{- end -}}
-{{- printf "\n   %s: ENV_NAME %q (from %s)\n      JWKS URL %q (from %s)" $component $envName $envSource $url $source -}}
+{{- /* Mask URL userinfo: the message lands in CI and ArgoCD logs. */ -}}
+{{- $shown := regexReplaceAll `://[^/?#@]*@` $url "://***@" -}}
+{{- printf "\n   %s: ENV_NAME %q (from %s)\n      JWKS URL %q (from %s)\n      To treat it as non-production instead: %s.%s" $component $envName $envSource $shown $source $envFix $hint -}}
 {{- end -}}
 {{- end }}
 
@@ -888,6 +919,6 @@ here would only let a guaranteed crash render.
 {{- end -}}
 {{- end -}}
 {{- if $failing -}}
-{{- fail (printf "\n\nERROR: plugin-access-manager: %s would crash-loop at startup: the Caradhras JWKS URL is not https in an environment the application treats as production.%s\n   Since application 3.3.0, auth and identity fetch the JWKS over https whenever ENV_NAME is not development, staging or local, and no setting relaxes this. The process exits before its telemetry flushes, so the reason shows only in `kubectl logs --previous` and helm reports a timeout.\n   Fix: Caradhras serves plain http, so terminate TLS in front of it with caradhras.ingress, using a certificate from a public CA (the chart cannot mount a private CA), and set auth.configmap.AUTHORIZER_ADDRESS and identity.configmap.AUTHORIZER_ADDRESS to the SAME https URL: identity also pins that address as the issuer of M2M tokens.\n   Only if this environment really is not production, set global.env.name to development, staging or local instead; that also switches off the application's production-only behavior.\n   See docs/UPGRADE-9.5.8.md.\n" (join " and " $failing) $details) -}}
+{{- fail (printf "\n\nERROR: plugin-access-manager: %s would crash-loop at startup: the Caradhras JWKS URL is not https in an environment the application treats as production.%s\n   Since application 3.3.0, auth and identity fetch the JWKS over https whenever ENV_NAME is not development, staging or local, and no setting relaxes this. The process exits before its telemetry flushes, so the reason shows only in `kubectl logs --previous` and helm reports a timeout.\n   Fix: Caradhras serves plain http, so terminate TLS in front of it with caradhras.ingress, using a certificate from a public CA (the chart cannot mount a private CA), and set auth.configmap.AUTHORIZER_ADDRESS and identity.configmap.AUTHORIZER_ADDRESS to the SAME https URL: identity also pins that address as the issuer of M2M tokens.\n   Keep that ingress internal: it also serves the Caradhras admin panel, and caradhras.ingress inherits global.ingress className, annotations and domain, so set caradhras.ingress.className and annotations explicitly to an internal class or load-balancer scheme.\n   Only if this environment really is not production, set ENV_NAME to development, staging or local instead (where, per component, is shown above); that also switches off the application's production-only behavior.\n   See docs/UPGRADE-9.5.8.md.\n" (join " and " $failing) $details) -}}
 {{- end -}}
 {{- end }}

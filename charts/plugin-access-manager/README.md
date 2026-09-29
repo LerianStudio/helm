@@ -408,13 +408,17 @@ put TLS in front of it with `caradhras.ingress`, using a certificate from a
 public CA, and set `auth.configmap.AUTHORIZER_ADDRESS` and
 `identity.configmap.AUTHORIZER_ADDRESS` to the **same** `https` URL (identity
 also pins that address as the M2M token issuer). Keep that ingress internal:
-it exposes the Caradhras admin panel and API.
+it exposes the Caradhras admin panel and API, and it inherits `global.ingress`
+`className`, `annotations` and `domain`, so set its own `className` and
+`annotations` to an internal class or load-balancer scheme.
 
 The chart **refuses to render** an `ENV_NAME` outside that list together with a
 JWKS URL the application would reject, because the pods would otherwise
 crash-loop before logging anything to your collector. With service discovery
 on (`SD_ENABLED=true`) the chart cannot see the address auth resolves, so it
-does not check auth; discovery must still resolve Caradhras to `https`. Worked
+does not check auth; discovery must still resolve Caradhras to `https`. A key
+set in `<component>.extraEnvVars` is read with the value the pod gets (it
+renders last and wins). Worked
 example, pre-upgrade check and caveats: `docs/UPGRADE-9.5.8.md`.
 
 #### Session store (required above one replica)

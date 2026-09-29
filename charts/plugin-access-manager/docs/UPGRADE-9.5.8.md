@@ -33,7 +33,7 @@ Caradhras itself serves plain http, and the chart's default `AUTHORIZER_ADDRESS`
 | Component | JWKS URL | Accepted when `ENV_NAME` is not `development` / `staging` / `local` |
 |-----------|----------|------------------------------------------------------------------|
 | auth | `<AUTHORIZER_ADDRESS>/.well-known/jwks`, or the Caradhras address resolved by service discovery when `SD_ENABLED=true` | `https` only |
-| identity (while `PLUGIN_AUTH_ENABLED` is true, the default) | `AUTH_M2M_JWKS_URL` when set, else `<AUTHORIZER_ADDRESS>/.well-known/jwks` | `https`, or `http` to a loopback host (`localhost`, `127.0.0.1`, `::1`) |
+| identity (while `PLUGIN_AUTH_ENABLED` is true, the default) | `AUTH_M2M_JWKS_URL` when set, else `<AUTHORIZER_ADDRESS>/.well-known/jwks` | `https`, or `http` to a loopback host (`localhost`, `127.0.0.0/8`, `::1`) |
 
 | `ENV_NAME` | Caradhras address | v9.5.7 (app `3.1.0`) | v9.5.8 (app `3.9.0`) |
 |------------|-------------------|----------------------|----------------------|
@@ -83,11 +83,18 @@ global:
 caradhras:
   ingress:
     enabled: true
-    className: "nginx"            # prefer an internal-only ingress class
+    # Set className and annotations explicitly: caradhras.ingress inherits
+    # global.ingress className, annotations and domain, so an install whose
+    # global ingress is public would otherwise expose Caradhras publicly.
+    className: "nginx-internal"   # an internal-only ingress class
     annotations:
-      # Restrict who can reach the Caradhras admin panel and API, e.g. with
-      # ingress-nginx (uncomment the line below and set your CIDRs):
-      # nginx.ingress.kubernetes.io/whitelist-source-range: "<cluster pod and node CIDRs>"
+      # On AWS Load Balancer Controller use instead:
+      #   alb.ingress.kubernetes.io/scheme: internal
+      # Optional extra restriction on ingress-nginx. List the source address the
+      # ingress actually sees from your pods: VPC/node CIDRs for an internal load
+      # balancer (with externalTrafficPolicy: Cluster), NAT gateway egress IPs for
+      # a public one. Pod CIDRs alone block auth and identity on most clouds.
+      # nginx.ingress.kubernetes.io/whitelist-source-range: "<source CIDRs>"
     hosts:
       - host: caradhras.example.com
         paths:
@@ -107,14 +114,14 @@ identity:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"   # same value as auth
 ```
 
-This renders an Ingress named `<release>-caradhras`, with TLS for the host, routing to the Caradhras Service on port `8000`. The TLS Secret (`caradhras-tls` here) is yours to provide, for example through cert-manager.
+This renders an Ingress named `<release>-caradhras`, with TLS for the host, routing to the Caradhras Service on port `8000`. The TLS Secret (`caradhras-tls` here) is yours to provide, for example through cert-manager. For an internal-only ingress, use a DNS-01 solver: HTTP-01 cannot validate a host the CA cannot reach, and making the ingress public to pass the challenge exposes the admin panel.
 
 Things to get right:
 
 - **A certificate from a public CA.** The auth and identity images trust only their default CA bundle, and the chart cannot mount a custom CA, so a self-signed or private-CA certificate fails the TLS handshake. auth's `wait-for-dependencies` init container polls `<AUTHORIZER_ADDRESS>/api/health` with `curl`, so it also waits until that handshake succeeds.
 - **Reachable from inside the cluster.** auth and identity call this hostname from their own pods, so it must resolve and route there, not only from users' networks.
-- **The same URL on both components, with no trailing slash.** identity also uses `AUTHORIZER_ADDRESS` as the expected issuer (`iss`) of M2M tokens and compares it exactly, while Caradhras stamps the issuer from the address it was called on (unless its own `origin` setting is set). After the switch, confirm that an M2M call to identity is still accepted. Tokens issued before the switch carry the old issuer, so identity rejects them until the client obtains a new one.
-- **Keep the ingress internal.** `caradhras.ingress` exposes the Caradhras admin panel and API. Use an internal ingress class or load balancer, or restrict source ranges (for example `nginx.ingress.kubernetes.io/whitelist-source-range` on ingress-nginx).
+- **The same URL on both components, with no trailing slash.** identity also uses `AUTHORIZER_ADDRESS` as the expected issuer (`iss`) of M2M tokens and compares it exactly, while Caradhras stamps the issuer from the address it was called on (the chart does not set Caradhras's `origin`). So every M2M client must obtain its tokens through exactly that https URL; a token fetched through the in-cluster Service or another hostname carries an `iss` that identity rejects. After the switch, confirm that an M2M call to identity is still accepted. Tokens issued before the switch carry the old issuer, so identity rejects them until the client obtains a new one.
+- **Keep the ingress internal.** `caradhras.ingress` exposes the Caradhras admin panel and API, and it inherits `global.ingress` `className`, `annotations` and `domain`, so an install with a public global ingress gets a public Caradhras unless it overrides them. Set `caradhras.ingress.className` and `annotations` explicitly to an internal ingress class or load-balancer scheme. Source-range allowlists are extra protection on top of that, not a replacement: list the address the ingress actually sees from your pods (see the example above).
 - **Every call to Caradhras goes through it**, not only the JWKS fetch: auth's logins and token issuance and identity's Caradhras API calls too. The ingress becomes part of the login path, so give it the timeouts, limits and availability that path needs.
 - **IP allowlists.** Caradhras now sees platform calls arrive through the ingress, from a different source address than the pods. If your organizations use an IP allowlist, review `PLATFORM_INTERNAL_CIDRS` (which must stay identical on `auth.configmap` and `identity.configmap`) so it covers that path.
 

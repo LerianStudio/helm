@@ -7,7 +7,7 @@ Verify:
   kubectl -n {{ $ns }} get cm,secret -l app.kubernetes.io/instance={{ .Release.Name }}
 {{- if .Values.manager.enabled }}
 
-Transfers API (manager): http://{{ include "br-sta.componentFullname" (dict "root" . "component" "manager") }}.{{ $ns }}.svc.cluster.local:{{ .Values.manager.service.port | default 4028 }}
+Transfers API (manager): http://{{ include "br-sta.managerServiceName" . }}.{{ $ns }}.svc.cluster.local:{{ .Values.manager.service.port | default 4028 }}
   br-sisbajud points brSisbajud.sta.transfersBaseUrl at this URL (POST /v1/transfers).
 {{- end }}
 {{- if not .Values.worker.enabled }}

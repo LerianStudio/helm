@@ -56,6 +56,18 @@ $ helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version <new-vers
 
 Coming from the pre-release `br-sta-helm` 1.0.0-beta.x charts: the values moved to the productized shape. The app block `br-sta:` becomes `common:` (shared config and secrets) plus `manager:` (the Deployment), the worker keeps `worker:`, and every native env key under `br-sta.configmap` / `br-sta.secrets` goes to `common.configmap` / `common.secrets` (or, better, to the matching `global.*` mask / grouped parameter). The manager Service is now `<release-name-base>-manager` on port `4028`, and `otel-collector-lerian.enabled` is replaced by `global.observability.enabled`.
 
+### Keeping an existing in-cluster address
+
+The manager Service is `<fullname>-manager:4028` by default. To keep an address clients already call (e.g. `br-sta:8080` from the pre-release chart), set only values: the Service name and port change, the container keeps listening on the app's `4028`:
+
+```yaml
+manager:
+  containerPort: 4028   # SERVER_ADDRESS / containerPort
+  service:
+    name: br-sta        # Service metadata.name
+    port: 8080          # Service port -> targetPort http (4028)
+```
+
 ## Uninstalling
 
 ```console
@@ -116,7 +128,7 @@ Shared (`common.*`):
 | `app.deploymentMode` / `configApiEnabled` | `DEPLOYMENT_MODE` / `CONFIG_API_ENABLED` | unset (app: not saas / `true`) |
 | `app.systemplaneEnabled` / `circuitBreakerEnabled` | `SYSTEMPLANE_ENABLED` / `CIRCUIT_BREAKER_ENABLED` | `false` / `false` |
 | `app.infraConnectTimeoutSec` / `dbMetricsIntervalSec` / `idempotencyRetryWindowSec` | `INFRA_CONNECT_TIMEOUT_SEC` / `DB_METRICS_INTERVAL_SEC` / `IDEMPOTENCY_RETRY_WINDOW_SEC` | `30` / `15` / `300` |
-| `server.address` | `SERVER_ADDRESS` | `0.0.0.0:<manager.service.port>` (worker: `0.0.0.0:<worker.port>`) |
+| `server.address` | `SERVER_ADDRESS` | `0.0.0.0:<manager.containerPort>` (worker: `0.0.0.0:<worker.port>`) |
 | `server.bodyLimitBytes` / `tlsTerminatedUpstream` | `HTTP_BODY_LIMIT_BYTES` / `TLS_TERMINATED_UPSTREAM` | `104857600` / `false` |
 | `server.tlsCertFile` / `tlsKeyFile` | `SERVER_TLS_CERT_FILE` / `SERVER_TLS_KEY_FILE` | unset (both or neither) |
 | `server.trustedProxies` | `SERVER_TRUSTED_PROXIES` | `""` (trust no proxy) |

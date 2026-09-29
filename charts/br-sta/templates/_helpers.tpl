@@ -46,6 +46,22 @@ br-sta.componentFullname — "<fullname>-<component>". Input: dict root, compone
 {{- end }}
 
 {{/*
+br-sta.managerServiceName — the manager Service name: manager.service.name when
+set (e.g. to keep a pre-existing in-cluster address), else <fullname>-manager.
+*/}}
+{{- define "br-sta.managerServiceName" -}}
+{{- (.Values.manager.service | default dict).name | default (include "br-sta.componentFullname" (dict "root" . "component" "manager")) | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+br-sta.managerPort — the port the manager container listens on (SERVER_ADDRESS
+and containerPort). manager.containerPort, else manager.service.port, else 4028.
+*/}}
+{{- define "br-sta.managerPort" -}}
+{{- .Values.manager.containerPort | default (.Values.manager.service | default dict).port | default 4028 -}}
+{{- end }}
+
+{{/*
 Selector labels for one component (stable across image bumps). Each component
 selects only its own pods, so the manager PDB never matches a Job or the worker.
 Input: dict root, component.
@@ -468,7 +484,7 @@ ENV_NAME: {{ $envName | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "circuitBreakerEnabled" "k" "CIRCUIT_BREAKER_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "configApiEnabled" "k" "CONFIG_API_ENABLED" "opt" true) }}
 # --- HTTP server + CORS --------------------------------------------------------
-{{ include $kv (dict "cm" $cm "p" $c.server "f" "address" "k" "SERVER_ADDRESS" "d" (printf "0.0.0.0:%v" (.Values.manager.service.port | default 4028))) }}
+{{ include $kv (dict "cm" $cm "p" $c.server "f" "address" "k" "SERVER_ADDRESS" "d" (printf "0.0.0.0:%v" (include "br-sta.managerPort" .))) }}
 {{ include $kv (dict "cm" $cm "p" $c.server "f" "bodyLimitBytes" "k" "HTTP_BODY_LIMIT_BYTES" "d" "104857600") }}
 {{ include $kv (dict "cm" $cm "p" $c.server "f" "tlsTerminatedUpstream" "k" "TLS_TERMINATED_UPSTREAM" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.server "f" "tlsCertFile" "k" "SERVER_TLS_CERT_FILE" "opt" true) }}

@@ -152,7 +152,7 @@ common:
   # dbMetricsIntervalSec, idempotencyRetryWindowSec, circuitBreakerEnabled,
   # configApiEnabled.
   app: {}
-  # -- address (defaults to 0.0.0.0:<manager.service.port>), bodyLimitBytes,
+  # -- address (defaults to 0.0.0.0:<manager containerPort>), bodyLimitBytes,
   # tlsTerminatedUpstream, tlsCertFile, tlsKeyFile, trustedProxies
   # (SERVER_TRUSTED_PROXIES — the Fiber layer / audit client IP).
   server: {}
@@ -278,10 +278,17 @@ manager:
     type: RollingUpdate
     maxSurge: 1
     maxUnavailable: 0
+  # -- The port the manager container listens on (SERVER_ADDRESS defaults to
+  # 0.0.0.0:<containerPort>). Empty = manager.service.port (4028, the app default).
+  containerPort: ""
   service:
     type: ClusterIP
-    # The app's SERVER_ADDRESS default (:4028); SERVER_ADDRESS defaults to 0.0.0.0:<port>.
+    # -- Service port; the Service targets the container's `http` port, so it may
+    # differ from containerPort (e.g. port 8080 in front of a container on 4028).
     port: 4028
+    # -- Service name override. Empty = <fullname>-manager. Set it (e.g. "br-sta")
+    # to keep an existing in-cluster address that clients already call.
+    name: ""
     annotations: {}
   ingress:
     enabled: false

@@ -87,7 +87,7 @@ spec:
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ $m.service.port | default 4028 }}
+              containerPort: {{ include "br-sta.managerPort" . }}
               protocol: TCP
           livenessProbe:
             httpGet:

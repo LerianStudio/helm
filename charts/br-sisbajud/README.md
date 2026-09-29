@@ -254,6 +254,8 @@ With a subchart enabled and no explicit value (`configmap` > dedicated mask > `g
 - **Transit** (`<release>-openbao-transit`, same hooks). It mounts the Transit engine at `VAULT_TRANSIT_MOUNT_PATH` if it is absent. No key is pre-created: the app creates its KEKs (`sisbajud-kek-<institution>`, `sisbajud-kek-connector-<institution>`) itself at boot and per institution. The Job authenticates with the dev token from the app Secret.
 - **Migrations / topics**. With their dependency bundled, these Jobs run as Helm post-install/post-upgrade / ArgoCD **Sync** hooks: a PreSync hook would wait forever for infra created in the same sync. They wait for Postgres / the broker in an initContainer. Against external infra they stay ArgoCD PreSync hooks.
 
+- **App boot ordering.** With a dependency bundled, the app pod itself runs idempotent initContainers before the app starts: `migrate up` (the migrations container, lock-protected), wait-for-broker, the topics entrypoint (list-then-create), and a wait for the Transit mount. The app never boots on a missing schema, missing topics or an unmounted Transit (verified on minikube: 0 restarts, `/readyz` healthy on first start). Against external infra these initContainers are not rendered.
+
 All the bootstrap Jobs are idempotent, non-root with a read-only rootfs (PSS restricted), carry native-sidecar mesh annotations, and are replaced on each run (`before-hook-creation`). The finished Job stays until `ttlSecondsAfterFinished`.
 
 ### Production guard
@@ -271,6 +273,7 @@ The postgresql / valkey / seaweedfs bundles are allowed in any environment, as i
 - **OpenBao restarts lose its keys.** The next `helm upgrade` / sync re-mounts Transit, but previously encrypted rows are unreadable: reset the database too.
 - **The dev root token is visible in the OpenBao pod env** (subchart dev mode). It is a public dev value (`dev-root-token`).
 - **Images.** The `bitnami/*` tags that postgresql 16.3.5 / valkey 2.4.7 default to were removed from Docker Hub. The chart pins the same tags from `bitnamilegacy/*` (`postgresql:17.2.0-debian-12-r5`, `valkey:8.0.2-debian-12-r6`) by tag, with `global.security.allowInsecureImages: true`. SeaweedFS and the bucket Job run `chrislusf/seaweedfs:3.93`. OpenBao and the Transit Job run `quay.io/openbao/openbao:2.7.0`. Redpanda runs its chart default (`docker.redpanda.com/redpandadata/redpanda:v26.2.3`).
-- **The app, migrations and topics images** (`ghcr.io/lerianstudio/br-sisbajud*`) are private: the cluster needs a pull secret for GHCR (`imagePullSecrets`, default `ghcr-credential`).
+- **The app, migrations and topics images** (`ghcr.io/lerianstudio/br-sisbajud*`) are private: the cluster needs a pull secret for GHCR. Top-level `imagePullSecrets` (default `ghcr-credential`) covers the app, migrations, topics and bucket pods; `brSisbajud/migrations/topics.imagePullSecrets` override it per workload.
+- **The bundled Valkey restarts once on the first `helm upgrade`** after install (upstream Bitnami: its `checksum/secret` is only stable once the generated password is reused via `lookup`). The password does not change.
 
 {% endraw %}

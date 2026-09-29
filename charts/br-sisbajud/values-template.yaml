@@ -121,6 +121,8 @@ valkey:
   enabled: false
   external: true
 
+# For a fully self-contained dev install (PostgreSQL, Valkey, SeaweedFS,
+# OpenBao, Redpanda) use values-dev.yaml instead of this file.
 # Bundled SeaweedFS (S3, auth OFF — dev only). When enabled, drop
 # global.objectStorage.sisbajud.endpoint so the endpoint derives from the
 # subchart; the bucket Job creates the configured buckets.

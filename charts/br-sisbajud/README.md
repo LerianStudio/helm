@@ -106,10 +106,10 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `server.bodyLimitBytes` | `HTTP_BODY_LIMIT_BYTES` | `104857600` |
 | `server.tlsTerminatedUpstream` | `TLS_TERMINATED_UPSTREAM` | `false` |
 | `server.tlsCertFile` / `tlsKeyFile` | `SERVER_TLS_CERT_FILE` / `SERVER_TLS_KEY_FILE` | unset (both or neither) |
-| `cors.allowedOrigins` | `CORS_ALLOWED_ORIGINS` | `""` (set in production) |
-| `cors.allowedMethods` | `CORS_ALLOWED_METHODS` | `GET,POST,PUT,PATCH,DELETE,OPTIONS` |
-| `cors.allowedHeaders` | `CORS_ALLOWED_HEADERS` | `Origin,Content-Type,Accept,Authorization,X-Request-ID` |
-| `cors.exposeHeaders` / `allowCredentials` | `CORS_EXPOSE_HEADERS` / `CORS_ALLOW_CREDENTIALS` | `""` / `false` |
+| `cors.allowedOrigins` | `ACCESS_CONTROL_ALLOW_ORIGIN` + `CORS_ALLOWED_ORIGINS` | `""` (set in production: with no origin the CORS middleware denies all) |
+| `cors.allowedMethods` | `ACCESS_CONTROL_ALLOW_METHODS` + `CORS_ALLOWED_METHODS` | `GET,POST,PUT,PATCH,DELETE,OPTIONS` |
+| `cors.allowedHeaders` | `ACCESS_CONTROL_ALLOW_HEADERS` + `CORS_ALLOWED_HEADERS` | `Origin,Content-Type,Accept,Authorization,X-Request-ID` |
+| `cors.exposeHeaders` / `allowCredentials` | `ACCESS_CONTROL_EXPOSE_HEADERS` / `ACCESS_CONTROL_ALLOW_CREDENTIALS` (+ `CORS_*`) | `""` / `false` |
 | `security.allowInsecureTls` | `ALLOW_INSECURE_TLS` | `true` only with a bundled subchart, else `false` |
 | `security.allowCorsWildcard` / `allowInsecureOtel` / `allowWebhookPrivateNetwork` | `ALLOW_CORS_WILDCARD` / `ALLOW_INSECURE_OTEL` / `ALLOW_WEBHOOK_PRIVATE_NETWORK` | unset |
 | `license.organizationIds` | `ORGANIZATION_IDS` | `global` (the only accepted value) |
@@ -208,11 +208,21 @@ A value supplied through `brSisbajud.extraEnvVars` satisfies the gate. With `use
 
 ## Detached migrations
 
-`migrations.enabled` (default `true`) ships an ArgoCD **PreSync** Secret (`hook-weight: -2`) and Job (`hook-weight: -1`) that run `ghcr.io/lerianstudio/br-sisbajud-migrations` (golang-migrate). The Job follows the app's resolved Postgres connection. `migrations.postgres.*` overrides it field by field. With the bundled subchart (or `postgresql.auth.existingSecret`), the password comes from that Secret. `migrations.useExistingSecret` / `existingSecretName` are supported. The Job pod is hardened (non-root, read-only rootfs, drop ALL, no service-account token) and waits for Postgres with a `busybox` initContainer.
+`migrations.enabled` (default `true`) ships a Job that runs `ghcr.io/lerianstudio/br-sisbajud-migrations` (golang-migrate). Against external Postgres it is a Helm `pre-install,pre-upgrade` hook and an ArgoCD **PreSync** hook (weight `-1`), so both `helm install/upgrade` and ArgoCD migrate before the app rolls. The Job follows the app's resolved Postgres connection; `migrations.postgres.*` overrides it field by field.
+
+The password comes from the **same source the app uses**, in this order:
+1. the bundled subchart or `postgresql.auth.existingSecret`;
+2. `migrations.useExistingSecret`;
+3. `migrations.postgres.password`;
+4. a `brSisbajud.extraEnvVars` `POSTGRES_PASSWORD` entry (reused verbatim);
+5. `brSisbajud.useExistingSecret`;
+6. `brSisbajud.secrets.POSTGRES_PASSWORD`.
+
+Sources 3 and 6 are copied into a dedicated hook Secret (weight `-2`), because the app Secret does not exist yet in pre-install/PreSync. With none set, the render fails. The Job pod is hardened (non-root, read-only rootfs, drop ALL, no service-account token) and waits for Postgres with a `busybox` initContainer.
 
 ## Topic provisioning
 
-While streaming is enabled, `topics.enabled` (default `true`) ships a PreSync Job running `ghcr.io/lerianstudio/br-sisbajud-topics` (`rpk`, list-then-create, idempotent). It creates `topics.list` with the app's resolved broker, TLS and SASL settings. The SASL password and CA come from a dedicated PreSync Secret, the existing Secret, or `extraEnvVars`. The default list is the lib-streaming v4 set: `lerian.streaming.br-sisbajud`, `.dlq` and `.commands`. The Builder only creates the first two when its principal holds `CreateTopics`, and it never creates `.commands`. `lerian.streaming.ledger` belongs to Midaz: never list it. `topics.partitions`, `topics.replicationFactor` (must not exceed the broker count) and `topics.retentionMs` tune creation.
+While streaming is enabled, `topics.enabled` (default `true`) ships a Helm pre-install/pre-upgrade + ArgoCD PreSync Job running `ghcr.io/lerianstudio/br-sisbajud-topics` (`rpk`, list-then-create, idempotent). It creates `topics.list` with the app's resolved broker, TLS and SASL settings. The SASL password and CA come from a dedicated hook Secret (weight `-2`), the existing Secret, or `extraEnvVars`. The default list is the lib-streaming v4 set: `lerian.streaming.br-sisbajud`, `.dlq` and `.commands`. The Builder only creates the first two when its principal holds `CreateTopics`, and it never creates `.commands`. `lerian.streaming.ledger` belongs to Midaz: never list it. `topics.partitions`, `topics.replicationFactor` (must not exceed the broker count) and `topics.retentionMs` tune creation.
 
 ## Bundled infrastructure (development only)
 
@@ -243,7 +253,7 @@ With a subchart enabled and no explicit value (`configmap` > dedicated mask > `g
 | `POSTGRES_HOST` / `REDIS_HOST` | Bitnami Services; passwords via `secretKeyRef` to the subchart Secrets |
 | `SEAWEEDFS_S3_ENDPOINT` (+ `STA_OBJECT_STORAGE_ENDPOINT`) | `http://<seaweedfs.nameOverride\|seaweedfs>-s3.<release ns>.svc.cluster.local:<s3.port>` |
 | `VAULT_ADDR` | `http://<release>-openbao.<release ns>.svc.cluster.local:8200` (collapse-aware); `KMS_PROVIDER=vault`, `VAULT_AUTH_METHOD=token` |
-| `VAULT_TOKEN` (Secret) | `openbao.server.dev.devRootToken` (required when the bundle is on) |
+| `VAULT_TOKEN` | `secretKeyRef` to the chart-generated dev-token Secret (`br-sisbajud-openbao-dev-token`, key `token`) |
 | `STREAMING_BROKERS` | `<redpanda.fullnameOverride\|release>.<release ns>.svc.cluster.local.:9093`, injected at the `global.streaming` tier |
 
 `POSTGRES_SSLMODE` defaults to `disable` and `ALLOW_INSECURE_TLS` to `true` with a bundled datastore.
@@ -252,7 +262,7 @@ With a subchart enabled and no explicit value (`configmap` > dedicated mask > `g
 
 - **Buckets** (`<release>-seaweedfs-buckets`, Helm post-install/post-upgrade, ArgoCD PostSync). The app never creates buckets. This Job creates `SEAWEEDFS_BUCKET`, `STA_INBOUND_BUCKET`, `TRANSFER_OBJECT_STORAGE_BUCKET` and `seaweedfsBuckets.extraBuckets` with `weed shell` (list, create the missing ones, verify).
 - **Transit** (`<release>-openbao-transit`, same hooks). It mounts the Transit engine at `VAULT_TRANSIT_MOUNT_PATH` if it is absent. No key is pre-created: the app creates its KEKs (`sisbajud-kek-<institution>`, `sisbajud-kek-connector-<institution>`) itself at boot and per institution. The Job authenticates with the dev token from the app Secret.
-- **Migrations / topics**. With their dependency bundled, these Jobs run as Helm post-install/post-upgrade / ArgoCD **Sync** hooks: a PreSync hook would wait forever for infra created in the same sync. They wait for Postgres / the broker in an initContainer. Against external infra they stay ArgoCD PreSync hooks.
+- **Migrations / topics**. With their dependency bundled, these Jobs run as Helm post-install/post-upgrade / ArgoCD **Sync** hooks: a PreSync hook would wait forever for infra created in the same sync. They wait for Postgres / the broker in an initContainer. Against external infra they are Helm pre-install/pre-upgrade + ArgoCD PreSync hooks.
 
 - **App boot ordering.** With a dependency bundled, the app pod itself runs idempotent initContainers before the app starts: `migrate up` (the migrations container, lock-protected), wait-for-broker, the topics entrypoint (list-then-create), and a wait for the Transit mount. The app never boots on a missing schema, missing topics or an unmounted Transit (verified on minikube: 0 restarts, `/readyz` healthy on first start). Against external infra these initContainers are not rendered.
 
@@ -271,7 +281,7 @@ The postgresql / valkey / seaweedfs bundles are allowed in any environment, as i
 
 - **S3 auth is OFF** (`seaweedfs.s3.enableAuth: false`). To enable it, set `seaweedfs.s3.enableAuth: true` + `seaweedfs.s3.existingConfigSecret`, and put the keys in `brSisbajud.secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY` (Secret only).
 - **OpenBao restarts lose its keys.** The next `helm upgrade` / sync re-mounts Transit, but previously encrypted rows are unreadable: reset the database too.
-- **The dev root token is visible in the OpenBao pod env** (subchart dev mode). It is a public dev value (`dev-root-token`).
+- **The OpenBao dev root token is generated per install.** It is a random 40-character value in the Secret named in `openbao.server.extraSecretEnvironmentVars` (default `br-sisbajud-openbao-dev-token`), reused on upgrade via `lookup`. OpenBao reads it as `BAO_DEV_ROOT_TOKEN_ID`, which wins over the subchart's plaintext `VAULT_DEV_ROOT_TOKEN_ID` default, so that default is not a working token. The app, the Transit Job and the Transit wait read the same Secret. Under GitOps, where `lookup` sees nothing, set `openbaoDevToken.token` (an AVP placeholder) or the token rotates on every render. The Secret name is fixed: one bundled OpenBao per namespace.
 - **Images.** The `bitnami/*` tags that postgresql 16.3.5 / valkey 2.4.7 default to were removed from Docker Hub. The chart pins the same tags from `bitnamilegacy/*` (`postgresql:17.2.0-debian-12-r5`, `valkey:8.0.2-debian-12-r6`) by tag, with `global.security.allowInsecureImages: true`. SeaweedFS and the bucket Job run `chrislusf/seaweedfs:3.93`. OpenBao and the Transit Job run `quay.io/openbao/openbao:2.7.0`. Redpanda runs its chart default (`docker.redpanda.com/redpandadata/redpanda:v26.2.3`).
 - **The app, migrations and topics images** (`ghcr.io/lerianstudio/br-sisbajud*`) are private: the cluster needs a pull secret for GHCR. Top-level `imagePullSecrets` (default `ghcr-credential`) covers the app, migrations, topics and bucket pods; `brSisbajud/migrations/topics.imagePullSecrets` override it per workload.
 - **The bundled Valkey restarts once on the first `helm upgrade`** after install (upstream Bitnami: its `checksum/secret` is only stable once the generated password is reused via `lookup`). The password does not change.

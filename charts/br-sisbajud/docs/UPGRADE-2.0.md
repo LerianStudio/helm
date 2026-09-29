@@ -101,6 +101,9 @@ A values mistake now fails the render with the key to set, instead of CrashLoopi
 - `brSisbajud.tolerations` defaults to a list (`[]`).
 - `brSisbajud.replicaCount: 0` is honored (1.1.x coerced it to `1`).
 - With a bundled Postgres / Redpanda, the migrations / topics Jobs run as Helm post-install/post-upgrade (ArgoCD Sync) hooks instead of PreSync.
+- Against external infra, the migrations / topics Jobs and their Secrets are now also Helm `pre-install,pre-upgrade` hooks, so a plain `helm install/upgrade` migrates before the app. ArgoCD behavior is unchanged: the `argocd.argoproj.io/*` annotations win.
+- The migrations Job takes its Postgres password from the app's own credential source (existing Secret, `extraEnvVars`, `brSisbajud.secrets`, or the bundled/existing subchart Secret) instead of only `brSisbajud.secrets`. It fails the render if none is set.
+- **CORS now works.** The CORS middleware (lib-commons v7.9.0 `withCORS.go`) reads `ACCESS_CONTROL_ALLOW_ORIGIN` / `_METHODS` / `_HEADERS` / `_EXPOSE_HEADERS` / `_CREDENTIALS`, not the app's `CORS_*`. 1.1.x only set `CORS_*`, so the middleware fell back to `*` and denied every origin. The chart now renders both families from one resolution. An existing `brSisbajud.configmap.CORS_ALLOWED_ORIGINS` flows into `ACCESS_CONTROL_ALLOW_ORIGIN`, and a native `configmap.ACCESS_CONTROL_*` wins.
 - The bundled `postgresql` / `valkey` subcharts pull `bitnamilegacy/*` images: the `bitnami/*` tags they default to no longer exist on Docker Hub. The tags are the same, so existing data stays readable. The bundled Postgres now creates the `br_sisbajud` role and database, and the bundled Valkey runs standalone.
 - `SERVER_ADDRESS` defaults to `0.0.0.0:<service.port>`, and `VERSION` / `SWAGGER_VERSION` default to the image tag.
 
@@ -133,7 +136,7 @@ The 1.1.x native keys keep working. Move to the right-hand column to use the pro
 | `OTEL_RESOURCE_SERVICE_NAME` / `OTEL_LIBRARY_NAME` | `brSisbajud.observability.{serviceName,libraryName}` |
 | `LOG_LEVEL`, `DEPLOYMENT_MODE`, `DEFAULT_TENANT_ID`, `VERSION` | `brSisbajud.app.{logLevel,deploymentMode,defaultTenantId,version}` |
 | `SERVER_ADDRESS`, `HTTP_BODY_LIMIT_BYTES`, `TLS_TERMINATED_UPSTREAM` | `brSisbajud.server.{address,bodyLimitBytes,tlsTerminatedUpstream}` |
-| `CORS_ALLOWED_ORIGINS` / `METHODS` / `HEADERS` | `brSisbajud.cors.{allowedOrigins,allowedMethods,allowedHeaders}` |
+| `CORS_ALLOWED_ORIGINS` / `METHODS` / `HEADERS` | `brSisbajud.cors.{allowedOrigins,allowedMethods,allowedHeaders}` (also rendered as `ACCESS_CONTROL_*`) |
 | `ALLOW_INSECURE_TLS` | `brSisbajud.security.allowInsecureTls` |
 | `ORGANIZATION_IDS`, `IS_DEVELOPMENT` | `brSisbajud.license.{organizationIds,isDevelopment}` |
 | `STA_CONSUMER_ENABLED`, `STA_TRANSFERS_ENABLED`, `STA_TRANSFERS_BASE_URL`, `STA_EXPECTED_TENANT_ST`, `STA_BACEN_SYSTEM_CODE`, `STA_SOURCE_PRODUCT`, `STA_CLIENT_ID` | `brSisbajud.sta.{consumerEnabled,transfersEnabled,transfersBaseUrl,expectedTenantSt,bacenSystemCode,sourceProduct,clientId}` |

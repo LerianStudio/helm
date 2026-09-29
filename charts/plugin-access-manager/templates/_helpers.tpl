@@ -770,32 +770,38 @@ brackets. Only identity's JWKS client honors this exemption; auth has none.
 plugin-access-manager.jwksTlsViolation — the reason ONE component would refuse
 to boot because its Caradhras JWKS URL is not https in an environment the
 application treats as production, as a detail line for validateJwksTls; ""
-when the component boots.
+when the component boots, or when the chart cannot tell (service discovery,
+below).
 
 Since application 3.3.0, auth and identity fetch the Caradhras JWKS (the key
 set every token is verified against) over https only, unless ENV_NAME, trimmed
 and lower-cased, is development, staging or local. Any other value
 (production, empty, a typo, `dev`) fails closed, and no other setting relaxes
 it:
-  - auth: TrimRight(AUTHORIZER_ADDRESS, "/") + "/.well-known/jwks" must parse
-    with scheme https; there is no loopback exemption. Boot fails with
-    "jwks cache upstream must use https".
+  - auth: TrimRight(<Caradhras address>, "/") + "/.well-known/jwks" must parse
+    with scheme https, where the address is AUTHORIZER_ADDRESS, or the one
+    service discovery resolves when it is on; there is no loopback exemption.
+    Boot fails with "jwks cache upstream must use https".
   - identity, only when PLUGIN_AUTH_ENABLED parses true (strconv.ParseBool:
     1, t, T, TRUE, true, True): AUTH_M2M_JWKS_URL (trimmed) or, when empty, the
     same derivation from AUTHORIZER_ADDRESS. lib-auth accepts https, or http
     to a loopback host. Boot fails with "initializing m2m jwks key source".
 
-Every input is resolved exactly as the component ConfigMap renders it, and the
-check is skipped exactly where the application boots anyway:
+Every input is resolved exactly as the component ConfigMap renders it. The
+check is skipped where the application boots anyway:
   - ENV_NAME is development, staging or local (same lerian-common.globalValue
     call as the ConfigMap: native key, global.env.name, cloud preset, default);
   - the component image predates the gate (imageBeforeJwksGate);
-  - auth with service discovery on (SD_ENABLED, or the legacy
-    SERVICE_DISCOVERY_ENABLED in auth.extraEnvVars, exactly "true"):
-    discovery may resolve Caradhras to an https endpoint the chart cannot see;
   - identity with PLUGIN_AUTH_ENABLED not true: the pass-through authenticator
     fetches no JWKS;
   - identity with an http JWKS URL on a loopback host (jwksUrlHostIsLoopback).
+It is also skipped where the chart cannot see the address, although the
+requirement still applies:
+  - auth with service discovery on (SD_ENABLED, or the legacy
+    SERVICE_DISCOVERY_ENABLED in auth.extraEnvVars, exactly "true"): the
+    Caradhras address is resolved at runtime and goes through the same https
+    gate, so discovery must resolve Caradhras to https or auth still
+    crash-loops. A render-time blind spot, not an exemption.
 The scheme is read the way net/url reads it (leading letters up to `:`,
 lower-cased), so `HTTPS://` passes as it does in the application.
 
@@ -855,7 +861,7 @@ Input (dict): context (root .), component ("auth" | "identity").
 plugin-access-manager.validateJwksTls — refuse to render a release that the
 application would refuse to boot because a component would fetch the
 Caradhras JWKS over something other than https in an environment it treats as
-production (see jwksTlsViolation for the exact rule and every exemption).
+production (see jwksTlsViolation for the exact rule and every case it skips).
 Included once, from templates/auth/configmap.yaml (always rendered), and
 checks BOTH components, so one failure names every component that would
 crash-loop instead of whichever template Helm happens to render first.

@@ -43,7 +43,7 @@ Caradhras itself serves plain http, and the chart's default `AUTHORIZER_ADDRESS`
 
 **Who is affected:**
 
-Every install whose `ENV_NAME` (`global.env.name`, or per component `auth.configmap.ENV_NAME` / `identity.configmap.ENV_NAME`) is not `development`, `staging` or `local`, and whose auth or identity JWKS URL from the table above is not `https`. When `ENV_NAME` is not set anywhere, the chart renders `development` and the install is not affected. A component whose image is pinned below `3.3.0` is not affected either.
+Every install whose `ENV_NAME` (`global.env.name`, or per component `auth.configmap.ENV_NAME` / `identity.configmap.ENV_NAME`) is not `development`, `staging` or `local`, and whose auth or identity JWKS URL from the table above is not accepted there. When `ENV_NAME` is not set anywhere, the chart renders `development` and the install is not affected. A component whose image is pinned below `3.3.0` is not affected either.
 
 **What happens if you upgrade anyway:**
 
@@ -120,7 +120,7 @@ Things to get right:
 
 identity's `wait-for-dependencies` init container only checks TCP reachability of plugin-auth, so it is unaffected.
 
-**Render-time check:** chart releases after v9.5.8 refuse to render this combination. The error names every component that would crash-loop, its resolved `ENV_NAME`, its JWKS URL and the values they came from, instead of letting the pods crash-loop. The check is skipped exactly where the application starts anyway: `ENV_NAME` is `development`, `staging` or `local`; the component's image tag is a version below `3.3.0`; auth uses service discovery (`SD_ENABLED=true`); identity has `PLUGIN_AUTH_ENABLED` off; or identity's JWKS URL is `http` to a loopback host. There is no value that turns the check off, because the application has none.
+**Render-time check:** chart releases after v9.5.8 refuse to render this combination. The error names every component that would crash-loop, its resolved `ENV_NAME`, its JWKS URL and the values they came from, instead of letting the pods crash-loop. The check is skipped where the application starts anyway: `ENV_NAME` is `development`, `staging` or `local`; the component's image tag is a version below `3.3.0`; identity has `PLUGIN_AUTH_ENABLED` off; or identity's JWKS URL is `http` to a loopback host. It is also skipped for auth with service discovery on (`SD_ENABLED=true`), because the chart cannot inspect the address discovery will resolve. The requirement still applies there: discovery must resolve Caradhras to an `https` address, or auth still exits at startup; it is just not checked at render time. There is no value that turns the check off, because the application has none.
 
 # Fixes
 

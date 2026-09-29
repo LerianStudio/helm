@@ -1,0 +1,7 @@
+# The chart renders no Secret: every role and the pre-install migration Job read
+# one operator-provisioned Secret and a PostgreSQL this kind cluster does not run.
+# With the hook on, the install fails in the hook and the gate cannot tell that
+# from a chart defect; with it off, every manifest is applied server-side and the
+# pods fail only on the missing Secret, which the allow-list absorbs as readiness.
+migrations:
+  enabled: false

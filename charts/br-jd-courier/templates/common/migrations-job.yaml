@@ -1,0 +1,61 @@
+{{- if .Values.migrations.enabled }}
+{{- include "br-jd-courier.guards" . }}
+{{- /* Every spelling strconv.ParseBool reads as true (1, t, T, true, True, TRUE), and a
+     few more it does not: refusing too much is safe here, refusing too little is not. */}}
+{{- if has (lower (trim (toString (get .Values.config "MULTI_TENANT_ENABLED" | default "false")))) (list "1" "t" "true") }}
+{{- fail "migrations.enabled=true with MULTI_TENANT_ENABLED=true: this Job migrates ONE database, and nothing on the platform applies per-tenant migrations on deploy. Set migrations.enabled=false and apply per-tenant migrations through the tenant manager." }}
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-migrate" (include "br-jd-courier.fullname" .) | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "br-jd-courier.labels" (dict "ctx" . "component" "migrate") | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-jd-courier.selector" (dict "ctx" . "component" "migrate") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          # The same image as every role: it ships /migrate and /migrations.
+          image: {{ include "br-jd-courier.image" . | quote }}
+          imagePullPolicy: {{ (index .Values "jd-courier" "image").pullPolicy }}
+          command: ["/migrate"]
+          args: ["-path", "/migrations", "-database", "$(DATABASE_URL)", "up"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "br-jd-courier.secretName" . }}
+                  key: DATABASE_URL
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          {{- with .Values.migrations.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

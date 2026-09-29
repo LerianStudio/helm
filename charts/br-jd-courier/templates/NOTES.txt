@@ -1,0 +1,10 @@
+JD Courier {{ .Chart.AppVersion }} — roles rendered:
+{{- range $key, $role := dict "spbConsumer" "spb-consumer" "spbSender" "spb-sender" "pixIngress" "pix-ingress" "admin" "admin" }}
+{{- $values := index $.Values.roles $key }}
+  {{ $role }}: {{ if $values.enabled }}{{ $values.replicas }} replica(s){{ else }}disabled{{ end }}
+{{- end }}
+
+spb-consumer is a single writer: never scale it above one.
+{{- if eq (lower (toString (get .Values.config "MULTI_TENANT_ENABLED" | default "false"))) "true" }}
+Multi-tenant: per-tenant migrations are NOT applied by this chart.
+{{- end }}

@@ -6,7 +6,7 @@
 - Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
-- Initial admin: the bootstrap admin (`admin@midaz.tech`) is first seeded from `init_data.json` baked into the `ghcr.io/lerianstudio/caradhras` image at first boot, with a placeholder password. While `auth.initUser.enabled` is true, a `post-install` hook Job then sets that account's password to the operator-supplied credential: `auth.initUser.adminPassword` when `auth.initUser.useExistingSecret=false`, otherwise the `adminPasswordSecretKey` value from the Secret named by `auth.initUser.adminPasswordSecretName`. The hook runs on `helm install` only, never on upgrades, so upgrades and later value changes neither reset the password nor recreate a deleted admin account, and passwords rotated inside Caradhras are preserved. If `auth.initUser.enabled=false`, the chart never touches the account and the image placeholder stays live; rotate it immediately after the first login.
+- Initial admin: `auth.initUser.enabled` controls a `post-install` bootstrap Job only. It never runs on upgrades, so upgrades and later values changes do not reset the password or recreate a deleted admin account. The v3.9.0 init-user binary preserves existing users instead of resetting their credentials. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow; do not assume `auth.initUser.adminPassword` overwrites them. For a new account, supply that value or the key selected by `auth.initUser.adminPasswordSecretName` / `adminPasswordSecretKey`.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
 > **Uninstall keeps the identity data.** `helm uninstall` leaves the bundled database volume (`data-<release>-auth-database-0`) and its password Secret (`<release>-auth-database`), so a reinstall under the same release name opens the same users, organizations and applications with the same password. This chart, not the Bitnami subchart, owns that Secret: it takes `auth-database.auth.password` when set, else the Secret already in the namespace, else a new random password. Deleting the data is a separate, manual step: delete that PVC and that Secret together (the Valkey volume `valkey-data-<release>-valkey-primary-0`, sessions and cached tokens only, is left too). Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned.
@@ -14,6 +14,40 @@
 This helm chart installs [Plugin Acess Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance and open-source ledger.
 
 ---
+
+## Startup validation (chart source after 9.5.8)
+
+The published `9.5.8` package does not contain these render-time guards. A new
+chart release is required to distribute them; changing this repository does not
+mutate that package.
+
+- **JWKS over HTTPS.** Outside `development`, `staging` or `local`, auth and
+  identity must reach Caradhras over `https`; the chart refuses to render the
+  combinations the application would refuse to boot, and names every failing
+  component in one error. What is checked and what is skipped (images below
+  `3.3.0`, identity loopback, auth with service discovery) is in
+  [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https).
+- **MFA.** `auth.configmap.MFA_ENABLED` (or its legacy `extraEnvVars` form) requires
+  `auth.secrets.MFA_SECRET` when the chart creates the Secret. With
+  `auth.useExistingSecret=true`, provide `auth.existingSecretName` and ensure the
+  existing Secret has a non-empty `MFA_SECRET`. Offline rendering checks the
+  reference, not Secret contents. Never put `MFA_SECRET` in `extraEnvVars`, which
+  writes a ConfigMap. Do not disable MFA to work around missing configuration.
+- **Chart-owned keys.** Put `ENV_NAME` and `AUTHORIZER_ADDRESS` in each component's
+  `configmap`, and identity's auth switch in `identity.configmap.AUTH_ENABLED`, not in
+  `extraEnvVars`: they are already emitted and duplicate YAML keys are refused. Set
+  `AUTH_M2M_JWKS_URL` in one place only.
+- These checks validate chart-visible settings only; they do not certify an
+  end-to-end upgrade, TLS trust, licenses, or existing users' MFA recovery paths.
+  See the [9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md) before rollout.
+
+The offline regression suite in `tests/` is not wired into CI yet. Run it from the
+repository root; it needs Helm 3 and PyYAML, no cluster:
+
+```bash
+helm dependency build charts/plugin-access-manager
+python3 charts/plugin-access-manager/tests/test_startup_contract.py
+```
 
 ## Install Plugin Access Manager Helm Chart:
 

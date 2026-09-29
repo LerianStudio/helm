@@ -1,28 +1,43 @@
-# Helm Upgrade from v9.5.7 to v9.5.8
+# Upgrade to plugin-access-manager 9.5.8
 
-# Topics
+Chart **9.5.8** selects Access Manager **3.9.0**. Treat this as an application upgrade, not just a chart change: existing values, upstream TLS, signing keys, MFA enrollments and database state must be checked first. Backward compatibility and a successful rollback are **not guaranteed**.
 
-- **[Breaking change: production-like installs need Caradhras over HTTPS](#breaking-change-production-like-installs-need-caradhras-over-https)**
-- **[Fixes](#fixes)**
-  - [1. Application Version Update](#1-application-version-update)
-  - [2. User Initialization Image Update](#2-user-initialization-image-update)
-- **[Features](#features)**
-  - [3. SSO Security and Network Configuration](#3-sso-security-and-network-configuration)
-  - [4. Self-Service Password Recovery](#4-self-service-password-recovery)
-  - [5. Machine-to-Machine Authentication Configuration](#5-machine-to-machine-authentication-configuration)
-  - [6. Single-Tenant SSO Organization Support](#6-single-tenant-sso-organization-support)
-  - [7. JWKS Cache TTL Configuration](#7-jwks-cache-ttl-configuration)
-- **[Configuration Reference](#configuration-reference)**
-  - [Identity Service SSO Configuration](#identity-service-sso-configuration)
-  - [Identity Service M2M Configuration](#identity-service-m2m-configuration)
-  - [Auth Service SSO Configuration](#auth-service-sso-configuration)
-  - [Auth Service JWKS Configuration](#auth-service-jwks-configuration)
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+> **Warning:** Read [Production-like `ENV_NAME`: reach Caradhras over HTTPS](#production-like-env_name-reach-caradhras-over-https) before upgrading any install whose `ENV_NAME` is not `development`, `staging` or `local`, including environments that are not production but run with a production `ENV_NAME`. With the chart's default Caradhras address, auth and identity **fail to start** after this upgrade.
 
-# Breaking change: production-like installs need Caradhras over HTTPS
+Application behavior below is checked against [v3.9.0](https://github.com/LerianStudio/plugin-access-manager/tree/v3.9.0), resolved to commit `fe633e3c1939a51c09c5d3809160c51f5809ade1`. Source links use that immutable commit. Chart behavior is defined by this chart's [values](../values.yaml) and templates, not by the application's development branch.
 
-> **Warning:** Read this section before upgrading any install whose `ENV_NAME` is not `development`, `staging` or `local`, including environments that are not production but run with a production `ENV_NAME`. With the chart's default Caradhras address, auth and identity **fail to start** after this upgrade.
+## 1. Confirm images and upgrade scope
+
+| Component | Chart default image | Override |
+| --- | --- | --- |
+| Auth | `ghcr.io/lerianstudio/plugin-auth:3.9.0` | `auth.image.repository`, `auth.image.tag` |
+| Identity | `ghcr.io/lerianstudio/plugin-identity:3.9.0` | `identity.image.repository`, `identity.image.tag` |
+| Initial admin user | `ghcr.io/lerianstudio/caradhras-user-init:3.9.0` | `auth.initUser.image` (full image string or repository/tag map) |
+| Caradhras | `ghcr.io/lerianstudio/caradhras:1.3.2` | `caradhras.image.repository`, `caradhras.image.tag` |
+| Database migrations | `ghcr.io/lerianstudio/caradhras-migrations:1.3.2` | `caradhras.migrations.image.repository`, `caradhras.migrations.image.tag` |
+
+Auth and Identity also have verified public Docker Hub mirrors, `docker.io/lerianstudio/plugin-auth:3.9.0` and `docker.io/lerianstudio/plugin-identity:3.9.0`; GHCR remains the chart default. Only GHCR was verified for the three support images. Do not infer support-image mirrors or use the incorrect `midaz-auth` / `midaz-identity` repository names. Verify registry access from the target cluster, platform compatibility and the actual pulled image digests before rollout.
+
+- Explicit image overrides remain effective; update Auth and Identity together. `appVersion` alone does not override pinned images.
+- Caradhras and its migration image have independent tags. Inspect legacy `auth.backend.*` overrides too; the [helpers](../templates/_helpers.tpl) retain fallback paths. Do not substitute the old `casdoor-migrations` image; see [9.2.4 migration notes](UPGRADE-9.2.4.md).
+- The [init-user Job](../templates/auth/init_user.yaml) is **post-install only**, when `auth.initUser.enabled` is true. It does not run on `helm upgrade`, recreate a deleted admin, or repair an existing installation. Do not manually rerun it as an upgrade step.
+- Database migrations run in the Caradhras Deployment's `migrate` **init container**, before the server starts; they are not the init-user Job or a Helm upgrade hook. Review migration compatibility and take a tested database backup before changing workloads.
+
+## 2. Satisfy runtime prerequisites before rendering
+
+These are application requirements, not a claim that released chart 9.5.8 validates every combination. In particular, rendering successfully does not prove TLS connectivity, external Secret contents, MFA readiness or single-tenant SSO correctness. Additional chart guards/CI proposed after 9.5.8 must not be assumed present in the published package.
+
+### TLS, JWKS and environment
+
+- Check each component's rendered `ENV_NAME`. `global.env.name` supplies the shared setting; `auth.configmap.ENV_NAME` and `identity.configmap.ENV_NAME` override it. The chart fallback is `development`; that is not an appropriate production classification.
+- Auth's JWKS cache derives `/.well-known/jwks` from its resolved Caradhras upstream (configured `AUTHORIZER_ADDRESS`, or service discovery). It rejects a non-HTTPS upstream at startup when `ENV_NAME` is production, empty or unrecognized. Only the explicit `development`, `staging`, `local` allow-list permits plaintext. A production deployment retaining the chart's default `http://<caradhras-service>:<port>` upstream will fail this gate.
+- Identity's dynamic M2M JWKS verification is active when `identity.configmap.AUTH_ENABLED` is true (rendered as **`PLUGIN_AUTH_ENABLED`**, default `"true"`). It is **not** enabled by `AUTH_M2M_INVERSION_ENABLED`; inversion is not a JWKS on/off switch. `identity.configmap.AUTH_M2M_JWKS_URL` overrides the default `${AUTHORIZER_ADDRESS}/.well-known/jwks`. The same environment allow-list governs non-loopback HTTP JWKS URLs; production/empty/unknown environments reject them. The library's loopback exception is not a production topology solution.
+- Provide a reachable HTTPS Caradhras/JWKS endpoint with a trusted certificate and correct hostname. Configure `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` for the real topology, preserving the issuer expected in tokens. Validate service-discovery results too. HTTPS at the public ingress alone does not change the internal HTTP upstream.
+- Independently, `DEPLOYMENT_MODE=saas` requires `REDIS_TLS=true` and an HTTPS `AUTHORIZER_ADDRESS` in both components. Changing `DEPLOYMENT_MODE` does not remove the environment-based JWKS gate.
+- Do not relabel production as development, disable authentication, or enable insecure transport flags to get past startup failures. `ALLOW_INSECURE_TLS` is not a substitute for meeting the JWKS HTTPS requirement. Configure certificate trust rather than disabling verification.
+- Preserve the issuer's real signing certificate/key configuration. Both components resolve `AUTHORIZER_JWT_CERTIFICATE`; an estate with its own Caradhras must use its own matching certificate, not assume an embedded certificate matches. Check credentialed token verification and key rotation, not just an HTTP 200 from JWKS.
+
+#### Production-like `ENV_NAME`: reach Caradhras over HTTPS
 
 **What changed:**
 
@@ -120,614 +135,103 @@ Things to get right:
 
 identity's `wait-for-dependencies` init container only checks TCP reachability of plugin-auth, so it is unaffected.
 
-**Render-time check:** chart releases after v9.5.8 refuse to render this combination. The error names every component that would crash-loop, its resolved `ENV_NAME`, its JWKS URL and the values they came from, instead of letting the pods crash-loop. The check is skipped where the application starts anyway: `ENV_NAME` is `development`, `staging` or `local`; the component's image tag is a version below `3.3.0`; identity has `PLUGIN_AUTH_ENABLED` off; or identity's JWKS URL is `http` to a loopback host. It is also skipped for auth with service discovery on (`SD_ENABLED=true`), because the chart cannot inspect the address discovery will resolve. The requirement still applies there: discovery must resolve Caradhras to an `https` address, or auth still exits at startup; it is just not checked at render time. There is no value that turns the check off, because the application has none.
+**Render-time check:** chart releases after 9.5.8 refuse to render this combination. The error names every component that would crash-loop, its resolved `ENV_NAME`, its JWKS URL and the values they came from, instead of letting the pods crash-loop. The check is skipped where the application starts anyway: `ENV_NAME` is `development`, `staging` or `local`; the component's image tag is a version below `3.3.0`; identity has `PLUGIN_AUTH_ENABLED` off; or identity's JWKS URL is `http` to a loopback host. It is also skipped for auth with service discovery on (`SD_ENABLED=true`), because the chart cannot inspect the address discovery will resolve. The requirement still applies there: discovery must resolve Caradhras to an `https` address, or auth still exits at startup; it is just not checked at render time. There is no value that turns the check off, because the application has none.
 
-# Fixes
+Optional tuning (Go duration syntax; omitted, invalid or non-positive values fall back to **`5m`**):
 
-### 1. Application Version Update
+| Values path | Purpose |
+| --- | --- |
+| `auth.configmap.AUTH_JWKS_CACHE_TTL` | Auth's upstream JWKS cache freshness |
+| `identity.configmap.AUTH_M2M_JWKS_REFRESH_INTERVAL` | Identity's dynamic JWKS refresh interval |
 
-**What changed:**
+Sources: [Auth bootstrap](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/auth/internal/bootstrap/config.go), [Identity bootstrap](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/internal/bootstrap/config.go), [Auth SaaS TLS gate](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/auth/internal/bootstrap/tls_enforcement.go), [Identity SaaS TLS gate](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/internal/bootstrap/tls_enforcement.go).
 
-The application version (appVersion) has been updated from `3.1.0` to `3.9.0`, and both the identity and auth service image tags have been updated to match.
+### MFA and existing users
 
-| Setting | v9.5.7 | v9.5.8 |
-|---------|--------|--------|
-| Chart appVersion | `3.1.0` | `3.9.0` |
-| Identity service image tag | `3.1.0` | `3.9.0` |
-| Auth service image tag | `3.1.0` | `3.9.0` |
+`auth.configmap.MFA_ENABLED: "true"` is a deployment assertion that MFA is used; Auth refuses startup without a non-empty **`MFA_SECRET`**. Supply it through `auth.secrets.MFA_SECRET`, or key `MFA_SECRET` in the Secret selected by `auth.useExistingSecret` / `auth.existingSecretName`. Keep the existing secret stable across replicas and upgrades; do not rotate it casually during this change. Chart releases after 9.5.8 refuse to render `MFA_ENABLED` true without that secret reference, and refuse `MFA_SECRET` in `auth.extraEnvVars` (a ConfigMap).
 
-**Before (v9.5.7):**
+The application defaults this assertion to false when omitted, but MFA enrollment is per user. Omitting the flag does not prove there are no enrolled users. Inventory actual enrollment, preserve MFA policy, and supply the secret rather than suppressing the assertion to make startup pass.
 
-```yaml
-# values.yaml
-identity:
-  image:
-    repository: ghcr.io/lerianstudio/midaz-identity
-    pullPolicy: Always
-    tag: "3.1.0"
+**SMS MFA is retired in 3.9.0.** Supported channels are `app` (TOTP) and `email`. Identify SMS-only users and complete an approved transition to a supported factor before rollout. Legacy SMS enrollment can be cleared through the authorized per-channel recovery flow, but cannot be re-enrolled or used for a login challenge. Clearing it can leave a password-only account; it is not a substitute for completing re-enrollment under the organization's security policy.
 
-auth:
-  image:
-    repository: ghcr.io/lerianstudio/midaz-auth
-    pullPolicy: Always
-    tag: "3.1.0"
-```
+Sources: [MFA startup validation](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/auth/internal/bootstrap/config.go), [supported and clearable MFA channels](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/pkg/constant/mfa.go).
 
-**After (v9.5.8):**
+### SSO and password recovery
 
-```yaml
-# values.yaml
-identity:
-  image:
-    repository: ghcr.io/lerianstudio/midaz-identity
-    pullPolicy: Always
-    tag: "3.9.0"
+| Values path | Behavior and operator action |
+| --- | --- |
+| `identity.configmap.PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE` | Default `"false"`. Allows **plain HTTP** preflight endpoints if enabled; it does **not** trust self-signed certificates or disable certificate validation. Preflight can transmit a client secret, so keep HTTPS and fix trust instead of using this as a certificate workaround. |
+| `identity.configmap.PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS` | Default `"false"`. Separately permits RFC1918 destinations for the applicable SSO probes/provider configuration. It does not permit all private/local addresses: loopback, link-local/metadata and IPv6 unique-local targets remain blocked at dial time. Enable only for a reviewed private-IdP topology, not to bypass an unexplained SSRF rejection. |
+| `auth.configmap.PLUGIN_AUTH_SSO_STATIC_ORGANIZATION` | Optional fixed, existing Caradhras organization for single-tenant BYOC SSO. Auth rejects it when effective `MULTI_TENANT_ENABLED=true`. Leave unset in multi-tenant deployments; do not disable tenancy to accommodate it. |
+| `identity.configmap.ENABLE_FORGOT_PASSWORD` | Default `"false"`; enabling exposes public self-service password-recovery routes. Confirm the intended email-provider/application configuration, rate limiting and end-to-end reset flow before opting in. |
 
-auth:
-  image:
-    repository: ghcr.io/lerianstudio/midaz-auth
-    pullPolicy: Always
-    tag: "3.9.0"
-```
+For SSO, Auth and Identity must receive the same browser-facing `PLUGIN_AUTH_SSO_CALLBACK_URL`, matching the Caradhras application's redirect allow-list. Use `common.sso.callbackUrl` for the full URL (or the chart's `common.sso.baseUrl` derivation); inspect per-component overrides, which take precedence. Do not use the internal `PLUGIN_AUTH_ADDRESS` as a browser callback. Test provider preflight, login, callback and code exchange with the actual IdP.
 
-**Why this matters:**
+Sources: [Identity SSO settings](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/pkg/config/config.go), [preflight transport policy](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/internal/services/sso_provider_preflight.go), [Auth single-tenant SSO validation](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/auth/pkg/config/config.go), [password recovery](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/internal/services/forgot_password.go).
 
-- **Feature additions:** The `3.9.0` release includes new SSO security controls, self-service password recovery, and enhanced M2M authentication configuration options
-- **Bug fixes and improvements:** This release includes fixes and enhancements from the `3.1.0` baseline
-- **Synchronized versions:** Both identity and auth services are updated to the same version to ensure API compatibility
+## 3. Verify Secret references without exposing values
 
-**Operational impact:**
+Existing Secrets must already exist in the release namespace and contain the keys required by the enabled features. A Secret name alone is not evidence of valid credentials. Never put real credentials in examples, shell history or review output.
 
-- If you have not explicitly overridden `identity.image.tag` or `auth.image.tag` in your `values.yaml`, the upgrade will automatically use the new `3.9.0` images for both services
-- If you have pinned specific image tags, your overrides will continue to take precedence
-- The new version introduces several new configuration options (detailed in the Features section below), all of which are opt-in with safe defaults
+| Consumer | Exact values paths / Secret keys |
+| --- | --- |
+| Auth | `auth.useExistingSecret: true` + `auth.existingSecretName`; keys include `AUTHORIZER_CLIENT_SECRET`, `LICENSE_KEY`, `ORGANIZATION_IDS`, and `REDIS_PASSWORD`, `MFA_SECRET`, `SD_TOKEN` as required by the configured features. Otherwise use `auth.secrets.<KEY>`. |
+| Identity | `identity.useExistingSecret: true` + `identity.existingSecretName`; keys include `AUTHORIZER_CLIENT_SECRET`, `LICENSE_KEY`, `ORGANIZATION_IDS`, and `REDIS_PASSWORD`, `SD_TOKEN` as required. Otherwise use `identity.secrets.<KEY>`. |
+| Database password | `auth-database.auth.existingSecret` selects an operator Secret with key **`password`** for chart workloads. With the bundled database and no operator override, the chart-managed database Secret is used. For an external/disabled database without that override, use `auth.secrets.DB_PASSWORD`, or key **`DB_PASSWORD`** in the existing Auth Secret. |
+| Initial admin (first install only) | `auth.initUser.useExistingSecret: true`, `auth.initUser.adminPasswordSecretName`, `auth.initUser.adminPasswordSecretKey` (default **`ADMIN_PASSWORD`**). Otherwise `auth.initUser.adminPassword`. These are not the Auth service's existing-Secret paths. |
 
-**What operators need to do:**
+Preserve the current license, organization scope and authorizer credentials. Do not invent replacement values or remove enforcement to pass a render/test. Check database and Redis credentials against the actual datastores; an application Secret override does not automatically change their passwords.
 
-No action required when `ENV_NAME` is `development`, `staging` or `local` (the chart renders `development` when it is not set). **Any other `ENV_NAME`, including `production`, needs an `https` Caradhras address before upgrading**: with the default address the new images refuse to start. See [Breaking change: production-like installs need Caradhras over HTTPS](#breaking-change-production-like-installs-need-caradhras-over-https). All new configuration options default to safe values that preserve existing behavior.
+Chart sources: [Auth Secret](../templates/auth/secrets.yaml), [Identity Secret](../templates/identity/secrets.yaml), [database password selection](../templates/_helpers.tpl), [init-user Secret and hook](../templates/auth/init_user.yaml).
 
-> **Note:** If you have explicitly pinned `identity.image.tag` or `auth.image.tag` to `3.1.0` in your values overrides, you should update both to `3.9.0` to benefit from the latest features and fixes.
+## 4. Preview, rehearse and upgrade
 
-### 2. User Initialization Image Update
+1. Record the current Helm revision, chart version, effective image digests and user-supplied values. Protect any exports: Helm values and manifests can contain credentials. Back up the database and required Secret/key material, and verify restore in an isolated environment. Review intervening migration notes if starting before 9.5.7.
+2. Prepare a complete, reviewed target values file from the current installation. Retain topology, external Secrets, issuer/callback settings, license scope and security policy. Reconcile old image pins and legacy aliases explicitly; do not blindly use `--reuse-values` or discard overrides.
+3. Render the exact target chart and inspect ConfigMaps, Secret references, images, probes, migrations and hooks. Rendering/diffing does not exercise application startup or inspect existing Secret contents. Rehearse with representative data and the intended TLS/IdP topology before production approval.
 
-**What changed:**
-
-The default image tag for the user initialization Job has been updated from `3.3.1` to `3.9.0` to align with the main application version.
-
-| Setting | v9.5.7 | v9.5.8 |
-|---------|--------|--------|
-| Default init user image tag | `3.3.1` | `3.9.0` |
-
-**Before (v9.5.7):**
-
-```yaml
-# templates/auth/init_user.yaml
-image: "{{ $initUserImage.repository | default "ghcr.io/lerianstudio/caradhras-user-init" }}:{{ $initUserImage.tag | default "3.3.1" }}"
-```
-
-**After (v9.5.8):**
-
-```yaml
-# templates/auth/init_user.yaml
-image: "{{ $initUserImage.repository | default "ghcr.io/lerianstudio/caradhras-user-init" }}:{{ $initUserImage.tag | default "3.9.0" }}"
-```
-
-**Why this matters:**
-
-- **Version alignment:** The init user Job now uses the same version as the main application services
-- **Compatibility:** Ensures the initialization logic is compatible with the `3.9.0` application version
-
-**Operational impact:**
-
-- The init user Job runs automatically during Helm upgrade (as a pre-upgrade hook)
-- If you have overridden `auth.initUser.image.tag` in your values, your override will continue to take precedence
-- The Job creates the initial admin user if it doesn't already exist — existing users are not affected
-
-**What operators need to do:**
-
-No action required. The init user Job will automatically use the updated image version on the next upgrade.
-
-# Features
-
-### 3. SSO Security and Network Configuration
-
-**What changed:**
-
-The identity service now supports two new security flags for SSO integration: `PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE` and `PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS`. These flags control TLS validation and network access restrictions when communicating with external identity providers.
-
-| Setting | v9.5.7 | v9.5.8 |
-|---------|--------|--------|
-| SSO insecure TLS flag | Not available | `PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE` (default: `false`) |
-| SSO private network flag | Not available | `PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS` (default: `false`) |
-
-**Before (v9.5.7):**
-
-```yaml
-# templates/identity/configmap.yaml
-# SSO
-PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
-{{- end }}
-
-# RUNTIME
-DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-```
-
-**After (v9.5.8):**
-
-```yaml
-# templates/identity/configmap.yaml
-# SSO
-PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
-{{- end }}
-PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: {{ .Values.identity.configmap.PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE | default "false" | quote }}
-PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: {{ .Values.identity.configmap.PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS | default "false" | quote }}
-
-# RUNTIME
-DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-```
-
-**Why this matters:**
-
-- **Development environments:** The `PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE` flag allows integration with identity providers that don't have valid TLS certificates (e.g., self-signed certificates in development)
-- **BYOC and on-premises deployments:** The `PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS` flag enables SSO integration with identity providers hosted on private RFC1918 networks (e.g., `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`)
-- **Security by default:** Both flags default to `false`, ensuring strict TLS validation and blocking private network access unless explicitly enabled
-
-**Default behavior:**
-
-Both flags are **disabled by default** (`false`). The identity service will:
-
-- Require valid TLS certificates from identity providers
-- Block connections to identity providers on private networks
-
-This ensures secure defaults for production environments.
-
-**New environment variables:**
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE` | `false` | Allow SSO connections to identity providers without valid TLS certificates. Only enable in development environments. |
-| `PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS` | `false` | Allow SSO connections to identity providers on private RFC1918 networks. Required for BYOC/on-premises IdP deployments. |
-
-**Configuration examples:**
-
-#### Option 1: Keep Default Secure Behavior (Recommended for Production)
-
-No configuration changes required. The identity service will enforce strict TLS validation and block private network access:
-
-```yaml
-# No changes needed - defaults are secure
-identity:
-  configmap:
-    # PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: "false"  # Default
-    # PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: "false"    # Default
-```
-
-#### Option 2: Enable for Development with Self-Signed Certificates
-
-For development environments where your identity provider uses self-signed certificates:
-
-```yaml
-identity:
-  configmap:
-    PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: "true"
-```
-
-> **Warning:** Only enable `PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE` in development environments. This flag disables TLS certificate validation and should never be used in production.
-
-#### Option 3: Enable for BYOC/On-Premises Identity Providers
-
-For BYOC or on-premises deployments where your identity provider is hosted on a private network:
-
-```yaml
-identity:
-  configmap:
-    PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: "true"
-```
-
-> **Note:** This flag only allows connections to RFC1918 private networks. It does not disable TLS validation — your identity provider must still have a valid certificate.
-
-#### Option 4: Enable Both (Development with Private Network IdP)
-
-For development environments with a private network identity provider using self-signed certificates:
-
-```yaml
-identity:
-  configmap:
-    PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: "true"
-    PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: "true"
-```
-
-> **Warning:** This combination should only be used in isolated development environments. Never use both flags in production.
-
-### 4. Self-Service Password Recovery
-
-**What changed:**
-
-The identity service now supports self-service password recovery (forgot password functionality) through a new `ENABLE_FORGOT_PASSWORD` configuration flag. This feature exposes public routes for password reset requests and must be explicitly enabled.
-
-| Setting | v9.5.7 | v9.5.8 |
-|---------|--------|--------|
-| Forgot password feature | Not available | `ENABLE_FORGOT_PASSWORD` (default: `false`) |
-
-**Before (v9.5.7):**
-
-```yaml
-# templates/identity/configmap.yaml
-PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: {{ .Values.identity.configmap.PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS | default "false" | quote }}
-
-# RUNTIME
-DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-```
-
-**After (v9.5.8):**
-
-```yaml
-# templates/identity/configmap.yaml
-PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: {{ .Values.identity.configmap.PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS | default "false" | quote }}
-
-# FORGOT PASSWORD (public self-service routes; off unless explicitly "true")
-ENABLE_FORGOT_PASSWORD: {{ .Values.identity.configmap.ENABLE_FORGOT_PASSWORD | default "false" | quote }}
-
-# RUNTIME
-DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-```
-
-**Why this matters:**
-
-- **Self-service capability:** Users can reset their passwords without administrator intervention
-- **Email provider requirement:** This feature requires an email provider to be configured in your application to send password reset links
-- **Security consideration:** Enabling this feature exposes public password reset routes — ensure your email provider is properly configured before enabling
-
-**Default behavior:**
-
-The feature is **disabled by default** (`false`). Password reset functionality is not available unless explicitly enabled.
-
-**New environment variable:**
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENABLE_FORGOT_PASSWORD` | `false` | Enable self-service password recovery routes. Requires an email provider to be configured. |
-
-**Configuration example:**
-
-```yaml
-identity:
-  configmap:
-    ENABLE_FORGOT_PASSWORD: "true"
-```
-
-> **Important:** Before enabling this feature, ensure you have configured an email provider in your application. The password reset flow requires sending email notifications to users. If no email provider is configured, password reset requests will fail.
-
-**What operators need to do:**
-
-1. **Verify email provider configuration** — ensure your application has a working email provider configured
-2. **Enable the feature** — set `identity.configmap.ENABLE_FORGOT_PASSWORD: "true"` in your values
-3. **Test the flow** — verify that password reset emails are delivered successfully
-4. **Monitor logs** — watch for any email delivery failures after enabling
-
-### 5. Machine-to-Machine Authentication Configuration
-
-**What changed:**
-
-The identity service now supports optional configuration for machine-to-machine (M2M) authentication through two new flags: `AUTH_M2M_JWKS_URL` and `AUTH_M2M_JWKS_REFRESH_INTERVAL`. These flags control how the identity service fetches and refreshes JSON Web Key Sets (JWKS) for validating M2M tokens.
-
-| Setting | v9.5.7 | v9.5.8 |
-|---------|--------|--------|
-| M2M JWKS URL | Not configurable | `AUTH_M2M_JWKS_URL` (optional) |
-| M2M JWKS refresh interval | Not configurable | `AUTH_M2M_JWKS_REFRESH_INTERVAL` (optional) |
-
-**Before (v9.5.7):**
-
-```yaml
-# templates/identity/configmap.yaml
-# M2M (lib-auth/v3 middleware — identity authorizes inbound M2M calls)
-AUTH_M2M_INVERSION_ENABLED: {{ .Values.identity.configmap.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
-
-# SERVICE DISCOVERY
-```
-
-**After (v9.5.8):**
-
-```yaml
-# templates/identity/configmap.yaml
-# M2M (lib-auth/v3 middleware — identity authorizes inbound M2M calls)
-AUTH_M2M_INVERSION_ENABLED: {{ .Values.identity.configmap.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
-{{- with .Values.identity.configmap.AUTH_M2M_JWKS_URL }}
-AUTH_M2M_JWKS_URL: {{ . | quote }}
-{{- end }}
-{{- with .Values.identity.configmap.AUTH_M2M_JWKS_REFRESH_INTERVAL }}
-AUTH_M2M_JWKS_REFRESH_INTERVAL: {{ . | quote }}
-{{- end }}
-
-# SERVICE DISCOVERY
-```
-
-**Why this matters:**
-
-- **Custom JWKS endpoints:** Allows overriding the default JWKS URL derived from the Casdoor address
-- **Refresh interval control:** Allows tuning how frequently the identity service refreshes its JWKS cache
-- **Opt-in configuration:** Both settings are optional and only included in the ConfigMap when explicitly set
-
-**Default behavior:**
-
-Both settings are **optional** and omitted from the ConfigMap by default:
-
-- `AUTH_M2M_JWKS_URL`: When not set, the identity service derives the JWKS URL from the configured Casdoor address
-- `AUTH_M2M_JWKS_REFRESH_INTERVAL`: When not set, the identity service uses its internal default refresh interval
-
-**New environment variables:**
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `AUTH_M2M_JWKS_URL` | (derived from Casdoor address) | Custom JWKS endpoint URL for M2M token validation. Only set if you need to override the default. |
-| `AUTH_M2M_JWKS_REFRESH_INTERVAL` | (application default) | How frequently to refresh the JWKS cache (e.g., `5m`, `10m`). Only set if you need to override the default. |
-
-**Configuration examples:**
-
-#### Option 1: Use Default Behavior (Recommended)
-
-No configuration changes required. The identity service will derive the JWKS URL from your Casdoor configuration:
-
-```yaml
-# No changes needed - defaults work for most deployments
-identity:
-  configmap:
-    AUTH_M2M_INVERSION_ENABLED: "true"
-    # AUTH_M2M_JWKS_URL: ""  # Omitted - derived from Casdoor
-    # AUTH_M2M_JWKS_REFRESH_INTERVAL: ""  # Omitted - uses app default
-```
-
-#### Option 2: Override JWKS URL
-
-If you need to point to a custom JWKS endpoint:
-
-```yaml
-identity:
-  configmap:
-    AUTH_M2M_INVERSION_ENABLED: "true"
-    AUTH_M2M_JWKS_URL: "https://custom-idp.example.com/.well-known/jwks.json"
-```
-
-#### Option 3: Customize Refresh Interval
-
-If you need to tune the JWKS refresh frequency:
-
-```yaml
-identity:
-  configmap:
-    AUTH_M2M_INVERSION_ENABLED: "true"
-    AUTH_M2M_JWKS_REFRESH_INTERVAL: "10m"
-```
-
-#### Option 4: Override Both
-
-For complete control over M2M JWKS configuration:
-
-```yaml
-identity:
-  configmap:
-    AUTH_M2M_INVERSION_ENABLED: "true"
-    AUTH_M2M_JWKS_URL: "https://custom-idp.example.com/.well-known/jwks.json"
-    AUTH_M2M_JWKS_REFRESH_INTERVAL: "10m"
-```
-
-> **Note:** These settings apply whenever identity verifies M2M tokens, that is whenever `PLUGIN_AUTH_ENABLED` is true (the default), independently of `AUTH_M2M_INVERSION_ENABLED`. When `ENV_NAME` is not `development`, `staging` or `local`, the JWKS URL, set here or derived from `AUTHORIZER_ADDRESS`, must be `https`; see [Breaking change: production-like installs need Caradhras over HTTPS](#breaking-change-production-like-installs-need-caradhras-over-https).
-
-### 6. Single-Tenant SSO Organization Support
-
-**What changed:**
-
-The auth service now supports a `PLUGIN_AUTH_SSO_STATIC_ORGANIZATION` configuration flag for BYOC single-tenant deployments. This flag pins all SSO operations to a specific organization and is mutually exclusive with multi-tenant mode.
-
-| Setting | v9.5.7 | v9.5.8 |
-|---------|--------|--------|
-| Static SSO organization | Not available | `PLUGIN_AUTH_SSO_STATIC_ORGANIZATION` (optional) |
-
-**Before (v9.5.7):**
-
-```yaml
-# templates/auth/configmap.yaml
-# SSO
-PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
-{{- end }}
-
-# RUNTIME
-DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-```
-
-**After (v9.5.8):**
-
-```yaml
-# templates/auth/configmap.yaml
-# SSO
-PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
-{{- end }}
-{{- with .Values.auth.configmap.PLUGIN_AUTH_SSO_STATIC_ORGANIZATION }}
-PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: {{ . | quote }}
-{{- end }}
-
-# RUNTIME
-DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-```
-
-**Why this matters:**
-
-- **BYOC single-tenant deployments:** Allows pinning all SSO operations to a specific organization identifier
-- **Simplified SSO flow:** Removes the need for organization selection during SSO authentication
-- **Mutual exclusivity:** The auth service will refuse to start if both `PLUGIN_AUTH_SSO_STATIC_ORGANIZATION` and `MULTI_TENANT_ENABLED=true` are set
-
-**Default behavior:**
-
-The setting is **optional** and omitted from the ConfigMap by default. When not set, SSO organization selection follows the standard multi-tenant flow.
-
-**New environment variable:**
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PLUGIN_AUTH_SSO_STATIC_ORGANIZATION` | (not set) | Pin all SSO operations to a specific organization. Only for BYOC single-tenant deployments. Refused when `MULTI_TENANT_ENABLED=true`. |
-
-**Configuration example:**
-
-```yaml
-auth:
-  configmap:
-    PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: "my-organization-id"
-    # MULTI_TENANT_ENABLED: "false"  # Must be false or unset
-```
-
-> **Warning:** Do not set `PLUGIN_AUTH_SSO_STATIC_ORGANIZATION` when `MULTI_TENANT_ENABLED` is `true`. The auth service will refuse to start and log an error. This validation prevents configuration conflicts between single-tenant and multi-tenant modes.
-
-**What operators need to do:**
-
-Only configure this setting if you are running a BYOC single-tenant deployment:
-
-1. **Verify multi-tenant mode is disabled** — ensure `auth.configmap.MULTI_TENANT_ENABLED` is either `false` or not set
-2. **Set the organization identifier** — configure `auth.configmap.PLUGIN_AUTH_SSO_STATIC_ORGANIZATION` with your organization ID
-3. **Test SSO flow** — verify that SSO authentication works without organization selection
-
-### 7. JWKS Cache TTL Configuration
-
-**What changed:**
-
-The auth service now supports an optional `AUTH_JWKS_CACHE_TTL` configuration flag to control how long JWKS (JSON Web Key Set) entries are cached before being refreshed.
-
-| Setting | v9.5.7 | v9.5.8 |
-|---------|--------|--------|
-| JWKS cache TTL | Not configurable | `AUTH_JWKS_CACHE_TTL` (optional) |
-
-**Before (v9.5.7):**
-
-```yaml
-# templates/auth/configmap.yaml
-{{- with .Values.auth.configmap.PLUGIN_AUTH_SSO_STATIC_ORGANIZATION }}
-PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: {{ . | quote }}
-{{- end }}
-
-# RUNTIME
-DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-```
-
-**After (v9.5.8):**
-
-```yaml
-# templates/auth/configmap.yaml
-{{- with .Values.auth.configmap.PLUGIN_AUTH_SSO_STATIC_ORGANIZATION }}
-PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: {{ . | quote }}
-{{- end }}
-{{- with .Values.auth.configmap.AUTH_JWKS_CACHE_TTL }}
-AUTH_JWKS_CACHE_TTL: {{ . | quote }}
-{{- end }}
-
-# RUNTIME
-DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}
-```
-
-**Why this matters:**
-
-- **Performance tuning:** Allows operators to balance between JWKS freshness and network overhead
-- **Key rotation support:** Shorter TTLs ensure faster propagation of key rotations from the identity provider
-- **Opt-in configuration:** Only included in the ConfigMap when explicitly set
-
-**Default behavior:**
-
-The setting is **optional** and omitted from the ConfigMap by default. When not set, the auth service uses its internal default cache TTL.
-
-**New environment variable:**
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `AUTH_JWKS_CACHE_TTL` | (application default) | How long to cache JWKS entries before refreshing (e.g., `5m`, `10m`, `1h`). Only set if you need to override the default. |
-
-**Configuration example:**
-
-```yaml
-auth:
-  configmap:
-    AUTH_JWKS_CACHE_TTL: "5m"
-```
-
-> **Note:** Use Go duration format for the TTL value (e.g., `5m` for 5 minutes, `1h` for 1 hour, `30s` for 30 seconds). Shorter TTLs increase network traffic to the JWKS endpoint but ensure faster key rotation propagation.
-
-# Configuration Reference
-
-### Identity Service SSO Configuration
-
-Configure SSO security and network settings for the identity service in your `values.yaml`:
-
-```yaml
-identity:
-  configmap:
-    # SSO security flags (default "false")
-    PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: "false"  # Only for IdP with no TLS
-    PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: "false"    # BYOC/on-prem IdP on RFC1918 only
-    
-    # Self-service password recovery (default "false")
-    ENABLE_FORGOT_PASSWORD: "false"  # Needs email provider linked to the app
-```
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE` | `false` | Allow SSO connections without valid TLS certificates. Only enable in development. |
-| `PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS` | `false` | Allow SSO connections to private RFC1918 networks. Required for BYOC/on-premises IdP. |
-| `ENABLE_FORGOT_PASSWORD` | `false` | Enable self-service password recovery routes. Requires email provider configuration. |
-
-### Identity Service M2M Configuration
-
-Configure machine-to-machine authentication for the identity service in your `values.yaml`:
-
-```yaml
-identity:
-  configmap:
-    # M2M JWKS configuration (optional, omitted unless set)
-    AUTH_M2M_JWKS_URL: ""  # Empty derives it from the Casdoor address
-    AUTH_M2M_JWKS_REFRESH_INTERVAL: "5m"
-```
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `AUTH_M2M_JWKS_URL` | (derived from Casdoor) | Custom JWKS endpoint URL. Only set to override the default. |
-| `AUTH_M2M_JWKS_REFRESH_INTERVAL` | (application default) | JWKS cache refresh interval (Go duration format). Only set to override the default. |
-
-### Auth Service SSO Configuration
-
-Configure single-tenant SSO for the auth service in your `values.yaml`:
-
-```yaml
-auth:
-  configmap:
-    # Single-tenant SSO organization (optional, omitted unless set)
-    PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: ""  # BYOC single-tenant SSO org; refused when MULTI_TENANT_ENABLED=true
-```
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `PLUGIN_AUTH_SSO_STATIC_ORGANIZATION` | (not set) | Pin all SSO operations to a specific organization. Only for BYOC single-tenant deployments. Mutually exclusive with `MULTI_TENANT_ENABLED=true`. |
-
-### Auth Service JWKS Configuration
-
-Configure JWKS caching for the auth service in your `values.yaml`:
-
-```yaml
-auth:
-  configmap:
-    # JWKS cache TTL (optional, omitted unless set)
-    AUTH_JWKS_CACHE_TTL: "5m"
-```
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `AUTH_JWKS_CACHE_TTL` | (application default) | JWKS cache TTL (Go duration format). Only set to override the default. |
-
-# Preview changes before upgrading
+The commands below assume a reviewed **9.5.8** chart checkout at `./charts/plugin-access-manager` (repository root as working directory), with its locked dependencies available. Set `RELEASE`, `NAMESPACE` and `VALUES` to the actual existing release, namespace and reviewed values-file path. `helm diff` requires the separately installed helm-diff plugin; handle its output as sensitive.
 
 ```bash
-helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 9.5.8 -n plugin-access-manager
+: "${RELEASE:?Set the existing release name}"
+: "${NAMESPACE:?Set its namespace}"
+: "${VALUES:?Set the reviewed values-file path}"
+CHART=./charts/plugin-access-manager
+
+helm show chart "$CHART"
+helm history "$RELEASE" -n "$NAMESPACE"
+helm lint "$CHART" -f "$VALUES"
+helm diff upgrade "$RELEASE" "$CHART" -n "$NAMESPACE" \
+  --reset-values -f "$VALUES"
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
-
-# Command to upgrade
+After backup, rehearsal and rollout approval, choose a timeout suitable for the tested migration duration and execute through the environment's approved release workflow. The equivalent direct Helm command is below; it deliberately does not use `--install` or create a namespace, so a misspelled release cannot silently become a new installation.
 
 ```bash
-helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 9.5.8 -n plugin-access-manager
+: "${ROLLOUT_TIMEOUT:?Set the approved Helm timeout duration}"
+helm upgrade "$RELEASE" "$CHART" -n "$NAMESPACE" \
+  --reset-values -f "$VALUES" --wait --timeout "$ROLLOUT_TIMEOUT"
 ```
+
+## 5. Acceptance and recovery
+
+Before accepting the release, verify:
+
+- Caradhras's `migrate` init container completed; Auth, Identity and Caradhras are Ready without restart loops. Check actual images/digests and sanitized logs, not just Helm's status.
+- HTTPS/JWKS retrieval and certificate trust work from the workload network; token issuance, validation, M2M authorization and signing-key refresh work with the expected issuer. Confirm unauthenticated/unauthorized requests remain denied.
+- Existing users can sign in and complete required MFA; migrated SMS users have a supported factor. SSO works end to end where used. Exercise password recovery only if enabled.
+- License and organization/tenant enforcement, datastore access and normal client integration flows remain correct. The absence of a new init-user Job during upgrade is expected.
+
+If a gate fails, stop the rollout and diagnose the actual error without relaxing authentication, MFA, TLS or tenant isolation. Do not treat an unrelated or pre-existing test failure as evidence that this image bump caused a regression.
+
+`helm rollback` restores a previous Helm release revision; it does **not** undo database migrations, restore external Secrets or reverse user/IdP changes. A restored Caradhras pod can run its own migration init container against the database. Before rollback, confirm old binaries are compatible with the resulting schema/state, or use the tested coordinated restore plan. Do not uninstall the release, delete PVCs, reset credentials or rely on automatic Helm rollback as database recovery.
+
+After approval of the compatible rollback/restore path:
+
+```bash
+: "${PREVIOUS_REVISION:?Set the verified previous Helm revision}"
+helm rollback "$RELEASE" "$PREVIOUS_REVISION" -n "$NAMESPACE" \
+  --wait --timeout "$ROLLOUT_TIMEOUT"
+```
+
+Repeat the same functional/security acceptance checks after recovery.

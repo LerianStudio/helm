@@ -18,7 +18,9 @@ Deploys **br-sta**, the Lerian BACEN STA (Sistema de Transferência de Arquivos)
 | `worker` | `ghcr.io/lerianstudio/br-sta-worker` | Background process (probe server `:4029`): the BACEN outbound scheduler (the **only** path that uploads to BACEN), inbound polling, audit publisher/consumer, business-event delivery, partition manager, verifier, export generator, reporter bridge. Exactly one replica, `Recreate` |
 | migrations | `ghcr.io/lerianstudio/br-sta-migrations` | Applies the SQL schema (single-tenant) |
 
-The chart tracks application **1.2.0-beta.16** (`appVersion`); the three images follow `appVersion` unless pinned.
+The chart tracks application **1.0.0** (`appVersion`), the first stable STA release; the three images follow `appVersion` unless pinned.
+
+> **Version line reset.** The app's pre-releases were numbered `1.2.0-beta.x`; its first stable release restarted at `1.0.0`. `1.0.0` is newer than every `1.2.0-beta.x` (same code lineage, the same migration sequence `000001`–`000019`), so moving from `1.2.0-beta.16` to `1.0.0` is an upgrade, not a downgrade: no schema reset, no env change.
 
 ---
 
@@ -197,7 +199,7 @@ Worker-only (`worker.*`, rendered into the worker ConfigMap):
 | `auditExportGenerator.enabled` | `AUDIT_EXPORT_GENERATOR_ENABLED` | `true` when an audit-export bucket is set, else `false` |
 | every other `audit*` field (interval, batch, exchange, queue, lock class, service name, ...) | `AUDIT_*` | unset (app defaults) |
 
-Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`, `REDIS_URL`) and `MASTER_ENCRYPTION_KEY` (documented in the app's `.env.example`, not read by 1.2.x), `LICENSE_SERVICE_ADDRESS` (reserved, not consumed), `MIGRATIONS_PATH` (the app does not run migrations; the Job sets it). The docker-compose server tuning (`POSTGRES_MAX_CONNECTIONS`, `POSTGRES_SHARED_BUFFERS`) and the inert pre-1.2 keys (`REPORTER_EVENTS_CONSUMER_ROUTING_KEY`, `REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY`, `REPORTER_EVENTS_EXPECTED_TENANT`, `TRUST_STORE_*`) are dropped from the escape hatch with a NOTES warning.
+Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`, `REDIS_URL`) and `MASTER_ENCRYPTION_KEY` (documented in the app's `.env.example`, not read by the service), `LICENSE_SERVICE_ADDRESS` (reserved, not consumed), `MIGRATIONS_PATH` (the app does not run migrations; the Job sets it). The docker-compose server tuning (`POSTGRES_MAX_CONNECTIONS`, `POSTGRES_SHARED_BUFFERS`) and the inert keys from earlier pre-releases (`REPORTER_EVENTS_CONSUMER_ROUTING_KEY`, `REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY`, `REPORTER_EVENTS_EXPECTED_TENANT`, `TRUST_STORE_*`) are dropped from the escape hatch with a NOTES warning.
 
 ### Secrets
 

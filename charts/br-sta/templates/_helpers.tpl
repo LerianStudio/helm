@@ -481,7 +481,7 @@ worker), as ConfigMap `data` lines (blank lines are dropped by the caller).
 Dependency connections go through the lerian-common masks/env helpers; every
 other key goes through lerian-common.cfgValue (via br-sta.kv). Contract source:
 the STA service config/.env.example + internal/bootstrap/config.go
-(app sta-v1.2.0-beta.16).
+(app sta-v1.0.0; identical to the sta-v1.2.0-beta.16 contract).
 */}}
 {{- define "br-sta.configmapData" -}}
 {{- $ := . -}}
@@ -1175,12 +1175,12 @@ config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
 {{- end -}}
 
 {{/*
-br-sta.removedKeys — env keys app 1.2.x no longer reads (inert). They are
+br-sta.removedKeys — env keys the app (>= 1.2.0-beta.16 / 1.0.0) no longer reads (inert). They are
 dropped from the ConfigMap/Secret escape hatch; NOTES.txt lists any still set.
 The reporter-events routing key became a code constant; the ACOS010 producer
 category moved into a code table; the expected-tenant comparison was removed;
 the POSTGRES_* server-tuning pair is docker-compose only; the TRUST_STORE_* knobs
-are not read by the 1.2.x service.
+are not read by the current service.
 */}}
 {{- define "br-sta.removedKeys" -}}
 {{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" | toJson -}}

@@ -44,7 +44,7 @@ exist on the broker{{ if eq (include "br-sta.redpandaEnabled" .) "true" }} (the 
 {{- end }}
 {{- if $set }}
 
-WARNING: these keys are set but app 1.2.x no longer reads them, so the chart no
+WARNING: these keys are set but the app no longer reads them, so the chart no
 longer emits them: {{ join ", " $set }}.
 {{- end }}
 {{- if ne (include "br-sta.devClass" .) "true" }}

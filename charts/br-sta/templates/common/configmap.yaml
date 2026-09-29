@@ -2,7 +2,7 @@
 {{- include "br-sta.validate" . -}}
 {{- /* The SHARED app ConfigMap (manager + worker). Chart-modeled keys
    (templates/_helpers.tpl br-sta.configmapData), then the escape hatch: any other
-   common.configmap key is emitted verbatim, except the keys app 1.2.x no longer
+   common.configmap key is emitted verbatim, except the keys the app no longer
    reads (br-sta.removedKeys). */ -}}
 {{- $body := include "br-sta.configmapData" . -}}
 {{- $emitted := fromYaml $body -}}

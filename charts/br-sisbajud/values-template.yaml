@@ -111,7 +111,8 @@ topics:
   enabled: true
   replicationFactor: 3                 # must not exceed the broker count
 
-# External infra is the production path. Enable only for a self-contained install.
+# External infra is the production path. Enable only for a self-contained
+# (dev / evaluation) install — broker and KMS stay external either way.
 postgresql:
   enabled: false
   external: true
@@ -119,3 +120,9 @@ postgresql:
 valkey:
   enabled: false
   external: true
+
+# Bundled SeaweedFS (S3, auth OFF — dev only). When enabled, drop
+# global.objectStorage.sisbajud.endpoint so the endpoint derives from the
+# subchart; the bucket Job creates the configured buckets.
+seaweedfs:
+  enabled: false

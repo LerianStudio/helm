@@ -89,6 +89,7 @@ A values mistake now fails the render with the key to set, instead of CrashLoopi
 - **Streaming SASL/TLS** through `global.streaming` + `brSisbajud.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`, validated at render (supported mechanism, username, TLS or explicit plaintext opt-in).
 - **Credentials only in the Secret**: `LICENSE_KEY`, `VAULT_TOKEN`, `VAULT_APPROLE_SECRET_ID`, `STA_CLIENT_SECRET`, `IDP_M2M_CLIENT_SECRET`, `SEAWEEDFS_*`, `MULTI_TENANT_SERVICE_API_KEY`, ...
 - **Config checksums** on the pod template: a ConfigMap or Secret change rolls the pods.
+- **Optional bundled SeaweedFS** (`seaweedfs.enabled`, off by default) for dev and evaluation installs. The S3 endpoint derives from the subchart Service, and a hook Job creates the configured buckets (the app never creates them). See the README "Bundled infrastructure".
 
 ## Behavior Changes
 
@@ -97,6 +98,7 @@ A values mistake now fails the render with the key to set, instead of CrashLoopi
 - With telemetry on, the pod still ships to `http://$(HOST_IP):4317` (node-local collector), unless an endpoint is set explicitly (`global.observability.otlpEndpoint`, `configmap.OTEL_EXPORTER_OTLP_ENDPOINT` or `extraEnvVars`). 1.1.x forced the node-local endpoint even then.
 - `pdb.minAvailable: 0` is honored. 1.1.x coerced it to `1`, which blocked node drains with a single replica.
 - `brSisbajud.tolerations` defaults to a list (`[]`).
+- The bundled `postgresql` / `valkey` subcharts pull `bitnamilegacy/*` images: the `bitnami/*` tags they default to no longer exist on Docker Hub. The tags are the same, so existing data stays readable. The bundled Postgres now creates the `br_sisbajud` role and database, and the bundled Valkey runs standalone.
 - `SERVER_ADDRESS` defaults to `0.0.0.0:<service.port>`, and `VERSION` / `SWAGGER_VERSION` default to the image tag.
 
 ## Key Mapping (1.1.x to 2.0)

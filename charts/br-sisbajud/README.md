@@ -6,7 +6,7 @@
 
 - Chart type: `single-service`
 - Required secrets: `brSisbajud.secrets.LICENSE_KEY` and (external Postgres) `POSTGRES_PASSWORD` in a production-like environment (the default); `VAULT_APPROLE_SECRET_ID` with Vault AppRole (or `VAULT_TOKEN` with token auth in `production`); `STREAMING_SASL_PASSWORD` when a SASL mechanism is set; `STA_CLIENT_SECRET` when the STA transfers client is on; `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on. The chart fails the render with the exact key to set when one is missing. With `brSisbajud.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql`/`valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
-- Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5) and `valkey` (2.4.7) Bitnami subcharts are declared but **disabled by default**: external PostgreSQL and Valkey/Redis are the production path. Kafka/Redpanda, Vault (or AWS KMS), S3-compatible object storage, plugin-access-manager, br-sta and the Midaz ledger are external services.
+- Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7) and `seaweedfs` (4.0.393) subcharts are declared but **disabled by default**: external PostgreSQL, Valkey/Redis and S3 object storage are the production path. Kafka/Redpanda, Vault (or AWS KMS), S3-compatible object storage, plugin-access-manager, br-sta and the Midaz ledger are external services.
 - Production overrides: `global.datastores` (postgres, redis), `global.objectStorage` (sisbajud, sta), `global.kms`, `global.streaming`, `global.auth`, `global.env`, the Secret keys above (or `brSisbajud.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `brSisbajud.cors.allowedOrigins`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Apache-2.0. The `br-sisbajud` service source is `github.com/LerianStudio/br-sisbajud`.
 
@@ -216,11 +216,33 @@ While streaming is enabled, `topics.enabled` (default `true`) ships a PreSync Jo
 
 ## Bundled infrastructure (development only)
 
+PostgreSQL, Valkey and SeaweedFS (S3) can run in-cluster for a dev or evaluation install. **Kafka/Redpanda and the KMS (Vault or AWS KMS) stay external** in every mode, as do plugin-access-manager, br-sta and the Midaz ledger.
+
 ```yaml
-postgresql: { enabled: true, external: false, auth: { username: br_sisbajud, database: br_sisbajud } }
-valkey:     { enabled: true, external: false }
+global:
+  env: { name: development }
+  objectStorage:
+    sta: { bucket: "br-sta-transfer" }
+  streaming: { brokers: "redpanda.internal:9092" }
+  kms: { vaultAddr: "http://vault.internal:8200" }
+postgresql: { enabled: true, external: false }   # creates role + database br_sisbajud
+valkey:     { enabled: true, external: false }   # standalone
+seaweedfs:  { enabled: true }
 ```
 
-The hosts then derive from the subchart Services, `POSTGRES_SSLMODE` defaults to `disable`, `ALLOW_INSECURE_TLS` defaults to `true`, and the passwords are read from the subchart Secrets.
+With a subchart enabled, and no explicit value set:
+
+- `POSTGRES_HOST` / `REDIS_HOST` derive from the Bitnami Services.
+- `SEAWEEDFS_S3_ENDPOINT`, and `STA_OBJECT_STORAGE_ENDPOINT` through it, derive from the SeaweedFS S3 Service: `http://<seaweedfs.nameOverride|seaweedfs>-s3.<release namespace>.svc.cluster.local:<s3.port>`.
+- `POSTGRES_SSLMODE` defaults to `disable` and `ALLOW_INSECURE_TLS` to `true`.
+- The Postgres and Valkey passwords are read from the subchart Secrets (`secretKeyRef`).
+
+An explicit `global.objectStorage` / `brSisbajud.objectStorage` endpoint, or `brSisbajud.configmap.SEAWEEDFS_S3_ENDPOINT`, still wins.
+
+**Buckets.** The app never creates buckets. With `seaweedfs.enabled`, a hook Job (`<release>-seaweedfs-buckets`, Helm post-install/post-upgrade, ArgoCD PostSync) creates the buckets the app is configured with: `SEAWEEDFS_BUCKET`, `STA_INBOUND_BUCKET` and `TRANSFER_OBJECT_STORAGE_BUCKET`, plus `seaweedfsBuckets.extraBuckets`. It runs `weed shell` list-then-create, which is idempotent, then verifies every bucket exists. It runs non-root with a read-only rootfs (PSS restricted).
+
+**S3 auth is OFF in the dev bundle** (`seaweedfs.s3.enableAuth: false`): any pod that reaches the Service can read the buckets. To enable it, set `seaweedfs.s3.enableAuth: true` and `seaweedfs.s3.existingConfigSecret` (the SeaweedFS identities JSON), and put the matching keys in `brSisbajud.secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY` (Secret only).
+
+**Images.** The `bitnami/*` tags that postgresql 16.3.5 and valkey 2.4.7 default to were removed from Docker Hub. The chart pulls the same tags from `bitnamilegacy/*` (`postgresql:17.2.0-debian-12-r5`, `valkey:8.0.2-debian-12-r6`), pinned by tag, with `global.security.allowInsecureImages: true`. SeaweedFS runs `chrislusf/seaweedfs:3.93` (the subchart's appVersion); the bucket Job uses the same image (`seaweedfsBuckets.image`). The volume resize hook (unpinned `bitnami/kubectl:latest`) is disabled.
 
 {% endraw %}

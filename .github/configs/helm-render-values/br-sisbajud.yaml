@@ -1,51 +1,36 @@
 # CI-only render fixture for charts/br-sisbajud (render gate + install test).
-# NOT a production example: every host is a placeholder and every credential is
-# a dummy "sample" value. It exercises the canonical global-first shape with the
-# chart's production-like default (ENVIRONMENT_NAME=production), so every
-# fail-fast gate that production enforces (LICENSE_KEY, POSTGRES_PASSWORD,
-# VAULT AppRole, STA bucket, streaming brokers) has to be satisfied here.
-# Object storage uses the BUNDLED SeaweedFS with no explicit endpoint, so the
-# render gate also proves the derived SEAWEEDFS_S3_ENDPOINT /
-# STA_OBJECT_STORAGE_ENDPOINT and the bucket bootstrap Job.
+# NOT a production example. It renders the FULL dev bundle, the same shape as
+# charts/br-sisbajud/values-dev.yaml: bundled PostgreSQL, Valkey, SeaweedFS,
+# OpenBao (dev mode) and Redpanda. The render gate then checks every secretKeyRef
+# the chart points at the subchart Secrets, the release-name collapse, the derived
+# endpoints (POSTGRES_HOST, REDIS_HOST, SEAWEEDFS_S3_ENDPOINT, VAULT_ADDR,
+# STREAMING_BROKERS) and the bootstrap Jobs (buckets, Transit, migrations and
+# topics as bundle-aware hooks). OpenBao/Redpanda are refused in a production-like
+# environment, so this fixture runs in development. The dev root token is the
+# public dev-only value from the app's config/.env.example.
 global:
-  datastores:
-    postgres:
-      host: "postgres.example.invalid"
-      ssl: "require"
-    redis:
-      host: "valkey.example.invalid:6379"
-      tls: "true"
+  env:
+    name: "development"
   objectStorage:
-    sisbajud:
-      region: "us-east-1"
-      bucket: "sisbajud"
     sta:
       bucket: "br-sta-transfer"
-  streaming:
-    brokers: "redpanda.example.invalid:9093"
-    tlsEnabled: true
-    saslMechanism: "SCRAM-SHA-256"
-    saslUsername: "br-sisbajud"
-  kms:
-    vendor: "hashicorp-vault"
-    vaultAddr: "https://vault.example.invalid:8200"
-    vaultAuthMethod: "approle"
-    vaultRoleId: "sample-role-id"
-    vaultMount: "transit"
-  auth:
-    enabled: true
-    host: "http://plugin-access-manager-auth.example.invalid:4000"
 
 brSisbajud:
-  cors:
-    allowedOrigins: "https://br-sisbajud.example.invalid"
-  secrets:
-    POSTGRES_PASSWORD: "sample"
-    REDIS_PASSWORD: "sample"
-    LICENSE_KEY: "sample"
-    VAULT_APPROLE_SECRET_ID: "sample"
-    STREAMING_SASL_PASSWORD: "sample"
-    STREAMING_TLS_CA_CERT: "c2FtcGxlLWNh"  # base64("sample-ca"), dummy
+  vault:
+    tokenRenewEnabled: false
 
+postgresql:
+  enabled: true
+  external: false
+valkey:
+  enabled: true
+  external: false
 seaweedfs:
+  enabled: true
+openbao:
+  enabled: true
+  server:
+    dev:
+      devRootToken: "dev-root-token"
+redpandaBundle:
   enabled: true

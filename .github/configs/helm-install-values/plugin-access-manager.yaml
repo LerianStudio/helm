@@ -1,0 +1,17 @@
+# Since application 3.9.0 (chart 9.5.8), auth and identity both refuse to boot
+# with an empty ORGANIZATION_IDS ("Invalid configuration: at least one
+# organization ID is required"), and the chart defaults it to "". auth
+# crash-looped in the install test, and identity never left its
+# wait-for-dependencies init container because it waits for auth.
+#
+# "global" is the value the other Lerian charts default to (the license
+# client's global plugin mode). With it, both images get past config validation
+# and stop only at dependencies this gate provides (Valkey, PostgreSQL,
+# Caradhras). Checked by running plugin-auth:3.9.0 and plugin-identity:3.9.0
+# directly, with and without it.
+auth:
+  secrets:
+    ORGANIZATION_IDS: "global"
+identity:
+  secrets:
+    ORGANIZATION_IDS: "global"

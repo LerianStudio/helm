@@ -4,6 +4,22 @@
 
 - **Fixes:**
   - Updated product-console to version 2.4.1.
+  - Applied the 2.4.1 tag to image.tag.
+
+- **Improvements:**
+  - Added Helm upgrade guide for product-console v4.2.5.
+  - Corrected upgrade guide for v4.2.5.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.5...product-console-v4.2.6)
+
+---
+
+## [4.2.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.6)
+
+- **Fixes:**
+  - Updated product-console to version 2.4.1.
   - Applied the 2.4.1 tag to image.tag in product-console.
 
 - **Improvements:**

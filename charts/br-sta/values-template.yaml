@@ -39,10 +39,10 @@ global:
     enabled: true                      # the app accepts false only in a development-class env
     host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
   streaming:
-    # br-sisbajud consumes br-sta's facts from lerian.streaming.br-sta: facts produced while
-    # this is false are never re-sent. Set false only if no br-sisbajud consumes br-sta.
-    enabled: true
-    brokers: ""                        # <- REQUIRED: host:port CSV (topics lerian.streaming.br-sta + .dlq must exist)
+    # br-sisbajud consumes br-sta's facts on lerian.streaming.br-sta: when you run br-sisbajud,
+    # set true with brokers/TLS/SASL (facts produced while off are never re-sent).
+    enabled: false
+    brokers: ""                        # <- REQUIRED when enabled: host:port CSV (topics lerian.streaming.br-sta + .dlq must exist)
     tlsEnabled: true
     saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
     saslUsername: "br-sta"
@@ -99,7 +99,7 @@ common:
     LICENSE_KEY: ""                    # <- REQUIRED in production
     AWS_ACCESS_KEY_ID: ""              # or an IRSA / workload-identity service account
     AWS_SECRET_ACCESS_KEY: ""
-    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED while global.streaming.saslMechanism is set
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when streaming is enabled with a saslMechanism
     STREAMING_TLS_CA_CERT: ""          # broker CA not in the system pool
     # IDP_M2M_CLIENT_SECRET: ""        # <- REQUIRED when identity.declarationEnabled
     # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on

@@ -87,6 +87,7 @@ global:
   # cert are secrets: common.secrets.STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT.
   # br-sta publishes its business facts on `lerian.streaming.br-sta` (+ `.dlq`),
   # the topic br-sisbajud consumes; both topics must exist before streaming is on.
+  # Off by default (enabled unset => STREAMING_ENABLED=false); turn it on when br-sisbajud is used.
   # Example:
   #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sta" }
   streaming: {}

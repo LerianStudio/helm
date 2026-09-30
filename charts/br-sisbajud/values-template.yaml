@@ -2,7 +2,7 @@
 #
 # Copy this file, fill the REQUIRED fields and the credential placeholders, and
 # install:
-#   helm install br-sisbajud oci://registry-1.docker.io/lerianstudio/br-sisbajud-helm -f values-template.yaml
+#   helm install br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version <version> -f values-template.yaml
 #
 # STYLE (canonical global-first shape): the env-wide contract lives in ONE
 # `global:` block, FIRST. Set each dependency connection ONCE with its typed
@@ -73,7 +73,13 @@ brSisbajud:
     trustedProxies: ""                 # CIDRs of the ingress/proxy in front, never the pod network
   midaz:
     balanceTopic: "lerian.streaming.ledger"
-    crmMode: "legacy"                  # legacy | embedded (deployment-wide default)
+    # Deployment-wide CRM mode, inherited by every institution without its own
+    # crmMode. Choose it before seeding institutions: changing it later re-applies
+    # the credential rule to every institution that inherits it. embedded (Midaz
+    # v4, CRM inside the ledger) accepts a ledger-only credential set
+    # (ledger_client_id/ledger_client_secret); legacy requires the crm_client_* pair.
+    # Institution credentials are set through the admin API, not this chart.
+    crmMode: "embedded"                # <- REQUIRED: embedded for Midaz v4 (chart default: legacy)
   sta:
     consumerEnabled: false
     expectedTenantSt: ""               # = br-sta's DEFAULT_TENANT_ID when the consumer is on
@@ -85,9 +91,14 @@ brSisbajud:
     host: ""                           # plugin-access-manager identity URL
     m2mClientId: ""
   workers:
+    # All off by default; enable them in the controlled activation window.
     execution: { enabled: false }
     returnFile: { enabled: false, environment: "HOMOLOGATION" }   # PRODUCTION on a production tier
     reconciliation: { enabled: false }
+    permanentBlockExpiry: { enabled: false }
+    slaAlert: { enabled: false }
+    informationReturnFile: { enabled: false }
+    # informationRequest: { enabled: true }   # opt-in: unset = key not emitted (app default off)
   secrets:
     POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres in production
     REDIS_PASSWORD: ""
@@ -100,6 +111,9 @@ brSisbajud:
     STA_CLIENT_SECRET: ""              # <- REQUIRED when sta.transfersEnabled
     IDP_M2M_CLIENT_SECRET: ""          # <- REQUIRED when identity.declarationEnabled
     # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on
+  # Or reference single keys of a Secret the chart does not manage (ESO/Vault):
+  # secretRefs:
+  #   STREAMING_SASL_PASSWORD: { name: redpanda-admin, key: password }
   # Or keep every credential in an operator-managed Secret:
   useExistingSecret: false
   existingSecretName: ""

@@ -48,6 +48,8 @@ The BACEN operator credentials and the document-type configs are **not** configu
 $ helm install br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version <version> -n br-sta --create-namespace -f my-values.yaml
 ```
 
+For a step-by-step installation (dev bundle, pairing with br-sisbajud, production), validation and known errors, see the getting-started runbook: [English](docs/00-getting-start.en.md) · [Português](docs/00-getting-start.md).
+
 Start `my-values.yaml` from [`values-template.yaml`](values-template.yaml). It is in the canonical global-first shape.
 
 ## Upgrading

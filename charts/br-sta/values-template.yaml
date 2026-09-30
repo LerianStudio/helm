@@ -40,13 +40,16 @@ global:
     enabled: true                      # the app accepts false only in a development-class env
     host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
   streaming:
-    # br-sisbajud consumes br-sta's facts on lerian.streaming.br-sta: when you run br-sisbajud,
-    # set true with brokers/TLS/SASL (facts produced while off are never re-sent).
-    enabled: false
-    brokers: ""                        # <- REQUIRED when enabled: host:port CSV (topics lerian.streaming.br-sta + .dlq must exist)
-    tlsEnabled: true
-    saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
-    saslUsername: "br-sta"
+    # ON: br-sisbajud consumes br-sta's facts on lerian.streaming.br-sta, and facts
+    # produced while off are never re-sent. The render fails until brokers + SASL are set.
+    enabled: true
+    brokers: ""                        # <- REQUIRED: host:port CSV
+    tlsEnabled: true                   # <- REQUIRED with SASL (SASL over plaintext is refused); must be true with deploymentMode saas
+    saslMechanism: "SCRAM-SHA-256"     # <- REQUIRED: SCRAM-SHA-256 | SCRAM-SHA-512 | PLAIN ("" = unauthenticated broker, byoc only)
+    saslUsername: ""                   # <- REQUIRED: the br-sta principal (or common.secrets.STREAMING_SASL_USERNAME)
+    # Both binaries create lerian.streaming.br-sta + .dlq at boot when the principal has
+    # CreateTopics (denied = WARN, not a boot failure). false: IaC-provisioned topics, which must exist first.
+    topicAutoProvision: true
   observability:
     enabled: false                     # true => node-local collector http://$(HOST_IP):4317
   multiTenant:
@@ -75,6 +78,8 @@ worker:
     tag: ""                            # optional — defaults to manager.image.tag
 
 common:
+  app:
+    deploymentMode: "byoc"             # byoc (your cloud) | saas (every dependency must be TLS) | local
   cors:
     allowedOrigins: ""                 # <- REQUIRED in production: your UI origins (CSV)
   server:
@@ -89,7 +94,7 @@ common:
   bacen:
     environment: "homologation"        # production => the live BACEN STA host
   transfer:
-    # With global.streaming off, transfer outcomes never reach br-sisbajud: enable both together.
+    # Transfer outcomes reach br-sisbajud only through global.streaming: keep both on.
     schedulerEnabled: true             # the ONLY path that uploads to BACEN (worker)
     inboundEnabled: false              # BACEN-pulled files
   secrets:
@@ -101,8 +106,8 @@ common:
     LICENSE_KEY: ""                    # <- REQUIRED in production
     AWS_ACCESS_KEY_ID: ""              # or an IRSA / workload-identity service account
     AWS_SECRET_ACCESS_KEY: ""
-    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when streaming is enabled with a saslMechanism
-    STREAMING_TLS_CA_CERT: ""          # broker CA not in the system pool
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED (global.streaming.saslMechanism is set)
+    STREAMING_TLS_CA_CERT: ""          # <- REQUIRED when the broker CA is not in the system pool (PEM)
     # IDP_M2M_CLIENT_SECRET: ""        # <- REQUIRED when identity.declarationEnabled
     # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on
   # Or reference single keys of a Secret the chart does not manage (ESO/Vault);

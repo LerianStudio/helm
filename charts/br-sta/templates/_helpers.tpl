@@ -416,9 +416,15 @@ key off that literal.
 {{- include "br-sta.isTrue" (include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false")) -}}
 {{- end -}}
 
+{{/*
+br-sta.streamingEnabledRaw — STREAMING_ENABLED. configmap > global.streaming.enabled
+> "true": br-sta's business facts on lerian.streaming.br-sta are what br-sisbajud
+consumes, and facts produced while it is off are never re-sent, so the chart ships
+it on (the app's own default is off). global.streaming.brokers is then required.
+*/}}
 {{- define "br-sta.streamingEnabledRaw" -}}
 {{- $cm := .Values.common.configmap | default dict -}}
-{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") -}}
+{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "true") -}}
 {{- end -}}
 
 {{/*
@@ -560,7 +566,7 @@ the STA service config/.env.example + internal/bootstrap/config.go
 # --- Application -------------------------------------------------------------
 ENV_NAME: {{ $envName | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "logLevel" "k" "LOG_LEVEL" "d" "info") }}
-{{ include $kv (dict "cm" $cm "p" $c.app "f" "deploymentMode" "k" "DEPLOYMENT_MODE" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $c.app "f" "deploymentMode" "k" "DEPLOYMENT_MODE" "d" "byoc") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "defaultTenantId" "k" "DEFAULT_TENANT_ID" "d" "11111111-1111-1111-1111-111111111111") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "systemplaneEnabled" "k" "SYSTEMPLANE_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "infraConnectTimeoutSec" "k" "INFRA_CONNECT_TIMEOUT_SEC" "d" "30") }}
@@ -707,6 +713,11 @@ RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.outbox "f" "allowEmptyTenant" "k" "OUTBOX_ALLOW_EMPTY_TENANT" "d" "true") }}
 # --- Streaming: business facts on lerian.streaming.br-sta (lerian-common.streaming.env) --
 STREAMING_ENABLED: {{ $streamingRaw | quote }}
+{{- /* lib-streaming (v4, internal/kafkasec) reads STREAMING_TOPIC_AUTO_PROVISION
+   straight from the env at producer Build — both binaries: it tries to create the
+   app's own topics (lerian.streaming.br-sta + .dlq); a denied CreateTopics is a
+   WARN, never a boot failure. false for brokers provisioned through IaC. */}}
+STREAMING_TOPIC_AUTO_PROVISION: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "streaming" "field" "topicAutoProvision" "nativeKey" "STREAMING_TOPIC_AUTO_PROVISION" "default" "true") | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.streaming "f" "cloudeventsSource" "k" "STREAMING_CLOUDEVENTS_SOURCE" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.streaming "f" "clientId" "k" "STREAMING_CLIENT_ID" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.streaming "f" "cbFailureRatio" "k" "STREAMING_CB_FAILURE_RATIO" "opt" true) }}
@@ -1162,9 +1173,19 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" "in production (ENV_NAME=production; any other ENV_NAME runs without license enforcement)" "set" "common.secrets.LICENSE_KEY") -}}
 {{- include $req (dict "context" $ "key" "ORGANIZATION_IDS" "value" (index $data "ORGANIZATION_IDS") "secret" true "why" "in production" "set" "common.license.organizationIds") -}}
 {{- end -}}
+{{- /* DEPLOYMENT_MODE vocabulary (normalizeDeploymentMode: trimmed, case-insensitive;
+   empty means local): any other value refuses boot. */ -}}
+{{- $deployMode := lower (trim (toString (index $data "DEPLOYMENT_MODE" | default ""))) -}}
+{{- if and $deployMode (not (has $deployMode (list "local" "byoc" "saas"))) -}}
+{{- fail (printf "\n\nERROR: br-sta: DEPLOYMENT_MODE must be byoc, saas or local (got %q).\n  set: common.app.deploymentMode (byoc — the chart default — for a customer-cloud install)\n" (toString (index $data "DEPLOYMENT_MODE"))) -}}
+{{- end -}}
 {{- /* Streaming: brokers + the pinned CloudEvents source. */ -}}
 {{- if eq (include $isTrue (index $data "STREAMING_ENABLED")) "true" -}}
-{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true" "set" "global.streaming.brokers (or enable the bundled redpanda for a dev install)") -}}
+{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (the chart default)" "set" "global.streaming.brokers (or enable the bundled redpanda for a dev install, or global.streaming.enabled=false)") -}}
+{{- /* ValidateSaaSTLS (appendStreamingTLSCheck): a saas broker dial must be TLS. */ -}}
+{{- if and (eq $deployMode "saas") (ne (include $isTrue (index $data "STREAMING_TLS_ENABLED" | default "")) "true") -}}
+{{- fail "\n\nERROR: br-sta: STREAMING_TLS_ENABLED must be true with DEPLOYMENT_MODE=saas and streaming on (the app refuses a plaintext broker dial in saas).\n  set: global.streaming.tlsEnabled=true\n" -}}
+{{- end -}}
 {{- end -}}
 {{- $ceSource := index $data "STREAMING_CLOUDEVENTS_SOURCE" | default "" -}}
 {{- if and (hasKey $data "STREAMING_CLOUDEVENTS_SOURCE") (ne (toString $ceSource) "br-sta") -}}

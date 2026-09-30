@@ -1568,6 +1568,7 @@
           "description": "Ingress NetworkPolicy for the tracer pods. It only takes effect on a CNI that enforces NetworkPolicy. The gRPC reservation seam trusts the x-tenant-id header, so it admits only the ledger pods of this release plus `grpcExtraFrom`.",
           "properties": {
             "enabled": {
+              "type": "boolean",
               "default": false,
               "description": "Enable or disable the NetworkPolicy"
             },

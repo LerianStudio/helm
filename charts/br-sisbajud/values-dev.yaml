@@ -43,12 +43,22 @@ brSisbajud:
     # The dev root token never expires; renewal would be a no-op.
     tokenRenewEnabled: false
 
+# Explicit dev passwords: the Valkey subchart otherwise regenerates its password
+# on every render (every `helm upgrade` rotated it and restarted Valkey and the
+# app), and a GitOps render (no Helm `lookup`) would do the same for PostgreSQL
+# while its data volume keeps the first one. Public dev-only values; the app
+# reads them from the subchart Secrets.
 postgresql:
   enabled: true
   external: false
+  auth:
+    password: "dev-only-postgres"
+    postgresPassword: "dev-only-postgres-admin"
 valkey:
   enabled: true
   external: false
+  auth:
+    password: "dev-only-valkey"
 seaweedfs:
   enabled: true
 openbao:

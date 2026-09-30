@@ -27,7 +27,7 @@ Topics: a PreSync Job ({{ include "br-sisbajud-topics.fullname" . }}) ensures: {
 WARNING: these keys are set but app 1.x no longer reads them, so the chart no
 longer emits them: {{ join ", " $set }}.
 The Midaz/CRM connector routing and credentials now live per institution in
-institution_config.connector_metadata (admin API). See docs/UPGRADE-2.0.md.
+institution_config.connector_metadata (admin API). See docs/UPGRADE-1.2.md.
 {{- end }}
 {{- if eq (include "br-sisbajud.productionLike" .) "true" }}
 {{- $bundled := list }}

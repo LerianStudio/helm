@@ -1,4 +1,4 @@
-# Helm Upgrade from v1.1.x to v2.0.0
+# Helm Upgrade from v1.1.x to v1.2.0
 
 {% raw %}
 
@@ -13,16 +13,16 @@
   - [5. Fail-fast render gates](#5-fail-fast-render-gates)
 - **[New Features](#new-features)**
 - **[Behavior Changes](#behavior-changes)**
-- **[Key Mapping (1.1.x to 2.0)](#key-mapping-11x-to-20)**
+- **[Key Mapping (1.1.x to 1.2)](#key-mapping-11x-to-12)**
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
 
-Chart 2.0 moves br-sisbajud to application **1.1.0** and productizes the chart on the `lerian-common-helm` library (2.1.2):
+Chart 1.2 moves br-sisbajud to application **1.1.0** and productizes the chart on the `lerian-common-helm` library (2.1.2):
 
-| Setting | v1.1.x | v2.0.0 |
+| Setting | v1.1.x | v1.2.0 |
 |---------|--------|--------|
 | Application | `1.0.0-beta.109` (default) | `1.1.0` (app, migrations and topics images) |
 | Configuration | `brSisbajud.configmap` emitted verbatim | Global-first contract (`global.*`) + grouped params; `configmap` stays as the escape hatch |
@@ -53,7 +53,7 @@ Other 1.x application requirements the chart now wires:
 
 ### 2. Production-like environment by default
 
-1.1.x shipped `ENV_NAME=development` in `values.yaml`. 2.0 defaults to `production`, the application's own fail-closed posture. A deployment that relied on the old default now needs a `LICENSE_KEY`, a TLS Postgres (`POSTGRES_SSLMODE` defaults to `require`), a Postgres password and TLS on the broker. To keep a non-production posture, set it explicitly:
+1.1.x shipped `ENV_NAME=development` in `values.yaml`. 1.2 defaults to `production`, the application's own fail-closed posture. A deployment that relied on the old default now needs a `LICENSE_KEY`, a TLS Postgres (`POSTGRES_SSLMODE` defaults to `require`), a Postgres password and TLS on the broker. To keep a non-production posture, set it explicitly:
 
 ```yaml
 global:
@@ -113,11 +113,11 @@ A values mistake now fails the render with the key to set, instead of CrashLoopi
 - The bundled `postgresql` / `valkey` subcharts pull `bitnamilegacy/*` images: the `bitnami/*` tags they default to no longer exist on Docker Hub. The tags are the same, so existing data stays readable. The bundled Postgres now creates the `br_sisbajud` role and database, and the bundled Valkey runs standalone.
 - `SERVER_ADDRESS` defaults to `0.0.0.0:<service.port>`, and `VERSION` / `SWAGGER_VERSION` default to the image tag.
 
-## Key Mapping (1.1.x to 2.0)
+## Key Mapping (1.1.x to 1.2)
 
 The 1.1.x native keys keep working. Move to the right-hand column to use the productized API. Once you set the new parameter, delete the native key: a native key shadows it.
 
-| 1.1.x (`brSisbajud.configmap` / `extraEnvVars`) | 2.0 |
+| 1.1.x (`brSisbajud.configmap` / `extraEnvVars`) | 1.2 |
 |---|---|
 | `ENV_NAME` / `ENVIRONMENT_NAME` | `global.env.name` |
 | `POSTGRES_HOST` / `PORT` / `USER` / `NAME` / `SSLMODE` | `global.datastores.postgres.{host,port,user,name,ssl}` |
@@ -175,20 +175,20 @@ Keep your 1.1.x values. Pin the environment explicitly if you relied on the old 
 
 ### Step 3: Move to the global-first shape (optional, recommended)
 
-Move connection keys to `global.*` and the rest to the grouped parameters (see the [Key Mapping](#key-mapping-11x-to-20)). Move credentials from `extraEnvVars` to `brSisbajud.secrets`. [`values-template.yaml`](../values-template.yaml) is the canonical starter. Re-render and confirm the effective env did not change.
+Move connection keys to `global.*` and the rest to the grouped parameters (see the [Key Mapping](#key-mapping-11x-to-12)). Move credentials from `extraEnvVars` to `brSisbajud.secrets`. [`values-template.yaml`](../values-template.yaml) is the canonical starter. Re-render and confirm the effective env did not change.
 
 ## Preview changes before upgrading
 
 ```bash
 helm template br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 1.1.0 -f my-values.yaml > before.yaml
-helm template br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 2.0.0 -f my-values.yaml > after.yaml
+helm template br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 1.2.0 -f my-values.yaml > after.yaml
 diff before.yaml after.yaml
 ```
 
 ## Command to upgrade
 
 ```bash
-helm upgrade br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 2.0.0 -n br-sisbajud -f my-values.yaml
+helm upgrade br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 1.2.0 -n br-sisbajud -f my-values.yaml
 ```
 
 {% endraw %}

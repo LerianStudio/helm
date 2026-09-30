@@ -46,7 +46,7 @@ Start `my-values.yaml` from [`values-template.yaml`](values-template.yaml). It i
 $ helm upgrade br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version <new-version> -n br-sisbajud -f my-values.yaml
 ```
 
-Coming from chart 1.1.x (app `1.0.0-beta.x` / `rc.x`), read [UPGRADE-2.0.md](docs/UPGRADE-2.0.md) first.
+Coming from chart 1.1.x (app `1.0.0-beta.x` / `rc.x`), read [UPGRADE-1.2.md](docs/UPGRADE-1.2.md) first.
 
 ## Uninstalling
 

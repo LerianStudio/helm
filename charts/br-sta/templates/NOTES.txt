@@ -26,8 +26,8 @@ provisioned through the tenant manager).
 Migrations: a Job applies the SQL schema to the bundled Postgres alongside the release.
 {{- else }}
 
-Migrations: an ArgoCD PreSync Job applies the SQL schema before the app boots.
-Under plain `helm install` (no ArgoCD) it runs as a regular Job next to the app.
+Migrations: a hook Job (Helm pre-install/pre-upgrade, ArgoCD PreSync) applies the
+SQL schema before the app boots.
 {{- end }}
 {{- end }}
 {{- if eq (include "br-sta.isTrue" (include "br-sta.streamingEnabledRaw" .)) "true" }}

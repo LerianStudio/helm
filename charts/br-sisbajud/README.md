@@ -245,6 +245,10 @@ It bundles, in the release namespace:
 
 It runs with `ENVIRONMENT_NAME=development`, which relaxes the app's production gates: empty `LICENSE_KEY` = license dev bypass, plaintext Postgres and broker allowed. Inbound auth, the access-manager declaration publisher, the br-sta consumer/transfers client and multi-tenancy are off. plugin-access-manager, br-sta and the Midaz ledger are not bundled, so institutions are still seeded via the admin API.
 
+### With a br-sta dev bundle
+
+[`values-dev-with-br-sta.yaml`](values-dev-with-br-sta.yaml), layered on `values-dev.yaml`, wires br-sisbajud to a br-sta dev bundle (release `br-sta`) in the same namespace: it reuses br-sta's SeaweedFS and Redpanda (the STA transfer bucket and endpoint then match, `sta_bucket_parity` is up), turns on the br-sta business-fact consumer (`lerian.streaming.br-sta`) and points the transfers client at `http://br-sta-manager:4028`. Install br-sta with `--set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'` so its bucket Job also creates br-sisbajud's own bucket. There is no plugin-access-manager in either bundle, so the transfers client cannot mint its m2m bearer; transfer submission needs a real `global.auth.host`.
+
 ### Derived connections
 
 With a subchart enabled and no explicit value (`configmap` > dedicated mask > `global.*` still wins):

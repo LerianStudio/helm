@@ -1,0 +1,54 @@
+# br-sisbajud — values-dev-with-br-sta.yaml: the br-sisbajud dev bundle wired to
+# a br-sta dev bundle installed in the SAME namespace. Layer it on values-dev.yaml:
+#
+#   helm install br-sta charts/br-sta -n <ns> -f charts/br-sta/values-dev.yaml \
+#     --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'
+#   helm install br-sisbajud charts/br-sisbajud -n <ns> \
+#     -f charts/br-sisbajud/values-dev.yaml -f charts/br-sisbajud/values-dev-with-br-sta.yaml
+#
+# It reuses br-sta's SeaweedFS (S3) and Redpanda, and keeps br-sisbajud's own
+# PostgreSQL, Valkey and OpenBao. Short Service names resolve inside the shared
+# namespace; they assume the br-sta release is named "br-sta" (its manager
+# Service is br-sta-manager) and the default SeaweedFS / Redpanda names. The
+# "sisbajud" bucket is created by br-sta's bucket Job (extraBuckets above).
+#
+# Wired: the STA transfer bucket and S3 endpoint (bucket parity), the br-sta
+# business-fact consumer (lerian.streaming.br-sta) and the transfers client
+# (POST /v1/transfers). Dev-only, public dummy credentials. There is no
+# plugin-access-manager in this bundle, so the transfers client cannot mint its
+# m2m bearer: transfer submission fails until global.auth.host points at a real
+# access manager.
+global:
+  objectStorage:
+    sisbajud:
+      endpoint: "http://seaweedfs-s3:8333"
+      bucket: "sisbajud"
+    sta:
+      bucket: "br-sta-transfer"
+  streaming:
+    enabled: true
+    brokers: "redpanda:9093"
+    tlsEnabled: false
+  auth:
+    enabled: false
+    host: "http://plugin-access-manager-auth.invalid:4000"
+
+brSisbajud:
+  sta:
+    consumerEnabled: true
+    # = br-sta's DEFAULT_TENANT_ID (single tenant).
+    expectedTenantSt: "11111111-1111-1111-1111-111111111111"
+    transfersEnabled: true
+    transfersBaseUrl: "http://br-sta-manager:4028"
+    clientId: "br-sisbajud"
+  secrets:
+    STA_CLIENT_SECRET: "dev-only-sta-client-secret"
+    # br-sta's SeaweedFS runs with S3 auth off; the SDK still signs requests.
+    SEAWEEDFS_ACCESS_KEY: "any"
+    SEAWEEDFS_SECRET_KEY: "any"
+
+# Provided by the br-sta release.
+seaweedfs:
+  enabled: false
+redpandaBundle:
+  enabled: false

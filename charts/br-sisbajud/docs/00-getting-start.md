@@ -23,6 +23,8 @@
 
 ## 1. Perfis de instalação
 
+> **A infraestrutura embutida é apenas para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada.** Produção significa PostgreSQL com TLS, Valkey/Redis, Kafka/Redpanda com TLS, Vault/OpenBao fora do modo dev (ou AWS KMS) e object storage S3. Os subcharts embutidos `postgresql`, `valkey`, `seaweedfs`, `openbao` e `redpanda` existem para instalações de desenvolvimento, POC e quickstart. O render recusa os bundles de OpenBao e Redpanda num ambiente com cara de produção. Os bundles de PostgreSQL, Valkey e SeaweedFS só recebem um aviso no NOTES nesse caso, mas também não são suportados em produção.
+
 | Perfil | Values | O que roda | Uso |
 |---|---|---|---|
 | **Dev bundle (quickstart)** | `values-dev.yaml` | a app, mais PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, modo dev) e Redpanda embutidos; `ENVIRONMENT_NAME=development`; auth de entrada, consumer/cliente de transfers do br-sta e multi-tenancy desligados | Avaliação, desenvolvimento local, teste do chart |
@@ -59,6 +61,8 @@ poderem executar.
 ## 3. Ordem de instalação
 
 ### Dev bundle
+
+> A infraestrutura embutida é apenas para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada. Não promova este perfil para um tier de produção.
 
 ```bash
 kubectl create namespace sisb-dev

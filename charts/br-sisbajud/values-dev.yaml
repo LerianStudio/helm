@@ -3,10 +3,19 @@
 #   helm install br-sisbajud charts/br-sisbajud -f charts/br-sisbajud/values-dev.yaml -n sisb-dev --create-namespace
 #
 # Bundles PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, dev mode)
-# and Redpanda (Kafka API) in the release namespace. NEVER use it for
-# production: OpenBao dev mode keeps its keys in memory (a restart makes the
-# encrypted data unrecoverable), S3 auth is off, TLS is off everywhere, and the
-# chart refuses to render OpenBao/Redpanda in a production-like environment.
+# and Redpanda (Kafka API) in the release namespace.
+#
+# Bundled infrastructure is for development and quickstart only. Production
+# installs must use external, managed infrastructure. That means PostgreSQL
+# with TLS, Valkey/Redis, Kafka/Redpanda with TLS, Vault/OpenBao in non-dev
+# mode (or AWS KMS) and S3 object storage. The render refuses the
+# OpenBao/Redpanda bundles in a production-like environment. The
+# PostgreSQL/Valkey/SeaweedFS bundles only get a NOTES warning there, but they
+# are unsupported in production all the same.
+#
+# NEVER use this file for production: OpenBao dev mode keeps its keys in
+# memory (a restart makes the encrypted data unrecoverable), S3 auth is off and
+# TLS is off everywhere.
 #
 # What development relaxes in the app (internal/bootstrap/config_validation.go):
 # an empty LICENSE_KEY disables license validation (dev bypass),

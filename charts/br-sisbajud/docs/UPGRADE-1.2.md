@@ -95,8 +95,8 @@ A values mistake now fails the render with the key to set, instead of CrashLoopi
 - **Streaming SASL/TLS** through `global.streaming` + `brSisbajud.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`, validated at render (supported mechanism, username, TLS or explicit plaintext opt-in).
 - **Credentials only in the Secret**: `LICENSE_KEY`, `VAULT_TOKEN`, `VAULT_APPROLE_SECRET_ID`, `STA_CLIENT_SECRET`, `IDP_M2M_CLIENT_SECRET`, `SEAWEEDFS_*`, `MULTI_TENANT_SERVICE_API_KEY`, ...
 - **Config checksums** on the pod template: a ConfigMap or Secret change rolls the pods.
-- **Self-contained dev bundle** (`values-dev.yaml`): PostgreSQL, Valkey, SeaweedFS, OpenBao (dev mode) and Redpanda, with derived endpoints and idempotent bootstrap Jobs (buckets, Transit). OpenBao/Redpanda are refused in a production-like environment. See the README "Bundled infrastructure".
-- **Optional bundled SeaweedFS** (`seaweedfs.enabled`, off by default) for dev and evaluation installs. The S3 endpoint derives from the subchart Service, and a hook Job creates the configured buckets (the app never creates them). See the README "Bundled infrastructure".
+- **Self-contained dev bundle** (`values-dev.yaml`): PostgreSQL, Valkey, SeaweedFS, OpenBao (dev mode) and Redpanda, with derived endpoints and idempotent bootstrap Jobs (buckets, Transit). OpenBao/Redpanda are refused in a production-like environment; PostgreSQL/Valkey/SeaweedFS only get a NOTES warning there but are unsupported in production. Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. See the README "Bundled infrastructure".
+- **Optional bundled SeaweedFS** (`seaweedfs.enabled`, off by default) for dev and evaluation installs only, never production. The S3 endpoint derives from the subchart Service, and a hook Job creates the configured buckets (the app never creates them). See the README "Bundled infrastructure".
 
 ## Behavior Changes
 

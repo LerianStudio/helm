@@ -23,6 +23,8 @@
 
 ## 1. Installation profiles
 
+> **Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure.** Production means PostgreSQL with TLS, Valkey/Redis, Kafka/Redpanda with TLS, Vault/OpenBao in non-dev mode (or AWS KMS) and S3 object storage. The bundled `postgresql`, `valkey`, `seaweedfs`, `openbao` and `redpanda` subcharts exist for development, POC and quickstart installs. The render refuses the OpenBao and Redpanda bundles in a production-like environment. The PostgreSQL, Valkey and SeaweedFS bundles only get a NOTES warning there, but they are unsupported in production all the same.
+
 | Profile | Values | What runs | Use case |
 |---|---|---|---|
 | **Dev bundle (quickstart)** | `values-dev.yaml` | the app, plus bundled PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, dev mode) and Redpanda; `ENVIRONMENT_NAME=development`; inbound auth, the br-sta consumer/transfers client and multi-tenancy off | Evaluation, local development, chart testing |
@@ -59,6 +61,8 @@ can execute.
 ## 3. Installation order
 
 ### Dev bundle
+
+> Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. Do not promote this profile to a production tier.
 
 ```bash
 kubectl create namespace sisb-dev

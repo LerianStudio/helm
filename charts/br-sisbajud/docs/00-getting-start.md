@@ -27,6 +27,7 @@
 |---|---|---|---|
 | **Dev bundle (quickstart)** | `values-dev.yaml` | a app, mais PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, modo dev) e Redpanda embutidos; `ENVIRONMENT_NAME=development`; auth de entrada, consumer/cliente de transfers do br-sta e multi-tenancy desligados | Avaliação, desenvolvimento local, teste do chart |
 | **br-sisbajud + br-sta juntos** | `values-dev.yaml` + `values-dev-with-br-sta.yaml` | a app com PostgreSQL, Valkey e OpenBao próprios, reaproveitando o SeaweedFS e o Redpanda de um dev bundle do br-sta no mesmo namespace; consumer e cliente de transfers do br-sta ligados | Dev integrado do fluxo STA (entrada de remessas, arquivos de retorno) |
+| **Standalone (sem br-sta)** | `values-dev.yaml` (ou seu arquivo) com `sta.consumerEnabled` / `sta.transfersEnabled` desligados (o default) | só a app; as remessas entram pela recepção HTTP `POST /v1/remittance-files/notifications` depois que o arquivo bruto é depositado no `STA_INBOUND_BUCKET` | Rodar o SISBAJUD sem o trilho do br-sta (seção 3, "Standalone") |
 | **Produção / infra externa** | seu arquivo, a partir do `values-template.yaml` | a app + Jobs de migrations e tópicos; toda dependência externa | Tiers reais. Ambiente default `production` (fail-closed) |
 
 Só com os defaults o chart não renderiza: o ambiente default é `production`, então o
@@ -112,6 +113,115 @@ kubectl -n sisb-dev delete pvc --all   # também necessário depois de mudar as 
 kubectl delete namespace sisb-dev
 ```
 
+### Standalone (sem br-sta)
+
+O br-sisbajud roda sem o br-sta. As duas pernas do STA são toggles independentes,
+**desligados por default** (e desligados no `values-dev.yaml`):
+
+| Value | Chave de env | Default | O que faz quando `true` |
+|---|---|---|---|
+| `brSisbajud.sta.consumerEnabled` | `STA_CONSUMER_ENABLED` | `false` | Assina os fatos de negócio do br-sta (`lerian.streaming.br-sta`) e recebe as remessas que o br-sta anuncia (precisa de `STREAMING_BROKERS` e `sta.expectedTenantSt`) |
+| `brSisbajud.sta.transfersEnabled` | `STA_TRANSFERS_ENABLED` | `false` | Submete os arquivos de retorno gerados ao br-sta (`POST /v1/transfers`), emitindo um bearer m2m a partir do `PLUGIN_AUTH_HOST` (precisa de `sta.transfersBaseUrl`, `sta.clientId` + `STA_CLIENT_SECRET`) |
+
+Com os dois desligados, **as remessas entram pela recepção HTTP**, o único caminho de
+entrada que não depende do br-sta. O `STA_INBOUND_BUCKET` continua obrigatório: é o
+bucket de onde a recepção lê a remessa bruta.
+
+**1. Crie a instituição (uma vez).** Isso provisiona a KEK da instituição (o arquivo
+bruto é selado com ela na recepção). O `institutionCode` é a raiz de CNPJ BACEN de 8
+dígitos, que precisa bater com o header da remessa. O `connectorMetadata` é validado na
+escrita: `baseUrl` e ao menos um `organizations[].organizationId` são obrigatórios mesmo
+antes de o Midaz estar ligado. Sem credenciais, o conector não envia header de auth.
+
+```bash
+kubectl -n sisb-dev port-forward svc/br-sisbajud 14029:4029 &
+INST=44444444-4444-4444-4444-444444444444
+curl -s -X POST localhost:14029/v1/institutions -H 'Content-Type: application/json' -d '{
+  "institutionId": "'$INST'",
+  "connectorType": "midaz",
+  "institutionCode": "12345678",
+  "connectorMetadata": {
+    "baseUrl": "http://midaz-ledger.midaz.svc.cluster.local:3002",
+    "organizations": [{"organizationId": "019fcd7b-97df-71a5-8023-6eb3c661968b"}],
+    "blockableBalances": ["default"],
+    "blockableAccountTypes": ["deposit"]
+  }
+}'
+```
+
+**2. Deposite a remessa bruta no `STA_INBOUND_BUCKET`.** Com o SeaweedFS embutido
+(auth S3 desligada no dev bundle), de dentro do namespace:
+
+```bash
+kubectl -n sisb-dev run s3-put --rm -i --restart=Never --image=amazon/aws-cli:2.17.0 \
+  --env AWS_ACCESS_KEY_ID=any --env AWS_SECRET_ACCESS_KEY=any --env AWS_DEFAULT_REGION=us-east-1 \
+  --command -- sh -c 'cat > /tmp/r.txt && aws --endpoint-url http://seaweedfs-s3:8333 \
+    s3 cp /tmp/r.txt s3://br-sta-transfer/inbound/12345678/AJUD301_12345678_20260617.txt' \
+  < remessa.txt
+```
+
+O bucket é o `global.objectStorage.sta.bucket` (`br-sta-transfer` no
+`values-dev.yaml`). O repositório do br-sisbajud traz uma remessa 5301 válida com CNPJ
+`12345678` no header em `internal/bootstrap/testdata/remittance_notification_remessa.txt`.
+
+**3. Notifique o serviço.** O corpo é camelCase e os quatro campos são obrigatórios:
+
+```bash
+curl -s -X POST localhost:14029/v1/remittance-files/notifications \
+  -H 'Content-Type: application/json' -d '{
+  "objectKey": "inbound/12345678/AJUD301_12345678_20260617.txt",
+  "institutionId": "'$INST'",
+  "institutionCode": "12345678",
+  "fileType": "5301"
+}'
+# => {"status":"processed","fileId":"<uuid>","environment":"PRODUCTION"}
+```
+
+| Campo | Regra |
+|---|---|
+| `objectKey` | Chave do objeto já presente no `STA_INBOUND_BUCKET`. Para `5303`/`5313` (resultados de validação do BACEN) precisa ser `inbound/<protocolo só com dígitos>/<nome do arquivo>`; nos demais, qualquer chave não vazia |
+| `institutionId` | UUID de uma instituição existente |
+| `institutionCode` | CNPJ BACEN de 8 dígitos da instituição; o parser confere com o header do arquivo |
+| `fileType` | Código numérico SISBAJUD, nunca um rótulo: `5301`/`5303`/`5308` (PRODUCTION: remessa de bloqueio / resultado de validação sintática / requisição AJUD308), `5311`/`5313`/`5318` (os mesmos três em HOMOLOGATION). `5302`/`5312` são produzidos por este serviço, nunca aceitos |
+
+Respostas:
+- `200 {"status":"processed","fileId","environment"}`;
+- `200 {"status":"skipped","reason":"skipped"}` numa reentrega idempotente, ou
+  `"reason":"lock_held"` enquanto outro worker processa o mesmo arquivo;
+- `422` SBJ-0006: corpo inválido, `fileType` desconhecido ou formato de chave inválido;
+- `404` SBJ-0005: o objeto não está no bucket;
+- `503` SBJ-0008.
+
+A recepção roda de forma síncrona na requisição.
+
+**Auth.** Com `PLUGIN_AUTH_ENABLED=false` (o dev bundle) a rota fica aberta. Com auth
+ligada, quem chama precisa do escopo `remittance_file:receive`: o papel
+`br-sisbajud-admin` ou o papel editor M2M. O `POST /v1/institutions` precisa do escopo de
+escrita de instituição.
+
+**Arquivos de retorno sem br-sta.** Os crons de retorno (`workers.returnFile`,
+`workers.informationReturnFile`, desligados por default) continuam gerando os arquivos
+AJUD302/AJUD309. Com `transfersEnabled` desligado, "gerado e não submetido" é um estado
+válido para o app: ele sobe e loga cada arquivo como não submetido. O app só recusa o
+boot quando os transfers estão ligados mas o caminho de submissão não pôde ser montado.
+- **Para onde vão os arquivos:** ficam guardados **cifrados** (ciphertext, chave com
+  escopo da instituição) no bucket do serviço `SEAWEEDFS_BUCKET`. Não há arquivo em
+  texto claro para buscar no bucket.
+- **Export em dev:** só em `local`/`development`, o
+  `GET /v1/admin/return-file/{id}/content` devolve os bytes decifrados (base64).
+- **Produção:** o app 1.1.0 não tem endpoint de export em produção. Entregar os
+  arquivos de retorno ao BACEN é papel do br-sta (`transfersEnabled`). Sem br-sta, a
+  perna de retorno precisa ser coberta pelo canal STA do próprio operador, e isso está
+  fora do que esta versão do app oferece.
+
+> **Ainda não exercitado.** Esta recepção HTTP não foi executada no minikube. O
+> contrato acima foi lido do código-fonte do app na v1.1.0:
+> `internal/adapters/http/remittance_notification_handler.go`,
+> `remittance_notification_huma.go`, `internal/bootstrap/routes_remittance_notification.go`,
+> `institution_handler.go` e o teste de integração do endpoint,
+> `internal/bootstrap/remittance_notification_integration_test.go`, que usa o mesmo corpo
+> e a mesma fixture.
+
 ### Produção
 
 1. Provisione PostgreSQL, Valkey, os buckets S3 (`global.objectStorage.sisbajud.bucket`
@@ -185,7 +295,7 @@ curl -s localhost:14029/health     # path do liveness probe
 | Jobs | `kubectl get jobs` | migrations (e em dev `openbao-transit`, buckets, tópicos) `Complete` | Host/senha do Postgres; acesso ao broker para os tópicos |
 | Readiness | `GET /readyz` | `healthy`; `postgres`, `redis`, `kms`, `seaweedfs`, `streaming` `up`; com o br-sta ligado: `sta_bucket_parity` `up` e `sta_consumer` `up` | `sta_bucket_parity` down: bucket/endpoint sta diferentes dos do br-sta |
 | Integração com br-sta (comprovada) | crie um transfer no br-sta (ver o runbook do br-sta): o mock STA leva a `Accepted` e o br-sta publica um fato em `lerian.streaming.br-sta` | O fato chega ao consumer STA do br-sisbajud (grupo `sisbajud-sta-consumer`) | Um fato de transfer que o br-sisbajud não criou é reprocessado (seção 5) |
-| Não exercitado | br-sisbajud → br-sta `POST /v1/transfers` (precisa de plugin-access-manager e de instituições/ordens cadastradas); arquivos inbound do BACEN/mock até o br-sisbajud | — | — |
+| Não exercitado | br-sisbajud → br-sta `POST /v1/transfers` (precisa de plugin-access-manager e de instituições/ordens cadastradas); arquivos inbound do BACEN/mock até o br-sisbajud; a recepção HTTP standalone `POST /v1/remittance-files/notifications` (documentada a partir do código, seção 3) | — | — |
 
 ---
 

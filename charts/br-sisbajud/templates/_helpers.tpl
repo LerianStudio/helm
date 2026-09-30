@@ -451,7 +451,7 @@ relaxations and the NOTES warnings.
 
 {{- define "br-sisbajud.streamingEnabledRaw" -}}
 {{- $cm := .Values.brSisbajud.configmap | default dict -}}
-{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") -}}
+{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "true") -}}
 {{- end -}}
 
 {{/*
@@ -571,7 +571,7 @@ ENVIRONMENT_NAME: {{ $envName | quote }}
 ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "logLevel" "k" "LOG_LEVEL" "d" "info") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "version" "k" "VERSION" "d" $imageTag) }}
-{{ include $kv (dict "cm" $cm "p" $b.app "f" "deploymentMode" "k" "DEPLOYMENT_MODE" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $b.app "f" "deploymentMode" "k" "DEPLOYMENT_MODE" "d" "byoc") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "defaultTenantId" "k" "DEFAULT_TENANT_ID" "d" "11111111-1111-1111-1111-111111111111") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "systemplaneEnabled" "k" "SYSTEMPLANE_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "infraConnectTimeoutSec" "k" "INFRA_CONNECT_TIMEOUT_SEC" "d" "30") }}
@@ -723,7 +723,7 @@ STA_OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "dedicated" $osDe
 {{ include $kv (dict "cm" $cm "p" $w.informationReturnFile "f" "enabled" "k" "INFORMATION_RETURN_FILE_GENERATION_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $w.informationReturnFile "f" "scanInterval" "k" "INFORMATION_RETURN_FILE_GENERATION_SCAN_INTERVAL" "d" "3600") }}
 {{ include $kv (dict "cm" $cm "p" $w.informationReturnFile "f" "limit" "k" "INFORMATION_RETURN_FILE_GENERATION_LIMIT" "d" "500") }}
-{{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "enabled" "k" "INFORMATION_REQUEST_ENABLED" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "enabled" "k" "INFORMATION_REQUEST_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "scanInterval" "k" "INFORMATION_REQUEST_SCAN_INTERVAL" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "batchSize" "k" "INFORMATION_REQUEST_BATCH_SIZE" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "lockTtl" "k" "INFORMATION_REQUEST_LOCK_TTL" "opt" true) }}
@@ -759,6 +759,11 @@ STREAMING_ENABLED: {{ $streamingRaw | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "cloudeventsSource" "k" "STREAMING_CLOUDEVENTS_SOURCE" "d" "br-sisbajud") }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "clientId" "k" "STREAMING_CLIENT_ID" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "healthCheckTimeout" "k" "STREAMING_HEALTH_CHECK_TIMEOUT" "d" "2s") }}
+{{- /* lib-streaming knobs outside lerian-common.streaming.env. closeTimeoutS must stay
+   below the pod's terminationGracePeriodSeconds (not set by this chart: Kubernetes
+   default 30s), or SIGKILL cuts the producer drain/flush short. */}}
+{{ include $kv (dict "cm" $cm "p" $b.streaming "f" "topicAutoProvision" "k" "STREAMING_TOPIC_AUTO_PROVISION" "d" "true") }}
+{{ include $kv (dict "cm" $cm "p" $b.streaming "f" "closeTimeoutS" "k" "STREAMING_CLOSE_TIMEOUT_S" "d" "20") }}
 {{ include "lerian-common.streaming.env" (dict "context" (dict "Values" (dict "global" (dict "streaming" (include "br-sisbajud.streamingGlobal" . | fromYaml)))) "enabled" $streamingOn "configmap" $cm) }}
 {{ include $kv (dict "cm" $cm "p" $b.balanceConsumer "f" "group" "k" "BALANCE_CONSUMER_GROUP" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.balanceConsumer "f" "dedupTtl" "k" "BALANCE_DEDUP_TTL" "opt" true) }}
@@ -927,9 +932,30 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- else -}}
 {{- include $req (dict "context" $ "key" "AWS_REGION" "value" (index $data "AWS_REGION") "why" "when KMS_PROVIDER=aws" "set" "global.kms.awsRegion (or brSisbajud.kms.awsRegion)") -}}
 {{- end -}}
-{{- /* Streaming: the app fails at boot when enabled without brokers. */ -}}
+{{- /* Streaming (on by default): the app fails at boot when enabled without brokers,
+   and without TLS in a production-like environment (validateProductionConfig). With
+   TLS on, every consumer (Midaz balance translator, balance consumer, STA consumer)
+   builds its dialer from STREAMING_TLS_CA_CERT and silently never starts without it
+   (buildStreamingTLSConfig; wiring failures are non-fatal), so the CA is required. */ -}}
 {{- if eq (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true" -}}
-{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (streaming is off by default; enable it together with brokers/TLS/SASL and keep OUTBOX_ENABLED=true)" "set" "global.streaming.brokers") -}}
+{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (streaming is on by default; set global.streaming.enabled=false to run without a broker)" "set" "global.streaming.brokers") -}}
+{{- /* TLS may also arrive as a brSisbajud.extraEnvVars entry (the 1.1.x wiring); a
+   valueFrom is undecidable at render, so both TLS gates are skipped for it. */ -}}
+{{- $xs := include "br-sisbajud.extraEnv" . | fromYaml -}}
+{{- $tlsRaw := index $data "STREAMING_TLS_ENABLED" -}}
+{{- if hasKey $xs "STREAMING_TLS_ENABLED" -}}{{- $tlsRaw = index $xs "STREAMING_TLS_ENABLED" -}}{{- end -}}
+{{- $tlsKnown := ne (toString $tlsRaw) "__valueFrom__" -}}
+{{- $tlsOn := eq (include "br-sisbajud.isTrue" $tlsRaw) "true" -}}
+{{- if and $tlsKnown $prodLike (not $tlsOn) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: STREAMING_TLS_ENABLED=true is required when STREAMING_ENABLED=true in a production-like environment (ENVIRONMENT_NAME=%q; the app refuses to boot).\n  set: global.streaming.tlsEnabled=true (+ brSisbajud.secrets.STREAMING_TLS_CA_CERT)\n" $envName) -}}
+{{- end -}}
+{{- if $tlsOn -}}
+{{- include $req (dict "context" $ "key" "STREAMING_TLS_CA_CERT" "secret" true "why" "when STREAMING_ENABLED=true and STREAMING_TLS_ENABLED=true (base64 PEM of the broker CA: without it the Midaz balance translator, the balance consumer and the STA consumer never start)" "set" "brSisbajud.secrets.STREAMING_TLS_CA_CERT") -}}
+{{- end -}}
+{{- $closeS := toString (index $data "STREAMING_CLOSE_TIMEOUT_S") -}}
+{{- if or (not (regexMatch "^[0-9]+$" $closeS)) (ge (atoi $closeS) 30) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: STREAMING_CLOSE_TIMEOUT_S must be a whole number of seconds below the pod terminationGracePeriodSeconds (Kubernetes default 30; this chart does not override it), got %q.\n  set: brSisbajud.streaming.closeTimeoutS (default \"20\")\n" $closeS) -}}
+{{- end -}}
 {{- else if or (index $data "STREAMING_BROKERS") (index $cm "STREAMING_BROKERS") -}}
 {{- /* The app refuses STREAMING_BROKERS with STREAMING_ENABLED=false (validateStreamingEnablement). */ -}}
 {{- fail "\n\nERROR: br-sisbajud: STREAMING_BROKERS is set while STREAMING_ENABLED=false (the app refuses to boot: the Midaz balance translator would publish into a no-op).\n  set: global.streaming.enabled=true, or unset brSisbajud.configmap.STREAMING_BROKERS\n" -}}

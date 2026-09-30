@@ -38,9 +38,6 @@ global:
     enabled: false
   observability:
     enabled: false
-  # The chart default is off; the dev bundle runs the bundled Redpanda with it on.
-  streaming:
-    enabled: true
 
 brSisbajud:
   sta:

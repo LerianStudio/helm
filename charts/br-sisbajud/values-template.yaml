@@ -38,13 +38,14 @@ global:
     vaultMount: "transit"
     # awsRegion: "sa-east-1"           # <- REQUIRED for vendor: aws
   streaming:
-    # Off by default: set true (with brokers/TLS/SASL) to publish events and consume
-    # br-sta's facts and the Midaz balance stream; OUTBOX_ENABLED stays true either way.
-    enabled: false
-    brokers: ""                        # <- REQUIRED when enabled
-    tlsEnabled: true                   # required in production
+    # On by default: publishes events and consumes br-sta's facts and the Midaz
+    # balance stream (needs OUTBOX_ENABLED=true, the chart default). false runs
+    # without a broker (then leave brokers empty and sta.consumerEnabled false).
+    enabled: true
+    brokers: ""                        # <- REQUIRED (host:port[,host:port])
+    tlsEnabled: true                   # <- REQUIRED true in production (+ secrets.STREAMING_TLS_CA_CERT)
     saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
-    saslUsername: "br-sisbajud"
+    saslUsername: ""                   # <- REQUIRED when saslMechanism is set
   auth:
     enabled: true
     host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
@@ -61,6 +62,11 @@ imagePullSecrets:
 brSisbajud:
   image:
     tag: ""                            # optional — defaults to Chart.appVersion
+  app:
+    deploymentMode: "byoc"             # saas | byoc | local (saas also forces TLS on Postgres/Redis)
+  streaming:
+    topicAutoProvision: "true"         # the app creates its own topics at boot; "false" if IaC provisions them
+    closeTimeoutS: "20"                # drain window on shutdown; must stay below terminationGracePeriodSeconds (30s)
   ingress:
     enabled: false
     className: "nginx"
@@ -85,7 +91,7 @@ brSisbajud:
     # Institution credentials are set through the admin API, not this chart.
     crmMode: "embedded"                # <- REQUIRED: embedded for Midaz v4 (chart default: legacy)
   sta:
-    consumerEnabled: false             # true needs global.streaming.enabled + brokers
+    consumerEnabled: false             # true needs streaming on (the default) + brokers
     expectedTenantSt: ""               # = br-sta's DEFAULT_TENANT_ID when the consumer is on
     transfersEnabled: false
     transfersBaseUrl: ""               # <- REQUIRED when transfersEnabled
@@ -102,14 +108,14 @@ brSisbajud:
     permanentBlockExpiry: { enabled: false }
     slaAlert: { enabled: false }
     informationReturnFile: { enabled: false }
-    # informationRequest: { enabled: true }   # opt-in: unset = key not emitted (app default off)
+    informationRequest: { enabled: false }
   secrets:
     POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres in production
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""                    # <- REQUIRED in production
     VAULT_APPROLE_SECRET_ID: ""        # <- REQUIRED for approle
-    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when streaming is enabled with a saslMechanism
-    STREAMING_TLS_CA_CERT: ""          # base64 PEM; the topics Job needs it when tlsEnabled
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when saslMechanism is set
+    STREAMING_TLS_CA_CERT: ""          # <- REQUIRED when tlsEnabled: base64 PEM of the broker CA (consumers + topics Job)
     SEAWEEDFS_ACCESS_KEY: ""
     SEAWEEDFS_SECRET_KEY: ""
     STA_CLIENT_SECRET: ""              # <- REQUIRED when sta.transfersEnabled

@@ -5,7 +5,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `brSisbajud.secrets.LICENSE_KEY` and (external Postgres) `POSTGRES_PASSWORD` in a production-like environment (the default); `VAULT_APPROLE_SECRET_ID` with Vault AppRole (or `VAULT_TOKEN` with token auth in `production`); `STREAMING_SASL_PASSWORD` when a SASL mechanism is set; `STA_CLIENT_SECRET` when the STA transfers client is on; `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on. The chart fails the render with the exact key to set when one is missing. With `brSisbajud.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql`/`valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
+- Required secrets: `brSisbajud.secrets.LICENSE_KEY` and (external Postgres) `POSTGRES_PASSWORD` in a production-like environment (the default); `VAULT_APPROLE_SECRET_ID` with Vault AppRole (or `VAULT_TOKEN` with token auth in `production`); `STREAMING_SASL_PASSWORD` when a SASL mechanism is set and `STREAMING_TLS_CA_CERT` when streaming TLS is on (streaming is on by default); `STA_CLIENT_SECRET` when the STA transfers client is on; `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on. The chart fails the render with the exact key to set when one is missing. With `brSisbajud.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql`/`valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
 - Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `seaweedfs` (4.0.393), `openbao` (0.30.0, dev mode) and `redpanda` (26.2.4) subcharts are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, S3, Vault/AWS KMS and Kafka are the production path, and OpenBao/Redpanda are refused outside a development-class environment (staging included). Kafka/Redpanda, Vault (or AWS KMS), S3-compatible object storage, plugin-access-manager, br-sta and the Midaz ledger are external services.
 - Production overrides: `global.datastores` (postgres, redis), `global.objectStorage` (sisbajud, sta), `global.kms`, `global.streaming`, `global.auth`, `global.env`, the Secret keys above (or `brSisbajud.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `brSisbajud.cors.allowedOrigins`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Apache-2.0. The `br-sisbajud` service source is `github.com/LerianStudio/br-sisbajud`.
@@ -97,7 +97,7 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 |-----------|---------|---------|
 | `app.logLevel` | `LOG_LEVEL` | `info` |
 | `app.version` | `VERSION` | image tag |
-| `app.deploymentMode` | `DEPLOYMENT_MODE` | unset (app: `local`; only `saas` enforces TLS) |
+| `app.deploymentMode` | `DEPLOYMENT_MODE` | `byoc` (`saas` \| `byoc` \| `local`; only `saas` enforces TLS) |
 | `app.defaultTenantId` | `DEFAULT_TENANT_ID` | `11111111-1111-1111-1111-111111111111` |
 | `app.systemplaneEnabled` | `SYSTEMPLANE_ENABLED` | `false` |
 | `app.infraConnectTimeoutSec` | `INFRA_CONNECT_TIMEOUT_SEC` | `30` |
@@ -141,7 +141,8 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `workers.slaAlert.{enabled,scanInterval}` | `SLA_ALERT_*` | `false` / `60` |
 | `workers.returnFile.{enabled,scanInterval,limit,environment}` | `RETURN_FILE_GENERATION_*`, `RETURN_FILE_ENVIRONMENT` | `false` / `3600` / `500` / `HOMOLOGATION` |
 | `workers.informationReturnFile.{enabled,scanInterval,limit}` | `INFORMATION_RETURN_FILE_GENERATION_*` | `false` / `3600` / `500` |
-| `workers.informationRequest.{enabled,scanInterval,batchSize,lockTtl}` | `INFORMATION_REQUEST_*` | unset (opt-in, app defaults) |
+| `workers.informationRequest.enabled` | `INFORMATION_REQUEST_ENABLED` | `false` |
+| `workers.informationRequest.{scanInterval,batchSize,lockTtl}` | `INFORMATION_REQUEST_SCAN_INTERVAL` / `_BATCH_SIZE` / `_LOCK_TTL` | unset (opt-in, app defaults) |
 | `workers.monitoringExpiry.{enabled,scanInterval,batchSize}` | `MONITORING_EXPIRY_*` | unset (opt-in, app defaults) |
 | `workers.execution.{enabled,orchestratorLockTtl,orchestratorRenewInterval}` | `EXECUTION_ENABLED`, `ORCHESTRATOR_LOCK_TTL`, `ORCHESTRATOR_RENEW_INTERVAL` | `false` / `30` / `10` |
 | `workers.execution.{unblockScanInterval,unblockBatchSize}` | `UNBLOCK_EXECUTION_SCAN_INTERVAL` / `UNBLOCK_EXECUTION_BATCH_SIZE` | `60` / `500` |
@@ -152,7 +153,9 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `outbox.includeTenantMetrics` / `allowEmptyTenant` / `priorityEventTypes` | `OUTBOX_INCLUDE_TENANT_METRICS` / `OUTBOX_ALLOW_EMPTY_TENANT` / `OUTBOX_PRIORITY_EVENT_TYPES` | `false` / `true` / unset |
 | `streaming.cloudeventsSource` | `STREAMING_CLOUDEVENTS_SOURCE` | `br-sisbajud` (the app refuses any other value) |
 | `streaming.clientId` / `healthCheckTimeout` | `STREAMING_CLIENT_ID` / `STREAMING_HEALTH_CHECK_TIMEOUT` | unset / `2s` |
-| (global.streaming.enabled) | `STREAMING_ENABLED` | `false` (when `true`, needs brokers and `OUTBOX_ENABLED=true`) |
+| `streaming.topicAutoProvision` | `STREAMING_TOPIC_AUTO_PROVISION` | `true` (the app creates its own declared topics at boot; `false` when IaC provisions them) |
+| `streaming.closeTimeoutS` | `STREAMING_CLOSE_TIMEOUT_S` | `20` (must stay below the pod `terminationGracePeriodSeconds`: Kubernetes default 30s, not overridden by this chart) |
+| (global.streaming.enabled) | `STREAMING_ENABLED` | `true` (needs brokers and `OUTBOX_ENABLED=true`; `false` runs without a broker) |
 | `balanceConsumer.{group,dedupTtl,retryBudget}` | `BALANCE_CONSUMER_GROUP` / `BALANCE_DEDUP_TTL` / `BALANCE_CONSUMER_RETRY_BUDGET` | unset (app: `sisbajud-balance-consumer` / `24h` / `3`) |
 | `midaz.balanceTopic` / `balanceConsumerGroup` / `balanceDefaultAccountType` | `MIDAZ_BALANCE_TOPIC` / `MIDAZ_BALANCE_CONSUMER_GROUP` / `MIDAZ_BALANCE_DEFAULT_ACCOUNT_TYPE` | `lerian.streaming.ledger` / `sisbajud-midaz-balance-translator` / `deposit` |
 | `midaz.crmMode` / `manifestCheckInterval` | `MIDAZ_CRM_MODE` / `MIDAZ_MANIFEST_CHECK_INTERVAL` | `legacy` / `15m` |
@@ -184,7 +187,7 @@ Keys that only matter for local development (`VAULT_PORT`, `VAULT_DEV_*`, `VAULT
 | `LICENSE_KEY` | Production-like environment |
 | `VAULT_APPROLE_SECRET_ID` | `global.kms.vaultAuthMethod: approle` |
 | `VAULT_TOKEN` | `vaultAuthMethod: token` and `ENVIRONMENT_NAME=production` |
-| `STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` | SASL mechanism set / broker CA not in the system pool (the topics Job needs the CA when TLS is on) |
+| `STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` | SASL mechanism set / streaming TLS on (the app's consumers and the topics Job dial with this CA, even for a public-CA broker) |
 | `SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY` | The object store requires static credentials |
 | `STA_CLIENT_SECRET` | `sta.transfersEnabled` |
 | `IDP_M2M_CLIENT_SECRET` | `identity.declarationEnabled` |
@@ -199,7 +202,7 @@ The render fails with the exact value to set (mirroring `internal/bootstrap/conf
 - `STA_INBOUND_BUCKET` is empty (always: the app has no default by policy);
 - `POSTGRES_HOST` / `REDIS_HOST` are empty in single-tenant mode;
 - `KMS_PROVIDER` is not `vault`/`aws`, or its credentials are missing (`VAULT_ADDR`, AppRole role/secret id, `VAULT_TOKEN` in `production`, `AWS_REGION` for AWS KMS);
-- streaming is on without `STREAMING_BROKERS`, or a SASL mechanism is set without a username/password or without TLS;
+- streaming is on (the default) without `STREAMING_BROKERS`, without TLS in a production-like environment, with TLS but without `STREAMING_TLS_CA_CERT`, or with `streaming.closeTimeoutS` not below 30; or a SASL mechanism is set without a username/password or without TLS;
 - streaming is off while `STREAMING_BROKERS` is set (`brSisbajud.configmap`) or `sta.consumerEnabled` is on (the app refuses both);
 - a production-like environment lacks `LICENSE_KEY` or the external Postgres password;
 - the STA transfers client, inbound auth or the declaration publisher is on without its host/client credentials;
@@ -226,7 +229,7 @@ Sources 2 and 6 are copied into a dedicated hook Secret (weight `-2`), because t
 
 ## Topic provisioning
 
-While streaming is enabled, `topics.enabled` (default `true`) ships a Helm pre-install/pre-upgrade + ArgoCD PreSync Job running `ghcr.io/lerianstudio/br-sisbajud-topics` (`rpk`, list-then-create, idempotent). It creates `topics.list` with the app's resolved broker, TLS and SASL settings. The SASL password and CA come from a dedicated hook Secret (weight `-2`, deleted by Helm after the hook phase), the existing Secret, or `extraEnvVars`. The default list is the lib-streaming v4 set: `lerian.streaming.br-sisbajud`, `.dlq` and `.commands`. The Builder only creates the first two when its principal holds `CreateTopics`, and it never creates `.commands`. `lerian.streaming.ledger` belongs to Midaz: never list it. `topics.partitions`, `topics.replicationFactor` (must not exceed the broker count) and `topics.retentionMs` tune creation.
+While streaming is enabled, `topics.enabled` (default `true`) ships a Helm pre-install/pre-upgrade + ArgoCD PreSync Job running `ghcr.io/lerianstudio/br-sisbajud-topics` (`rpk`, list-then-create, idempotent). It creates `topics.list` with the app's resolved broker, TLS and SASL settings. The SASL password and CA come from a dedicated hook Secret (weight `-2`, deleted by Helm after the hook phase), the existing Secret, or `extraEnvVars`. The default list is the lib-streaming v4 set: `lerian.streaming.br-sisbajud`, `.dlq` and `.commands`. The Builder only creates the first two when its principal holds `CreateTopics` (`streaming.topicAutoProvision`, default `true`; the Job and the app then overlap harmlessly, and a principal without `CreateTopics` only logs a WARN), and it never creates `.commands`. `lerian.streaming.ledger` belongs to Midaz: never list it. `topics.partitions`, `topics.replicationFactor` (must not exceed the broker count) and `topics.retentionMs` tune creation.
 
 ## Bundled infrastructure (development only)
 

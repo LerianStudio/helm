@@ -135,7 +135,7 @@ spec:
             {{- with (include "br-sisbajud.corsExtraEnv" . | trim) }}
             {{- . | nindent 12 }}
             {{- end }}
-            {{- with .Values.brSisbajud.extraEnvVars }}
+            {{- with (include "br-sisbajud.podEnvList" . | fromYamlArray) }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           ports:

@@ -16,7 +16,7 @@
        topics Secret (templates/topics/secrets.yaml). PreSync runs before the app
        Secret exists on a first install, hence the dedicated hook Secret. */ -}}
 {{- $envByName := dict -}}
-{{- range (.Values.brSisbajud.extraEnvVars | default list) -}}
+{{- range (include "br-sisbajud.podEnvList" . | fromYamlArray) -}}
 {{- if .name -}}
 {{- $_ := set $envByName .name . -}}
 {{- end -}}

@@ -277,6 +277,8 @@ brSisbajud:
   pagination: {}
   # -- Admin read API: maxFileContentBytes, maxAuditVerifyWindow.
   admin: {}
+  # -- Go runtime knobs: godebug (GODEBUG), gotraceback (GOTRACEBACK). Unset by default.
+  runtime: {}
 
   # -- Escape hatch: native env keys emitted verbatim into the ConfigMap. A key
   # here wins over the grouped/global parameters above. Empty by default.
@@ -289,6 +291,14 @@ brSisbajud:
   # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
   # MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
   secrets: {}
+  # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
+  # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
+  # secretKeyRef pod env entry, so credentials never need raw extraEnvVars.
+  # The fail-fast gates and the migrations/topics Jobs honor them.
+  # Example:
+  #   secretRefs:
+  #     STREAMING_SASL_PASSWORD: { name: redpanda-admin, key: password }
+  secretRefs: {}
   # -- Use an operator-provided Secret instead of the chart-managed one. The
   # chart then skips its secret fail-fast checks: the Secret must carry every
   # credential the enabled features need.

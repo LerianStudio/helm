@@ -303,6 +303,35 @@ argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 {{- end -}}
 
 {{/*
+br-sisbajud.podEnvList — the explicit pod `env:` entries the chart adds on top of
+envFrom, as a YAML list: one secretKeyRef entry per brSisbajud.secretRefs.<KEY>
+({name, key[, optional]}), sorted by KEY, followed by brSisbajud.extraEnvVars
+verbatim. extraEnvVars wins on a name clash (the secretRefs entry is dropped, so
+server-side apply never sees a duplicate). Every consumer that inspects "what
+reaches the pod explicitly" (fail-fast gates, migrations/topics credential
+resolution, CORS mirroring) reads this list.
+*/}}
+{{- define "br-sisbajud.podEnvList" -}}
+{{- $extra := .Values.brSisbajud.extraEnvVars | default list -}}
+{{- $names := dict -}}
+{{- range $extra -}}{{- if .name -}}{{- $_ := set $names .name true -}}{{- end -}}{{- end -}}
+{{- $out := list -}}
+{{- $refs := .Values.brSisbajud.secretRefs | default dict -}}
+{{- range $k := keys $refs | sortAlpha -}}
+{{- $r := index $refs $k -}}
+{{- if not (hasKey $names $k) -}}
+{{- if or (not $r.name) (not $r.key) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: brSisbajud.secretRefs.%s needs both name and key (the Kubernetes Secret and its data key).\n" $k) -}}
+{{- end -}}
+{{- $ref := dict "name" $r.name "key" $r.key -}}
+{{- if hasKey $r "optional" -}}{{- $_ := set $ref "optional" $r.optional -}}{{- end -}}
+{{- $out = append $out (dict "name" $k "valueFrom" (dict "secretKeyRef" $ref)) -}}
+{{- end -}}
+{{- end -}}
+{{- toYaml (concat $out $extra) -}}
+{{- end -}}
+
+{{/*
 br-sisbajud.extraEnv — brSisbajud.extraEnvVars as a YAML map {NAME: value},
 with "__valueFrom__" for entries sourced via valueFrom. Lets the fail-fast gates
 and the topics Job see values an operator supplies as explicit pod env (the
@@ -310,7 +339,7 @@ and the topics Job see values an operator supplies as explicit pod env (the
 */}}
 {{- define "br-sisbajud.extraEnv" -}}
 {{- $out := dict -}}
-{{- range (.Values.brSisbajud.extraEnvVars | default list) -}}
+{{- range (include "br-sisbajud.podEnvList" . | fromYamlArray) -}}
 {{- if .name -}}
 {{- if hasKey . "valueFrom" -}}
 {{- $_ := set $out .name "__valueFrom__" -}}
@@ -503,6 +532,9 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "dbMetricsIntervalSec" "k" "DB_METRICS_INTERVAL_SEC" "d" "15") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "idempotencyRetryWindowSec" "k" "IDEMPOTENCY_RETRY_WINDOW_SEC" "d" "300") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "circuitBreakerEnabled" "k" "CIRCUIT_BREAKER_ENABLED" "d" "false") }}
+{{- /* Go runtime (optional; e.g. GODEBUG=http2client=0 for golang/go#71885). */}}
+{{ include $kv (dict "cm" $cm "p" $b.runtime "f" "godebug" "k" "GODEBUG" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $b.runtime "f" "gotraceback" "k" "GOTRACEBACK" "opt" true) }}
 # --- HTTP server + CORS --------------------------------------------------------
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "address" "k" "SERVER_ADDRESS" "d" (printf "0.0.0.0:%v" ($b.service.port | default 4029))) }}
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "bodyLimitBytes" "k" "HTTP_BODY_LIMIT_BYTES" "d" "104857600") }}
@@ -939,7 +971,7 @@ secretName: {{ $secretName | quote }}
    (the app Secret does not exist yet during PreSync/pre-install)
    otherwise the render fails instead of migrating with an empty password. */ -}}
 {{- $envByName := dict -}}
-{{- range (.Values.brSisbajud.extraEnvVars | default list) -}}{{- if .name -}}{{- $_ := set $envByName .name . -}}{{- end -}}{{- end -}}
+{{- range (include "br-sisbajud.podEnvList" . | fromYamlArray) -}}{{- if .name -}}{{- $_ := set $envByName .name . -}}{{- end -}}{{- end -}}
 {{- $appSecrets := .Values.brSisbajud.secrets | default dict -}}
 {{- $pwEnv := dict -}}
 {{- $hookPassword := "" -}}
@@ -1130,7 +1162,7 @@ entry, unless ACCESS_CONTROL_* is set explicitly (configmap or extraEnvVars).
 {{- define "br-sisbajud.corsExtraEnv" -}}
 {{- $cm := .Values.brSisbajud.configmap | default dict -}}
 {{- $envByName := dict -}}
-{{- range (.Values.brSisbajud.extraEnvVars | default list) -}}{{- if .name -}}{{- $_ := set $envByName .name . -}}{{- end -}}{{- end -}}
+{{- range (include "br-sisbajud.podEnvList" . | fromYamlArray) -}}{{- if .name -}}{{- $_ := set $envByName .name . -}}{{- end -}}{{- end -}}
 {{- $out := list -}}
 {{- range $pair := list (list "CORS_ALLOWED_ORIGINS" "ACCESS_CONTROL_ALLOW_ORIGIN") (list "CORS_ALLOWED_METHODS" "ACCESS_CONTROL_ALLOW_METHODS") (list "CORS_ALLOWED_HEADERS" "ACCESS_CONTROL_ALLOW_HEADERS") (list "CORS_EXPOSE_HEADERS" "ACCESS_CONTROL_EXPOSE_HEADERS") (list "CORS_ALLOW_CREDENTIALS" "ACCESS_CONTROL_ALLOW_CREDENTIALS") -}}
 {{- $src := index $envByName (index $pair 0) -}}

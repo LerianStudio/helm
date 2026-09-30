@@ -3,10 +3,10 @@
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v1.0.0)
 
 - Features:
-  - Added the jd courier chart.
+  - Added the JD Courier chart.
 
 - Fixes:
-  - Addressed review comments from round 1.
+  - Addressed issues identified in review round 1 for br-jd-courier.
 
 Contributors: @fredcamaral, @lerian-studio,
 

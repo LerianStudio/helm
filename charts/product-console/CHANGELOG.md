@@ -6,11 +6,9 @@
   - Deploy the 2.5.0 image for product-console.
   - Update product-console to version 2.5.0.
 
-- **Documentation**
+- **Improvements**
   - Added Helm upgrade guide for product-console v4.2.6.
   - Added Helm upgrade guide for product-console v4.2.4.
-  - Added upgrade guide for product-console v4.2.6.
-  - Added upgrade guide for product-console v4.2.4.
 
 Contributors: @guimoreirar, @lerian-studio
 

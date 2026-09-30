@@ -7,9 +7,10 @@
 
 - **Fixes:**
   - Bumped app images to version 3.9.0 and exposed new environment variables.
+  - Corrected upgrade guides for versions v9.5.2, v9.5.4, and v9.5.7.
 
 - **Improvements:**
-  - Added and corrected Helm upgrade guides for versions 9.5.2, 9.5.4, 9.5.6, and 9.5.7.
+  - Added Helm upgrade guides for versions v9.5.2, v9.5.4, v9.5.6, and v9.5.7.
 
 Contributors: @guimoreirar, @lerian-studio
 

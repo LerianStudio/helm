@@ -6,8 +6,8 @@
   - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
 
 - **Improvements:**
-  - Added Helm upgrade guides for versions v9.2.5, v9.2.7, v9.2.8, v9.2.9, v9.2.10, v9.2.11, v9.2.12, v9.2.13, v9.2.14, and v9.2.15.
-  - Corrected upgrade guides for versions v9.2.8, v9.2.9, v9.2.10, v9.2.13, v9.2.14, and v9.2.15.
+  - Added Helm upgrade guides for versions v9.2.5 through v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8 through v9.2.15.
 
 Contributors: @guimoreirar, @lerian-studio
 

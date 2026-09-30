@@ -1,5 +1,23 @@
 # Product-console Changelog
 
+## [4.2.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.7)
+
+- **Fixes**
+  - Deploy the 2.5.0 image for product-console.
+  - Update product-console to version 2.5.0.
+
+- **Documentation**
+  - Added Helm upgrade guide for product-console v4.2.6.
+  - Added Helm upgrade guide for product-console v4.2.4.
+  - Added upgrade guide for product-console v4.2.6.
+  - Added upgrade guide for product-console v4.2.4.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.6...product-console-v4.2.7)
+
+---
+
 ## [4.2.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.6)
 
 - **Fixes:**

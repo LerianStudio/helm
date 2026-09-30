@@ -24,10 +24,11 @@ global:
     postgres: { host: "", port: "5432", user: "br_sisbajud", name: "br_sisbajud", ssl: "require" }  # <- REQUIRED: host
     redis:    { host: "", tls: "true" }                                                          # <- REQUIRED: host:port
   objectStorage:
-    # SeaweedFS / S3 bucket for the (already encrypted) seizure artifacts.
+    # One S3 client serves BOTH buckets: this endpoint, region and the SEAWEEDFS_* keys
+    # must also reach br-sta's bucket (same region; path-style always; static keys, no IRSA).
     sisbajud: { endpoint: "", region: "us-east-1", bucket: "sisbajud" }
-    # br-sta's transfer bucket for the tier (REQUIRED, no default by policy).
-    # The endpoint defaults to the sisbajud endpoint (the app refuses a mismatch).
+    # Same bucket as br-sta global.objectStorage.sta. Its endpoint is inherited from
+    # sisbajud.endpoint above (the app refuses a mismatch) — do not set it empty.
     sta: { bucket: "" }                                                                          # <- REQUIRED
   kms:
     vendor: "hashicorp-vault"          # hashicorp-vault | aws

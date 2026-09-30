@@ -1,5 +1,457 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+- **Fixes**
+  - Boot the workers with their values to ensure proper initialization.
+  - Drop refusals that the workers do not need, optimizing performance.
+  - Give the bundled valkey its port, addressing connectivity issues.
+  - Pin the bundled database majors to maintain compatibility.
+  - Recreate the MongoDB pod on upgrade to ensure smooth transitions.
+
+Contributors: @brunognovaes, @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+- **Fixes:**
+  - Boot the workers with their values to ensure proper initialization.
+  - Drop unnecessary refusals from the workers to optimize performance.
+  - Assign the bundled valkey its port for correct network configuration.
+  - Recreate the MongoDB pod on upgrade to ensure data consistency.
+  - Pin the bundled database majors to maintain compatibility.
+
+Contributors: @brunognovaes, @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+- **Fixes:**
+  - Boot the workers with their values to ensure proper initialization.
+  - Drop unnecessary refusals to optimize worker performance.
+  - Ensure the bundled valkey has its designated port for proper communication.
+  - Recreate the MongoDB pod during upgrades to maintain data integrity.
+  - Pin the bundled database majors to prevent compatibility issues.
+
+Contributors: @brunognovaes, @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+- **Fixes:**
+  - Boot the workers with their values to ensure correct initialization.
+  - Drop unnecessary refusals that the workers do not need.
+  - Assign the bundled valkey its port for proper configuration.
+  - Recreate the MongoDB pod on upgrade to maintain data integrity.
+  - Pin the bundled database majors to prevent unwanted updates.
+
+Contributors: @brunognovaes, @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+- **Fixes:**
+  - Boot the workers with their values to ensure proper initialization.
+  - Drop refusals that the workers do not need, optimizing processing.
+  - Assign the bundled valkey its port to prevent connectivity issues.
+  - Recreate the MongoDB pod on upgrade to ensure data consistency.
+  - Pin the bundled database majors to maintain compatibility and stability.
+
+Contributors: @brunognovaes, @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+- **Fixes:**
+  - Boot the workers with their values to ensure proper initialization.
+  - Drop refusals that the workers do not need, optimizing performance.
+  - Ensure the bundled valkey has its port assigned correctly.
+  - Recreate the MongoDB pod on upgrade to maintain data integrity.
+  - Pin the bundled database majors to prevent unexpected updates.
+
+Contributors: @brunognovaes, @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+- **Fixes:**
+  - Boot the workers with their values to ensure correct initialization.
+  - Drop refusals that the workers do not need, optimizing worker processes.
+  - Addressed the issue of booting workers with their values to prevent initialization errors.
+  - Assigned the correct port to the bundled valkey and its address for proper communication.
+  - Ensured the MongoDB pod is recreated on upgrade to maintain data integrity.
+
+Contributors: @brunognovaes, @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+- **Fixes:**
+  - Boot the workers with their values to ensure proper initialization.
+  - Drop refusals that the workers do not need, optimizing performance.
+  - Ensure the bundled valkey is assigned its port correctly.
+  - Recreate the MongoDB pod on upgrade to maintain data integrity.
+  - Pin the bundled database majors to prevent compatibility issues.
+
+Contributors: @brunognovaes, @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including updates to associated workers: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`.
+  - Introduced new environment variables for enhanced configuration and flexibility.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+- **Contributors**
+  - @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0.
+  - Introduced new environment variables for `plugin-br-pix-indirect-btg`, `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including updates to `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+  - Introduced new environment variables for enhanced configuration and flexibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including updates to worker components: `worker-reconciliation`, `worker-schedule`, `worker-inbound`, and `worker-outbound`.
+  - Introduced new environment variables for enhanced configuration flexibility.
+
+- **Contributors**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including updates to worker components: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`.
+  - Introduced new environment variables for enhanced configuration and flexibility.
+
+- **Contributors:** @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, along with related workers: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`. Introduced new environment variables.
+
+- **Documentation**
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.8.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+- **Improvements:**
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.8.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0.
+  - Introduced new environment variables for `plugin-br-pix-indirect-btg` and its associated workers: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including updates to associated workers: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`. Introduced new environment variables.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+- **Documentation**
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.8.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, along with associated workers: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` all to version 1.10.0.
+  - Introduced new environment variables for enhanced configuration and flexibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, along with related workers: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+  - Introduced new environment variables for enhanced configuration and flexibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+- **Documentation:**
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.8.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation` to version 1.10.0.
+  - Updated `plugin-br-pix-indirect-btg-worker-schedule` to version 1.10.0.
+  - Updated `plugin-br-pix-indirect-btg-worker-inbound` to version 1.10.0.
+  - Updated `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including updates to worker components: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`.
+  - Introduced new environment variables for enhanced configuration flexibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, along with `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0. Introduced new environment variables.
+
+- **Contributors:**
+  - @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including updates to related worker components: `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`.
+  - Introduced new environment variables for enhanced configuration and flexibility.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound` to version 1.10.0.
+
+- **Improvements**
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.8.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0.
+  - Introduced new environment variables for `plugin-br-pix-indirect-btg`, `plugin-br-pix-indirect-btg-worker-reconciliation`, `plugin-br-pix-indirect-btg-worker-schedule`, `plugin-br-pix-indirect-btg-worker-inbound`, and `plugin-br-pix-indirect-btg-worker-outbound`.
+
+- **Improvements**
+  - Added an upgrade guide for `plugin-br-pix-indirect-btg` version 3.8.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
+
+- **Features:**
+  - Updated `plugin-br-pix-indirect-btg` to version 1.10.0, including new environment variables.
+  - Updated associated workers (`reconciliation`, `schedule`, `inbound`, `outbound`) to version 1.10.0.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v3.8.0...plugin-br-pix-indirect-btg-v4.0.0)
+
+---
+
 ## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.0)
 
 - **Features:**

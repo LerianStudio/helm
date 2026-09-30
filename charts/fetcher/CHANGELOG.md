@@ -1,5 +1,380 @@
 # Fetcher Changelog
 
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Adjusted RabbitMQ plugin user permissions to remove the management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Updated the RabbitMQ plugin user to have no management tag to enhance security.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Adjusted the RabbitMQ plugin user permissions to exclude the management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Adjusted the RabbitMQ plugin user configuration to remove the management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+- Fixes:
+  - Give the RabbitMQ plugin user no management tag.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.3)
+
+- Fixes:
+  - RabbitMQ bootstrap now sets the configured password first.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.2...fetcher-v3.1.3)
+
+---
+
+## [3.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.2)
+
+- **Fixes**
+  - Pass pod security restricted to ensure compliance with security policies.
+  - Implement new bootstrap jobs per revision and converge RabbitMQ retries for improved stability.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.1...fetcher-v3.1.2)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
+
+- **Features:**
+  - Released fetcher v3.1.0 with updated documentation and upgrade guide.
+  
+- **Fixes:**
+  - Updated fetcher-manager and fetcher-worker to version 3.1.0 to address compatibility issues.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.0...fetcher-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
+
+- **Features**
+  - Released fetcher version 3.1.0.
+  - Added upgrade guide for fetcher v3.1.0.
+
+- **Fixes**
+  - Updated fetcher-manager to version 3.1.0.
+  - Updated fetcher-worker to version 3.1.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.0...fetcher-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
+
+- **Features:**
+  - Updated `fetcher-manager` and `fetcher-worker` to version 3.1.0.
+
+- **Fixes:**
+  - Addressed issues in `fetcher-manager` and `fetcher-worker` with the update to version 3.1.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.0...fetcher-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
+
+- **Features**
+  - Added upgrade guide for fetcher v3.1.0.
+
+- **Fixes**
+  - Updated fetcher-manager and fetcher-worker to version 3.1.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.0...fetcher-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
+
+- **Features**
+  - Updated fetcher-manager to version 3.1.0.
+  - Updated fetcher-worker to version 3.1.0.
+
+- **Fixes**
+  - Addressed issues related to fetcher-manager and fetcher-worker updates.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.0...fetcher-v3.1.1)
+
+---
+
+## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
+
+- **Features**
+  - Updated fetcher-manager to version 3.1.0.
+  - Updated fetcher-worker to version 3.1.0.
+
+- **Fixes**
+  - Resolved issues related to fetcher-manager and fetcher-worker updates.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.0...fetcher-v3.1.1)
+
+---
+
 ## [3.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.1)
 
 - **Features**

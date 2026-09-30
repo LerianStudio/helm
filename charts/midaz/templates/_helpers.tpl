@@ -78,7 +78,7 @@ Allows overriding it for multi-namespace deployments in combined charts.
 
 {{/*
 infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` env entry
-pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+pointing at a bundled datastore's password Secret (or the operator's existingSecret override).
 Inputs (dict): context (root .), subchart, key, envName.
 See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 */}}
@@ -86,11 +86,8 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- $ctx := .context -}}
 {{- $sub := .subchart -}}
 {{- $subValues := default dict (index $ctx.Values $sub) -}}
-{{- $auth := default dict (index $subValues "auth") -}}
-{{- $secretName := "" -}}
-{{- if $auth.existingSecret -}}
-{{- $secretName = $auth.existingSecret -}}
-{{- else -}}
+{{- $secretName := include "midaz.operatorSecret" . -}}
+{{- if not $secretName -}}
 {{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" $subValues "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
@@ -98,6 +95,14 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
     secretKeyRef:
       name: {{ $secretName }}
       key: {{ .key }}
+{{- end }}
+
+{{/*
+midaz.operatorSecret — the Secret an operator named in <subchart>.auth.existingSecret, "" when none.
+The chart default renders a name only inside the subchart (templates/datastore-secrets.yaml).
+*/}}
+{{- define "midaz.operatorSecret" -}}
+{{- tpl (dig "auth" "existingSecret" "" (index .context.Values .subchart | default dict) | toString) .context -}}
 {{- end }}
 
 {{/*
@@ -111,7 +116,7 @@ Fail loud at render time so the operator fixes the configuration.
 {{- define "midaz.mongodbAuthRequired" -}}
 {{- $mongo := .Values.mongodb | default dict -}}
 {{- $mongoAuth := $mongo.auth | default dict -}}
-{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) (not $mongoAuth.enabled) (not $mongoAuth.existingSecret) -}}
+{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) (not $mongoAuth.enabled) (not (include "midaz.operatorSecret" (dict "context" . "subchart" "mongodb"))) -}}
 {{- fail "\n\nERROR: mongodb.auth.enabled is REQUIRED when the bundled mongodb subchart is internal.\n   ledger and crm read MONGO_*_PASSWORD from the mongodb Secret (single source), but Bitnami\n   mongodb creates no Secret when auth.enabled=false, leaving a dangling secretKeyRef.\n   Choose one: set mongodb.auth.enabled=true, or provide mongodb.auth.existingSecret, or set mongodb.external=true.\n" -}}
 {{- end -}}
 {{- end }}

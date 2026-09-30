@@ -225,7 +225,7 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.0.7"
+    tag: "4.1.2"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -306,9 +306,7 @@ ledger:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 1
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
@@ -408,7 +406,7 @@ ledger:
   secrets:
     # -- Onboarding module passwords.
     # DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from
-    # the Bitnami postgresql subchart Secret (keys `password` / `replication-password`)
+    # the Bitnami postgresql subchart Secret (key `password`, replicas included)
     # and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret
     # (key `mongodb-root-password`). Only set these for an EXTERNAL backend
     # (subchart disabled / .external=true) without an existingSecret override.
@@ -438,8 +436,8 @@ ledger:
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
     # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
-    # existingSecret override. RABBITMQ_* remain operator-provided (see README
-    # "Known limitation" — RabbitMQ is not yet single-sourced).
+    # existingSecret override. RABBITMQ_* are operator-provided; the bundled
+    # RabbitMQ gives them to its transaction and consumer users.
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""
     RABBITMQ_CONSUMER_PASS: ""
@@ -512,9 +510,7 @@ crm:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 0
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
@@ -638,7 +634,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.0.5"
+    tag: "4.1.2"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -719,9 +715,8 @@ tracer:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods. Setting `maxUnavailable` in an
-    # override takes precedence over this value.
-    minAvailable: 1
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
+    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
   # -- Deployment update strategy
@@ -870,6 +865,8 @@ postgresql:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+    # latest (PostgreSQL 18.6.0), pinned: PostgreSQL refuses a data directory of another major.
+    digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
   external: false
   architecture: replication
   replication:
@@ -883,6 +880,9 @@ postgresql:
     database: "onboarding"
     replicationUsername: "replicator"
     replicationPassword: ""
+    # -- Secret with the passwords. The default points the subchart at the one this chart keeps across
+    # uninstall (templates/datastore-secrets.yaml); midaz's own templates read it as empty. Name yours to replace it.
+    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname" . }}{{ end }}'
   primary:
     extraVolumes:
       - name: init-script
@@ -949,20 +949,30 @@ mongodb:
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
+    # latest (MongoDB 8.3.11), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:c8babafb7d15a7412543a9a391ffee8ba206c4d10dd6a1ba2ae2bf74fdfe538b"
   external: false
   auth:
     enabled: true
     rootUser: midaz
     rootPassword: ""
+    # -- Secret with the passwords, as postgresql.auth.existingSecret.
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
+  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
+  # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+  updateStrategy:
+    type: Recreate
   persistence:
     size: 8Gi
+    # -- The data volume outlives the release, like the PostgreSQL ones.
+    resourcePolicy: keep
 rabbitmq:
   enabled: true
   image:
     tag: "3.13.6"
-  persistence:
-    size: 8Gi
+  # -- No persistent volume (emptyDir): queues and messages are lost when the broker pod is recreated. Kubernetes
+  # refuses changes to a StatefulSet's volumeClaimTemplates, so adding `storage.requestedSize` later needs it deleted first.
   resources:
     requests:
       cpu: 250m

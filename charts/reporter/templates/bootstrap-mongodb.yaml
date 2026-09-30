@@ -21,11 +21,27 @@ spec:
   parallelism: 1
   backoffLimit: 3
   template:
+    metadata:
+      # A mesh proxy injected as a regular container never exits and the Job never completes.
+      annotations:
+        sidecar.istio.io/nativeSidecar: "true"
+        config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
     spec:
       restartPolicy: Never
+      {{- /* Pod Security "restricted" admits this pod only with this profile: both images default to root. */}}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}
@@ -51,6 +67,11 @@ spec:
       containers:
       - name: mongosh
         image: mongo:8
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalMongoDefinitions.connection.host | quote }}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "jd-courier": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "imagePullSecrets": {
+      "type": "array"
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "telemetry": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "ports": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "migrations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "podAnnotations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "tolerations": {
+      "type": "array"
+    },
+    "affinity": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "terminationGracePeriodSeconds": {
+      "type": "integer"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -41,11 +41,9 @@ dependencies:
   # Library chart — renders nothing on its own; provides the shared env
   # contracts (multi-tenant, otel, rate-limit, auth, streaming) and the workload
   # helpers (service, ingress, hpa, pdb, probes, scheduling, serviceAccount).
-  # `name` must be the library's real chart name (`lerian-common-helm`), not the
-  # directory name. No `condition`: the helpers are needed at template time.
   - name: lerian-common-helm
-    version: 2.1.0
-    repository: "file://../lerian-common"
+    version: "2.1.2"
+    repository: "oci://ghcr.io/lerianstudio"
   # Bundled by default; `postgresql.external: true` or `postgresql.enabled: false`
   # switches the chart to an operator-provided Postgres. Exact pin (no ~/^) per
   # docs/helm-chart-standard.md — the generated Secret name and data keys are

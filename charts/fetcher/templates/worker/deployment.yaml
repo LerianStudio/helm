@@ -106,6 +106,8 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           resources:
             {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
         {{- end }}

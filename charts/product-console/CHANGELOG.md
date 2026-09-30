@@ -1,5 +1,452 @@
 # Product-console Changelog
 
+## [4.2.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.7)
+
+- **Fixes**
+  - Deploy the 2.5.0 image for product-console.
+  - Update product-console to version 2.5.0.
+
+- **Improvements**
+  - Added Helm upgrade guide for product-console v4.2.6.
+  - Added Helm upgrade guide for product-console v4.2.4.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.6...product-console-v4.2.7)
+
+---
+
+## [4.2.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.6)
+
+- **Fixes:**
+  - Updated product-console to version 2.4.1.
+  - Applied the 2.4.1 tag to image.tag.
+
+- **Improvements:**
+  - Added Helm upgrade guide for product-console v4.2.5.
+  - Corrected upgrade guide for v4.2.5.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.5...product-console-v4.2.6)
+
+---
+
+## [4.2.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.6)
+
+- **Fixes:**
+  - Updated product-console to version 2.4.1.
+  - Applied the 2.4.1 tag to image.tag in product-console.
+
+- **Improvements:**
+  - Added Helm upgrade guide for product-console v4.2.5.
+  - Corrected upgrade guide for product-console v4.2.5.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.5...product-console-v4.2.6)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes:**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes:**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes:**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes:**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- Fixes:
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes:**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes:**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes:**
+  - Resolved an issue allowing the bootstrap job to finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes:**
+  - Resolved an issue allowing the bootstrap job to finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- **Fixes**
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.5)
+
+- Fixes:
+  - Let the bootstrap job finish under a mesh sidecar.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.4...product-console-v4.2.5)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes**
+  - Ensure the database and its password are retained on uninstall.
+  - Correctly locate the stored password where it is written.
+  - Prevent acceptance of an empty MongoDB existingSecret.
+
+- **Improvements**
+  - Document the process to uninstall within its namespace before deleting data.
+  - Add a Helm upgrade guide for product-console v4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes**
+  - Keep the database and its password on uninstall.
+  - Look up the kept password where it is written.
+  - Refuse an empty MongoDB existingSecret.
+
+- **Improvements**
+  - Uninstall in its namespace before deleting data.
+  - Add Helm upgrade guide for product-console v4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes**
+  - Ensure the database and its password are retained upon uninstallation.
+  - Correct the lookup for the retained password to the correct location.
+  - Prevent acceptance of an empty MongoDB `existingSecret` during configuration.
+
+- **Improvements**
+  - Document the uninstallation process within its namespace before data deletion.
+  - Add a Helm upgrade guide for version 4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes**
+  - Keep the database and its password on uninstall.
+  - Look up the kept password where it is written.
+  - Refuse an empty MongoDB existingSecret.
+
+- **Improvements**
+  - Uninstall in its namespace before deleting data.
+  - Add Helm upgrade guide for product-console v4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes:**
+  - Ensure the database and its password are retained on uninstall.
+  - Correct the lookup for the retained password where it is stored.
+  - Prevent the use of an empty MongoDB existingSecret.
+
+- **Improvements:**
+  - Document the process to uninstall within its namespace before deleting data.
+  - Add a Helm upgrade guide for version 4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes**
+  - Keep the database and its password on uninstall.
+  - Look up the kept password where it is written.
+  - Refuse an empty MongoDB existingSecret.
+
+- **Improvements**
+  - Uninstall in its namespace before deleting data.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes:**
+  - Keep the database and its password on uninstall to prevent data loss (#2226).
+  - Correctly look up the kept password where it is written.
+  - Refuse an empty MongoDB `existingSecret` to ensure proper configuration.
+
+- **Improvements:**
+  - Added documentation on uninstalling in its namespace before deleting data.
+  - Added a Helm upgrade guide for product-console v4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes:**
+  - Ensure the database and its password are retained on uninstall.
+  - Correctly locate the stored password where it is written.
+  - Prevent the use of an empty MongoDB `existingSecret`.
+
+- **Improvements:**
+  - Document the process for uninstalling within its namespace before deleting data.
+  - Add a Helm upgrade guide for product-console v4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes:**
+  - Keep the database and its password on uninstall.
+  - Look up the kept password where it is written.
+  - Refuse an empty MongoDB existingSecret.
+
+- **Improvements:**
+  - Uninstall in its namespace before deleting data.
+  - Add Helm upgrade guide for product-console v4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes:**
+  - Keep the database and its password on uninstall to prevent data loss.
+  - Look up the kept password where it is written to ensure correct retrieval.
+  - Refuse an empty MongoDB existingSecret to avoid configuration errors.
+
+- **Improvements:**
+  - Uninstall product-console in its namespace before deleting data to ensure a clean removal process.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes:**
+  - Ensure the database and its password are retained during uninstall.
+  - Correct the lookup for the retained password to its correct location.
+  - Prevent acceptance of an empty MongoDB existingSecret.
+
+- **Improvements:**
+  - Document the process for uninstalling within its namespace before deleting data.
+  - Add a Helm upgrade guide for version 4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.4)
+
+- **Fixes:**
+  - Ensure the database and its password are retained on uninstall.
+  - Correct the lookup for the retained password to its correct location.
+  - Prevent an empty MongoDB `existingSecret` from being accepted.
+
+- **Improvements:**
+  - Document the process of uninstalling within its namespace before deleting data.
+  - Add a Helm upgrade guide for product-console v4.2.3.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.3...product-console-v4.2.4)
+
+---
+
+## [4.2.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.3)
+
+- **Fixes**
+  - Bumped the real image.tag to 2.2.1 and removed obsolete values block.
+  - Updated product-console to version 2.2.1.
+
+- **Documentation**
+  - Added Helm upgrade guide for product-console v4.2.2.
+  - Added upgrade guide for product-console v4.2.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.2...product-console-v4.2.3)
+
+---
+
+## [4.2.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.3)
+
+- **Fixes:**
+  - Bumped the real image.tag to 2.2.1 and removed obsolete values block.
+  - Updated product-console to version 2.2.1.
+
+- **Documentation:**
+  - Added Helm upgrade guide for product-console v4.2.2.
+  - Added upgrade guide for product-console v4.2.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.2...product-console-v4.2.3)
+
+---
+
 ## [4.2.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.3)
 
 - Fixes:

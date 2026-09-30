@@ -1,0 +1,36 @@
+apiVersion: v2
+name: br-jd-courier-helm
+description: >-
+  Helm chart for br-jd-courier — the Lerian JD Courier, which carries SPB and
+  Pix traffic between JD Consultores and the Lerian rail engines. One binary,
+  four role Deployments (spb-consumer, spb-sender, pix-ingress, admin) off ONE
+  image.
+
+type: application
+annotations:
+  lerian.studio/chart-type: multi-component
+
+home: https://github.com/LerianStudio/helm
+
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/br-jd-courier
+  - https://github.com/LerianStudio/br-jd-courier
+
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+version: 1.0.0
+
+# Registry tags have no leading `v`. jd-courier.image.tag is the key the release
+# dispatch bumps; this is what an empty tag falls back to.
+appVersion: "1.0.0-rc.1"
+
+keywords:
+  - lerian
+  - jd
+  - spb
+  - pix
+  - bacen
+
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4

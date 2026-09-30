@@ -27,10 +27,9 @@ ledger:
   secrets:
     LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-    # RabbitMQ — operator-provided; not yet single-sourced (see chart README
-    # "Known limitation"). The infra passwords (Postgres/Mongo/Valkey) are now
-    # single-sourced from the Bitnami subchart Secrets, so they are intentionally
-    # omitted here.
+    # RabbitMQ — operator-provided; the bundled broker's two users take these. The infra
+    # passwords (Postgres/Mongo/Valkey) are single-sourced from the Bitnami subchart
+    # Secrets, so they are intentionally omitted here.
     RABBITMQ_DEFAULT_PASS: "sample"
     RABBITMQ_CONSUMER_PASS: "sample"
 crm:

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "br-jd-courier.fullname" . }}
+  labels:
+    {{- include "br-jd-courier.labels" (dict "ctx" . "component" "config") | nindent 4 }}
+{{- with .Values.config }}
+data:
+  {{- range $key, $value := . }}
+  {{- /* YAML loads every number as float64, and toString writes a large
+         whole one in exponent form (10485760 -> "1.048576e+07"). */}}
+  {{- if and (kindIs "float64" $value) (eq $value (floor $value)) }}
+  {{- $value = int64 $value }}
+  {{- end }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+{{- end }}

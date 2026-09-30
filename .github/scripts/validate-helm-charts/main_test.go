@@ -368,7 +368,7 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 			repeatsFlags,
 			emptiesTheVolume,
 			backUpFirst,
-			"helm deletes the volume in '" + c.wantMongoNs + "'",
+			"the old volume stays behind in '" + c.wantMongoNs + "'",
 			c.wantSaid,
 		} {
 			if !strings.Contains(notes, want) {

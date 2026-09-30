@@ -1,5 +1,436 @@
 # Midaz Changelog
 
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.2.5 through v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8 through v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements**
+  - Added Helm upgrade guides for versions v9.2.5, v9.2.7, v9.2.8, v9.2.9, v9.2.10, v9.2.11, v9.2.12, v9.2.13, v9.2.14, and v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8, v9.2.9, v9.2.10, v9.2.13, v9.2.14, and v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated midaz-ledger to version 4.1.0.
+  - Updated midaz-tracer to version 4.1.0.
+  - Introduced new environment variables for midaz.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.2.5, v9.2.7, v9.2.8, v9.2.9, v9.2.10, v9.2.11, v9.2.12, v9.2.13, v9.2.14, and v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8, v9.2.9, v9.2.10, v9.2.13, v9.2.14, and v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.2.5 through v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8 through v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
+
+- Fixes:
+  - Restart pods when their secret changes to ensure updated configurations are applied.
+  - Keep the manual ledger restart in the broker refusal process for better error handling.
+  - Drop the manual ledger restart from the broker refusal to streamline operations.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.11...midaz-v9.2.12)
+
+---
+
+## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
+
+- Fixes:
+  - Restart pods when their secret changes to ensure proper configuration updates.
+  - Keep the manual ledger restart in the broker refusal to maintain intended behavior.
+  - Drop the manual ledger restart from the broker refusal to streamline the process.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.11...midaz-v9.2.12)
+
+---
+
+## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
+
+- Fixes:
+  - Restart pods when their secret changes to ensure updated configurations are applied.
+  - Keep the manual ledger restart in the broker refusal to maintain system integrity.
+  - Drop the manual ledger restart from the broker refusal to streamline operations.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.11...midaz-v9.2.12)
+
+---
+
+## [9.2.11](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.11)
+
+- Fixes:
+  - Log the ledger into the replica with its own password.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.10...midaz-v9.2.11)
+
+---
+
+## [9.2.10](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.10)
+
+- Fixes:
+  - Stop promising a volume for the bundled broker.
+  - Name the immutable StatefulSet field precisely.
+  - Indicate that the broker loses messages when its pod is recreated.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.9...midaz-v9.2.10)
+
+---
+
+## [9.2.10](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.10)
+
+- Fixes:
+  - Stopped promising a volume for the bundled broker.
+  - Precisely named the immutable StatefulSet field.
+  - Indicated that the broker loses messages when its pod is recreated.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.9...midaz-v9.2.10)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and retained job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped the RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.8](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.8)
+
+- Fixes:
+  - Ensure the RabbitMQ bootstrap runs on upgrade and rotation.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.7...midaz-v9.2.8)
+
+---
+
+## [9.2.8](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.8)
+
+- Fixes:
+  - Ensure the RabbitMQ bootstrap runs on upgrade and rotation.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.7...midaz-v9.2.8)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- **Fixes**
+  - Run init containers under pod security restricted.
+
+- **Improvements**
+  - Updated documentation to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- Fixes:
+  - Run init containers under pod security restricted.
+
+- Improvements:
+  - Update documentation to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- **Fixes:**
+  - Run init containers under pod security restricted.
+
+- **Improvements:**
+  - Updated documentation to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- **Fixes:**
+  - Run init containers under pod security restricted.
+
+- **Improvements:**
+  - Documentation update to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- Fixes:
+  - Keep the databases and their passwords on uninstall to ensure data integrity and security.
+
+- Improvements:
+  - Documentation update to specify that the chart owns the database passwords.
+  - Enhanced documentation by pointing the required-secrets note at the kept datastore secrets.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- **Fixes:**
+  - Ensure databases and their passwords are retained on uninstall.
+
+- **Documentation:**
+  - Clarified that the chart owns the database passwords.
+  - Updated the required-secrets note to reference the maintained datastore secrets.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- **Fixes:**
+  - Keep the databases and their passwords on uninstall to prevent data loss. (Commit: 2aeea307)
+
+- **Improvements:**
+  - Documentation update to indicate that the chart owns the database passwords. (Commit: ecc8369b)
+  - Updated the required-secrets note to point at the kept datastore secrets for better clarity. (Commit: d68c32cc)
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
 ## [9.2.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.5)
 
 - Fixes:

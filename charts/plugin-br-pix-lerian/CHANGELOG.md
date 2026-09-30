@@ -2,6 +2,742 @@
 
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
 
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point to the real access-manager service.
+- Prefix provider-mock callback URLs.
+
+Improvements:
+- Adopt `lerian-common` masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+- **Features:**
+  - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+  - Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+- **Fixes:**
+  - Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Point `pix-lerian` at the real access-manager service.
+  - Prefix the `pix-lerian` provider-mock callback URLs.
+
+- **Improvements:**
+  - Rewrite runbook tone and add an English version.
+  - Productize configmap surface with defaults-in-template.
+  - Adopt `lerian-common` masks and emit the STANDARD contract.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+- **Features:**
+  - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+  - Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+- **Fixes:**
+  - Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Point pix-lerian at the real access-manager service.
+  - Prefix the pix-lerian provider-mock callback URLs.
+
+- **Improvements:**
+  - Adopt lerian-common masks and emit the STANDARD contract.
+  - Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Changelog for plugin-br-pix-lerian:
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt lerian-common masks; emit the STANDARD contract.
+- Productize configmap surface (defaults-in-template).
+- Adopt lerian-common workload fragments.
+- Rewrite runbook tone, add EN version.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt lerian-common masks; emit the STANDARD contract.
+- Productize configmap surface (defaults-in-template).
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop internal review checklist from published runbook.
+- Rewrite runbook tone and add English version.
+- Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+- Port plugin-br-pix-lerian chart from develop.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in pix-lerian.
+- Stop pix-lerian defaults from discarding an explicit zero.
+
+Improvements:
+- Rewrite runbook tone, add EN version.
+- Productize configmap surface (defaults-in-template).
+- Adopt lerian-common masks; emit the STANDARD contract.
+- Drop DICT outbound callback fields.
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive STREAMING_ENABLED from global.streaming.enabled.
+- Consolidate SD_* via global.serviceDiscovery using a chart-local helper.
+
+Fixes:
+- Always emit OTEL_RESOURCE_SERVICE_VERSION into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize the configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point to the real access-manager service.
+- Prefix provider-mock callback URLs.
+
+Improvements:
+- Adopt `lerian-common` masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+- Port `plugin-br-pix-lerian` chart from develop.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point `pix-lerian` at the real access-manager service.
+- Prefix the `pix-lerian` provider-mock callback URLs.
+- Keep the OTel endpoint when an operator overrides `HOST_IP`.
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in `pix-lerian`.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt `lerian-common` masks and emit the STANDARD contract.
+- Productize configmap surface with defaults in template.
+- Adopt `lerian-common` workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+Fixes:
+- Ensure `OTEL_RESOURCE_SERVICE_VERSION` is always emitted into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt lerian-common masks; emit the STANDARD contract.
+- Productize configmap surface (defaults-in-template).
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+- **Features:**
+  - Added support to drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+  - Consolidated `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+- **Fixes:**
+  - Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Corrected prefixed probe paths and updated license client information in documentation.
+  - Fixed access to the real access-manager service.
+
+- **Improvements:**
+  - Rewrote runbook tone and added an English version.
+  - Productized configmap surface with defaults in template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point the plugin at the real access-manager service.
+- Prefix provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize the configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point to the real access-manager service.
+- Prefix the provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point at the real access-manager service.
+- Prefix provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt lerian-common workload fragments.
+- Drop DICT outbound callback fields.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+- **Features:**
+  - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+  - Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+- **Fixes:**
+  - Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Point pix-lerian at the real access-manager service.
+  - Prefix the pix-lerian provider-mock callback URLs.
+
+- **Improvements:**
+  - Drop DICT outbound callback fields.
+  - Adopt lerian-common masks; emit the STANDARD contract.
+  - Productize configmap surface (defaults-in-template).
+  - Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop `DICT` outbound callback fields.
+- Adopt lerian-common masks; emit the STANDARD contract.
+- Productize configmap surface (defaults-in-template).
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+- **Features:**
+  - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+  - Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+- **Fixes:**
+  - Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Point pix-lerian at the real access-manager service.
+  - Prefix the pix-lerian provider-mock callback URLs.
+
+- **Improvements:**
+  - Drop `DICT` outbound callback fields.
+  - Adopt lerian-common masks and emit the STANDARD contract.
+  - Productize configmap surface with defaults-in-template.
+  - Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop internal review checklist from published runbook.
+- Rewrite runbook tone and add English version.
+- Productize configmap surface (defaults-in-template).
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+- **Features:**
+  - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+  - Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+- **Fixes:**
+  - Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+  - Point pix-lerian at the real access-manager service.
+  - Prefix the pix-lerian provider-mock callback URLs.
+
+- **Improvements:**
+  - Adopt lerian-common masks and emit the STANDARD contract.
+  - Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Added the ability to drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidated `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Ensured the plugin always emits `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Corrected prefixed probe paths and updated the license client to 5 in the documentation.
+- Pointed the plugin at the real access-manager service.
+
+Improvements:
+- Dropped DICT outbound callback fields and adopted lerian-common masks.
+- Productized the configmap surface with defaults in the template.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point `pix-lerian` at the real access-manager service.
+- Prefix the `pix-lerian` provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt `lerian-common` masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt `lerian-common` workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper.
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap.
+- Point pix-lerian at the real access-manager service.
+- Prefix the pix-lerian provider-mock callback URLs.
+
+Improvements:
+- Drop DICT outbound callback fields.
+- Adopt lerian-common masks and emit the STANDARD contract.
+- Productize configmap surface with defaults-in-template.
+- Adopt lerian-common workload fragments.
+
+Contributors: @Leonardox7, @guimoreirar
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
 - **Features:**
   - Drive `STREAMING_ENABLED` from `global.streaming.enabled`.
   - Consolidate `SD_*` via `global.serviceDiscovery` (chart-local helper).

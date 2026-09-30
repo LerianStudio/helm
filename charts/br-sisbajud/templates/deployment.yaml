@@ -109,12 +109,15 @@ spec:
           env:
             {{- /* Bundled (or existingSecret) infra passwords are single-sourced from the
                subchart Secret; the external path reads them from the app Secret via envFrom. */}}
+            {{- /* An explicit extraEnvVars entry is the effective value (it renders
+               last), so do not also emit the subchart reference: a duplicate env
+               name is rejected by server-side apply. */}}
             {{- $pgAuth := (.Values.postgresql | default dict).auth | default dict }}
-            {{- if or (eq (include "br-sisbajud.postgresInternal" .) "true") $pgAuth.existingSecret }}
+            {{- if and (or (eq (include "br-sisbajud.postgresInternal" .) "true") $pgAuth.existingSecret) (not (hasKey $x "POSTGRES_PASSWORD")) }}
             {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
             {{- end }}
             {{- $vkAuth := (.Values.valkey | default dict).auth | default dict }}
-            {{- if or (eq (include "br-sisbajud.valkeyInternal" .) "true") $vkAuth.existingSecret }}
+            {{- if and (or (eq (include "br-sisbajud.valkeyInternal" .) "true") $vkAuth.existingSecret) (not (hasKey $x "REDIS_PASSWORD")) }}
             {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
             {{- end }}
             {{- /* Bundled OpenBao: the app authenticates with the generated dev root
@@ -124,10 +127,13 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "br-sisbajud.openbaoTokenSecret" . }}
-                  key: token
+                  key: {{ include "br-sisbajud.openbaoTokenKey" . }}
             {{- end }}
             {{- if and $telemetry (not $explicitEndpoint) }}
             {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 12 }}
+            {{- end }}
+            {{- with (include "br-sisbajud.corsExtraEnv" . | trim) }}
+            {{- . | nindent 12 }}
             {{- end }}
             {{- with .Values.brSisbajud.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
@@ -156,9 +162,9 @@ spec:
             failureThreshold: {{ .Values.brSisbajud.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.brSisbajud.resources | nindent 12 }}
-      {{- if and .Values.topics.enabled (eq (include "br-sisbajud.redpandaEnabled" .) "true") }}
+      {{- if or (and .Values.topics.enabled (eq (include "br-sisbajud.redpandaEnabled" .) "true")) (eq (include "br-sisbajud.openbaoEnabled" .) "true") }}
       volumes:
-        # Writable HOME for the bundled topics initContainer (rpk), read-only rootfs.
+        # Writable HOME for the bundled topics (rpk) / transit (bao) initContainers, read-only rootfs.
         - name: bundle-tmp
           emptyDir: {}
       {{- end }}

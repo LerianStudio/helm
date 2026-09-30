@@ -173,22 +173,30 @@ port 8200, plain HTTP (global.tlsDisable default), in the release namespace.
 
 {{/*
 br-sisbajud.openbaoTokenSecret — the Secret that carries the bundled OpenBao's
-dev root token (key "token"). Its NAME is the one openbao.server.
+dev root token (under its configured secretKey). Its name/key are the ones openbao.server.
 extraSecretEnvironmentVars feeds to BAO_DEV_ROOT_TOKEN_ID (single source: the
-subchart reads it, and the app / Transit Job / wait-for-transit read the same
+subchart reads it, and the app / Transit Job / transit initContainer read the same
 Secret). BAO_DEV_ROOT_TOKEN_ID wins over the subchart's plaintext
 VAULT_DEV_ROOT_TOKEN_ID (OpenBao api.ReadBaoVariable prefers BAO_*), so the
 subchart's default "root" is not a working credential.
 */}}
-{{- define "br-sisbajud.openbaoTokenSecret" -}}
-{{- $name := "" -}}
+{{- define "br-sisbajud.openbaoTokenSecretRef" -}}
+{{- $ref := dict -}}
 {{- range ((((.Values.openbao | default dict).server | default dict).extraSecretEnvironmentVars) | default list) -}}
-{{- if eq .envName "BAO_DEV_ROOT_TOKEN_ID" -}}{{- $name = .secretName -}}{{- end -}}
+{{- if eq .envName "BAO_DEV_ROOT_TOKEN_ID" -}}{{- $ref = dict "name" (.secretName | default "") "key" (.secretKey | default "") -}}{{- end -}}
 {{- end -}}
-{{- if not $name -}}
-{{- fail "\n\nERROR: br-sisbajud: openbao.enabled needs an openbao.server.extraSecretEnvironmentVars entry for BAO_DEV_ROOT_TOKEN_ID (secretName/secretKey: token); the chart creates that Secret. See values.yaml.\n" -}}
+{{- if or (not $ref.name) (not $ref.key) -}}
+{{- fail "\n\nERROR: br-sisbajud: openbao.enabled needs an openbao.server.extraSecretEnvironmentVars entry for BAO_DEV_ROOT_TOKEN_ID with both secretName and secretKey; the chart creates that Secret under that key. See values.yaml.\n" -}}
 {{- end -}}
-{{- $name -}}
+{{- toYaml $ref -}}
+{{- end -}}
+
+{{/* Name / key of the dev-token Secret (the SAME entry OpenBao reads). */}}
+{{- define "br-sisbajud.openbaoTokenSecret" -}}
+{{- (include "br-sisbajud.openbaoTokenSecretRef" . | fromYaml).name -}}
+{{- end -}}
+{{- define "br-sisbajud.openbaoTokenKey" -}}
+{{- (include "br-sisbajud.openbaoTokenSecretRef" . | fromYaml).key -}}
 {{- end -}}
 
 {{/*
@@ -267,21 +275,27 @@ argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 
 {{/*
 br-sisbajud.presyncSecretAnnotations — the dedicated migrations/topics hook
-Secrets: created one weight BEFORE their Job, and never deleted on success (the
-Job still has to read them); replaced on the next run. Input: dict "bundled".
+Secrets (they carry credentials): created one weight BEFORE their Job.
+  Helm: hook-succeeded removes them once the WHOLE hook phase has succeeded
+        (Helm deletes succeeded hooks after the last hook of the phase, so the
+        Job has already read the Secret). Nothing credential-bearing is left
+        in the namespace after install/upgrade, and so none after uninstall.
+  ArgoCD: BeforeHookCreation only (unchanged). A HookSucceeded Secret would be
+        pruned as soon as it applies, before the Job reads it.
+Input: dict "bundled".
 */}}
 {{- define "br-sisbajud.presyncSecretAnnotations" -}}
 {{- if .bundled -}}
 helm.sh/hook: post-install,post-upgrade
 helm.sh/hook-weight: "-1"
-helm.sh/hook-delete-policy: before-hook-creation
+helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 argocd.argoproj.io/hook: Sync
 argocd.argoproj.io/hook-weight: "-1"
 argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 {{- else -}}
 helm.sh/hook: pre-install,pre-upgrade
 helm.sh/hook-weight: "-2"
-helm.sh/hook-delete-policy: before-hook-creation
+helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 argocd.argoproj.io/hook: PreSync
 argocd.argoproj.io/hook-weight: "-2"
 argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
@@ -913,11 +927,13 @@ fromSubchart: {{ ternary "true" "false" (eq (toString $pgFromSubchart) "true") |
 bundled: {{ ternary "true" "false" $pgFromSubchartBundled | quote }}
 secretName: {{ $secretName | quote }}
 {{- /* POSTGRES_PASSWORD source for the migrations container — the SAME credential
-   the app uses, so the two can never drift:
-     1. bundled subchart / postgresql.auth.existingSecret -> that Secret (secretKeyRef)
-     2. migrations.useExistingSecret                    -> migrations.existingSecretName
-     3. migrations.postgres.password (explicit override) -> the dedicated hook Secret
-     4. brSisbajud.extraEnvVars POSTGRES_PASSWORD        -> the same entry, verbatim
+   the app uses, in the app's own effective precedence (explicit pod env wins
+   over the subchart secretKeyRef, which wins over envFrom), so the two can never
+   drift. Explicit migration-only overrides come first:
+     1. migrations.useExistingSecret                    -> migrations.existingSecretName
+     2. migrations.postgres.password (explicit override) -> the dedicated hook Secret
+     3. brSisbajud.extraEnvVars POSTGRES_PASSWORD        -> the same entry, verbatim
+     4. bundled subchart / postgresql.auth.existingSecret -> that Secret (secretKeyRef)
      5. brSisbajud.useExistingSecret                     -> brSisbajud.existingSecretName
      6. brSisbajud.secrets.POSTGRES_PASSWORD             -> copied into the hook Secret
    (the app Secret does not exist yet during PreSync/pre-install)
@@ -927,14 +943,14 @@ secretName: {{ $secretName | quote }}
 {{- $appSecrets := .Values.brSisbajud.secrets | default dict -}}
 {{- $pwEnv := dict -}}
 {{- $hookPassword := "" -}}
-{{- if $pgFromSubchart -}}
-{{- $pwEnv = include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | fromYamlArray | first -}}
-{{- else if .Values.migrations.useExistingSecret -}}
+{{- if .Values.migrations.useExistingSecret -}}
 {{- $pwEnv = dict "name" "POSTGRES_PASSWORD" "valueFrom" (dict "secretKeyRef" (dict "name" .Values.migrations.existingSecretName "key" "POSTGRES_PASSWORD")) -}}
 {{- else if $mp.password -}}
 {{- $hookPassword = $mp.password -}}
 {{- else if index $envByName "POSTGRES_PASSWORD" -}}
 {{- $pwEnv = index $envByName "POSTGRES_PASSWORD" -}}
+{{- else if $pgFromSubchart -}}
+{{- $pwEnv = include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | fromYamlArray | first -}}
 {{- else if .Values.brSisbajud.useExistingSecret -}}
 {{- $pwEnv = dict "name" "POSTGRES_PASSWORD" "valueFrom" (dict "secretKeyRef" (dict "name" .Values.brSisbajud.existingSecretName "key" "POSTGRES_PASSWORD")) -}}
 {{- else if $appSecrets.POSTGRES_PASSWORD -}}
@@ -951,7 +967,7 @@ hookSecret: {{ ternary "true" "false" (ne (toString $hookPassword) "") | quote }
 
 {{/*
 br-sisbajud.migrationsHookPassword — the value the dedicated migrations hook
-Secret carries (sources 3 and 6 above); empty when another source is used.
+Secret carries (sources 2 and 6 above); empty when another source is used.
 */}}
 {{- define "br-sisbajud.migrationsHookPassword" -}}
 {{- $mp := .Values.migrations.postgres | default dict -}}
@@ -1069,27 +1085,80 @@ migrations/topics Jobs are PreSync hooks and already run first.
     {{- toYaml .Values.topics.resources | nindent 4 }}
 {{- end }}
 {{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" }}
-- name: wait-for-transit
-  image: {{ $wait }}
+- name: transit
+  # Mounts Transit ITSELF (idempotent) instead of waiting for the post-install
+  # openbao-transit Job: with `helm install/upgrade --wait` Helm runs
+  # post-install hooks only after the Deployment is Ready, so a wait here would
+  # deadlock until the timeout.
+  image: "{{ .Values.openbaoTransit.image.repository }}:{{ .Values.openbaoTransit.image.tag }}"
+  imagePullPolicy: {{ .Values.openbaoTransit.image.pullPolicy | default "IfNotPresent" }}
   env:
-    - name: VAULT_ADDR
+    - name: HOME
+      value: /tmp
+    - name: BAO_ADDR
       value: {{ index $data "VAULT_ADDR" | quote }}
     - name: TRANSIT_MOUNT
       value: {{ index $data "VAULT_TRANSIT_MOUNT_PATH" | default "transit" | quote }}
-    - name: VAULT_TOKEN
+    - name: BAO_TOKEN
       valueFrom:
         secretKeyRef:
           name: {{ include "br-sisbajud.openbaoTokenSecret" . }}
-          key: token
+          key: {{ include "br-sisbajud.openbaoTokenKey" . }}
   command:
     - /bin/sh
-    - -c
-    - >
-      until wget -q -O /dev/null --header "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/sys/mounts/$TRANSIT_MOUNT"; do
-        echo "transit mount $TRANSIT_MOUNT not ready at $VAULT_ADDR, waiting..."; sleep 5;
-      done;
-      echo "transit mount $TRANSIT_MOUNT is ready"
+    - -ec
+    - |
+      {{- include "br-sisbajud.openbaoTransitScript" . | nindent 6 }}
   securityContext:
     {{- toYaml $sc | nindent 4 }}
+  volumeMounts:
+    - name: bundle-tmp
+      mountPath: /tmp
+  resources:
+    {{- toYaml .Values.openbaoTransit.resources | nindent 4 }}
 {{- end }}
+{{- end -}}
+
+{{/*
+br-sisbajud.corsExtraEnv — legacy CORS overrides passed as brSisbajud.extraEnvVars.
+An extraEnvVars CORS_* entry wins in the pod over the ConfigMap, but the CORS
+middleware reads ACCESS_CONTROL_* (lib-commons withCORS.go), which the ConfigMap
+derives from configmap/grouped values only. So each extraEnvVars CORS_* entry
+(literal or valueFrom) is mirrored as an explicit ACCESS_CONTROL_* pod env
+entry, unless ACCESS_CONTROL_* is set explicitly (configmap or extraEnvVars).
+*/}}
+{{- define "br-sisbajud.corsExtraEnv" -}}
+{{- $cm := .Values.brSisbajud.configmap | default dict -}}
+{{- $envByName := dict -}}
+{{- range (.Values.brSisbajud.extraEnvVars | default list) -}}{{- if .name -}}{{- $_ := set $envByName .name . -}}{{- end -}}{{- end -}}
+{{- $out := list -}}
+{{- range $pair := list (list "CORS_ALLOWED_ORIGINS" "ACCESS_CONTROL_ALLOW_ORIGIN") (list "CORS_ALLOWED_METHODS" "ACCESS_CONTROL_ALLOW_METHODS") (list "CORS_ALLOWED_HEADERS" "ACCESS_CONTROL_ALLOW_HEADERS") (list "CORS_EXPOSE_HEADERS" "ACCESS_CONTROL_EXPOSE_HEADERS") (list "CORS_ALLOW_CREDENTIALS" "ACCESS_CONTROL_ALLOW_CREDENTIALS") -}}
+{{- $src := index $envByName (index $pair 0) -}}
+{{- if and $src (not (hasKey $envByName (index $pair 1))) (not (hasKey $cm (index $pair 1))) -}}
+{{- $e := deepCopy $src -}}
+{{- $_ := set $e "name" (index $pair 1) -}}
+{{- $out = append $out $e -}}
+{{- end -}}
+{{- end -}}
+{{- if $out }}{{ toYaml $out }}{{ end -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.openbaoTransitScript — idempotent Transit mount (bao CLI): wait for
+OpenBao, enable the engine at $TRANSIT_MOUNT only when absent, verify. Shared by
+the openbao-transit hook Job and the app's `transit` initContainer.
+*/}}
+{{- define "br-sisbajud.openbaoTransitScript" -}}
+i=0
+until bao status >/dev/null 2>&1; do
+  i=$((i + 1)); [ "$i" -ge 60 ] && { echo "timeout waiting for $BAO_ADDR"; exit 1; }
+  echo "waiting for $BAO_ADDR..."; sleep 5
+done
+if bao secrets list -format=json | grep -Fq -- "\"${TRANSIT_MOUNT}/\""; then
+  echo "transit already mounted at ${TRANSIT_MOUNT}/"
+else
+  bao secrets enable -path="$TRANSIT_MOUNT" transit || bao secrets list -format=json | grep -Fq -- "\"${TRANSIT_MOUNT}/\""
+  echo "transit enabled at ${TRANSIT_MOUNT}/"
+fi
+bao secrets list -format=json | grep -Fq -- "\"${TRANSIT_MOUNT}/\"" || { echo "transit mount missing"; exit 1; }
 {{- end -}}

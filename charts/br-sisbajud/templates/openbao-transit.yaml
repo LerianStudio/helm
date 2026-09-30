@@ -69,23 +69,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "br-sisbajud.openbaoTokenSecret" . }}
-                  key: token
+                  key: {{ include "br-sisbajud.openbaoTokenKey" . }}
           command:
             - /bin/sh
             - -ec
             - |
-              i=0
-              until bao status >/dev/null 2>&1; do
-                i=$((i + 1)); [ "$i" -ge 60 ] && { echo "timeout waiting for $BAO_ADDR"; exit 1; }
-                echo "waiting for $BAO_ADDR..."; sleep 5
-              done
-              if bao secrets list -format=json | grep -Fq -- "\"${TRANSIT_MOUNT}/\""; then
-                echo "transit already mounted at ${TRANSIT_MOUNT}/"
-              else
-                bao secrets enable -path="$TRANSIT_MOUNT" transit
-                echo "transit enabled at ${TRANSIT_MOUNT}/"
-              fi
-              bao secrets list -format=json | grep -Fq -- "\"${TRANSIT_MOUNT}/\"" || { echo "transit mount missing"; exit 1; }
+              {{- include "br-sisbajud.openbaoTransitScript" . | nindent 14 }}
           securityContext:
             runAsNonRoot: true
             runAsUser: 65532

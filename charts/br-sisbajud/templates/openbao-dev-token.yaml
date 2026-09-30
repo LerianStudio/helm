@@ -5,11 +5,12 @@
    render) > the token already stored in this Secret (lookup, so upgrades keep it)
    > a random 40-char token generated on first install. Never a shared literal. */}}
 {{- $name := include "br-sisbajud.openbaoTokenSecret" . -}}
+{{- $key := include "br-sisbajud.openbaoTokenKey" . -}}
 {{- $token := (.Values.openbaoDevToken | default dict).token | default "" -}}
 {{- if not $token -}}
 {{- $existing := lookup "v1" "Secret" .Release.Namespace $name -}}
-{{- if and $existing $existing.data (index $existing.data "token") -}}
-{{- $token = index $existing.data "token" | b64dec -}}
+{{- if and $existing $existing.data (index $existing.data $key) -}}
+{{- $token = index $existing.data $key | b64dec -}}
 {{- else -}}
 {{- $token = randAlphaNum 40 -}}
 {{- end -}}
@@ -24,5 +25,5 @@ metadata:
     app.kubernetes.io/component: openbao-dev-token
 type: Opaque
 data:
-  token: {{ $token | b64enc | quote }}
+  {{ $key }}: {{ $token | b64enc | quote }}
 {{- end }}

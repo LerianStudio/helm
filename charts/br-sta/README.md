@@ -97,7 +97,7 @@ Every application env key is resolved with this precedence (lerian-common):
 
 `common.configmap`, `common.secrets` and `worker.configmap` are empty by default. Pinning a native key there shadows the grouped/global parameter for that key.
 
-`manager.extraEnvVars` / `worker.extraEnvVars` (lists of `{name, value|valueFrom}`) are rendered as explicit pod `env:` and win over the ConfigMaps and the Secret. The fail-fast gates count an `extraEnvVars` entry only when it reaches every enabled app pod (set on both `manager` and `worker`), since both binaries need the same configuration.
+`manager.extraVolumes`/`extraVolumeMounts` and the `worker.*` equivalents add pod volumes and container mounts, e.g. a private CA bundle: the app trusts the system certificate pool for the RabbitMQ management API and `amqps` (there is no CA key for them), so a private CA is supplied as a bundle file plus `SSL_CERT_FILE` in `extraEnvVars`. `manager.extraEnvVars` / `worker.extraEnvVars` (lists of `{name, value|valueFrom}`) are rendered as explicit pod `env:` and win over the ConfigMaps and the Secret. The fail-fast gates count an `extraEnvVars` entry only when it reaches every enabled app pod (set on both `manager` and `worker`), since both binaries need the same configuration.
 
 ### Global contract
 

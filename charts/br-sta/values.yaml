@@ -347,6 +347,11 @@ manager:
   # -- Extra env vars rendered as explicit `env:` entries on the manager pod (a
   # list of {name, value|valueFrom}). They win over the ConfigMap and the Secret.
   extraEnvVars: []
+  # -- Extra pod volumes / container mounts, e.g. a private CA bundle for the
+  # RabbitMQ management API or amqps (the app trusts the system pool; point
+  # SSL_CERT_FILE at a bundle through extraEnvVars). Empty by default.
+  extraVolumes: []
+  extraVolumeMounts: []
 
 # =============================================================================
 # worker — cmd/worker: the background process (BACEN outbound scheduler, inbound
@@ -430,6 +435,9 @@ worker:
   configmap: {}
   # -- Extra env vars rendered as explicit `env:` entries on the worker pod.
   extraEnvVars: []
+  # -- Extra pod volumes / container mounts (same use as manager.extraVolumes).
+  extraVolumes: []
+  extraVolumeMounts: []
 
 # =============================================================================
 # Detached migrations — the br-sta-migrations image applies the SQL schema to the

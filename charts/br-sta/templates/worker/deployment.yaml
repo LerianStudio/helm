@@ -110,8 +110,16 @@ spec:
             timeoutSeconds: {{ $w.readinessProbe.timeoutSeconds | default 5 }}
             successThreshold: {{ $w.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ $w.readinessProbe.failureThreshold | default 3 }}
+          {{- with $w.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml $w.resources | nindent 12 }}
+      {{- with $w.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if or $w.nodeSelector $w.affinity $w.tolerations }}
       {{- include "lerian-common.scheduling" $w | nindent 6 }}
       {{- end }}

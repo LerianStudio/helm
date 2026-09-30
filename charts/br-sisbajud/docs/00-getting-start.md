@@ -2,7 +2,8 @@
 
 > Preenchido a partir do chart (`README.md`, `values.yaml`, `values-dev.yaml`,
 > `values-dev-with-br-sta.yaml`, `values-template.yaml`, templates) e de uma instalação
-> real ao lado de um dev bundle do br-sta num minikube isolado (6 CPU / 7 GB).
+> real ao lado de um dev bundle do br-sta num minikube isolado (6 CPU / 7 GB),
+> além de uma instalação em modo produção sobre infra externa (seção 3, Produção).
 > Objetivo: alguém de fora da squad, só com o chart + este runbook, consegue instalar
 > uma versão funcional e sabe o que checar caso algo não se comporte como esperado.
 
@@ -211,6 +212,7 @@ Respostas:
 - `422` SBJ-0006: corpo inválido, `fileType` desconhecido ou formato de chave inválido;
 - `404` SBJ-0005: o objeto não está no bucket;
 - `503` SBJ-0008.
+- `500` SBJ-0002 para uma instituição que não existe (comportamento conhecido da app `1.1.0`: cadastre a instituição antes).
 
 A recepção roda de forma síncrona na requisição.
 
@@ -234,15 +236,31 @@ boot quando os transfers estão ligados mas o caminho de submissão não pôde s
   perna de retorno precisa ser coberta pelo canal STA do próprio operador, e isso está
   fora do que esta versão do app oferece.
 
-> **Ainda não exercitado.** Esta recepção HTTP não foi executada no minikube. O
-> contrato acima foi lido do código-fonte do app na v1.1.0:
-> `internal/adapters/http/remittance_notification_handler.go`,
-> `remittance_notification_huma.go`, `internal/bootstrap/routes_remittance_notification.go`,
-> `institution_handler.go` e o teste de integração do endpoint,
-> `internal/bootstrap/remittance_notification_integration_test.go`, que usa o mesmo corpo
-> e a mesma fixture.
+> **Exercitado.** Esta recepção rodou contra uma instalação production-like (PostgreSQL
+> externo, Valkey com TLS, OpenBao Transit, storage compatível com S3, Kafka com TLS +
+> SASL). A primeira entrega rodou com `global.env.name=staging` e o replay com
+> `production`, na mesma infra. Resultados: `POST /v1/institutions` -> `201`; a
+> notificação da fixture 5301 -> `{"status":"processed","environment":"PRODUCTION"}` com
+> o arquivo parseado; a mesma notificação reenviada -> `skipped` (dedup pelo hash do
+> arquivo); recriar um código de instituição existente -> `409`. Comportamento conhecido
+> da app `1.1.0`: uma notificação para uma instituição que não existe responde `500`
+> SBJ-0002 em vez de um 4xx, então cadastre a instituição antes.
 
 ### Produção
+
+> **Validado em modo produção.** O br-sisbajud `1.1.0` foi instalado com
+> `global.env.name=production`, o gateway de licença de produção e só infra externa
+> (nenhum subchart embutido) num cluster production-like. Confirmado em runtime:
+> PostgreSQL `sslmode=require`; Valkey com TLS e CA privada; Kafka com TLS + SASL
+> SCRAM; OpenBao Transit como KMS; origem CORS explícita; `ORGANIZATION_IDS=global`. O
+> pod ficou `1/1` cerca de 28 s depois do install, com 0 restarts. O log mostrou
+> `Organization global has a valid license` e `license validation enabled`. O `/readyz`
+> ficou healthy, com `kms`, `postgres`, `redis`, `seaweedfs` e `streaming` `up`, e o Job
+> de hook criou os tópicos `lerian.streaming.br-sisbajud` (+ `.dlq`, `.commands`).
+> Ligado ao br-sta no mesmo modo, `sta_bucket_parity` e `sta_consumer` ficaram `up`, e o
+> consumer group `sisbajud-sta-consumer` ficou Stable em `lerian.streaming.br-sta`. Isso
+> exigiu transfers ligados: ver "Modo só-consumer" na seção 5. Não exercitado: envio de
+> transfer br-sisbajud -> br-sta, que precisa do plugin-access-manager.
 
 1. Provisione PostgreSQL, Valkey, os buckets S3 (`global.objectStorage.sisbajud.bucket`
    e o bucket de transfer do br-sta), Vault Transit (ou AWS KMS) e o broker.
@@ -317,6 +335,41 @@ Ligação com o br-sta (valores agrupados em `brSisbajud.sta`): `consumerEnabled
 | Fatos do br-sta de transfers desconhecidos | Comportamento conhecido da app: um fato em `lerian.streaming.br-sta` de um transfer que o br-sisbajud não criou é tratado como transitório e segura a partição | Acompanhe `sta_consumer` no `/readyz` (`degraded`, `consumer_not_polling`) |
 | Imagens privadas | Imagens da app, migrations e tópicos são privadas no GHCR | Pull secret no namespace (`imagePullSecrets`) |
 
+### Modo só-consumer (limitação conhecida da app 1.1.0)
+
+Com `brSisbajud.sta.consumerEnabled: true` e `transfersEnabled: false`, o `/readyz`
+reporta `sta_bucket_parity` `down` (`not_configured`) e o pod nunca fica Ready. O motivo
+é que a app só constrói o store de paridade de bucket junto com o cliente de transfers.
+Até a app mudar isso, ligue os transfers também:
+
+```yaml
+global:
+  auth: { host: "<URL do auth do plugin-access-manager>" }
+brSisbajud:
+  sta:
+    consumerEnabled: true
+    transfersEnabled: true
+    transfersBaseUrl: "<URL do manager do br-sta>"
+    clientId: "br-sisbajud"
+# mais STA_CLIENT_SECRET no Secret
+```
+
+O token m2m só é pedido quando um transfer é enviado, então um `STA_CLIENT_SECRET`
+placeholder basta para o pod subir e ficar Ready. Envios de verdade precisam do client
+secret real e de um plugin-access-manager acessível.
+
+### Licença
+
+| Tema | Comportamento (app `1.1.0`, SDK de licença v4.1.0) |
+|---|---|
+| Uma chave por produto | Uma chave licencia um único produto. Chave emitida para outro produto é recusada com `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; chave desconhecida ou adulterada, com `(LCS-1002)` |
+| Na recusa | O processo sai e o pod entra em `CrashLoopBackOff`. Num rolling update o pod que já está rodando continua servindo: o rollout trava, mas nada cai |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging foram validadas neste gateway de produção. `brSisbajud.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) troca para `https://license.dev.lerian.io`: use só para chaves emitidas pelo gateway dev |
+| Refresh e carência | A chave é revalidada a cada 6 h. Quando o gateway não responde (erro de rede ou 5xx) depois de ter confirmado a chave uma vez, o processo segue servindo em janelas de carência decrescentes (2 d, 1 d, 12 h, 6 h, no máximo 3 d 18 h) e depois sai. Um processo que nunca foi confirmado ganha só 6 h. Uma recusa 4xx encerra a carência na hora. As janelas vivem em memória: um pod reiniciado durante uma queda começa sem confirmação |
+| Offline | Não há modo de licença offline nesta versão da app |
+| Gate de render | Ambientes production-like falham o render sem `LICENSE_KEY`; `ORGANIZATION_IDS` precisa ser `global` |
+| Como confirmar | Não há check de licença no `/readyz`: procure no log de boot as linhas `Organization global has a valid license` e `license validation enabled` |
+
 ---
 
 ## 6. Como validar uma instalação bem-sucedida
@@ -333,9 +386,10 @@ curl -s localhost:14029/health     # path do liveness probe
 |---|---|---|---|
 | Pods | `kubectl get pods` | app `1/1 Running`, 0 restarts | `CrashLoopBackOff`: o log diz a dependência que falta |
 | Jobs | `kubectl get jobs` | Dev bundle: `migrations`, `openbao-transit`, `seaweedfs-buckets`, `topics` `Complete` (até o TTL de 600 s). Infra externa: Helm e ArgoCD apagam os Jobs de hook de migrations/tópicos quando terminam com sucesso, então nenhum Job restante significa sucesso | Um Job `Failed` (mantido para os logs): host/senha do Postgres; acesso ao broker para os tópicos |
-| Readiness | `GET /readyz` | `healthy`; `postgres`, `redis`, `kms`, `seaweedfs`, `streaming` `up`; com o br-sta ligado: `sta_bucket_parity` `up` e `sta_consumer` `up` | `sta_bucket_parity` down: bucket/endpoint sta diferentes dos do br-sta |
+| Readiness | `GET /readyz` | `healthy`; `postgres`, `redis`, `kms`, `seaweedfs`, `streaming` `up`; com o br-sta ligado: `sta_bucket_parity` `up` e `sta_consumer` `up` | `sta_bucket_parity` down: bucket/endpoint sta diferentes dos do br-sta, ou `not_configured` no modo só-consumer (seção 5) |
 | Integração com br-sta (comprovada) | crie um transfer no br-sta (ver o runbook do br-sta): o mock STA leva a `Accepted` e o br-sta publica um fato em `lerian.streaming.br-sta` | O fato chega ao consumer STA do br-sisbajud (grupo `sisbajud-sta-consumer`) | Um fato de transfer que o br-sisbajud não criou é reprocessado (seção 5) |
-| Não exercitado | br-sisbajud → br-sta `POST /v1/transfers` (precisa de plugin-access-manager e de instituições/ordens cadastradas); arquivos inbound do BACEN/mock até o br-sisbajud; a recepção HTTP standalone `POST /v1/remittance-files/notifications` (documentada a partir do código, seção 3) | — | — |
+| Recepção HTTP (exercitada) | `POST /v1/institutions`, depois `POST /v1/remittance-files/notifications` (seção 3) | `201`, depois `processed`; o reenvio responde `skipped` | `500` SBJ-0002: a instituição não existe |
+| Não exercitado | br-sisbajud → br-sta `POST /v1/transfers` (precisa de plugin-access-manager e de instituições/ordens cadastradas); arquivos inbound do BACEN/mock até o br-sisbajud | — | — |
 
 ---
 
@@ -348,7 +402,9 @@ curl -s localhost:14029/health     # path do liveness probe
 | `sta_consumer` `degraded` / `consumer_not_polling`, log `STA inbound event requeued: transfer_not_found` e depois `partition halted (head-of-line blocked)` | Comportamento conhecido da app: um fato do br-sta que referencia um transfer desconhecido pelo br-sisbajud é reprocessado e bloqueia a partição | Monitore `sta_consumer`; em dev, não crie transfers no br-sta por fora do br-sisbajud num tópico compartilhado |
 | Job de tópicos falha com TLS ligado | A imagem de tópicos precisa da CA do broker como arquivo quando `STREAMING_TLS_ENABLED=true`, mesmo para broker com CA pública | Sete `brSisbajud.secrets.STREAMING_TLS_CA_CERT`, ou provisione os tópicos por fora e use `topics.enabled=false` |
 | Render falha citando `STA_INBOUND_BUCKET` | Sem default por política | `global.objectStorage.sta.bucket` = bucket de transfer do br-sta |
-| Boot recusado em produção, erros de licença | `LICENSE_KEY` ausente, ou sem egress até o gateway de licença (não há modo de licença offline nesta versão da app) | Sete a chave e libere o egress |
+| Boot recusado em produção, erros de licença | `LICENSE_KEY` ausente, chave de outro produto (`LCS-1005`) ou chave desconhecida (`LCS-1002`), ou sem egress até o gateway de licença (não há modo de licença offline nesta versão da app) | Sete a chave deste produto e libere o egress (seção 5, Licença) |
+| Pod nunca fica Ready, `/readyz` `sta_bucket_parity` `not_configured` | Modo só-consumer (`consumerEnabled` ligado, `transfersEnabled` desligado): limitação conhecida da app `1.1.0` | Ligue os transfers também (seção 5, Modo só-consumer) |
+| `500` SBJ-0002 em `POST /v1/remittance-files/notifications` | A instituição não existe (comportamento conhecido da app `1.1.0`, em vez de um 4xx) | Cadastre antes com `POST /v1/institutions` |
 | Chamadas do browser bloqueadas mesmo com origens CORS setadas | O middleware de CORS do lib-commons lê `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `brSisbajud.cors.allowedOrigins` (o chart mapeia); wildcard exige o opt-in explícito |
 | br-sta `1.0.0` "mais velho" que `1.2.0-beta.x` | A linha de versões do br-sta recomeçou no release estável: `1.0.0` é o release posterior e compatível | Fixe o br-sta em `1.0.0` explicitamente |
 

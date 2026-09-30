@@ -168,7 +168,7 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `swagger.description` / `host` / `schemes` | `SWAGGER_DESCRIPTION` / `SWAGGER_HOST` / `SWAGGER_SCHEMES` | unset |
 | `pagination.maxLimit` / `maxMonthDateRange` | `MAX_PAGINATION_LIMIT` / `MAX_PAGINATION_MONTH_DATE_RANGE` | `100` / `3` |
 | `admin.maxFileContentBytes` / `maxAuditVerifyWindow` | `ADMIN_MAX_FILE_CONTENT_BYTES` / `ADMIN_MAX_AUDIT_VERIFY_WINDOW` | `104857600` / unset |
-| `runtime.godebug` / `gotraceback` | `GODEBUG` / `GOTRACEBACK` | unset (e.g. `http2client=0` / `all`) |
+| `runtime.godebug` / `gotraceback` | `GODEBUG` / `GOTRACEBACK` | unset |
 
 Chart-derived keys: `ENVIRONMENT_NAME`/`ENV_NAME` default to `production`; `POSTGRES_SSLMODE` defaults to `require` (`disable` with the bundled subchart); `VAULT_AUTH_METHOD` defaults to `token` and `VAULT_TRANSIT_MOUNT_PATH` to `transit`; `KMS_PROVIDER` defaults to `vault`; `MULTI_TENANT_ENABLED` and `PLUGIN_AUTH_ENABLED` default to `false`. `OTEL_EXPORTER_OTLP_ENDPOINT` is overridden on the pod by `http://$(HOST_IP):4317` (node-local collector) when telemetry is on and no endpoint is set.
 

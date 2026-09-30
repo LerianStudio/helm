@@ -532,7 +532,7 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "dbMetricsIntervalSec" "k" "DB_METRICS_INTERVAL_SEC" "d" "15") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "idempotencyRetryWindowSec" "k" "IDEMPOTENCY_RETRY_WINDOW_SEC" "d" "300") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "circuitBreakerEnabled" "k" "CIRCUIT_BREAKER_ENABLED" "d" "false") }}
-{{- /* Go runtime (optional; e.g. GODEBUG=http2client=0 for golang/go#71885). */}}
+{{- /* Go runtime knobs (optional). */}}
 {{ include $kv (dict "cm" $cm "p" $b.runtime "f" "godebug" "k" "GODEBUG" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.runtime "f" "gotraceback" "k" "GOTRACEBACK" "opt" true) }}
 # --- HTTP server + CORS --------------------------------------------------------

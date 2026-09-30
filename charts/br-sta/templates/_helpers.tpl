@@ -259,13 +259,66 @@ operator Secret via common.useExistingSecret).
 {{- end -}}
 
 {{/*
-br-sta.componentExtraEnv — one component's extraEnvVars as a YAML map
-{NAME: value}, with "__valueFrom__" for entries sourced via valueFrom.
+br-sta.podEnvList — one component's explicit pod `env:` entries on top of
+envFrom, as a YAML list: one secretKeyRef entry per common.secretRefs.<KEY>
+({name, key[, optional]}), sorted by KEY, followed by that component's
+extraEnvVars verbatim. extraEnvVars wins on a name clash (the secretRefs entry
+is dropped, so server-side apply never sees a duplicate). Every consumer that
+inspects "what reaches the pod explicitly" reads this list through
+br-sta.componentExtraEnv. Input: dict root, component (manager | worker), skip
+(opt: names the chart already emits as explicit env — br-sta.appEnv's
+subchart-single-sourced passwords — whose secretRefs entry is dropped too).
+*/}}
+{{- define "br-sta.podEnvList" -}}
+{{- $extra := (index .root.Values .component | default dict).extraEnvVars | default list -}}
+{{- $names := dict -}}
+{{- range $extra -}}{{- if .name -}}{{- $_ := set $names .name true -}}{{- end -}}{{- end -}}
+{{- range (.skip | default list) -}}{{- $_ := set $names . true -}}{{- end -}}
+{{- $out := list -}}
+{{- $refs := .root.Values.common.secretRefs | default dict -}}
+{{- range $k := keys $refs | sortAlpha -}}
+{{- $r := index $refs $k | default dict -}}
+{{- if not (hasKey $names $k) -}}
+{{- if or (not $r.name) (not $r.key) -}}
+{{- fail (printf "\n\nERROR: br-sta: common.secretRefs.%s needs both name and key (the Kubernetes Secret and its data key).\n" $k) -}}
+{{- end -}}
+{{- $ref := dict "name" $r.name "key" $r.key -}}
+{{- if hasKey $r "optional" -}}{{- $_ := set $ref "optional" $r.optional -}}{{- end -}}
+{{- $out = append $out (dict "name" $k "valueFrom" (dict "secretKeyRef" $ref)) -}}
+{{- end -}}
+{{- end -}}
+{{- toYaml (concat $out $extra) -}}
+{{- end -}}
+
+{{/*
+br-sta.migrationsPgRef — the {name, key[, optional]} secretKeyRef the migrations
+Job reads POSTGRES_PASSWORD from when common.secretRefs.POSTGRES_PASSWORD is set,
+so the Job follows the same credential as the app pods; "" otherwise. It yields
+to the stronger migration sources (migrations.useExistingSecret, the Postgres
+subchart Secret, migrations.postgres.password). The referenced Secret is
+operator-managed: it must exist before the pre-install/PreSync hook runs.
+*/}}
+{{- define "br-sta.migrationsPgRef" -}}
+{{- $r := index (.Values.common.secretRefs | default dict) "POSTGRES_PASSWORD" | default dict -}}
+{{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
+{{- $pgFromSubchart := or (eq (include "br-sta.postgresInternal" .) "true") $pgAuth.existingSecret -}}
+{{- $mpPw := ((.Values.migrations | default dict).postgres | default dict).password -}}
+{{- if and $r.name $r.key (not .Values.migrations.useExistingSecret) (not $pgFromSubchart) (not $mpPw) -}}
+{{- $ref := dict "name" $r.name "key" $r.key -}}
+{{- if hasKey $r "optional" -}}{{- $_ := set $ref "optional" $r.optional -}}{{- end -}}
+{{- toYaml $ref -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+br-sta.componentExtraEnv — one component's explicit pod env (br-sta.podEnvList:
+common.secretRefs + extraEnvVars) as a YAML map {NAME: value}, with
+"__valueFrom__" for entries sourced via valueFrom.
 Input: dict root, component (manager | worker).
 */}}
 {{- define "br-sta.componentExtraEnv" -}}
 {{- $out := dict -}}
-{{- range ((index .root.Values .component | default dict).extraEnvVars | default list) -}}
+{{- range (include "br-sta.podEnvList" . | fromYamlArray) -}}
 {{- if .name -}}
 {{- if hasKey . "valueFrom" -}}
 {{- $_ := set $out .name "__valueFrom__" -}}

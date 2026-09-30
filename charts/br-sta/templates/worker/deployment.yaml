@@ -79,12 +79,15 @@ spec:
             - configMapRef:
                 name: {{ $fullname }}
           {{- $env := include "br-sta.appEnv" (dict "root" . "component" "worker") | trim }}
-          {{- if or $env $w.extraEnvVars }}
+          {{- $skip := list }}
+          {{- range ($env | fromYamlArray) }}{{- if .name }}{{- $skip = append $skip .name }}{{- end }}{{- end }}
+          {{- $podEnv := include "br-sta.podEnvList" (dict "root" . "component" "worker" "skip" $skip) | fromYamlArray }}
+          {{- if or $env $podEnv }}
           env:
             {{- with $env }}
             {{- . | nindent 12 }}
             {{- end }}
-            {{- with $w.extraEnvVars }}
+            {{- with $podEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}

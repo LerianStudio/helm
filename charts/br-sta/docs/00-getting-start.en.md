@@ -125,7 +125,8 @@ kubectl delete namespace sta-dev
 2. Generate the master key once (`openssl rand -hex 32`) and store `v1:<hex>` as
    `MASTER_KEYS` in your secret store. Never replace it: add a new version instead.
 3. Create the app Secret out of band (`common.useExistingSecret: true` +
-   `existingSecretName`) or fill `common.secrets` with `<path:...>` placeholders.
+   `existingSecretName`), reference single keys of it with `common.secretRefs.<KEY>:
+   {name, key}`, or fill `common.secrets` with `<path:...>` placeholders.
 4. Create the GHCR pull secret in the namespace. The chart default is `ghcr-credential`
    (`imagePullSecrets: [{name: ghcr-credential}]`):
 

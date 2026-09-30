@@ -126,7 +126,8 @@ kubectl delete namespace sta-dev
 2. Gere a master key uma única vez (`openssl rand -hex 32`) e guarde `v1:<hex>` como
    `MASTER_KEYS` no seu cofre. Nunca substitua: adicione uma versão nova.
 3. Crie o Secret da app fora do chart (`common.useExistingSecret: true` +
-   `existingSecretName`) ou preencha `common.secrets` com placeholders `<path:...>`.
+   `existingSecretName`), referencie chaves avulsas dele com `common.secretRefs.<KEY>:
+   {name, key}`, ou preencha `common.secrets` com placeholders `<path:...>`.
 4. Crie o pull secret do GHCR no namespace. O default do chart é `ghcr-credential`
    (`imagePullSecrets: [{name: ghcr-credential}]`):
 

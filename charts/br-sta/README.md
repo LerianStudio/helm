@@ -7,7 +7,7 @@
 - Chart type: `multi-component`
 - Required secrets: `common.secrets.MASTER_KEYS` always (credential envelope-encryption key material; the manager aborts boot without it). In `production` (the default environment): `POSTGRES_PASSWORD` (external Postgres), `RABBITMQ_DEFAULT_PASS` (or a full `RABBITMQ_URL`) and `LICENSE_KEY`. `STREAMING_SASL_PASSWORD` when a SASL mechanism is set; `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on; `RABBITMQ_DEFAULT_PASS` + `RABBITMQ_ERLANG_COOKIE` with the bundled RabbitMQ. The chart fails the render with the exact key to set when one is missing. With `common.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql` / `valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
 - Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `rabbitmq` (groundhog2k 2.1.11), `seaweedfs` (4.0.393) and `redpanda` (26.2.4, dev only) subcharts, plus an optional mock STA server (dev only), are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, RabbitMQ, S3 and Kafka are the production path; Redpanda and the mock STA are refused outside a development-class environment. plugin-access-manager, the tenant manager and BACEN STA itself are external services.
-- Production overrides: `global.datastores` (postgres, redis, broker), `global.objectStorage` (sta, staAuditExports), `global.kms`, `global.auth`, `global.streaming`, `global.env`, the Secret keys above (or `common.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `common.cors.allowedOrigins`, `common.license.organizationIds`, `common.bacen.environment`, ingress, resources and autoscaling.
+- Production overrides: `global.datastores` (postgres, redis, broker), `global.objectStorage` (sta, staAuditExports), `global.kms`, `global.auth`, `global.streaming`, `global.env`, the Secret keys above (or per-key `common.secretRefs`, `common.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `common.cors.allowedOrigins`, `common.license.organizationIds`, `common.bacen.environment`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Apache-2.0. The br-sta service itself is proprietary (Lerian Studio); its images are private on GHCR.
 
 Deploys **br-sta**, the Lerian BACEN STA (Sistema de Transferência de Arquivos) service: file transfers to and from BACEN, the BACEN operator credentials (envelope-encrypted), and a hash-chained audit trail. It runs as two components from one release train:
@@ -224,6 +224,8 @@ Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`,
 
 The Deployments list the ConfigMap before the Secret in `envFrom`, so a Secret key always wins over a ConfigMap key of the same name.
 
+To take a single key from a Secret the chart does not manage (ESO/Vault), use `common.secretRefs.<KEY>: {name, key[, optional]}` instead of `common.secrets.<KEY>`: it renders a `secretKeyRef` env entry on the manager and worker pods (a component's own `extraEnvVars` entry of the same name wins), counts as set for the fail-fast gates, and `common.secretRefs.POSTGRES_PASSWORD` also feeds the migrations Job (the Secret must exist before the hook runs).
+
 ### Fail-fast gates
 
 The render fails with the exact value to set (mirroring the app's boot validation) when:
@@ -237,7 +239,7 @@ The render fails with the exact value to set (mirroring the app's boot validatio
 - the declaration publisher or the reporter bridge is on without its host / credentials / exchange / resolver (`static` is refused in production and outside homologation);
 - the CORS origin is `*` without `security.allowCorsWildcard` (and, in production, is a wildcard at all), the server TLS cert/key are not set together, or `M2M_TARGET_SERVICE` contains `:`.
 
-A value supplied through `extraEnvVars` satisfies the gate only when it is set, with the same value, on both `manager.extraEnvVars` and `worker.extraEnvVars` (or the worker is disabled). An empty literal for a required key in either pod's `extraEnvVars` fails the render, since it would override the ConfigMap/Secret for that pod. With `common.useExistingSecret`, the gates skip the Secret keys.
+A value supplied through `extraEnvVars` (or `common.secretRefs`, which reaches both pods) satisfies the gate only when it is set, with the same value, on both `manager.extraEnvVars` and `worker.extraEnvVars` (or the worker is disabled). An empty literal for a required key in either pod's `extraEnvVars` fails the render, since it would override the ConfigMap/Secret for that pod. With `common.useExistingSecret`, the gates skip the Secret keys.
 
 ---
 

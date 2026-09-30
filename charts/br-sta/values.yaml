@@ -256,6 +256,16 @@ common:
   # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, when a tier sources it from
   # the secret store). Any other key is emitted verbatim.
   secrets: {}
+  # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
+  # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
+  # secretKeyRef env entry on the manager AND worker pods, so credentials never
+  # need raw extraEnvVars. A component's own extraEnvVars entry of the same name
+  # wins. The fail-fast checks count a reference as set, and the migrations Job
+  # reads POSTGRES_PASSWORD from it (the Secret must exist before the hook runs).
+  # Example:
+  #   secretRefs:
+  #     STREAMING_SASL_PASSWORD: { name: redpanda-br-sta, key: password }
+  secretRefs: {}
   # -- Use an operator-provided Secret instead of the chart-managed one (manager,
   # worker and — unless migrations.useExistingSecret says otherwise — the
   # migrations Job). The chart then skips its secret fail-fast checks: the Secret

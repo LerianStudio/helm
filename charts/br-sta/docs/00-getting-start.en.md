@@ -24,6 +24,8 @@
 
 The profile is chosen by the values file you layer, not by a flag.
 
+> **Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure.** Production means external, managed infrastructure: PostgreSQL with TLS, Valkey/Redis, RabbitMQ, Kafka/Redpanda with TLS, S3 object storage and the real BACEN/Nuclea STA upstream. The bundled `postgresql`, `valkey`, `rabbitmq`, `seaweedfs` and `redpanda` subcharts and `mockSta` exist for development, POC and quickstart. The render refuses Redpanda and the mock STA in a production-like environment and only warns (NOTES) for the others, but none of them is supported in production.
+
 | Profile | Values | What runs | Use case |
 |---|---|---|---|
 | **Dev bundle (quickstart)** | `values-dev.yaml` | manager + worker + migrations, plus bundled PostgreSQL, Valkey, RabbitMQ, SeaweedFS (S3), Redpanda and the mock STA server, all in the release namespace; `ENV_NAME=development`, inbound auth off | Evaluation, local development, chart testing. Nothing reaches BACEN |

@@ -1,5 +1,10 @@
 # br-sta — values-dev.yaml: a SELF-CONTAINED dev / evaluation install.
 #
+# Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure.
+# Production = external managed PostgreSQL (TLS), Valkey/Redis, RabbitMQ,
+# Kafka/Redpanda (TLS), S3 and the real BACEN/Nuclea STA upstream; the bundled
+# subcharts and the mock STA are unsupported in production.
+#
 #   helm install br-sta charts/br-sta -f charts/br-sta/values-dev.yaml -n sta-dev --create-namespace
 #
 # Bundles PostgreSQL, Valkey, RabbitMQ, SeaweedFS (S3), Redpanda (Kafka API) and

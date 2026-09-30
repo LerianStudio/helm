@@ -24,6 +24,8 @@
 
 O perfil é escolhido pelo arquivo de values que você aplica, não por um flag.
 
+> **A infraestrutura embutida é só para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada.** Produção significa infraestrutura externa e gerenciada: PostgreSQL com TLS, Valkey/Redis, RabbitMQ, Kafka/Redpanda com TLS, object storage S3 e o upstream STA real do BACEN/Nuclea. Os subcharts embutidos `postgresql`, `valkey`, `rabbitmq`, `seaweedfs` e `redpanda` e o `mockSta` existem para desenvolvimento, POC e quickstart. O render recusa o Redpanda e o mock STA em ambiente tipo produção e só avisa (NOTES) para os demais, mas nenhum deles é suportado em produção.
+
 | Perfil | Values | O que roda | Uso |
 |---|---|---|---|
 | **Dev bundle (quickstart)** | `values-dev.yaml` | manager + worker + migrations, mais PostgreSQL, Valkey, RabbitMQ, SeaweedFS (S3), Redpanda e o mock STA server embutidos, tudo no namespace do release; `ENV_NAME=development`, auth de entrada desligado | Avaliação, desenvolvimento local, teste do chart. Nada chega ao BACEN |

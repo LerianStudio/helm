@@ -609,19 +609,30 @@ REDIS_CA_CERT: {{ $redisCa | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.redis "f" "maxRetryBackoff" "k" "REDIS_MAX_RETRY_BACKOFF" "d" "1") }}
 # --- RabbitMQ: audit transport + business channel (datastore broker mask) -----
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "enabled" "k" "RABBITMQ_ENABLED" "d" "true") }}
-{{- $rmqHostDefault := ternary (include "br-sta.rabbitmqHost" .) "" (eq (include "br-sta.rabbitmqEnabled" .) "true") }}
-RABBITMQ_HOST: {{ include $dv (dict "context" $ "dedicated" $dsDed "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" $rmqHostDefault) | quote }}
-RABBITMQ_SCHEME: {{ include $dv (dict "context" $ "dedicated" $dsDed "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_SCHEME" "default" "amqp") | quote }}
+{{- $rmqBundled := eq (include "br-sta.rabbitmqEnabled" .) "true" }}
+{{- $rmqHostDefault := ternary (include "br-sta.rabbitmqHost" .) "" $rmqBundled }}
+{{- $rmqHost := include $dv (dict "context" $ "dedicated" $dsDed "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" $rmqHostDefault) }}
+{{- $rmqScheme := include $dv (dict "context" $ "dedicated" $dsDed "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_SCHEME" "default" "amqp") }}
+{{- $rmqMgmtPort := include $dv (dict "context" $ "dedicated" $dsDed "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") }}
+RABBITMQ_HOST: {{ $rmqHost | quote }}
+RABBITMQ_SCHEME: {{ $rmqScheme | quote }}
 RABBITMQ_PORT_AMQP: {{ include $dv (dict "context" $ "dedicated" $dsDed "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
-RABBITMQ_PORT_HOST: {{ include $dv (dict "context" $ "dedicated" $dsDed "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") | quote }}
+RABBITMQ_PORT_HOST: {{ $rmqMgmtPort | quote }}
 RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "vhost" "k" "RABBITMQ_VHOST" "d" "/") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "exchange" "k" "RABBITMQ_EXCHANGE" "d" "events") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "queue" "k" "RABBITMQ_QUEUE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "healthCheckUrl" "k" "RABBITMQ_HEALTH_CHECK_URL" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "healthCheckAllowedHosts" "k" "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS" "opt" true) }}
+{{- /* lib-commons dials the management API health check on EVERY connect and
+   refuses an empty URL, so it defaults to the broker's own management endpoint
+   (https for an amqps broker), with the broker host as the SSRF allowlist. The
+   bundled broker serves it over plain HTTP, hence its insecure opt-in default. */}}
+{{- $rmqHealthHost := trimSuffix "." $rmqHost }}
+{{- $rmqHealthDefault := "" }}
+{{- if $rmqHealthHost }}{{- $rmqHealthDefault = printf "%s://%s:%v/api/health/checks/alarms" (ternary "https" "http" (eq $rmqScheme "amqps")) $rmqHealthHost $rmqMgmtPort }}{{- end }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "healthCheckUrl" "k" "RABBITMQ_HEALTH_CHECK_URL" "d" $rmqHealthDefault "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "healthCheckAllowedHosts" "k" "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS" "d" $rmqHealthHost "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "requireHealthAllowedHosts" "k" "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureHealthCheck" "k" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" "d" "false") }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureHealthCheck" "k" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" "d" (ternary "true" "false" $rmqBundled)) }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureTls" "k" "RABBITMQ_ALLOW_INSECURE_TLS" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherConfirmTimeoutMs" "k" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "d" "5000") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryInitialMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "d" "1000") }}
@@ -1057,6 +1068,12 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- /* With useExistingSecret a full RABBITMQ_URL may live in the operator Secret. */ -}}
 {{- if and $rmqOn (not (index $data "RABBITMQ_HOST")) (not (include "br-sta.provided" (dict "context" $ "key" "RABBITMQ_URL"))) (not $c.useExistingSecret) -}}
 {{- fail "\n\nERROR: br-sta: RABBITMQ_HOST (or a full RABBITMQ_URL secret) is required when RABBITMQ_ENABLED=true (the default: the audit transport is mandatory in production).\n  set: global.datastores.broker.host (or common.secrets.RABBITMQ_URL), or enable the bundled rabbitmq subchart\n" -}}
+{{- end -}}
+{{- if and $rmqOn (not (trim (toString (index $data "RABBITMQ_HEALTH_CHECK_URL" | default "")))) -}}
+{{- fail "\n\nERROR: br-sta: RABBITMQ_HEALTH_CHECK_URL is required when RABBITMQ_ENABLED=true (lib-commons checks the management API on every connect and refuses an empty URL). It defaults to <http|https>://<broker host>:<broker port>/api/health/checks/alarms once global.datastores.broker.host is set.\n  set: common.rabbitmq.healthCheckUrl (or global.datastores.broker.host / .port)\n" -}}
+{{- end -}}
+{{- if and $rmqOn (hasPrefix "http://" (toString (index $data "RABBITMQ_HEALTH_CHECK_URL" | default ""))) (ne (include $isTrue (index $data "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK")) "true") -}}
+{{- fail "\n\nERROR: br-sta: RABBITMQ_HEALTH_CHECK_URL is plain http but RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK is not true (lib-commons refuses basic auth over http).\n  set: an https management endpoint (global.datastores.broker.scheme: amqps / common.rabbitmq.healthCheckUrl), or common.rabbitmq.allowInsecureHealthCheck=true (non-production)\n" -}}
 {{- end -}}
 {{- if and $rmqOn $prod (not (include "br-sta.provided" (dict "context" $ "key" "RABBITMQ_URL"))) (not (eq (include "br-sta.rabbitmqEnabled" .) "true")) -}}
 {{- include $req (dict "context" $ "key" "RABBITMQ_DEFAULT_PASS" "secret" true "why" "in production (the app otherwise falls back to guest)" "set" "common.secrets.RABBITMQ_DEFAULT_PASS (or a full common.secrets.RABBITMQ_URL)") -}}

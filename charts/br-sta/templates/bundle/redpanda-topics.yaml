@@ -46,7 +46,8 @@ template:
           - -ec
           - |
             i=0
-            until rpk cluster health -X brokers="$BROKERS" 2>/dev/null | grep -q 'Healthy:.*true'; do
+            # Kafka API readiness (rpk cluster health talks to the admin API, not -X brokers).
+            until rpk topic list -X brokers="$BROKERS" >/dev/null 2>&1; do
               i=$((i + 1)); [ "$i" -ge 120 ] && { echo "timeout waiting for $BROKERS"; exit 1; }
               echo "waiting for $BROKERS..."; sleep 5
             done

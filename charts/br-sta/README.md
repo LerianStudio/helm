@@ -146,8 +146,8 @@ Shared (`common.*`):
 | `redis.readTimeout` / `writeTimeout` / `dialTimeout` / `poolTimeout` | `REDIS_READ_TIMEOUT` / `REDIS_WRITE_TIMEOUT` / `REDIS_DIAL_TIMEOUT` / `REDIS_POOL_TIMEOUT` | `3` / `3` / `5` / `2` |
 | `redis.maxRetries` / `minRetryBackoff` / `maxRetryBackoff` / `masterName` | `REDIS_MAX_RETRIES` / `REDIS_MIN_RETRY_BACKOFF` / `REDIS_MAX_RETRY_BACKOFF` / `REDIS_MASTER_NAME` | `3` / `8` / `1` / unset |
 | `rabbitmq.enabled` / `vhost` / `exchange` / `queue` | `RABBITMQ_ENABLED` / `RABBITMQ_VHOST` / `RABBITMQ_EXCHANGE` / `RABBITMQ_QUEUE` | `true` / `/` / `events` / unset |
-| `rabbitmq.healthCheckUrl` / `healthCheckAllowedHosts` | `RABBITMQ_HEALTH_CHECK_URL` / `RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS` | unset |
-| `rabbitmq.requireHealthAllowedHosts` / `allowInsecureHealthCheck` / `allowInsecureTls` | `RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS` / `RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK` / `RABBITMQ_ALLOW_INSECURE_TLS` | `false` / `false` / `false` |
+| `rabbitmq.healthCheckUrl` / `healthCheckAllowedHosts` | `RABBITMQ_HEALTH_CHECK_URL` / `RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS` | `<http\|https>://<broker host>:<broker port>/api/health/checks/alarms` (https for an `amqps` broker) / the broker host. lib-commons checks the management API on every connect and refuses an empty URL |
+| `rabbitmq.requireHealthAllowedHosts` / `allowInsecureHealthCheck` / `allowInsecureTls` | `RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS` / `RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK` / `RABBITMQ_ALLOW_INSECURE_TLS` | `false` / `true` only with the bundled (plain-HTTP) broker, else `false` / `false` |
 | `rabbitmq.publisherConfirmTimeoutMs` / `publisherRecoveryInitialMs` / `publisherRecoveryMaxMs` / `publisherMaxRecoveries` | `RABBITMQ_PUBLISHER_*` | `5000` / `1000` / `30000` / `10` |
 | `outbox.enabled` / `tableName` / `allowEmptyTenant` | `OUTBOX_ENABLED` / `OUTBOX_TABLE_NAME` / `OUTBOX_ALLOW_EMPTY_TENANT` | `true` / `outbox_events` / `true` |
 | `outbox.dispatchIntervalSec` / `batchSize` / `publishMaxAttempts` / `publishBackoffMs` | `OUTBOX_DISPATCH_INTERVAL_SEC` / `OUTBOX_BATCH_SIZE` / `OUTBOX_PUBLISH_MAX_ATTEMPTS` / `OUTBOX_PUBLISH_BACKOFF_MS` | `2` / `50` / `3` / `200` |
@@ -228,7 +228,7 @@ The render fails with the exact value to set (mirroring the app's boot validatio
 
 - `MASTER_KEYS` is missing, malformed (not `version:key`, or not hex under `envvar`), or `MASTER_KEY_VERSION` is not one of its versions; `MASTER_KEY_KMS_KEY_ID` is missing under `aws-kms`;
 - `PLUGIN_AUTH_ENABLED` is `false` outside a development-class environment (or with `DEPLOYMENT_MODE=saas`), or `true` without `PLUGIN_AUTH_HOST`;
-- `POSTGRES_HOST` / `REDIS_HOST` are empty in single-tenant mode; RabbitMQ is enabled without a host or `RABBITMQ_URL`;
+- `POSTGRES_HOST` / `REDIS_HOST` are empty in single-tenant mode; RabbitMQ is enabled without a host or `RABBITMQ_URL`, without a management health-check URL, or with a plain-`http` health-check URL but no `allowInsecureHealthCheck`;
 - production lacks `POSTGRES_PASSWORD`, `RABBITMQ_DEFAULT_PASS`, `LICENSE_KEY`, `ORGANIZATION_IDS` or the transfer bucket, uses `sslmode=disable`, disables RabbitMQ, the outbox or the business channel, or allows insecure RabbitMQ TLS / health checks;
 - streaming is on without `STREAMING_BROKERS`, a SASL mechanism is set without a username/password or without TLS, or `STREAMING_CLOUDEVENTS_SOURCE` is anything but `br-sta`;
 - multi-tenancy is on without the tenant-manager URL, its Redis host, the service API key or inbound auth;

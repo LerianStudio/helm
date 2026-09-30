@@ -12,7 +12,7 @@
 
 | Campo | Valor |
 |---|---|
-| Produto / Chart | `br-sisbajud-helm` (release **1.2.0**) / app **1.1.0** |
+| Produto / Chart | `br-sisbajud-helm` (release **1.2.0**; o pipeline de release define a versão, então o `Chart.yaml` da branch ainda mostra `1.1.0`) / app **1.1.0** |
 | Componentes | um binário Go (API HTTP `:4029` + workers de background), Job de migrations, Job de tópicos |
 | Imagens | `ghcr.io/lerianstudio/br-sisbajud`, `br-sisbajud-migrations`, `br-sisbajud-topics` (todas privadas no GHCR) |
 | Guia de upgrade | vindo do chart 1.1.x: [`UPGRADE-1.2.md`](UPGRADE-1.2.md) |
@@ -23,7 +23,7 @@
 
 ## 1. Perfis de instalação
 
-> **A infraestrutura embutida é apenas para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada.** Produção significa PostgreSQL com TLS, Valkey/Redis, Kafka/Redpanda com TLS, Vault/OpenBao fora do modo dev (ou AWS KMS) e object storage S3. Os subcharts embutidos `postgresql`, `valkey`, `seaweedfs`, `openbao` e `redpanda` existem para instalações de desenvolvimento, POC e quickstart. O render recusa os bundles de OpenBao e Redpanda num ambiente com cara de produção. Os bundles de PostgreSQL, Valkey e SeaweedFS só recebem um aviso no NOTES nesse caso, mas também não são suportados em produção.
+> **A infraestrutura embutida é apenas para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada.** Produção significa PostgreSQL com TLS, Valkey/Redis, Kafka/Redpanda com TLS, Vault/OpenBao fora do modo dev (ou AWS KMS) e object storage S3. Os subcharts embutidos `postgresql`, `valkey`, `seaweedfs`, `openbao` e `redpanda` existem para instalações de desenvolvimento, POC e quickstart. O render recusa os bundles de OpenBao e Redpanda fora de um ambiente da classe dev (`local`, `development`, `develop`, `dev`, `test`, `e2e`; staging incluído). Os bundles de PostgreSQL, Valkey e SeaweedFS só recebem um aviso no NOTES num ambiente com cara de produção, mas também não são suportados em produção.
 
 | Perfil | Values | O que roda | Uso |
 |---|---|---|---|
@@ -79,6 +79,16 @@ dependências embutidas, o pod da app roda initContainers idempotentes (migratio
 espera do broker, tópicos, mount do Transit) antes de subir, então nunca sobe sem
 schema, tópicos ou Transit montado.
 
+Esperado com o release no ar:
+
+| Pods (Running) | Jobs (Complete) |
+|---|---|
+| `br-sisbajud-*`, `br-sisbajud-postgresql-0`, `br-sisbajud-valkey-primary-0`, `br-sisbajud-openbao-0`, `redpanda-0`, `seaweedfs-master-0`, `seaweedfs-volume-0`, `seaweedfs-filer-0`, `seaweedfs-s3-*` | `br-sisbajud-migrations`, `br-sisbajud-openbao-transit`, `br-sisbajud-seaweedfs-buckets`, `br-sisbajud-topics` |
+
+Com uma dependência embutida esses Jobs são hooks post-install/post-upgrade só com
+`before-hook-creation`, então ficam `Complete` até o `ttlSecondsAfterFinished` (600 s)
+removê-los. O próximo upgrade os substitui.
+
 ### br-sisbajud + br-sta juntos (comprovado em minikube)
 
 ```bash
@@ -101,6 +111,12 @@ br-sta sozinho levou cerca de 105 s), **0 restarts**:
 | Pods (Running) | Jobs (Complete) |
 |---|---|
 | `br-sisbajud-*`, `br-sisbajud-postgresql-0`, `br-sisbajud-valkey-primary-0`, `br-sisbajud-openbao-0` | `br-sisbajud-migrations`, `br-sisbajud-openbao-transit` |
+
+O `br-sisbajud-topics` também roda aqui, mas não como Job de bundle: o Redpanda que ele
+usa é o do br-sta, externo do ponto de vista do br-sisbajud. Por isso ele é um hook
+`pre-install`/`pre-upgrade` com `hook-succeeded`, e o Helm o apaga quando termina com
+sucesso. `helm get hooks br-sisbajud -n sisb-dev` mostra o hook; uma execução com falha
+fica para os logs.
 
 Os tópicos `lerian.streaming.br-sisbajud`, `.dlq` e `.commands` são criados no Redpanda
 do br-sta, ao lado de `lerian.streaming.br-sta`.
@@ -231,10 +247,30 @@ boot quando os transfers estão ligados mas o caminho de submissão não pôde s
 1. Provisione PostgreSQL, Valkey, os buckets S3 (`global.objectStorage.sisbajud.bucket`
    e o bucket de transfer do br-sta), Vault Transit (ou AWS KMS) e o broker.
 2. Crie o Secret fora do chart (`brSisbajud.useExistingSecret` + `existingSecretName`)
-   ou preencha `brSisbajud.secrets` com placeholders `<path:...>`; crie o pull secret do GHCR.
-3. `helm install`. Contra infra externa os Jobs de migrations e tópicos são hooks Helm
-   `pre-install/pre-upgrade` + PreSync do ArgoCD, então a app nunca sobe sem schema.
-4. Cadastre as instituições pela API admin (`POST /v1/institutions`).
+   ou preencha `brSisbajud.secrets` com placeholders `<path:...>`.
+3. Crie o pull secret do GHCR. O default do chart é `ghcr-credential`
+   (`imagePullSecrets: [{name: ghcr-credential}]`):
+
+   ```bash
+   kubectl -n <namespace> create secret docker-registry ghcr-credential \
+     --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
+   ```
+
+   Com um Secret de outro nome, sobrescreva a lista raiz, usada pelos pods da app, de
+   migrations, tópicos e buckets: `imagePullSecrets: [{name: <seu-secret>}]`.
+4. `helm install` a partir do registry OCI, fixando a versão do chart:
+
+   ```bash
+   helm install br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 1.2.0 \
+     -n <namespace> -f my-values.yaml
+   ```
+
+   A versão do chart é definida pelo pipeline de release no merge, então o `Chart.yaml`
+   de uma branch ainda mostra a versão anterior (`1.1.0`) até o `1.2.0` ser publicado.
+   Instale uma versão publicada do registry, nunca um checkout de branch. Contra infra
+   externa os Jobs de migrations e tópicos são hooks Helm `pre-install/pre-upgrade` +
+   PreSync do ArgoCD, então a app nunca sobe sem schema.
+5. Cadastre as instituições pela API admin (`POST /v1/institutions`).
 
 ---
 
@@ -275,7 +311,7 @@ Ligação com o br-sta (valores agrupados em `brSisbajud.sta`): `consumerEnabled
 | Tema | O que saber | Antes de habilitar / como confirmar |
 |---|---|---|
 | Render fail-fast | Espelha a validação de boot da app: `STA_INBOUND_BUCKET` sempre; host de Postgres/Redis em single-tenant; provider do KMS + credenciais; brokers/SASL/TLS do streaming; `LICENSE_KEY` + senha do Postgres em ambiente tipo produção; credenciais do cliente de transfers do STA / auth de entrada / publisher de declaração; URL/Redis/API key do multi-tenant; `ORGANIZATION_IDS` precisa ser `global` | Leia o erro do render: ele diz exatamente o valor |
-| Guarda de produção | `openbao` (modo dev, chaves em memória) e `redpandaBundle` são recusados fora de `local`/`development`/`staging`/`e2e`/`test` | `helm template ... --set global.env.name=production` com o dev bundle falha citando os dois |
+| Guarda dos bundles dev-only | `openbao` (modo dev, chaves em memória) e `redpandaBundle` são recusados fora de `local`/`development`/`develop`/`dev`/`test`/`e2e` (staging incluído). Independe dos relaxamentos da própria app, que `staging` continua tendo | `helm template ... --set global.env.name=production` com o dev bundle falha citando os dois |
 | OpenBao modo dev | Reiniciar o pod do OpenBao perde todas as chaves Transit: linhas criptografadas antes ficam ilegíveis | Só dev/avaliação; resete o banco junto |
 | Cliente de transfers do STA | Precisa de um plugin-access-manager acessível para emitir o bearer m2m | Sem ele, o envio de arquivo de retorno ao br-sta falha |
 | Fatos do br-sta de transfers desconhecidos | Comportamento conhecido da app: um fato em `lerian.streaming.br-sta` de um transfer que o br-sisbajud não criou é tratado como transitório e segura a partição | Acompanhe `sta_consumer` no `/readyz` (`degraded`, `consumer_not_polling`) |
@@ -296,7 +332,7 @@ curl -s localhost:14029/health     # path do liveness probe
 | Checagem | Comando/URL | Esperado | Se não bater, verifique primeiro |
 |---|---|---|---|
 | Pods | `kubectl get pods` | app `1/1 Running`, 0 restarts | `CrashLoopBackOff`: o log diz a dependência que falta |
-| Jobs | `kubectl get jobs` | migrations (e em dev `openbao-transit`, buckets, tópicos) `Complete` | Host/senha do Postgres; acesso ao broker para os tópicos |
+| Jobs | `kubectl get jobs` | Dev bundle: `migrations`, `openbao-transit`, `seaweedfs-buckets`, `topics` `Complete` (até o TTL de 600 s). Infra externa: Helm e ArgoCD apagam os Jobs de hook de migrations/tópicos quando terminam com sucesso, então nenhum Job restante significa sucesso | Um Job `Failed` (mantido para os logs): host/senha do Postgres; acesso ao broker para os tópicos |
 | Readiness | `GET /readyz` | `healthy`; `postgres`, `redis`, `kms`, `seaweedfs`, `streaming` `up`; com o br-sta ligado: `sta_bucket_parity` `up` e `sta_consumer` `up` | `sta_bucket_parity` down: bucket/endpoint sta diferentes dos do br-sta |
 | Integração com br-sta (comprovada) | crie um transfer no br-sta (ver o runbook do br-sta): o mock STA leva a `Accepted` e o br-sta publica um fato em `lerian.streaming.br-sta` | O fato chega ao consumer STA do br-sisbajud (grupo `sisbajud-sta-consumer`) | Um fato de transfer que o br-sisbajud não criou é reprocessado (seção 5) |
 | Não exercitado | br-sisbajud → br-sta `POST /v1/transfers` (precisa de plugin-access-manager e de instituições/ordens cadastradas); arquivos inbound do BACEN/mock até o br-sisbajud; a recepção HTTP standalone `POST /v1/remittance-files/notifications` (documentada a partir do código, seção 3) | — | — |
@@ -315,3 +351,27 @@ curl -s localhost:14029/health     # path do liveness probe
 | Boot recusado em produção, erros de licença | `LICENSE_KEY` ausente, ou sem egress até o gateway de licença (não há modo de licença offline nesta versão da app) | Sete a chave e libere o egress |
 | Chamadas do browser bloqueadas mesmo com origens CORS setadas | O middleware de CORS do lib-commons lê `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `brSisbajud.cors.allowedOrigins` (o chart mapeia); wildcard exige o opt-in explícito |
 | br-sta `1.0.0` "mais velho" que `1.2.0-beta.x` | A linha de versões do br-sta recomeçou no release estável: `1.0.0` é o release posterior e compatível | Fixe o br-sta em `1.0.0` explicitamente |
+
+---
+
+## 8. Rollback
+
+```bash
+helm history br-sisbajud -n <namespace>
+helm rollback br-sisbajud <revision> -n <namespace>
+```
+
+Com ArgoCD, reverta o commit de values/versão do chart no Git; um rollback manual é
+desfeito no próximo sync.
+
+- **Migrations só andam para frente.** O rollback reimplanta o chart e a imagem
+  anteriores, mas não reverte o schema: o Job de migrations só roda `migrate up`, e o
+  hook da revisão antiga o roda de novo sem efeito. Uma imagem antiga da app só é testada contra o
+  próprio schema e pode falhar contra um mais novo. Volte para uma imagem que conheça a versão atual do schema, ou restaure o
+  banco de um backup feito antes do upgrade. Faça esse backup antes de todo upgrade que
+  traga migrations.
+- **As chaves do KMS precisam sobreviver a todo rollback e reinstalação.** Dados
+  cifrados, como os arquivos de retorno guardados, são embrulhados pelas chaves Transit (`sisbajud-kek-*`)
+  no Vault/OpenBao, ou pela chave do AWS KMS. Nunca apague nem recrie essas chaves: um
+  dado cifrado com uma chave perdida é irrecuperável. É também por isso que o bundle
+  OpenBao em modo dev, com as chaves em memória, é só para dev.

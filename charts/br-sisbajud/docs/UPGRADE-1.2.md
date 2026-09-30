@@ -31,7 +31,7 @@ Chart 1.2 moves br-sisbajud to application **1.1.0** and productizes the chart o
 | Topics Job | Pre-1.1 per-event topics | `lerian.streaming.br-sisbajud` (+ `.dlq`, `.commands`) |
 | envFrom order | Secret, then ConfigMap | ConfigMap, then Secret (Secret wins) |
 
-**Backward compatibility.** Every key a 1.1.x install sets under `brSisbajud.configmap`, `brSisbajud.secrets` or `brSisbajud.extraEnvVars` keeps reaching the pod with the same value: the native key wins over every new parameter. The only exceptions are the keys the application no longer reads ([section 3](#3-keys-app-1x-no-longer-reads-are-dropped)). Rendering the dev-st, stg-st and stg-mt values of chart 1.1.0 with 2.0 and comparing the effective pod env (ConfigMap, Secret and `env:`) gives zero changed values. Only the new defaults are added, and `LEDGER_BALANCE_TOPIC` is removed.
+**Backward compatibility.** Every key a 1.1.x install sets under `brSisbajud.configmap`, `brSisbajud.secrets` or `brSisbajud.extraEnvVars` keeps reaching the pod with the same value: the native key wins over every new parameter. The only exceptions are the keys the application no longer reads ([section 3](#3-keys-app-1x-no-longer-reads-are-dropped)). Rendering the dev-st, stg-st and stg-mt values of chart 1.1.0 with 1.2.0 and comparing the effective pod env (ConfigMap, Secret and `env:`) gives zero changed values. Only the new defaults are added, and `LEDGER_BALANCE_TOPIC` is removed.
 
 ## Breaking Changes
 
@@ -95,7 +95,7 @@ A values mistake now fails the render with the key to set, instead of CrashLoopi
 - **Streaming SASL/TLS** through `global.streaming` + `brSisbajud.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`, validated at render (supported mechanism, username, TLS or explicit plaintext opt-in).
 - **Credentials only in the Secret**: `LICENSE_KEY`, `VAULT_TOKEN`, `VAULT_APPROLE_SECRET_ID`, `STA_CLIENT_SECRET`, `IDP_M2M_CLIENT_SECRET`, `SEAWEEDFS_*`, `MULTI_TENANT_SERVICE_API_KEY`, ...
 - **Config checksums** on the pod template: a ConfigMap or Secret change rolls the pods.
-- **Self-contained dev bundle** (`values-dev.yaml`): PostgreSQL, Valkey, SeaweedFS, OpenBao (dev mode) and Redpanda, with derived endpoints and idempotent bootstrap Jobs (buckets, Transit). OpenBao/Redpanda are refused in a production-like environment; PostgreSQL/Valkey/SeaweedFS only get a NOTES warning there but are unsupported in production. Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. See the README "Bundled infrastructure".
+- **Self-contained dev bundle** (`values-dev.yaml`): PostgreSQL, Valkey, SeaweedFS, OpenBao (dev mode) and Redpanda, with derived endpoints and idempotent bootstrap Jobs (buckets, Transit). OpenBao/Redpanda are refused outside a development-class environment (`local|development|develop|dev|test|e2e`; staging included); PostgreSQL/Valkey/SeaweedFS only get a NOTES warning in a production-like environment but are unsupported in production. Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. See the README "Bundled infrastructure".
 - **Optional bundled SeaweedFS** (`seaweedfs.enabled`, off by default) for dev and evaluation installs only, never production. The S3 endpoint derives from the subchart Service, and a hook Job creates the configured buckets (the app never creates them). See the README "Bundled infrastructure".
 
 ## Behavior Changes

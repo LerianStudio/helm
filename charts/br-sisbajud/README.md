@@ -152,7 +152,7 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `outbox.includeTenantMetrics` / `allowEmptyTenant` / `priorityEventTypes` | `OUTBOX_INCLUDE_TENANT_METRICS` / `OUTBOX_ALLOW_EMPTY_TENANT` / `OUTBOX_PRIORITY_EVENT_TYPES` | `false` / `true` / unset |
 | `streaming.cloudeventsSource` | `STREAMING_CLOUDEVENTS_SOURCE` | `br-sisbajud` (the app refuses any other value) |
 | `streaming.clientId` / `healthCheckTimeout` | `STREAMING_CLIENT_ID` / `STREAMING_HEALTH_CHECK_TIMEOUT` | unset / `2s` |
-| (global.streaming.enabled) | `STREAMING_ENABLED` | `true` (needs `OUTBOX_ENABLED=true`) |
+| (global.streaming.enabled) | `STREAMING_ENABLED` | `false` (when `true`, needs brokers and `OUTBOX_ENABLED=true`) |
 | `balanceConsumer.{group,dedupTtl,retryBudget}` | `BALANCE_CONSUMER_GROUP` / `BALANCE_DEDUP_TTL` / `BALANCE_CONSUMER_RETRY_BUDGET` | unset (app: `sisbajud-balance-consumer` / `24h` / `3`) |
 | `midaz.balanceTopic` / `balanceConsumerGroup` / `balanceDefaultAccountType` | `MIDAZ_BALANCE_TOPIC` / `MIDAZ_BALANCE_CONSUMER_GROUP` / `MIDAZ_BALANCE_DEFAULT_ACCOUNT_TYPE` | `lerian.streaming.ledger` / `sisbajud-midaz-balance-translator` / `deposit` |
 | `midaz.crmMode` / `manifestCheckInterval` | `MIDAZ_CRM_MODE` / `MIDAZ_MANIFEST_CHECK_INTERVAL` | `legacy` / `15m` |
@@ -200,6 +200,7 @@ The render fails with the exact value to set (mirroring `internal/bootstrap/conf
 - `POSTGRES_HOST` / `REDIS_HOST` are empty in single-tenant mode;
 - `KMS_PROVIDER` is not `vault`/`aws`, or its credentials are missing (`VAULT_ADDR`, AppRole role/secret id, `VAULT_TOKEN` in `production`, `AWS_REGION` for AWS KMS);
 - streaming is on without `STREAMING_BROKERS`, or a SASL mechanism is set without a username/password or without TLS;
+- streaming is off while `STREAMING_BROKERS` is set (`brSisbajud.configmap`) or `sta.consumerEnabled` is on (the app refuses both);
 - a production-like environment lacks `LICENSE_KEY` or the external Postgres password;
 - the STA transfers client, inbound auth or the declaration publisher is on without its host/client credentials;
 - multi-tenancy is on without the tenant-manager URL, its Redis host or the service API key;

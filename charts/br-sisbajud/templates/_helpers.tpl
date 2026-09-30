@@ -451,7 +451,7 @@ relaxations and the NOTES warnings.
 
 {{- define "br-sisbajud.streamingEnabledRaw" -}}
 {{- $cm := .Values.brSisbajud.configmap | default dict -}}
-{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "true") -}}
+{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") -}}
 {{- end -}}
 
 {{/*
@@ -929,7 +929,14 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- end -}}
 {{- /* Streaming: the app fails at boot when enabled without brokers. */ -}}
 {{- if eq (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true" -}}
-{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (streaming is on by default; disable it together with OUTBOX_ENABLED)" "set" "global.streaming.brokers") -}}
+{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (streaming is off by default; enable it together with brokers/TLS/SASL and keep OUTBOX_ENABLED=true)" "set" "global.streaming.brokers") -}}
+{{- else if or (index $data "STREAMING_BROKERS") (index $cm "STREAMING_BROKERS") -}}
+{{- /* The app refuses STREAMING_BROKERS with STREAMING_ENABLED=false (validateStreamingEnablement). */ -}}
+{{- fail "\n\nERROR: br-sisbajud: STREAMING_BROKERS is set while STREAMING_ENABLED=false (the app refuses to boot: the Midaz balance translator would publish into a no-op).\n  set: global.streaming.enabled=true, or unset brSisbajud.configmap.STREAMING_BROKERS\n" -}}
+{{- end -}}
+{{- /* The STA consumer reads br-sta's facts off STREAMING_BROKERS, which the app only accepts with streaming on. */ -}}
+{{- if and (eq (include "br-sisbajud.isTrue" (index $data "STA_CONSUMER_ENABLED")) "true") (ne (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true") -}}
+{{- fail "\n\nERROR: br-sisbajud: STA_CONSUMER_ENABLED=true requires STREAMING_ENABLED=true (the consumer needs STREAMING_BROKERS, which the app refuses while streaming is off).\n  set: global.streaming.enabled=true + global.streaming.brokers, or brSisbajud.sta.consumerEnabled=false\n" -}}
 {{- end -}}
 {{- /* STA transfers client (m2m to br-sta). */ -}}
 {{- if eq (include "br-sisbajud.isTrue" (index $data "STA_TRANSFERS_ENABLED")) "true" -}}

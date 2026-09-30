@@ -37,7 +37,10 @@ global:
     vaultMount: "transit"
     # awsRegion: "sa-east-1"           # <- REQUIRED for vendor: aws
   streaming:
-    brokers: ""                        # <- REQUIRED (streaming is on by default)
+    # Off by default: set true (with brokers/TLS/SASL) to publish events and consume
+    # br-sta's facts and the Midaz balance stream; OUTBOX_ENABLED stays true either way.
+    enabled: false
+    brokers: ""                        # <- REQUIRED when enabled
     tlsEnabled: true                   # required in production
     saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
     saslUsername: "br-sisbajud"
@@ -81,7 +84,7 @@ brSisbajud:
     # Institution credentials are set through the admin API, not this chart.
     crmMode: "embedded"                # <- REQUIRED: embedded for Midaz v4 (chart default: legacy)
   sta:
-    consumerEnabled: false
+    consumerEnabled: false             # true needs global.streaming.enabled + brokers
     expectedTenantSt: ""               # = br-sta's DEFAULT_TENANT_ID when the consumer is on
     transfersEnabled: false
     transfersBaseUrl: ""               # <- REQUIRED when transfersEnabled
@@ -104,7 +107,7 @@ brSisbajud:
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""                    # <- REQUIRED in production
     VAULT_APPROLE_SECRET_ID: ""        # <- REQUIRED for approle
-    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when saslMechanism is set
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when streaming is enabled with a saslMechanism
     STREAMING_TLS_CA_CERT: ""          # base64 PEM; the topics Job needs it when tlsEnabled
     SEAWEEDFS_ACCESS_KEY: ""
     SEAWEEDFS_SECRET_KEY: ""

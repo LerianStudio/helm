@@ -14,16 +14,234 @@
     },
     "global": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {}
+          }
+        },
+        "datastores": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "postgres": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "host": {},
+                "port": {},
+                "user": {},
+                "name": {},
+                "ssl": {},
+                "replicaHost": {}
+              }
+            }
+          }
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {},
+            "host": {}
+          }
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {},
+            "otlpEndpoint": {},
+            "deploymentEnvironment": {}
+          }
+        },
+        "multiTenant": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {},
+            "url": {}
+          }
+        },
+        "cloud": {
+          "type": "string"
+        }
+      }
     },
     "app": {
       "type": "object",
       "properties": {
         "configmap": {
-          "type": "object"
+          "type": "object",
+          "description": "Per-key overrides of the template-owned ConfigMap. Keys outside this list are not rendered by the chart; renamed/retired keys are accepted here only so the render can name their replacement.",
+          "propertyNames": {
+            "enum": [
+              "ACCESS_CONTROL_ALLOW_CREDENTIALS",
+              "ACCESS_CONTROL_ALLOW_HEADERS",
+              "ACCESS_CONTROL_ALLOW_METHODS",
+              "ACCESS_CONTROL_ALLOW_ORIGIN",
+              "ACCESS_CONTROL_EXPOSE_HEADERS",
+              "ACCOUNTING_ROUTES_CACHE_TTL_SEC",
+              "ACCOUNTING_ROUTES_ENABLED",
+              "ACCOUNTING_ROUTES_FETCH_TIMEOUT_SEC",
+              "ACCOUNT_VALIDATION_DISABLED",
+              "AGGRESSIVE_RATE_LIMIT_MAX",
+              "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+              "ALLOW_INSECURE_TLS",
+              "AWS_REGION",
+              "BTG_API_BASE_URL",
+              "BTG_AUTH_URL",
+              "BTG_COMMON_BASE_URL",
+              "BTG_CREDENTIAL_SYNC_INTERVAL",
+              "BTG_HTTP_TIMEOUT",
+              "BTG_MTLS_INBOUND_CERT_HEADER",
+              "BTG_MTLS_INBOUND_ENABLED",
+              "BTG_MTLS_OUTBOUND_CA_FILE",
+              "BTG_MTLS_OUTBOUND_CERT_FILE",
+              "BTG_MTLS_OUTBOUND_ENABLED",
+              "BTG_MTLS_OUTBOUND_KEY_FILE",
+              "BTG_TOKEN_REFRESH_INTERVAL",
+              "BTG_WEBHOOK_CERTIFICATE_URL",
+              "CIRCUIT_BREAKER_ENABLED",
+              "DB_METRICS_INTERVAL_SEC",
+              "DEPLOYMENT_MODE",
+              "ENABLE_TELEMETRY",
+              "ENV_NAME",
+              "EXAMPLE_STATUS_PROVIDER_MODE",
+              "HTTP_BODY_LIMIT_BYTES",
+              "HTTP_READ_BUFFER_SIZE",
+              "IDEMPOTENCY_RECORD_TTL_HOURS",
+              "INFRA_CONNECT_TIMEOUT_SEC",
+              "INTERNAL_WORKER_URL",
+              "LOG_LEVEL",
+              "M2M_CRM_TARGET_SERVICE",
+              "MIDAZ_ALLOW_INSECURE_HTTP",
+              "MIDAZ_AUTH_ENABLED",
+              "MIDAZ_CRM_URL",
+              "MIDAZ_DEFAULT_LEDGER_ID",
+              "MIDAZ_DEFAULT_ORG_ID",
+              "MIDAZ_LEDGER_URL",
+              "MIDAZ_ONBOARDING_URL",
+              "MIDAZ_TRANSACTION_URL",
+              "MIGRATION_LOCK_TIMEOUT_MS",
+              "MIGRATION_TIMEOUT_SEC",
+              "MULTI_TENANCY_ENABLED",
+              "MULTI_TENANT_ALLOW_INSECURE_HTTP",
+              "MULTI_TENANT_CACHE_TTL_MINUTES",
+              "MULTI_TENANT_CACHE_TTL_SEC",
+              "MULTI_TENANT_CB_THRESHOLD",
+              "MULTI_TENANT_CB_TIMEOUT_SEC",
+              "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+              "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+              "MULTI_TENANT_CLIENT_TIMEOUT_SEC",
+              "MULTI_TENANT_CREDENTIAL_SOURCE",
+              "MULTI_TENANT_DISCOVERY_INTERVAL_SEC",
+              "MULTI_TENANT_ENABLED",
+              "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+              "MULTI_TENANT_MANAGER_URL",
+              "MULTI_TENANT_MAX_TENANT_POOLS",
+              "MULTI_TENANT_POSTGRES_MODULE",
+              "MULTI_TENANT_SERVICE_NAME",
+              "MULTI_TENANT_TIMEOUT",
+              "MULTI_TENANT_URL",
+              "ORGANIZATION_IDS",
+              "OTEL_EXPORTER_OTLP_ENDPOINT",
+              "OTEL_LIBRARY_NAME",
+              "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+              "OTEL_RESOURCE_SERVICE_NAME",
+              "OTEL_RESOURCE_SERVICE_VERSION",
+              "OUTBOX_ALLOW_EMPTY_TENANT",
+              "OUTBOX_BATCH_SIZE",
+              "OUTBOX_DISPATCH_INTERVAL_SEC",
+              "OUTBOX_ENABLED",
+              "OUTBOX_INCLUDE_TENANT_METRICS",
+              "OUTBOX_MAX_DISPATCH_ATTEMPTS",
+              "OUTBOX_MAX_FAILED_PER_BATCH",
+              "OUTBOX_PRIORITY_EVENT_TYPES",
+              "OUTBOX_PROCESSING_TIMEOUT_SEC",
+              "OUTBOX_PUBLISH_BACKOFF_MS",
+              "OUTBOX_PUBLISH_MAX_ATTEMPTS",
+              "OUTBOX_RETRY_WINDOW_SEC",
+              "OUTBOX_TABLE_NAME",
+              "PLUGIN_AUTH_ADDRESS",
+              "PLUGIN_AUTH_ENABLED",
+              "POSTGRES_CONNECT_TIMEOUT_SEC",
+              "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+              "POSTGRES_CONN_MAX_LIFETIME_MINS",
+              "POSTGRES_DB",
+              "POSTGRES_HOST",
+              "POSTGRES_MAX_IDLE_CONNS",
+              "POSTGRES_MAX_OPEN_CONNS",
+              "POSTGRES_PORT",
+              "POSTGRES_REPLICA_DB",
+              "POSTGRES_REPLICA_HOST",
+              "POSTGRES_REPLICA_PORT",
+              "POSTGRES_REPLICA_SSLMODE",
+              "POSTGRES_REPLICA_USER",
+              "POSTGRES_SSLMODE",
+              "POSTGRES_USER",
+              "PROVIDER_CREDENTIAL_CLAIM_LEASE",
+              "RATE_LIMIT_ENABLED",
+              "RATE_LIMIT_MAX",
+              "RATE_LIMIT_READ",
+              "RATE_LIMIT_WINDOW_SEC",
+              "RATE_LIMIT_WRITE",
+              "RECONCILIATION_BOLETO_GRACE_PERIOD",
+              "RECONCILIATION_DELAY_MS",
+              "RECONCILIATION_INTERVAL",
+              "RECONCILIATION_LOOKBACK_HOURS",
+              "RECONCILIATION_MAX_BOLETOS_PER_CYCLE",
+              "RECONCILIATION_MAX_MONEY_ITEMS_PER_CYCLE",
+              "RECONCILIATION_MAX_PROVIDER_PAGES",
+              "RECONCILIATION_PAYMENT_GRACE_PERIOD",
+              "RECONCILIATION_WEBHOOK_CLAIM_LEASE",
+              "RECONCILIATION_WEBHOOK_SILENCE_WINDOW",
+              "RELAXED_RATE_LIMIT_MAX",
+              "RELAXED_RATE_LIMIT_WINDOW_SEC",
+              "SERVER_ADDRESS",
+              "SERVER_TLS_CERT_FILE",
+              "SERVER_TLS_KEY_FILE",
+              "SERVICE_TYPE",
+              "SWAGGER_ENABLED",
+              "TLS_TERMINATED_UPSTREAM",
+              "TRUSTED_PROXIES",
+              "VERSION",
+              "WEBHOOK_CONNECTION_GRACE_WINDOW_SEC",
+              "WEBHOOK_CONSUMER_INTERVAL",
+              "WEBHOOK_DISPATCHER_BATCH_SIZE",
+              "WEBHOOK_DISPATCHER_CLAIM_LEASE",
+              "WEBHOOK_DISPATCHER_INTERVAL",
+              "WEBHOOK_PUBLIC_BASE_URL",
+              "WEBHOOK_SKIP_URL_VALIDATION"
+            ]
+          }
         },
         "secrets": {
-          "type": "object"
+          "type": "object",
+          "description": "Per-key Secret values, each rendered only when set.",
+          "propertyNames": {
+            "enum": [
+              "BTG_CLIENT_ID",
+              "BTG_CLIENT_SECRET",
+              "BTG_WEBHOOK_HMAC_SECRET",
+              "BTG_WEBHOOK_SECRET",
+              "CREDENTIAL_ENCRYPTION_KEY",
+              "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS",
+              "INTERNAL_API_KEY",
+              "INTERNAL_API_KEY_PREVIOUS",
+              "LICENSE_KEY",
+              "MULTI_TENANT_SERVICE_API_KEY",
+              "PLUGIN_AUTH_CLIENT_ID",
+              "PLUGIN_AUTH_CLIENT_SECRET",
+              "POSTGRES_PASSWORD",
+              "POSTGRES_REPLICA_PASSWORD",
+              "PROVIDER_CLIENT_ID",
+              "PROVIDER_CLIENT_SECRET"
+            ]
+          }
         }
       },
       "additionalProperties": true
@@ -36,9 +254,32 @@
       "type": "object",
       "additionalProperties": true
     },
+    "aws": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "plugin-br-payments": {
       "type": "object",
       "additionalProperties": true
+    },
+    "datastores": {
+      "type": "object",
+      "description": "Datastore masks for this chart only (override global.datastores).",
+      "additionalProperties": false,
+      "properties": {
+        "postgres": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "host": {},
+            "port": {},
+            "user": {},
+            "name": {},
+            "ssl": {},
+            "replicaHost": {}
+          }
+        }
+      }
     }
   }
 }

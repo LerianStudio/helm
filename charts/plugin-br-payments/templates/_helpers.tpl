@@ -135,12 +135,60 @@ DEPENDENCY ENABLED HELPER
 ================================================================================
 */}}
 
+{{- /*
+"true" only when the bundled postgresql subchart is actually in play:
+postgresql.enabled is not explicitly "false" AND postgresql.external is not
+set. NOT `and (default true .Values.postgresql.enabled) ...` — Sprig's
+`default` substitutes its fallback for ANY "empty" input, and a Go bool
+`false` IS the zero value for its type, so `default true false` evaluates
+to `true`. That silently discarded an explicit postgresql.enabled=false
+override and made this helper report "bundled" even when a caller asked for
+external Postgres, which is exactly the exclusivity this helper exists to
+police (see templates/controlplane-migrations.yaml and
+templates/bootstrap-postgres.yaml, which gate on this helper resolving to
+"false" before ever running against a genuinely external Postgres).
+*/}}
 {{- define "postgresql.enabled" -}}
-{{- if and (default true .Values.postgresql.enabled) (not .Values.postgresql.external) -}}
+{{- if and (ne (.Values.postgresql.enabled | toString) "false") (not .Values.postgresql.external) -}}
 true
 {{- else -}}
 false
 {{- end -}}
+{{- end -}}
+
+{{- /*
+Exclusivity guard between the bundled postgresql subchart and
+global.externalPostgresDefinitions/postgresql.external, kept SEPARATE from
+the "postgresql.enabled" helper above on purpose: that helper is an OR of two
+flags (postgresql.enabled / postgresql.external) meant to answer "which host
+does this release talk to", but Chart.yaml's dependency condition
+(`condition: postgresql.enabled`) only ever reads the literal
+.Values.postgresql.enabled — it has no idea postgresql.external exists. So an
+operator who sets postgresql.external=true while leaving postgresql.enabled
+at its default true gets a "postgresql.enabled" helper that answers "false"
+(external) while Helm's own dependency condition still resolves true and
+renders the bundled StatefulSet/Service/Secret anyway. A gate built on the
+helper (templates/controlplane-migrations.yaml, templates/bootstrap-postgres.yaml)
+would then wrongly believe it is safe to render external-database Jobs while
+the bundled database is also present, producing the exact double-render/race
+this chart's exclusivity gates exist to prevent — with zero warning.
+
+This check is keyed on the SAME literal .Values.postgresql.enabled Chart.yaml
+itself uses, not the helper, and it fails closed on EITHER of the two ways an
+operator can signal "external": postgresql.external=true (README's documented
+path — postgresql.enabled left at its default true, only .external flipped)
+OR global.externalPostgresDefinitions.enabled=true. An earlier version of this
+guard checked only the externalPostgresDefinitions.enabled arm and let
+postgresql.enabled=true + postgresql.external=true through silently — the
+exact contradictory combination this guard exists to catch, since Chart.yaml
+would still render the bundled StatefulSet under it. Only actually turning off
+the literal postgresql.enabled (or turning off both external signals) avoids
+this fail().
+*/}}
+{{- define "plugin-br-payments.validatePostgresExclusivity" -}}
+{{- if and .Values.postgresql.enabled (or .Values.postgresql.external .Values.global.externalPostgresDefinitions.enabled) }}
+{{- fail "\n\nERROR: postgresql.enabled cannot be true at the same time as postgresql.external\n   or global.externalPostgresDefinitions.enabled.\n   Chart.yaml's postgresql dependency is gated on the literal postgresql.enabled\n   value alone (condition: postgresql.enabled), so leaving it at its default\n   true still renders the bundled PostgreSQL subchart even when\n   postgresql.external and/or global.externalPostgresDefinitions.enabled is\n   also set to true. Set postgresql.enabled: false to use an external Postgres\n   (postgresql.external / global.externalPostgresDefinitions), or leave both\n   postgresql.external and global.externalPostgresDefinitions.enabled false to\n   use the bundled one.\n" }}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -154,11 +202,8 @@ plugin-br-payments README.
 */}}
 
 {{- define "plugin-br-payments.validateRequired" -}}
-
-{{/* OUTBOX must be enabled for HTTP routes to register */}}
-{{- if ne (.Values.app.configmap.OUTBOX_ENABLED | toString) "true" }}
-{{- fail "\n\nERROR: app.configmap.OUTBOX_ENABLED must be \"true\".\n   plugin-br-payments only registers its routes when the outbox pattern is enabled.\n   See README -> 'Local Development Config'.\n" }}
-{{- end }}
+{{- include "plugin-br-payments.validateRetiredKeys" . -}}
+{{- $multiTenantEnabled := eq (include "plugin-br-payments.multiTenantEnabled" .) "true" }}
 
 {{/* BTG provider integration — required for any write operation */}}
 {{- if not .Values.app.configmap.BTG_API_BASE_URL }}
@@ -169,87 +214,17 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.configmap.BTG_AUTH_URL is REQUIRED.\n   Set the BTG OAuth2 token endpoint URL.\n" }}
 {{- end }}
 
-{{/* ONE tenancy toggle, and this refuses the other one rather than guessing.
+{{/* Renamed keys (MULTI_TENANCY_ENABLED and the five MULTI_TENANT_* the app
+     deprecated with it, the BTG_CLIENT_* pair, the ONBOARDING/TRANSACTION URLs) are
+     refused by validateRetiredKeys above, with the replacement named in the error. */}}
 
-     MULTI_TENANCY_ENABLED is the app's DEPRECATED spelling of MULTI_TENANT_ENABLED.
-     This chart no longer ships or reads it, so an overlay that still sets it would
-     read as single-tenant to every guard below — and a multi-tenant environment
-     would then be refused with "PROVIDER_CLIENT_ID is REQUIRED in single-tenant
-     mode", which points at the wrong problem. Failing here instead names the actual
-     fix in the message.
-
-     A hard fail rather than a warning, because the quiet outcome is worse than a
-     blocked render: the app resolves the canonical name through bare os.LookupEnv,
-     so once anything sets MULTI_TENANT_ENABLED the deprecated value stops being
-     adopted, and a deployment that reads as multi-tenant in its own values file
-     runs SINGLE-TENANT. There is no version of that which is safe to let through
-     silently. */}}
-{{- if hasKey .Values.app.configmap "MULTI_TENANCY_ENABLED" }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANCY_ENABLED was RENAMED to app.configmap.MULTI_TENANT_ENABLED.\n   The application deprecated the MULTI_TENANCY_ prefix; this chart now reads MULTI_TENANT_ENABLED only.\n   Rename the key in your values overlay — the value itself does not change.\n   Leaving both set is not supported: the app resolves the canonical name first, so the deprecated one would be ignored and a multi-tenant overlay would run single-tenant.\n" }}
-{{- end }}
-
-{{/* Same rename, same reason, for the five other MULTI_TENANT* keys the app
-     deprecated alongside MULTI_TENANCY_ENABLED
-     (internal/bootstrap/config_multitenant.go). The app still accepts each old
-     name as a WARN-logged alias at runtime, but this chart's own gates below
-     read the canonical name only — an overlay left on an old key becomes a
-     silent validation blind spot rather than a boot error, so refuse here and
-     name the exact replacement instead of guessing which spelling is live. */}}
-{{- if hasKey .Values.app.configmap "MULTI_TENANT_MANAGER_URL" }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_MANAGER_URL was RENAMED to app.configmap.MULTI_TENANT_URL.\n   Rename the key in your values overlay — the value itself does not change.\n" }}
-{{- end }}
-{{- if hasKey .Values.app.configmap "MULTI_TENANT_CLIENT_TIMEOUT_SEC" }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CLIENT_TIMEOUT_SEC was RENAMED to app.configmap.MULTI_TENANT_TIMEOUT.\n   Rename the key in your values overlay — the value itself does not change.\n" }}
-{{- end }}
-{{- if hasKey .Values.app.configmap "MULTI_TENANT_CACHE_TTL_MINUTES" }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CACHE_TTL_MINUTES was RENAMED to app.configmap.MULTI_TENANT_CACHE_TTL_SEC.\n   Rename the key in your values overlay AND convert the unit: minutes -> seconds (e.g. 60 -> 3600).\n" }}
-{{- end }}
-{{- if hasKey .Values.app.configmap "MULTI_TENANT_CB_THRESHOLD" }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CB_THRESHOLD was RENAMED to app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD.\n   Rename the key in your values overlay — the value itself does not change.\n" }}
-{{- end }}
-{{- if hasKey .Values.app.configmap "MULTI_TENANT_CB_TIMEOUT_SEC" }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CB_TIMEOUT_SEC was RENAMED to app.configmap.MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC.\n   Rename the key in your values overlay — the value itself does not change.\n" }}
-{{- end }}
-
-{{/* The OAuth2 credential pair — named for the ROLE, not the vendor, and required
-     only in SINGLE-TENANT mode.
-
-     RENAMED from BTG_CLIENT_ID / BTG_CLIENT_SECRET. plugin-br-payments is
-     provider-agnostic by design and BTG is its first adapter, not its only one; a
-     client id and a client secret are what any OAuth2 provider issues, unlike the
-     URLs and the webhook keys above, which point at something vendor-specific and
-     keep their BTG_ prefix. The app reads PROVIDER_CLIENT_ID /
-     PROVIDER_CLIENT_SECRET (internal/bootstrap/config.go). Note this reverses part
-     of the 1.0.0 rename — the deployment repositories' Vault field names were
-     PROVIDER_CLIENT_ID all along and never followed it.
-
-     ⛔ CONDITIONAL, AND THE UNCONDITIONAL VERSION WAS A DEFECT. In multi-tenant the
-     pair is resolved PER TENANT from the credential row, nothing reads these two,
-     and the app logs a WARN at boot naming each one left set. Demanding them
-     anyway made a legitimate multi-tenant deployment fail to render — verified
-     against this chart: `helm template` with the tenancy toggle on refused
-     with "app.secrets.BTG_CLIENT_ID is REQUIRED" before this change.
-
-     ONE toggle, and it is MULTI_TENANT_ENABLED — the name the app actually prefers.
-     MULTI_TENANCY_ENABLED is the app's DEPRECATED alias
-     (reconcileDeprecatedMultiTenantEnv) and this chart no longer ships or reads it.
-
-     ⛔ AND THE CHART MUST NOT SHIP A VALUE FOR MULTI_TENANT_ENABLED EITHER, which is
-     why values.yaml leaves it commented out. The app's reconciliation asks bare
-     os.LookupEnv for the canonical name, so a PRESENT BUT BLANK MULTI_TENANT_ENABLED
-     makes the canonical "set" and the deprecated alias is then NOT adopted. An
-     overlay that still says MULTI_TENANCY_ENABLED=true would silently run
-     SINGLE-TENANT. The ConfigMap template renders every key in app.configmap,
-     empty strings included, so a chart default here is not a harmless placeholder —
-     it is that silent mode flip. Overlays on the deprecated name keep working
-     precisely because the chart declares nothing.
-
-     An overlay still on the deprecated name therefore reads as single-tenant HERE
-     and keeps being asked for the pair. That is deliberate and safe: it is the
-     behaviour those overlays already have, the app still runs multi-tenant because
-     it adopts the alias, and the way out is to rename the toggle in the overlay —
-     not to make this guard guess. */}}
-{{- if ne (.Values.app.configmap.MULTI_TENANT_ENABLED | default "" | toString) "true" }}
+{{/* The provider OAuth2 pair — named for the ROLE, not the vendor (renamed from
+     BTG_CLIENT_ID / BTG_CLIENT_SECRET; the old names are refused above). Required
+     in SINGLE-TENANT only: in multi-tenant the pair is resolved per tenant from the
+     credential row, nothing reads these two, and the app WARNs at boot for each one
+     left set. Demanding them unconditionally made a valid multi-tenant deployment
+     fail to render. */}}
+{{- if not $multiTenantEnabled }}
 {{- if not .Values.app.secrets.PROVIDER_CLIENT_ID }}
 {{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_ID is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client ID in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
 {{- end }}
@@ -257,10 +232,6 @@ plugin-br-payments README.
 {{- if not .Values.app.secrets.PROVIDER_CLIENT_SECRET }}
 {{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_SECRET is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client secret in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
 {{- end }}
-{{- end }}
-
-{{- if not .Values.app.secrets.BTG_WEBHOOK_SECRET }}
-{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_SECRET is REQUIRED.\n   Set the BTG webhook bearer token in the secrets section.\n" }}
 {{- end }}
 
 {{/* Midaz Ledger URL — required for production.
@@ -271,9 +242,7 @@ plugin-br-payments README.
      environments that have not migrated yet; remove once all overlays use
      MIDAZ_LEDGER_URL. */}}
 {{- if not .Values.app.configmap.MIDAZ_LEDGER_URL }}
-{{- if not (and .Values.app.configmap.MIDAZ_ONBOARDING_URL .Values.app.configmap.MIDAZ_TRANSACTION_URL) }}
-{{- fail "\n\nERROR: app.configmap.MIDAZ_LEDGER_URL is REQUIRED.\n   Set the Midaz Ledger service URL.\n   (Deprecated: the former MIDAZ_ONBOARDING_URL + MIDAZ_TRANSACTION_URL pair is still accepted as a fallback.)\n" }}
-{{- end }}
+{{- fail "\n\nERROR: app.configmap.MIDAZ_LEDGER_URL is REQUIRED.\n   Set the Midaz Ledger service URL (one URL serves onboarding and transaction).\n" }}
 {{- end }}
 
 {{/* PostgreSQL password is single-sourced from the postgresql subchart Secret
@@ -282,18 +251,29 @@ plugin-br-payments README.
      for the bundled subchart the value is generated; for external Postgres the
      operator supplies postgresql.auth.existingSecret or app.secrets.POSTGRES_PASSWORD. */}}
 
-{{/* Multi-tenant required fields when enabled. Same single toggle as above, and
-     the same reason: the canonical name only. An overlay still on the deprecated
-     MULTI_TENANCY_ENABLED skips this block, and the app is the backstop — it
-     asserts MULTI_TENANT_URL is present when tenancy is on
-     (internal/bootstrap/config_multitenant.go), so the failure is a precise boot
-     error rather than a missing check. */}}
-{{- if eq (.Values.app.configmap.MULTI_TENANT_ENABLED | default "" | toString) "true" }}
-{{- if not .Values.app.configmap.MULTI_TENANT_URL }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{/* Multi-tenant required fields when enabled */}}
+{{- if $multiTenantEnabled }}
+{{- $mtCm := dict -}}
+{{- range $k, $v := (.Values.app.configmap | default dict) }}{{- if not (kindIs "invalid" $v) }}{{- $_ := set $mtCm $k $v -}}{{- end }}{{- end }}
+{{- if not (include "lerian-common.globalValue" (dict "context" . "configmap" $mtCm "block" "multiTenant" "field" "url" "nativeKey" "MULTI_TENANT_URL" "default" "")) }}
+{{- fail "\n\nERROR: MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Set global.multiTenant.url (env-wide) or app.configmap.MULTI_TENANT_URL.\n" }}
 {{- end }}
 {{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
 {{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{- end }}
+{{/* The app resolves this with strings.EqualFold(strings.TrimSpace(...), "vault")
+     (internal/bootstrap/config.go) — case-insensitive AND trimmed. Match that
+     trim-then-fold order here so a value like "Vault" or " vault " that boots
+     fine in the app doesn't fail this chart's render gate. */}}
+{{- if ne (trim (include "plugin-br-payments.cfg" (dict "root" . "key" "MULTI_TENANT_CREDENTIAL_SOURCE" "default" "vault")) | lower) "vault" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE must be \"vault\" (case-insensitive, whitespace-trimmed) when MULTI_TENANT_ENABLED=true.\n   The application fails closed at boot for any other value (empty, a typo, or the retired \"tenant_manager\" spelling) — there is no fallback credential source.\n" }}
+{{- end }}
+{{/* Helm's `not` only catches empty-string/nil: an all-whitespace value like
+     "   " would pass a bare `not` check and let the AWS SDK load with an
+     empty effective region, failing later on the first Secrets Manager call
+     instead of failing closed at render time. Validate the trimmed value. */}}
+{{- if not (trim (.Values.app.configmap.AWS_REGION | toString)) }}
+{{- fail "\n\nERROR: app.configmap.AWS_REGION is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle.\n" }}
 {{- end }}
 {{- end }}
 

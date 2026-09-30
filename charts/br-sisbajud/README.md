@@ -69,7 +69,7 @@ Every application env key is resolved with this precedence (lerian-common):
 
 `brSisbajud.configmap` and `brSisbajud.secrets` are empty by default. Pinning a native key there shadows the grouped/global parameter for that key.
 
-`brSisbajud.extraEnvVars` (a list of `{name, value|valueFrom}`) is rendered as explicit pod `env:` and wins over the ConfigMap and the Secret. The fail-fast gates and the topics Job also read it.
+`brSisbajud.secretRefs` (`{ENV_KEY: {name, key[, optional]}}`) references a key of a Secret the chart does not manage (e.g. synced by External Secrets) as an explicit `secretKeyRef` pod env entry. Credentials never need raw `extraEnvVars`, and the fail-fast gates and the migrations/topics Jobs honor them. `brSisbajud.extraEnvVars` (a list of `{name, value|valueFrom}`) is still rendered as explicit pod `env:`, after `secretRefs` and winning on a name clash, and wins over the ConfigMap and the Secret. The fail-fast gates and the topics Job also read it.
 
 ### Global contract
 
@@ -166,6 +166,7 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `swagger.description` / `host` / `schemes` | `SWAGGER_DESCRIPTION` / `SWAGGER_HOST` / `SWAGGER_SCHEMES` | unset |
 | `pagination.maxLimit` / `maxMonthDateRange` | `MAX_PAGINATION_LIMIT` / `MAX_PAGINATION_MONTH_DATE_RANGE` | `100` / `3` |
 | `admin.maxFileContentBytes` / `maxAuditVerifyWindow` | `ADMIN_MAX_FILE_CONTENT_BYTES` / `ADMIN_MAX_AUDIT_VERIFY_WINDOW` | `104857600` / unset |
+| `runtime.godebug` / `gotraceback` | `GODEBUG` / `GOTRACEBACK` | unset (e.g. `http2client=0` / `all`) |
 
 Chart-derived keys: `ENVIRONMENT_NAME`/`ENV_NAME` default to `production`; `POSTGRES_SSLMODE` defaults to `require` (`disable` with the bundled subchart); `VAULT_AUTH_METHOD` defaults to `token` and `VAULT_TRANSIT_MOUNT_PATH` to `transit`; `KMS_PROVIDER` defaults to `vault`; `MULTI_TENANT_ENABLED` and `PLUGIN_AUTH_ENABLED` default to `false`. `OTEL_EXPORTER_OTLP_ENDPOINT` is overridden on the pod by `http://$(HOST_IP):4317` (node-local collector) when telemetry is on and no endpoint is set.
 

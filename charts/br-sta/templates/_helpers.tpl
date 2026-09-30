@@ -1191,11 +1191,18 @@ subchart Secrets, and the node-local OTLP endpoint. Input: dict root, component.
 {{- end -}}
 
 {{/*
-br-sta.presyncAnnotations — ArgoCD PreSync hook annotations for the migrations
-Secret (weight -2) and Job (weight -1) against EXTERNAL Postgres: the database
-already exists, so the app never boots unmigrated. Input: weight.
+br-sta.presyncAnnotations — hook annotations for the migrations Secret (weight -2)
+and Job (weight -1) against EXTERNAL Postgres: the database already exists, so the
+app never boots unmigrated, under Helm (pre-install/pre-upgrade) and ArgoCD
+(PreSync) alike. Helm deletes both after the hook phase succeeds (the Secret is
+still there while the Job reads it, since Helm runs the hooks in weight order and
+only then applies the delete policy). ArgoCD keeps the Secret for the whole PreSync
+phase (BeforeHookCreation only). Input: weight, deletePolicy (ArgoCD).
 */}}
 {{- define "br-sta.presyncAnnotations" -}}
+helm.sh/hook: pre-install,pre-upgrade
+helm.sh/hook-weight: {{ .weight | quote }}
+helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 argocd.argoproj.io/hook: PreSync
 argocd.argoproj.io/hook-weight: {{ .weight | quote }}
 argocd.argoproj.io/hook-delete-policy: {{ .deletePolicy | default "BeforeHookCreation,HookSucceeded" }}

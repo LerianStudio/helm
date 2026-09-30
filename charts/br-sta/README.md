@@ -262,7 +262,7 @@ Set these once in an umbrella `global:` block and both charts agree.
 
 `migrations.enabled` (default `true`, single-tenant only — the runner refuses `MULTI_TENANT_ENABLED=true`) runs `ghcr.io/lerianstudio/br-sta-migrations` (golang-migrate). The Job follows the app's resolved Postgres connection; `migrations.postgres.*` overrides it field by field.
 
-- **External Postgres**: an ArgoCD **PreSync** Secret (`hook-weight: -2`) and Job (`-1`), so the app never boots unmigrated. The password comes from that Secret, `migrations.useExistingSecret`, or the app's existing Secret (`common.useExistingSecret`).
+- **External Postgres**: a Helm **pre-install/pre-upgrade** + ArgoCD **PreSync** hook Secret (`hook-weight: -2`) and Job (`-1`), so the app never boots unmigrated under either tool. Helm deletes both after the hook phase succeeds; ArgoCD keeps the Secret until the next hook run (`BeforeHookCreation`). The password comes from that Secret, `migrations.useExistingSecret`, or the app's existing Secret (`common.useExistingSecret`).
 - **Bundled Postgres**: the database is created in the same sync, so the Job is a regular resource created with the release; its initContainer waits for Postgres and the password comes from the subchart Secret.
 
 The Job is named after a hash of its spec (`<fullname>-migrations-<hash>`): a new image tag is a new Job, so the immutable `spec.template` never blocks an upgrade under Helm or ArgoCD. The pod is hardened (non-root, read-only rootfs, drop ALL, no service-account token) and carries native-sidecar mesh annotations.

@@ -446,7 +446,8 @@ worker:
 # SINGLE-TENANT ONLY: the runner refuses MULTI_TENANT_ENABLED=true, so the Job is
 # not rendered when multi-tenancy is on (tenant schemas are provisioned by the
 # tenant manager).
-#   External Postgres: ArgoCD PreSync Secret + Job (the app never boots unmigrated).
+#   External Postgres: Helm pre-install/pre-upgrade + ArgoCD PreSync Secret + Job
+#                      (the app never boots unmigrated).
 #   Bundled Postgres:  a regular Job created with the release (see README).
 # =============================================================================
 migrations:

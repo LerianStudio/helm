@@ -9,8 +9,8 @@ Connection: migrations.postgres.* override > the app's resolved POSTGRES_*
 and the app can never point at different databases.
 
 Ordering:
-  - EXTERNAL Postgres: an ArgoCD PreSync hook (weight -1, after its PreSync Secret
-    at -2), so the app never boots unmigrated.
+  - EXTERNAL Postgres: a Helm pre-install/pre-upgrade + ArgoCD PreSync hook
+    (weight -1, after its hook Secret at -2), so the app never boots unmigrated.
   - BUNDLED Postgres: the database is created in the same sync, so a PreSync hook
     would wait forever, and a post-install / PostSync hook would wait for an app
     that crash-loops until the schema exists. It is a regular Job created with the

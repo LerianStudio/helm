@@ -15,11 +15,13 @@ jobs:
     # main) instead of overwriting the mainline chart. release.yml releases from those
     # branches, so this closes the loop. Contract is additive between the two versions:
     # only the four legacy_* inputs appear, none removed or renamed, secrets unchanged.
-    # v1.76.0+ writes a single-service chart's image to the root .image.tag (and drops
-    # the orphan "<component>:" block older runs left) instead of .<component>.image.tag,
-    # which no template reads: product-console bumps moved appVersion but kept shipping
-    # the old image. v1.55.0 -> v1.78.1 leaves the inputs and secrets unchanged.
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@v1.78.1
+    # Pinned to the tier-2 channel like this repo's other shared workflows, not to a
+    # version: releases arrive when tier-2 is promoted. Since v1.76.0 it writes a
+    # single-service chart's image to the root .image.tag (and drops the orphan
+    # "<component>:" block older runs left) instead of .<component>.image.tag, which no
+    # template reads: product-console bumps moved appVersion but kept shipping the old
+    # image. Inputs and secrets are unchanged from v1.55.0.
+    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@tier-2
     with:
       payload: ${{ inputs.payload }}
       # develop is retired for this repo (see the PR template): mainline updates belong on main.

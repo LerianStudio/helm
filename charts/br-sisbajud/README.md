@@ -38,6 +38,8 @@ The Midaz ledger and CRM connectors are **not** configured through this chart: s
 $ helm install br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version <version> -n br-sisbajud --create-namespace -f my-values.yaml
 ```
 
+For a step-by-step installation (dev bundle, pairing with br-sta, production), validation and known errors, see the getting-started runbook: [English](docs/00-getting-start.en.md) · [Português](docs/00-getting-start.md).
+
 Start `my-values.yaml` from [`values-template.yaml`](values-template.yaml). It is in the canonical global-first shape.
 
 ## Upgrading
@@ -289,6 +291,6 @@ The postgresql / valkey / seaweedfs bundles are allowed in any environment, as i
 - **The OpenBao dev root token is generated per install.** It is a random 40-character value in the Secret named in `openbao.server.extraSecretEnvironmentVars` (default `br-sisbajud-openbao-dev-token`), reused on upgrade via `lookup`. OpenBao reads it as `BAO_DEV_ROOT_TOKEN_ID`, which wins over the subchart's plaintext `VAULT_DEV_ROOT_TOKEN_ID` default, so that default is not a working token. The app, the Transit Job and the `transit` initContainer read the same Secret, under the same `secretKey`. Under GitOps, where `lookup` sees nothing, set `openbaoDevToken.token` (an AVP placeholder) or the token rotates on every render. The Secret name is fixed: one bundled OpenBao per namespace.
 - **Images.** The `bitnami/*` tags that postgresql 16.3.5 / valkey 2.4.7 default to were removed from Docker Hub. The chart pins the same tags from `bitnamilegacy/*` (`postgresql:17.2.0-debian-12-r5`, `valkey:8.0.2-debian-12-r6`) by tag, with `global.security.allowInsecureImages: true`. SeaweedFS and the bucket Job run `chrislusf/seaweedfs:3.93`. OpenBao and the Transit Job run `quay.io/openbao/openbao:2.7.0`. Redpanda runs its chart default (`docker.redpanda.com/redpandadata/redpanda:v26.2.3`).
 - **The app, migrations and topics images** (`ghcr.io/lerianstudio/br-sisbajud*`) are private: the cluster needs a pull secret for GHCR. Top-level `imagePullSecrets` (default `ghcr-credential`) covers the app, migrations, topics and bucket pods; `brSisbajud/migrations/topics.imagePullSecrets` override it per workload.
-- **The bundled Valkey restarts once on the first `helm upgrade`** after install (upstream Bitnami: its `checksum/secret` is only stable once the generated password is reused via `lookup`). The password does not change.
+- **The bundled Valkey regenerates an empty password on every render** (upstream Bitnami), which rotates it and restarts Valkey and the app on each `helm upgrade`. `values-dev.yaml` pins public dev passwords for PostgreSQL and Valkey; set them explicitly in any other dev values file. After changing them, delete the PVCs (the Postgres volume keeps the first password).
 
 {% endraw %}

@@ -65,14 +65,26 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ $fullname }}
-          {{- /* Probe the SAME endpoints the app connects to: an explicit pod-env
-             override (secretRefs / extraEnvVars) of the connection keys wins over
-             the ConfigMap in the app container, so it must here too. Only these
-             three keys are copied; no credential reaches this container. */}}
+          {{- /* Probe the SAME endpoints the app connects to. In the app container the
+             Secret (envFrom, after the ConfigMap) wins over the ConfigMap, and an
+             explicit pod-env override (secretRefs / extraEnvVars) wins over both,
+             so the same order applies here. Only these three connection keys are
+             copied; no credential reaches this container. The Secret is read only
+             where it can carry them: an existing Secret (optional refs, so a key
+             it lacks keeps the ConfigMap value) or a chart Secret that sets them. */}}
+          {{- $waitKeys := list "POSTGRES_HOST" "POSTGRES_PORT" "REDIS_HOST" }}
           {{- $waitEnv := list }}
+          {{- $explicit := dict }}
           {{- range (include "br-sisbajud.podEnvList" . | fromYamlArray) }}
-          {{- if has .name (list "POSTGRES_HOST" "POSTGRES_PORT" "REDIS_HOST") }}
+          {{- if has .name $waitKeys }}
           {{- $waitEnv = append $waitEnv . }}
+          {{- $_ := set $explicit .name true }}
+          {{- end }}
+          {{- end }}
+          {{- $chartSecrets := .Values.brSisbajud.secrets | default dict }}
+          {{- range $k := $waitKeys }}
+          {{- if and (not (hasKey $explicit $k)) (or $.Values.brSisbajud.useExistingSecret (index $chartSecrets $k)) }}
+          {{- $waitEnv = append $waitEnv (dict "name" $k "valueFrom" (dict "secretKeyRef" (dict "name" $secretName "key" $k "optional" true))) }}
           {{- end }}
           {{- end }}
           {{- with $waitEnv }}

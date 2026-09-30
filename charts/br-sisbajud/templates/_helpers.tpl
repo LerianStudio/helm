@@ -334,6 +334,36 @@ resolution, CORS mirroring) reads this list.
 {{- end -}}
 
 {{/*
+br-sisbajud.effectiveEnvEntry — the env entry the app container actually gets for
+one key, as JSON: the explicit pod env entry (secretRefs / extraEnvVars, verbatim
+incl. valueFrom) when present, else {name, value} from the rendered ConfigMap
+(or `default`). Init containers that probe or reuse an app connection key read
+this, so they can never target a different endpoint than the app.
+Input: dict "context" . "name" KEY ["default" VALUE].
+*/}}
+{{- define "br-sisbajud.effectiveEnvEntry" -}}
+{{- $ctx := .context -}}
+{{- $entry := dict -}}
+{{- range (include "br-sisbajud.podEnvList" $ctx | fromYamlArray) -}}{{- if eq (toString .name) $.name -}}{{- $entry = . -}}{{- end -}}{{- end -}}
+{{- if not $entry -}}
+{{- $data := include "br-sisbajud.configmapData" $ctx | fromYaml -}}
+{{- $entry = dict "name" .name "value" (index $data .name | default .default | default "" | toString) -}}
+{{- end -}}
+{{- toJson $entry -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.waitBrokerScript — waits for the first endpoint of $STREAMING_BROKERS,
+read at runtime so a valueFrom entry works too.
+*/}}
+{{- define "br-sisbajud.waitBrokerScript" -}}
+HP="${STREAMING_BROKERS%%,*}"; HP="$(echo "$HP" | tr -d ' ')"; H="${HP%:*}"; P="${HP##*:}";
+echo "waiting for broker $H:$P...";
+until nc -z "$H" "$P"; do echo "broker $H:$P not ready, waiting..."; sleep 5; done;
+echo "broker is ready"
+{{- end -}}
+
+{{/*
 br-sisbajud.extraEnv — brSisbajud.extraEnvVars as a YAML map {NAME: value},
 with "__valueFrom__" for entries sourced via valueFrom. Lets the fail-fast gates
 and the topics Job see values an operator supplies as explicit pod env (the
@@ -1092,20 +1122,27 @@ migrations/topics Jobs are PreSync hooks and already run first.
 {{- $wait := .Values.brSisbajud.waitImage | default "busybox:1.36" -}}
 {{- $secretName := ternary .Values.brSisbajud.existingSecretName (include "br-sisbajud.fullname" .) .Values.brSisbajud.useExistingSecret -}}
 {{- if and .Values.migrations.enabled (eq (include "br-sisbajud.postgresInternal" .) "true") }}
+{{- /* The migrations hook Secret is a post-install hook here (created after the
+   Deployment, deleted once the hooks succeed), so this initContainer can never
+   read it: a hook-sourced password would wedge every pod start. */ -}}
+{{- if eq (include "br-sisbajud.migrationsConn" . | fromYaml).hookSecret "true" }}
+{{- fail "\n\nERROR: br-sisbajud: migrations.postgres.password cannot be used with the bundled postgresql.\n  The app's migrations initContainer would read it from the migrations hook Secret, which only exists while the post-install hooks run.\n  unset: migrations.postgres.password (the bundled subchart Secret is used), or set migrations.useExistingSecret + migrations.existingSecretName\n" }}
+{{- end }}
 {{ include "br-sisbajud.migrationsContainer" . }}
 {{- end }}
 {{- $streamingOn := eq (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true" }}
 {{- if and .Values.topics.enabled $streamingOn (eq (include "br-sisbajud.redpandaEnabled" .) "true") }}
-{{- $first := first (splitList "," (index $data "STREAMING_BROKERS" | default "")) | trim }}
+{{- $brokersEnv := include "br-sisbajud.effectiveEnvEntry" (dict "context" . "name" "STREAMING_BROKERS") | fromJson }}
+{{- $tlsEnv := include "br-sisbajud.effectiveEnvEntry" (dict "context" . "name" "STREAMING_TLS_ENABLED" "default" "false") | fromJson }}
 - name: wait-for-broker
   image: {{ $wait }}
+  env:
+    - {{ toYaml $brokersEnv | nindent 6 | trim }}
   command:
     - /bin/sh
     - -c
     - >
-      HP="{{ $first }}"; H="${HP%:*}"; P="${HP##*:}";
-      until nc -z "$H" "$P"; do echo "broker $H:$P not ready, waiting..."; sleep 5; done;
-      echo "broker is ready"
+      {{- include "br-sisbajud.waitBrokerScript" . | nindent 6 }}
   securityContext:
     {{- toYaml $sc | nindent 4 }}
 - name: topics
@@ -1120,10 +1157,8 @@ migrations/topics Jobs are PreSync hooks and already run first.
       value: {{ .Values.topics.partitions | default 1 | quote }}
     - name: TOPIC_REPLICAS
       value: {{ .Values.topics.replicationFactor | default 1 | quote }}
-    - name: STREAMING_BROKERS
-      value: {{ index $data "STREAMING_BROKERS" | quote }}
-    - name: STREAMING_TLS_ENABLED
-      value: {{ index $data "STREAMING_TLS_ENABLED" | default "false" | quote }}
+    - {{ toYaml $brokersEnv | nindent 6 | trim }}
+    - {{ toYaml $tlsEnv | nindent 6 | trim }}
   securityContext:
     {{- toYaml $sc | nindent 4 }}
   volumeMounts:

@@ -90,20 +90,20 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if eq (include "br-sisbajud.redpandaEnabled" .) "true" }}
-      {{- $brokers := index $data "STREAMING_BROKERS" | default "" }}
-      {{- $first := first (splitList "," $brokers) | trim }}
+      {{- $brokersEnv := dict }}
+      {{- range $streamingEnv }}{{- if eq .name "STREAMING_BROKERS" }}{{- $brokersEnv = . }}{{- end }}{{- end }}
       initContainers:
-        # Bundled Redpanda starts in the same sync: wait for its Kafka listener.
+        # Bundled Redpanda starts in the same sync: wait for its Kafka listener, on
+        # the same STREAMING_BROKERS entry the topics container gets.
         - name: wait-for-broker
           image: {{ .Values.brSisbajud.waitImage | default "busybox:1.36" }}
+          env:
+            - {{ toYaml $brokersEnv | nindent 14 | trim }}
           command:
             - /bin/sh
             - -c
             - >
-              HP="{{ $first }}"; H="${HP%:*}"; P="${HP##*:}";
-              echo "waiting for broker $H:$P...";
-              until nc -z "$H" "$P"; do echo "broker not ready, waiting..."; sleep 5; done;
-              echo "broker is ready"
+              {{- include "br-sisbajud.waitBrokerScript" . | nindent 14 }}
           securityContext:
             runAsUser: 65532
             runAsGroup: 65532

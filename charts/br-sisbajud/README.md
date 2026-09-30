@@ -221,7 +221,7 @@ The password comes from the **same source the app effectively uses**. Explicit m
 5. `brSisbajud.useExistingSecret`;
 6. `brSisbajud.secrets.POSTGRES_PASSWORD`.
 
-Sources 2 and 6 are copied into a dedicated hook Secret (weight `-2`), because the app Secret does not exist yet in pre-install/PreSync. With plain Helm, that Secret is deleted once the hook phase succeeds (`hook-succeeded`), so no copy of the password is left behind, including after uninstall. With ArgoCD it is replaced on each sync. With none set, the render fails. The Job pod is hardened (non-root, read-only rootfs, drop ALL, no service-account token) and waits for Postgres with a `busybox` initContainer.
+Sources 2 and 6 are copied into a dedicated hook Secret (weight `-2`), because the app Secret does not exist yet in pre-install/PreSync. With plain Helm, that Secret is deleted once the hook phase succeeds (`hook-succeeded`), so no copy of the password is left behind, including after uninstall. With ArgoCD it is replaced on each sync. With none set, the render fails. With the bundled `postgresql`, `migrations.postgres.password` is refused at render: the app's `migrations` initContainer would have to read it from that hook Secret, which only exists while the post-install hooks run. The bundled subchart Secret (or `migrations.useExistingSecret`) is used instead. The Job pod is hardened (non-root, read-only rootfs, drop ALL, no service-account token) and waits for Postgres with a `busybox` initContainer.
 
 ## Topic provisioning
 

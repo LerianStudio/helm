@@ -7,13 +7,28 @@ Verify:
 
 {{- if .Values.migrations.enabled }}
 
-Migrations: an ArgoCD PreSync Job ({{ include "br-sisbajud-migrations.fullname" . }})
-applies the SQL schema to the database before the app boots.
-Under plain `helm install` (no ArgoCD) the PreSync hook Job still runs as a normal Job.
+{{- if eq (include "br-sisbajud.postgresInternal" .) "true" }}
+
+Migrations: the app's `migrations` initContainer applies the SQL schema before the app
+boots; the {{ include "br-sisbajud-migrations.fullname" . }} Job re-runs it as a
+post-install/post-upgrade (ArgoCD Sync) hook.
+{{- else }}
+
+Migrations: the {{ include "br-sisbajud-migrations.fullname" . }} Job applies the SQL schema
+as a pre-install/pre-upgrade hook (ArgoCD PreSync) before the app boots.
+{{- end }}
 {{- end }}
 {{- if and .Values.topics.enabled (eq (include "br-sisbajud.isTrue" (include "br-sisbajud.streamingEnabledRaw" .)) "true") }}
 
-Topics: a PreSync Job ({{ include "br-sisbajud-topics.fullname" . }}) ensures: {{ join ", " .Values.topics.list }}.
+{{- if eq (include "br-sisbajud.redpandaEnabled" .) "true" }}
+
+Topics: the app's `topics` initContainer and the {{ include "br-sisbajud-topics.fullname" . }}
+post-install/post-upgrade (ArgoCD Sync) hook Job ensure: {{ join ", " .Values.topics.list }}.
+{{- else }}
+
+Topics: the {{ include "br-sisbajud-topics.fullname" . }} pre-install/pre-upgrade (ArgoCD PreSync)
+hook Job ensures: {{ join ", " .Values.topics.list }}.
+{{- end }}
 {{- end }}
 {{- $removed := include "br-sisbajud.removedKeys" . | fromJsonArray }}
 {{- $set := list }}

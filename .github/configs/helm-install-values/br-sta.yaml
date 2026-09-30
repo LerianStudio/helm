@@ -1,0 +1,16 @@
+# Derived from a failing run: every br-sta pod sat in ImagePullBackOff with
+# "failed to fetch anonymous token ... 401 Unauthorized" on its private GHCR image.
+#
+# The gate creates the pull Secret `it-registry` and attaches it to the namespace's
+# `default` ServiceAccount only. This chart runs its pods under its own
+# ServiceAccount and sets an explicit pod `imagePullSecrets` (default
+# `ghcr-credential`, the Secret an operator creates in a real namespace), and an
+# explicit list replaces whatever a ServiceAccount carries. `ghcr-credential` does
+# not exist in `it-br-sta`, so kubelet pulled anonymously. Pointing the chart's own
+# pull-secret list at the gate's Secret is the supported way to install it: the
+# same key an operator sets for a differently named registry Secret.
+#
+# The render values (the full dev bundle) are layered underneath and already
+# carry everything the pods need to become Ready.
+imagePullSecrets:
+  - name: it-registry

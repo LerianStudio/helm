@@ -6,7 +6,7 @@
 
 - Chart type: `single-service`
 - Required secrets: `brSisbajud.secrets.LICENSE_KEY` and (external Postgres) `POSTGRES_PASSWORD` in a production-like environment (the default); `VAULT_APPROLE_SECRET_ID` with Vault AppRole (or `VAULT_TOKEN` with token auth in `production`); `STREAMING_SASL_PASSWORD` when a SASL mechanism is set; `STA_CLIENT_SECRET` when the STA transfers client is on; `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on. The chart fails the render with the exact key to set when one is missing. With `brSisbajud.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql`/`valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
-- Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `seaweedfs` (4.0.393), `openbao` (0.30.0, dev mode) and `redpanda` (26.2.4) subcharts are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, S3, Vault/AWS KMS and Kafka are the production path, and OpenBao/Redpanda are refused in a production-like environment. Kafka/Redpanda, Vault (or AWS KMS), S3-compatible object storage, plugin-access-manager, br-sta and the Midaz ledger are external services.
+- Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `seaweedfs` (4.0.393), `openbao` (0.30.0, dev mode) and `redpanda` (26.2.4) subcharts are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, S3, Vault/AWS KMS and Kafka are the production path, and OpenBao/Redpanda are refused outside a development-class environment (staging included). Kafka/Redpanda, Vault (or AWS KMS), S3-compatible object storage, plugin-access-manager, br-sta and the Midaz ledger are external services.
 - Production overrides: `global.datastores` (postgres, redis), `global.objectStorage` (sisbajud, sta), `global.kms`, `global.streaming`, `global.auth`, `global.env`, the Secret keys above (or `brSisbajud.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `brSisbajud.cors.allowedOrigins`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Apache-2.0. The `br-sisbajud` service source is `github.com/LerianStudio/br-sisbajud`.
 
@@ -229,7 +229,7 @@ While streaming is enabled, `topics.enabled` (default `true`) ships a Helm pre-i
 
 ## Bundled infrastructure (development only)
 
-> **Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure.** Production means PostgreSQL with TLS, Valkey/Redis, Kafka/Redpanda with TLS, Vault/OpenBao in non-dev mode (or AWS KMS) and S3 object storage. The bundled `postgresql`, `valkey`, `seaweedfs`, `openbao` and `redpanda` subcharts exist for development, POC and quickstart installs. The render refuses the OpenBao and Redpanda bundles in a production-like environment. The PostgreSQL, Valkey and SeaweedFS bundles only get a NOTES warning there, but they are unsupported in production all the same.
+> **Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure.** Production means PostgreSQL with TLS, Valkey/Redis, Kafka/Redpanda with TLS, Vault/OpenBao in non-dev mode (or AWS KMS) and S3 object storage. The bundled `postgresql`, `valkey`, `seaweedfs`, `openbao` and `redpanda` subcharts exist for development, POC and quickstart installs. The render refuses the OpenBao and Redpanda bundles outside a development-class environment (`local`, `development`, `develop`, `dev`, `test`, `e2e`; staging included). The PostgreSQL, Valkey and SeaweedFS bundles only get a NOTES warning in a production-like environment, but they are unsupported in production all the same.
 
 `values-dev.yaml` is a self-contained dev / evaluation install:
 
@@ -279,10 +279,12 @@ All the bootstrap Jobs are idempotent, non-root with a read-only rootfs (PSS res
 
 ### Production guard
 
-The render **fails** when `openbao` or `redpandaBundle` is enabled in a production-like environment (anything but `local|development|staging|e2e|test`):
+The render **fails** when `openbao` or `redpandaBundle` is enabled outside a development-class environment, that is anything but `local|development|develop|dev|test|e2e` (case-insensitive). **Staging is refused too**: the app relaxes its own gates in `staging` (license, plaintext Postgres and broker), but a staging tier holds data someone expects to keep, and OpenBao dev mode loses every Transit key on a restart:
 
 - OpenBao dev mode keeps its keys in memory: a pod restart loses every Transit key, and the data encrypted under them becomes **unrecoverable**.
 - The Redpanda bundle is a single plaintext broker.
+
+The guard only decides whether the dev-only bundles render. The app's own relaxations are separate and unchanged: only `local|development|staging|e2e|test` relax its gates (`dev` and `develop` pass the guard, but the app treats them as production, so it still needs `LICENSE_KEY` and TLS). A dev install uses `development`, as `values-dev.yaml` does.
 
 The postgresql / valkey / seaweedfs bundles render in any environment, as in the sibling charts, and NOTES.txt warns when they run production-like. That is a warning, not support: they are unsupported in production. Kafka/Redpanda and the KMS are external in production: set `global.streaming` and `global.kms`.
 

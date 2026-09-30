@@ -513,8 +513,9 @@ seaweedfsBuckets:
 # -- Bundled OpenBao (Vault-API compatible KMS), DISABLED by default. DEV ONLY:
 # it runs in dev mode (in-memory storage, auto-unsealed, root token). A pod
 # restart LOSES every Transit key, and data encrypted under them becomes
-# unrecoverable — so the chart refuses to render it in a production-like
-# environment. When enabled and no explicit address is set, VAULT_ADDR derives
+# unrecoverable — so the chart refuses to render it outside a
+# development-class environment (local|development|develop|dev|test|e2e;
+# staging included). When enabled and no explicit address is set, VAULT_ADDR derives
 # from the subchart Service (http://<release>-openbao.<release namespace>.svc.cluster.local:8200),
 # KMS_PROVIDER=vault, VAULT_AUTH_METHOD=token, and the app reads VAULT_TOKEN from
 # the chart-generated dev-token Secret (random per install, kept across upgrades
@@ -588,7 +589,8 @@ redpandaBundle:
 
 # -- Bundled Redpanda (Kafka API), DISABLED by default (redpandaBundle.enabled). DEV ONLY: one broker,
 # no TLS, no SASL, no external listener, no cert-manager — the chart refuses to
-# render it in a production-like environment. When enabled and no explicit
+# render it outside a development-class environment (local|development|develop|
+# dev|test|e2e; staging included). When enabled and no explicit
 # brokers are set, STREAMING_BROKERS derives from the subchart Service
 # (<fullnameOverride|release>.<release namespace>.svc.cluster.local.:<kafka port>)
 # and the topics Job waits for the broker instead of running as a PreSync hook.

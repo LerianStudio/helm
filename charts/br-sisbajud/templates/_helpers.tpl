@@ -232,16 +232,18 @@ and an explicit global value is untouched.
 {{/*
 br-sisbajud.bundleGuard — OpenBao (dev mode: in-memory keys; a restart makes
 encrypted data unrecoverable) and Redpanda (single broker, no TLS/SASL) are
-dev-only and refused in a production-like environment. The postgresql/valkey/
-seaweedfs bundles are allowed, as in the sibling charts, but NOTES.txt warns.
+dev-only and refused outside a development-class environment (devClass), which
+includes staging: a staging tier holds data someone expects to keep. The
+postgresql/valkey/seaweedfs bundles are allowed, as in the sibling charts, but
+NOTES.txt warns in a production-like environment.
 */}}
 {{- define "br-sisbajud.bundleGuard" -}}
-{{- if eq (include "br-sisbajud.productionLike" .) "true" -}}
+{{- if ne (include "br-sisbajud.devClass" .) "true" -}}
 {{- $bad := list -}}
 {{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" -}}{{- $bad = append $bad "openbao (dev mode: keys live in memory; a pod restart loses them and every value encrypted under them becomes unrecoverable)" -}}{{- end -}}
 {{- if eq (include "br-sisbajud.redpandaEnabled" .) "true" -}}{{- $bad = append $bad "redpandaBundle / redpanda (single broker, no TLS, no SASL)" -}}{{- end -}}
 {{- if $bad -}}
-{{- fail (printf "\n\nERROR: br-sisbajud: dev-only bundle enabled in a production-like environment (ENVIRONMENT_NAME=%q):\n  - %s\n  Use external Vault/AWS KMS and Kafka/Redpanda (global.kms / global.streaming), or set global.env.name to local|development|staging|e2e|test for a dev install (values-dev.yaml).\n" (include "br-sisbajud.envName" .) (join "\n  - " $bad)) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: dev-only bundle enabled outside a development-class environment (ENVIRONMENT_NAME=%q):\n  - %s\n  Use external Vault/AWS KMS and Kafka/Redpanda (global.kms / global.streaming), or set global.env.name to local|development|develop|dev|test|e2e for a dev install (values-dev.yaml).\n" (include "br-sisbajud.envName" .) (join "\n  - " $bad)) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -392,6 +394,20 @@ recognized non-production names (config.go isNonProductionEnv).
 {{- define "br-sisbajud.productionLike" -}}
 {{- $env := include "br-sisbajud.envName" . -}}
 {{- ternary "false" "true" (has $env (list "local" "development" "staging" "e2e" "test")) -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.devClass — "true" when the env name is a development-class name
+(local, development, develop, dev, test, e2e; case-insensitive), the same
+vocabulary as br-sta plus the app's e2e. Only there does the chart render its
+dev-only bundles (OpenBao dev mode, Redpanda). It is stricter than
+productionLike on purpose: staging relaxes the app's own gates (license, TLS)
+but must not run in-memory Transit keys. productionLike keeps driving the app
+relaxations and the NOTES warnings.
+*/}}
+{{- define "br-sisbajud.devClass" -}}
+{{- $env := lower (trim (include "br-sisbajud.envName" .)) -}}
+{{- ternary "true" "false" (has $env (list "local" "development" "develop" "dev" "test" "e2e")) -}}
 {{- end -}}
 
 {{- define "br-sisbajud.isTrue" -}}

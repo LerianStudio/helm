@@ -282,8 +282,9 @@ br-sta.extraEnv — the extraEnvVars entries that reach EVERY enabled app pod:
 the intersection of manager.extraEnvVars and worker.extraEnvVars (only the
 enabled components count). Both binaries read the same configuration, so a
 key set on one pod only must not satisfy the fail-fast gates (nor suppress the
-chart's own Secret copy) for the other. The value is the manager's entry when
-both carry it. Output: YAML map {NAME: value | "__valueFrom__"}.
+chart's own Secret copy) for the other, and every pod must carry the SAME
+value (a mismatch — e.g. an empty literal on one pod — does not count, and the
+migrations Job never inherits a conflicting setting). Output: YAML map {NAME: value | "__valueFrom__"}.
 */}}
 {{- define "br-sta.extraEnv" -}}
 {{- $maps := list -}}
@@ -296,7 +297,11 @@ both carry it. Output: YAML map {NAME: value | "__valueFrom__"}.
 {{- if $maps -}}
 {{- range $k, $v := first $maps -}}
 {{- $inAll := true -}}
-{{- range $m := rest $maps -}}{{- if not (hasKey $m $k) -}}{{- $inAll = false -}}{{- end -}}{{- end -}}
+{{- range $m := rest $maps -}}
+{{- if not (hasKey $m $k) -}}{{- $inAll = false -}}
+{{- else if ne (toString (index $m $k)) (toString $v) -}}{{- $inAll = false -}}
+{{- end -}}
+{{- end -}}
 {{- if $inAll -}}{{- $_ := set $out $k $v -}}{{- end -}}
 {{- end -}}
 {{- end -}}
@@ -895,6 +900,17 @@ why (condition text), set (where to set it).
 */}}
 {{- define "br-sta.required" -}}
 {{- $ctx := .context -}}
+{{- $key := .key -}}
+{{- /* An explicit empty literal in a pod's extraEnvVars overrides every other
+   source for that pod (env beats envFrom), so it is a missing value there. */ -}}
+{{- range $comp := list "manager" "worker" -}}
+{{- if (index $ctx.Values $comp | default dict).enabled -}}
+{{- $cx := include "br-sta.componentExtraEnv" (dict "root" $ctx "component" $comp) | fromYaml | default dict -}}
+{{- if and (hasKey $cx $key) (not (trim (toString (index $cx $key)))) -}}
+{{- fail (printf "\n\nERROR: br-sta: %s is set to an empty value in %s.extraEnvVars, which overrides the ConfigMap/Secret for that pod.\n  set: a non-empty value (or remove the entry)\n" $key $comp) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- $skip := and .secret $ctx.Values.common.useExistingSecret -}}
 {{- if and (not $skip) (not (include "br-sta.provided" (dict "context" $ctx "key" .key "value" .value))) -}}
 {{- fail (printf "\n\nERROR: br-sta: %s is required %s.\n  set: %s\n  (or pass it as an extraEnvVars entry on BOTH manager and worker%s)\n" .key .why .set (ternary " / via common.useExistingSecret" "" (eq (toString .secret) "true"))) -}}
@@ -954,7 +970,14 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- if and $mtOn (ne $auth "true") -}}
 {{- fail "\n\nERROR: br-sta: PLUGIN_AUTH_ENABLED must be true when MULTI_TENANT_ENABLED=true.\n  set: global.auth.enabled=true + global.auth.host\n" -}}
 {{- end -}}
-{{- /* A wildcard CORS origin needs lib-commons' explicit opt-in. */ -}}
+{{- /* CORS origin. The middleware treats an empty origin as "*". In production a
+   wildcard is refused outright (explicit trusted origins only), opt-in or not;
+   elsewhere it needs lib-commons' explicit opt-in. */ -}}
+{{- $acOrigin := nospace (toString (index $data "ACCESS_CONTROL_ALLOW_ORIGIN")) -}}
+{{- $corsWildcardOptIn := eq (include $isTrue (index $data "ALLOW_CORS_WILDCARD" | default "")) "true" -}}
+{{- if and $prod (or (has "*" (splitList "," $acOrigin)) (and (not $acOrigin) $corsWildcardOptIn)) -}}
+{{- fail "\n\nERROR: br-sta: a wildcard CORS origin (\"*\", or an empty origin with ALLOW_CORS_WILDCARD=true) is not allowed in production.\n  set: common.cors.allowedOrigins to the explicit trusted origins (CSV)\n" -}}
+{{- end -}}
 {{- if and (has "*" (splitList "," (nospace (toString (index $data "ACCESS_CONTROL_ALLOW_ORIGIN"))))) (ne (include $isTrue (index $data "ALLOW_CORS_WILDCARD" | default "")) "true") -}}
 {{- fail "\n\nERROR: br-sta: the CORS origin is \"*\" without ALLOW_CORS_WILDCARD=true (lib-commons' CORS middleware would silently fall back to deny-all).\n  set: common.cors.allowedOrigins to the real origins (recommended), or common.security.allowCorsWildcard=true\n" -}}
 {{- end -}}

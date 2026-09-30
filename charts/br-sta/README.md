@@ -20,7 +20,7 @@ Deploys **br-sta**, the Lerian BACEN STA (Sistema de Transferência de Arquivos)
 
 The chart tracks application **1.0.0** (`appVersion`), the first stable STA release; the three images follow `appVersion` unless pinned.
 
-> **Version line reset.** The app's pre-releases were numbered `1.2.0-beta.x`; its first stable release restarted at `1.0.0`. `1.0.0` is newer than every `1.2.0-beta.x` (same code lineage, the same migration sequence `000001`–`000019`), so moving from `1.2.0-beta.16` to `1.0.0` is an upgrade, not a downgrade: no schema reset, no env change.
+> **Version line reset.** The app's pre-releases were numbered `1.2.0-beta.x`; its first stable release restarted at `1.0.0`. `1.0.0` has lower SemVer precedence than every `1.2.0-beta.x`, but it is the later release of the same code lineage: the env contract and the migration sequence `000001`–`000019` are unchanged, so moving from `1.2.0-beta.16` to `1.0.0` is a compatible upgrade (no schema reset, no env change). Tooling that picks "the highest version" would pick the betas: pin `1.0.0` explicitly.
 
 ---
 
@@ -138,8 +138,6 @@ Shared (`common.*`):
 | `server.trustedProxies` | `SERVER_TRUSTED_PROXIES` | `""` (trust no proxy) |
 | `cors.allowedOrigins` / `allowedMethods` / `allowedHeaders` | `CORS_ALLOWED_ORIGINS` / `CORS_ALLOWED_METHODS` / `CORS_ALLOWED_HEADERS` | `""` / `GET,POST,PUT,PATCH,DELETE,OPTIONS` / `Origin,Content-Type,Accept,Authorization,X-Request-ID` |
 | `cors.exposeHeaders` / `allowCredentials` | `CORS_EXPOSE_HEADERS` / `CORS_ALLOW_CREDENTIALS` | `""` / `false` |
-
-The `cors` group also renders the keys lib-commons' CORS middleware actually reads: `ACCESS_CONTROL_ALLOW_ORIGIN` always (from `allowedOrigins`), and `ACCESS_CONTROL_ALLOW_METHODS` / `_HEADERS` / `ACCESS_CONTROL_EXPOSE_HEADERS` / `ACCESS_CONTROL_ALLOW_CREDENTIALS` only when the matching field (or native `CORS_*` key) is set — otherwise the middleware keeps its own defaults. An empty origin list means deny-all (the default, fail-closed); `*` needs `security.allowCorsWildcard: true` (the chart fails the render otherwise, since the middleware would silently deny everything). A native `ACCESS_CONTROL_*` key under `common.configmap` wins.
 | `security.allowInsecureTls` | `ALLOW_INSECURE_TLS` | `true` only with a bundled plaintext datastore, else `false` |
 | `security.allowCorsWildcard` / `allowInsecureOtel` | `ALLOW_CORS_WILDCARD` / `ALLOW_INSECURE_OTEL` | unset |
 | `license.organizationIds` / `isDevelopment` | `ORGANIZATION_IDS` / `IS_DEVELOPMENT` | unset (organizationIds required in production) |
@@ -183,6 +181,8 @@ The `cors` group also renders the keys lib-commons' CORS middleware actually rea
 | `reporterEvents.consumerEnabled` | `REPORTER_EVENTS_CONSUMER_ENABLED` | `false` |
 | `reporterEvents.exchange` / `doctypeResolver` | `REPORTER_EVENTS_CONSUMER_EXCHANGE` / `REPORTER_EVENTS_DOCTYPE_RESOLVER` | unset (both required when the consumer is on; `payload` in production) |
 | `reporterEvents.queue` / `dlqExchange` / `alternateExchange` / `idleWindowSec` / `dedupTtlSec` / `reconciliationWindowSec` / `redeliveryWindowSec` / `doctypeMap` | `REPORTER_EVENTS_*` | unset (app defaults) |
+
+The `cors` group also renders the keys lib-commons' CORS middleware actually reads: `ACCESS_CONTROL_ALLOW_ORIGIN` always (from `allowedOrigins`), and `ACCESS_CONTROL_ALLOW_METHODS` / `_HEADERS` / `ACCESS_CONTROL_EXPOSE_HEADERS` / `ACCESS_CONTROL_ALLOW_CREDENTIALS` only when the matching field (or native `CORS_*` key) is set — otherwise the middleware keeps its own defaults. An empty origin list means deny-all (the default, fail-closed). Outside production, `*` needs `security.allowCorsWildcard: true` (the chart fails the render otherwise, since the middleware would silently deny everything); in production a wildcard origin is refused outright, opt-in or not. A native `ACCESS_CONTROL_*` key under `common.configmap` wins.
 
 Worker-only (`worker.*`, rendered into the worker ConfigMap):
 
@@ -230,9 +230,9 @@ The render fails with the exact value to set (mirroring the app's boot validatio
 - streaming is on without `STREAMING_BROKERS`, a SASL mechanism is set without a username/password or without TLS, or `STREAMING_CLOUDEVENTS_SOURCE` is anything but `br-sta`;
 - multi-tenancy is on without the tenant-manager URL, its Redis host, the service API key or inbound auth;
 - the declaration publisher or the reporter bridge is on without its host / credentials / exchange / resolver (`static` is refused in production and outside homologation);
-- the CORS origin is `*` without `security.allowCorsWildcard`, the server TLS cert/key are not set together, or `M2M_TARGET_SERVICE` contains `:`.
+- the CORS origin is `*` without `security.allowCorsWildcard` (and, in production, is a wildcard at all), the server TLS cert/key are not set together, or `M2M_TARGET_SERVICE` contains `:`.
 
-A value supplied through `extraEnvVars` satisfies the gate only when it is set on both `manager.extraEnvVars` and `worker.extraEnvVars` (or the worker is disabled). With `common.useExistingSecret`, the gates skip the Secret keys.
+A value supplied through `extraEnvVars` satisfies the gate only when it is set, with the same value, on both `manager.extraEnvVars` and `worker.extraEnvVars` (or the worker is disabled). An empty literal for a required key in either pod's `extraEnvVars` fails the render, since it would override the ConfigMap/Secret for that pod. With `common.useExistingSecret`, the gates skip the Secret keys.
 
 ---
 

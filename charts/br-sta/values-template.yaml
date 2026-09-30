@@ -29,6 +29,7 @@ global:
   objectStorage:
     # The transfer bucket: holds BOTH directions (outbound sources + BACEN
     # downloads). br-sisbajud reads the SAME block for its STA inbound bucket.
+    # endpoint "" = native AWS S3 only; REQUIRED for SeaweedFS/MinIO/any other S3 (with usePathStyle "true").
     sta: { endpoint: "", region: "us-east-1", bucket: "", usePathStyle: "false" }          # <- REQUIRED in production: bucket
     # Audit exports (the worker writes, the manager serves downloads).
     staAuditExports: { bucket: "" }
@@ -88,6 +89,7 @@ common:
   bacen:
     environment: "homologation"        # production => the live BACEN STA host
   transfer:
+    # With global.streaming off, transfer outcomes never reach br-sisbajud: enable both together.
     schedulerEnabled: true             # the ONLY path that uploads to BACEN (worker)
     inboundEnabled: false              # BACEN-pulled files
   secrets:

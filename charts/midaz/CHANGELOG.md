@@ -2,6 +2,21 @@
 
 ## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
 
+- **Features:**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.2.5 through v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8 through v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
 - **Features**
   - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
 

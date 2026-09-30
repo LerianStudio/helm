@@ -2,6 +2,24 @@
 
 ## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
 
+- **Features:**
+  - Documented the optional configmap keys added for version 3.9.0.
+
+- **Fixes:**
+  - Bumped app images to version 3.9.0 and exposed new environment variables.
+  - Corrected upgrade guides for versions v9.5.2, v9.5.4, and v9.5.7.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.5.2, v9.5.4, v9.5.6, and v9.5.7.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
 - **Features**
   - Documented the optional configmap keys added for version 3.9.0.
   - Bumped app images to version 3.9.0 and exposed new environment variables.

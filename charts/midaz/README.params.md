@@ -209,6 +209,11 @@
 | `tracer.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
 | `tracer.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `tracer.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
+| `tracer.networkPolicy` | object | `{}` | Ingress NetworkPolicy for the tracer pods. It only takes effect on a CNI that enforces NetworkPolicy. The gRPC reservation seam trusts the x-tenant-id header, so it admits only the ledger pods of this release plus `grpcExtraFrom`. |
+| `tracer.networkPolicy.enabled` | bool | `false` | Enable or disable the NetworkPolicy |
+| `tracer.networkPolicy.httpFrom` | list | `[]` | Peers admitted to the HTTP port. Empty admits every source, which load balancers targeting pod IPs and kubelet probes need. |
+| `tracer.networkPolicy.grpcExtraFrom` | list | `[]` | Peers admitted to the gRPC port besides the ledger pods of this release |
+| `tracer.networkPolicy.extraIngress` | list | `[]` | Additional ingress rules, appended as-is (e.g. the Istio ambient HBONE port 15008 once the namespace joins the mesh) |
 | `tracer.deploymentUpdate` | object | `{}` | Deployment update strategy |
 | `tracer.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
 | `tracer.deploymentUpdate.maxSurge` | int | `1` | Maximum number of pods that can be created over the desired number of pods |

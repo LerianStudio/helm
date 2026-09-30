@@ -14,6 +14,10 @@ tracer:
       name: "tracer_ci"
   configmap:
     TRACER_GRPC_PORT: ":5099"
+  # Exercise the tracer NetworkPolicy: the gRPC rule follows TRACER_GRPC_PORT
+  # and admits the ledger pods of the release.
+  networkPolicy:
+    enabled: true
 ledger:
   # Exercise the per-module Postgres name masks (flow to migration Job + bootstrap + init.sql)
   # and a template-supported configmap key that must be on the schema allowlist.

@@ -10,7 +10,8 @@
 # POSTGRES_*/REDIS_*/RABBITMQ_*/TRANSFER_S3_*/STREAMING_* keys under
 # common.configmap: a native key there WINS over its mask and defeats it.
 # Credentials go under common.secrets (use AVP <path:...> placeholders in
-# GitOps), or in an existing Secret (common.useExistingSecret).
+# GitOps), per key from a Secret you manage (common.secretRefs), or all in an
+# existing Secret (common.useExistingSecret).
 
 # --- The env-wide contract ------------------------------------------------------
 global:
@@ -38,8 +39,10 @@ global:
     enabled: true                      # the app accepts false only in a development-class env
     host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
   streaming:
-    enabled: false                     # true => business facts on lerian.streaming.br-sta (br-sisbajud consumes it)
-    brokers: ""                        # <- REQUIRED when enabled (topics lerian.streaming.br-sta + .dlq must exist)
+    # br-sisbajud consumes br-sta's facts from lerian.streaming.br-sta: facts produced while
+    # this is false are never re-sent. Set false only if no br-sisbajud consumes br-sta.
+    enabled: true
+    brokers: ""                        # <- REQUIRED: host:port CSV (topics lerian.streaming.br-sta + .dlq must exist)
     tlsEnabled: true
     saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
     saslUsername: "br-sta"
@@ -78,6 +81,8 @@ common:
     trustedProxies: ""                 # ingress/LB CIDR (SERVER_TRUSTED_PROXIES)
   auth:
     trustedProxies: ""                 # same CIDR (TRUSTED_PROXIES, lib-auth client-IP forwarding)
+  # Access-manager permission declaration (manager); off by default:
+  # identity: { declarationEnabled: true, host: "<access-manager-idp-url>", m2mClientId: "<client-id>" }
   license:
     organizationIds: ""                # <- REQUIRED in production
   bacen:
@@ -90,13 +95,18 @@ common:
     POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres (production + migrations)
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""          # <- REQUIRED in production (or a full RABBITMQ_URL)
+    # RABBITMQ_URL: ""                 # amqps://user:pass@host:5671/vhost — replaces host/user/pass
     LICENSE_KEY: ""                    # <- REQUIRED in production
     AWS_ACCESS_KEY_ID: ""              # or an IRSA / workload-identity service account
     AWS_SECRET_ACCESS_KEY: ""
-    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when a SASL mechanism is set
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED while global.streaming.saslMechanism is set
     STREAMING_TLS_CA_CERT: ""          # broker CA not in the system pool
     # IDP_M2M_CLIENT_SECRET: ""        # <- REQUIRED when identity.declarationEnabled
     # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on
+  # Or reference single keys of a Secret the chart does not manage (ESO/Vault);
+  # a reference counts as set for the checks above:
+  # secretRefs:
+  #   STREAMING_SASL_PASSWORD: { name: redpanda-br-sta, key: password }
   # Or keep every credential in an operator-managed Secret:
   useExistingSecret: false
   existingSecretName: ""

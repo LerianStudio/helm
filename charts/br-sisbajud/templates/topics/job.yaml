@@ -51,11 +51,15 @@
 {{- $tlsOn := false -}}
 {{- $caSet := false -}}
 {{- range $streamingEnv -}}
+{{- /* A literal "true", or a valueFrom (secretRefs / extraEnvVars) whose value is
+   unknown at render: the entrypoint cannot tell either apart from TLS on, so a
+   secret-backed TLS flag must come with a CA source too. */ -}}
 {{- if and (eq .name "STREAMING_TLS_ENABLED") (hasKey . "value") (eq (include "br-sisbajud.isTrue" .value) "true") -}}{{- $tlsOn = true -}}{{- end -}}
+{{- if and (eq .name "STREAMING_TLS_ENABLED") (hasKey . "valueFrom") -}}{{- $tlsOn = true -}}{{- end -}}
 {{- if eq .name "STREAMING_TLS_CA_CERT" -}}{{- $caSet = true -}}{{- end -}}
 {{- end -}}
 {{- if and $tlsOn (not $caSet) -}}
-{{- fail "\n\nERROR: br-sisbajud: the topics Job needs STREAMING_TLS_CA_CERT when STREAMING_TLS_ENABLED=true (its rpk entrypoint takes the CA as a file).\n  set: brSisbajud.secrets.STREAMING_TLS_CA_CERT (base64 PEM), or provision the topics out of band and set topics.enabled=false\n" -}}
+{{- fail "\n\nERROR: br-sisbajud: the topics Job needs STREAMING_TLS_CA_CERT when STREAMING_TLS_ENABLED is true or comes from a Secret (its rpk entrypoint requires the CA as a file whenever TLS is on, even for brokers with a publicly trusted CA).\n  set: brSisbajud.secrets.STREAMING_TLS_CA_CERT (base64 PEM) or brSisbajud.secretRefs.STREAMING_TLS_CA_CERT, or provision the topics out of band and set topics.enabled=false\n" -}}
 {{- end -}}
 {{- $pullSecrets := .Values.topics.imagePullSecrets | default .Values.imagePullSecrets }}
 apiVersion: batch/v1

@@ -65,6 +65,20 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ $fullname }}
+          {{- /* Probe the SAME endpoints the app connects to: an explicit pod-env
+             override (secretRefs / extraEnvVars) of the connection keys wins over
+             the ConfigMap in the app container, so it must here too. Only these
+             three keys are copied; no credential reaches this container. */}}
+          {{- $waitEnv := list }}
+          {{- range (include "br-sisbajud.podEnvList" . | fromYamlArray) }}
+          {{- if has .name (list "POSTGRES_HOST" "POSTGRES_PORT" "REDIS_HOST") }}
+          {{- $waitEnv = append $waitEnv . }}
+          {{- end }}
+          {{- end }}
+          {{- with $waitEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           command:
             - /bin/sh
             - -c

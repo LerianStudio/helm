@@ -15,3 +15,10 @@
 # a ServiceAccount lands in the namespace of the workload using it - the defect
 # that made this chart install cleanly and never create a pod.
 namespaceOverride: "it-product-console"
+
+# Since 2.2.x the console refuses to boot in production with authentication off
+# or without a NEXTAUTH_SECRET, and the chart defaults both to empty/"false".
+configmap:
+  PLUGIN_AUTH_ENABLED: "true"
+secrets:
+  NEXTAUTH_SECRET: "chart-install-test-only"

@@ -162,6 +162,8 @@ Shared (`common.*`):
 | `m2m.targetService` / `credentialCacheTtlSec` | `M2M_TARGET_SERVICE` / `M2M_CREDENTIAL_CACHE_TTL_SEC` | unset / `300` |
 | `aws.region` | `AWS_REGION` | `us-east-1` |
 | `multiTenant.poolMaxConns` / `poolMaxIdleConns` | `MULTI_TENANT_POOL_MAX_CONNS` / `MULTI_TENANT_POOL_MAX_IDLE_CONNS` | `20` / `5` (only with multi-tenancy) |
+| `multiTenant.maxTenantPools` / `idleTimeoutSec` / `timeoutSec` / `cacheTtlSec` / `connectionsCheckIntervalSec` | `MULTI_TENANT_MAX_TENANT_POOLS` / `..._IDLE_TIMEOUT_SEC` / `MULTI_TENANT_TIMEOUT` / `..._CACHE_TTL_SEC` / `..._CONNECTIONS_CHECK_INTERVAL_SEC` | `100` / `300` / `30` / `120` / `30` (only with multi-tenancy) |
+| `multiTenant.circuitBreakerThreshold` / `circuitBreakerTimeoutSec` / `allowInsecureHttp` | `MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD` / `..._TIMEOUT_SEC` / `MULTI_TENANT_ALLOW_INSECURE_HTTP` | `5` / `30` / `false` (only with multi-tenancy) |
 | `observability.serviceName` / `libraryName` | `OTEL_RESOURCE_SERVICE_NAME` / `OTEL_LIBRARY_NAME` | unset (each binary seeds `br-sta-manager` / `br-sta-worker`) |
 | `rateLimit.enabled` / `max` / `windowSec` | `RATE_LIMIT_ENABLED` / `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_SEC` | `true` / `100` / `60` |
 | `rateLimit.aggressiveMax` / `aggressiveWindowSec` / `relaxedMax` / `relaxedWindowSec` | `AGGRESSIVE_RATE_LIMIT_*` / `RELAXED_RATE_LIMIT_*` | `100` / `60` / `1000` / `60` |
@@ -212,6 +214,7 @@ Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`,
 | `RABBITMQ_DEFAULT_PASS` / `RABBITMQ_URL` | Production (password, or a full DSN that overrides the parts) / the bundled RabbitMQ (password) |
 | `RABBITMQ_ERLANG_COOKIE` | The bundled RabbitMQ (stable across upgrades) |
 | `LICENSE_KEY` | Production |
+| `ORGANIZATION_IDS` | Optional here: an identifier whose home is `common.license.organizationIds` (required in production); accepted in the Secret for tiers that source it from the secret store |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | The object store needs static credentials (not with IRSA / workload identity) |
 | `STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` | SASL mechanism set / broker CA not in the system pool |
 | `IDP_M2M_CLIENT_SECRET` | `identity.declarationEnabled` |

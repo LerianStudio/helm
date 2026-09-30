@@ -551,7 +551,16 @@ ALLOW_INSECURE_TLS: {{ include "br-sta.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.license "f" "isDevelopment" "k" "IS_DEVELOPMENT" "opt" true) }}
 # --- Multi-tenant (lerian-common.multiTenant.env; secrets via multiTenant.secret) --
 MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
-{{ include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm "enabled" $mtOn "requiredUrl" true "requiredRedisHost" true "emitRedis" true "emitRedisCaCert" true "emitPool" true "emitCache" true "emitAllowInsecure" true) }}
+{{- /* Tenant-manager client tuning as grouped params (common.multiTenant.*): the
+   library helper reads only native keys, so a set field is injected as its
+   native key unless common.configmap already carries it (native still wins). */}}
+{{- $mtCm := deepCopy $cm }}
+{{- range $pair := list (list "maxTenantPools" "MULTI_TENANT_MAX_TENANT_POOLS") (list "idleTimeoutSec" "MULTI_TENANT_IDLE_TIMEOUT_SEC") (list "timeoutSec" "MULTI_TENANT_TIMEOUT") (list "cacheTtlSec" "MULTI_TENANT_CACHE_TTL_SEC") (list "connectionsCheckIntervalSec" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC") (list "circuitBreakerThreshold" "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD") (list "circuitBreakerTimeoutSec" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC") (list "allowInsecureHttp" "MULTI_TENANT_ALLOW_INSECURE_HTTP") }}
+{{- if and (hasKey ($c.multiTenant | default dict) (index $pair 0)) (not (hasKey $cm (index $pair 1))) }}
+{{- $_ := set $mtCm (index $pair 1) (toString (index $c.multiTenant (index $pair 0))) }}
+{{- end }}
+{{- end }}
+{{ include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $mtCm "enabled" $mtOn "requiredUrl" true "requiredRedisHost" true "emitRedis" true "emitRedisCaCert" true "emitPool" true "emitCache" true "emitAllowInsecure" true) }}
 {{- if $mtOn }}
 {{ include $kv (dict "cm" $cm "p" $c.multiTenant "f" "poolMaxConns" "k" "MULTI_TENANT_POOL_MAX_CONNS" "d" "20") }}
 {{ include $kv (dict "cm" $cm "p" $c.multiTenant "f" "poolMaxIdleConns" "k" "MULTI_TENANT_POOL_MAX_IDLE_CONNS" "d" "5") }}
@@ -858,6 +867,10 @@ REDIS_PASSWORD: {{ $s.REDIS_PASSWORD | quote }}
 {{- /* Bundled broker (Pattern B): the broker's initial user is read from here. */}}
 RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{- end }}
+{{- /* ORGANIZATION_IDS (an identifier whose home is common.license.organizationIds)
+   is also accepted in common.secrets for tiers that source it from the secret
+   store: it flows through the verbatim pass-through below, and the production
+   gate counts it there. */}}
 {{- range $k := list "RABBITMQ_DEFAULT_PASS" "RABBITMQ_URL" "RABBITMQ_ERLANG_COOKIE" "POSTGRES_REPLICA_PASSWORD" "MASTER_KEYS" "LICENSE_KEY" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "IDP_M2M_CLIENT_SECRET" }}
 {{- with index $s $k }}
 {{ $k }}: {{ . | quote }}

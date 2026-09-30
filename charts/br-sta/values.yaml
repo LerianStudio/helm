@@ -198,7 +198,10 @@ common:
   m2m: {}
   # -- AWS SDK: region (AWS_REGION — S3 signing region fallback, M2M, KMS region fallback).
   aws: {}
-  # -- Multi-tenant pool sizing (only when multi-tenancy is on): poolMaxConns, poolMaxIdleConns.
+  # -- Multi-tenant client tuning (only when multi-tenancy is on; url / redis come
+  # from global.multiTenant): poolMaxConns, poolMaxIdleConns, maxTenantPools,
+  # idleTimeoutSec, timeoutSec, cacheTtlSec, connectionsCheckIntervalSec,
+  # circuitBreakerThreshold, circuitBreakerTimeoutSec, allowInsecureHttp.
   multiTenant: {}
   # -- OTEL identity: serviceName (unset: each binary seeds br-sta-manager /
   # br-sta-worker), libraryName. enabled/endpoint come from global.observability.
@@ -250,7 +253,8 @@ common:
   # RABBITMQ_ERLANG_COOKIE (bundled rabbitmq only), MASTER_KEYS, LICENSE_KEY,
   # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, IDP_M2M_CLIENT_SECRET,
   # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
-  # MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
+  # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, when a tier sources it from
+  # the secret store). Any other key is emitted verbatim.
   secrets: {}
   # -- Use an operator-provided Secret instead of the chart-managed one (manager,
   # worker and — unless migrations.useExistingSecret says otherwise — the

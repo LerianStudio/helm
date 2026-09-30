@@ -112,9 +112,19 @@ kubectl delete namespace sta-dev
    `MASTER_KEYS` in your secret store. Never replace it: add a new version instead.
 3. Create the app Secret out of band (`common.useExistingSecret: true` +
    `existingSecretName`) or fill `common.secrets` with `<path:...>` placeholders.
-4. Create the GHCR pull secret in the namespace.
-5. `helm install` with your values. Against external Postgres the migrations run as an
-   ArgoCD PreSync hook (a regular Job under plain Helm), so the app never boots unmigrated.
+4. Create the GHCR pull secret in the namespace. The chart default is `ghcr-credential`
+   (`imagePullSecrets: [{name: ghcr-credential}]`):
+
+   ```bash
+   kubectl -n <namespace> create secret docker-registry ghcr-credential \
+     --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
+   ```
+
+   For a differently named Secret, override the root list, which the manager, worker,
+   migrations Job and mock STA all use: `imagePullSecrets: [{name: <your-secret>}]`.
+5. `helm install` with your values. Against external Postgres the migrations run as a
+   Helm `pre-install`/`pre-upgrade` hook and as an ArgoCD PreSync hook (the hook Secret
+   at weight -2, the Job at -1), so the app never boots unmigrated under either tool.
 6. Register the BACEN operator credentials (`POST /v1/credentials`) and the
    document-type / inbound-source configs through the API before transfers run.
 
@@ -201,8 +211,8 @@ curl -s localhost:14028/health                    # liveness
 
 | Error/log | Cause | Fix |
 |---|---|---|
-| `rabbitmq health check failed: rabbitmq health check URL is empty` (manager and worker crash-loop) | lib-commons checks the management API on every connect | The chart now derives `RABBITMQ_HEALTH_CHECK_URL` from the broker host/port; set `global.datastores.broker.port` (management) or `common.rabbitmq.healthCheckUrl` if yours differs. Plain `http` needs `common.rabbitmq.allowInsecureHealthCheck: true` (the render says so) |
-| `redpanda-topics` Job stuck on `waiting for ...` | Older chart builds waited on the admin API instead of the Kafka API | Fixed: the Job waits on `rpk topic list`. Delete the stuck Job and upgrade |
+| `rabbitmq health check failed: rabbitmq health check URL is empty` (manager and worker crash-loop) | lib-commons checks the management API on every connect | The chart derives `RABBITMQ_HEALTH_CHECK_URL` from the broker host/port; set `global.datastores.broker.port` (management) or `common.rabbitmq.healthCheckUrl` if yours differs. Plain `http` needs `common.rabbitmq.allowInsecureHealthCheck: true` (the render says so) |
+| `redpanda-topics` Job stuck on `waiting for ...` | The bundled Redpanda's Kafka API is not up yet (the Job waits on `rpk topic list`) | Check the `redpanda-0` pod and its logs; the Job retries until the broker answers |
 | Postgres `password authentication failed` after changing the dev passwords | The data volume keeps the password it was initialised with | `helm uninstall`, delete the PVCs, reinstall |
 | Browser calls blocked although `CORS_ALLOWED_ORIGINS` is set | The CORS middleware reads `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `common.cors.allowedOrigins`; `*` needs `common.security.allowCorsWildcard: true` and is refused in production |
 | Tooling picks `1.2.0-beta.x` over `1.0.0` | The app's version line was reset for the stable release: `1.0.0` has lower SemVer precedence but is the later, compatible release (same env and migrations) | Pin `1.0.0` explicitly |
@@ -210,3 +220,34 @@ curl -s localhost:14028/health                    # liveness
 | `PLUGIN_AUTH_ENABLED=false is only accepted in a development-class environment` | Auth off in `staging`/`production` | Enable `global.auth` or use a development-class `global.env.name` |
 | `MASTER_KEYS is malformed` / `must reference a key present` | Wrong `version:hex` shape or `MASTER_KEY_VERSION` mismatch | `v1:<64 hex chars>` and `common.credentials.masterKeyVersion: v1` |
 | br-sisbajud `sta_consumer` degraded after a br-sta fact | Known br-sisbajud behaviour: a fact for a transfer br-sisbajud did not create is retried and blocks the partition | Monitor `sta_consumer` on br-sisbajud's `/readyz`; see the br-sisbajud runbook |
+
+---
+
+## 8. Rollback
+
+```bash
+helm history br-sta -n <namespace>
+helm rollback br-sta <revision> -n <namespace>
+```
+
+Under ArgoCD, revert the values/chart version commit in Git instead; a manual rollback
+is undone by the next sync.
+
+- **Migrations are forward-only.** A rollback redeploys the older chart and image but
+  does not revert the schema: the migrations Job only applies `up` migrations, and the
+  pre-upgrade/PreSync hook of the older revision re-runs them as a no-op. An older app
+  image can refuse a schema newer than the one it ships (for example, an app build
+  whose last migration is lower than the database's version fails its migration check
+  at boot). Roll back to an image that knows the current schema version, or restore the
+  database from a backup taken before the upgrade. Take that backup before every
+  upgrade that ships migrations.
+- **`MASTER_KEYS` must survive every rollback and reinstall.** The operator credentials
+  stored through `POST /v1/credentials` are envelope-encrypted, and each ciphertext is
+  pinned to the master-key version that encrypted it. The app decrypts through that
+  version (`unknown master key version` when it is missing from `MASTER_KEYS`). Never
+  change or drop an existing version. To rotate, add a new `v2:<hex>` entry next to
+  `v1` and move `common.credentials.masterKeyVersion` to it: new writes use `v2` and
+  old ciphertexts still decrypt with `v1`. Losing a version, or its value in the secret
+  store, makes every credential encrypted under it unrecoverable: they have to be
+  registered again. With `MASTER_KEY_PROVIDER=aws-kms` the same holds for the wrapped
+  blobs and the KMS key that wraps them.

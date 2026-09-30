@@ -2,7 +2,8 @@
 
 > Preenchido a partir do chart (`README.md`, `values.yaml`, `values-dev.yaml`,
 > `values-template.yaml`, templates) e de uma instalação real do dev bundle num
-> minikube isolado (6 CPU / 7 GB). Objetivo: alguém de fora da squad, só com o chart +
+> minikube isolado (6 CPU / 7 GB), além de uma instalação em modo produção sobre infra
+> externa (seção 3, Produção). Objetivo: alguém de fora da squad, só com o chart +
 > este runbook, consegue instalar uma versão funcional e sabe o que checar caso algo
 > não se comporte como esperado.
 
@@ -105,6 +106,20 @@ kubectl delete namespace sta-dev
 
 ### Produção
 
+> **Validado em modo produção.** O br-sta `1.0.0` foi instalado com
+> `global.env.name=production`, o gateway de licença de produção e só infra externa
+> (nenhum subchart embutido) num cluster production-like. Confirmado em runtime:
+> PostgreSQL `sslmode=require`; Valkey com TLS e CA privada; RabbitMQ via `amqps`
+> (5671), com o health check do management via `https` (15671) e um bundle de CA (ver
+> "RabbitMQ com CA privada" abaixo); Kafka com TLS + SASL SCRAM; origem CORS explícita;
+> `ORGANIZATION_IDS=global`. As migrations rodaram como hook `pre-install`, e o manager e
+> o worker ficaram `1/1` cerca de 37 s depois, com 0 restarts. O `/readyz` respondeu
+> `200`, com `license`, `postgres`, `rabbitmq`, `redis` (`tls: true`) e
+> `storage_transfer` `up`. Os loops do worker subiram: business publisher, outbound
+> fanout, leader election e audit consumer. Não exercitado: chamadas autenticadas à API
+> e envio de transfer a partir do br-sisbajud, porque os dois precisam do
+> plugin-access-manager.
+
 1. Provisione PostgreSQL (banco/usuário `br_sta` por default), Valkey, RabbitMQ (com a
    API de management acessível), os buckets S3 e, se o streaming estiver ligado, os
    tópicos `lerian.streaming.br-sta` e `lerian.streaming.br-sta.dlq`.
@@ -127,6 +142,31 @@ kubectl delete namespace sta-dev
    weight -2, o Job no -1), então a app nunca sobe sem schema em nenhuma das duas.
 6. Cadastre as credenciais de operador do BACEN (`POST /v1/credentials`) e as configs de
    tipo de documento / inbound pela API antes de os transfers rodarem.
+
+### RabbitMQ com CA privada (produção)
+
+A app valida tanto a conexão AMQPS quanto o health check do management (`https`) contra
+o pool de certificados do sistema do container. Quando o certificado do broker vem de
+uma CA privada, entregue ao manager **e** ao worker um bundle via `SSL_CERT_FILE`. O
+bundle precisa conter as raízes públicas **mais** a sua CA, porque as raízes públicas
+continuam necessárias para falar com o gateway de licença e com qualquer outro endpoint
+TLS público.
+
+```bash
+cat /etc/ssl/certs/ca-certificates.crt minha-ca-privada.pem > ca-bundle.pem
+kubectl -n <namespace> create configmap br-sta-ca-bundle --from-file=ca-bundle.pem
+```
+
+```yaml
+manager:
+  extraVolumes:      [{ name: ca-bundle, configMap: { name: br-sta-ca-bundle } }]
+  extraVolumeMounts: [{ name: ca-bundle, mountPath: /etc/br-sta-ca, readOnly: true }]
+  extraEnvVars:      [{ name: SSL_CERT_FILE, value: /etc/br-sta-ca/ca-bundle.pem }]
+worker:
+  extraVolumes:      [{ name: ca-bundle, configMap: { name: br-sta-ca-bundle } }]
+  extraVolumeMounts: [{ name: ca-bundle, mountPath: /etc/br-sta-ca, readOnly: true }]
+  extraEnvVars:      [{ name: SSL_CERT_FILE, value: /etc/br-sta-ca/ca-bundle.pem }]
+```
 
 ---
 
@@ -184,6 +224,18 @@ export generator).
 | Filing sweep | `worker.scheduler.filingSweepEnabled` (default `false`) fecha filings encalhados do reporter; `filingSweepAgeMinutes` é knob de segurança | Ligue por decisão; não reduza a idade |
 | Imagens privadas | Todas as imagens da app são privadas no GHCR | Pull secret em cada namespace (`imagePullSecrets`) |
 
+### Licença
+
+| Tema | Comportamento (app `1.0.0`, SDK de licença v4.1.0) |
+|---|---|
+| Uma chave por produto | Uma chave licencia um único produto. Chave emitida para outro produto é recusada com `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; chave desconhecida ou adulterada, com `(LCS-1002)` |
+| Na recusa | O processo sai e o pod entra em `CrashLoopBackOff`. Num rolling update o pod que já está rodando continua servindo: o rollout trava, mas nada cai |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging foram validadas neste gateway de produção. `common.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) troca para `https://license.dev.lerian.io`: use só para chaves emitidas pelo gateway dev |
+| Refresh e carência | A chave é revalidada a cada 6 h. Quando o gateway não responde (erro de rede ou 5xx) depois de ter confirmado a chave uma vez, o processo segue servindo em janelas de carência decrescentes (2 d, 1 d, 12 h, 6 h, no máximo 3 d 18 h) e depois sai. Um processo que nunca foi confirmado ganha só 6 h. Uma recusa 4xx encerra a carência na hora. As janelas vivem em memória: um pod reiniciado durante uma queda começa sem confirmação |
+| Offline | Não há modo de licença offline nesta versão da app |
+| Gate de render | Com `global.env.name=production` o render falha sem `LICENSE_KEY` e `ORGANIZATION_IDS` |
+| Como confirmar | `GET /readyz` -> `checks.license` `up` (`n/a` quando não há cliente de licença) |
+
 ---
 
 ## 6. Como validar uma instalação bem-sucedida
@@ -204,6 +256,7 @@ curl -s localhost:14028/health                    # liveness
 | Liveness | `GET /health` | `200 {"status":"available"}` | — |
 | Loops do worker | `kubectl logs deploy/<fullname>-worker` | audit publisher/consumer, business publisher, outbound fanout, `scheduler: starting leader campaign`, `poll outcome` periódico | Loop ausente: o toggle dele em `worker.*` / `common.transfer.*` |
 | E2E em dev (comprovado) | suba um arquivo em `outbound/` no bucket de transfer, `POST /v1/credentials`, depois `POST /v1/transfers` (`sourceProduct`, `documentType` ex. `AJUD302`, `fileRef: outbound/<arquivo>`, `fileName`) com um bearer token | O worker empacota, recebe protocolo do mock, faz polling `10 -> 15 -> 35` e o transfer termina `Accepted`; um fato cai em `lerian.streaming.br-sta` | Com auth desligado a API ainda exige um bearer que nomeie um principal (não verificado em development) |
+| Não exercitado | Chamadas autenticadas à API contra o plugin-access-manager; envio br-sisbajud -> br-sta `POST /v1/transfers` (precisa de plugin-access-manager) | — | — |
 
 ---
 
@@ -216,7 +269,8 @@ curl -s localhost:14028/health                    # liveness
 | Postgres `password authentication failed` depois de mudar as senhas dev | O volume de dados guarda a senha com que foi inicializado | `helm uninstall`, apague os PVCs, reinstale |
 | Chamadas do browser bloqueadas mesmo com `CORS_ALLOWED_ORIGINS` setado | O middleware de CORS lê `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `common.cors.allowedOrigins`; `*` exige `common.security.allowCorsWildcard: true` e é recusado em produção |
 | Ferramenta escolhe `1.2.0-beta.x` em vez de `1.0.0` | A linha de versões da app recomeçou no release estável: `1.0.0` tem precedência SemVer menor, mas é o release posterior e compatível (mesmo env e migrations) | Fixe `1.0.0` explicitamente |
-| Boot recusado em produção, erros de licença | `LICENSE_KEY` / `ORGANIZATION_IDS` ausentes, ou sem egress até o gateway de licença (não há modo de licença offline nesta versão da app) | Sete os dois e libere o egress |
+| Boot recusado em produção, erros de licença | `LICENSE_KEY` / `ORGANIZATION_IDS` ausentes, chave de outro produto (`LCS-1005`) ou chave desconhecida (`LCS-1002`), ou sem egress até o gateway de licença (não há modo de licença offline nesta versão da app) | Sete os dois, use a chave deste produto, libere o egress (seção 5, Licença) |
+| `Failed to connect to plugin-auth` no boot | O plugin-access-manager não está instalado ou ainda não está acessível | Informativo: os pods ficam Ready mesmo assim. Chamadas autenticadas precisam do plugin-access-manager |
 | `PLUGIN_AUTH_ENABLED=false is only accepted in a development-class environment` | Auth desligado em `staging`/`production` | Ligue `global.auth` ou use um `global.env.name` da classe dev |
 | `MASTER_KEYS is malformed` / `must reference a key present` | Formato `versão:hex` errado ou `MASTER_KEY_VERSION` divergente | `v1:<64 chars hex>` e `common.credentials.masterKeyVersion: v1` |
 | `sta_consumer` degraded no br-sisbajud depois de um fato do br-sta | Comportamento conhecido do br-sisbajud: um fato de um transfer que ele não criou é reprocessado e bloqueia a partição | Monitore `sta_consumer` no `/readyz` do br-sisbajud; ver o runbook do br-sisbajud |

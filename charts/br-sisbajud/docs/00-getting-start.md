@@ -1,11 +1,7 @@
 # br-sisbajud — Runbook de instalação
 
-> Preenchido a partir do chart (`README.md`, `values.yaml`, `values-dev.yaml`,
-> `values-dev-with-br-sta.yaml`, `values-template.yaml`, templates) e de uma instalação
-> real ao lado de um dev bundle do br-sta num minikube isolado (6 CPU / 7 GB),
-> além de uma instalação em modo produção sobre infra externa (seção 3, Produção).
-> Objetivo: alguém de fora da squad, só com o chart + este runbook, consegue instalar
-> uma versão funcional e sabe o que checar caso algo não se comporte como esperado.
+> Como instalar, validar e diagnosticar o br-sisbajud a partir deste chart (dev bundle,
+> com o br-sta, standalone, produção). Para quem opera a instalação do chart.
 
 ---
 
@@ -18,7 +14,7 @@
 | Imagens | `ghcr.io/lerianstudio/br-sisbajud`, `br-sisbajud-migrations`, `br-sisbajud-topics` (todas privadas no GHCR) |
 | Guia de upgrade | vindo do chart 1.1.x: [`UPGRADE-1.2.md`](UPGRADE-1.2.md) |
 | Última revisão deste runbook | 2026-09-30, contra chart 1.2.0 / app 1.1.0 |
-| Contato de escalação | squad SISBAJUD (ver CODEOWNERS do chart) |
+| Contato de escalação | `@LerianStudio/G_Github_Devops` (ver `.github/CODEOWNERS`) |
 
 ---
 
@@ -90,7 +86,7 @@ Com uma dependência embutida esses Jobs são hooks post-install/post-upgrade s�
 `before-hook-creation`, então ficam `Complete` até o `ttlSecondsAfterFinished` (600 s)
 removê-los. O próximo upgrade os substitui.
 
-### br-sisbajud + br-sta juntos (comprovado em minikube)
+### br-sisbajud + br-sta juntos
 
 ```bash
 # 1. dev bundle do br-sta, somando o bucket do br-sisbajud ao Job de buckets dele
@@ -106,8 +102,7 @@ helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
 O overlay assume o release do br-sta com o nome `br-sta` (Service do manager
 `br-sta-manager:4028`) e os nomes default das Services do SeaweedFS / Redpanda.
 
-Observado: pods do br-sisbajud saudáveis cerca de 50 s depois da instalação dele (o
-br-sta sozinho levou cerca de 105 s), **0 restarts**:
+Esperado: pods do br-sisbajud Ready sem restarts, e estes Jobs Complete:
 
 | Pods (Running) | Jobs (Complete) |
 |---|---|
@@ -122,8 +117,9 @@ fica para os logs.
 Os tópicos `lerian.streaming.br-sisbajud`, `.dlq` e `.commands` são criados no Redpanda
 do br-sta, ao lado de `lerian.streaming.br-sta`.
 
-Upgrades: dois `helm upgrade` seguidos com os mesmos values não mudaram a generation de
-nenhum Deployment/StatefulSet (as senhas dev estão fixas no `values-dev.yaml`, ver seção 7).
+Upgrades: um segundo `helm upgrade` com os mesmos values não muda a generation de nenhum
+Deployment/StatefulSet nem recria pods (as senhas dev estão fixas no `values-dev.yaml`,
+ver seção 7).
 
 Limpeza:
 
@@ -236,31 +232,35 @@ boot quando os transfers estão ligados mas o caminho de submissão não pôde s
   perna de retorno precisa ser coberta pelo canal STA do próprio operador, e isso está
   fora do que esta versão do app oferece.
 
-> **Exercitado.** Esta recepção rodou contra uma instalação production-like (PostgreSQL
-> externo, Valkey com TLS, OpenBao Transit, storage compatível com S3, Kafka com TLS +
-> SASL). A primeira entrega rodou com `global.env.name=staging` e o replay com
-> `production`, na mesma infra. Resultados: `POST /v1/institutions` -> `201`; a
-> notificação da fixture 5301 -> `{"status":"processed","environment":"PRODUCTION"}` com
-> o arquivo parseado; a mesma notificação reenviada -> `skipped` (dedup pelo hash do
-> arquivo); recriar um código de instituição existente -> `409`. Comportamento conhecido
-> da app `1.1.0`: uma notificação para uma instituição que não existe responde `500`
-> SBJ-0002 em vez de um 4xx, então cadastre a instituição antes.
+**Como confirmar que a recepção funciona:**
+
+- `POST /v1/institutions` responde `201`; recriar um código de instituição existente
+  responde `409`.
+- A primeira notificação de uma remessa responde `200` com `"status":"processed"` e o
+  `environment` do arquivo (`PRODUCTION` para um arquivo 5301/5303/5308).
+- A mesma notificação reenviada responde `skipped` (dedup pelo hash do arquivo).
+- Uma notificação para uma instituição que não existe responde `500` SBJ-0002 na app
+  `1.1.0` (não um 4xx): cadastre a instituição antes.
 
 ### Produção
 
-> **Validado em modo produção.** O br-sisbajud `1.1.0` foi instalado com
-> `global.env.name=production`, o gateway de licença de produção e só infra externa
-> (nenhum subchart embutido) num cluster production-like. Confirmado em runtime:
-> PostgreSQL `sslmode=require`; Valkey com TLS e CA privada; Kafka com TLS + SASL
-> SCRAM; OpenBao Transit como KMS; origem CORS explícita; `ORGANIZATION_IDS=global`. O
-> pod ficou `1/1` cerca de 28 s depois do install, com 0 restarts. O log mostrou
-> `Organization global has a valid license` e `license validation enabled`. O `/readyz`
-> ficou healthy, com `kms`, `postgres`, `redis`, `seaweedfs` e `streaming` `up`, e o Job
-> de hook criou os tópicos `lerian.streaming.br-sisbajud` (+ `.dlq`, `.commands`).
-> Ligado ao br-sta no mesmo modo, `sta_bucket_parity` e `sta_consumer` ficaram `up`, e o
-> consumer group `sisbajud-sta-consumer` ficou Stable em `lerian.streaming.br-sta`. Isso
-> exigiu transfers ligados: ver "Modo só-consumer" na seção 5. Não exercitado: envio de
-> transfer br-sisbajud -> br-sta, que precisa do plugin-access-manager.
+**Como confirmar uma instalação de produção** (`global.env.name=production`, só infra
+externa):
+
+- O pod da app fica `1/1 Running` sem restarts.
+- O log de boot traz `Organization global has a valid license` e
+  `license validation enabled`.
+- O `/readyz` fica `healthy`, com `kms`, `postgres`, `redis`, `seaweedfs` e `streaming`
+  `up`.
+- Os tópicos `lerian.streaming.br-sisbajud`, `.dlq` e `.commands` existem no broker.
+- As conexões efetivas são as com TLS: PostgreSQL `sslmode=require`, Valkey e Kafka com
+  TLS (SASL quando configurado), Vault Transit ou AWS KMS como KMS, origem CORS
+  explícita, `ORGANIZATION_IDS=global`.
+- Com o br-sta ligado: `sta_bucket_parity` e `sta_consumer` `up`, e o consumer group
+  `sisbajud-sta-consumer` fica `Stable` em `lerian.streaming.br-sta`. Isso exige
+  transfers ligados (ver "Modo só-consumer" na seção 5).
+- Limitação conhecida: enviar transfers br-sisbajud -> br-sta exige o
+  plugin-access-manager para o bearer m2m.
 
 1. Provisione PostgreSQL, Valkey, os buckets S3 (`global.objectStorage.sisbajud.bucket`
    e o bucket de transfer do br-sta), Vault Transit (ou AWS KMS) e o broker.
@@ -387,9 +387,9 @@ curl -s localhost:14029/health     # path do liveness probe
 | Pods | `kubectl get pods` | app `1/1 Running`, 0 restarts | `CrashLoopBackOff`: o log diz a dependência que falta |
 | Jobs | `kubectl get jobs` | Dev bundle: `migrations`, `openbao-transit`, `seaweedfs-buckets`, `topics` `Complete` (até o TTL de 600 s). Infra externa: Helm e ArgoCD apagam os Jobs de hook de migrations/tópicos quando terminam com sucesso, então nenhum Job restante significa sucesso | Um Job `Failed` (mantido para os logs): host/senha do Postgres; acesso ao broker para os tópicos |
 | Readiness | `GET /readyz` | `healthy`; `postgres`, `redis`, `kms`, `seaweedfs`, `streaming` `up`; com o br-sta ligado: `sta_bucket_parity` `up` e `sta_consumer` `up` | `sta_bucket_parity` down: bucket/endpoint sta diferentes dos do br-sta, ou `not_configured` no modo só-consumer (seção 5) |
-| Integração com br-sta (comprovada) | crie um transfer no br-sta (ver o runbook do br-sta): o mock STA leva a `Accepted` e o br-sta publica um fato em `lerian.streaming.br-sta` | O fato chega ao consumer STA do br-sisbajud (grupo `sisbajud-sta-consumer`) | Um fato de transfer que o br-sisbajud não criou é reprocessado (seção 5) |
-| Recepção HTTP (exercitada) | `POST /v1/institutions`, depois `POST /v1/remittance-files/notifications` (seção 3) | `201`, depois `processed`; o reenvio responde `skipped` | `500` SBJ-0002: a instituição não existe |
-| Não exercitado | br-sisbajud → br-sta `POST /v1/transfers` (precisa de plugin-access-manager e de instituições/ordens cadastradas); arquivos inbound do BACEN/mock até o br-sisbajud | — | — |
+| Integração com br-sta | crie um transfer no br-sta (ver o runbook do br-sta): o mock STA leva a `Accepted` e o br-sta publica um fato em `lerian.streaming.br-sta` | O fato chega ao consumer STA do br-sisbajud (grupo `sisbajud-sta-consumer`) | Um fato de transfer que o br-sisbajud não criou é reprocessado (seção 5) |
+| Recepção HTTP | `POST /v1/institutions`, depois `POST /v1/remittance-files/notifications` (seção 3) | `201`, depois `processed`; o reenvio responde `skipped` | `500` SBJ-0002: a instituição não existe |
+| Limitação conhecida | br-sisbajud → br-sta `POST /v1/transfers` exige o plugin-access-manager (o bearer m2m) e instituições/ordens cadastradas; sem ele o envio de transfers falha | — | Aponte `global.auth.host` para um plugin-access-manager real |
 
 ---
 
@@ -397,7 +397,7 @@ curl -s localhost:14029/health     # path do liveness probe
 
 | Erro/log | Causa | Correção |
 |---|---|---|
-| Valkey e a app reiniciam a cada `helm upgrade` | O subchart do Valkey regenera uma senha deixada vazia | O `values-dev.yaml` agora fixa senhas dev públicas para PostgreSQL e Valkey; fixe as suas em outros arquivos de dev |
+| Valkey e a app reiniciam a cada `helm upgrade` | O subchart do Valkey regenera uma senha deixada vazia | O `values-dev.yaml` fixa senhas dev públicas para PostgreSQL e Valkey; fixe as suas em outros arquivos de dev |
 | Postgres `password authentication failed` depois de mudar as senhas dev | O volume de dados guarda a senha com que foi inicializado | `helm uninstall`, apague os PVCs, reinstale |
 | `sta_consumer` `degraded` / `consumer_not_polling`, log `STA inbound event requeued: transfer_not_found` e depois `partition halted (head-of-line blocked)` | Comportamento conhecido da app: um fato do br-sta que referencia um transfer desconhecido pelo br-sisbajud é reprocessado e bloqueia a partição | Monitore `sta_consumer`; em dev, não crie transfers no br-sta por fora do br-sisbajud num tópico compartilhado |
 | Job de tópicos falha com TLS ligado | A imagem de tópicos precisa da CA do broker como arquivo quando `STREAMING_TLS_ENABLED=true`, mesmo para broker com CA pública | Sete `brSisbajud.secrets.STREAMING_TLS_CA_CERT`, ou provisione os tópicos por fora e use `topics.enabled=false` |
@@ -406,7 +406,6 @@ curl -s localhost:14029/health     # path do liveness probe
 | Pod nunca fica Ready, `/readyz` `sta_bucket_parity` `not_configured` | Modo só-consumer (`consumerEnabled` ligado, `transfersEnabled` desligado): limitação conhecida da app `1.1.0` | Ligue os transfers também (seção 5, Modo só-consumer) |
 | `500` SBJ-0002 em `POST /v1/remittance-files/notifications` | A instituição não existe (comportamento conhecido da app `1.1.0`, em vez de um 4xx) | Cadastre antes com `POST /v1/institutions` |
 | Chamadas do browser bloqueadas mesmo com origens CORS setadas | O middleware de CORS do lib-commons lê `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `brSisbajud.cors.allowedOrigins` (o chart mapeia); wildcard exige o opt-in explícito |
-| br-sta `1.0.0` "mais velho" que `1.2.0-beta.x` | A linha de versões do br-sta recomeçou no release estável: `1.0.0` é o release posterior e compatível | Fixe o br-sta em `1.0.0` explicitamente |
 
 ---
 

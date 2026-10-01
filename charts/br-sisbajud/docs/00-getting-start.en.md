@@ -44,7 +44,7 @@ chart fails fast until the external connections and secrets are set (section 5).
 |---|---|---|
 | PostgreSQL | Always (single-tenant: the host is required) | `global.datastores.postgres` + `brSisbajud.secrets.POSTGRES_PASSWORD` |
 | Valkey / Redis | Always (rate limit, idempotency, processing locks) | `global.datastores.redis` (`host:port`) + `brSisbajud.secrets.REDIS_PASSWORD` |
-| Kafka / Redpanda | Streaming is on by default (lib-streaming producer/consumers, Midaz balance translator, br-sta facts) | `global.streaming` + `brSisbajud.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
+| Kafka / Redpanda | Streaming is on by default (lib-streaming producer/consumers, Midaz balance translator, br-sta facts): brokers required; TLS + CA in production | `global.streaming` + `brSisbajud.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
 | HashiCorp Vault Transit **or** AWS KMS | Always (envelope encryption of court-ordered seizure data) | `global.kms` + `brSisbajud.secrets.VAULT_APPROLE_SECRET_ID` (or `VAULT_TOKEN`) |
 | S3-compatible object storage | Always (encrypted seizure artifacts + the br-sta transfer bucket) | `global.objectStorage.sisbajud` / `.sta` + `SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY` |
 | br-sta | Remittance intake (business facts on `lerian.streaming.br-sta`) and return-file submission (`POST /v1/transfers`) | `brSisbajud.sta.*`, `global.objectStorage.sta` (the same block br-sta reads) |
@@ -142,7 +142,7 @@ default** (and off in `values-dev.yaml`):
 
 | Value | Env key | Default | What it does when `true` |
 |---|---|---|---|
-| `brSisbajud.sta.consumerEnabled` | `STA_CONSUMER_ENABLED` | `false` | Subscribes to br-sta's business facts (`lerian.streaming.br-sta`) and takes the remessas br-sta announces (needs `STREAMING_BROKERS` and `sta.expectedTenantSt`) |
+| `brSisbajud.sta.consumerEnabled` | `STA_CONSUMER_ENABLED` | `false` | Subscribes to br-sta's business facts (`lerian.streaming.br-sta`) and takes the remessas br-sta announces (needs `global.streaming.enabled: true`, `STREAMING_BROKERS` and `sta.expectedTenantSt`) |
 | `brSisbajud.sta.transfersEnabled` | `STA_TRANSFERS_ENABLED` | `false` | Submits generated return files to br-sta (`POST /v1/transfers`), minting an m2m bearer from `PLUGIN_AUTH_HOST` (needs `sta.transfersBaseUrl`, `sta.clientId` + `STA_CLIENT_SECRET`) |
 
 With both off, **remessas come in through the HTTP intake**, the only reception path
@@ -304,7 +304,7 @@ global:
     sisbajud: { endpoint: "", region: "", bucket: "sisbajud" }
     sta:      { bucket: "" }                # = br-sta's transfer bucket (required, no default)
   kms: { vendor: "hashicorp-vault", vaultAddr: "", vaultAuthMethod: "approle", vaultRoleId: "", vaultMount: "transit" }
-  streaming: { brokers: "", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sisbajud" }
+  streaming: { enabled: true, brokers: "", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sisbajud" }
   auth: { enabled: true, host: "" }
 ```
 

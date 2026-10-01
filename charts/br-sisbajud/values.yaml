@@ -67,9 +67,14 @@ global:
   # tlsEnabled | saslMechanism | saslUsername | saslAllowPlaintext | compression |
   # requiredAcks | batchLingerMs | importantEmitTimeoutMs. SASL password and CA
   # cert are secrets: brSisbajud.secrets.STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT.
+  # On by default (needs OUTBOX_ENABLED=true, also the default). With it on the
+  # render requires brokers; in a production-like environment tlsEnabled: true;
+  # with TLS, secrets.STREAMING_TLS_CA_CERT; with a saslMechanism, saslUsername +
+  # secrets.STREAMING_SASL_PASSWORD. Set enabled: false to run without a broker.
   # Example:
-  #   streaming: { brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sisbajud" }
-  streaming: {}
+  #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sisbajud" }
+  streaming:
+    enabled: true
   # -- Env-wide multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls.
   # The service API key is a secret: brSisbajud.secrets.MULTI_TENANT_SERVICE_API_KEY.
   # Example: multiTenant: { enabled: true, url: "http://tenant-manager:4026", redisHost: "valkey.internal" }
@@ -194,7 +199,7 @@ brSisbajud:
   # group empty to keep every default.
   # ---------------------------------------------------------------------------
   # -- ENVIRONMENT_NAME/ENV_NAME come from global.env.name. Fields: logLevel,
-  # defaultTenantId, deploymentMode, version, systemplaneEnabled,
+  # defaultTenantId, deploymentMode (saas|byoc|local, default byoc), version, systemplaneEnabled,
   # infraConnectTimeoutSec, dbMetricsIntervalSec, idempotencyRetryWindowSec,
   # circuitBreakerEnabled.
   app: {}
@@ -239,7 +244,7 @@ brSisbajud:
   #   slaAlert:              { enabled, scanInterval }
   #   returnFile:            { enabled, scanInterval, limit, environment }
   #   informationReturnFile: { enabled, scanInterval, limit }
-  #   informationRequest:    { enabled, scanInterval, batchSize, lockTtl }   (opt-in)
+  #   informationRequest:    { enabled, scanInterval, batchSize, lockTtl }   (enabled default false; the rest opt-in)
   #   monitoringExpiry:      { enabled, scanInterval, batchSize }            (opt-in)
   #   execution:             { enabled, orchestratorLockTtl, orchestratorRenewInterval,
   #                            unblockScanInterval, unblockBatchSize }
@@ -251,7 +256,12 @@ brSisbajud:
   # priorityEventTypes, allowEmptyTenant.
   outbox: {}
   # -- Per-app streaming identity: cloudeventsSource (must stay "br-sisbajud"),
-  # clientId, healthCheckTimeout. Brokers/TLS/SASL come from global.streaming.
+  # clientId, healthCheckTimeout, topicAutoProvision (STREAMING_TOPIC_AUTO_PROVISION,
+  # default "true": the app creates its own declared topics at boot; "false" when
+  # topics are pre-provisioned by IaC), closeTimeoutS (STREAMING_CLOSE_TIMEOUT_S,
+  # default "20": must stay below the pod terminationGracePeriodSeconds, Kubernetes
+  # default 30s, which this chart does not override). Brokers/TLS/SASL come from
+  # global.streaming.
   streaming: {}
   # -- Core balance consumer (all optional): group, dedupTtl, retryBudget.
   balanceConsumer: {}

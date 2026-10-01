@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
       # Chart line branches for legacy patches, e.g. maintenance/midaz-5.7.x.
       # maintenance/* is the convention; hotfix/* stays accepted so lines created
       # under the old prefix keep releasing until they are renamed.
@@ -30,8 +29,6 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       matrix: ${{ steps.restrict.outputs.matrix }}
-      chart_line_chart: ${{ steps.restrict.outputs.chart_line_chart }}
-      chart_line_range: ${{ steps.restrict.outputs.chart_line_range }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -49,11 +46,17 @@ jobs:
           get-app-name: true
           path-level: 2
 
+      # On a chart line the range comes from the branch's own committed .releaserc,
+      # written by whoever cut the line (Severino's create_chart_line) and reviewable
+      # like any other file. The branch name is only checked against it: a name alone
+      # never decides what gets published, and a line whose .releaserc was never
+      # edited for it is refused rather than released under main's config.
       - name: Restrict matrix on chart line branches
         id: restrict
         env:
           MATRIX: ${{ steps.changed-paths.outputs.matrix }}
           REF_NAME: ${{ github.ref_name }}
+          RELEASERC: .github/configs/.releaserc.json
         run: |
           set -euo pipefail
 
@@ -78,15 +81,25 @@ jobs:
           esac
 
           if [ -z "${CHART}" ]; then
-            {
-              echo "matrix=${MATRIX}"
-              echo "chart_line_chart="
-              echo "chart_line_range="
-            } >> "$GITHUB_OUTPUT"
+            echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "::notice::Chart line branch — restricting the release matrix to '${CHART}' in range ${RANGE}"
+          # Exactly one entry: semantic-release would take the first of two, and which
+          # one that is should not be a question anybody has to answer.
+          DECLARED=$(jq -r --arg branch "${REF_NAME}" \
+            '[.branches[] | objects | select(.name == $branch) | .range // ""] | if length == 1 then .[0] else "" end' \
+            "${RELEASERC}")
+          if [ -z "${DECLARED}" ]; then
+            echo "::error::${RELEASERC} does not declare '${REF_NAME}' exactly once with a range — this chart line's .releaserc was never set up for it, refusing to release"
+            exit 1
+          fi
+          if [ "${DECLARED}" != "${RANGE}" ]; then
+            echo "::error::${RELEASERC} declares range ${DECLARED} for '${REF_NAME}', but the branch name says ${RANGE} — refusing to release until they agree"
+            exit 1
+          fi
+
+          echo "::notice::Chart line branch — restricting the release matrix to '${CHART}' in range ${DECLARED}"
 
           # A chart line branch releases only its own chart. Anything else that
           # changed on the branch would be released with the wrong version range.
@@ -96,11 +109,7 @@ jobs:
             echo "::notice::No change to charts/${CHART} in this push — nothing to release"
           fi
 
-          {
-            echo "matrix=${RESTRICTED}"
-            echo "chart_line_chart=${CHART}"
-            echo "chart_line_range=${RANGE}"
-          } >> "$GITHUB_OUTPUT"
+          echo "matrix=${RESTRICTED}" >> "$GITHUB_OUTPUT"
 
   release-helm-chart:
     needs: get-changed-paths
@@ -225,53 +234,53 @@ jobs:
           cd .github/scripts
           go build -o update-chart-version-readme-bin ./update-chart-version-readme
 
-      - name: Generate .releaserc file
+      # The committed .github/configs/.releaserc.json is the whole config, used as it
+      # is. It is placed in the chart dir only because semantic-release (cosmiconfig 9,
+      # searchStrategy "none") reads its config from the cwd and nowhere above it — the
+      # copy is byte-identical, nothing is filled in here.
+      #
+      # Everything in it is relative to the chart dir, so one file serves every chart:
+      # chartPath ".", the git assets, and the exec commands, which read the chart name
+      # off $PWD. The tag format comes from semantic-release-monorepo, which the file
+      # extends: `<package.json name>-v${version}`, hence the package.json below.
+      #
+      # On a chart line the file is the line's own, edited once when the line was cut;
+      # get-changed-paths has already refused a line whose file does not declare it.
+      - name: Place the committed .releaserc
         env:
-          CHART_LINE_RANGE: ${{ needs.get-changed-paths.outputs.chart_line_range }}
-          BRANCH_NAME: ${{ github.ref_name }}
+          CHART_PATH: ${{ matrix.chart.working_dir }}
         run: |
-          CHART_NAME="${{ matrix.chart.name }}"
-          CHART_PATH="${{ matrix.chart.working_dir }}"
+          set -euo pipefail
 
-          # cwd for Semantic Release is the chart dir (working_directory below),
-          # so exec/helm3/git plugin paths must be relative to it, not repo root.
-          #
-          # semantic-release-monorepo rewrites ${nextRelease.version} to the full
-          # git tag (not the plain semver) for the exec plugin's "success"/"fail"
-          # steps specifically — it still resolves to plain semver in "prepare"
-          # and "publish".
-          # Keep the README update in prepareCmd so @semantic-release/git can
-          # commit it. Package and push in publishCmd, after the release commit/tag
-          # succeeds and before the success notification. A fresh temporary
-          # directory lets Helm determine the exact package filename from
-          # Chart.yaml, so publishCmd does not depend on nextRelease.version.
-          jq \
-            --arg tagFormat "$CHART_NAME-v\${version}" \
-            --arg publishCmd "PACKAGE_DIR=\$(mktemp -d) && helm package . --destination \"\$PACKAGE_DIR\" && set -- \"\$PACKAGE_DIR\"/*.tgz && [ \"\$#\" -eq 1 ] && helm push \"\$1\" oci://ghcr.io/lerianstudio" \
-            --arg prepareCmd "cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart $CHART_NAME --version \${nextRelease.version}" \
-            '.plugins[2][1].chartPath = "." |
-              .plugins[4][1].assets = ["Chart.yaml", "../../README.md"] |
-              .tagFormat = $tagFormat |
-              del(.plugins[3][1].successCmd) |
-              .plugins[3][1].publishCmd = $publishCmd |
-              .plugins[3][1].prepareCmd = $prepareCmd' \
-            .github/configs/.releaserc.json > "$CHART_PATH/.releaserc"
+          # cosmiconfig reads .releaserc before .releaserc.json, so a config committed
+          # inside the chart would silently win over the one this step places.
+          for existing in "$CHART_PATH"/.releaserc "$CHART_PATH"/.releaserc.*; do
+            if [ -e "$existing" ]; then
+              echo "::error::${existing} exists — the release config is .github/configs/.releaserc.json, a chart may not carry its own"
+              exit 1
+            fi
+          done
 
-          # On a chart line branch, register it as a semantic-release maintenance
-          # branch so the next version stays inside its range (e.g. 5.7.x -> 5.7.1)
-          if [ -n "${CHART_LINE_RANGE}" ]; then
-            jq \
-              --arg name "${BRANCH_NAME}" \
-              --arg range "${CHART_LINE_RANGE}" \
-              '.branches += [{name: $name, range: $range, channel: $range}]' \
-              "$CHART_PATH/.releaserc" > "$CHART_PATH/.releaserc.tmp" && mv "$CHART_PATH/.releaserc.tmp" "$CHART_PATH/.releaserc"
-          fi
+          cp .github/configs/.releaserc.json "$CHART_PATH/.releaserc.json"
+          jq . "$CHART_PATH/.releaserc.json"
 
-          jq . "$CHART_PATH/.releaserc"
-
+      # The name is the chart directory, written rather than left to `npm init -y`: npm
+      # rewrites some names (it strips a leading "node-" and a trailing ".js"/"-js"),
+      # and the name IS the tag prefix, so a rewrite would cut tags nothing reads.
       - name: Init ephemeral package.json
         working-directory: ${{ matrix.chart.working_dir }}
-        run: '[ -f package.json ] || npm init -y >/dev/null'
+        env:
+          CHART_NAME: ${{ matrix.chart.name }}
+        run: |
+          set -euo pipefail
+          if [ ! -f package.json ]; then
+            jq -n --arg name "$CHART_NAME" '{name: $name, version: "0.0.0", private: true}' > package.json
+          fi
+          NAME=$(jq -r '.name // ""' package.json)
+          if [ "$NAME" != "$CHART_NAME" ]; then
+            echo "::error::package.json names '${NAME}', not '${CHART_NAME}' — the tags would be cut as ${NAME}-v*"
+            exit 1
+          fi
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@16ca923e6ccbb50770c415a0ccd43709a8c5f7a4 # v4.2.2
@@ -388,9 +397,9 @@ jobs:
   # ---------------------------------------------------------------------------
   # Pin the freshly published charts into the GitOps repository.
   #
-  # Only from the default branch. develop and the maintenance/*.x lines also
-  # release, but their versions are not what the internal tier should track: a
-  # maintenance release of an older line would pin the environments *backwards*.
+  # Only from the default branch. The maintenance/*.x lines also release, but
+  # their versions are not what the internal tier should track: a maintenance
+  # release of an older line would pin the environments *backwards*.
   # ---------------------------------------------------------------------------
   collect-published-charts:
     name: Collect Published Charts

@@ -14,6 +14,8 @@ global:
   objectStorage:
     sta:
       bucket: "br-sta-transfer"
+  streaming:
+    enabled: true
 
 brSisbajud:
   vault:

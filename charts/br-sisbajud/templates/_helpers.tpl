@@ -451,7 +451,7 @@ relaxations and the NOTES warnings.
 
 {{- define "br-sisbajud.streamingEnabledRaw" -}}
 {{- $cm := .Values.brSisbajud.configmap | default dict -}}
-{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "true") -}}
+{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") -}}
 {{- end -}}
 
 {{/*
@@ -932,13 +932,14 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- else -}}
 {{- include $req (dict "context" $ "key" "AWS_REGION" "value" (index $data "AWS_REGION") "why" "when KMS_PROVIDER=aws" "set" "global.kms.awsRegion (or brSisbajud.kms.awsRegion)") -}}
 {{- end -}}
-{{- /* Streaming (on by default): the app fails at boot when enabled without brokers,
+{{- /* Streaming (off by default, like the other Lerian charts; every check below
+   applies only when it is enabled): the app fails at boot when enabled without brokers,
    and without TLS in a production-like environment (validateProductionConfig). With
    TLS on, every consumer (Midaz balance translator, balance consumer, STA consumer)
    builds its dialer from STREAMING_TLS_CA_CERT and silently never starts without it
    (buildStreamingTLSConfig; wiring failures are non-fatal), so the CA is required. */ -}}
 {{- if eq (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true" -}}
-{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (streaming is on by default; set global.streaming.enabled=false to run without a broker)" "set" "global.streaming.brokers") -}}
+{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (streaming is off by default, like the other Lerian charts; enable it together with brokers/TLS/SASL/CA, or set global.streaming.enabled=false)" "set" "global.streaming.brokers") -}}
 {{- /* TLS may also arrive as a brSisbajud.extraEnvVars entry (the 1.1.x wiring); a
    valueFrom is undecidable at render, so both TLS gates are skipped for it. */ -}}
 {{- $xs := include "br-sisbajud.extraEnv" . | fromYaml -}}

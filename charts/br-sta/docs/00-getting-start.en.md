@@ -1,11 +1,8 @@
 # br-sta — Installation Runbook
 
-> Filled in from the chart itself (`README.md`, `values.yaml`, `values-dev.yaml`,
-> `values-template.yaml`, templates) and from a real install of the dev bundle on an
-> isolated minikube (6 CPU / 7 GB), plus a production-mode install on external infra
-> (section 3, Production). Goal: someone outside the squad, with only the
-> chart and this runbook, can install a working release and knows what to check if
-> something does not behave as expected.
+> Scope: installing and operating the br-sta chart (dev bundle, pairing with
+> br-sisbajud, production on external infra). Audience: operators outside the STA
+> squad who have only the chart and this runbook.
 
 ---
 
@@ -13,11 +10,11 @@
 
 | Field | Value |
 |---|---|
-| Product / Chart | `br-sta-helm` (first release **1.0.0**) / app **1.0.0** (first stable STA release) |
+| Product / Chart | `br-sta-helm` (first release **1.0.0**) / app **1.0.0** |
 | Components | `manager` (HTTP API, `:4028`), `worker` (background process, probe server `:4029`, exactly one replica), migrations Job |
 | Images | `ghcr.io/lerianstudio/br-sta-manager`, `br-sta-worker`, `br-sta-migrations` (all private on GHCR); dev only: `mock-sta-server` (private) |
-| Last review of this runbook | 2026-09-30, against chart 1.0.0 / app 1.0.0 |
-| Escalation contact | STA squad (see chart CODEOWNERS) |
+| Last review of this runbook | 2026-10-01 |
+| Escalation contact | `@LerianStudio/G_Github_Devops` (see `.github/CODEOWNERS`) |
 
 ---
 
@@ -60,7 +57,7 @@ RabbitMQ exchanges and queues at boot.
 
 ## 3. Installation order
 
-### Dev bundle (proved on minikube)
+### Dev bundle
 
 ```bash
 kubectl create namespace sta-dev
@@ -76,17 +73,17 @@ helm install br-sta charts/br-sta -n sta-dev \
 `imagePullSecrets` (root key) is used by the manager, worker, migrations Job and the
 mock STA server; the bundled infra and bootstrap Jobs run public images.
 
-Expected after about **105 s** on a fresh namespace:
+Expected on a fresh namespace:
 
 | Pods (Running) | Jobs (Complete) |
 |---|---|
-| `br-sta-manager-*`, `br-sta-worker-*` (**0 restarts**), `br-sta-mock-sta-*`, `br-sta-postgresql-0`, `br-sta-valkey-primary-0`, `br-sta-rabbitmq-0`, `redpanda-0` (2/2), `seaweedfs-master-0`, `seaweedfs-volume-0`, `seaweedfs-filer-0`, `seaweedfs-s3-*` | `br-sta-migrations-<hash>`, `br-sta-seaweedfs-buckets-<hash>`, `br-sta-redpanda-topics-<hash>` |
+| `br-sta-manager-*`, `br-sta-worker-*`, `br-sta-mock-sta-*`, `br-sta-postgresql-0`, `br-sta-valkey-primary-0`, `br-sta-rabbitmq-0`, `redpanda-0` (2/2), `seaweedfs-master-0`, `seaweedfs-volume-0`, `seaweedfs-filer-0`, `seaweedfs-s3-*` | `br-sta-migrations-<hash>`, `br-sta-seaweedfs-buckets-<hash>`, `br-sta-redpanda-topics-<hash>` |
 
 The bootstrap Jobs are regular Jobs named after a hash of their spec (not hooks): the
 app's `/readyz` gates on the transfer bucket, so a post-install hook would never run.
 
-Upgrades are idempotent: two consecutive `helm upgrade` with the same values
-produced no error, no Deployment/StatefulSet generation change and the same pods.
+Upgrades are idempotent: a `helm upgrade` with the same values changes no
+Deployment/StatefulSet generation and keeps the same pods.
 
 Cleanup:
 
@@ -99,25 +96,27 @@ kubectl delete namespace sta-dev
 ### With br-sisbajud
 
 1. Install br-sta as above, adding `--set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'`
-   (its bucket Job then also creates br-sisbajud's bucket).
+   (its bucket Job also creates br-sisbajud's bucket).
 2. Install br-sisbajud in the same namespace with its `values-dev.yaml` +
    `values-dev-with-br-sta.yaml` (see the br-sisbajud runbook). It reuses br-sta's
    SeaweedFS and Redpanda and calls `http://br-sta-manager:4028`.
 
 ### Production
 
-> **Validated in production mode.** br-sta `1.0.0` was installed with
-> `global.env.name=production`, the production license gateway and external infra only
-> (no bundled subchart) in a production-like cluster. Confirmed at runtime:
-> PostgreSQL `sslmode=require`; Valkey over TLS with a private CA; RabbitMQ over
-> `amqps` (5671) with the management health check over `https` (15671) and a CA bundle
-> (see "RabbitMQ with a private CA" below); Kafka with TLS + SASL SCRAM; an explicit CORS
-> origin; `ORGANIZATION_IDS=global`. The migrations ran as the `pre-install` hook, and
-> the manager and worker were `1/1` about 37 s later with 0 restarts. `/readyz`
-> returned `200`, with `license`, `postgres`, `rabbitmq`, `redis` (`tls: true`) and
-> `storage_transfer` `up`. The worker loops started: business publisher, outbound
-> fanout, leader election and audit consumer. Not exercised: authenticated API calls
-> and transfer submission from br-sisbajud, since both need plugin-access-manager.
+> **How to confirm a production install** (`global.env.name=production`, external infra):
+>
+> - [ ] PostgreSQL with `sslmode=require` (or stricter), Valkey over TLS, RabbitMQ over
+>   `amqps` with the management API over `https` (private CA: see "RabbitMQ with a
+>   private CA" below), Kafka with TLS + SASL, explicit CORS origins, `LICENSE_KEY` and
+>   `ORGANIZATION_IDS` set.
+> - [ ] The migrations hook completes, then the manager and the worker are `1/1 Running`.
+> - [ ] `GET /readyz` returns `200`, with `license`, `postgres`, `rabbitmq`, `redis`
+>   (`tls: true`) and `storage_transfer` `up`.
+> - [ ] The worker log shows the business publisher, outbound fanout, leader election
+>   and audit consumer starting.
+>
+> Known limitation: authenticated API calls and transfer submission from br-sisbajud
+> need a reachable plugin-access-manager.
 
 1. Provision PostgreSQL (database/user `br_sta` by default), Valkey, RabbitMQ (with the
    management API reachable), the S3 buckets, and Kafka/Redpanda (streaming is on by
@@ -231,7 +230,7 @@ verifier/export generator).
 |---|---|
 | One key per product | A key licenses a single product. A key issued for another product is refused with `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; an unknown or altered key with `(LCS-1002)` |
 | On refusal | The process exits and the pod goes to `CrashLoopBackOff`. In a rolling update the pod that is already running keeps serving, so the rollout stalls but nothing goes down |
-| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging were validated on this production gateway. `common.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) switches to `https://license.dev.lerian.io`: use it only for keys issued by the dev gateway |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging are validated on this production gateway too. `common.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) switches to `https://license.dev.lerian.io`: use it only for keys issued by the dev gateway |
 | Refresh and grace | The key is re-validated every 6 h. When the gateway does not answer (network error or 5xx) after it has confirmed the key once, the process keeps serving through decaying grace windows (2 d, 1 d, 12 h, 6 h, so at most 3 d 18 h) and then exits. A process that was never confirmed gets 6 h only. A 4xx refusal ends the grace at once. The windows live in memory: a pod restarted during an outage starts unconfirmed |
 | Offline | No offline license mode in this app version |
 | Render gate | With `global.env.name=production` the render fails without `LICENSE_KEY` and `ORGANIZATION_IDS` |
@@ -256,8 +255,8 @@ curl -s localhost:14028/health                    # liveness
 | Readiness | `GET /readyz` | `200`, `status: healthy`; `postgres`, `redis`, `rabbitmq`, `storage_transfer` `up` (`license` `n/a` without a key; `storage_audit_exports` `skipped` on the manager) | A `down` check names the dependency; a missing bucket shows as `storage_transfer` down |
 | Liveness | `GET /health` | `200 {"status":"available"}` | — |
 | Worker loops | `kubectl logs deploy/<fullname>-worker` | audit publisher/consumer, business publisher, outbound fanout, `scheduler: starting leader campaign`, periodic `poll outcome` | Missing loop: its toggle under `worker.*` / `common.transfer.*` |
-| Dev E2E (proved) | upload a file under `outbound/` in the transfer bucket, `POST /v1/credentials`, then `POST /v1/transfers` (`sourceProduct`, `documentType` e.g. `AJUD302`, `fileRef: outbound/<file>`, `fileName`) with a bearer token | The worker packages it, gets a protocol from the mock, polls `10 -> 15 -> 35` and the transfer ends `Accepted`; a fact lands on `lerian.streaming.br-sta` | With auth off the API still requires a bearer naming a principal (not verified in development) |
-| Not exercised | Authenticated API calls against plugin-access-manager; br-sisbajud -> br-sta `POST /v1/transfers` submission (needs plugin-access-manager) | — | — |
+| Dev transfer flow | upload a file under `outbound/` in the transfer bucket, `POST /v1/credentials`, then `POST /v1/transfers` (`sourceProduct`, `documentType` e.g. `AJUD302`, `fileRef: outbound/<file>`, `fileName`) with a bearer token | The worker packages it, gets a protocol from the mock, polls `10 -> 15 -> 35` and the transfer ends `Accepted`; a fact lands on `lerian.streaming.br-sta` | With auth off the API still requires a bearer naming a principal (not verified in development) |
+| Known limitation | Authenticated API calls and br-sisbajud -> br-sta `POST /v1/transfers` submission | Need a reachable plugin-access-manager | `global.auth.host` |
 
 ---
 
@@ -269,7 +268,6 @@ curl -s localhost:14028/health                    # liveness
 | `redpanda-topics` Job stuck on `waiting for ...` | The bundled Redpanda's Kafka API is not up yet (the Job waits on `rpk topic list`) | Check the `redpanda-0` pod and its logs; the Job retries until the broker answers |
 | Postgres `password authentication failed` after changing the dev passwords | The data volume keeps the password it was initialised with | `helm uninstall`, delete the PVCs, reinstall |
 | Browser calls blocked although `CORS_ALLOWED_ORIGINS` is set | The CORS middleware reads `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `common.cors.allowedOrigins`; `*` needs `common.security.allowCorsWildcard: true` and is refused in production |
-| Tooling picks `1.2.0-beta.x` over `1.0.0` | The app's version line was reset for the stable release: `1.0.0` has lower SemVer precedence but is the later, compatible release (same env and migrations) | Pin `1.0.0` explicitly |
 | Boot refused in production, license errors | `LICENSE_KEY` / `ORGANIZATION_IDS` missing, a key for another product (`LCS-1005`) or an unknown key (`LCS-1002`), or no egress to the license gateway (there is no offline license mode in this app version) | Set both, use this product's key, allow egress (section 5, License) |
 | `Failed to connect to plugin-auth` at boot | plugin-access-manager is not installed or not reachable yet | Informational: the pods still become Ready. Authenticated calls need plugin-access-manager |
 | `PLUGIN_AUTH_ENABLED=false is only accepted in a development-class environment` | Auth off in `staging`/`production` | Enable `global.auth` or use a development-class `global.env.name` |

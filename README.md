@@ -235,7 +235,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### BR STA
 
-BACEN STA (Sistema de Transferência de Arquivos): file transfers to and from BACEN, operator credentials and the audit trail. The app's stable line restarted at `1.0.0`: lower SemVer precedence than its `1.2.0-beta.x` pre-releases, but the later, compatible release of the same code.
+BACEN STA (Sistema de Transferência de Arquivos): file transfers to and from BACEN, operator credentials and the audit trail.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
 

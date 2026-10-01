@@ -18,9 +18,7 @@ Deploys **br-sta**, the Lerian BACEN STA (Sistema de Transferência de Arquivos)
 | `worker` | `ghcr.io/lerianstudio/br-sta-worker` | Background process (probe server `:4029`): the BACEN outbound scheduler (the **only** path that uploads to BACEN), inbound polling, audit publisher/consumer, business-event delivery, partition manager, verifier, export generator, reporter bridge. Exactly one replica, `Recreate` |
 | migrations | `ghcr.io/lerianstudio/br-sta-migrations` | Applies the SQL schema (single-tenant) |
 
-The chart tracks application **1.0.0** (`appVersion`), the first stable STA release; the three images follow `appVersion` unless pinned.
-
-> **Version line reset.** The app's pre-releases were numbered `1.2.0-beta.x`; its first stable release restarted at `1.0.0`. `1.0.0` has lower SemVer precedence than every `1.2.0-beta.x`, but it is the later release of the same code lineage: the env contract and the migration sequence `000001`–`000019` are unchanged, so moving from `1.2.0-beta.16` to `1.0.0` is a compatible upgrade (no schema reset, no env change). Tooling that picks "the highest version" would pick the betas: pin `1.0.0` explicitly.
+The chart tracks application **1.0.0** (`appVersion`); the three images follow `appVersion` unless pinned.
 
 ---
 
@@ -58,7 +56,7 @@ Start `my-values.yaml` from [`values-template.yaml`](values-template.yaml). It i
 $ helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version <new-version> -n br-sta -f my-values.yaml
 ```
 
-Coming from the pre-release `br-sta-helm` 1.0.0-beta.x charts: the values moved to the productized shape. The app block `br-sta:` becomes `common:` (shared config and secrets) plus `manager:` (the Deployment), the worker keeps `worker:`, and every native env key under `br-sta.configmap` / `br-sta.secrets` goes to `common.configmap` / `common.secrets` (or, better, to the matching `global.*` mask / grouped parameter). The manager Service is now `<release-name-base>-manager` on port `4028`, and `otel-collector-lerian.enabled` is replaced by `global.observability.enabled`.
+Coming from the pre-release `br-sta-helm` 1.0.0-beta.x charts: the values moved to the productized shape. The app block `br-sta:` becomes `common:` (shared config and secrets) plus `manager:` (the Deployment), the worker keeps `worker:`, and every native env key under `br-sta.configmap` / `br-sta.secrets` goes to `common.configmap` / `common.secrets` (or, better, to the matching `global.*` mask / grouped parameter). The manager Service is `<release-name-base>-manager` on port `4028`, and `otel-collector-lerian.enabled` is replaced by `global.observability.enabled`.
 
 ### Keeping an existing in-cluster address
 

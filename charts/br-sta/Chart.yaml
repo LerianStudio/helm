@@ -22,11 +22,6 @@ version: 1.0.0
 # NOTE: appVersion is the default image tag for the manager, the worker and the
 # migrations Job (the three images are released together under one tag). Override
 # via manager.image.tag / worker.image.tag / migrations.image.tag when needed.
-# The app's first stable release (br-sfn tag sta-v1.0.0). The version line was
-# reset: 1.0.0 has LOWER SemVer precedence than the 1.2.0-beta.x pre-releases,
-# but it is the later release of the same code lineage (41 commits ahead of
-# sta-v1.2.0-beta.16, same env contract, same migrations), so moving to it is a
-# compatible upgrade, not a downgrade.
 appVersion: "1.0.0"
 
 keywords:

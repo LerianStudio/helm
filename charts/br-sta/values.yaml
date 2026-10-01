@@ -83,13 +83,23 @@ global:
   auth: {}
   # -- Env-wide streaming (lib-streaming / Redpanda / Kafka): enabled | brokers |
   # tlsEnabled | saslMechanism | saslUsername | saslAllowPlaintext | compression |
-  # requiredAcks | batchLingerMs | importantEmitTimeoutMs. SASL password and CA
-  # cert are secrets: common.secrets.STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT.
+  # requiredAcks | batchLingerMs | importantEmitTimeoutMs | topicAutoProvision.
+  # SASL password and CA cert are secrets: common.secrets.STREAMING_SASL_PASSWORD /
+  # STREAMING_TLS_CA_CERT.
   # br-sta publishes its business facts on `lerian.streaming.br-sta` (+ `.dlq`),
-  # the topic br-sisbajud consumes; both topics must exist before streaming is on.
+  # the topic br-sisbajud consumes. ON by default (STREAMING_ENABLED=true): brokers
+  # are then REQUIRED (the render fails without them); facts produced while it is
+  # off are never re-sent. Set enabled: false only for an install with no broker.
+  # topicAutoProvision (STREAMING_TOPIC_AUTO_PROVISION, default "true"): both
+  # binaries create the two topics at boot when the principal has CreateTopics
+  # (a denied create is a WARN, not a boot failure); set "false" when the topics
+  # are provisioned through IaC — they must then exist before the first boot.
+  # The facts leave through the worker's business publisher: keep
+  # common.businessEvents.enabled and common.rabbitmq.enabled on (both default true).
   # Example:
   #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sta" }
-  streaming: {}
+  streaming:
+    enabled: true
   # -- Env-wide multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls | redisCaCert.
   # The service API key is a secret: common.secrets.MULTI_TENANT_SERVICE_API_KEY.
   # Example: multiTenant: { enabled: true, url: "http://tenant-manager:4026", redisHost: "valkey.internal" }
@@ -150,7 +160,10 @@ common:
   # -- ENV_NAME comes from global.env.name. Fields: logLevel, defaultTenantId,
   # deploymentMode, systemplaneEnabled, infraConnectTimeoutSec,
   # dbMetricsIntervalSec, idempotencyRetryWindowSec, circuitBreakerEnabled,
-  # configApiEnabled.
+  # configApiEnabled. deploymentMode (DEPLOYMENT_MODE) defaults to "byoc" (the
+  # customer's cloud); "saas" makes the app refuse any non-TLS dependency
+  # (Postgres, Redis, RabbitMQ, S3, broker, tenant manager); "local" for a
+  # workstation. Any other value is refused at render.
   app: {}
   # -- address (defaults to 0.0.0.0:<manager containerPort>), bodyLimitBytes,
   # tlsTerminatedUpstream, tlsCertFile, tlsKeyFile, trustedProxies
@@ -256,6 +269,16 @@ common:
   # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, when a tier sources it from
   # the secret store). Any other key is emitted verbatim.
   secrets: {}
+  # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
+  # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
+  # secretKeyRef env entry on the manager AND worker pods, so credentials never
+  # need raw extraEnvVars. A component's own extraEnvVars entry of the same name
+  # wins. The fail-fast checks count a reference as set, and the migrations Job
+  # reads POSTGRES_PASSWORD from it (the Secret must exist before the hook runs).
+  # Example:
+  #   secretRefs:
+  #     STREAMING_SASL_PASSWORD: { name: redpanda-br-sta, key: password }
+  secretRefs: {}
   # -- Use an operator-provided Secret instead of the chart-managed one (manager,
   # worker and — unless migrations.useExistingSecret says otherwise — the
   # migrations Job). The chart then skips its secret fail-fast checks: the Secret

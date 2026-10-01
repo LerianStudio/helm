@@ -38,7 +38,9 @@ upgrade, under Helm and ArgoCD alike.
 {{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
 {{- $pgFromSubchart := and (not .Values.migrations.useExistingSecret) (or (eq (include "br-sta.postgresInternal" .) "true") $pgAuth.existingSecret) -}}
 {{- /* Password source when not from the subchart: migrations.existingSecretName >
-   the app's existing Secret (common.useExistingSecret) > the PreSync Secret. */ -}}
+   common.secretRefs.POSTGRES_PASSWORD (br-sta.migrationsPgRef, unless
+   migrations.postgres.password is set) > the app's existing Secret
+   (common.useExistingSecret) > the PreSync Secret. */ -}}
 {{- $secretName := include "br-sta.componentFullname" (dict "root" . "component" "migrations") -}}
 {{- if .Values.migrations.useExistingSecret -}}
 {{- $secretName = .Values.migrations.existingSecretName -}}
@@ -117,8 +119,14 @@ template:
           - name: MIGRATIONS_TIMEOUT_SEC
             value: {{ . | toString | quote }}
           {{- end }}
+          {{- $pgRef := include "br-sta.migrationsPgRef" . | trim }}
           {{- if $pgFromSubchart }}
           {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
+          {{- else if $pgRef }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                {{- $pgRef | nindent 16 }}
           {{- else }}
           - name: POSTGRES_PASSWORD
             valueFrom:

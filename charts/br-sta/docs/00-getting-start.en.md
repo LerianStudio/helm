@@ -46,7 +46,7 @@ chart fails fast until the external connections and secrets are set (section 5).
 | Valkey / Redis | Always (rate limit, idempotency, scheduler leader election) | `global.datastores.redis` (`host:port`) + `common.secrets.REDIS_PASSWORD` |
 | RabbitMQ | Always in production (audit transport + business-event channel; the app refuses production without it) | `global.datastores.broker` + `common.secrets.RABBITMQ_DEFAULT_PASS` (or a full `RABBITMQ_URL`). The management API must be reachable: the app health-checks it on every connect |
 | S3-compatible object storage | Always in production (the transfer bucket holds both directions) | `global.objectStorage.sta` (+ `staAuditExports` for audit exports) + `common.secrets.AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` or an IRSA / workload-identity annotation on `serviceAccount` |
-| Kafka / Redpanda | Optional: business facts on `lerian.streaming.br-sta` (+ `.dlq`), the topic br-sisbajud consumes | `global.streaming` + `common.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`. Topics must exist before streaming is on |
+| Kafka / Redpanda | On by default: business facts on `lerian.streaming.br-sta` (+ `.dlq`), the topic br-sisbajud consumes | `global.streaming` (brokers required) + `common.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`. With `topicAutoProvision: true` (the default) both binaries create the topics at boot when the principal has CreateTopics; with `false` (IaC topics) they must exist first |
 | plugin-access-manager | Mandatory outside a development-class env (the app accepts `PLUGIN_AUTH_ENABLED=false` only in development/develop/dev/local/test) | `global.auth.enabled` + `global.auth.host` |
 | Lerian license gateway | Production (`LICENSE_KEY` + `ORGANIZATION_IDS`); the pods need egress to it | `common.secrets.LICENSE_KEY`, `common.license.organizationIds` |
 | BACEN STA | The real upstream (homologation or production host) | `common.bacen.environment` (`homologation` default) |
@@ -120,12 +120,14 @@ kubectl delete namespace sta-dev
 > and transfer submission from br-sisbajud, since both need plugin-access-manager.
 
 1. Provision PostgreSQL (database/user `br_sta` by default), Valkey, RabbitMQ (with the
-   management API reachable), the S3 buckets, and, if streaming is on, the topics
-   `lerian.streaming.br-sta` and `lerian.streaming.br-sta.dlq`.
+   management API reachable), the S3 buckets, and Kafka/Redpanda (streaming is on by
+   default): the topics `lerian.streaming.br-sta` and `lerian.streaming.br-sta.dlq`, or
+   CreateTopics for the br-sta principal (`global.streaming.topicAutoProvision: true`).
 2. Generate the master key once (`openssl rand -hex 32`) and store `v1:<hex>` as
    `MASTER_KEYS` in your secret store. Never replace it: add a new version instead.
 3. Create the app Secret out of band (`common.useExistingSecret: true` +
-   `existingSecretName`) or fill `common.secrets` with `<path:...>` placeholders.
+   `existingSecretName`), reference single keys of it with `common.secretRefs.<KEY>:
+   {name, key}`, or fill `common.secrets` with `<path:...>` placeholders.
 4. Create the GHCR pull secret in the namespace. The chart default is `ghcr-credential`
    (`imagePullSecrets: [{name: ghcr-credential}]`):
 
@@ -186,7 +188,7 @@ global:
     staAuditExports: { bucket: "" }                             # endpoint/region default to sta
   kms:       { vendor: "envvar" }                               # aws => KMS-wrapped MASTER_KEYS + keyId
   auth:      { enabled: true, host: "" }
-  streaming: { enabled: false, brokers: "", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sta" }
+  streaming: { enabled: true, brokers: "", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "", topicAutoProvision: true }   # brokers/username required
 ```
 
 | Global field | Native keys | Note |

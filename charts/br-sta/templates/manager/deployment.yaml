@@ -80,12 +80,15 @@ spec:
             - secretRef:
                 name: {{ include "br-sta.secretName" . }}
           {{- $env := include "br-sta.appEnv" (dict "root" . "component" "manager") | trim }}
-          {{- if or $env $m.extraEnvVars }}
+          {{- $skip := list }}
+          {{- range ($env | fromYamlArray) }}{{- if .name }}{{- $skip = append $skip .name }}{{- end }}{{- end }}
+          {{- $podEnv := include "br-sta.podEnvList" (dict "root" . "component" "manager" "skip" $skip) | fromYamlArray }}
+          {{- if or $env $podEnv }}
           env:
             {{- with $env }}
             {{- . | nindent 12 }}
             {{- end }}
-            {{- with $m.extraEnvVars }}
+            {{- with $podEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}

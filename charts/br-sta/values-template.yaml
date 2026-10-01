@@ -10,7 +10,8 @@
 # POSTGRES_*/REDIS_*/RABBITMQ_*/TRANSFER_S3_*/STREAMING_* keys under
 # common.configmap: a native key there WINS over its mask and defeats it.
 # Credentials go under common.secrets (use AVP <path:...> placeholders in
-# GitOps), or in an existing Secret (common.useExistingSecret).
+# GitOps), per key from a Secret you manage (common.secretRefs), or all in an
+# existing Secret (common.useExistingSecret).
 
 # --- The env-wide contract ------------------------------------------------------
 global:
@@ -28,6 +29,7 @@ global:
   objectStorage:
     # The transfer bucket: holds BOTH directions (outbound sources + BACEN
     # downloads). br-sisbajud reads the SAME block for its STA inbound bucket.
+    # endpoint "" = native AWS S3 only; REQUIRED for SeaweedFS/MinIO/any other S3 (with usePathStyle "true").
     sta: { endpoint: "", region: "us-east-1", bucket: "", usePathStyle: "false" }          # <- REQUIRED in production: bucket
     # Audit exports (the worker writes, the manager serves downloads).
     staAuditExports: { bucket: "" }
@@ -38,11 +40,16 @@ global:
     enabled: true                      # the app accepts false only in a development-class env
     host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
   streaming:
-    enabled: false                     # true => business facts on lerian.streaming.br-sta (br-sisbajud consumes it)
-    brokers: ""                        # <- REQUIRED when enabled (topics lerian.streaming.br-sta + .dlq must exist)
-    tlsEnabled: true
-    saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
-    saslUsername: "br-sta"
+    # ON: br-sisbajud consumes br-sta's facts on lerian.streaming.br-sta, and facts
+    # produced while off are never re-sent. The render fails until brokers + SASL are set.
+    enabled: true
+    brokers: ""                        # <- REQUIRED: host:port CSV
+    tlsEnabled: true                   # <- REQUIRED with SASL (SASL over plaintext is refused); must be true with deploymentMode saas
+    saslMechanism: "SCRAM-SHA-256"     # <- REQUIRED: SCRAM-SHA-256 | SCRAM-SHA-512 | PLAIN ("" = unauthenticated broker, byoc only)
+    saslUsername: ""                   # <- REQUIRED: the br-sta principal (or common.secrets.STREAMING_SASL_USERNAME)
+    # Both binaries create lerian.streaming.br-sta + .dlq at boot when the principal has
+    # CreateTopics (denied = WARN, not a boot failure). false: IaC-provisioned topics, which must exist first.
+    topicAutoProvision: true
   observability:
     enabled: false                     # true => node-local collector http://$(HOST_IP):4317
   multiTenant:
@@ -71,6 +78,8 @@ worker:
     tag: ""                            # optional — defaults to manager.image.tag
 
 common:
+  app:
+    deploymentMode: "byoc"             # byoc (your cloud) | saas (every dependency must be TLS) | local
   cors:
     allowedOrigins: ""                 # <- REQUIRED in production: your UI origins (CSV)
   server:
@@ -78,11 +87,14 @@ common:
     trustedProxies: ""                 # ingress/LB CIDR (SERVER_TRUSTED_PROXIES)
   auth:
     trustedProxies: ""                 # same CIDR (TRUSTED_PROXIES, lib-auth client-IP forwarding)
+  # Access-manager permission declaration (manager); off by default:
+  # identity: { declarationEnabled: true, host: "<access-manager-idp-url>", m2mClientId: "<client-id>" }
   license:
     organizationIds: ""                # <- REQUIRED in production
   bacen:
     environment: "homologation"        # production => the live BACEN STA host
   transfer:
+    # Transfer outcomes reach br-sisbajud only through global.streaming: keep both on.
     schedulerEnabled: true             # the ONLY path that uploads to BACEN (worker)
     inboundEnabled: false              # BACEN-pulled files
   secrets:
@@ -90,13 +102,18 @@ common:
     POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres (production + migrations)
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""          # <- REQUIRED in production (or a full RABBITMQ_URL)
+    # RABBITMQ_URL: ""                 # amqps://user:pass@host:5671/vhost — replaces host/user/pass
     LICENSE_KEY: ""                    # <- REQUIRED in production
     AWS_ACCESS_KEY_ID: ""              # or an IRSA / workload-identity service account
     AWS_SECRET_ACCESS_KEY: ""
-    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when a SASL mechanism is set
-    STREAMING_TLS_CA_CERT: ""          # broker CA not in the system pool
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED (global.streaming.saslMechanism is set)
+    STREAMING_TLS_CA_CERT: ""          # <- REQUIRED when the broker CA is not in the system pool (PEM)
     # IDP_M2M_CLIENT_SECRET: ""        # <- REQUIRED when identity.declarationEnabled
     # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on
+  # Or reference single keys of a Secret the chart does not manage (ESO/Vault);
+  # a reference counts as set for the checks above:
+  # secretRefs:
+  #   STREAMING_SASL_PASSWORD: { name: redpanda-br-sta, key: password }
   # Or keep every credential in an operator-managed Secret:
   useExistingSecret: false
   existingSecretName: ""

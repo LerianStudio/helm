@@ -26,14 +26,22 @@ provisioned through the tenant manager).
 Migrations: a Job applies the SQL schema to the bundled Postgres alongside the release.
 {{- else }}
 
-Migrations: an ArgoCD PreSync Job applies the SQL schema before the app boots.
-Under plain `helm install` (no ArgoCD) it runs as a regular Job next to the app.
+Migrations: a hook Job (Helm pre-install/pre-upgrade, ArgoCD PreSync) applies the
+SQL schema before the app boots.
 {{- end }}
 {{- end }}
 {{- if eq (include "br-sta.isTrue" (include "br-sta.streamingEnabledRaw" .)) "true" }}
 
-Streaming: business facts go to lerian.streaming.br-sta (+ .dlq). Both topics must
-exist on the broker{{ if eq (include "br-sta.redpandaEnabled" .) "true" }} (the redpanda-topics Job creates them on the bundled Redpanda){{ end }}.
+Streaming: business facts go to lerian.streaming.br-sta (+ .dlq).
+{{- if eq (include "br-sta.isTrue" (include "lerian-common.globalValue" (dict "context" . "configmap" (.Values.common.configmap | default dict) "block" "streaming" "field" "topicAutoProvision" "nativeKey" "STREAMING_TOPIC_AUTO_PROVISION" "default" "true"))) "true" }}
+Both binaries create the two topics at boot when the broker principal has CreateTopics
+(STREAMING_TOPIC_AUTO_PROVISION=true); a denied create is logged as a WARN.
+{{- else }}
+STREAMING_TOPIC_AUTO_PROVISION=false: both topics must exist on the broker before the first boot.
+{{- end }}
+{{- if eq (include "br-sta.redpandaEnabled" .) "true" }}
+The redpanda-topics Job creates them on the bundled Redpanda.
+{{- end }}
 {{- end }}
 {{- $removed := include "br-sta.removedKeys" . | fromJsonArray }}
 {{- $set := list }}

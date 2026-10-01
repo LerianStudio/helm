@@ -5,9 +5,9 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `common.secrets.MASTER_KEYS` always (credential envelope-encryption key material; the manager aborts boot without it). In `production` (the default environment): `POSTGRES_PASSWORD` (external Postgres), `RABBITMQ_DEFAULT_PASS` (or a full `RABBITMQ_URL`) and `LICENSE_KEY`. `STREAMING_SASL_PASSWORD` when a SASL mechanism is set; `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on; `RABBITMQ_DEFAULT_PASS` + `RABBITMQ_ERLANG_COOKIE` with the bundled RabbitMQ. The chart fails the render with the exact key to set when one is missing. With `common.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql` / `valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
+- Required secrets: `common.secrets.MASTER_KEYS` always (credential envelope-encryption key material; the manager aborts boot without it). In `production` (the default environment): `POSTGRES_PASSWORD` (external Postgres), `RABBITMQ_DEFAULT_PASS` (or a full `RABBITMQ_URL`) and `LICENSE_KEY`. `STREAMING_SASL_PASSWORD` when a SASL mechanism is set (streaming is on by default); `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on; `RABBITMQ_DEFAULT_PASS` + `RABBITMQ_ERLANG_COOKIE` with the bundled RabbitMQ. The chart fails the render with the exact key to set when one is missing. With `common.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql` / `valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
 - Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `rabbitmq` (groundhog2k 2.1.11), `seaweedfs` (4.0.393) and `redpanda` (26.2.4, dev only) subcharts, plus an optional mock STA server (dev only), are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, RabbitMQ, S3 and Kafka are the production path; Redpanda and the mock STA are refused outside a development-class environment. plugin-access-manager, the tenant manager and BACEN STA itself are external services.
-- Production overrides: `global.datastores` (postgres, redis, broker), `global.objectStorage` (sta, staAuditExports), `global.kms`, `global.auth`, `global.streaming`, `global.env`, the Secret keys above (or `common.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `common.cors.allowedOrigins`, `common.license.organizationIds`, `common.bacen.environment`, ingress, resources and autoscaling.
+- Production overrides: `global.datastores` (postgres, redis, broker), `global.objectStorage` (sta, staAuditExports), `global.kms`, `global.auth`, `global.streaming`, `global.env`, the Secret keys above (or per-key `common.secretRefs`, `common.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `common.cors.allowedOrigins`, `common.license.organizationIds`, `common.bacen.environment`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Apache-2.0. The br-sta service itself is proprietary (Lerian Studio); its images are private on GHCR.
 
 Deploys **br-sta**, the Lerian BACEN STA (Sistema de Transferência de Arquivos) service: file transfers to and from BACEN, the BACEN operator credentials (envelope-encrypted), and a hash-chained audit trail. It runs as two components from one release train:
@@ -32,7 +32,7 @@ The chart tracks application **1.0.0** (`appVersion`), the first stable STA rele
 | Valkey / Redis | Rate limiting, idempotency, scheduler leader election | `global.datastores.redis` + `secrets.REDIS_PASSWORD` |
 | RabbitMQ | Audit transport (mandatory in production) and the business-event channel | `global.datastores.broker` + `secrets.RABBITMQ_DEFAULT_PASS` (or `RABBITMQ_URL`) |
 | S3-compatible object storage | The transfer bucket (both directions) and audit exports | `global.objectStorage.sta` / `staAuditExports` + `secrets.AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (or IRSA) |
-| Kafka / Redpanda (optional) | Business facts on `lerian.streaming.br-sta` (+ `.dlq`) | `global.streaming` + `secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
+| Kafka / Redpanda (on by default) | Business facts on `lerian.streaming.br-sta` (+ `.dlq`), the topic br-sisbajud consumes | `global.streaming` (brokers required) + `secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
 | plugin-access-manager | Inbound JWT validation (mandatory outside a development-class env), permission declaration | `global.auth`, `common.identity` |
 | Lerian license | Runtime license validation (enforced in production) | `secrets.LICENSE_KEY`, `common.license.organizationIds` |
 | BACEN STA (RSFN) | The upstream: `sta-h.bcb.gov.br` (homologation) / `sta.bcb.gov.br` (production) | `common.bacen.environment` |
@@ -111,7 +111,7 @@ Every application env key is resolved with this precedence (lerian-common):
 | `global.objectStorage.staAuditExports` | `endpoint`, `region`, `bucket`, `usePathStyle` (default to `sta`, except the bucket) | `AUDIT_EXPORT_GENERATOR_S3_*` |
 | `global.kms` | `vendor` (`envvar` \| `aws`), `keyId`, `awsRegion` | `MASTER_KEY_PROVIDER` (`envvar` \| `aws-kms`), `MASTER_KEY_KMS_KEY_ID`, `MASTER_KEY_KMS_REGION` |
 | `global.auth` | `enabled`, `host` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` |
-| `global.streaming` | `enabled`, `brokers`, `tlsEnabled`, `saslMechanism`, `saslUsername`, `saslAllowPlaintext`, `compression`, `requiredAcks`, `batchLingerMs`, `importantEmitTimeoutMs` | `STREAMING_ENABLED` + `STREAMING_*` transport keys |
+| `global.streaming` | `enabled`, `brokers`, `tlsEnabled`, `saslMechanism`, `saslUsername`, `saslAllowPlaintext`, `compression`, `requiredAcks`, `batchLingerMs`, `importantEmitTimeoutMs`, `topicAutoProvision` | `STREAMING_ENABLED` + `STREAMING_*` transport keys + `STREAMING_TOPIC_AUTO_PROVISION` |
 | `global.multiTenant` | `enabled`, `url`, `redisHost`, `redisPort`, `redisTls`, `redisCaCert` | `MULTI_TENANT_*` |
 | `global.observability` | `enabled`, `otlpEndpoint`, `deploymentEnvironment` | `ENABLE_TELEMETRY`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` |
 | `global.cloud` | `aws` \| `gcp` \| `azure` | TLS/ssl/scheme defaults for the masks above |
@@ -131,7 +131,7 @@ Shared (`common.*`):
 | Parameter | Env key | Default |
 |-----------|---------|---------|
 | `app.logLevel` / `defaultTenantId` | `LOG_LEVEL` / `DEFAULT_TENANT_ID` | `info` / `11111111-1111-1111-1111-111111111111` |
-| `app.deploymentMode` / `configApiEnabled` | `DEPLOYMENT_MODE` / `CONFIG_API_ENABLED` | unset (app: not saas / `true`) |
+| `app.deploymentMode` / `configApiEnabled` | `DEPLOYMENT_MODE` / `CONFIG_API_ENABLED` | `byoc` (`saas` \| `local` selectable; `saas` makes the app refuse every non-TLS dependency) / unset (app: `true`) |
 | `app.systemplaneEnabled` / `circuitBreakerEnabled` | `SYSTEMPLANE_ENABLED` / `CIRCUIT_BREAKER_ENABLED` | `false` / `false` |
 | `app.infraConnectTimeoutSec` / `dbMetricsIntervalSec` / `idempotencyRetryWindowSec` | `INFRA_CONNECT_TIMEOUT_SEC` / `DB_METRICS_INTERVAL_SEC` / `IDEMPOTENCY_RETRY_WINDOW_SEC` | `30` / `15` / `300` |
 | `server.address` | `SERVER_ADDRESS` | `0.0.0.0:<manager.containerPort>` (worker: `0.0.0.0:<worker.port>`) |
@@ -155,7 +155,8 @@ Shared (`common.*`):
 | `outbox.dispatchIntervalSec` / `batchSize` / `publishMaxAttempts` / `publishBackoffMs` | `OUTBOX_DISPATCH_INTERVAL_SEC` / `OUTBOX_BATCH_SIZE` / `OUTBOX_PUBLISH_MAX_ATTEMPTS` / `OUTBOX_PUBLISH_BACKOFF_MS` | `2` / `50` / `3` / `200` |
 | `outbox.retryWindowSec` / `maxDispatchAttempts` / `processingTimeoutSec` / `maxFailedPerBatch` | `OUTBOX_RETRY_WINDOW_SEC` / `OUTBOX_MAX_DISPATCH_ATTEMPTS` / `OUTBOX_PROCESSING_TIMEOUT_SEC` / `OUTBOX_MAX_FAILED_PER_BATCH` | `300` / `10` / `600` / `25` |
 | `outbox.includeTenantMetrics` / `priorityEventTypes` | `OUTBOX_INCLUDE_TENANT_METRICS` / `OUTBOX_PRIORITY_EVENT_TYPES` | `false` / unset |
-| (global.streaming.enabled) | `STREAMING_ENABLED` | `false` |
+| (global.streaming.enabled) | `STREAMING_ENABLED` | `true` (brokers then required; `false` only for an install with no broker — facts produced while off are never re-sent) |
+| (global.streaming.topicAutoProvision) | `STREAMING_TOPIC_AUTO_PROVISION` | `true` (lib-streaming: both binaries create `lerian.streaming.br-sta` + `.dlq` at boot when the principal has CreateTopics; a denied create is a WARN, not a boot failure. `false` for IaC-provisioned topics, which must then exist first) |
 | `streaming.cloudeventsSource` / `clientId` | `STREAMING_CLOUDEVENTS_SOURCE` / `STREAMING_CLIENT_ID` | unset (the app pins `br-sta`; any other ce-source is refused) |
 | `streaming.cbFailureRatio` / `cbMinRequests` / `cbTimeoutSec` / `closeTimeoutSec` | `STREAMING_CB_FAILURE_RATIO` / `STREAMING_CB_MIN_REQUESTS` / `STREAMING_CB_TIMEOUT_S` / `STREAMING_CLOSE_TIMEOUT_S` | unset (app defaults) |
 | (global.auth.enabled) | `PLUGIN_AUTH_ENABLED` | `false` in a development-class env, `true` elsewhere |
@@ -224,6 +225,8 @@ Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`,
 
 The Deployments list the ConfigMap before the Secret in `envFrom`, so a Secret key always wins over a ConfigMap key of the same name.
 
+To take a single key from a Secret the chart does not manage (ESO/Vault), use `common.secretRefs.<KEY>: {name, key[, optional]}` instead of `common.secrets.<KEY>`: it renders a `secretKeyRef` env entry on the manager and worker pods (a component's own `extraEnvVars` entry of the same name wins), counts as set for the fail-fast gates, and `common.secretRefs.POSTGRES_PASSWORD` also feeds the migrations Job (the Secret must exist before the hook runs).
+
 ### Fail-fast gates
 
 The render fails with the exact value to set (mirroring the app's boot validation) when:
@@ -232,12 +235,13 @@ The render fails with the exact value to set (mirroring the app's boot validatio
 - `PLUGIN_AUTH_ENABLED` is `false` outside a development-class environment (or with `DEPLOYMENT_MODE=saas`), or `true` without `PLUGIN_AUTH_HOST`;
 - `POSTGRES_HOST` / `REDIS_HOST` are empty in single-tenant mode; RabbitMQ is enabled without a host or `RABBITMQ_URL`, without a management health-check URL, or with a plain-`http` health-check URL but no `allowInsecureHealthCheck`;
 - production lacks `POSTGRES_PASSWORD`, `RABBITMQ_DEFAULT_PASS`, `LICENSE_KEY`, `ORGANIZATION_IDS` or the transfer bucket, uses `sslmode=disable`, disables RabbitMQ, the outbox or the business channel, or allows insecure RabbitMQ TLS / health checks;
-- streaming is on without `STREAMING_BROKERS`, a SASL mechanism is set without a username/password or without TLS, or `STREAMING_CLOUDEVENTS_SOURCE` is anything but `br-sta`;
+- streaming is on (the default) without `STREAMING_BROKERS`, a SASL mechanism is set without a username/password or without TLS, streaming is on with `DEPLOYMENT_MODE=saas` and TLS off, or `STREAMING_CLOUDEVENTS_SOURCE` is anything but `br-sta`;
+- `DEPLOYMENT_MODE` is anything but `byoc`, `saas` or `local` (the app's other `saas` TLS rules — Postgres, Redis, RabbitMQ, S3, tenant manager — are enforced at boot, not at render);
 - multi-tenancy is on without the tenant-manager URL, its Redis host, the service API key or inbound auth;
 - the declaration publisher or the reporter bridge is on without its host / credentials / exchange / resolver (`static` is refused in production and outside homologation);
 - the CORS origin is `*` without `security.allowCorsWildcard` (and, in production, is a wildcard at all), the server TLS cert/key are not set together, or `M2M_TARGET_SERVICE` contains `:`.
 
-A value supplied through `extraEnvVars` satisfies the gate only when it is set, with the same value, on both `manager.extraEnvVars` and `worker.extraEnvVars` (or the worker is disabled). An empty literal for a required key in either pod's `extraEnvVars` fails the render, since it would override the ConfigMap/Secret for that pod. With `common.useExistingSecret`, the gates skip the Secret keys.
+A value supplied through `extraEnvVars` (or `common.secretRefs`, which reaches both pods) satisfies the gate only when it is set, with the same value, on both `manager.extraEnvVars` and `worker.extraEnvVars` (or the worker is disabled). An empty literal for a required key in either pod's `extraEnvVars` fails the render, since it would override the ConfigMap/Secret for that pod. With `common.useExistingSecret`, the gates skip the Secret keys.
 
 ---
 
@@ -250,7 +254,7 @@ br-sisbajud is an STA client: it submits its return files through `POST /v1/tran
 | `global.objectStorage.sta.bucket` (→ `STA_INBOUND_BUCKET` / `TRANSFER_OBJECT_STORAGE_BUCKET`) | `global.objectStorage.sta.bucket` (→ `TRANSFER_OBJECT_STORAGE_BUCKET`) — the same bucket |
 | `STA_OBJECT_STORAGE_ENDPOINT` (defaults to its S3 endpoint) | `global.objectStorage.sta.endpoint` — the same S3 backend |
 | `brSisbajud.sta.transfersBaseUrl` | `http://<fullname>-manager.<namespace>.svc.cluster.local:4028` (printed in NOTES) |
-| `brSisbajud.sta.consumerEnabled` + `global.streaming` | `global.streaming.enabled: true` + the same brokers; the topics `lerian.streaming.br-sta` and `.dlq` must exist |
+| `brSisbajud.sta.consumerEnabled` + `global.streaming` | `global.streaming.enabled: true` (the default) + the same brokers; the topics `lerian.streaming.br-sta` and `.dlq` must exist (br-sta creates them when `topicAutoProvision` is on and its principal has CreateTopics) |
 | `brSisbajud.sta.expectedTenantSt` | br-sta's `DEFAULT_TENANT_ID` (`common.app.defaultTenantId`) in single-tenant mode |
 | `STA_CLIENT_ID` / `STA_CLIENT_SECRET` (m2m bearer from `global.auth.host`) | the same plugin-access-manager (`global.auth.host`) |
 
@@ -307,7 +311,7 @@ With a bundle enabled and no explicit value (`configmap` > dedicated mask > `glo
 ### Bootstrap Jobs
 
 - **Buckets** (`<fullname>-seaweedfs-buckets-<hash>`): creates `TRANSFER_OBJECT_STORAGE_BUCKET`, `AUDIT_EXPORT_GENERATOR_S3_BUCKET` and `seaweedfsBuckets.extraBuckets` with `weed shell` (list, create the missing ones, verify).
-- **Topics** (`<fullname>-redpanda-topics-<hash>`): creates `redpandaTopics.list` (`lerian.streaming.br-sta`, `.dlq`) with `rpk`. The app never creates its topics.
+- **Topics** (`<fullname>-redpanda-topics-<hash>`): creates `redpandaTopics.list` (`lerian.streaming.br-sta`, `.dlq`) with `rpk`. The app also tries to create them at boot while `global.streaming.topicAutoProvision` is on (the default); an existing topic is a silent success.
 - **Migrations**: see above.
 
 They are **regular Jobs, not hooks**: `/readyz` fails until the transfer bucket exists, so a post-install hook (which `helm install --wait` runs only after the release is Ready) or an ArgoCD PostSync hook would never run. Each is named after a hash of its spec, so a changed spec is a new Job and an unchanged one is not re-run. All are idempotent, non-root with a read-only rootfs (PSS restricted), and carry native-sidecar mesh annotations.

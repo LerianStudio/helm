@@ -44,7 +44,7 @@ chart falha de propósito até as conexões externas e os secrets estarem setado
 |---|---|---|
 | PostgreSQL | Sempre (single-tenant: o host é obrigatório) | `global.datastores.postgres` + `brSisbajud.secrets.POSTGRES_PASSWORD` |
 | Valkey / Redis | Sempre (rate limit, idempotência, locks de processamento) | `global.datastores.redis` (`host:porta`) + `brSisbajud.secrets.REDIS_PASSWORD` |
-| Kafka / Redpanda | Streaming desligado por default, como nos outros charts Lerian; ligue com `global.streaming.enabled: true` (producer/consumers lib-streaming, tradutor de saldo do Midaz, fatos do br-sta): aí brokers são obrigatórios, e TLS + CA em produção | `global.streaming` + `brSisbajud.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
+| Kafka / Redpanda | Streaming ligado por default (producer/consumers lib-streaming, tradutor de saldo do Midaz, fatos do br-sta): brokers obrigatórios; TLS + CA em produção | `global.streaming` + `brSisbajud.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
 | HashiCorp Vault Transit **ou** AWS KMS | Sempre (criptografia envelope dos dados de bloqueio judicial) | `global.kms` + `brSisbajud.secrets.VAULT_APPROLE_SECRET_ID` (ou `VAULT_TOKEN`) |
 | Object storage S3 | Sempre (artefatos criptografados + o bucket de transfer do br-sta) | `global.objectStorage.sisbajud` / `.sta` + `SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY` |
 | br-sta | Entrada de remessas (fatos em `lerian.streaming.br-sta`) e envio de arquivos de retorno (`POST /v1/transfers`) | `brSisbajud.sta.*`, `global.objectStorage.sta` (o mesmo bloco que o br-sta lê) |

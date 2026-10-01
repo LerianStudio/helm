@@ -67,15 +67,14 @@ global:
   # tlsEnabled | saslMechanism | saslUsername | saslAllowPlaintext | compression |
   # requiredAcks | batchLingerMs | importantEmitTimeoutMs. SASL password and CA
   # cert are secrets: brSisbajud.secrets.STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT.
-  # Off by default, like the other Lerian charts (OUTBOX_ENABLED stays true either
-  # way). Set enabled: true to publish and consume events (br-sta facts, Midaz
-  # balance stream); the render then requires brokers; in a production-like
-  # environment tlsEnabled: true; with TLS, secrets.STREAMING_TLS_CA_CERT; with a
-  # saslMechanism, saslUsername + secrets.STREAMING_SASL_PASSWORD.
+  # On by default (needs OUTBOX_ENABLED=true, also the default). With it on the
+  # render requires brokers; in a production-like environment tlsEnabled: true;
+  # with TLS, secrets.STREAMING_TLS_CA_CERT; with a saslMechanism, saslUsername +
+  # secrets.STREAMING_SASL_PASSWORD. Set enabled: false to run without a broker.
   # Example:
   #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sisbajud" }
   streaming:
-    enabled: false
+    enabled: true
   # -- Env-wide multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls.
   # The service API key is a secret: brSisbajud.secrets.MULTI_TENANT_SERVICE_API_KEY.
   # Example: multiTenant: { enabled: true, url: "http://tenant-manager:4026", redisHost: "valkey.internal" }

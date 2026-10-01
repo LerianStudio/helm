@@ -46,7 +46,7 @@ chart falha de propósito até as conexões externas e os secrets estarem setado
 | Valkey / Redis | Sempre (rate limit, idempotência, leader election do scheduler) | `global.datastores.redis` (`host:porta`) + `common.secrets.REDIS_PASSWORD` |
 | RabbitMQ | Sempre em produção (transporte de auditoria + canal de business events; a app recusa produção sem ele) | `global.datastores.broker` + `common.secrets.RABBITMQ_DEFAULT_PASS` (ou um `RABBITMQ_URL` completo). A API de management precisa estar acessível: a app faz health check nela a cada conexão |
 | Object storage S3 | Sempre em produção (o bucket de transfer guarda as duas direções) | `global.objectStorage.sta` (+ `staAuditExports` para exports de auditoria) + `common.secrets.AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` ou anotação IRSA / workload identity no `serviceAccount` |
-| Kafka / Redpanda | Ligado por default: fatos de negócio em `lerian.streaming.br-sta` (+ `.dlq`), o tópico que o br-sisbajud consome | `global.streaming` (brokers obrigatórios) + `common.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`. Com `topicAutoProvision: true` (default) os dois binários criam os tópicos no boot se o principal tiver CreateTopics; com `false` (tópicos via IaC) eles precisam existir antes |
+| Kafka / Redpanda | Desligado por default, como nos outros charts Lerian: fatos de negócio em `lerian.streaming.br-sta` (+ `.dlq`), o tópico que o br-sisbajud consome | `global.streaming` (`enabled: true` + brokers) + `common.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`. Com `topicAutoProvision: true` (default) os dois binários criam os tópicos no boot se o principal tiver CreateTopics; com `false` (tópicos via IaC) eles precisam existir antes |
 | plugin-access-manager | Obrigatório fora da classe de desenvolvimento (a app só aceita `PLUGIN_AUTH_ENABLED=false` em development/develop/dev/local/test) | `global.auth.enabled` + `global.auth.host` |
 | Gateway de licença Lerian | Produção (`LICENSE_KEY` + `ORGANIZATION_IDS`); os pods precisam de egress até ele | `common.secrets.LICENSE_KEY`, `common.license.organizationIds` |
 | BACEN STA | O upstream real (host de homologação ou produção) | `common.bacen.environment` (default `homologation`) |
@@ -121,9 +121,9 @@ kubectl delete namespace sta-dev
 > plugin-access-manager.
 
 1. Provisione PostgreSQL (banco/usuário `br_sta` por default), Valkey, RabbitMQ (com a
-   API de management acessível), os buckets S3 e o Kafka/Redpanda (streaming ligado por
-   default): os tópicos `lerian.streaming.br-sta` e `lerian.streaming.br-sta.dlq`, ou
-   CreateTopics para o principal do br-sta (`global.streaming.topicAutoProvision: true`).
+   API de management acessível), os buckets S3 e, se o streaming estiver ligado (desligado
+   por default), o Kafka/Redpanda: os tópicos `lerian.streaming.br-sta` e
+   `lerian.streaming.br-sta.dlq`, ou CreateTopics para o principal do br-sta (`global.streaming.topicAutoProvision: true`).
 2. Gere a master key uma única vez (`openssl rand -hex 32`) e guarde `v1:<hex>` como
    `MASTER_KEYS` no seu cofre. Nunca substitua: adicione uma versão nova.
 3. Crie o Secret da app fora do chart (`common.useExistingSecret: true` +
@@ -189,7 +189,7 @@ global:
     staAuditExports: { bucket: "" }                             # endpoint/region seguem o sta
   kms:       { vendor: "envvar" }                               # aws => MASTER_KEYS embrulhada no KMS + keyId
   auth:      { enabled: true, host: "" }
-  streaming: { enabled: true, brokers: "", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "", topicAutoProvision: true }   # brokers/username obrigatórios
+  streaming: { enabled: false, brokers: "", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "", topicAutoProvision: true }   # brokers/username obrigatórios quando ligado
 ```
 
 | Campo global | Chaves nativas | Observação |

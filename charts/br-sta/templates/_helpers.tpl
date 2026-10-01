@@ -418,13 +418,13 @@ key off that literal.
 
 {{/*
 br-sta.streamingEnabledRaw — STREAMING_ENABLED. configmap > global.streaming.enabled
-> "true": br-sta's business facts on lerian.streaming.br-sta are what br-sisbajud
-consumes, and facts produced while it is off are never re-sent, so the chart ships
-it on (the app's own default is off). global.streaming.brokers is then required.
+> "false": off by default, like the other Lerian charts (and the app's own default).
+Turn it on when br-sisbajud consumes lerian.streaming.br-sta (facts produced while
+off are never re-sent); global.streaming.brokers is then required.
 */}}
 {{- define "br-sta.streamingEnabledRaw" -}}
 {{- $cm := .Values.common.configmap | default dict -}}
-{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "true") -}}
+{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") -}}
 {{- end -}}
 
 {{/*
@@ -1181,7 +1181,7 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- end -}}
 {{- /* Streaming: brokers + the pinned CloudEvents source. */ -}}
 {{- if eq (include $isTrue (index $data "STREAMING_ENABLED")) "true" -}}
-{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (the chart default)" "set" "global.streaming.brokers (or enable the bundled redpanda for a dev install, or global.streaming.enabled=false)") -}}
+{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true" "set" "global.streaming.brokers (or enable the bundled redpanda for a dev install, or leave global.streaming.enabled off — the chart default)") -}}
 {{- /* ValidateSaaSTLS (appendStreamingTLSCheck): a saas broker dial must be TLS. */ -}}
 {{- if and (eq $deployMode "saas") (ne (include $isTrue (index $data "STREAMING_TLS_ENABLED" | default "")) "true") -}}
 {{- fail "\n\nERROR: br-sta: STREAMING_TLS_ENABLED must be true with DEPLOYMENT_MODE=saas and streaming on (the app refuses a plaintext broker dial in saas).\n  set: global.streaming.tlsEnabled=true\n" -}}

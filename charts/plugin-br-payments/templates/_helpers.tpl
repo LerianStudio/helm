@@ -291,6 +291,26 @@ plugin-br-payments README.
 {{- end }}
 {{- end }}
 
+{{/* Bill consult audit HMAC key — the app refuses to boot without it wherever the
+     consult route is served (SERVICE_TYPE "both" or "api"). Operator-provided with
+     no subchart to source it from, so it is gated at render (docs/helm-chart-standard.md
+     "Fail-loud credential gates"). Skipped with app.useExistingSecret: the key then
+     lives in the operator's Secret, which the chart cannot read. The app also refuses
+     the published example placeholders when ENV_NAME=production; that check stays
+     in the app. */}}
+{{- if and (or (eq $svcType "both") (eq $svcType "api")) (not .Values.app.useExistingSecret) }}
+{{- $consultKey := .Values.app.secrets.CONSULT_AUDIT_HMAC_KEY | default "" | toString }}
+{{- if not $consultKey }}
+{{- fail "\n\nERROR: app.secrets.CONSULT_AUDIT_HMAC_KEY is REQUIRED when SERVICE_TYPE serves the API (\"both\" or \"api\").\n   HMAC key of the bill consult audit's line fingerprint; the app refuses to boot without it.\n   Must be at least 32 characters, with no leading or trailing whitespace.\n   Generate with: openssl rand -hex 32 (outside local, source it from the platform secret manager)\n   or set app.useExistingSecret with a Secret that carries the key.\n" }}
+{{- end }}
+{{- if ne $consultKey (trim $consultKey) }}
+{{- fail "\n\nERROR: app.secrets.CONSULT_AUDIT_HMAC_KEY must not have leading or trailing whitespace.\n   The app refuses it at boot. Generate with: openssl rand -hex 32\n" }}
+{{- end }}
+{{- if lt (len $consultKey) 32 }}
+{{- fail "\n\nERROR: app.secrets.CONSULT_AUDIT_HMAC_KEY must be at least 32 characters.\n   Generate with: openssl rand -hex 32\n" }}
+{{- end }}
+{{- end }}
+
 {{/* Split-deployment API mode requires INTERNAL_WORKER_URL */}}
 {{- if eq $svcType "api" }}
 {{- if not .Values.app.configmap.INTERNAL_WORKER_URL }}

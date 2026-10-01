@@ -85,6 +85,11 @@ app:
     # Credential encryption (REQUIRED for SERVICE_TYPE=both/worker, AES-256 key)
     # Generate with: openssl rand -base64 32
     CREDENTIAL_ENCRYPTION_KEY: ""
+    # Bill consult audit HMAC key (REQUIRED for SERVICE_TYPE=both/api, >= 32 chars,
+    # no leading/trailing whitespace). From the platform secret manager; rotating it
+    # breaks line_fp correlation with older audit records (no _PREVIOUS key).
+    # Generate with: openssl rand -hex 32
+    CONSULT_AUDIT_HMAC_KEY: ""
     LICENSE_KEY: ""
     # Outbound M2M credentials for the Midaz client
     PLUGIN_AUTH_CLIENT_ID: ""

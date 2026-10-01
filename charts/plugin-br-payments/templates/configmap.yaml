@@ -60,6 +60,15 @@ data:
   AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC" "default" "60") | quote }}
   RELAXED_RATE_LIMIT_MAX: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "RELAXED_RATE_LIMIT_MAX" "default" "1000") | quote }}
   RELAXED_RATE_LIMIT_WINDOW_SEC: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "RELAXED_RATE_LIMIT_WINDOW_SEC" "default" "60") | quote }}
+  {{- /* Bill consult route: in-process limit per (tenantId, sub). Not the
+     AGGRESSIVE_* tier, and RATE_LIMIT_ENABLED does not turn it off. No chart
+     default: rendered only when set, so the app default (100 per 60s) applies. */}}
+  {{- if hasKey $cm "CONSULT_RATE_LIMIT_MAX" }}
+  CONSULT_RATE_LIMIT_MAX: {{ index $cm "CONSULT_RATE_LIMIT_MAX" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "CONSULT_RATE_LIMIT_WINDOW_SEC" }}
+  CONSULT_RATE_LIMIT_WINDOW_SEC: {{ index $cm "CONSULT_RATE_LIMIT_WINDOW_SEC" | quote }}
+  {{- end }}
   # ====================================================================
   # MULTI-TENANCY
   # ====================================================================

@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render, and `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -60,6 +60,7 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. Same conditionality as above; renamed from `BTG_CLIENT_SECRET`. |
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |
+| `app.secrets.CONSULT_AUDIT_HMAC_KEY` | HMAC key of the bill consult audit's line fingerprint (`line_fp`). Required when `SERVICE_TYPE` serves the API (`both`, the default, or `api`); the app refuses to boot without it. At least 32 characters, no leading or trailing whitespace; with `ENV_NAME=production` the app also refuses the published example placeholders. Generate with `openssl rand -hex 32` and, outside local, source it from the platform secret manager. Rotating it is a restart, but older `line_fp` values stop correlating (there is no `_PREVIOUS` key). Not checked at render when `app.useExistingSecret=true`. |
 
 When `app.configmap.MULTI_TENANT_ENABLED=true`, the `PROVIDER_CLIENT_*` pair above stops being required — the app resolves it per tenant — and the following are additionally required:
 
@@ -95,6 +96,10 @@ Before upgrading, in your overlay:
    `null` still works (it counts as unset).
 4. **Multi-tenant**: `MULTI_TENANT_CREDENTIAL_SOURCE` defaults to `"vault"`, the only value
    the application accepts; `AWS_REGION` is required.
+5. **Bill consult**: set `app.secrets.CONSULT_AUDIT_HMAC_KEY` (at least 32 characters,
+   `openssl rand -hex 32`, from the platform secret manager) for `SERVICE_TYPE` `both` or
+   `api`, or add it to the Secret named by `app.existingSecretName`. Without it the render
+   fails, and the application would refuse to boot.
 
 Optionally move connection endpoints to the `global:` block (see `values-template.yaml`);
 native `app.configmap.<KEY>` values keep working and win over it. Pods now roll on a
@@ -162,6 +167,10 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `AGGRESSIVE_RATE_LIMIT_WINDOW_SEC` | `"60"` |
 | `RELAXED_RATE_LIMIT_MAX` | `"1000"` |
 | `RELAXED_RATE_LIMIT_WINDOW_SEC` | `"60"` |
+| `CONSULT_RATE_LIMIT_MAX` | unset (app default `100`) |
+| `CONSULT_RATE_LIMIT_WINDOW_SEC` | unset (app default `60`) |
+
+`CONSULT_RATE_LIMIT_*` is the bill consult route's own in-process limit per (tenantId, sub). It is not the `AGGRESSIVE_*` tier, and `RATE_LIMIT_ENABLED` does not turn it off.
 
 </details>
 
@@ -322,7 +331,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 
 </details>
 
-**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`.
+**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`.
 
 **Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES`, `TRUSTED_PROXIES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
 

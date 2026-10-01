@@ -264,18 +264,17 @@ jobs:
           cp .github/configs/.releaserc.json "$CHART_PATH/.releaserc.json"
           jq . "$CHART_PATH/.releaserc.json"
 
-      # The name is the chart directory, written rather than left to `npm init -y`: npm
-      # rewrites some names (it strips a leading "node-" and a trailing ".js"/"-js"),
-      # and the name IS the tag prefix, so a rewrite would cut tags nothing reads.
+      # The package.json name IS the tag prefix now that the tag format comes from
+      # semantic-release-monorepo, and `npm init -y` rewrites some names (it strips a
+      # leading "node-" and a trailing ".js"/"-js"). No chart today is affected; the
+      # check makes sure a future one fails here instead of cutting `<other>-v*` tags.
       - name: Init ephemeral package.json
         working-directory: ${{ matrix.chart.working_dir }}
         env:
           CHART_NAME: ${{ matrix.chart.name }}
         run: |
           set -euo pipefail
-          if [ ! -f package.json ]; then
-            jq -n --arg name "$CHART_NAME" '{name: $name, version: "0.0.0", private: true}' > package.json
-          fi
+          [ -f package.json ] || npm init -y >/dev/null
           NAME=$(jq -r '.name // ""' package.json)
           if [ "$NAME" != "$CHART_NAME" ]; then
             echo "::error::package.json names '${NAME}', not '${CHART_NAME}' — the tags would be cut as ${NAME}-v*"

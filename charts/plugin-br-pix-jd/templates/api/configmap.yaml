@@ -69,6 +69,11 @@
 {{- $_ := set $http "SWAGGER_VERSION" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cfg "key" "SWAGGER_VERSION" "default" .Chart.AppVersion)) -}}
 {{- $_ := set $http "SWAGGER_BASE_PATH" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cfg "key" "SWAGGER_BASE_PATH" "default" "/")) -}}
 {{- $_ := set $http "SWAGGER_HOST" (required "\n\nERROR: api.configmap.SWAGGER_HOST is required when SWAGGER_ENABLED=true.\nThe app short-circuits on an empty host and emits an empty `servers` list, so the\ndocument renders but no request can be issued from it.\n" (index $cfg "SWAGGER_HOST" | default "")) -}}
+{{- /* Optional presentation keys: the app owns their defaults (empty description, {{ }}
+   delimiters), so they are emitted only when an operator sets them. */ -}}
+{{- range $k := (list "SWAGGER_DESCRIPTION" "SWAGGER_LEFT_DELIM" "SWAGGER_RIGHT_DELIM") -}}
+{{- with (index $cfg $k | default "" | toString) -}}{{- $_ := set $http $k . -}}{{- end -}}
+{{- end -}}
 {{- $_ := set $http "SWAGGER_SCHEMES" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cfg "key" "SWAGGER_SCHEMES" "default" "https")) -}}
 {{- end -}}
 {{- /* Merge order IS the precedence contract: platform < rate-limit < CORS < http

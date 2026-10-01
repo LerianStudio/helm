@@ -43,7 +43,13 @@ api:
     PLUGIN_AUTH_ENABLED: ""
     PLUGIN_AUTH_HOST: ""
 
-    # Telemetry collector endpoint (host:port), when ENABLE_TELEMETRY is true.
+    # Telemetry. ENABLE_TELEMETRY=true is ALL a cluster with the node-local Lerian
+    # collector needs: the chart injects HOST_IP, OTEL_EXPORTER_OTLP_ENDPOINT
+    # (http://$(HOST_IP):4317) and ALLOW_INSECURE_OTEL into the api and worker pods,
+    # like every other Lerian plugin. Leave OTEL_EXPORTER_OTLP_ENDPOINT EMPTY for that.
+    # Set it only for a collector that is NOT node-local; under
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=production a plaintext endpoint also needs
+    # ALLOW_INSECURE_OTEL (api.extraEnvVars) or an https:// endpoint.
     ENABLE_TELEMETRY: ""
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
 

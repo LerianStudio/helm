@@ -250,6 +250,20 @@ api:
   #   global.datastores    -> POSTGRES_PORT / POSTGRES_USER / POSTGRES_SSLMODE,
   #                           REDIS_HOST
   #
+  # Pass-through keys (emitted ONLY when set, because the app owns their default):
+  #   POSTGRES_REPLICA_{HOST,PORT,USER,NAME,SSLMODE} (+ secrets.POSTGRES_REPLICA_PASSWORD),
+  #   RABBITMQ_{ENABLED,HOST,PORT_AMQP,PORT_HOST,DEFAULT_USER,VHOST,QUEUE,
+  #   HEALTH_CHECK_URL,HEALTH_CHECK_ALLOWED_HOSTS,REQUIRE_HEALTH_ALLOWED_HOSTS,
+  #   ALLOW_INSECURE_HEALTH_CHECK,ALLOW_INSECURE_TLS} (+ secrets.RABBITMQ_URL / _DEFAULT_PASS),
+  #   MULTI_TENANT_{INTEGRATION_CACHE_TTL_SEC,INTEGRATION_MAX_CACHED_TENANTS,
+  #   WORKER_TENANT_POOL_SIZE,WORKER_TENANT_DEADLINE_SEC,WORKER_DEGRADED_THRESHOLD},
+  #   OUTBOX_PRIORITY_EVENT_TYPES, PIX_AUTOMATICO_{BLOQUEAR,ESTORNO}_ENABLED,
+  #   APPLICATION_NAME, TRUSTED_PROXIES, SWAGGER_{DESCRIPTION,LEFT_DELIM,RIGHT_DELIM}.
+  # Deliberately NOT modeled: TRANSACTION_LIMIT_DAILY_PERIOD_* and JD_ISPB (systemplane-
+  # managed, the app ignores them and WARNs when present), IS_DEVELOPMENT (production-
+  # forbidden bypass), SERVER_TLS_*_FILE (TLS terminates upstream; no cert is mounted),
+  # ENV_NAME / VERSION (the app derives them from ENVIRONMENT_NAME / the binary).
+  #
   # Chart defaults when a key is absent everywhere: LOG_LEVEL=info,
   # SERVER_ADDRESS=:8080, TLS_TERMINATED_UPSTREAM=true, POSTGRES_SSLMODE=disable,
   # POSTGRES_USER/POSTGRES_NAME=plugin-br-pix-jd, MIGRATIONS_PATH=/migrations,
@@ -265,7 +279,13 @@ api:
   #
   # See README.md for the full table.
   configmap: {}
-  # -- Extra environment variables appended to the container (list of name/value)
+  # -- Extra environment variables appended to the container (list of name/value).
+  # TELEMETRY: with ENABLE_TELEMETRY=true and no OTEL_EXPORTER_OTLP_ENDPOINT anywhere
+  # (configmap, extraConfigmap, global.observability.otlpEndpoint), the chart appends
+  # HOST_IP (status.hostIP), OTEL_EXPORTER_OTLP_ENDPOINT=http://$(HOST_IP):4317 and
+  # ALLOW_INSECURE_OTEL AFTER this list — the node-local collector, same as the other
+  # Lerian plugins. Declaring HOST_IP, OTEL_EXPORTER_OTLP_ENDPOINT or ALLOW_INSECURE_OTEL
+  # here makes the chart skip its own entry of that name (declare HOST_IP first).
   extraEnvVars: []
   # -- Escape hatch for non-secret env keys this chart does not model yet. These are
   # merged LAST, so a key here DOES override a modeled key of the same name. Use it

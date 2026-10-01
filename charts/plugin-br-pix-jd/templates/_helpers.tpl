@@ -553,6 +553,11 @@ INFRA_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $
 DB_METRICS_INTERVAL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "DB_METRICS_INTERVAL_SEC" "default" "15") | quote }}
 SYSTEMPLANE_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEMPLANE_ENABLED" "default" "false") | quote }}
 ORGANIZATION_IDS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ORGANIZATION_IDS" "default" "") | quote }}
+{{- /* TRUSTED_PROXIES is read by lib-auth (not by an app struct): without it the caller IP is
+   not derived from X-Forwarded-For and the per-tenant IP allowlist sees the proxy. The CIDR
+   is environment-specific, so there is no chart default. IS_DEVELOPMENT is deliberately NOT
+   modeled (a production-forbidden bypass, see consistencyGates); extraConfigmap reaches it. */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "TRUSTED_PROXIES")) }}
 {{- /* Postgres. Host is derived for the bundled subchart; the pool and timeout
    values are shared because both processes open their own pool to the same DB. */}}
 POSTGRES_HOST: {{ include "plugin-br-pix-jd.postgresHost" $root | quote }}
@@ -565,6 +570,15 @@ POSTGRES_MAX_IDLE_CONNS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm
 POSTGRES_CONN_MAX_LIFETIME_MINS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "POSTGRES_CONN_MAX_LIFETIME_MINS" "default" "30") | quote }}
 POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "POSTGRES_CONN_MAX_IDLE_TIME_MINS" "default" "5") | quote }}
 POSTGRES_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "POSTGRES_CONNECT_TIMEOUT_SEC" "default" "10") | quote }}
+{{- /* Read replica. Empty POSTGRES_REPLICA_HOST means "no replica" (ReplicaConfigured), and the
+   app falls back to the primary field by field for port/user/name/sslmode, so each key is
+   emitted only when the operator set it. POSTGRES_REPLICA_PASSWORD is a Secret key. */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "POSTGRES_REPLICA_HOST" "POSTGRES_REPLICA_PORT" "POSTGRES_REPLICA_USER" "POSTGRES_REPLICA_NAME" "POSTGRES_REPLICA_SSLMODE")) }}
+{{- /* RabbitMQ — the readyz broker probe and the multi-tenant vhost manager. Off by default
+   in the app; delivery itself goes through lib-streaming, not this connection. The
+   app validates URL-or-HOST at boot when enabled, so the chart does not duplicate that gate.
+   RABBITMQ_URL / RABBITMQ_DEFAULT_PASS carry credentials: Secret keys (domainSecrets). */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "RABBITMQ_ENABLED" "RABBITMQ_HOST" "RABBITMQ_PORT_AMQP" "RABBITMQ_PORT_HOST" "RABBITMQ_DEFAULT_USER" "RABBITMQ_VHOST" "RABBITMQ_QUEUE" "RABBITMQ_HEALTH_CHECK_URL" "RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS" "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" "RABBITMQ_ALLOW_INSECURE_TLS")) }}
 MIGRATIONS_PATH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIGRATIONS_PATH" "default" "/migrations") | quote }}
 {{- /* ALLOW_INSECURE_TLS — modeled as a first-class key, not left to the escape hatch,
    because the benedita test environments run Postgres, Valkey and RabbitMQ WITHOUT TLS
@@ -623,6 +637,16 @@ REDIS_MASTER_NAME: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key"
 {{- $telemetryEnabled := include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") -}}
 {{- $otlpEndpoint := include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") -}}
 {{- $deployEnv := include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" "") -}}
+{{- /* An unset OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT reaches the app as "" and the app falls back
+   to its envDefault "development", so a production pod would label every span and metric
+   "development" and dashboards filtering on deployment.environment would miss it. On the
+   node-local path (telemetry on, no endpoint configured) the chart owns the whole wiring —
+   including the plaintext-exporter exemption — so it derives the label from ENVIRONMENT_NAME.
+   An operator-chosen endpoint keeps today's behaviour: deriving "production" there would arm
+   lib-observability's insecure-exporter gate on a pipeline the chart did not set up. */ -}}
+{{- if and (not $deployEnv) (not $otlpEndpoint) (has ($telemetryEnabled | toString | lower) (list "true" "1" "t")) -}}
+{{- $deployEnv = include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ENVIRONMENT_NAME" "default" "") -}}
+{{- end -}}
 {{- $otelKeys := list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT" -}}
 {{- /* The closing `}}` here deliberately keeps its newline: every preceding
    assignment trims both sides, so this is what terminates the last emitted key
@@ -757,9 +781,13 @@ MIDAZ_URL_ONBOARDING: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "k
 MIDAZ_URL_TRANSACTION: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_TRANSACTION" "default" "") | quote }}
 {{- /* CRM — alias resolution. */}}
 CRM_URL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "CRM_URL" "default" "") | quote }}
-{{- /* Transaction limits: the clock bounds separating the daily and nightly buckets. */}}
-TRANSACTION_LIMIT_DAILY_PERIOD_INIT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "TRANSACTION_LIMIT_DAILY_PERIOD_INIT" "default" "06:00") | quote }}
-TRANSACTION_LIMIT_DAILY_PERIOD_END: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "TRANSACTION_LIMIT_DAILY_PERIOD_END" "default" "20:00") | quote }}
+{{- /* Transaction limits: NOT emitted. TRANSACTION_LIMIT_DAILY_PERIOD_INIT/_END are in the
+   app's PluginSystemplaneManagedIgnoredEnvVars (ignored_systemplane_env.go): the window now
+   lives in the systemplane transaction_limits.* keys and the env twins are never parsed. This
+   chart used to ship 06:00 / 20:00 for them, so EVERY pod logged a "systemplane-managed
+   environment variable is set and ignored" WARN about a value the chart itself invented
+   (same reasoning as JD_ISPB above, which is emitted only when an operator sets it). */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "PIX_AUTOMATICO_BLOQUEAR_ENABLED" "PIX_AUTOMATICO_ESTORNO_ENABLED" "APPLICATION_NAME")) }}
 {{- /* Notification providers. SENDGRID_BASE_URL / TWILIO_BASE_URL MUST default to
    empty: empty means "the real provider", and they exist only so a test rig can point
    the adapter at a local counterparty. A non-empty default here would silently divert
@@ -869,7 +897,7 @@ Input dict: root, comp (the component values block).
 {{- $s := mergeOverwrite (deepCopy $api) $own -}}
 {{- $mt := eq (index (.root.Values.api.configmap | default dict) "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
 {{- $lines := list -}}
-{{- range $k := (list "JD_CLIENT_ID" "JD_SECRET" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "SENDGRID_API_KEY" "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN") -}}
+{{- range $k := (list "JD_CLIENT_ID" "JD_SECRET" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "SENDGRID_API_KEY" "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN" "POSTGRES_REPLICA_PASSWORD" "RABBITMQ_URL" "RABBITMQ_DEFAULT_PASS") -}}
 {{- with (index $s $k) -}}
 {{- $lines = append $lines (printf "%s: %s" $k (. | b64enc | quote)) -}}
 {{- end -}}
@@ -949,6 +977,10 @@ Input dict: root, configmap.
         "MULTI_TENANT_REDIS_HOST" "api.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true")) }}
 {{- if $enabled }}
 READYZ_ISPB_SCAN_INTERVAL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "READYZ_ISPB_SCAN_INTERVAL_SEC" "default" "600") | quote }}
+{{- /* Resolver cache and worker fan-out tuning. The app owns the defaults (600s / 512 tenants /
+   pool 4 / 8s deadline / threshold 3) and re-applies them when a value is <= 0, so each key is
+   passed through only when an operator sets it. */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "MULTI_TENANT_INTEGRATION_CACHE_TTL_SEC" "MULTI_TENANT_INTEGRATION_MAX_CACHED_TENANTS" "MULTI_TENANT_WORKER_TENANT_POOL_SIZE" "MULTI_TENANT_WORKER_TENANT_DEADLINE_SEC" "MULTI_TENANT_WORKER_DEGRADED_THRESHOLD")) }}
 M2M_LEDGER_TARGET_SERVICE: {{ index $cm "M2M_LEDGER_TARGET_SERVICE" | quote }}
 M2M_CRM_TARGET_SERVICE: {{ index $cm "M2M_CRM_TARGET_SERVICE" | quote }}
 M2M_CREDENTIAL_CACHE_TTL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "M2M_CREDENTIAL_CACHE_TTL_SEC" "default" "300") | quote }}
@@ -1014,6 +1046,7 @@ OUTBOX_PROCESSING_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configma
 OUTBOX_MAX_FAILED_PER_BATCH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OUTBOX_MAX_FAILED_PER_BATCH" "default" "25") | quote }}
 OUTBOX_INCLUDE_TENANT_METRICS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OUTBOX_INCLUDE_TENANT_METRICS" "default" "false") | quote }}
 OUTBOX_ALLOW_EMPTY_TENANT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OUTBOX_ALLOW_EMPTY_TENANT" "default" "true") | quote }}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "OUTBOX_PRIORITY_EVENT_TYPES")) }}
 CIRCUIT_BREAKER_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "CIRCUIT_BREAKER_ENABLED" "default" "false") | quote }}
 {{- end }}
 STREAMING_ENABLED: {{ index $cm "STREAMING_ENABLED" | default "false" | quote }}
@@ -1108,5 +1141,92 @@ Input dict: comp.
 {{- define "plugin-br-pix-jd.rendersOwnSecret" -}}
 {{- if not ((.comp.existingSecret | default dict).name | default "") -}}
 true
+{{- end -}}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+optionalEnv — pass-through of keys the app reads that the chart does not give a
+default of its own.
+
+A key is emitted ONLY when the operator set it to a non-empty value. That is the
+whole point: the app owns these defaults (envDefault / config_helpers.go), so the
+chart must not invent a second copy that can drift. An unset key stays OUT of the
+container environment, which also keeps the app's ignored-env scanner quiet.
+
+Only use it for keys whose "off" value is empty or false: an explicit `false` or `0`
+is dropped by `default ""`, so never list a key whose app default is true.
+
+Input dict: configmap (merged map), keys (list of names).
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.optionalEnv" -}}
+{{- $cm := .configmap | default dict -}}
+{{- range $k := .keys -}}
+{{- if hasKey $cm $k -}}
+{{- with (index $cm $k | default "" | toString) }}
+{{ $k }}: {{ . | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+otelPodEnv — wires the pod to the node-local OTLP collector, exactly like the other
+Lerian plugins (plugin-br-bank-transfer, plugin-br-payments, pix-indirect-btg, ...).
+
+The Lerian convention is a collector DaemonSet on every node. The pod reaches it
+through the downward API (status.hostIP), so there is no address to write down: with
+ENABLE_TELEMETRY=true and no endpoint configured, this emits
+  HOST_IP                      <- status.hostIP
+  OTEL_EXPORTER_OTLP_ENDPOINT  <- http://$(HOST_IP):4317
+  ALLOW_INSECURE_OTEL          <- the node-local hop is plaintext gRPC by design
+and nothing else. Without it the app falls back to localhost:4317 and every span and
+metric is dropped silently — no error, no failed request.
+
+Precedence (first match wins, so an explicit choice is never overridden):
+  1. telemetry off                                  -> emits nothing
+  2. an endpoint in configmap / extraConfigmap /
+     global.observability.otlpEndpoint               -> the ConfigMap carries it
+  3. an endpoint or HOST_IP in <comp>.extraEnvVars   -> the operator's name is kept,
+                                                       ours is suppressed
+  4. otherwise                                       -> node-local collector
+
+ALLOW_INSECURE_OTEL exists because lib-observability refuses a plaintext exporter when
+the deployment environment is "production". It is set ONLY together with the
+node-local default above (same rule as br-jd-courier); any endpoint the operator picks
+meets the library's gate on its own terms (https://, or their own justification).
+
+The block is emitted AFTER extraEnvVars: Kubernetes expands $(HOST_IP) only against a
+variable defined EARLIER in the same list, so an operator-supplied HOST_IP must come
+first.
+
+Input dict: root, comp (the component values block: api or worker).
+Caller: `with` + nindent, so an empty result leaves no blank line.
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.otelPodEnv" -}}
+{{- $root := .root -}}
+{{- $comp := .comp -}}
+{{- $cm := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) ($comp.configmap | default dict) -}}
+{{- $eff := mergeOverwrite (deepCopy $cm) ($comp.extraConfigmap | default dict) -}}
+{{- $enabled := include "lerian-common.globalValue" (dict "context" $root "configmap" $eff "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | toString | lower -}}
+{{- $endpoint := include "lerian-common.globalValue" (dict "context" $root "configmap" $eff "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | toString | trim -}}
+{{- $names := list -}}
+{{- range ($comp.extraEnvVars | default list) -}}
+{{- $names = append $names .name -}}
+{{- end -}}
+{{- if and (has $enabled (list "true" "1" "t")) (not $endpoint) (not (has "OTEL_EXPORTER_OTLP_ENDPOINT" $names)) -}}
+{{- if has "HOST_IP" $names }}
+- name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+  value: "http://$(HOST_IP):4317"
+{{- else }}
+{{ include "lerian-common.otel.podEnv" (dict "port" 4317) }}
+{{- end }}
+{{- if not (or (has "ALLOW_INSECURE_OTEL" $names) (hasKey $eff "ALLOW_INSECURE_OTEL")) }}
+- name: "ALLOW_INSECURE_OTEL"
+  value: "node-local otel-collector DaemonSet on the pod's own node (status.hostIP:4317): plaintext gRPC that never leaves the node"
+{{- end }}
 {{- end -}}
 {{- end }}

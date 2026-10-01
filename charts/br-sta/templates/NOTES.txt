@@ -42,10 +42,6 @@ STREAMING_TOPIC_AUTO_PROVISION=false: both topics must exist on the broker befor
 {{- if eq (include "br-sta.redpandaEnabled" .) "true" }}
 The redpanda-topics Job creates them on the bundled Redpanda.
 {{- end }}
-{{- else }}
-
-Streaming: off (the chart default, like the other Lerian charts). br-sisbajud gets no
-facts on lerian.streaming.br-sta until global.streaming.enabled=true with brokers/TLS/SASL.
 {{- end }}
 {{- $removed := include "br-sta.removedKeys" . | fromJsonArray }}
 {{- $set := list }}

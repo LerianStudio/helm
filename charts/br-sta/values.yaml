@@ -87,10 +87,9 @@ global:
   # SASL password and CA cert are secrets: common.secrets.STREAMING_SASL_PASSWORD /
   # STREAMING_TLS_CA_CERT.
   # br-sta publishes its business facts on `lerian.streaming.br-sta` (+ `.dlq`),
-  # the topic br-sisbajud consumes. OFF by default (enabled unset =>
-  # STREAMING_ENABLED=false), like the other Lerian charts. Turn it on with
-  # brokers/TLS/SASL when br-sisbajud consumes lerian.streaming.br-sta: brokers are
-  # then REQUIRED (the render fails without them); facts produced while off are never re-sent.
+  # the topic br-sisbajud consumes. ON by default (STREAMING_ENABLED=true): brokers
+  # are then REQUIRED (the render fails without them); facts produced while it is
+  # off are never re-sent. Set enabled: false only for an install with no broker.
   # topicAutoProvision (STREAMING_TOPIC_AUTO_PROVISION, default "true"): both
   # binaries create the two topics at boot when the principal has CreateTopics
   # (a denied create is a WARN, not a boot failure); set "false" when the topics
@@ -99,7 +98,8 @@ global:
   # common.businessEvents.enabled and common.rabbitmq.enabled on (both default true).
   # Example:
   #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sta" }
-  streaming: {}
+  streaming:
+    enabled: true
   # -- Env-wide multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls | redisCaCert.
   # The service API key is a secret: common.secrets.MULTI_TENANT_SERVICE_API_KEY.
   # Example: multiTenant: { enabled: true, url: "http://tenant-manager:4026", redisHost: "valkey.internal" }

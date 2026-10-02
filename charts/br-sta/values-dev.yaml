@@ -1,0 +1,82 @@
+# br-sta — values-dev.yaml: a SELF-CONTAINED dev / evaluation install.
+#
+# Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure.
+# Production = external managed PostgreSQL (TLS), Valkey/Redis, RabbitMQ,
+# Kafka/Redpanda (TLS), S3 and the real BACEN/Nuclea STA upstream; the bundled
+# subcharts and the mock STA are unsupported in production.
+#
+#   helm install br-sta charts/br-sta -f charts/br-sta/values-dev.yaml -n sta-dev --create-namespace
+#
+# Bundles PostgreSQL, Valkey, RabbitMQ, SeaweedFS (S3), Redpanda (Kafka API) and
+# the mock STA server (a BACEN stand-in) in the release namespace. NEVER use it
+# for production: every credential below is a PUBLIC dev-only value, S3 auth is
+# off, TLS is off everywhere, nothing reaches BACEN, and the chart refuses the
+# Redpanda / mock STA bundles outside a development-class environment.
+#
+# What development relaxes in the app: an empty LICENSE_KEY disables license
+# enforcement, PLUGIN_AUTH_ENABLED=false is accepted, plaintext Postgres /
+# RabbitMQ / broker are allowed, and the production gates (mandatory audit
+# transport, transfer bucket, business channel) are off. Features that need
+# services this bundle does not provide are OFF: inbound auth
+# (plugin-access-manager), the access-manager declaration publisher,
+# multi-tenancy, the reporter -> BACEN bridge.
+#
+# Pairs with the br-sisbajud dev bundle: point br-sisbajud at this release's
+# transfers API (brSisbajud.sta.transfersBaseUrl =
+# http://br-sta-manager.<namespace>.svc.cluster.local:4028) and give both the same
+# global.objectStorage.sta.bucket ("br-sta-transfer" here).
+global:
+  env:
+    name: "development"
+  auth:
+    enabled: false
+  multiTenant:
+    enabled: false
+  observability:
+    enabled: false
+  streaming:
+    enabled: true
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+    staAuditExports:
+      bucket: "br-sta-audit-exports"
+
+common:
+  swagger:
+    enabled: true
+  secrets:
+    # Public, dev-only values. They never land in a ConfigMap.
+    # Envelope-encryption key material: "v1:<64 hex chars>" (an all-zero key —
+    # obviously not a secret; generate a real one with `openssl rand -hex 32`).
+    MASTER_KEYS: "v1:0000000000000000000000000000000000000000000000000000000000000000"
+    # The bundled RabbitMQ's only login and its (stable) Erlang cookie.
+    RABBITMQ_DEFAULT_PASS: "dev-only-rabbitmq"
+    RABBITMQ_ERLANG_COOKIE: "dev-only-erlang-cookie-not-for-production"
+    # SeaweedFS runs with S3 auth OFF, but the AWS SDK still signs every request,
+    # so it needs SOME credentials (any value works).
+    AWS_ACCESS_KEY_ID: "any"
+    AWS_SECRET_ACCESS_KEY: "any"
+
+# Explicit dev passwords: the subcharts otherwise generate random ones, which a
+# GitOps render (no Helm `lookup`) regenerates on every sync while the data
+# volume keeps the first one. The app reads them from the subchart Secrets.
+postgresql:
+  enabled: true
+  external: false
+  auth:
+    password: "dev-only-postgres"
+    postgresPassword: "dev-only-postgres-admin"
+valkey:
+  enabled: true
+  external: false
+  auth:
+    password: "dev-only-valkey"
+rabbitmq:
+  enabled: true
+seaweedfs:
+  enabled: true
+redpandaBundle:
+  enabled: true
+mockSta:
+  enabled: true

@@ -1,0 +1,35 @@
+{{- if or .Values.manager.enabled .Values.worker.enabled -}}
+{{- include "br-sta.validate" . -}}
+{{- /* The SHARED app ConfigMap (manager + worker). Chart-modeled keys
+   (templates/_helpers.tpl br-sta.configmapData), then the escape hatch: any other
+   common.configmap key is emitted verbatim, except the keys the app no longer
+   reads (br-sta.removedKeys). */ -}}
+{{- $body := include "br-sta.configmapData" . -}}
+{{- $emitted := fromYaml $body -}}
+{{- $removed := include "br-sta.removedKeys" . | fromJsonArray -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "br-sta.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.sharedLabels" . | nindent 4 }}
+data:
+  {{- range $line := splitList "\n" $body }}
+  {{- if trim $line }}
+  {{ $line }}
+  {{- end }}
+  {{- end }}
+  {{- $extra := list }}
+  {{- range $k, $v := (.Values.common.configmap | default dict) }}
+  {{- if and (not (hasKey $emitted $k)) (not (has $k $removed)) }}
+  {{- $extra = append $extra $k }}
+  {{- end }}
+  {{- end }}
+  {{- if $extra }}
+  # --- Escape hatch: common.configmap keys not modeled by the chart ---------------
+  {{- range $k := $extra }}
+  {{ $k }}: {{ index $.Values.common.configmap $k | toString | quote }}
+  {{- end }}
+  {{- end }}
+{{- end -}}

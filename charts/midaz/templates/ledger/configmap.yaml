@@ -239,6 +239,12 @@ data:
   {{- if $cm.TRACER_M2M_CLIENT_ID }}
   TRACER_M2M_CLIENT_ID: {{ $cm.TRACER_M2M_CLIENT_ID | quote }}
   {{- end }}
+  {{- /* How long a reservation seam call may wait for an M2M token that is not
+     cached yet, before the TRACER_TIMEOUT_MS budget of the call itself starts.
+     Emitted only when set; the ledger defaults it. */}}
+  {{- if $cm.TRACER_M2M_TOKEN_TIMEOUT_MS }}
+  TRACER_M2M_TOKEN_TIMEOUT_MS: {{ $cm.TRACER_M2M_TOKEN_TIMEOUT_MS | quote }}
+  {{- end }}
 
   # =============================================================================
   # REDIS (shared between modules; host via datastore mask, tuning via passthrough)

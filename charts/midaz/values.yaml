@@ -400,6 +400,11 @@ ledger:
     # single-tenant): the ledger's Access Manager application client id. Pairs with
     # ledger.secrets.TRACER_M2M_CLIENT_SECRET; rendered only when set.
     TRACER_M2M_CLIENT_ID: ""
+    # -- Milliseconds a reservation seam call may wait for an M2M token that is not
+    # cached yet (pod start, or a tenant idle long enough for its token to expire),
+    # before the TRACER_TIMEOUT_MS budget of the call starts. Empty uses the ledger
+    # default (3000).
+    TRACER_M2M_TOKEN_TIMEOUT_MS: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

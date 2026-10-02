@@ -707,6 +707,7 @@
               "TRACER_TIMEOUT_MS",
               "TRACER_TLS_CA_FILE",
               "TRACER_M2M_CLIENT_ID",
+              "TRACER_M2M_TOKEN_TIMEOUT_MS",
               "TRACER_TLS_CERT_FILE",
               "TRACER_TLS_CLIENT_CA_FILE",
               "TRACER_TLS_KEY_FILE",

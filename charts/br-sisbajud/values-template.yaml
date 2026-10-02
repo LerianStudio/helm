@@ -1,0 +1,154 @@
+# br-sisbajud — values-template.yaml (the operator fill-in surface)
+#
+# Copy this file, fill the REQUIRED fields and the credential placeholders, and
+# install:
+#   helm install br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version <version> -f values-template.yaml
+#
+# STYLE (canonical global-first shape): the env-wide contract lives in ONE
+# `global:` block, FIRST. Set each dependency connection ONCE with its typed
+# mask; the chart renders the app's native env keys from it. Do NOT repeat
+# POSTGRES_*/REDIS_*/VAULT_*/STREAMING_* keys under brSisbajud.configmap: a
+# native key there WINS over its mask and defeats it. Credentials go under
+# brSisbajud.secrets (use AVP <path:...> placeholders in GitOps), or in an
+# existing Secret (brSisbajud.useExistingSecret).
+
+# --- The env-wide contract ------------------------------------------------------
+global:
+  # -- aws | gcp | azure presets TLS/ssl for the masks below ("" = self-managed).
+  cloud: ""
+  # -- local | development | staging | e2e | test relax the app's production
+  # gates (license, TLS). Anything else, including the default, is production.
+  env:
+    name: "production"
+  datastores:
+    postgres: { host: "", port: "5432", user: "br_sisbajud", name: "br_sisbajud", ssl: "require" }  # <- REQUIRED: host
+    redis:    { host: "", tls: "true" }                                                          # <- REQUIRED: host:port
+  objectStorage:
+    # One S3 client serves BOTH buckets: this endpoint, region and the SEAWEEDFS_* keys
+    # must also reach br-sta's bucket (same region; path-style always; static keys, no IRSA).
+    sisbajud: { endpoint: "", region: "us-east-1", bucket: "sisbajud" }
+    # Same bucket as br-sta global.objectStorage.sta. Its endpoint is inherited from
+    # sisbajud.endpoint above (the app refuses a mismatch) — do not set it empty.
+    sta: { bucket: "" }                                                                          # <- REQUIRED
+  kms:
+    vendor: "hashicorp-vault"          # hashicorp-vault | aws
+    vaultAddr: ""                      # <- REQUIRED for hashicorp-vault
+    vaultAuthMethod: "approle"         # approle (recommended) | token
+    vaultRoleId: ""                    # <- REQUIRED for approle
+    vaultMount: "transit"
+    # awsRegion: "sa-east-1"           # <- REQUIRED for vendor: aws
+  streaming:
+    # On by default: publishes events and consumes br-sta's facts and the Midaz
+    # balance stream (needs OUTBOX_ENABLED=true, the chart default). false runs
+    # without a broker (then leave brokers empty and sta.consumerEnabled false).
+    enabled: true
+    brokers: ""                        # <- REQUIRED (host:port[,host:port])
+    tlsEnabled: true                   # <- REQUIRED true in production (+ secrets.STREAMING_TLS_CA_CERT)
+    saslMechanism: "SCRAM-SHA-256"     # "" disables SASL
+    saslUsername: ""                   # <- REQUIRED when saslMechanism is set
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
+  observability:
+    enabled: false                     # true => node-local collector http://$(HOST_IP):4317
+  multiTenant:
+    enabled: false
+    # url: "http://tenant-manager.tenant-manager.svc.cluster.local:4026"
+    # redisHost: "valkey.internal"
+
+# The images are public on GHCR. Set a pull secret only for a private mirror/registry.
+imagePullSecrets: []
+
+brSisbajud:
+  image:
+    tag: ""                            # optional — defaults to Chart.appVersion
+  app:
+    deploymentMode: "byoc"             # saas | byoc | local (saas also forces TLS on Postgres/Redis)
+  streaming:
+    topicAutoProvision: "true"         # the app creates its own topics at boot; "false" if IaC provisions them
+    closeTimeoutS: "20"                # drain window on shutdown; must stay below terminationGracePeriodSeconds (30s)
+  ingress:
+    enabled: false
+    className: "nginx"
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+  cors:
+    allowedOrigins: ""                 # <- REQUIRED in production: your UI origins (CSV)
+  server:
+    tlsTerminatedUpstream: true        # TLS ends at the ingress
+  auth:
+    trustedProxies: ""                 # CIDRs of the ingress/proxy in front, never the pod network
+  midaz:
+    balanceTopic: "lerian.streaming.ledger"
+    # Deployment-wide CRM mode, inherited by every institution without its own
+    # crmMode. Choose it before seeding institutions: changing it later re-applies
+    # the credential rule to every institution that inherits it. embedded (Midaz
+    # v4, CRM inside the ledger) accepts a ledger-only credential set
+    # (ledger_client_id/ledger_client_secret); legacy requires the crm_client_* pair.
+    # Institution credentials are set through the admin API, not this chart.
+    crmMode: "embedded"                # <- REQUIRED: embedded for Midaz v4 (chart default: legacy)
+  sta:
+    consumerEnabled: false             # true needs streaming on (the default) + brokers
+    expectedTenantSt: ""               # = br-sta's DEFAULT_TENANT_ID when the consumer is on
+    transfersEnabled: false
+    transfersBaseUrl: ""               # <- REQUIRED when transfersEnabled
+    clientId: ""                       # <- REQUIRED when transfersEnabled
+  identity:
+    declarationEnabled: false
+    host: ""                           # plugin-access-manager identity URL
+    m2mClientId: ""
+  workers:
+    # All off by default; enable them in the controlled activation window.
+    execution: { enabled: false }
+    returnFile: { enabled: false, environment: "HOMOLOGATION" }   # PRODUCTION on a production tier
+    reconciliation: { enabled: false }
+    permanentBlockExpiry: { enabled: false }
+    slaAlert: { enabled: false }
+    informationReturnFile: { enabled: false }
+    informationRequest: { enabled: false }
+  secrets:
+    POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres in production
+    REDIS_PASSWORD: ""
+    LICENSE_KEY: ""                    # <- REQUIRED in production
+    VAULT_APPROLE_SECRET_ID: ""        # <- REQUIRED for approle
+    STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when saslMechanism is set
+    STREAMING_TLS_CA_CERT: ""          # <- REQUIRED when tlsEnabled: base64 PEM of the broker CA (consumers + topics Job)
+    SEAWEEDFS_ACCESS_KEY: ""
+    SEAWEEDFS_SECRET_KEY: ""
+    STA_CLIENT_SECRET: ""              # <- REQUIRED when sta.transfersEnabled
+    IDP_M2M_CLIENT_SECRET: ""          # <- REQUIRED when identity.declarationEnabled
+    # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on
+  # Or reference single keys of a Secret the chart does not manage (ESO/Vault):
+  # secretRefs:
+  #   STREAMING_SASL_PASSWORD: { name: redpanda-admin, key: password }
+  # Or keep every credential in an operator-managed Secret:
+  useExistingSecret: false
+  existingSecretName: ""
+
+migrations:
+  enabled: true                        # connection follows global.datastores.postgres
+
+topics:
+  enabled: true
+  replicationFactor: 3                 # must not exceed the broker count
+
+# External infra is the production path. Enable only for a self-contained
+# (dev / evaluation) install — broker and KMS stay external either way.
+postgresql:
+  enabled: false
+  external: true
+
+valkey:
+  enabled: false
+  external: true
+
+# For a fully self-contained dev install (PostgreSQL, Valkey, SeaweedFS,
+# OpenBao, Redpanda) use values-dev.yaml instead of this file.
+# Bundled SeaweedFS (S3, auth OFF — dev only). When enabled, drop
+# global.objectStorage.sisbajud.endpoint so the endpoint derives from the
+# subchart; the bucket Job creates the configured buckets.
+seaweedfs:
+  enabled: false

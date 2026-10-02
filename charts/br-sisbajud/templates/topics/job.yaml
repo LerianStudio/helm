@@ -1,0 +1,158 @@
+{{- $streamingOn := eq (include "br-sisbajud.isTrue" (include "br-sisbajud.streamingEnabledRaw" .)) "true" -}}
+{{- if and .Values.topics.enabled $streamingOn }}
+{{- /* PreSync topics Job. Runs the dedicated br-sisbajud-topics image (rpk), whose
+   entrypoint idempotently ensures the Redpanda topics in topics.list (and the
+   .dlq siblings listed there) exist before the app boots. hook-weight -1 puts it
+   in the same wave as the migration Job (independent: Kafka vs Postgres) and
+   before the main-sync Deployment. Rendered only while streaming is enabled.
+
+   Connection (the same values the app receives):
+     STREAMING_BROKERS / TLS_ENABLED / SASL_MECHANISM / SASL_USERNAME:
+       brSisbajud.extraEnvVars entry (verbatim, keeps valueFrom) > the app's
+       resolved ConfigMap value (configmap > global.streaming) > default.
+     STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT:
+       brSisbajud.extraEnvVars entry (verbatim) > the existing Secret
+       (brSisbajud.useExistingSecret, optional keys) > the dedicated PreSync
+       topics Secret (templates/topics/secrets.yaml). PreSync runs before the app
+       Secret exists on a first install, hence the dedicated hook Secret. */ -}}
+{{- $envByName := dict -}}
+{{- range (include "br-sisbajud.podEnvList" . | fromYamlArray) -}}
+{{- if .name -}}
+{{- $_ := set $envByName .name . -}}
+{{- end -}}
+{{- end -}}
+{{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
+{{- $streamingEnv := list -}}
+{{- range $spec := list (dict "name" "STREAMING_BROKERS" "default" "" "required" true) (dict "name" "STREAMING_TLS_ENABLED" "default" "false" "required" true) (dict "name" "STREAMING_SASL_MECHANISM" "default" "" "required" false) (dict "name" "STREAMING_SASL_USERNAME" "default" "" "required" false) -}}
+{{- $entry := index $envByName $spec.name -}}
+{{- if $entry -}}
+{{- $streamingEnv = append $streamingEnv $entry -}}
+{{- else -}}
+{{- $val := index $data $spec.name | default $spec.default | toString -}}
+{{- if or $spec.required $val -}}
+{{- $streamingEnv = append $streamingEnv (dict "name" $spec.name "value" $val) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $s := .Values.brSisbajud.secrets | default dict -}}
+{{- range $key := list "STREAMING_SASL_PASSWORD" "STREAMING_TLS_CA_CERT" -}}
+{{- $entry := index $envByName $key -}}
+{{- if $entry -}}
+{{- $streamingEnv = append $streamingEnv $entry -}}
+{{- else if $.Values.brSisbajud.useExistingSecret -}}
+{{- $streamingEnv = append $streamingEnv (dict "name" $key "valueFrom" (dict "secretKeyRef" (dict "name" $.Values.brSisbajud.existingSecretName "key" $key "optional" true))) -}}
+{{- else if index $s $key -}}
+{{- $streamingEnv = append $streamingEnv (dict "name" $key "valueFrom" (dict "secretKeyRef" (dict "name" (include "br-sisbajud-topics.fullname" $) "key" $key))) -}}
+{{- end -}}
+{{- end -}}
+{{- /* The topics image's entrypoint refuses TLS without a CA
+   (scripts/topics-entrypoint.sh: STREAMING_TLS_CA_CERT is required when
+   STREAMING_TLS_ENABLED=true) — fail here instead of wedging the PreSync phase. */ -}}
+{{- $tlsOn := false -}}
+{{- $caSet := false -}}
+{{- range $streamingEnv -}}
+{{- /* A literal "true", or a valueFrom (secretRefs / extraEnvVars) whose value is
+   unknown at render: the entrypoint cannot tell either apart from TLS on, so a
+   secret-backed TLS flag must come with a CA source too. */ -}}
+{{- if and (eq .name "STREAMING_TLS_ENABLED") (hasKey . "value") (eq (include "br-sisbajud.isTrue" .value) "true") -}}{{- $tlsOn = true -}}{{- end -}}
+{{- if and (eq .name "STREAMING_TLS_ENABLED") (hasKey . "valueFrom") -}}{{- $tlsOn = true -}}{{- end -}}
+{{- if eq .name "STREAMING_TLS_CA_CERT" -}}{{- $caSet = true -}}{{- end -}}
+{{- end -}}
+{{- if and $tlsOn (not $caSet) -}}
+{{- fail "\n\nERROR: br-sisbajud: the topics Job needs STREAMING_TLS_CA_CERT when STREAMING_TLS_ENABLED is true or comes from a Secret (its rpk entrypoint requires the CA as a file whenever TLS is on, even for brokers with a publicly trusted CA).\n  set: brSisbajud.secrets.STREAMING_TLS_CA_CERT (base64 PEM) or brSisbajud.secretRefs.STREAMING_TLS_CA_CERT, or provision the topics out of band and set topics.enabled=false\n" -}}
+{{- end -}}
+{{- $pullSecrets := .Values.topics.imagePullSecrets | default .Values.imagePullSecrets }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "br-sisbajud-topics.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud-topics.labels" . | nindent 4 }}
+  annotations:
+    {{- include "br-sisbajud.presyncJobAnnotations" (dict "bundled" (eq (include "br-sisbajud.redpandaEnabled" .) "true")) | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.topics.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ .Values.topics.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ .Values.topics.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sisbajud-topics.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if eq (include "br-sisbajud.redpandaEnabled" .) "true" }}
+      {{- $brokersEnv := dict }}
+      {{- range $streamingEnv }}{{- if eq .name "STREAMING_BROKERS" }}{{- $brokersEnv = . }}{{- end }}{{- end }}
+      initContainers:
+        # Bundled Redpanda starts in the same sync: wait for its Kafka listener, on
+        # the same STREAMING_BROKERS entry the topics container gets.
+        - name: wait-for-broker
+          image: {{ .Values.brSisbajud.waitImage | default "busybox:1.36" }}
+          env:
+            - {{ toYaml $brokersEnv | nindent 14 | trim }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              {{- include "br-sisbajud.waitBrokerScript" . | nindent 14 }}
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      {{- end }}
+      containers:
+        - name: topics
+          image: "{{ .Values.topics.image.repository }}:{{ .Values.topics.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.topics.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            # rpk needs a writable HOME; under readOnlyRootFilesystem the only
+            # writable path is the /tmp emptyDir mounted below.
+            - name: HOME
+              value: /tmp
+            - name: TOPICS
+              value: {{ join " " .Values.topics.list | quote }}
+            - name: TOPIC_PARTITIONS
+              value: {{ .Values.topics.partitions | default 1 | quote }}
+            - name: TOPIC_REPLICAS
+              value: {{ .Values.topics.replicationFactor | default 1 | quote }}
+            {{- if .Values.topics.retentionMs }}
+            - name: TOPIC_RETENTION_MS
+              value: {{ .Values.topics.retentionMs | quote }}
+            {{- end }}
+            {{- with $streamingEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            {{- toYaml .Values.topics.resources | nindent 12 }}
+      volumes:
+        # rpk needs a writable HOME/config dir + a place for the decoded CA;
+        # emptyDir keeps readOnlyRootFilesystem: true intact.
+        - name: tmp
+          emptyDir: {}
+{{- end }}

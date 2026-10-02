@@ -1,0 +1,83 @@
+# br-sisbajud — values-dev.yaml: a SELF-CONTAINED dev / evaluation install.
+#
+#   helm install br-sisbajud charts/br-sisbajud -f charts/br-sisbajud/values-dev.yaml -n sisb-dev --create-namespace
+#
+# Bundles PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, dev mode)
+# and Redpanda (Kafka API) in the release namespace.
+#
+# Bundled infrastructure is for development and quickstart only. Production
+# installs must use external, managed infrastructure. That means PostgreSQL
+# with TLS, Valkey/Redis, Kafka/Redpanda with TLS, Vault/OpenBao in non-dev
+# mode (or AWS KMS) and S3 object storage. The render refuses the
+# OpenBao/Redpanda bundles outside a development-class environment
+# (local|development|develop|dev|test|e2e; staging is refused). The
+# PostgreSQL/Valkey/SeaweedFS bundles only get a NOTES warning in a
+# production-like environment, but they are unsupported in production all the
+# same.
+#
+# NEVER use this file for production: OpenBao dev mode keeps its keys in
+# memory (a restart makes the encrypted data unrecoverable), S3 auth is off and
+# TLS is off everywhere.
+#
+# What development relaxes in the app (internal/bootstrap/config_validation.go):
+# an empty LICENSE_KEY disables license validation (dev bypass),
+# POSTGRES_SSLMODE=disable and a plaintext broker are allowed. Features that
+# need services this bundle does not provide are OFF: inbound auth
+# (plugin-access-manager), the access-manager declaration publisher, the br-sta
+# consumer/transfers client, multi-tenancy. The Midaz ledger is not bundled:
+# institutions (and their connector_metadata) are still seeded via the admin API.
+global:
+  env:
+    name: "development"
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+  auth:
+    enabled: false
+  multiTenant:
+    enabled: false
+  observability:
+    enabled: false
+
+brSisbajud:
+  sta:
+    consumerEnabled: false
+    transfersEnabled: false
+  identity:
+    declarationEnabled: false
+  cors:
+    # A concrete dev origin: with none, the CORS middleware denies all.
+    allowedOrigins: "http://localhost:3000"
+  swagger:
+    enabled: true
+  vault:
+    # The dev root token never expires; renewal would be a no-op.
+    tokenRenewEnabled: false
+
+# Explicit dev passwords: the Valkey subchart otherwise regenerates its password
+# on every render (every `helm upgrade` rotated it and restarted Valkey and the
+# app), and a GitOps render (no Helm `lookup`) would do the same for PostgreSQL
+# while its data volume keeps the first one. Public dev-only values; the app
+# reads them from the subchart Secrets.
+postgresql:
+  enabled: true
+  external: false
+  auth:
+    password: "dev-only-postgres"
+    postgresPassword: "dev-only-postgres-admin"
+valkey:
+  enabled: true
+  external: false
+  auth:
+    password: "dev-only-valkey"
+seaweedfs:
+  enabled: true
+openbao:
+  enabled: true
+  # The dev root token is generated per install (chart Secret, kept across
+  # upgrades); nothing reusable is committed here.
+redpandaBundle:
+  enabled: true
+
+topics:
+  replicationFactor: 1

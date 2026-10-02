@@ -1,0 +1,134 @@
+{{- if and .Values.brSisbajud.enabled (eq (include "br-sisbajud.seaweedfsEnabled" .) "true") }}
+{{- /* Bucket bootstrap for the bundled SeaweedFS. The app never creates buckets
+   (CreateBucket exists only in its tests), and the subchart's own createBuckets
+   hook takes static names and runs on post-install only, so this Job creates the
+   buckets the app is actually configured with — SEAWEEDFS_BUCKET,
+   STA_INBOUND_BUCKET and TRANSFER_OBJECT_STORAGE_BUCKET as resolved into the app
+   ConfigMap, plus seaweedfsBuckets.extraBuckets — on EVERY install and upgrade.
+   Idempotent: list, create only the missing ones, then verify all exist.
+   Runs after the subchart is up (post-install/post-upgrade, ArgoCD PostSync);
+   before-hook-creation replaces the Job on each run, so the immutable
+   spec.template never blocks a sync. */ -}}
+{{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
+{{- $buckets := list -}}
+{{- range $b := concat (list (index $data "SEAWEEDFS_BUCKET") (index $data "STA_INBOUND_BUCKET") (index $data "TRANSFER_OBJECT_STORAGE_BUCKET")) (.Values.seaweedfsBuckets.extraBuckets | default list) -}}
+{{- $b = trim (toString $b) -}}
+{{- if and $b (not (has $b $buckets)) -}}
+{{- $buckets = append $buckets $b -}}
+{{- end -}}
+{{- end -}}
+{{- $sw := .Values.seaweedfs | default dict -}}
+{{- $name := include "br-sisbajud.seaweedfsName" . -}}
+{{- $master := printf "%s-master.%s:%v" $name .Release.Namespace (($sw.master | default dict).port | default 9333) -}}
+{{- $filer := printf "%s-filer-client.%s:%v" $name .Release.Namespace (($sw.filer | default dict).port | default 8888) -}}
+{{- $job := .Values.seaweedfsBuckets -}}
+{{- $pullSecrets := .Values.imagePullSecrets -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-seaweedfs-buckets" (include "br-sisbajud.fullname" . | trunc 45 | trimSuffix "-") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ include "br-sisbajud.chart" . }}
+    app.kubernetes.io/name: {{ printf "%s-seaweedfs-buckets" (include "br-sisbajud.fullname" . | trunc 45 | trimSuffix "-") }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: bootstrap
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "5"
+    # before-hook-creation only: the finished Job stays inspectable until
+    # ttlSecondsAfterFinished, and is replaced on the next run.
+    helm.sh/hook-delete-policy: before-hook-creation
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: {{ $job.backoffLimit | default 6 }}
+  activeDeadlineSeconds: {{ $job.activeDeadlineSeconds | default 900 }}
+  ttlSecondsAfterFinished: {{ $job.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ printf "%s-seaweedfs-buckets" (include "br-sisbajud.fullname" . | trunc 45 | trimSuffix "-") }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: bootstrap
+      annotations:
+        # Service meshes: run the proxy as a native sidecar so the Job can complete.
+        sidecar.istio.io/nativeSidecar: "true"
+        config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: buckets
+          image: "{{ $job.image.repository }}:{{ $job.image.tag }}"
+          imagePullPolicy: {{ $job.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: WEED_CLUSTER_DEFAULT
+              value: "sw"
+            - name: WEED_CLUSTER_SW_MASTER
+              value: {{ $master | quote }}
+            - name: WEED_CLUSTER_SW_FILER
+              value: {{ $filer | quote }}
+            - name: BUCKETS
+              value: {{ join " " $buckets | quote }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              wait_for() {
+                i=0
+                until wget -q --spider "http://$1/" >/dev/null 2>&1; do
+                  i=$((i + 1)); [ "$i" -ge 120 ] && { echo "timeout waiting for $1"; exit 1; }
+                  echo "waiting for $1..."; sleep 5
+                done
+              }
+              wait_for "$WEED_CLUSTER_SW_MASTER"
+              wait_for "$WEED_CLUSTER_SW_FILER"
+              # weed shell echoes its "> " prompt in front of the first output
+              # line; strip it before taking the bucket name (first column).
+              list() { echo "s3.bucket.list" | weed shell 2>/dev/null | sed 's/^[> ]*//' | awk '{print $1}'; }
+              existing="$(list)"
+              for b in $BUCKETS; do
+                if printf '%s\n' "$existing" | grep -Fqx -- "$b"; then
+                  echo "bucket exists: $b"
+                else
+                  echo "creating bucket: $b"
+                  echo "s3.bucket.create -name $b" | weed shell
+                fi
+              done
+              existing="$(list)"
+              for b in $BUCKETS; do
+                printf '%s\n' "$existing" | grep -Fqx -- "$b" || { echo "bucket missing after create: $b"; exit 1; }
+              done
+              echo "buckets ready: $BUCKETS"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            {{- toYaml $job.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

@@ -1,0 +1,21 @@
+dependencies:
+- name: lerian-common-helm
+  repository: oci://ghcr.io/lerianstudio
+  version: 2.1.2
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.3.5
+- name: valkey
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 2.4.7
+- name: seaweedfs
+  repository: https://seaweedfs.github.io/seaweedfs/helm
+  version: 4.0.393
+- name: openbao
+  repository: https://openbao.github.io/openbao-helm
+  version: 0.30.0
+- name: redpanda
+  repository: https://charts.redpanda.com
+  version: 26.2.4
+digest: sha256:a894ac18e2e754574df317a988eef57e2c0758e0c79b96146f56b30bce5aef01
+generated: "2026-09-29T10:36:48.211491-03:00"

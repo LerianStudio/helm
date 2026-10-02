@@ -1,0 +1,95 @@
+{{- if and .Values.brSisbajud.enabled (eq (include "br-sisbajud.openbaoEnabled" .) "true") }}
+{{- /* Transit bootstrap for the bundled OpenBao (dev mode). The app needs the
+   Transit secrets engine mounted at VAULT_TRANSIT_MOUNT_PATH; it then creates
+   its own KEKs at boot and per institution (internal/security/kms/vault:
+   keys "sisbajud-kek-<institution>" and "sisbajud-kek-connector-<institution>",
+   via CreateKEK), so NO key is pre-created here. Idempotent: enable only when
+   the mount is absent. Runs as a Helm post-install/post-upgrade hook (ArgoCD
+   PostSync) — dev mode is in-memory, so it also re-mounts Transit after an
+   OpenBao restart on the next upgrade/sync. Authenticates with the dev root
+   token from the chart's generated dev-token Secret (never a ConfigMap). */ -}}
+{{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
+{{- $mount := index $data "VAULT_TRANSIT_MOUNT_PATH" | default "transit" -}}
+{{- $addr := index $data "VAULT_ADDR" -}}
+{{- $job := .Values.openbaoTransit -}}
+{{- $name := printf "%s-openbao-transit" (include "br-sisbajud.fullname" . | trunc 45 | trimSuffix "-") -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ include "br-sisbajud.chart" . }}
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: bootstrap
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-5"
+    # before-hook-creation only: the finished Job stays inspectable until
+    # ttlSecondsAfterFinished, and is replaced on the next run.
+    helm.sh/hook-delete-policy: before-hook-creation
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: {{ $job.backoffLimit | default 6 }}
+  activeDeadlineSeconds: {{ $job.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ $job.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: bootstrap
+      annotations:
+        sidecar.istio.io/nativeSidecar: "true"
+        config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: transit
+          image: "{{ $job.image.repository }}:{{ $job.image.tag }}"
+          imagePullPolicy: {{ $job.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: BAO_ADDR
+              value: {{ $addr | quote }}
+            - name: TRANSIT_MOUNT
+              value: {{ $mount | quote }}
+            - name: BAO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "br-sisbajud.openbaoTokenSecret" . }}
+                  key: {{ include "br-sisbajud.openbaoTokenKey" . }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              {{- include "br-sisbajud.openbaoTransitScript" . | nindent 14 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            {{- toYaml $job.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

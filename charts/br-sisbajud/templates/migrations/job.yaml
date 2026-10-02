@@ -1,0 +1,61 @@
+{{- if .Values.migrations.enabled }}
+{{- /* PreSync migration Job. Runs the dedicated br-sisbajud-migrations image, whose
+   entrypoint applies the golang-migrate SQL migrations against the br_sisbajud
+   database. hook-weight -1 puts this after the PreSync Secret (-2) and before
+   the main-sync Deployment, so the app never boots unmigrated. */ -}}
+{{- $c := include "br-sisbajud.migrationsConn" . | fromYaml -}}
+{{- $pgHost := $c.host -}}
+{{- $pgPort := $c.port -}}
+{{- $pgFromSubchartBundled := eq $c.bundled "true" -}}
+{{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "br-sisbajud-migrations.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud-migrations.labels" . | nindent 4 }}
+  annotations:
+    {{- include "br-sisbajud.presyncJobAnnotations" (dict "bundled" $pgFromSubchartBundled) | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit | default 3 }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sisbajud-migrations.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.migrations.waitImage | default "busybox:1.36" }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              echo "waiting for {{ $pgHost }}:{{ $pgPort }}...";
+              until nc -z {{ $pgHost }} {{ $pgPort }}; do
+                echo "{{ $pgHost }}:{{ $pgPort }} not ready, waiting..."; sleep 5;
+              done;
+              echo "{{ $pgHost }}:{{ $pgPort }} is ready"
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        {{- include "br-sisbajud.migrationsContainer" . | nindent 8 }}
+{{- end }}

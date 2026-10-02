@@ -396,6 +396,10 @@ ledger:
     IDP_DECLARATION_ENABLED: "false"
     IDP_HOST: ""
     IDP_M2M_CLIENT_ID: ""
+    # -- Tracer reservation seam token identity (PLUGIN_AUTH_ENABLED=true,
+    # single-tenant): the ledger's Access Manager application client id. Pairs with
+    # ledger.secrets.TRACER_M2M_CLIENT_SECRET; rendered only when set.
+    TRACER_M2M_CLIENT_ID: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -447,6 +451,13 @@ ledger:
     # -- RI permission declaration M2M client secret. Operator-provided; only set
     # when IDP_DECLARATION_ENABLED=true. Rendered into the ledger Secret, never the ConfigMap.
     IDP_M2M_CLIENT_SECRET: ""
+    # -- Tracer reservation seam token identity client secret (pairs with
+    # ledger.configmap.TRACER_M2M_CLIENT_ID). Operator-provided; rendered into the
+    # ledger Secret, never the ConfigMap.
+    TRACER_M2M_CLIENT_SECRET: ""
+    # -- Tracer reservation seam API key identity (PLUGIN_AUTH_ENABLED=false; the
+    # tracer must run with API_KEY_ENABLED=true). Rendered into the ledger Secret.
+    TRACER_API_KEY: ""
     # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
     # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
     # they are rendered into the ledger Secret (never the ConfigMap).

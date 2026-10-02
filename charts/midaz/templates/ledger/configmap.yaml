@@ -233,6 +233,12 @@ data:
   TRACER_TLS_CERT_FILE: {{ $cm.TRACER_TLS_CERT_FILE | default "" | quote }}
   TRACER_TLS_KEY_FILE: {{ $cm.TRACER_TLS_KEY_FILE | default "" | quote }}
   TRACER_TLS_CA_FILE: {{ $cm.TRACER_TLS_CA_FILE | default "" | quote }}
+  {{- /* Reservation seam token identity (PLUGIN_AUTH_ENABLED=true, single-tenant):
+     the ledger's Access Manager application client id. Its secret is
+     ledger.secrets.TRACER_M2M_CLIENT_SECRET. Emitted only when set. */}}
+  {{- if $cm.TRACER_M2M_CLIENT_ID }}
+  TRACER_M2M_CLIENT_ID: {{ $cm.TRACER_M2M_CLIENT_ID | quote }}
+  {{- end }}
 
   # =============================================================================
   # REDIS (shared between modules; host via datastore mask, tuning via passthrough)

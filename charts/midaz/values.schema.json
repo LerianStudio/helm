@@ -720,7 +720,9 @@
               "M2M_SECRETS_BACKEND",
               "AWS_REGION",
               "M2M_VAULT_MOUNT",
-              "BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS"
+              "BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS",
+              "REDIS_PORT",
+              "TRANSACTION_BATCH_MAX_SIZE"
             ]
           }
         },
@@ -1848,6 +1850,8 @@
               "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
               "MULTI_TENANT_ENABLED",
               "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+              "MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT",
+              "MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT",
               "MULTI_TENANT_MAX_TENANT_POOLS",
               "MULTI_TENANT_REDIS_HOST",
               "MULTI_TENANT_REDIS_PASSWORD",

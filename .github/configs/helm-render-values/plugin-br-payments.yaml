@@ -12,3 +12,5 @@ app:
     BTG_WEBHOOK_HMAC_SECRET: "sample-webhook-hmac-secret-32-characters"
     INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
     CREDENTIAL_ENCRYPTION_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+    # Required where the API is served (SERVICE_TYPE both, the default). CI-only dummy.
+    CONSULT_AUDIT_HMAC_KEY: "ci-only-consult-audit-hmac-key-0123456789"

@@ -217,12 +217,17 @@ app:
     # MIDAZ_DEFAULT_LEDGER_ID: ""
     # MULTI_TENANT_ENABLED: "true"
     # AWS_REGION: "us-east-2"
+    # Bill consult route limit per (tenantId, sub), in-process. Not the AGGRESSIVE_*
+    # tier; RATE_LIMIT_ENABLED does not turn it off. Unset = app default (100 / 60s).
+    # CONSULT_RATE_LIMIT_MAX: "100"
+    # CONSULT_RATE_LIMIT_WINDOW_SEC: "60"
 
   # -- Per-key Secret values, each rendered only when set (templates/secrets.yaml).
   # Required: POSTGRES_PASSWORD, INTERNAL_API_KEY (>= 32 chars) and
   # CREDENTIAL_ENCRYPTION_KEY when SERVICE_TYPE runs the worker ("both"/"worker");
   # PROVIDER_CLIENT_ID and PROVIDER_CLIENT_SECRET in single-tenant mode (resolved
-  # per tenant otherwise); MULTI_TENANT_SERVICE_API_KEY in multi-tenant mode.
+  # per tenant otherwise); MULTI_TENANT_SERVICE_API_KEY in multi-tenant mode;
+  # CONSULT_AUDIT_HMAC_KEY when SERVICE_TYPE serves the API ("both"/"api").
   # Also accepted: POSTGRES_REPLICA_PASSWORD, BTG_WEBHOOK_HMAC_SECRET,
   # INTERNAL_API_KEY_PREVIOUS, CREDENTIAL_ENCRYPTION_KEY_PREVIOUS, LICENSE_KEY,
   # PLUGIN_AUTH_CLIENT_ID, PLUGIN_AUTH_CLIENT_SECRET.
@@ -232,6 +237,13 @@ app:
     # PROVIDER_CLIENT_SECRET: ""
     # INTERNAL_API_KEY: ""            # openssl rand -hex 32
     # CREDENTIAL_ENCRYPTION_KEY: ""   # openssl rand -base64 32
+    # Bill consult audit: HMAC key of the line fingerprint (line_fp). REQUIRED for
+    # SERVICE_TYPE "both"/"api": the app refuses to boot without it. >= 32 chars, no
+    # leading/trailing whitespace; production refuses the published example
+    # placeholders. Outside local, source it from the platform secret manager.
+    # Rotating it is a restart, but older line_fp values stop correlating (there is
+    # no _PREVIOUS key).
+    # CONSULT_AUDIT_HMAC_KEY: ""      # openssl rand -hex 32
 
   # -- Use an externally managed Secret instead of generating one
   useExistingSecret: false

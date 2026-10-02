@@ -55,6 +55,7 @@ The following values MUST be set for the deployment to start successfully:
 {{- end }}
   - app.secrets.INTERNAL_API_KEY          (>=32 chars; required for SERVICE_TYPE=both/worker)
   - app.secrets.CREDENTIAL_ENCRYPTION_KEY (base64 AES-256; required for SERVICE_TYPE=both/worker)
+  - app.secrets.CONSULT_AUDIT_HMAC_KEY    (>=32 chars, no surrounding whitespace; required for SERVICE_TYPE=both/api)
   - app.secrets.LICENSE_KEY               (recommended — required in production)
 
 When MULTI_TENANT_ENABLED=true, additionally:

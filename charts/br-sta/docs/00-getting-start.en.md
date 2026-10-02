@@ -12,7 +12,7 @@
 |---|---|
 | Product / Chart | `br-sta-helm` (first release **1.0.0**) / app **1.0.0** |
 | Components | `manager` (HTTP API, `:4028`), `worker` (background process, probe server `:4029`, exactly one replica), migrations Job |
-| Images | `ghcr.io/lerianstudio/br-sta-manager`, `br-sta-worker`, `br-sta-migrations` (all private on GHCR); dev only: `mock-sta-server` (private) |
+| Images | `ghcr.io/lerianstudio/br-sta-manager`, `br-sta-worker`, `br-sta-migrations` (all public on GHCR); dev only: `mock-sta-server` (public) |
 | Last review of this runbook | 2026-10-01 |
 | Escalation contact | `@LerianStudio/G_Github_Devops` (see `.github/CODEOWNERS`) |
 
@@ -61,17 +61,12 @@ RabbitMQ exchanges and queues at boot.
 
 ```bash
 kubectl create namespace sta-dev
-# GHCR pull secret (the br-sta images are private). Use a token with read:packages.
-kubectl -n sta-dev create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
-
-helm install br-sta charts/br-sta -n sta-dev \
-  -f charts/br-sta/values-dev.yaml \
-  --set-json 'imagePullSecrets=[{"name":"ghcr-pull"}]'
+helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml
 ```
 
-`imagePullSecrets` (root key) is used by the manager, worker, migrations Job and the
-mock STA server; the bundled infra and bootstrap Jobs run public images.
+All images are public, so no pull secret is needed. For a private mirror, set
+`imagePullSecrets` (root key): the manager, worker, migrations Job and mock STA server
+use it.
 
 Expected on a fresh namespace:
 
@@ -127,16 +122,19 @@ kubectl delete namespace sta-dev
 3. Create the app Secret out of band (`common.useExistingSecret: true` +
    `existingSecretName`), reference single keys of it with `common.secretRefs.<KEY>:
    {name, key}`, or fill `common.secrets` with `<path:...>` placeholders.
-4. Create the GHCR pull secret in the namespace. The chart default is `ghcr-credential`
-   (`imagePullSecrets: [{name: ghcr-credential}]`):
+4. Optional, only when pulling from a private mirror or registry: the GHCR images are
+   public and the chart default is `imagePullSecrets: []`. Create the registry Secret
+   and point the root list at it (the manager, worker, migrations Job and mock STA use
+   it):
 
    ```bash
-   kubectl -n <namespace> create secret docker-registry ghcr-credential \
-     --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
+   kubectl -n <namespace> create secret docker-registry <your-secret> \
+     --docker-server=<registry> --docker-username=<user> --docker-password=<token>
    ```
 
-   For a differently named Secret, override the root list, which the manager, worker,
-   migrations Job and mock STA all use: `imagePullSecrets: [{name: <your-secret>}]`.
+   ```yaml
+   imagePullSecrets: [{name: <your-secret>}]
+   ```
 5. `helm install` with your values. Against external Postgres the migrations run as a
    Helm `pre-install`/`pre-upgrade` hook and as an ArgoCD PreSync hook (the hook Secret
    at weight -2, the Job at -1), so the app never boots unmigrated under either tool.
@@ -222,7 +220,7 @@ verifier/export generator).
 | CORS | lib-commons' middleware reads `ACCESS_CONTROL_*`; the chart renders `ACCESS_CONTROL_ALLOW_ORIGIN` from `common.cors.allowedOrigins`. Empty = deny-all | Production: explicit origins only |
 | Master key | Replacing `MASTER_KEYS` makes every stored BACEN credential undecryptable | Add a new version (`v1:...,v2:...`) and switch `MASTER_KEY_VERSION` |
 | Filing sweep | `worker.scheduler.filingSweepEnabled` (default `false`) auto-closes stranded reporter filings; `filingSweepAgeMinutes` is a safety knob | Enable deliberately; do not tune the age down |
-| Private images | All app images are private on GHCR | Pull secret in every namespace (`imagePullSecrets`) |
+| Images | All app images are public on GHCR | A pull secret (`imagePullSecrets`) only for a private mirror/registry |
 
 ### License
 

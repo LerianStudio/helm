@@ -111,9 +111,10 @@ global:
   # Example: kms: { vendor: "aws", keyId: "arn:aws:kms:sa-east-1:<account>:key/<id>" }
   kms: {}
 
-# -- Default pull secret for the manager, worker and migrations Job (single GHCR credential).
-imagePullSecrets:
-  - name: ghcr-credential
+# -- Pull secrets for the manager, worker, migrations Job and mock STA. The images are
+# public on GHCR, so none is needed by default; set it only for a private mirror or
+# registry, e.g. [{name: my-registry-credential}]. Per-component lists override it.
+imagePullSecrets: []
 
 serviceAccount:
   create: true
@@ -739,7 +740,7 @@ redpandaTopics:
 # When enabled, STA_SCHEME / STA_FILE_HOST / STA_PASSWORD_HOST point the STA client
 # at it (a native common.configmap key still wins). The chart refuses it in a
 # production-like environment.
-# The image is Lerian-internal and private on GHCR (same pull secret as the app).
+# The image is public on GHCR (it follows the app's imagePullSecrets, if any).
 mockSta:
   enabled: false
   image:

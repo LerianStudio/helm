@@ -56,8 +56,27 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth:4000") | quote }}
   PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") | quote }}
 
-  # MULTI-TENANT (knob only; CRM emits just the gate)
+  # =============================================================================
+  # MULTI-TENANT — knob inline; gated block via lerian-common.multiTenant.env
+  # (URL + redis host come from global.multiTenant or configmap.MULTI_TENANT_*).
+  # Defaults are the CRM's own (.env.example): timeout 30, pools 100 / idle 300,
+  # circuit breaker 5 / 30, redis port 6379 without TLS. The redis host is
+  # optional: without it the CRM only skips the tenant-event listener (Pub/Sub).
+  # =============================================================================
+  {{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
   MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+  {{- include "lerian-common.multiTenant.env" (dict
+        "context" $
+        "configmap" $cm
+        "enabled" $mtEnabled
+        "emitRedis" true
+        "emitPool" true
+        "requiredUrl" true) | nindent 2 }}
+  {{- if $mtEnabled }}
+  MULTI_TENANT_TIMEOUT: {{ $cm.MULTI_TENANT_TIMEOUT | default "30" | quote }}
+  # Seconds between tenant-connection health checks; 0 keeps the library default.
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "0" | quote }}
+  {{- end }}
 
   KMS_VAULT_ADDR: {{ $cm.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
   KMS_VAULT_AUTH_METHOD: {{ $cm.KMS_VAULT_AUTH_METHOD | default "token" | quote }}

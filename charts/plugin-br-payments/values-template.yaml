@@ -1,9 +1,48 @@
 # Production values overlay starter for plugin-br-payments-helm.
 # Copy this file, fill in the placeholders, and pass it to helm install/upgrade.
 #
-#   helm upgrade --install plugin-br-payments lerian/plugin-br-payments-helm \
+#   helm upgrade --install plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm \
 #     -n midaz-plugins --create-namespace \
 #     -f values-prod.yaml
+#
+# Shape: ONE `global:` block with the environment-wide contract (datastores, auth,
+# observability, multi-tenancy), then the component. The ConfigMap is rendered
+# from these masks; app.configmap.<KEY> overrides a single key and always wins.
+
+global:
+  env:
+    name: "production"
+  # cloud: "aws"                 # aws | gcp | azure: TLS/SSL defaults for the masks
+  datastores:
+    postgres:
+      host: "payments-db.example.internal"
+      port: "5432"
+      user: "plugin_br_payments"
+      name: "plugin_br_payments"
+      ssl: "require"
+      # replicaHost: "payments-db-ro.example.internal"
+  auth:
+    enabled: "true"
+    host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
+  observability:
+    enabled: "true"
+    otlpEndpoint: "otel-collector-lerian:4317"
+    deploymentEnvironment: "production"
+  # Multi-tenancy (database-per-tenant via tenant-manager). When enabled, also set
+  # app.configmap.AWS_REGION and app.secrets.MULTI_TENANT_SERVICE_API_KEY, and
+  # leave the provider credential pair unset (it is resolved per tenant).
+  # multiTenant:
+  #   enabled: "true"
+  #   url: "http://tenant-manager.tenant-manager.svc.cluster.local:4003"
+
+  # When using a fresh external Postgres, optionally run the bootstrap Job once:
+  # externalPostgresDefinitions:
+  #   enabled: true
+  #   postgresAdminLogin:
+  #     username: postgres
+  #     password: <admin password>
+  #   paymentsCredentials:
+  #     password: <plugin_br_payments password>
 
 app:
   replicaCount: 2
@@ -23,48 +62,39 @@ app:
         hosts:
           - payments.example.com
   configmap:
-    ALLOW_INSECURE_TLS: "true"
-    ENV_NAME: "production"
-    DEPLOYMENT_MODE: "saas"
-    LOG_LEVEL: "info"
-    SERVICE_TYPE: "both"
-    OUTBOX_ENABLED: "true"
-    # External PostgreSQL — leave empty here only if postgresql.enabled=true.
-    POSTGRES_HOST: ""
-    POSTGRES_SSLMODE: "require"
-    # BTG Provider integration (REQUIRED)
+    # Provider (REQUIRED)
     BTG_API_BASE_URL: ""
     BTG_AUTH_URL: ""
-    # Midaz Ledger (REQUIRED)
-    MIDAZ_ONBOARDING_URL: ""
-    MIDAZ_TRANSACTION_URL: ""
-    # Auth
-    PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_ADDRESS: ""
-    # Multi-tenancy (set to "true" to enable)
-    MULTI_TENANCY_ENABLED: "false"
-    # MULTI_TENANT_MANAGER_URL: ""
-    # OpenTelemetry (use otel-collector-lerian.enabled below for host injection)
-    ENABLE_TELEMETRY: "true"
-    OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "production"
-  secrets:
-    # Database
-    POSTGRES_PASSWORD: ""        # REQUIRED
-    # BTG OAuth2 (REQUIRED)
-    BTG_CLIENT_ID: ""
-    BTG_CLIENT_SECRET: ""
-    BTG_WEBHOOK_SECRET: ""
-    # Internal cross-pod API (REQUIRED for SERVICE_TYPE=both/worker)
-    # Generate with: openssl rand -hex 32   (>=32 chars)
-    INTERNAL_API_KEY: ""
-    # Credential encryption (REQUIRED for SERVICE_TYPE=both/worker)
-    # Generate with: openssl rand -base64 32   (AES-256 key)
-    CREDENTIAL_ENCRYPTION_KEY: ""
-    # License (REQUIRED in production)
-    LICENSE_KEY: ""
+    # Midaz (REQUIRED): one Ledger URL serves onboarding and transaction.
+    MIDAZ_LEDGER_URL: ""
+    MIDAZ_CRM_URL: ""
+    MIDAZ_DEFAULT_ORG_ID: ""
+    MIDAZ_DEFAULT_LEDGER_ID: ""
     ORGANIZATION_IDS: ""
-    # Multi-tenancy (REQUIRED when MULTI_TENANCY_ENABLED=true)
-    # MULTI_TENANT_SERVICE_API_KEY: ""
+    # AWS_REGION: "us-east-2"    # REQUIRED with multi-tenancy (Secrets Manager)
+  secrets:
+    POSTGRES_PASSWORD: ""        # REQUIRED
+    # Provider OAuth2 (REQUIRED in single-tenant; leave empty in multi-tenant)
+    PROVIDER_CLIENT_ID: ""
+    PROVIDER_CLIENT_SECRET: ""
+    # HMAC-SHA256 secret of the provider webhook subscription (>= 32 chars)
+    BTG_WEBHOOK_HMAC_SECRET: ""
+    # Internal cross-pod API (REQUIRED for SERVICE_TYPE=both/worker, >= 32 chars)
+    # Generate with: openssl rand -hex 32
+    INTERNAL_API_KEY: ""
+    # Credential encryption (REQUIRED for SERVICE_TYPE=both/worker, AES-256 key)
+    # Generate with: openssl rand -base64 32
+    CREDENTIAL_ENCRYPTION_KEY: ""
+    # Bill consult audit HMAC key (REQUIRED for SERVICE_TYPE=both/api, >= 32 chars,
+    # no leading/trailing whitespace). From the platform secret manager; rotating it
+    # breaks line_fp correlation with older audit records (no _PREVIOUS key).
+    # Generate with: openssl rand -hex 32
+    CONSULT_AUDIT_HMAC_KEY: ""
+    LICENSE_KEY: ""
+    # Outbound M2M credentials for the Midaz client
+    PLUGIN_AUTH_CLIENT_ID: ""
+    PLUGIN_AUTH_CLIENT_SECRET: ""
+    # MULTI_TENANT_SERVICE_API_KEY: ""   # REQUIRED with multi-tenancy
   autoscaling:
     enabled: true
     minReplicas: 2
@@ -73,19 +103,6 @@ app:
 # Use a managed Postgres in production.
 postgresql:
   enabled: false
-
-# When using a fresh external Postgres, optionally run the bootstrap Job once:
-# global:
-#   externalPostgresDefinitions:
-#     enabled: true
-#     connection:
-#       host: my-rds.example.com
-#       port: "5432"
-#     postgresAdminLogin:
-#       username: postgres
-#       password: <admin password>
-#     paymentsCredentials:
-#       password: <plugin_br_payments password>
 
 # otel-collector-lerian:
 #   enabled: true

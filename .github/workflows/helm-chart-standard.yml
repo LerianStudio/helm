@@ -36,6 +36,27 @@ jobs:
           go-version: '1.21'
           cache-dependency-path: .github/scripts/go.sum
 
+      # A pull request into a chart line — maintenance/<chart>-<major>.<minor>.x, cut from an old
+      # release of one chart — is held to "no new violations", not to today's standard. midaz's
+      # 1.63.x line is chart 1.63.0 from 2025 and has 55 violations of the current --strict rules;
+      # enforcing them would red every patch the line exists to ship, including the ones app-sync
+      # opens. The same pattern as release.yml's chart line parser, leading zeros included.
+      - name: Detect chart line pull request
+        id: chart-line
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]] \
+            && [[ "$BASE_REF" =~ ^(maintenance|hotfix)/.+-(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.x$ ]]; then
+            echo "::notice::Pull request into chart line ${BASE_REF} — validated against its base, not against --strict"
+            echo "is_line=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_line=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # The validator's own unit tests, including the renders that pin
       # product-console's refusal to write a MONGO_HOST that names no Service,
       # and the br-jd-courier render contract (its secret and single-writer refusals).
@@ -80,14 +101,35 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Not on a chart line: these tests pin the validator, which is developed on main, and some of
+      # them render charts a line does not carry.
       - name: Test chart scripts
-        if: steps.script-tests.outputs.run == 'true'
+        if: steps.script-tests.outputs.run == 'true' && steps.chart-line.outputs.is_line != 'true'
         working-directory: .github/scripts
         run: go test ./...
 
       - name: Validate chart standard
+        if: steps.chart-line.outputs.is_line != 'true'
         working-directory: .github/scripts
         run: go run ./validate-helm-charts --root ../.. --strict
+
+      # The baseline is the line's own base commit, computed here rather than committed: whatever the
+      # chart already violated when the PR was opened is accepted, anything the PR adds is not.
+      # Violations are recorded relative to --root, so the two trees compare path for path. Stale
+      # entries are allowed, because fixing an old violation is not something to refuse.
+      - name: Validate chart standard (chart line, no new violations)
+        if: steps.chart-line.outputs.is_line == 'true'
+        working-directory: .github/scripts
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          base_tree="$RUNNER_TEMP/chart-line-base"
+          baseline="$RUNNER_TEMP/chart-line-baseline.yaml"
+          git worktree add --detach "$base_tree" "$BASE_SHA"
+          go run ./validate-helm-charts --root "$base_tree" --write-baseline --baseline "$baseline"
+          go run ./validate-helm-charts --root ../.. --baseline "$baseline" --allow-stale-baseline
 
       - name: Determine render scope
         id: render-scope

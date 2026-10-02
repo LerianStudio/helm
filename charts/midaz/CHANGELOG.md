@@ -1,5 +1,20 @@
 # Midaz Changelog
 
+## [9.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.4.0)
+
+Features:
+- Render the ledger seam token wait timeout. (@andreimatiazi)
+- Render the ledger tracer seam credentials. (@andreimatiazi)
+- Support AWS IAM Roles Anywhere on the ledger. (@andreimatiazi)
+
+Fixes:
+- Name the seam token wait `TRACER_M2M_WAIT_TIMEOUT_MS`. (@andreimatiazi)
+- Update `midaz-ledger@4.1.2`, `midaz-tracer@4.1.2`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.3.0...midaz-v9.4.0)
+
+---
+
 ## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
 
 Features:

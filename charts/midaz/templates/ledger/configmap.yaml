@@ -46,6 +46,10 @@ data:
   # =============================================================================
   ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ $envName | quote }}
+  # Service name the ledger registers with the tenant manager; REQUIRED when
+  # MULTI_TENANT_ENABLED=true (the app refuses to boot without it) and part of the
+  # tenants/{ENV_NAME}/{tenant}/{APPLICATION_NAME}/m2m/tracer secret path.
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "ledger" | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "debug" | quote }}
@@ -95,6 +99,10 @@ data:
         "emitRedis" true
         "requiredUrl" true
         "requiredRedisHost" true) | nindent 2 }}
+  {{- if $mtEnabled }}
+  # Seconds between tenant-connection health checks; 0 keeps the library default.
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "0" | quote }}
+  {{- end }}
 
   # =============================================================================
   # DB POSTGRESQL - ONBOARDING MODULE (host/user/port/ssl/replicaHost via datastore mask)
@@ -241,10 +249,15 @@ data:
   {{- end }}
   {{- /* How long a reservation seam call may wait for an M2M token that is not
      cached yet, before the TRACER_TIMEOUT_MS budget of the call itself starts.
-     Emitted only when set; the ledger defaults it. */}}
-  {{- if $cm.TRACER_M2M_WAIT_TIMEOUT_MS }}
-  TRACER_M2M_WAIT_TIMEOUT_MS: {{ $cm.TRACER_M2M_WAIT_TIMEOUT_MS | quote }}
-  {{- end }}
+     3000 is the ledger's own default (tracerclient.DefaultTokenWaitTimeout). */}}
+  TRACER_M2M_WAIT_TIMEOUT_MS: {{ $cm.TRACER_M2M_WAIT_TIMEOUT_MS | default "3000" | quote }}
+  {{- /* Where the multi-tenant seam identity (each tenant's
+     ledger-m2m-tracer-{tenant} client) is read from: "" (off), "aws" (Secrets
+     Manager at tenants/{ENV_NAME}/{tenant}/{APPLICATION_NAME}/m2m/tracer/
+     credentials) or "vault". AWS_REGION is read by the AWS SDK for the "aws"
+     backend; empty falls through to the SDK's other region sources. */}}
+  M2M_SECRETS_BACKEND: {{ $cm.M2M_SECRETS_BACKEND | default "" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "" | quote }}
 
   # =============================================================================
   # REDIS (shared between modules; host via datastore mask, tuning via passthrough)
@@ -310,6 +323,8 @@ data:
   RABBITMQ_HOST: {{ $rabbitHost | quote }}
   RABBITMQ_PORT_HOST: {{ $rabbitPort | quote }}
   RABBITMQ_PORT_AMQP: {{ $rabbitAmqpPort | quote }}
+  # TLS to the broker (AmazonMQ requires it). Native key, else the broker mask's tls.
+  RABBITMQ_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "tls" "nativeKey" "RABBITMQ_TLS" "default" "false") | quote }}
   RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "transaction") | quote }}
   RABBITMQ_CONSUMER_USER: {{ $cm.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
   RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}

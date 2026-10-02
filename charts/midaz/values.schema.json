@@ -715,7 +715,10 @@
               "TRACER_TRANSPORT",
               "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
-              "VERSION"
+              "VERSION",
+              "RABBITMQ_TLS",
+              "M2M_SECRETS_BACKEND",
+              "AWS_REGION"
             ]
           }
         },
@@ -1727,6 +1730,8 @@
               "API_KEY_LABEL",
               "APPLICATION_NAME",
               "AUDIT_LOG_ENABLED",
+              "AUTH_CACHE_TTL",
+              "AUTH_M2M_INVERSION_ENABLED",
               "BALANCE_SYNC_BATCH_SIZE",
               "BALANCE_SYNC_FLUSH_TIMEOUT_MS",
               "BALANCE_SYNC_MAX_WORKERS",

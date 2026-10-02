@@ -30,6 +30,11 @@ data:
   CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "*" | quote }}
 
   # AUTH PLUGIN (Access Manager) — via lerian-common.auth.env (global.auth contract)
+  # AUTH_M2M_INVERSION_ENABLED and AUTH_CACHE_TTL are read by lib-auth: inversion is
+  # off unless "true", and the decision cache is off unless AUTH_CACHE_TTL is a
+  # positive Go duration (e.g. "60s"). Defaults keep both off, as the library does.
+  AUTH_M2M_INVERSION_ENABLED: {{ $cm.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
+  AUTH_CACHE_TTL: {{ $cm.AUTH_CACHE_TTL | default "" | quote }}
   {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
 
   # RI PERMISSION DECLARATION (IdP identity service :4001 — distinct from auth :4000)
@@ -42,6 +47,8 @@ data:
   IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
 
   # RESERVATION gRPC SEAM (opt-in; empty keeps the seam off, as the app does)
+  # TRACER_TLS_MODE: "" (plain gRPC), "server" or "mtls".
+  TRACER_TLS_MODE: {{ $cm.TRACER_TLS_MODE | default "" | quote }}
   {{- with $cm.TRACER_GRPC_PORT }}
   TRACER_GRPC_PORT: {{ . | quote }}
   {{- end }}
@@ -64,6 +71,9 @@ data:
   # GOMEMLIMIT must track resources.limits.memory (~90%); the image default of
   # 1800MiB assumes a 2Gi container and would let the heap outgrow the cgroup.
   GOMEMLIMIT: {{ $cm.GOMEMLIMIT | default "460MiB" | quote }}
+
+  # OPENAPI DOCS (serves the OpenAPI document/UI; off by default, as the app does)
+  OPENAPI_DOCS_ENABLED: {{ $cm.OPENAPI_DOCS_ENABLED | default "false" | quote }}
 
   # SWAGGER
   SWAGGER_TITLE: {{ $cm.SWAGGER_TITLE | default "Tracer API" | quote }}

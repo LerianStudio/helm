@@ -226,6 +226,7 @@ Midaz deploys the following core services:
 | `ledger.serviceAccount.create` | Specifies whether the service account should be created. | `true` |
 | `ledger.serviceAccount.annotations` | Annotations for the service account. | `{}` |
 | `ledger.serviceAccount.name` | Service account name. If not defined, it will be generated automatically. | `""` |
+| `ledger.aws.rolesAnywhere.enabled` | Enable the AWS IAM Roles Anywhere sidecar on the ledger, for clusters without IRSA. The multi-tenant ledger reads its per-tenant Tracer M2M credential from Secrets Manager. On EKS keep it `false` and set `ledger.serviceAccount.annotations["eks.amazonaws.com/role-arn"]`; never enable both. When enabled, `trustAnchorArn`, `profileArn` and `roleArn` are required, the client certificate Secret (`certificateSecretName`, default `<midaz-ledger.fullname>-iam-tls`) must be provisioned outside the chart, and `ledger.podSecurityContext` is replaced with `fsGroup: 65532`. Set `AWS_REGION` in `ledger.extraEnvVars`. | `false` |
 
 #### Creating Ledger Secret Manually
 

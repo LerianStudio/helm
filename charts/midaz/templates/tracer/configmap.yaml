@@ -23,8 +23,15 @@ data:
   # LOG LEVEL
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
 
+  # Service name used with the tenant manager (the app falls back to "tracer").
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "tracer" | quote }}
+  DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
+  # Comma-separated CIDRs whose X-Forwarded-For is trusted ("" trusts none).
+  TRUSTED_PROXY_CIDRS: {{ $cm.TRUSTED_PROXY_CIDRS | default "" | quote }}
+
   # AUTHENTICATION
   API_KEY_ENABLED: {{ $cm.API_KEY_ENABLED | default "false" | quote }}
+  API_KEY_ENABLED_ONLY_VALIDATION: {{ $cm.API_KEY_ENABLED_ONLY_VALIDATION | default "false" | quote }}
 
   # CORS
   CORS_ALLOWED_ORIGINS: {{ $cm.CORS_ALLOWED_ORIGINS | default "*" | quote }}
@@ -35,6 +42,10 @@ data:
   # positive Go duration (e.g. "60s"). Defaults keep both off, as the library does.
   AUTH_M2M_INVERSION_ENABLED: {{ $cm.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
   AUTH_CACHE_TTL: {{ $cm.AUTH_CACHE_TTL | default "" | quote }}
+  # lib-auth circuit breaker: on only when "true" (the .env.example recommends it).
+  AUTH_BREAKER_ENABLED: {{ $cm.AUTH_BREAKER_ENABLED | default "false" | quote }}
+  # PEM used to verify the Access Manager JWT signature ("" uses the JWKS).
+  AUTH_JWT_VERIFY_CERT: {{ $cm.AUTH_JWT_VERIFY_CERT | default "" | quote }}
   {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
 
   # RI PERMISSION DECLARATION (IdP identity service :4001 — distinct from auth :4000)
@@ -49,6 +60,15 @@ data:
   # RESERVATION gRPC SEAM (opt-in; empty keeps the seam off, as the app does)
   # TRACER_TLS_MODE: "" (plain gRPC), "server" or "mtls".
   TRACER_TLS_MODE: {{ $cm.TRACER_TLS_MODE | default "" | quote }}
+  # Server certificate/key (required for "server" and "mtls"), the client CA and
+  # the accepted client identities (required for "mtls").
+  TRACER_TLS_CERT_FILE: {{ $cm.TRACER_TLS_CERT_FILE | default "" | quote }}
+  TRACER_TLS_KEY_FILE: {{ $cm.TRACER_TLS_KEY_FILE | default "" | quote }}
+  TRACER_TLS_CLIENT_CA_FILE: {{ $cm.TRACER_TLS_CLIENT_CA_FILE | default "" | quote }}
+  TRACER_TLS_CLIENT_ALLOWED_NAMES: {{ $cm.TRACER_TLS_CLIENT_ALLOWED_NAMES | default "" | quote }}
+  # Access Manager client names allowed to reserve over the seam ("" = in
+  # multi-tenant only ledger-m2m-tracer-{tenant} matching the token's tenant).
+  TRACER_SEAM_ALLOWED_CLIENTS: {{ $cm.TRACER_SEAM_ALLOWED_CLIENTS | default "" | quote }}
   {{- with $cm.TRACER_GRPC_PORT }}
   TRACER_GRPC_PORT: {{ . | quote }}
   {{- end }}
@@ -72,6 +92,21 @@ data:
   # 1800MiB assumes a 2Gi container and would let the heap outgrow the cgroup.
   GOMEMLIMIT: {{ $cm.GOMEMLIMIT | default "460MiB" | quote }}
 
+  # RESERVATIONS — background reaper that returns capacity held past a
+  # reservation's expiry (the app defaults it on), and the long-lived TTL.
+  RESERVATION_REAPER_ENABLED: {{ hasKey $cm "RESERVATION_REAPER_ENABLED" | ternary (toString (index $cm "RESERVATION_REAPER_ENABLED")) "true" | quote }}
+  RESERVATION_REAPER_INTERVAL_SECONDS: {{ $cm.RESERVATION_REAPER_INTERVAL_SECONDS | default "30" | quote }}
+  RESERVATION_LONG_LIVED_TTL_HOURS: {{ $cm.RESERVATION_LONG_LIVED_TTL_HOURS | default "720" | quote }}
+  # RULE SYNC — worker polling for rule changes, cache staleness and delta overlap.
+  RULE_SYNC_POLL_INTERVAL_SECONDS: {{ $cm.RULE_SYNC_POLL_INTERVAL_SECONDS | default "10" | quote }}
+  RULE_SYNC_STALENESS_THRESHOLD_SECONDS: {{ $cm.RULE_SYNC_STALENESS_THRESHOLD_SECONDS | default "50" | quote }}
+  RULE_SYNC_OVERLAP_BUFFER_SECONDS: {{ $cm.RULE_SYNC_OVERLAP_BUFFER_SECONDS | default "2" | quote }}
+  # READINESS — drain grace on shutdown and the rule-cache staleness /readyz tolerates.
+  READYZ_DRAIN_GRACE_SECONDS: {{ $cm.READYZ_DRAIN_GRACE_SECONDS | default "12" | quote }}
+  READYZ_CACHE_STALENESS_THRESHOLD_SECONDS: {{ $cm.READYZ_CACHE_STALENESS_THRESHOLD_SECONDS | default "300" | quote }}
+  # Retry-After (seconds) returned when a tenant hits its connection-pool cap.
+  TENANT_CAP_RETRY_AFTER_SECONDS: {{ $cm.TENANT_CAP_RETRY_AFTER_SECONDS | default "5" | quote }}
+
   # OPENAPI DOCS (serves the OpenAPI document/UI; off by default, as the app does)
   OPENAPI_DOCS_ENABLED: {{ $cm.OPENAPI_DOCS_ENABLED | default "false" | quote }}
 
@@ -91,6 +126,7 @@ data:
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.tracer.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" $envName) | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ $cm.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
 
   # CLEANUP WORKER

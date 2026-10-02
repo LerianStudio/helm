@@ -718,7 +718,9 @@
               "VERSION",
               "RABBITMQ_TLS",
               "M2M_SECRETS_BACKEND",
-              "AWS_REGION"
+              "AWS_REGION",
+              "M2M_VAULT_MOUNT",
+              "BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS"
             ]
           }
         },
@@ -1730,7 +1732,9 @@
               "API_KEY_LABEL",
               "APPLICATION_NAME",
               "AUDIT_LOG_ENABLED",
+              "AUTH_BREAKER_ENABLED",
               "AUTH_CACHE_TTL",
+              "AUTH_JWT_VERIFY_CERT",
               "AUTH_M2M_INVERSION_ENABLED",
               "BALANCE_SYNC_BATCH_SIZE",
               "BALANCE_SYNC_FLUSH_TIMEOUT_MS",
@@ -1962,9 +1966,11 @@
               "TENANT_CAP_RETRY_AFTER_SECONDS",
               "TRACER_BASE_URL",
               "TRACER_GRPC_PORT",
+              "TRACER_SEAM_ALLOWED_CLIENTS",
               "TRACER_TIMEOUT_MS",
               "TRACER_TLS_CA_FILE",
               "TRACER_TLS_CERT_FILE",
+              "TRACER_TLS_CLIENT_ALLOWED_NAMES",
               "TRACER_TLS_CLIENT_CA_FILE",
               "TRACER_TLS_KEY_FILE",
               "TRACER_TLS_MODE",

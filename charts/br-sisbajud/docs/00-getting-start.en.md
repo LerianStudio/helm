@@ -85,13 +85,10 @@ With a bundled dependency these Jobs are post-install/post-upgrade hooks with
 ### br-sisbajud + br-sta together
 
 ```bash
-# 0. namespace + a GHCR pull secret for br-sta (its images are private)
+# 0. namespace (both charts' images are public: no pull secret)
 kubectl create namespace sisb-dev
-kubectl -n sisb-dev create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
 # 1. br-sta dev bundle, with br-sisbajud's own bucket added to its bucket Job
 helm install br-sta charts/br-sta -n sisb-dev -f charts/br-sta/values-dev.yaml \
-  --set-json 'imagePullSecrets=[{"name":"ghcr-pull"}]' \
   --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'
 # 2. br-sisbajud wired to it (reuses br-sta's SeaweedFS + Redpanda)
 helm install br-sisbajud charts/br-sisbajud -n sisb-dev \

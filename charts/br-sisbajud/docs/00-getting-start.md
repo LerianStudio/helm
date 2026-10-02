@@ -85,13 +85,10 @@ removê-los. O próximo upgrade os substitui.
 ### br-sisbajud + br-sta juntos
 
 ```bash
-# 0. namespace + pull secret do GHCR para o br-sta (as imagens dele são privadas)
+# 0. namespace (as imagens dos dois charts são públicas: sem pull secret)
 kubectl create namespace sisb-dev
-kubectl -n sisb-dev create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
 # 1. dev bundle do br-sta, somando o bucket do br-sisbajud ao Job de buckets dele
 helm install br-sta charts/br-sta -n sisb-dev -f charts/br-sta/values-dev.yaml \
-  --set-json 'imagePullSecrets=[{"name":"ghcr-pull"}]' \
   --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'
 # 2. br-sisbajud ligado a ele (reaproveita o SeaweedFS + Redpanda do br-sta)
 helm install br-sisbajud charts/br-sisbajud -n sisb-dev \

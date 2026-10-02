@@ -146,6 +146,12 @@ data:
         "clientId" (include "midaz-tracer.fullname" .)
         "cloudeventsSource" "tracer") | nindent 2 }}
 
+  AUTH_BREAKER_ENABLED: {{ .Values.tracer.configmap.AUTH_BREAKER_ENABLED | default "true" | quote }}
+  AUTH_CACHE_TTL: {{ .Values.tracer.configmap.AUTH_CACHE_TTL | default "60s" | quote }}
+  AUTH_JWT_VERIFY_CERT: {{ .Values.tracer.configmap.AUTH_JWT_VERIFY_CERT | default "" | quote }}
+  AUTH_M2M_INVERSION_ENABLED: {{ .Values.tracer.configmap.AUTH_M2M_INVERSION_ENABLED | default "true" | quote }}
+  TRACER_SEAM_ALLOWED_CLIENTS: {{ .Values.tracer.configmap.TRACER_SEAM_ALLOWED_CLIENTS | default "" | quote }}
+  TRACER_TLS_CLIENT_ALLOWED_NAMES: {{ .Values.tracer.configmap.TRACER_TLS_CLIENT_ALLOWED_NAMES | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.tracer.extraEnvVars }}
   {{- range $key, $value := . }}

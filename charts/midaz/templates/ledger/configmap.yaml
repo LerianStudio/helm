@@ -433,6 +433,10 @@ data:
   # =============================================================================
   CASDOOR_JWK_ADDRESS: {{ $cm.CASDOOR_JWK_ADDRESS | default "" | quote }}
   TRANSACTION_BATCH_MAX_SIZE: {{ .Values.ledger.configmap.TRANSACTION_BATCH_MAX_SIZE | default "10" | quote }}
+  M2M_SECRETS_BACKEND: {{ .Values.ledger.configmap.M2M_SECRETS_BACKEND | default "" | quote }}
+  M2M_VAULT_MOUNT: {{ .Values.ledger.configmap.M2M_VAULT_MOUNT | default "" | quote }}
+  TRACER_M2M_CLIENT_ID: {{ .Values.ledger.configmap.TRACER_M2M_CLIENT_ID | default "" | quote }}
+  TRACER_M2M_WAIT_TIMEOUT_MS: {{ .Values.ledger.configmap.TRACER_M2M_WAIT_TIMEOUT_MS | default "3000" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -87,9 +87,10 @@ global:
   #   kms: { vendor: "hashicorp-vault", vaultAddr: "https://vault.internal:8200", vaultAuthMethod: "approle", vaultRoleId: "<role-id>", vaultMount: "transit" }
   kms: {}
 
-# -- Default pull secret for the app + migrations/topics Jobs (single GHCR credential).
-imagePullSecrets:
-  - name: ghcr-credential
+# -- Pull secrets for the app + migrations/topics/bucket pods. The
+# ghcr.io/lerianstudio/br-sisbajud* images are public, so none is needed; set one
+# only to pull from a private mirror/registry (e.g. [{name: my-registry}]).
+imagePullSecrets: []
 
 serviceAccount:
   create: true

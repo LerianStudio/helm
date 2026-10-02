@@ -56,8 +56,8 @@ global:
     # url: "http://tenant-manager.tenant-manager.svc.cluster.local:4026"
     # redisHost: "valkey.internal"
 
-imagePullSecrets:
-  - name: ghcr-credential
+# The images are public on GHCR. Set a pull secret only for a private mirror/registry.
+imagePullSecrets: []
 
 brSisbajud:
   image:

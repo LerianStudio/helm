@@ -11,7 +11,7 @@
 |---|---|
 | Produto / Chart | `br-sisbajud-helm` (release **1.2.0**; o pipeline de release define a versão, então o `Chart.yaml` da branch ainda mostra `1.1.0`) / app **1.1.0** |
 | Componentes | um binário Go (API HTTP `:4029` + workers de background), Job de migrations, Job de tópicos |
-| Imagens | `ghcr.io/lerianstudio/br-sisbajud`, `br-sisbajud-migrations`, `br-sisbajud-topics` (todas privadas no GHCR) |
+| Imagens | `ghcr.io/lerianstudio/br-sisbajud`, `br-sisbajud-migrations`, `br-sisbajud-topics` (todas públicas no GHCR) |
 | Guia de upgrade | vindo do chart 1.1.x: [`UPGRADE-1.2.md`](UPGRADE-1.2.md) |
 | Última revisão deste runbook | 2026-09-30, contra chart 1.2.0 / app 1.1.0 |
 | Contato de escalação | `@LerianStudio/G_Github_Devops` (ver `.github/CODEOWNERS`) |
@@ -62,16 +62,12 @@ poderem executar.
 > A infraestrutura embutida é apenas para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada. Não promova este perfil para um tier de produção.
 
 ```bash
-kubectl create namespace sisb-dev
-kubectl -n sisb-dev create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
-
-helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
-  -f charts/br-sisbajud/values-dev.yaml \
-  --set-json 'imagePullSecrets=[{"name":"ghcr-pull"}]'
+helm install br-sisbajud charts/br-sisbajud -n sisb-dev --create-namespace \
+  -f charts/br-sisbajud/values-dev.yaml
 ```
 
-O `imagePullSecrets` de topo cobre os pods da app, migrations, tópicos e buckets. Com as
+As imagens são públicas, então não é preciso pull secret (o `imagePullSecrets` de topo
+é só para um mirror/registry privado). Com as
 dependências embutidas, o pod da app roda initContainers idempotentes (migrations,
 espera do broker, tópicos, mount do Transit) antes de subir, então nunca sobe sem
 schema, tópicos ou Transit montado.
@@ -89,14 +85,17 @@ removê-los. O próximo upgrade os substitui.
 ### br-sisbajud + br-sta juntos
 
 ```bash
+# 0. namespace + pull secret do GHCR para o br-sta (as imagens dele são privadas)
+kubectl create namespace sisb-dev
+kubectl -n sisb-dev create secret docker-registry ghcr-pull \
+  --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
 # 1. dev bundle do br-sta, somando o bucket do br-sisbajud ao Job de buckets dele
 helm install br-sta charts/br-sta -n sisb-dev -f charts/br-sta/values-dev.yaml \
   --set-json 'imagePullSecrets=[{"name":"ghcr-pull"}]' \
   --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'
 # 2. br-sisbajud ligado a ele (reaproveita o SeaweedFS + Redpanda do br-sta)
 helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
-  -f charts/br-sisbajud/values-dev.yaml -f charts/br-sisbajud/values-dev-with-br-sta.yaml \
-  --set-json 'imagePullSecrets=[{"name":"ghcr-pull"}]'
+  -f charts/br-sisbajud/values-dev.yaml -f charts/br-sisbajud/values-dev-with-br-sta.yaml
 ```
 
 O overlay assume o release do br-sta com o nome `br-sta` (Service do manager
@@ -266,16 +265,18 @@ externa):
    e o bucket de transfer do br-sta), Vault Transit (ou AWS KMS) e o broker.
 2. Crie o Secret fora do chart (`brSisbajud.useExistingSecret` + `existingSecretName`)
    ou preencha `brSisbajud.secrets` com placeholders `<path:...>`.
-3. Crie o pull secret do GHCR. O default do chart é `ghcr-credential`
-   (`imagePullSecrets: [{name: ghcr-credential}]`):
+3. Pull secret: opcional. As imagens são públicas no GHCR e o default do chart é
+   `imagePullSecrets: []`. Só para um mirror/registry privado, crie o Secret e defina a
+   lista raiz, usada pelos pods da app, de migrations, tópicos e buckets:
 
    ```bash
-   kubectl -n <namespace> create secret docker-registry ghcr-credential \
-     --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<GHCR_READ_TOKEN>
+   kubectl -n <namespace> create secret docker-registry <seu-secret> \
+     --docker-server=<registry> --docker-username=<usuario> --docker-password=<token>
    ```
 
-   Com um Secret de outro nome, sobrescreva a lista raiz, usada pelos pods da app, de
-   migrations, tópicos e buckets: `imagePullSecrets: [{name: <seu-secret>}]`.
+   ```yaml
+   imagePullSecrets: [{name: <seu-secret>}]
+   ```
 4. `helm install` a partir do registry OCI, fixando a versão do chart:
 
    ```bash
@@ -333,7 +334,7 @@ Ligação com o br-sta (valores agrupados em `brSisbajud.sta`): `consumerEnabled
 | OpenBao modo dev | Reiniciar o pod do OpenBao perde todas as chaves Transit: linhas criptografadas antes ficam ilegíveis | Só dev/avaliação; resete o banco junto |
 | Cliente de transfers do STA | Precisa de um plugin-access-manager acessível para emitir o bearer m2m | Sem ele, o envio de arquivo de retorno ao br-sta falha |
 | Fatos do br-sta de transfers desconhecidos | Comportamento conhecido da app: um fato em `lerian.streaming.br-sta` de um transfer que o br-sisbajud não criou é tratado como transitório e segura a partição | Acompanhe `sta_consumer` no `/readyz` (`degraded`, `consumer_not_polling`) |
-| Imagens privadas | Imagens da app, migrations e tópicos são privadas no GHCR | Pull secret no namespace (`imagePullSecrets`) |
+| Imagens | Imagens da app, migrations e tópicos são públicas no GHCR | Pull secret (`imagePullSecrets`) só para um mirror/registry privado |
 
 ### Modo só-consumer (limitação conhecida da app 1.1.0)
 

@@ -10,7 +10,7 @@
 # with TLS, Valkey/Redis, Kafka/Redpanda with TLS, Vault/OpenBao in non-dev
 # mode (or AWS KMS) and S3 object storage. The render refuses the
 # OpenBao/Redpanda bundles outside a development-class environment
-# (local|development|develop|dev|test|e2e; staging included). The
+# (local|development|develop|dev|test|e2e; staging is refused). The
 # PostgreSQL/Valkey/SeaweedFS bundles only get a NOTES warning in a
 # production-like environment, but they are unsupported in production all the
 # same.

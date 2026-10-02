@@ -20,7 +20,7 @@
 
 ## 1. Perfis de instalação
 
-> **A infraestrutura embutida é apenas para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada.** Produção significa PostgreSQL com TLS, Valkey/Redis, Kafka/Redpanda com TLS, Vault/OpenBao fora do modo dev (ou AWS KMS) e object storage S3. Os subcharts embutidos `postgresql`, `valkey`, `seaweedfs`, `openbao` e `redpanda` existem para instalações de desenvolvimento, POC e quickstart. O render recusa os bundles de OpenBao e Redpanda fora de um ambiente da classe dev (`local`, `development`, `develop`, `dev`, `test`, `e2e`; staging incluído). Os bundles de PostgreSQL, Valkey e SeaweedFS só recebem um aviso no NOTES num ambiente com cara de produção, mas também não são suportados em produção.
+> **A infraestrutura embutida é apenas para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada.** Produção significa PostgreSQL com TLS, Valkey/Redis, Kafka/Redpanda com TLS, Vault/OpenBao fora do modo dev (ou AWS KMS) e object storage S3. Os subcharts embutidos `postgresql`, `valkey`, `seaweedfs`, `openbao` e `redpanda` existem para instalações de desenvolvimento, POC e quickstart. O render recusa os bundles de OpenBao e Redpanda fora de um ambiente da classe dev (`local`, `development`, `develop`, `dev`, `test`, `e2e`; staging também é recusado). Os bundles de PostgreSQL, Valkey e SeaweedFS só recebem um aviso no NOTES num ambiente com cara de produção, mas também não são suportados em produção.
 
 | Perfil | Values | O que roda | Uso |
 |---|---|---|---|
@@ -329,7 +329,7 @@ Ligação com o br-sta (valores agrupados em `brSisbajud.sta`): `consumerEnabled
 | Tema | O que saber | Antes de habilitar / como confirmar |
 |---|---|---|
 | Render fail-fast | Espelha a validação de boot da app: `STA_INBOUND_BUCKET` sempre; host de Postgres/Redis em single-tenant; provider do KMS + credenciais; brokers/SASL/TLS do streaming; `LICENSE_KEY` + senha do Postgres em ambiente tipo produção; credenciais do cliente de transfers do STA / auth de entrada / publisher de declaração; URL/Redis/API key do multi-tenant; `ORGANIZATION_IDS` precisa ser `global` | Leia o erro do render: ele diz exatamente o valor |
-| Guarda dos bundles dev-only | `openbao` (modo dev, chaves em memória) e `redpandaBundle` são recusados fora de `local`/`development`/`develop`/`dev`/`test`/`e2e` (staging incluído). Independe dos relaxamentos da própria app, que `staging` continua tendo | `helm template ... --set global.env.name=production` com o dev bundle falha citando os dois |
+| Guarda dos bundles dev-only | `openbao` (modo dev, chaves em memória) e `redpandaBundle` são recusados fora de `local`/`development`/`develop`/`dev`/`test`/`e2e` (staging também é recusado). Independe dos relaxamentos da própria app, que `staging` continua tendo | `helm template ... --set global.env.name=production` com o dev bundle falha citando os dois |
 | OpenBao modo dev | Reiniciar o pod do OpenBao perde todas as chaves Transit: linhas criptografadas antes ficam ilegíveis | Só dev/avaliação; resete o banco junto |
 | Cliente de transfers do STA | Precisa de um plugin-access-manager acessível para emitir o bearer m2m | Sem ele, o envio de arquivo de retorno ao br-sta falha |
 | Fatos do br-sta de transfers desconhecidos | Comportamento conhecido da app: um fato em `lerian.streaming.br-sta` de um transfer que o br-sisbajud não criou é tratado como transitório e segura a partição | Acompanhe `sta_consumer` no `/readyz` (`degraded`, `consumer_not_polling`) |

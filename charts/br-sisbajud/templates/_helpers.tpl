@@ -353,6 +353,39 @@ Input: dict "context" . "name" KEY ["default" VALUE].
 {{- end -}}
 
 {{/*
+br-sisbajud.appEnvEntries — the app container's effective source for each key in
+`names`, for init containers in the app pod: the explicit pod env entry
+(secretRefs / extraEnvVars) when present; else, when the selected app Secret can
+carry the key (brSisbajud.useExistingSecret, or brSisbajud.secrets sets it), an
+optional secretKeyRef to it, with the ConfigMap as fallback through envFrom (the
+same order the app's envFrom gives: Secret over ConfigMap); else the ConfigMap
+value as a literal. Returns JSON {entries: [...], configMapFallback: bool}; a
+caller adds `envFrom: [configMapRef]` when configMapFallback is true.
+Input: dict "context" . "names" (list) ["defaults" (dict)].
+*/}}
+{{- define "br-sisbajud.appEnvEntries" -}}
+{{- $ctx := .context -}}
+{{- $b := $ctx.Values.brSisbajud -}}
+{{- $chartSecrets := $b.secrets | default dict -}}
+{{- $secretName := ternary $b.existingSecretName (include "br-sisbajud.fullname" $ctx) (and $b.useExistingSecret true) -}}
+{{- $explicit := dict -}}
+{{- range (include "br-sisbajud.podEnvList" $ctx | fromYamlArray) -}}{{- if .name -}}{{- $_ := set $explicit (toString .name) . -}}{{- end -}}{{- end -}}
+{{- $out := list -}}
+{{- $fallback := false -}}
+{{- range $k := .names -}}
+{{- if hasKey $explicit $k -}}
+{{- $out = append $out (index $explicit $k) -}}
+{{- else if or $b.useExistingSecret (index $chartSecrets $k) -}}
+{{- $out = append $out (dict "name" $k "valueFrom" (dict "secretKeyRef" (dict "name" $secretName "key" $k "optional" true))) -}}
+{{- $fallback = true -}}
+{{- else -}}
+{{- $out = append $out (include "br-sisbajud.effectiveEnvEntry" (dict "context" $ctx "name" $k "default" (index ($.defaults | default dict) $k | default "")) | fromJson) -}}
+{{- end -}}
+{{- end -}}
+{{- toJson (dict "entries" $out "configMapFallback" $fallback) -}}
+{{- end -}}
+
+{{/*
 br-sisbajud.waitBrokerScript — waits for the first endpoint of $STREAMING_BROKERS,
 read at runtime so a valueFrom entry works too.
 */}}
@@ -1165,12 +1198,17 @@ migrations/topics Jobs are PreSync hooks and already run first.
 {{- end }}
 {{- $streamingOn := eq (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true" }}
 {{- if and .Values.topics.enabled $streamingOn (eq (include "br-sisbajud.redpandaEnabled" .) "true") }}
-{{- $brokersEnv := include "br-sisbajud.effectiveEnvEntry" (dict "context" . "name" "STREAMING_BROKERS") | fromJson }}
-{{- $tlsEnv := include "br-sisbajud.effectiveEnvEntry" (dict "context" . "name" "STREAMING_TLS_ENABLED" "default" "false") | fromJson }}
+{{- $brk := include "br-sisbajud.appEnvEntries" (dict "context" . "names" (list "STREAMING_BROKERS")) | fromJson }}
+{{- $tls := include "br-sisbajud.appEnvEntries" (dict "context" . "names" (list "STREAMING_BROKERS" "STREAMING_TLS_ENABLED") "defaults" (dict "STREAMING_TLS_ENABLED" "false")) | fromJson }}
 - name: wait-for-broker
   image: {{ $wait }}
+  {{- if $brk.configMapFallback }}
+  envFrom:
+    - configMapRef:
+        name: {{ include "br-sisbajud.fullname" . }}
+  {{- end }}
   env:
-    - {{ toYaml $brokersEnv | nindent 6 | trim }}
+    {{- toYaml $brk.entries | nindent 4 }}
   command:
     - /bin/sh
     - -c
@@ -1181,6 +1219,11 @@ migrations/topics Jobs are PreSync hooks and already run first.
 - name: topics
   image: "{{ .Values.topics.image.repository }}:{{ .Values.topics.image.tag | default .Chart.AppVersion }}"
   imagePullPolicy: {{ .Values.topics.image.pullPolicy | default "IfNotPresent" }}
+  {{- if $tls.configMapFallback }}
+  envFrom:
+    - configMapRef:
+        name: {{ include "br-sisbajud.fullname" . }}
+  {{- end }}
   env:
     - name: HOME
       value: /tmp
@@ -1190,8 +1233,7 @@ migrations/topics Jobs are PreSync hooks and already run first.
       value: {{ .Values.topics.partitions | default 1 | quote }}
     - name: TOPIC_REPLICAS
       value: {{ .Values.topics.replicationFactor | default 1 | quote }}
-    - {{ toYaml $brokersEnv | nindent 6 | trim }}
-    - {{ toYaml $tlsEnv | nindent 6 | trim }}
+    {{- toYaml $tls.entries | nindent 4 }}
   securityContext:
     {{- toYaml $sc | nindent 4 }}
   volumeMounts:

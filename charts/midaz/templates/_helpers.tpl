@@ -58,6 +58,18 @@ Return valid ledger version label
 {{- end -}}
 
 {{/*
+midaz.ledgerRolesAnywhereEnabled — truthy string when the ledger's AWS IAM Roles
+Anywhere sidecar is on. The guard is an `and` over possibly-absent maps repeated
+at several sites; one helper keeps a values file that omits ledger.aws from
+nil-pointering the render.
+*/}}
+{{- define "midaz.ledgerRolesAnywhereEnabled" -}}
+{{- $aws := .Values.ledger.aws | default dict -}}
+{{- $ra := $aws.rolesAnywhere | default dict -}}
+{{- if $ra.enabled -}}true{{- end -}}
+{{- end }}
+
+{{/*
 Create the name of the service account to use for ledger
 */}}
 {{- define "midaz-ledger.serviceAccountName" -}}

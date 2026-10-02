@@ -50,8 +50,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "midaz-ledger.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.ledger.podSecurityContext | nindent 8 }}
+      {{- /* The helper owns both branches: fsGroup 65532 when Roles Anywhere is on, so
+         the sidecar (runAsUser 65532) can read the 0440 cert volume; otherwise
+         ledger.podSecurityContext. Called unguarded on purpose. */}}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.ledger.aws "podSecurityContext" .Values.ledger.podSecurityContext) | nindent 6 }}
       initContainers:
         - name: wait-for-dependencies
           image: busybox:1.37
@@ -204,6 +206,11 @@ spec:
             - name: "OTEL_RESOURCE_ATTRIBUTES"
               value: "k8s.pod.ip=$(POD_IP)"
             {{- end }}
+            {{- /* Points the AWS SDK inside the ledger at the sidecar's loopback IMDS
+               instead of the (absent) instance metadata service. */}}
+            {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
+            {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.ledger.aws) | nindent 12 }}
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.ledger.service.port | default 3002 }}
@@ -228,6 +235,12 @@ spec:
             failureThreshold: {{ .Values.ledger.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.ledger.resources | nindent 12 }}
+        {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.ledger.aws) | nindent 8 }}
+        {{- end }}
+      {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.ledger.aws "iamTlsDefault" (printf "%s-iam-tls" (include "midaz-ledger.fullname" .))) | nindent 6 }}
+      {{- end }}
       {{- with .Values.ledger.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

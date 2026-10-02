@@ -123,6 +123,16 @@
 | `ledger.serviceAccount.create` | bool | `true` | Specifies whether a ServiceAccount should be created |
 | `ledger.serviceAccount.annotations` | object | `{}` | Annotations for the ServiceAccount |
 | `ledger.serviceAccount.name` | string | ``midaz-ledger.fullname`` | Name of the service account |
+| `ledger.aws.rolesAnywhere.enabled` | bool | `false` | Enable the aws-signing-helper sidecar on the ledger (IAM Roles Anywhere, for clusters without IRSA). Keep false on EKS and use `ledger.serviceAccount.annotations` instead. |
+| `ledger.aws.rolesAnywhere.trustAnchorArn` | string | `""` | Roles Anywhere trust anchor ARN. Required when enabled. |
+| `ledger.aws.rolesAnywhere.profileArn` | string | `""` | Roles Anywhere profile ARN. Required when enabled. |
+| `ledger.aws.rolesAnywhere.roleArn` | string | `""` | IAM role ARN the sidecar assumes. Required when enabled. |
+| `ledger.aws.rolesAnywhere.region` | string | `"us-east-2"` | Region the credentials are minted in. |
+| `ledger.aws.rolesAnywhere.sessionDuration` | int | `3600` | Credential lifetime in seconds; the helper refreshes before expiry. |
+| `ledger.aws.rolesAnywhere.certificateSecretName` | string | ``<midaz-ledger.fullname>-iam-tls`` | Secret holding the client certificate (`tls.crt` / `tls.key`). Not created by this chart. |
+| `ledger.aws.rolesAnywhere.sidecar.image.repository` | string | `"public.ecr.aws/rolesanywhere/credential-helper"` | Sidecar image repository. |
+| `ledger.aws.rolesAnywhere.sidecar.image.tag` | string | `"latest-amd64"` | Sidecar image tag. Floating and amd64-only; pin a digest for production. |
+| `ledger.aws.rolesAnywhere.sidecar.port` | int | `9911` | Loopback port the IMDS shim listens on. |
 | `crm.readinessProbe` | object | `{}` | Readiness probe configuration. All fields override chart defaults. |
 | `crm.livenessProbe` | object | `{}` | Liveness probe configuration. All fields override chart defaults. |
 | `crm.name` | string | `crm` | Service name |

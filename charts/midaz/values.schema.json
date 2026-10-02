@@ -706,6 +706,8 @@
               "TRACER_GRPC_PORT",
               "TRACER_TIMEOUT_MS",
               "TRACER_TLS_CA_FILE",
+              "TRACER_M2M_CLIENT_ID",
+              "TRACER_M2M_WAIT_TIMEOUT_MS",
               "TRACER_TLS_CERT_FILE",
               "TRACER_TLS_CLIENT_CA_FILE",
               "TRACER_TLS_KEY_FILE",
@@ -752,6 +754,11 @@
             }
           },
           "additionalProperties": true
+        },
+        "aws": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "AWS credential source (IAM Roles Anywhere sidecar) for the multi-tenant ledger's Secrets Manager reads"
         }
       },
       "additionalProperties": true

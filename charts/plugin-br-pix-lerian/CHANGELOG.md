@@ -5,6 +5,28 @@
 Features:
 - Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
 - Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+
+Improvements:
+- Fix the getting-started documentation (pt) by prefacing probe paths and correcting the license client number from 8 to 5. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the ConfigMap surface with defaults in the template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
 - Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)
 
 Fixes:

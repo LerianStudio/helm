@@ -233,6 +233,18 @@ data:
   TRACER_TLS_CERT_FILE: {{ $cm.TRACER_TLS_CERT_FILE | default "" | quote }}
   TRACER_TLS_KEY_FILE: {{ $cm.TRACER_TLS_KEY_FILE | default "" | quote }}
   TRACER_TLS_CA_FILE: {{ $cm.TRACER_TLS_CA_FILE | default "" | quote }}
+  {{- /* Reservation seam token identity (PLUGIN_AUTH_ENABLED=true, single-tenant):
+     the ledger's Access Manager application client id. Its secret is
+     ledger.secrets.TRACER_M2M_CLIENT_SECRET. Emitted only when set. */}}
+  {{- if $cm.TRACER_M2M_CLIENT_ID }}
+  TRACER_M2M_CLIENT_ID: {{ $cm.TRACER_M2M_CLIENT_ID | quote }}
+  {{- end }}
+  {{- /* How long a reservation seam call may wait for an M2M token that is not
+     cached yet, before the TRACER_TIMEOUT_MS budget of the call itself starts.
+     Emitted only when set; the ledger defaults it. */}}
+  {{- if $cm.TRACER_M2M_WAIT_TIMEOUT_MS }}
+  TRACER_M2M_WAIT_TIMEOUT_MS: {{ $cm.TRACER_M2M_WAIT_TIMEOUT_MS | quote }}
+  {{- end }}
 
   # =============================================================================
   # REDIS (shared between modules; host via datastore mask, tuning via passthrough)

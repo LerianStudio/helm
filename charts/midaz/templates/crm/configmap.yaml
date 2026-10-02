@@ -60,7 +60,8 @@ data:
   # MULTI-TENANT — knob inline; gated block via lerian-common.multiTenant.env
   # (URL + redis host come from global.multiTenant or configmap.MULTI_TENANT_*).
   # Defaults are the CRM's own (.env.example): timeout 30, pools 100 / idle 300,
-  # circuit breaker 5 / 30, redis port 6379 without TLS.
+  # circuit breaker 5 / 30, redis port 6379 without TLS. The redis host is
+  # optional: without it the CRM only skips the tenant-event listener (Pub/Sub).
   # =============================================================================
   {{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
   MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
@@ -70,8 +71,7 @@ data:
         "enabled" $mtEnabled
         "emitRedis" true
         "emitPool" true
-        "requiredUrl" true
-        "requiredRedisHost" true) | nindent 2 }}
+        "requiredUrl" true) | nindent 2 }}
   {{- if $mtEnabled }}
   MULTI_TENANT_TIMEOUT: {{ $cm.MULTI_TENANT_TIMEOUT | default "30" | quote }}
   # Seconds between tenant-connection health checks; 0 keeps the library default.

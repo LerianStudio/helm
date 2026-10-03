@@ -1,0 +1,115 @@
+# Modelo para cluster de CLIENTE (BYOC). Anel 4 do rollout.
+#
+# Este arquivo é o que o cliente recebe. São DOIS valores; o resto é derivado.
+#
+#   helm upgrade --install alloy-lerian \
+#     oci://ghcr.io/lerianstudio/alloy-lerian-helm --version <fixada> \
+#     -n monitoring --create-namespace -f values.yaml
+
+profile: client
+
+origin:
+  # Substituir. Formato: <cliente>-<ambiente>, minúsculas, ambiente = stg | prd.
+  # O nome do cliente é UMA palavra: acme-prd, nunca acme-corp-prd.
+  id: SUBSTITUIR-prd
+
+# O DESTINO tem default no chart: `https://telemetry.lerian.io`, o ponto de entrada
+# de producao, que e o de todo cliente BYOC. Declarado aqui de proposito — este
+# arquivo e o que o cliente le, e o destino da telemetria dele nao deveria ser
+# invisivel — mas remover a chave produz o mesmo resultado.
+#
+# ⚠️ Se sobrescrever, mude TAMBEM `ALLOY_DESTINATION_ENDPOINT` no extraEnv abaixo:
+# esta entrada e o que o chart valida, a variavel e o que chega ao agente.
+destination:
+  endpoint: https://telemetry.lerian.io
+
+# O PERIMETRO tem default no chart: `^midaz$` e `^midaz-plugins$`, que e onde
+# nossos produtos sao instalados em todo cliente. Sobrescreva `collection.
+# onlyNamespaces` apenas se este cliente instalou em outro lugar.
+
+node:
+  alloy:
+    extraEnv:
+      # ⚠️ A config publicada no Fleet e UMA SO para todos os clientes.
+      # Esta variavel e o que distingue um do outro — sem ela a telemetria
+      # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
+      - name: ALLOY_CLIENT_ID
+        value: SUBSTITUIR-prd
+      # ⚠️ Precisa dizer o MESMO que `destination.endpoint` acima.
+      #
+      # O destino saiu do texto da configuracao publicada no Fleet: aquela
+      # configuracao e UMA para todos os clientes, e o destino nao e igual para
+      # todos — os ambientes internos entregam a um balanceador interno que nao
+      # passa pelo gateway.
+      #
+      # A entrada do values continua obrigatoria: e ela que o chart valida
+      # (recusa http quando o perfil envia credencial, para o token nao viajar
+      # em texto claro). Esta variavel e o que chega ao agente.
+      - name: ALLOY_DESTINATION_ENDPOINT
+        value: https://telemetry.lerian.io
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+singleton:
+  alloy:
+    extraEnv:
+      # ⚠️ A config publicada no Fleet e UMA SO para todos os clientes.
+      # Esta variavel e o que distingue um do outro — sem ela a telemetria
+      # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
+      - name: ALLOY_CLIENT_ID
+        value: SUBSTITUIR-prd
+      # ⚠️ Precisa dizer o MESMO que `destination.endpoint` acima.
+      #
+      # O destino saiu do texto da configuracao publicada no Fleet: aquela
+      # configuracao e UMA para todos os clientes, e o destino nao e igual para
+      # todos — os ambientes internos entregam a um balanceador interno que nao
+      # passa pelo gateway.
+      #
+      # A entrada do values continua obrigatoria: e ela que o chart valida
+      # (recusa http quando o perfil envia credencial, para o token nao viajar
+      # em texto claro). Esta variavel e o que chega ao agente.
+      - name: ALLOY_DESTINATION_ENDPOINT
+        value: https://telemetry.lerian.io
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+# ---------------------------------------------------------------------------
+# GESTÃO REMOTA DE CONFIGURAÇÃO
+# ---------------------------------------------------------------------------
+# O chart traz LIGADO por padrão, e ligada ela exige três valores que só a Lerian
+# tem: a URL do serviço, o id da stack e um token. Sem eles o render FALHA — de
+# propósito, para a ausência ser uma decisão e não um silêncio.
+#
+# Para o cluster de cliente ela vem desligada, porque o canal de configuração
+# remota é acordado caso a caso. Quando for habilitada, a Lerian entrega os três
+# valores e a chave `fleet-token` no mesmo Secret.
+fleetManagement:
+  enabled: false

@@ -1,0 +1,651 @@
+# Default values for the br-sisbajud (SISBAJUD plugin) chart.
+# Single-service chart: one Go binary (HTTP API + background workers in one
+# process).
+#
+# Configuration precedence for every application env key (lerian-common):
+#
+#   brSisbajud.configmap.<KEY>          escape hatch — the native env key, wins over everything
+#   > brSisbajud.<group>.<field>        grouped chart parameter (cfgValue)
+#   > brSisbajud.datastores / kms / objectStorage   dedicated connection masks
+#   > global.<block>.<field>            env-wide contract, set once per environment
+#   > global.cloud preset               managed-cloud topology defaults (aws | gcp | azure)
+#   > chart default                     lives in templates/_helpers.tpl, NOT here
+#
+# brSisbajud.configmap and brSisbajud.secrets are EMPTY by default on purpose:
+# a key set there shadows the grouped/global API for that key. Any key the chart
+# does not model can still be added there and is emitted verbatim.
+nameOverride: "br-sisbajud"
+fullnameOverride: ""
+namespaceOverride: ""
+
+# =============================================================================
+# global — the env-wide contract (lerian-common). Set these ONCE per environment
+# (umbrella / GitOps layer). Every block is empty by default, so the chart falls
+# back to its own defaults. A native brSisbajud.configmap.<KEY> still wins.
+# =============================================================================
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets TLS/ssl defaults
+  # for the masks below in one knob (e.g. "aws" => POSTGRES_SSLMODE=require,
+  # REDIS_TLS=true). Leave "" for self-managed / bundled infra. Endpoints
+  # (host/port/user) still come from global.datastores.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Shared datastore masks (lerian-common.datastore.value).
+  # postgres: host | port | user | name | ssl | replicaHost
+  # redis:    host ("host:port") | tls | caCert
+  # Example:
+  #   datastores:
+  #     postgres: { host: "postgresql.internal", user: "br_sisbajud", name: "br_sisbajud", ssl: "require" }
+  #     redis:    { host: "valkey.internal:6379", tls: "true" }
+  datastores: {}
+  # -- Shared object storage masks (lerian-common.objectStorage.value).
+  # sisbajud: endpoint | region | bucket   -> SEAWEEDFS_S3_ENDPOINT / SEAWEEDFS_REGION / SEAWEEDFS_BUCKET
+  # sta:      endpoint | bucket            -> STA_OBJECT_STORAGE_ENDPOINT / STA_INBOUND_BUCKET
+  #                                           (+ TRANSFER_OBJECT_STORAGE_BUCKET, same bucket)
+  # Access keys are secrets: brSisbajud.secrets.SEAWEEDFS_ACCESS_KEY / SEAWEEDFS_SECRET_KEY.
+  # Example:
+  #   objectStorage:
+  #     sisbajud: { endpoint: "https://s3.sa-east-1.amazonaws.com", region: "sa-east-1", bucket: "sisbajud" }
+  #     sta:      { bucket: "br-sta-transfer" }
+  objectStorage: {}
+  # -- Env-wide environment name -> ENVIRONMENT_NAME, ENV_NAME and (by default)
+  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT. local | development | staging | e2e |
+  # test relax the app's production gates; anything else is production-like.
+  # Example: env: { name: "staging" }
+  env: {}
+  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
+  # With enabled=true and no otlpEndpoint, the pod ships to the node-local
+  # collector at http://$(HOST_IP):4317.
+  # Example: observability: { enabled: true }
+  observability: {}
+  # -- Env-wide auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
+  # Example: auth: { enabled: true, host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" }
+  auth: {}
+  # -- Env-wide streaming (lib-streaming / Redpanda / Kafka): enabled | brokers |
+  # tlsEnabled | saslMechanism | saslUsername | saslAllowPlaintext | compression |
+  # requiredAcks | batchLingerMs | importantEmitTimeoutMs. SASL password and CA
+  # cert are secrets: brSisbajud.secrets.STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT.
+  # On by default (needs OUTBOX_ENABLED=true, also the default). With it on the
+  # render requires brokers; in a production-like environment tlsEnabled: true;
+  # with TLS, secrets.STREAMING_TLS_CA_CERT; with a saslMechanism, saslUsername +
+  # secrets.STREAMING_SASL_PASSWORD. Set enabled: false to run without a broker.
+  # Example:
+  #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sisbajud" }
+  streaming:
+    enabled: true
+  # -- Env-wide multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls.
+  # The service API key is a secret: brSisbajud.secrets.MULTI_TENANT_SERVICE_API_KEY.
+  # Example: multiTenant: { enabled: true, url: "http://tenant-manager:4026", redisHost: "valkey.internal" }
+  multiTenant: {}
+  # -- Env-wide KMS (lerian-common.kms.value): vendor | vaultAddr | vaultAuthMethod |
+  # vaultRoleId | vaultMount. vendor: hashicorp-vault (default) | aws.
+  # br-sisbajud also reads awsRegion here when vendor=aws. The AppRole secret-id
+  # and the Vault token are secrets: brSisbajud.secrets.VAULT_APPROLE_SECRET_ID / VAULT_TOKEN.
+  # Example:
+  #   kms: { vendor: "hashicorp-vault", vaultAddr: "https://vault.internal:8200", vaultAuthMethod: "approle", vaultRoleId: "<role-id>", vaultMount: "transit" }
+  kms: {}
+
+# -- Pull secrets for the app + migrations/topics/bucket pods. The
+# ghcr.io/lerianstudio/br-sisbajud* images are public, so none is needed; set one
+# only to pull from a private mirror/registry (e.g. [{name: my-registry}]).
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# -- Pod-level security context
+podSecurityContext: {}
+
+# -- Container security context (distroless static-debian12:nonroot — UID/GID 65532)
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# =============================================================================
+# brSisbajud — the single SISBAJUD service component.
+# =============================================================================
+brSisbajud:
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sisbajud
+    # -- Defaults to Chart.appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  waitImage: busybox:1.36
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 1
+  service:
+    type: ClusterIP
+    # Matches the Dockerfile EXPOSE 4029; SERVER_ADDRESS defaults to 0.0.0.0:<port>.
+    port: 4029
+    annotations: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    enabled: true
+    minAvailable: 0
+    # maxUnavailable is intentionally unset so minAvailable takes effect.
+    # Set to an integer (including 0) to switch to maxUnavailable mode.
+    # maxUnavailable: 1
+    annotations: {}
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  # ---------------------------------------------------------------------------
+  # Dedicated connection masks — override global.datastores / global.kms /
+  # global.objectStorage for THIS release only. Same fields as the global blocks.
+  # Keep empty unless this release talks to its own instance.
+  # ---------------------------------------------------------------------------
+  datastores: {}
+  kms: {}
+  objectStorage: {}
+
+  # ---------------------------------------------------------------------------
+  # Grouped parameters (lerian-common.cfgValue). Each field maps to ONE env key;
+  # the defaults are in templates/_helpers.tpl and listed in README.md. Leave a
+  # group empty to keep every default.
+  # ---------------------------------------------------------------------------
+  # -- ENVIRONMENT_NAME/ENV_NAME come from global.env.name. Fields: logLevel,
+  # defaultTenantId, deploymentMode (saas|byoc|local, default byoc), version, systemplaneEnabled,
+  # infraConnectTimeoutSec, dbMetricsIntervalSec, idempotencyRetryWindowSec,
+  # circuitBreakerEnabled.
+  app: {}
+  # -- address, bodyLimitBytes, tlsTerminatedUpstream, tlsCertFile, tlsKeyFile.
+  server: {}
+  # -- allowedOrigins, allowedMethods, allowedHeaders, exposeHeaders, allowCredentials.
+  # Production MUST set allowedOrigins to the real UI origins.
+  cors: {}
+  # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
+  # a bundled subchart is enabled), allowCorsWildcard, allowInsecureOtel,
+  # allowWebhookPrivateNetwork.
+  security: {}
+  # -- organizationIds (must be "global"), isDevelopment (routes the license SDK
+  # to the dev gateway). LICENSE_KEY is a secret and, since app 1.2.0, required in
+  # EVERY environment (no dev bypass): the render fails without it.
+  license: {}
+  # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
+  # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
+  postgres: {}
+  # -- Redis tuning: db, protocol, poolSize, minIdleConns, readTimeout,
+  # writeTimeout, dialTimeout, poolTimeout, maxRetries, minRetryBackoff,
+  # maxRetryBackoff, masterName. Connection identity lives in datastores.
+  redis: {}
+  # -- KMS knobs not covered by the kms mask: timeoutSec, tokenRenewEnabled,
+  # tokenRenewMinIntervalSec, awsEndpointUrl (LocalStack only).
+  vault: {}
+  # -- Envelope-encryption layer: dekCacheTtl, dekCacheMaxEntries, hmacCoexistenceWindow.
+  crypto: {}
+  # -- Remittance layout: responseLayout (auto|v111|v2026), remittanceLayouts (CSV of v111,v2026).
+  layout: {}
+  # -- STA integration (br-sta): fileLockTtl, consumerEnabled, consumerGroup,
+  # consumerRetryBudget, sourceProduct, bacenSystemCode, expectedTenantSt,
+  # maxInboundSizeBytes, transfersEnabled, transfersBaseUrl, documentTypeAjud302,
+  # documentTypeAjud309, clientId. STA_CLIENT_SECRET is a secret. The buckets and
+  # endpoint come from objectStorage.sta. consumerEnabled and transfersEnabled go
+  # together (both off, the default, or both on): app 1.2.x leaves its readiness
+  # down with the consumer alone, and the render refuses that combination.
+  sta: {}
+  # -- Background workers. One sub-map per worker:
+  #   permanentBlockExpiry:  { enabled, scanInterval, batchSize }
+  #   kekRewrapBackfill:     { enabled, scanInterval, batchSize }
+  #   rehashBackfill:        { enabled, scanInterval, batchSize, dropPreviousKeyEnabled }
+  #   reconciliation:        { enabled, scanInterval, batchSize, intensifiedEnabled,
+  #                            intensifiedScanInterval, nearDeadlinePercent }
+  #   slaAlert:              { enabled, scanInterval }
+  #   returnFile:            { enabled, scanInterval, limit, environment }
+  #   informationReturnFile: { enabled, scanInterval, limit }
+  #   informationRequest:    { enabled, scanInterval, batchSize, lockTtl }   (enabled default false; the rest opt-in)
+  #   monitoringExpiry:      { enabled, scanInterval, batchSize }            (opt-in)
+  #   execution:             { enabled, orchestratorLockTtl, orchestratorRenewInterval,
+  #                            unblockScanInterval, unblockBatchSize }
+  #   processingLockReaper:  { enabled, intervalSec }
+  workers: {}
+  # -- Transactional outbox: enabled, tableName, dispatchIntervalSec, batchSize,
+  # publishMaxAttempts, publishBackoffMs, retryWindowSec, maxDispatchAttempts,
+  # processingTimeoutSec, maxFailedPerBatch, includeTenantMetrics,
+  # priorityEventTypes, allowEmptyTenant.
+  outbox: {}
+  # -- Per-app streaming identity: cloudeventsSource (must stay "br-sisbajud"),
+  # clientId, healthCheckTimeout, topicAutoProvision (STREAMING_TOPIC_AUTO_PROVISION,
+  # default "true": the app creates its own declared topics at boot; "false" when
+  # topics are pre-provisioned by IaC), closeTimeoutS (STREAMING_CLOSE_TIMEOUT_S,
+  # default "20": must stay below the pod terminationGracePeriodSeconds, Kubernetes
+  # default 30s, which this chart does not override). Brokers/TLS/SASL come from
+  # global.streaming.
+  streaming: {}
+  # -- Core balance consumer (all optional): group, dedupTtl, retryBudget.
+  balanceConsumer: {}
+  # -- Midaz ledger integration: balanceTopic, balanceConsumerGroup,
+  # balanceDefaultAccountType, crmMode (legacy|embedded), manifestCheckInterval.
+  midaz: {}
+  # -- Inbound auth extras: trustedProxies, productName. enabled/host come from global.auth.
+  auth: {}
+  # -- Access-manager declaration publisher (lib-auth WireFromEnv):
+  # declarationEnabled, host, m2mClientId. IDP_M2M_CLIENT_SECRET is a secret.
+  identity: {}
+  # -- M2M credential provider (multi-tenant): targetService, credentialCacheTtlSec.
+  m2m: {}
+  # -- OTEL identity: serviceName, libraryName. enabled/endpoint come from global.observability.
+  observability: {}
+  # -- Rate limiting (lerian-common.rateLimit.env): enabled, max, windowSec,
+  # aggressiveMax, aggressiveWindowSec, relaxedMax, relaxedWindowSec,
+  # allowFailOpen, allowDisabled, redisTimeoutMs.
+  rateLimit: {}
+  # -- Swagger: enabled, title, description, version, host, schemes, basePath, leftDelim, rightDelim.
+  swagger: {}
+  # -- Pagination: maxLimit, maxMonthDateRange.
+  pagination: {}
+  # -- Admin read API: maxFileContentBytes, maxAuditVerifyWindow.
+  admin: {}
+  # -- Go runtime knobs: godebug (GODEBUG), gotraceback (GOTRACEBACK). Unset by default.
+  runtime: {}
+
+  # -- Escape hatch: native env keys emitted verbatim into the ConfigMap. A key
+  # here wins over the grouped/global parameters above. Empty by default.
+  configmap: {}
+  # -- Secret keys (stringData). Credentials only, never in configmap. Use AVP
+  # <path:...> placeholders in GitOps values, never real credentials. Keys the
+  # chart models: POSTGRES_PASSWORD, POSTGRES_REPLICA_PASSWORD, REDIS_PASSWORD,
+  # LICENSE_KEY (required in every environment), VAULT_TOKEN,
+  # VAULT_APPROLE_SECRET_ID, SEAWEEDFS_ACCESS_KEY, SEAWEEDFS_SECRET_KEY,
+  # STA_CLIENT_SECRET, IDP_M2M_CLIENT_SECRET, STREAMING_SASL_PASSWORD,
+  # STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
+  secrets: {}
+  # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
+  # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
+  # secretKeyRef pod env entry, so credentials never need raw extraEnvVars.
+  # The fail-fast gates and the migrations/topics Jobs honor them.
+  # Example:
+  #   secretRefs:
+  #     STREAMING_SASL_PASSWORD: { name: redpanda-admin, key: password }
+  secretRefs: {}
+  # -- Use an operator-provided Secret instead of the chart-managed one. The
+  # chart then skips its secret fail-fast checks: the Secret must carry every
+  # credential the enabled features need.
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Extra env vars rendered as explicit `env:` entries on the pod (a list of
+  # {name, value|valueFrom}). They win over the ConfigMap and the Secret.
+  extraEnvVars: []
+
+# =============================================================================
+# Detached migrations — ArgoCD PreSync Secret + Job that applies the SQL schema
+# to the br_sisbajud database before the app boots. The br-sisbajud-migrations
+# image runs golang-migrate against the /migrations directory. The connection
+# follows the app's resolved POSTGRES_* values unless overridden here.
+# =============================================================================
+migrations:
+  enabled: true
+  image:
+    repository: ghcr.io/lerianstudio/br-sisbajud-migrations
+    # -- Defaults to Chart.appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  waitImage: busybox:1.36
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Postgres connection for the migration Job. Empty fields fall back to the
+  # app's resolved POSTGRES_* values (configmap > datastores > global > default)
+  # and brSisbajud.secrets.POSTGRES_PASSWORD.
+  postgres:
+    host: ""
+    port: ""
+    user: ""
+    database: ""
+    sslMode: ""
+    password: ""
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# =============================================================================
+# Detached topic provisioning — ArgoCD PreSync Job that idempotently ensures the
+# Redpanda topics exist before the app boots (list-then-create `rpk`). It reuses
+# the app's resolved STREAMING_* connection (global.streaming / configmap /
+# extraEnvVars); SASL password and CA cert come from a dedicated PreSync Secret
+# (or from the existing Secret / extraEnvVars valueFrom).
+#
+# lib-streaming v4 topics (app 1.x): the app's own `lerian.streaming.br-sisbajud`
+# and `.dlq` are also created by the app's Builder when its principal holds the
+# CreateTopics ACL; `.commands` is NOT — a consumer on a broker with auto-create
+# off never creates it and the balance trigger fails silently. All three are
+# listed here. `lerian.streaming.ledger` is Midaz's to create; never list it.
+# =============================================================================
+topics:
+  enabled: true
+  image:
+    repository: ghcr.io/lerianstudio/br-sisbajud-topics
+    # -- Defaults to Chart.appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  partitions: 1
+  replicationFactor: 1        # per-env; 3 on multi-broker prod
+  retentionMs: ""             # optional; empty = broker default
+  list:
+    - lerian.streaming.br-sisbajud
+    - lerian.streaming.br-sisbajud.dlq
+    - lerian.streaming.br-sisbajud.commands
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# -- Values block for the lerian-common library dependency. INERT (a library
+# chart renders nothing and reads no values), but it must be declared: Helm
+# injects a values key for every declared dependency, and the closed root schema
+# (additionalProperties: false) would otherwise reject the render with
+# "additional properties 'lerian-common-helm' not allowed".
+lerian-common-helm: {}
+
+# =============================================================================
+# Bundled infra subcharts — DISABLED by default. External PostgreSQL, Valkey and
+# S3 object storage are the production path: wire them via global.datastores /
+# global.objectStorage (or the brSisbajud.* dedicated masks). Enable these only
+# for a self-contained (dev / evaluation) install. Kafka/Redpanda and the KMS
+# (Vault / AWS KMS) are ALWAYS external.
+#
+# Images: the bitnami/* tags the pinned subcharts default to were removed from
+# Docker Hub; bitnamilegacy/* serves the SAME tags (checked with a registry
+# manifest HEAD). Pinned by TAG, never by digest — a digest would silently win
+# over an operator's registry/tag override. allowInsecureImages only lifts the
+# Bitnami "unrecognized image" guard for the non-bitnami repository name.
+# =============================================================================
+postgresql:
+  enabled: false
+  external: true
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/postgresql
+    tag: "17.2.0-debian-12-r5"
+  # When bundled, create the app role + database the chart defaults point at.
+  auth:
+    username: br_sisbajud
+    database: br_sisbajud
+
+valkey:
+  enabled: false
+  external: true
+  architecture: standalone
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/valkey
+    tag: "8.0.2-debian-12-r6"
+
+# -- Bundled SeaweedFS (S3-compatible object storage), DISABLED by default.
+# When enabled and no endpoint is set explicitly, SEAWEEDFS_S3_ENDPOINT and
+# STA_OBJECT_STORAGE_ENDPOINT derive from this subchart's S3 Service
+# (http://<seaweedfs.nameOverride|seaweedfs>-s3.<release namespace>.svc.cluster.local:<s3.port>).
+# The app never creates buckets: the chart's own bucket Job (seaweedfsBuckets
+# below) creates SEAWEEDFS_BUCKET and STA_INBOUND_BUCKET/TRANSFER bucket from the
+# resolved values on every install/upgrade.
+# DEV-ONLY: S3 auth is OFF (s3.enableAuth: false). To turn it on, set
+# s3.enableAuth: true + s3.existingConfigSecret (the SeaweedFS identities JSON)
+# and put the matching keys in brSisbajud.secrets.SEAWEEDFS_ACCESS_KEY /
+# SEAWEEDFS_SECRET_KEY (Secret only, never the ConfigMap).
+seaweedfs:
+  enabled: false
+  global:
+    # The subchart otherwise creates a FIXED-NAME cluster-scoped ClusterRole that
+    # collides across releases; it only backs an optional post-migration hack.
+    createClusterRole: false
+    serviceAccountName: "br-sisbajud-seaweedfs"
+  master:
+    enabled: true
+    replicas: 1
+    # The subchart pins kubernetes.io/arch: amd64; "" drops it (multi-arch).
+    nodeSelector: ""
+    data:
+      type: "persistentVolumeClaim"
+      size: "1Gi"
+      storageClass: ""
+    logs:
+      type: "emptyDir"
+  volume:
+    enabled: true
+    replicas: 1
+    nodeSelector: ""
+    dataDirs:
+      - name: data
+        type: "persistentVolumeClaim"
+        size: "10Gi"
+        storageClass: ""
+        maxVolumes: 0
+    # The resize hook pulls bitnami/kubectl:latest (unpinned); off for the dev bundle.
+    resizeHook:
+      enabled: false
+  filer:
+    enabled: true
+    replicas: 1
+    nodeSelector: ""
+    data:
+      type: "persistentVolumeClaim"
+      size: "5Gi"
+      storageClass: ""
+    logs:
+      type: "emptyDir"
+  s3:
+    enabled: true
+    nodeSelector: ""
+    port: 8333
+    enableAuth: false
+    logs:
+      type: "emptyDir"
+
+# -- Bucket bootstrap Job for the bundled SeaweedFS (rendered only when
+# seaweedfs.enabled). Idempotent list-then-create via `weed shell`, run as a
+# Helm post-install/post-upgrade hook (ArgoCD PostSync). The bucket names come
+# from the app's resolved SEAWEEDFS_BUCKET / STA_INBOUND_BUCKET /
+# TRANSFER_OBJECT_STORAGE_BUCKET, plus any extraBuckets.
+seaweedfsBuckets:
+  image:
+    # Same image/tag the pinned seaweedfs 4.0.393 subchart runs (appVersion 3.93).
+    repository: chrislusf/seaweedfs
+    tag: "3.93"
+    pullPolicy: IfNotPresent
+  extraBuckets: []
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# -- Bundled OpenBao (Vault-API compatible KMS), DISABLED by default. DEV ONLY:
+# it runs in dev mode (in-memory storage, auto-unsealed, root token). A pod
+# restart LOSES every Transit key, and data encrypted under them becomes
+# unrecoverable — so the chart refuses to render it outside a
+# development-class environment (local|development|develop|dev|test|e2e;
+# staging is refused). When enabled and no explicit address is set, VAULT_ADDR derives
+# from the subchart Service (http://<release>-openbao.<release namespace>.svc.cluster.local:8200),
+# KMS_PROVIDER=vault, VAULT_AUTH_METHOD=token, and the app reads VAULT_TOKEN from
+# the chart-generated dev-token Secret (random per install, kept across upgrades
+# via lookup; openbaoDevToken.token to supply one, e.g. under GitOps).
+# openbaoTransit below enables the Transit engine the app uses; the app itself
+# creates its KEKs (sisbajud-kek-<institution>) at boot.
+# Upstream openbao 0.30.0 limits, not settable here: in dev mode it ignores
+# server.nodeSelector/affinity/tolerations, and it always renders its helm-test Pod
+# (<release>-openbao-server-test). Pin the StatefulSet's scheduling with a
+# post-render patch (e.g. helmfile strategicMergePatches) where that matters.
+openbao:
+  enabled: false
+  injector:
+    enabled: false
+  csi:
+    enabled: false
+  server:
+    # No Kubernetes auth method in the dev bundle: skip the cluster-scoped
+    # auth-delegator ClusterRoleBinding.
+    authDelegator:
+      enabled: false
+    dev:
+      enabled: true
+    # The dev root token comes from the chart-generated Secret named here
+    # (BAO_* wins over the subchart's plaintext VAULT_DEV_ROOT_TOKEN_ID
+    # default). The chart reads this entry to know which Secret to create.
+    extraSecretEnvironmentVars:
+      - envName: BAO_DEV_ROOT_TOKEN_ID
+        secretName: br-sisbajud-openbao-dev-token
+        secretKey: token
+    standalone:
+      enabled: false
+    ha:
+      enabled: false
+    dataStorage:
+      enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+
+# -- Dev root token of the bundled OpenBao. Empty (default) = random per install,
+# stored in the Secret named in openbao.server.extraSecretEnvironmentVars and
+# reused on upgrade via lookup. Set it (an AVP placeholder, never a literal) when
+# rendering without cluster access (GitOps/ArgoCD), or the token rotates.
+# create: false renders no token Secret at all, for an operator-managed one (e.g.
+# an ExternalSecret) under that same name and key.
+openbaoDevToken:
+  token: ""
+  create: true
+
+# -- Transit bootstrap Job for the bundled OpenBao (rendered only when
+# openbao.enabled). Idempotent: enables the Transit engine at the resolved
+# VAULT_TRANSIT_MOUNT_PATH when it is not mounted yet. Helm
+# post-install/post-upgrade hook (ArgoCD PostSync).
+openbaoTransit:
+  image:
+    # The OpenBao server image of the pinned subchart (openbao 0.30.0, app v2.7.0).
+    repository: quay.io/openbao/openbao
+    tag: "2.7.0"
+    pullPolicy: IfNotPresent
+  backoffLimit: 6
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+# -- Toggle for the bundled Redpanda below. It lives OUTSIDE the redpanda block
+# because the redpanda chart's values schema is closed and rejects `enabled`.
+redpandaBundle:
+  enabled: false
+
+# -- Bundled Redpanda (Kafka API), DISABLED by default (redpandaBundle.enabled). DEV ONLY: one broker,
+# no TLS, no SASL, no external listener, no cert-manager — the chart refuses to
+# render it outside a development-class environment (local|development|develop|
+# dev|test|e2e; staging is refused). When enabled and no explicit
+# brokers are set, STREAMING_BROKERS derives from the subchart Service
+# (<fullnameOverride|release>.<release namespace>.svc.cluster.local.:<kafka port>)
+# and the topics Job waits for the broker instead of running as a PreSync hook.
+redpanda:
+  # The subchart names its Services after the RELEASE (no suffix); pin a name so
+  # it can never collide with this chart's own Service.
+  fullnameOverride: "redpanda"
+  console:
+    enabled: false
+  statefulset:
+    replicas: 1
+    podAntiAffinity:
+      type: soft
+  tls:
+    enabled: false
+  auth:
+    sasl:
+      enabled: false
+  external:
+    enabled: false
+  # Privileged tuning container — not for a dev bundle.
+  tuning:
+    tune_aio_events: false
+  resources:
+    cpu:
+      cores: 1
+      overprovisioned: true
+    memory:
+      container:
+        max: 2Gi
+  storage:
+    persistentVolume:
+      enabled: true
+      size: 5Gi
+  # Runs rpk cluster-config against the broker after install; not needed here.
+  post_install_job:
+    enabled: false

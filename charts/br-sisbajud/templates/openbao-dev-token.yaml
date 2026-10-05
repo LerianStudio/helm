@@ -1,0 +1,31 @@
+{{- if and .Values.brSisbajud.enabled (eq (include "br-sisbajud.openbaoEnabled" .) "true") (ne (toString ((.Values.openbaoDevToken | default dict).create)) "false") }}
+{{- /* Dev root token for the bundled OpenBao (dev mode). Precedence:
+   openbaoDevToken.token (operator-supplied, e.g. an AVP placeholder — use it under
+   GitOps, where `lookup` returns nothing and a random value would rotate every
+   render) > the token already stored in this Secret (lookup, so upgrades keep it)
+   > a random 40-char token generated on first install. Never a shared literal.
+   openbaoDevToken.create=false skips this Secret: an operator-managed one (e.g. an
+   ExternalSecret) under the same name/key is used instead. */}}
+{{- $name := include "br-sisbajud.openbaoTokenSecret" . -}}
+{{- $key := include "br-sisbajud.openbaoTokenKey" . -}}
+{{- $token := (.Values.openbaoDevToken | default dict).token | default "" -}}
+{{- if not $token -}}
+{{- $existing := lookup "v1" "Secret" .Release.Namespace $name -}}
+{{- if and $existing $existing.data (index $existing.data $key) -}}
+{{- $token = index $existing.data $key | b64dec -}}
+{{- else -}}
+{{- $token = randAlphaNum 40 -}}
+{{- end -}}
+{{- end }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "br-sisbajud.labels" . | nindent 4 }}
+    app.kubernetes.io/component: openbao-dev-token
+type: Opaque
+data:
+  {{ $key }}: {{ $token | b64enc | quote }}
+{{- end }}

@@ -17,7 +17,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 1.0.0
+version: 1.0.1
 
 # NOTE: appVersion is the default image tag for the manager, the worker and the
 # migrations Job (the three images are released together under one tag). Override

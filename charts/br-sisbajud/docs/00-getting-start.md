@@ -62,9 +62,13 @@ poderem executar.
 > A infraestrutura embutida é apenas para desenvolvimento e quickstart. Instalações de produção devem usar infraestrutura externa e gerenciada. Não promova este perfil para um tier de produção.
 
 ```bash
-helm install br-sisbajud charts/br-sisbajud -n sisb-dev --create-namespace \
+kubectl create namespace sisb-dev
+# a chave de licença fica num arquivo: nunca vai para o histórico do shell nem para os args do processo
+kubectl create secret generic br-sisbajud-license -n sisb-dev \
+  --from-file=LICENSE_KEY=./br-sisbajud.license
+helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
   -f charts/br-sisbajud/values-dev.yaml \
-  --set brSisbajud.secrets.LICENSE_KEY=<sua chave de licença do br-sisbajud>
+  --set-json 'brSisbajud.secretRefs={"LICENSE_KEY":{"name":"br-sisbajud-license","key":"LICENSE_KEY"}}'
 ```
 
 A licença é obrigatória aqui também. Desde a app 1.2.0 a licença é exigida em todo
@@ -95,12 +99,18 @@ removê-los. O próximo upgrade os substitui.
 # 0. namespace (as imagens dos dois charts são públicas: sem pull secret)
 kubectl create namespace sisb-dev
 # 1. dev bundle do br-sta, somando o bucket do br-sisbajud ao Job de buckets dele
+kubectl create secret generic br-sta-license -n sisb-dev \
+  --from-file=LICENSE_KEY=./br-sta.license
 helm install br-sta charts/br-sta -n sisb-dev -f charts/br-sta/values-dev.yaml \
-  --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'
+  --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]' \
+  --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}' \
+  --set common.license.organizationIds=<organization id do br-sta>
 # 2. br-sisbajud ligado a ele (reaproveita o SeaweedFS + Redpanda do br-sta)
+kubectl create secret generic br-sisbajud-license -n sisb-dev \
+  --from-file=LICENSE_KEY=./br-sisbajud.license
 helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
   -f charts/br-sisbajud/values-dev.yaml -f charts/br-sisbajud/values-dev-with-br-sta.yaml \
-  --set brSisbajud.secrets.LICENSE_KEY=<sua chave de licença do br-sisbajud>
+  --set-json 'brSisbajud.secretRefs={"LICENSE_KEY":{"name":"br-sisbajud-license","key":"LICENSE_KEY"}}'
 ```
 
 O overlay assume o release do br-sta com o nome `br-sta` (Service do manager

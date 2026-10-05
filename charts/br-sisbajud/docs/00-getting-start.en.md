@@ -62,9 +62,13 @@ can execute.
 > Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. Do not promote this profile to a production tier.
 
 ```bash
-helm install br-sisbajud charts/br-sisbajud -n sisb-dev --create-namespace \
+kubectl create namespace sisb-dev
+# the license key stays in a file: it never lands in shell history or process args
+kubectl create secret generic br-sisbajud-license -n sisb-dev \
+  --from-file=LICENSE_KEY=./br-sisbajud.license
+helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
   -f charts/br-sisbajud/values-dev.yaml \
-  --set brSisbajud.secrets.LICENSE_KEY=<your br-sisbajud license key>
+  --set-json 'brSisbajud.secretRefs={"LICENSE_KEY":{"name":"br-sisbajud-license","key":"LICENSE_KEY"}}'
 ```
 
 A license is required here too. Since app 1.2.0 the license is mandatory in every
@@ -95,12 +99,18 @@ With a bundled dependency these Jobs are post-install/post-upgrade hooks with
 # 0. namespace (both charts' images are public: no pull secret)
 kubectl create namespace sisb-dev
 # 1. br-sta dev bundle, with br-sisbajud's own bucket added to its bucket Job
+kubectl create secret generic br-sta-license -n sisb-dev \
+  --from-file=LICENSE_KEY=./br-sta.license
 helm install br-sta charts/br-sta -n sisb-dev -f charts/br-sta/values-dev.yaml \
-  --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'
+  --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]' \
+  --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}' \
+  --set common.license.organizationIds=<br-sta organization id>
 # 2. br-sisbajud wired to it (reuses br-sta's SeaweedFS + Redpanda)
+kubectl create secret generic br-sisbajud-license -n sisb-dev \
+  --from-file=LICENSE_KEY=./br-sisbajud.license
 helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
   -f charts/br-sisbajud/values-dev.yaml -f charts/br-sisbajud/values-dev-with-br-sta.yaml \
-  --set brSisbajud.secrets.LICENSE_KEY=<your br-sisbajud license key>
+  --set-json 'brSisbajud.secretRefs={"LICENSE_KEY":{"name":"br-sisbajud-license","key":"LICENSE_KEY"}}'
 ```
 
 The overlay assumes the br-sta release is named `br-sta` (manager Service

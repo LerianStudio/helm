@@ -62,7 +62,7 @@ $ helm uninstall br-sisbajud -n br-sisbajud
 
 Every application env key is resolved with this precedence (lerian-common):
 
-1. `brSisbajud.configmap.<KEY>`: the native env key, the escape hatch. It wins over everything. Keys the chart does not model are emitted verbatim.
+1. `brSisbajud.configmap.<KEY>`: the native env key, the escape hatch. It wins over everything. Keys the chart does not model are emitted verbatim, into the ConfigMap: never put a credential (token, password, key) here; use `brSisbajud.secrets` or `brSisbajud.secretRefs`.
 2. `brSisbajud.<group>.<field>`: grouped chart parameters (`lerian-common.cfgValue`).
 3. `brSisbajud.datastores` / `brSisbajud.kms` / `brSisbajud.objectStorage`: dedicated connection masks for this release.
 4. `global.<block>.<field>`: the env-wide contract, set once per environment.
@@ -251,7 +251,7 @@ It bundles, in the release namespace:
 | openbao | 0.30.0 | `openbao.enabled` | **dev mode** (in-memory, auto-unsealed, root token) |
 | redpanda | 26.2.4 | `redpandaBundle.enabled` | 1 broker, no TLS, no SASL, no external listener |
 
-It runs with `ENVIRONMENT_NAME=development`, which relaxes the app's production gates: plaintext Postgres and broker allowed. It does **not** relax the license: since app 1.2.0 a license is mandatory in every environment, with no dev bypass. `values-dev.yaml` ships the placeholder `LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"` so the render succeeds, but the pod does not boot until you set a real key (`--set brSisbajud.secrets.LICENSE_KEY=<key>`; a key issued by the license dev gateway also needs `brSisbajud.license.isDevelopment: "true"`). Inbound auth, the access-manager declaration publisher, the br-sta consumer/transfers client and multi-tenancy are off. plugin-access-manager, br-sta and the Midaz ledger are not bundled, so institutions are still seeded via the admin API.
+It runs with `ENVIRONMENT_NAME=development`, which relaxes the app's production gates: plaintext Postgres and broker allowed. It does **not** relax the license: since app 1.2.0 a license is mandatory in every environment, with no dev bypass. `values-dev.yaml` ships the placeholder `LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"` so the render succeeds, but the pod does not boot until you set a real key (keep it out of `--set`: create a Secret from a file and point `brSisbajud.secretRefs.LICENSE_KEY` at it, as in the getting-started runbook; a key issued by the license dev gateway also needs `brSisbajud.license.isDevelopment: "true"`). Inbound auth, the access-manager declaration publisher, the br-sta consumer/transfers client and multi-tenancy are off. plugin-access-manager, br-sta and the Midaz ledger are not bundled, so institutions are still seeded via the admin API.
 
 ### With a br-sta dev bundle
 

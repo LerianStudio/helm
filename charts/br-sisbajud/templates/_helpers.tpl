@@ -464,8 +464,8 @@ br-sisbajud.devClass — "true" when the env name is a development-class name
 (local, development, develop, dev, test, e2e; case-insensitive), the same
 vocabulary as br-sta plus the app's e2e. Only there does the chart render its
 dev-only bundles (OpenBao dev mode, Redpanda). It is stricter than
-productionLike on purpose: staging relaxes the app's own gates (license, TLS)
-but must not run in-memory Transit keys. productionLike keeps driving the app
+productionLike on purpose: staging relaxes the app's own gates (TLS; since app
+1.2.0 never the license) but must not run in-memory Transit keys. productionLike keeps driving the app
 relaxations and the NOTES warnings.
 */}}
 {{- define "br-sisbajud.devClass" -}}
@@ -940,10 +940,10 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- include $req (dict "context" $ "key" "POSTGRES_PASSWORD" "secret" true "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q) with external Postgres" $envName) "set" "brSisbajud.secrets.POSTGRES_PASSWORD") -}}
 {{- end -}}
 {{- end -}}
-{{- /* License: fail-closed in production-like environments. */ -}}
-{{- if $prodLike -}}
-{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q; use development|staging|... to run without a license)" $envName) "set" "brSisbajud.secrets.LICENSE_KEY") -}}
-{{- end -}}
+{{- /* License: fail-closed in EVERY environment (app 1.2.0+: no unlicensed mode and
+   no dev bypass; only a local -tags licensetest build, never the published image,
+   runs without one). ENVIRONMENT_NAME still relaxes other gates, not this one. */ -}}
+{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" (printf "in every environment (ENVIRONMENT_NAME=%q; app 1.2.0+ refuses to boot without a license, there is no dev bypass)" $envName) "set" "brSisbajud.secrets.LICENSE_KEY (a dev-gateway key also needs brSisbajud.license.isDevelopment: \"true\")") -}}
 {{- /* KMS backend. */ -}}
 {{- $kms := index $data "KMS_PROVIDER" -}}
 {{- if not (has $kms (list "vault" "aws")) -}}
@@ -1014,9 +1014,15 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- include $req (dict "context" $ "key" "IDP_M2M_CLIENT_ID" "value" (index $data "IDP_M2M_CLIENT_ID") "why" "when IDP_DECLARATION_ENABLED=true" "set" "brSisbajud.identity.m2mClientId") -}}
 {{- include $req (dict "context" $ "key" "IDP_M2M_CLIENT_SECRET" "secret" true "why" "when IDP_DECLARATION_ENABLED=true" "set" "brSisbajud.secrets.IDP_M2M_CLIENT_SECRET") -}}
 {{- end -}}
-{{- /* License mode: GLOBAL only. */ -}}
+{{- /* License mode: GLOBAL only, required in every environment (the app refuses an
+   empty ORGANIZATION_IDS whatever ENVIRONMENT_NAME says). A literal
+   brSisbajud.extraEnvVars entry wins over the ConfigMap; a valueFrom is
+   undecidable at render and only counts as provided. */ -}}
+{{- $orgX := include "br-sisbajud.extraEnv" . | fromYaml -}}
 {{- $org := trim (toString (index $data "ORGANIZATION_IDS")) -}}
-{{- if and $org (ne (lower $org) "global") -}}
+{{- if hasKey $orgX "ORGANIZATION_IDS" -}}{{- $org = trim (toString (index $orgX "ORGANIZATION_IDS")) -}}{{- end -}}
+{{- include $req (dict "context" $ "key" "ORGANIZATION_IDS" "value" $org "why" (printf "in every environment (ENVIRONMENT_NAME=%q) and must be \"global\"" $envName) "set" "brSisbajud.license.organizationIds: \"global\" (the default)") -}}
+{{- if and $org (ne $org "__valueFrom__") (ne (lower $org) "global") -}}
 {{- fail (printf "\n\nERROR: br-sisbajud: ORGANIZATION_IDS must be \"global\" (got %q): the app supports GLOBAL license mode only.\n" $org) -}}
 {{- end -}}
 {{- end -}}

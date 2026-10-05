@@ -17,7 +17,8 @@ global:
   # -- aws | gcp | azure presets TLS/ssl for the masks below ("" = self-managed).
   cloud: ""
   # -- local | development | staging | e2e | test relax the app's production
-  # gates (license, TLS). Anything else, including the default, is production.
+  # gates (TLS). Anything else, including the default, is production. The license
+  # is never relaxed: app 1.2.0+ requires LICENSE_KEY in every environment.
   env:
     name: "production"
   datastores:
@@ -112,7 +113,7 @@ brSisbajud:
   secrets:
     POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres in production
     REDIS_PASSWORD: ""
-    LICENSE_KEY: ""                    # <- REQUIRED in production
+    LICENSE_KEY: ""                    # <- REQUIRED in every environment (app 1.2.0+, no dev bypass)
     VAULT_APPROLE_SECRET_ID: ""        # <- REQUIRED for approle
     STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when saslMechanism is set
     STREAMING_TLS_CA_CERT: ""          # <- REQUIRED when tlsEnabled: base64 PEM of the broker CA (consumers + topics Job)

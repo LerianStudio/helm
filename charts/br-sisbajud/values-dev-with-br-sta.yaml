@@ -41,7 +41,15 @@ brSisbajud:
     transfersEnabled: true
     transfersBaseUrl: "http://br-sta-manager:4028"
     clientId: "br-sisbajud"
+  # GLOBAL license mode: the only value the app accepts (required everywhere).
+  license:
+    organizationIds: "global"
   secrets:
+    # PLACEHOLDER, not a license (same as values-dev.yaml). App 1.2.0+ requires a
+    # license in every environment, with no dev bypass: the pod will not boot until
+    # a real LICENSE_KEY is set (or a dev-gateway key with
+    # brSisbajud.license.isDevelopment: "true"). Never commit a real key.
+    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
     STA_CLIENT_SECRET: "dev-only-sta-client-secret"
     # br-sta's SeaweedFS runs with S3 auth off; the SDK still signs requests.
     SEAWEEDFS_ACCESS_KEY: "any"

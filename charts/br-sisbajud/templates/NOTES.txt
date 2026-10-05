@@ -56,6 +56,13 @@ These single-replica, plaintext subcharts are meant for dev/evaluation; use
 managed PostgreSQL / Valkey / S3 in production (global.datastores / global.objectStorage).
 {{- end }}
 {{- end }}
+{{- if eq (toString (index (.Values.brSisbajud.secrets | default dict) "LICENSE_KEY")) "REPLACE_WITH_YOUR_LICENSE_KEY" }}
+
+WARNING: LICENSE_KEY is still the values-dev placeholder. App {{ .Values.brSisbajud.image.tag | default .Chart.AppVersion }}
+requires a license in every environment (development included, no dev bypass):
+the pod will not boot until brSisbajud.secrets.LICENSE_KEY holds a real key
+(a dev-gateway key also needs brSisbajud.license.isDevelopment: "true").
+{{- end }}
 {{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" }}
 
 OpenBao runs in DEV mode: its Transit keys live in memory. Restarting the

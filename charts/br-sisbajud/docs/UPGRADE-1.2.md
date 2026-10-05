@@ -6,11 +6,12 @@
 
 - **[Overview](#overview)**
 - **[Breaking Changes](#breaking-changes)**
-  - [1. Application 1.1.0: the Midaz connector moved into the database](#1-application-110-the-midaz-connector-moved-into-the-database)
-  - [2. Production-like environment by default](#2-production-like-environment-by-default)
-  - [3. Keys app 1.x no longer reads are dropped](#3-keys-app-1x-no-longer-reads-are-dropped)
-  - [4. Topics Job provisions the lib-streaming v4 topics](#4-topics-job-provisions-the-lib-streaming-v4-topics)
-  - [5. Fail-fast render gates](#5-fail-fast-render-gates)
+  - [1. Application 1.2.0: a license is required in every environment](#1-application-120-a-license-is-required-in-every-environment)
+  - [2. Application 1.1.0: the Midaz connector moved into the database](#2-application-110-the-midaz-connector-moved-into-the-database)
+  - [3. Production-like environment by default](#3-production-like-environment-by-default)
+  - [4. Keys app 1.x no longer reads are dropped](#4-keys-app-1x-no-longer-reads-are-dropped)
+  - [5. Topics Job provisions the lib-streaming v4 topics](#5-topics-job-provisions-the-lib-streaming-v4-topics)
+  - [6. Fail-fast render gates](#6-fail-fast-render-gates)
 - **[New Features](#new-features)**
 - **[Behavior Changes](#behavior-changes)**
 - **[Key Mapping (1.1.x to 1.2)](#key-mapping-11x-to-12)**
@@ -20,23 +21,35 @@
 
 ## Overview
 
-Chart 1.2 moves br-sisbajud to application **1.1.0** and productizes the chart on the `lerian-common-helm` library (2.1.2):
+Chart 1.2 moves br-sisbajud to application **1.2.0** and productizes the chart on the `lerian-common-helm` library (2.1.2):
 
 | Setting | v1.1.x | v1.2.0 |
 |---------|--------|--------|
-| Application | `1.0.0-beta.109` (default) | `1.1.0` (app, migrations and topics images) |
+| Application | `1.0.0-beta.109` (default) | `1.2.0` (app, migrations and topics images) |
+| License | Required in production only (empty `LICENSE_KEY` = dev bypass elsewhere) | Required in **every** environment (app 1.2.0; no dev bypass) |
 | Configuration | `brSisbajud.configmap` emitted verbatim | Global-first contract (`global.*`) + grouped params; `configmap` stays as the escape hatch |
-| Env coverage | Only what the operator set | Every key of `config/.env.example@v1.1.0` (unchanged from v1.0.2), with defaults |
+| Env coverage | Only what the operator set | Every key of `config/.env.example@v1.2.0` (same key set as v1.1.0 and v1.0.2), with defaults |
 | Default environment | `ENV_NAME=development` | `ENVIRONMENT_NAME=ENV_NAME=production` |
 | Topics Job | Pre-1.1 per-event topics | `lerian.streaming.br-sisbajud` (+ `.dlq`, `.commands`) |
 | envFrom order | Secret, then ConfigMap | ConfigMap, then Secret (Secret wins) |
 | Default `imagePullSecrets` | `[{name: ghcr-credential}]` | `[]` (the `br-sisbajud*` images are public on GHCR) |
 
-**Backward compatibility.** Every key a 1.1.x install sets under `brSisbajud.configmap`, `brSisbajud.secrets` or `brSisbajud.extraEnvVars` keeps reaching the pod with the same value: the native key wins over every new parameter. The only exceptions are the keys the application no longer reads ([section 3](#3-keys-app-1x-no-longer-reads-are-dropped)). Rendering the dev-st, stg-st and stg-mt values of chart 1.1.0 with 1.2.0 and comparing the effective pod env (ConfigMap, Secret and `env:`) gives zero changed values. Only the new defaults are added, and `LEDGER_BALANCE_TOPIC` is removed.
+**Backward compatibility.** Every key a 1.1.x install sets under `brSisbajud.configmap`, `brSisbajud.secrets` or `brSisbajud.extraEnvVars` keeps reaching the pod with the same value: the native key wins over every new parameter. The only exceptions are the keys the application no longer reads ([section 4](#4-keys-app-1x-no-longer-reads-are-dropped)). Rendering the dev-st, stg-st and stg-mt values of chart 1.1.0 with 1.2.0 and comparing the effective pod env (ConfigMap, Secret and `env:`) gives zero changed values. Only the new defaults are added, and `LEDGER_BALANCE_TOPIC` is removed. One gate is new with application 1.2.0: a values file without `LICENSE_KEY` (and `ORGANIZATION_IDS=global`) now fails the render in every environment, development and staging included ([section 1](#1-application-120-a-license-is-required-in-every-environment)).
 
 ## Breaking Changes
 
-### 1. Application 1.1.0: the Midaz connector moved into the database
+### 1. Application 1.2.0: a license is required in every environment
+
+Application 1.2.0 has no unlicensed mode. The boot fails closed in **every** `ENVIRONMENT_NAME` (`development`, `staging`, `e2e`, `test` and `local` included) when `LICENSE_KEY` is blank, or when `ORGANIZATION_IDS` is blank or not `global`. The 1.1.x dev bypass (an empty `LICENSE_KEY` in a non-production environment disabled validation) is gone. Only a local build with `-tags licensetest` runs without a license, and the published image is never built that way.
+
+- A license in its grace period still boots, including the outage grace the license SDK opens when the gateway cannot answer at startup. A refusal from the gateway (a 4xx: unknown key, a key for another product) aborts the boot.
+- The non-production environments keep relaxing everything else (CRM/fake connector, plaintext Postgres and broker). Only the license relaxation is gone.
+- The chart mirrors this: the render fails without `brSisbajud.secrets.LICENSE_KEY` (or a `brSisbajud.secretRefs` / `brSisbajud.extraEnvVars` entry, or `useExistingSecret`) and without `ORGANIZATION_IDS=global` (the `brSisbajud.license.organizationIds` default), whatever `global.env.name` says.
+- `values-dev.yaml` and `values-dev-with-br-sta.yaml` carry the placeholder `LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"`, so they render, but the pod does not boot until a real key is set. A key issued by the license dev gateway also needs `brSisbajud.license.isDevelopment: "true"`.
+
+Before upgrading a dev, staging or e2e release that ran without a license, give it this product's key (and allow egress to the license gateway).
+
+### 2. Application 1.1.0: the Midaz connector moved into the database
 
 The Midaz ledger and CRM connector routing (base URL, auth address, CRM URL) and credentials are **per institution** in `institution_config.connector_metadata`, sealed under the credentials KEK. No env var configures them anymore. Before the first order runs, seed one row per institution through the admin API (`POST /v1/institutions`). A row without `baseUrl` fails closed. `MIDAZ_CRM_MODE` (`legacy` | `embedded`) is the only deployment-wide connector setting left. It is inherited by rows without their own `crmMode`.
 
@@ -44,15 +57,17 @@ The Midaz ledger and CRM connector routing (base URL, auth address, CRM URL) and
 - `crmMode: embedded` now accepts a **ledger-only** credential set (`ledger_client_id` / `ledger_client_secret`, no `crm_*`).
 - `legacy` now **requires** the `crm_client_id` / `crm_client_secret` pair.
 
+Application 1.2.0 keeps this connector contract and the same env key set; its operator-facing change is the license ([section 1](#1-application-120-a-license-is-required-in-every-environment)).
+
 Check existing `institution_config.connector_metadata.credentials` against the institution's effective CRM mode before upgrading. The access-manager permission manifest also declares `credential_kek` and `sta_dlq` (relevant when `identity.declarationEnabled` is on). Grant those permissions in plugin-access-manager.
 
 Other 1.x application requirements the chart now wires:
 
 - `STA_INBOUND_BUCKET` is **required** at boot (br-sta's transfer bucket for the tier). When the STA consumer or transfers are on, `TRANSFER_OBJECT_STORAGE_BUCKET` must equal it and `STA_OBJECT_STORAGE_ENDPOINT` must equal `SEAWEEDFS_S3_ENDPOINT`. The chart defaults both to those values.
-- Runtime license validation: `LICENSE_KEY` and `ORGANIZATION_IDS=global` are required in production.
+- Runtime license validation: `LICENSE_KEY` and `ORGANIZATION_IDS=global` (required in production by 1.1.0; in every environment since 1.2.0, see [section 1](#1-application-120-a-license-is-required-in-every-environment)).
 - In production, `STREAMING_TLS_ENABLED=true` is required when streaming is on, and `POSTGRES_SSLMODE=disable` is refused.
 
-### 2. Production-like environment by default
+### 3. Production-like environment by default
 
 1.1.x shipped `ENV_NAME=development` in `values.yaml`. 1.2 defaults to `production`, the application's own fail-closed posture. A deployment that relied on the old default now needs a `LICENSE_KEY`, a TLS Postgres (`POSTGRES_SSLMODE` defaults to `require`), a Postgres password and TLS on the broker. To keep a non-production posture, set it explicitly:
 
@@ -64,9 +79,9 @@ global:
 
 A `brSisbajud.configmap.ENV_NAME` or `ENVIRONMENT_NAME` from 1.1.x keeps working and wins.
 
-`staging` relaxes the app's gates, but it is not a development-class environment: with the bundled OpenBao or Redpanda (`values-dev.yaml`) the render refuses it. Use `development` for a dev bundle install.
+`staging` relaxes the app's TLS gates (never the license), but it is not a development-class environment: with the bundled OpenBao or Redpanda (`values-dev.yaml`) the render refuses it. Use `development` for a dev bundle install.
 
-### 3. Keys app 1.x no longer reads are dropped
+### 4. Keys app 1.x no longer reads are dropped
 
 The chart no longer emits these keys, even when they are set under `brSisbajud.configmap` / `brSisbajud.secrets` (NOTES.txt lists any that are still set). Remove them from your values:
 
@@ -81,13 +96,13 @@ The chart no longer emits these keys, even when they are set under `brSisbajud.c
 
 `brSisbajud.extraEnvVars` is still rendered verbatim, so clean these keys out of it as well.
 
-### 4. Topics Job provisions the lib-streaming v4 topics
+### 5. Topics Job provisions the lib-streaming v4 topics
 
 `topics.list` now defaults to `lerian.streaming.br-sisbajud`, `lerian.streaming.br-sisbajud.dlq` and `lerian.streaming.br-sisbajud.commands`. The app's Builder only creates the first two when its principal holds `CreateTopics`. `.commands` is never created by the app: a missing `.commands` makes the balance trigger fail **silently**. The pre-1.1 per-event topics (`br-sisbajud.ledger.balance.changed`, `br-sisbajud.block_account.created`, `br-sisbajud.kek.rotated`, each with a `.dlq`) are no longer created. Retire them only after every consumer reads the new topic.
 
 The Job now renders only while streaming is enabled. It fails the render when `STREAMING_TLS_ENABLED=true` has no `STREAMING_TLS_CA_CERT`, because the topics image needs the CA as a file. Provide it, or set `topics.enabled=false` and provision the topics out of band.
 
-### 5. Fail-fast render gates
+### 6. Fail-fast render gates
 
 A values mistake now fails the render with the key to set, instead of CrashLooping the pod. The gates cover the STA bucket, datastore hosts, KMS credentials, streaming (brokers; TLS in a production-like environment; `STREAMING_TLS_CA_CERT` when TLS is on, since without it the app's consumers never start), license, Postgres password, STA transfers, auth and multi-tenancy (see the README "Fail-fast gates"). Values passed as `brSisbajud.extraEnvVars` count. With `useExistingSecret`, the gates skip the Secret keys.
 
@@ -167,8 +182,9 @@ The 1.1.x native keys keep working. Move to the right-hand column to use the pro
 
 ## Migration Steps
 
-### Step 1: Prepare application 1.1.0
+### Step 1: Prepare application 1.2.0
 
+1. Set `brSisbajud.secrets.LICENSE_KEY` (or a `secretRefs` entry) in every release, non-production ones included, and keep `ORGANIZATION_IDS=global` ([section 1](#1-application-120-a-license-is-required-in-every-environment)).
 1. Seed `institution_config` for every institution (admin API), including `connector_metadata.baseUrl`, `authAddress` and the sealed `credentials` when the ledger requires auth.
 2. Confirm br-sta's transfer bucket for the tier and set `global.objectStorage.sta.bucket`.
 3. Provision `lerian.streaming.br-sisbajud.commands` (the topics Job does it by default), with the same partition count as the app topic.
@@ -176,7 +192,7 @@ The 1.1.x native keys keep working. Move to the right-hand column to use the pro
 
 ### Step 2: Render with your current values, unchanged
 
-Keep your 1.1.x values. Pin the environment explicitly if you relied on the old default (`global.env.name`), remove the keys from [section 3](#3-keys-app-1x-no-longer-reads-are-dropped), and diff the render (next section). The expected difference is the new default keys plus the removed ones.
+Keep your 1.1.x values. Pin the environment explicitly if you relied on the old default (`global.env.name`), remove the keys from [section 4](#4-keys-app-1x-no-longer-reads-are-dropped), and diff the render (next section). The expected difference is the new default keys plus the removed ones.
 
 ### Step 3: Move to the global-first shape (optional, recommended)
 

@@ -18,6 +18,12 @@ global:
 brSisbajud:
   vault:
     tokenRenewEnabled: false
+  # App 1.2.0+ requires LICENSE_KEY in every environment (the render fails
+  # without it). Fake placeholder: renders, but the app does not boot on it.
+  license:
+    organizationIds: "global"
+  secrets:
+    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
 
 postgresql:
   enabled: true

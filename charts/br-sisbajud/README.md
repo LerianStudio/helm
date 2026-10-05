@@ -5,12 +5,12 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `brSisbajud.secrets.LICENSE_KEY` and (external Postgres) `POSTGRES_PASSWORD` in a production-like environment (the default); `VAULT_APPROLE_SECRET_ID` with Vault AppRole (or `VAULT_TOKEN` with token auth in `production`); `STREAMING_SASL_PASSWORD` when a SASL mechanism is set and `STREAMING_TLS_CA_CERT` when streaming TLS is on (streaming is on by default); `STA_CLIENT_SECRET` when the STA transfers client is on; `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on. The chart fails the render with the exact key to set when one is missing. With `brSisbajud.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql`/`valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
+- Required secrets: `brSisbajud.secrets.LICENSE_KEY` in every environment (app 1.2.0+ has no unlicensed mode); (external Postgres) `POSTGRES_PASSWORD` in a production-like environment (the default); `VAULT_APPROLE_SECRET_ID` with Vault AppRole (or `VAULT_TOKEN` with token auth in `production`); `STREAMING_SASL_PASSWORD` when a SASL mechanism is set and `STREAMING_TLS_CA_CERT` when streaming TLS is on (streaming is on by default); `STA_CLIENT_SECRET` when the STA transfers client is on; `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on. The chart fails the render with the exact key to set when one is missing. With `brSisbajud.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql`/`valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
 - Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `seaweedfs` (4.0.393), `openbao` (0.30.0, dev mode) and `redpanda` (26.2.4) subcharts are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, S3, Vault/AWS KMS and Kafka are the production path, and OpenBao/Redpanda are refused outside a development-class environment (staging is refused). Kafka/Redpanda, Vault (or AWS KMS), S3-compatible object storage, plugin-access-manager, br-sta and the Midaz ledger are external services.
 - Production overrides: `global.datastores` (postgres, redis), `global.objectStorage` (sisbajud, sta), `global.kms`, `global.streaming`, `global.auth`, `global.env`, the Secret keys above (or `brSisbajud.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `brSisbajud.cors.allowedOrigins`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Apache-2.0. The `br-sisbajud` service source is `github.com/LerianStudio/br-sisbajud`.
 
-Deploys **br-sisbajud**, the Lerian SISBAJUD plugin (judicial asset blocking and unblocking with BACEN SISBAJUD). The service is a single Go binary that runs the HTTP API and the background workers in one process. The chart tracks application **1.1.0** (`appVersion`); the app, migrations and topics images follow `appVersion` unless pinned.
+Deploys **br-sisbajud**, the Lerian SISBAJUD plugin (judicial asset blocking and unblocking with BACEN SISBAJUD). The service is a single Go binary that runs the HTTP API and the background workers in one process. The chart tracks application **1.2.0** (`appVersion`); the app, migrations and topics images follow `appVersion` unless pinned.
 
 ---
 
@@ -22,7 +22,7 @@ Deploys **br-sisbajud**, the Lerian SISBAJUD plugin (judicial asset blocking and
 | Valkey / Redis | Rate limiting, idempotency, processing locks | `global.datastores.redis` + `secrets.REDIS_PASSWORD` |
 | Kafka / Redpanda | lib-streaming producer/consumers, Midaz balance translator, br-sta facts | `global.streaming` + `secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
 | HashiCorp Vault Transit **or** AWS KMS | Envelope encryption of court-ordered seizure data | `global.kms` + `secrets.VAULT_APPROLE_SECRET_ID` (or `VAULT_TOKEN`) |
-| Lerian license | Runtime license validation (fail-closed in production) | `secrets.LICENSE_KEY`, `brSisbajud.license.organizationIds` (`global`) |
+| Lerian license | Runtime license validation (fail-closed in every environment since app 1.2.0) | `secrets.LICENSE_KEY`, `brSisbajud.license.organizationIds` (`global`) |
 | Midaz ledger stream | Balance-change trigger (`lerian.streaming.ledger`, created by Midaz) | `brSisbajud.midaz.balanceTopic` |
 | plugin-access-manager | Inbound JWT validation, STA m2m token minting, permission declaration | `global.auth`, `brSisbajud.identity` |
 | br-sta | Remittance intake (business facts) and return-file submission | `brSisbajud.sta`, `global.objectStorage.sta` |
@@ -184,7 +184,7 @@ Keys that only matter for local development (`VAULT_PORT`, `VAULT_DEV_*`, `VAULT
 | `POSTGRES_PASSWORD` | External Postgres in a production-like environment (single-tenant) |
 | `POSTGRES_REPLICA_PASSWORD` | Optional (replica with its own password) |
 | `REDIS_PASSWORD` | The external Redis requires auth |
-| `LICENSE_KEY` | Production-like environment |
+| `LICENSE_KEY` | Always, in every environment (app 1.2.0+; no dev bypass) |
 | `VAULT_APPROLE_SECRET_ID` | `global.kms.vaultAuthMethod: approle` |
 | `VAULT_TOKEN` | `vaultAuthMethod: token` and `ENVIRONMENT_NAME=production` |
 | `STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` | SASL mechanism set / streaming TLS on (the app's consumers and the topics Job dial with this CA, even for a public-CA broker) |
@@ -204,10 +204,10 @@ The render fails with the exact value to set (mirroring `internal/bootstrap/conf
 - `KMS_PROVIDER` is not `vault`/`aws`, or its credentials are missing (`VAULT_ADDR`, AppRole role/secret id, `VAULT_TOKEN` in `production`, `AWS_REGION` for AWS KMS);
 - streaming is on (the default) without `STREAMING_BROKERS`, without TLS in a production-like environment, with TLS but without `STREAMING_TLS_CA_CERT`, or with `streaming.closeTimeoutS` not below 30; or a SASL mechanism is set without a username/password or without TLS;
 - streaming is off while `STREAMING_BROKERS` is set (`brSisbajud.configmap`) or `sta.consumerEnabled` is on (the app refuses both);
-- a production-like environment lacks `LICENSE_KEY` or the external Postgres password;
+- `LICENSE_KEY` is missing (in every environment, development included), or a production-like environment lacks the external Postgres password;
 - the STA transfers client, inbound auth or the declaration publisher is on without its host/client credentials;
 - multi-tenancy is on without the tenant-manager URL, its Redis host or the service API key;
-- `ORGANIZATION_IDS` is anything but `global`.
+- `ORGANIZATION_IDS` is empty or anything but `global` (in every environment).
 
 A value supplied through `brSisbajud.extraEnvVars` satisfies the gate. With `useExistingSecret`, the gates skip the Secret keys.
 
@@ -251,7 +251,7 @@ It bundles, in the release namespace:
 | openbao | 0.30.0 | `openbao.enabled` | **dev mode** (in-memory, auto-unsealed, root token) |
 | redpanda | 26.2.4 | `redpandaBundle.enabled` | 1 broker, no TLS, no SASL, no external listener |
 
-It runs with `ENVIRONMENT_NAME=development`, which relaxes the app's production gates: empty `LICENSE_KEY` = license dev bypass, plaintext Postgres and broker allowed. Inbound auth, the access-manager declaration publisher, the br-sta consumer/transfers client and multi-tenancy are off. plugin-access-manager, br-sta and the Midaz ledger are not bundled, so institutions are still seeded via the admin API.
+It runs with `ENVIRONMENT_NAME=development`, which relaxes the app's production gates: plaintext Postgres and broker allowed. It does **not** relax the license: since app 1.2.0 a license is mandatory in every environment, with no dev bypass. `values-dev.yaml` ships the placeholder `LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"` so the render succeeds, but the pod does not boot until you set a real key (`--set brSisbajud.secrets.LICENSE_KEY=<key>`; a key issued by the license dev gateway also needs `brSisbajud.license.isDevelopment: "true"`). Inbound auth, the access-manager declaration publisher, the br-sta consumer/transfers client and multi-tenancy are off. plugin-access-manager, br-sta and the Midaz ledger are not bundled, so institutions are still seeded via the admin API.
 
 ### With a br-sta dev bundle
 
@@ -283,12 +283,12 @@ All the bootstrap Jobs are idempotent, non-root with a read-only rootfs (PSS res
 
 ### Production guard
 
-The render **fails** when `openbao` or `redpandaBundle` is enabled outside a development-class environment, that is anything but `local|development|develop|dev|test|e2e` (case-insensitive). **Staging is refused too**: the app relaxes its own gates in `staging` (license, plaintext Postgres and broker), but a staging tier holds data someone expects to keep, and OpenBao dev mode loses every Transit key on a restart:
+The render **fails** when `openbao` or `redpandaBundle` is enabled outside a development-class environment, that is anything but `local|development|develop|dev|test|e2e` (case-insensitive). **Staging is refused too**: the app relaxes its own gates in `staging` (plaintext Postgres and broker), but a staging tier holds data someone expects to keep, and OpenBao dev mode loses every Transit key on a restart:
 
 - OpenBao dev mode keeps its keys in memory: a pod restart loses every Transit key, and the data encrypted under them becomes **unrecoverable**.
 - The Redpanda bundle is a single plaintext broker.
 
-The guard only decides whether the dev-only bundles render. The app's own relaxations are separate and unchanged: only `local|development|staging|e2e|test` relax its gates (`dev` and `develop` pass the guard, but the app treats them as production, so it still needs `LICENSE_KEY` and TLS). A dev install uses `development`, as `values-dev.yaml` does.
+The guard only decides whether the dev-only bundles render. The app's own relaxations are separate: only `local|development|staging|e2e|test` relax its gates (`dev` and `develop` pass the guard, but the app treats them as production, so they still need TLS). The license is never relaxed: since app 1.2.0, `LICENSE_KEY` and `ORGANIZATION_IDS=global` are required in every environment, including those five. A dev install uses `development`, as `values-dev.yaml` does.
 
 The postgresql / valkey / seaweedfs bundles render in any environment, as in the sibling charts, and NOTES.txt warns when they run production-like. That is a warning, not support: they are unsupported in production. Kafka/Redpanda and the KMS are external in production: set `global.streaming` and `global.kms`.
 

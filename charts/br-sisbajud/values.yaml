@@ -214,7 +214,8 @@ brSisbajud:
   # allowWebhookPrivateNetwork.
   security: {}
   # -- organizationIds (must be "global"), isDevelopment (routes the license SDK
-  # to the dev gateway). LICENSE_KEY is a secret.
+  # to the dev gateway). LICENSE_KEY is a secret and, since app 1.2.0, required in
+  # EVERY environment (no dev bypass): the render fails without it.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
   # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
@@ -297,10 +298,10 @@ brSisbajud:
   # -- Secret keys (stringData). Credentials only, never in configmap. Use AVP
   # <path:...> placeholders in GitOps values, never real credentials. Keys the
   # chart models: POSTGRES_PASSWORD, POSTGRES_REPLICA_PASSWORD, REDIS_PASSWORD,
-  # LICENSE_KEY, VAULT_TOKEN, VAULT_APPROLE_SECRET_ID, SEAWEEDFS_ACCESS_KEY,
-  # SEAWEEDFS_SECRET_KEY, STA_CLIENT_SECRET, IDP_M2M_CLIENT_SECRET,
-  # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
-  # MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
+  # LICENSE_KEY (required in every environment), VAULT_TOKEN,
+  # VAULT_APPROLE_SECRET_ID, SEAWEEDFS_ACCESS_KEY, SEAWEEDFS_SECRET_KEY,
+  # STA_CLIENT_SECRET, IDP_M2M_CLIENT_SECRET, STREAMING_SASL_PASSWORD,
+  # STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
   secrets: {}
   # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
   # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit

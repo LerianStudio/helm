@@ -9,11 +9,11 @@
 
 | Field | Value |
 |---|---|
-| Product / Chart | `br-sisbajud-helm` (releases as **1.2.0**; the release pipeline sets the version, so `Chart.yaml` on the branch still reads `1.1.0`) / app **1.1.0** |
+| Product / Chart | `br-sisbajud-helm` (releases as **1.2.0**; the release pipeline sets the version, so `Chart.yaml` on the branch still reads `1.1.0`) / app **1.2.0** |
 | Components | one Go binary (HTTP API `:4029` + background workers), migrations Job, topics Job |
 | Images | `ghcr.io/lerianstudio/br-sisbajud`, `br-sisbajud-migrations`, `br-sisbajud-topics` (all public on GHCR) |
 | Upgrade guide | coming from chart 1.1.x: [`UPGRADE-1.2.md`](UPGRADE-1.2.md) |
-| Last review of this runbook | 2026-09-30, against chart 1.2.0 / app 1.1.0 |
+| Last review of this runbook | 2026-10-05, against chart 1.2.0 / app 1.2.0 |
 | Escalation contact | `@LerianStudio/G_Github_Devops` (see `.github/CODEOWNERS`) |
 
 ---
@@ -46,7 +46,7 @@ chart fails fast until the external connections and secrets are set (section 5).
 | br-sta | Remittance intake (business facts on `lerian.streaming.br-sta`) and return-file submission (`POST /v1/transfers`) | `brSisbajud.sta.*`, `global.objectStorage.sta` (the same block br-sta reads) |
 | plugin-access-manager | Inbound JWT validation, the STA m2m bearer, permission declaration | `global.auth`, `brSisbajud.identity` |
 | Midaz ledger stream | Balance-change trigger (`lerian.streaming.ledger`, created by Midaz) | `brSisbajud.midaz.balanceTopic` |
-| Lerian license gateway | Production (`LICENSE_KEY`); the pod needs egress to it | `brSisbajud.secrets.LICENSE_KEY`, `brSisbajud.license.organizationIds` (`global`) |
+| Lerian license gateway | Always, in every environment (`LICENSE_KEY`, app 1.2.0+); the pod needs egress to it | `brSisbajud.secrets.LICENSE_KEY`, `brSisbajud.license.organizationIds` (`global`) |
 | Tenant manager | Only with multi-tenancy | `global.multiTenant` + `MULTI_TENANT_SERVICE_API_KEY` |
 
 The Midaz ledger and CRM connectors are not configured through the chart: seed one
@@ -63,8 +63,15 @@ can execute.
 
 ```bash
 helm install br-sisbajud charts/br-sisbajud -n sisb-dev --create-namespace \
-  -f charts/br-sisbajud/values-dev.yaml
+  -f charts/br-sisbajud/values-dev.yaml \
+  --set brSisbajud.secrets.LICENSE_KEY=<your br-sisbajud license key>
 ```
+
+A license is required here too. Since app 1.2.0 the license is mandatory in every
+environment, `development` included (no dev bypass). `values-dev.yaml` ships the
+placeholder `REPLACE_WITH_YOUR_LICENSE_KEY` so the chart renders, but the pod does not
+boot until a real key is set. A key issued by the license dev gateway also needs
+`--set brSisbajud.license.isDevelopment=true`.
 
 The images are public, so no pull secret is needed (top-level `imagePullSecrets` is
 only for a private mirror/registry). With
@@ -92,7 +99,8 @@ helm install br-sta charts/br-sta -n sisb-dev -f charts/br-sta/values-dev.yaml \
   --set-json 'seaweedfsBuckets.extraBuckets=["sisbajud"]'
 # 2. br-sisbajud wired to it (reuses br-sta's SeaweedFS + Redpanda)
 helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
-  -f charts/br-sisbajud/values-dev.yaml -f charts/br-sisbajud/values-dev-with-br-sta.yaml
+  -f charts/br-sisbajud/values-dev.yaml -f charts/br-sisbajud/values-dev-with-br-sta.yaml \
+  --set brSisbajud.secrets.LICENSE_KEY=<your br-sisbajud license key>
 ```
 
 The overlay assumes the br-sta release is named `br-sta` (manager Service
@@ -204,7 +212,7 @@ Responses:
 - `422` SBJ-0006: bad body, unknown `fileType`, or a bad key shape;
 - `404` SBJ-0005: the object is not in the bucket;
 - `503` SBJ-0008.
-- `500` SBJ-0002 for an institution that does not exist (known app `1.1.0` behaviour: create the institution first).
+- `500` SBJ-0002 for an institution that does not exist (known app `1.2.0` behaviour: create the institution first).
 
 The reception runs synchronously in the request.
 
@@ -222,7 +230,7 @@ when transfers are enabled but the submission path could not be built.
   from the bucket.
 - **Dev export:** in `local`/`development` only,
   `GET /v1/admin/return-file/{id}/content` returns the decrypted bytes (base64).
-- **Production:** app 1.1.0 has no production export endpoint. Delivering return files
+- **Production:** app 1.2.0 has no production export endpoint. Delivering return files
   to BACEN is br-sta's job (`transfersEnabled`). Without br-sta the return leg must be
   covered by the operator's own STA channel, and that is outside what this app version
   offers.
@@ -235,7 +243,7 @@ when transfers are enabled but the submission path could not be built.
   the file's `environment` (`PRODUCTION` for a 5301/5303/5308 file).
 - The same notification sent again returns `skipped` (dedup by file hash).
 - A notification for an institution that does not exist returns `500` SBJ-0002 in app
-  `1.1.0` (not a 4xx): create the institution first.
+  `1.2.0` (not a 4xx): create the institution first.
 
 ### Production
 
@@ -307,7 +315,7 @@ global:
 
 | Global field | Native keys | Note |
 |---|---|---|
-| `global.env.name` | `ENVIRONMENT_NAME`, `ENV_NAME` | Only `local`/`development`/`staging`/`e2e`/`test` relax the gates; anything else is production-like |
+| `global.env.name` | `ENVIRONMENT_NAME`, `ENV_NAME` | Only `local`/`development`/`staging`/`e2e`/`test` relax the gates (never the license); anything else is production-like |
 | `global.datastores.*` | `POSTGRES_*`, `REDIS_*` | bundled subcharts derive them automatically |
 | `global.objectStorage.sisbajud` | `SEAWEEDFS_S3_ENDPOINT/BUCKET/REGION` | — |
 | `global.objectStorage.sta` | `STA_INBOUND_BUCKET` (+ `TRANSFER_OBJECT_STORAGE_BUCKET`), `STA_OBJECT_STORAGE_ENDPOINT` | Endpoint defaults to the sisbajud endpoint; the app enforces bucket and endpoint parity with br-sta |
@@ -325,14 +333,14 @@ br-sta wiring (grouped values under `brSisbajud.sta`): `consumerEnabled`,
 
 | Topic | What to know | Before enabling / how to confirm |
 |---|---|---|
-| Fail-fast render | Mirrors the app's boot validation: `STA_INBOUND_BUCKET` always; Postgres/Redis host in single-tenant; KMS provider + credentials; streaming brokers/SASL/TLS; `LICENSE_KEY` + Postgres password production-like; STA transfers client / inbound auth / declaration publisher credentials; multi-tenant URL/Redis/API key; `ORGANIZATION_IDS` must be `global` | Read the render error: it names the exact value |
+| Fail-fast render | Mirrors the app's boot validation: `STA_INBOUND_BUCKET` always; Postgres/Redis host in single-tenant; KMS provider + credentials; streaming brokers/SASL/TLS; `LICENSE_KEY` in every environment; Postgres password production-like; STA transfers client / inbound auth / declaration publisher credentials; multi-tenant URL/Redis/API key; `ORGANIZATION_IDS` required and `global` | Read the render error: it names the exact value |
 | Dev-only bundle guard | `openbao` (dev mode, keys in memory) and `redpandaBundle` are refused outside `local`/`development`/`develop`/`dev`/`test`/`e2e` (staging is refused). Separate from the app's own relaxations, which `staging` still gets | `helm template ... --set global.env.name=production` with the dev bundle fails naming both |
 | OpenBao dev mode | A restart of the OpenBao pod loses every Transit key: previously encrypted rows become unreadable | Dev/evaluation only; reset the database with it |
 | STA transfers client | Needs a reachable plugin-access-manager to mint its m2m bearer | Without it, return-file submission to br-sta fails |
 | br-sta facts for unknown transfers | Known app behaviour: a `lerian.streaming.br-sta` fact for a transfer br-sisbajud did not create is retried as transient and holds the partition | Watch `sta_consumer` in `/readyz` (`degraded`, `consumer_not_polling`) |
 | Images | App, migrations and topics images are public on GHCR | A pull secret (`imagePullSecrets`) only for a private mirror/registry |
 
-### Consumer-only mode (known app 1.1.0 limitation)
+### Consumer-only mode (known app 1.2.0 limitation)
 
 With `brSisbajud.sta.consumerEnabled: true` and `transfersEnabled: false`, `/readyz`
 reports `sta_bucket_parity` `down` (`not_configured`) and the pod never becomes Ready.
@@ -357,14 +365,16 @@ need the real client secret and a reachable plugin-access-manager.
 
 ### License
 
-| Topic | Behaviour (app `1.1.0`, license SDK v4.1.0) |
+| Topic | Behaviour (app `1.2.0`, license SDK v4.1.0) |
 |---|---|
+| Every environment | Since app 1.2.0 a license is mandatory in every `ENVIRONMENT_NAME`, `development`/`staging`/`e2e`/`test`/`local` included: no dev bypass, no unlicensed mode. The boot fails closed when `LICENSE_KEY` is blank or `ORGANIZATION_IDS` is blank or not `global`. Only a local `-tags licensetest` build runs unlicensed; the published image never does |
+| At startup | A valid license boots, and so does a license in grace, including the outage grace when the gateway cannot answer. A 4xx refusal from the gateway aborts the boot |
 | One key per product | A key licenses a single product. A key issued for another product is refused with `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; an unknown or altered key with `(LCS-1002)` |
 | On refusal | The process exits and the pod goes to `CrashLoopBackOff`. In a rolling update the pod that is already running keeps serving, so the rollout stalls but nothing goes down |
 | Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging were validated on this production gateway. `brSisbajud.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) switches to `https://license.dev.lerian.io`: use it only for keys issued by the dev gateway |
 | Refresh and grace | The key is re-validated every 6 h. When the gateway does not answer (network error or 5xx) after it has confirmed the key once, the process keeps serving through decaying grace windows (2 d, 1 d, 12 h, 6 h, so at most 3 d 18 h) and then exits. A process that was never confirmed gets 6 h only. A 4xx refusal ends the grace at once. The windows live in memory: a pod restarted during an outage starts unconfirmed |
 | Offline | No offline license mode in this app version |
-| Render gate | Production-like environments fail the render without `LICENSE_KEY`; `ORGANIZATION_IDS` must be `global` |
+| Render gate | Every environment fails the render without `LICENSE_KEY` (a Secret value, `secretRefs`, `extraEnvVars` or `useExistingSecret`); `ORGANIZATION_IDS` is required and must be `global` |
 | How to confirm | No license check in `/readyz`: look for the boot log lines `Organization global has a valid license` and `license validation enabled` |
 
 ---
@@ -399,9 +409,9 @@ curl -s localhost:14029/health     # liveness probe path
 | `sta_consumer` `degraded` / `consumer_not_polling`, log `STA inbound event requeued: transfer_not_found` then `partition halted (head-of-line blocked)` | Known app behaviour: a br-sta fact that references a transfer unknown to br-sisbajud is retried and blocks the partition | Monitor `sta_consumer`; in dev, do not create br-sta transfers outside br-sisbajud on a shared topic |
 | Topics Job fails with TLS on | The topics image needs the broker CA as a file when `STREAMING_TLS_ENABLED=true`, even for a public-CA broker | Set `brSisbajud.secrets.STREAMING_TLS_CA_CERT`, or provision the topics out of band and set `topics.enabled=false` |
 | Render fails naming `STA_INBOUND_BUCKET` | No default by policy | `global.objectStorage.sta.bucket` = br-sta's transfer bucket |
-| Boot refused in production, license errors | `LICENSE_KEY` missing, a key for another product (`LCS-1005`) or an unknown key (`LCS-1002`), or no egress to the license gateway (no offline license mode in this app version) | Set this product's key and allow egress (section 5, License) |
-| Pod never Ready, `/readyz` `sta_bucket_parity` `not_configured` | Consumer-only mode (`consumerEnabled` on, `transfersEnabled` off): known app `1.1.0` limitation | Enable transfers too (section 5, Consumer-only mode) |
-| `500` SBJ-0002 on `POST /v1/remittance-files/notifications` | The institution does not exist (known app `1.1.0` behaviour, instead of a 4xx) | Create it first with `POST /v1/institutions` |
+| Boot refused (any environment), license errors | `LICENSE_KEY` missing or still the `values-dev.yaml` placeholder, a key for another product (`LCS-1005`) or an unknown key (`LCS-1002`), or no egress to the license gateway (no offline license mode in this app version) | Set this product's key and allow egress (section 5, License) |
+| Pod never Ready, `/readyz` `sta_bucket_parity` `not_configured` | Consumer-only mode (`consumerEnabled` on, `transfersEnabled` off): known app `1.2.0` limitation | Enable transfers too (section 5, Consumer-only mode) |
+| `500` SBJ-0002 on `POST /v1/remittance-files/notifications` | The institution does not exist (known app `1.2.0` behaviour, instead of a 4xx) | Create it first with `POST /v1/institutions` |
 | Browser calls blocked although CORS origins are set | lib-commons' CORS middleware reads `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `brSisbajud.cors.allowedOrigins` (the chart maps it); a wildcard needs the explicit opt-in |
 
 ---

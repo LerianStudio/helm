@@ -22,7 +22,7 @@ version: 1.1.0
 # NOTE: appVersion is the default image tag for the app, the migrations Job and
 # the topics Job. Override via brSisbajud.image.tag / migrations.image.tag /
 # topics.image.tag when needed.
-appVersion: "1.1.0"
+appVersion: "1.2.0"
 
 keywords:
   - br-sisbajud

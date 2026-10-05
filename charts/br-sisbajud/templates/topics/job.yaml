@@ -81,6 +81,9 @@ spec:
         {{- include "br-sisbajud-topics.labels" . | nindent 8 }}
     spec:
       restartPolicy: Never
+      {{- with (include "br-sisbajud.jobScheduling" $) }}
+      {{- . | nindent 6 }}
+      {{- end }}
       automountServiceAccountToken: false
       securityContext:
         seccompProfile:

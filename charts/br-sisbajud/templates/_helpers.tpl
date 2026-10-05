@@ -930,6 +930,13 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- $mtOn := eq (include "br-sisbajud.multiTenantEnabled" .) "true" -}}
 {{- /* STA inbound bucket: validated unconditionally by the app (no default by policy). */ -}}
 {{- include $req (dict "context" $ "key" "STA_INBOUND_BUCKET" "value" (index $data "STA_INBOUND_BUCKET") "why" "(the app refuses to boot without it; it must match br-sta's transfer bucket for the tier)" "set" "global.objectStorage.sta.bucket (or brSisbajud.objectStorage.sta.bucket)") -}}
+{{- /* STA consumer and transfers go together: app 1.2.x builds the shared-bucket
+   store only with transfers on, so the consumer alone leaves sta_bucket_parity
+   down (not_configured) and /health at 503 — the liveness probe restarts the pod
+   in a loop. Both off (the default) or both on. */ -}}
+{{- if and (eq (toString (index $data "STA_CONSUMER_ENABLED")) "true") (ne (toString (index $data "STA_TRANSFERS_ENABLED")) "true") -}}
+{{- fail "\n\nERROR: br-sisbajud: brSisbajud.sta.consumerEnabled needs brSisbajud.sta.transfersEnabled.\n  App 1.2.x builds the shared STA bucket store only with transfers on: with the consumer alone the readiness check sta_bucket_parity reports down (not_configured), /health answers 503 and the liveness probe restarts the pod in a loop.\n  set: both false (default), or both true (transfers need an access-manager for the m2m token: global.auth.host + brSisbajud.sta.clientId / STA_CLIENT_SECRET)\n" -}}
+{{- end -}}
 {{- /* Single-tenant datastores. */ -}}
 {{- if not $mtOn -}}
 {{- include $req (dict "context" $ "key" "POSTGRES_HOST" "value" (index $data "POSTGRES_HOST") "why" "when multi-tenancy is off (or enable the bundled postgresql subchart)" "set" "global.datastores.postgres.host") -}}
@@ -1100,7 +1107,7 @@ secretName: {{ $secretName | quote }}
 {{- else if index $envByName "POSTGRES_PASSWORD" -}}
 {{- $pwEnv = index $envByName "POSTGRES_PASSWORD" -}}
 {{- else if $pgFromSubchart -}}
-{{- $pwEnv = include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | fromYamlArray | first -}}
+{{- $pwEnv = include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" (include "br-sisbajud.postgresPasswordKey" .) "envName" "POSTGRES_PASSWORD") | fromYamlArray | first -}}
 {{- else if .Values.brSisbajud.useExistingSecret -}}
 {{- $pwEnv = dict "name" "POSTGRES_PASSWORD" "valueFrom" (dict "secretKeyRef" (dict "name" .Values.brSisbajud.existingSecretName "key" "POSTGRES_PASSWORD")) -}}
 {{- else if $appSecrets.POSTGRES_PASSWORD -}}
@@ -1325,4 +1332,28 @@ else
   echo "transit enabled at ${TRANSIT_MOUNT}/"
 fi
 bao secrets list -format=json | grep -Fq -- "\"${TRANSIT_MOUNT}/\"" || { echo "transit mount missing"; exit 1; }
+{{- end -}}
+
+{{/*
+Keys holding the app passwords in the PostgreSQL / Valkey Secret (bundled, or an
+existing one). They follow the subcharts' own settings, so an existing Secret with
+other key names works: postgresql.auth.secretKeys.userPasswordKey (default
+"password") and valkey.auth.existingSecretPasswordKey (default "valkey-password").
+*/}}
+{{- define "br-sisbajud.postgresPasswordKey" -}}
+{{- ((((.Values.postgresql | default dict).auth | default dict).secretKeys | default dict).userPasswordKey) | default "password" -}}
+{{- end -}}
+{{- define "br-sisbajud.valkeyPasswordKey" -}}
+{{- (((.Values.valkey | default dict).auth | default dict).existingSecretPasswordKey) | default "valkey-password" -}}
+{{- end -}}
+
+{{/*
+Pod scheduling of the chart's Jobs (migrations, topics, SeaweedFS buckets, OpenBao
+Transit): the app's brSisbajud.nodeSelector / affinity / tolerations, so a
+dedicated or spot-only node pool schedules them like the app. Input: root.
+*/}}
+{{- define "br-sisbajud.jobScheduling" -}}
+{{- if or .Values.brSisbajud.nodeSelector .Values.brSisbajud.affinity .Values.brSisbajud.tolerations -}}
+{{- include "lerian-common.scheduling" .Values.brSisbajud -}}
+{{- end -}}
 {{- end -}}

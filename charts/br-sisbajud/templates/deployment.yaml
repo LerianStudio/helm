@@ -140,11 +140,11 @@ spec:
                name is rejected by server-side apply. */}}
             {{- $pgAuth := (.Values.postgresql | default dict).auth | default dict }}
             {{- if and (or (eq (include "br-sisbajud.postgresInternal" .) "true") $pgAuth.existingSecret) (not (hasKey $x "POSTGRES_PASSWORD")) }}
-            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" (include "br-sisbajud.postgresPasswordKey" .) "envName" "POSTGRES_PASSWORD") | nindent 12 }}
             {{- end }}
             {{- $vkAuth := (.Values.valkey | default dict).auth | default dict }}
             {{- if and (or (eq (include "br-sisbajud.valkeyInternal" .) "true") $vkAuth.existingSecret) (not (hasKey $x "REDIS_PASSWORD")) }}
-            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" (include "br-sisbajud.valkeyPasswordKey" .) "envName" "REDIS_PASSWORD") | nindent 12 }}
             {{- end }}
             {{- /* Bundled OpenBao: the app authenticates with the generated dev root
                token (unless the operator supplies VAULT_TOKEN explicitly). */}}

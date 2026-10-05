@@ -58,6 +58,9 @@ spec:
         config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
     spec:
       restartPolicy: Never
+      {{- with (include "br-sisbajud.jobScheduling" $) }}
+      {{- . | nindent 6 }}
+      {{- end }}
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true

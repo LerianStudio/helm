@@ -1,9 +1,11 @@
-{{- if and .Values.brSisbajud.enabled (eq (include "br-sisbajud.openbaoEnabled" .) "true") }}
+{{- if and .Values.brSisbajud.enabled (eq (include "br-sisbajud.openbaoEnabled" .) "true") (ne (toString ((.Values.openbaoDevToken | default dict).create)) "false") }}
 {{- /* Dev root token for the bundled OpenBao (dev mode). Precedence:
    openbaoDevToken.token (operator-supplied, e.g. an AVP placeholder — use it under
    GitOps, where `lookup` returns nothing and a random value would rotate every
    render) > the token already stored in this Secret (lookup, so upgrades keep it)
-   > a random 40-char token generated on first install. Never a shared literal. */}}
+   > a random 40-char token generated on first install. Never a shared literal.
+   openbaoDevToken.create=false skips this Secret: an operator-managed one (e.g. an
+   ExternalSecret) under the same name/key is used instead. */}}
 {{- $name := include "br-sisbajud.openbaoTokenSecret" . -}}
 {{- $key := include "br-sisbajud.openbaoTokenKey" . -}}
 {{- $token := (.Values.openbaoDevToken | default dict).token | default "" -}}

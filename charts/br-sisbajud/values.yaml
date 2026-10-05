@@ -235,7 +235,9 @@ brSisbajud:
   # consumerRetryBudget, sourceProduct, bacenSystemCode, expectedTenantSt,
   # maxInboundSizeBytes, transfersEnabled, transfersBaseUrl, documentTypeAjud302,
   # documentTypeAjud309, clientId. STA_CLIENT_SECRET is a secret. The buckets and
-  # endpoint come from objectStorage.sta.
+  # endpoint come from objectStorage.sta. consumerEnabled and transfersEnabled go
+  # together (both off, the default, or both on): app 1.2.x leaves its readiness
+  # down with the consumer alone, and the render refuses that combination.
   sta: {}
   # -- Background workers. One sub-map per worker:
   #   permanentBlockExpiry:  { enabled, scanInterval, batchSize }
@@ -534,6 +536,10 @@ seaweedfsBuckets:
 # via lookup; openbaoDevToken.token to supply one, e.g. under GitOps).
 # openbaoTransit below enables the Transit engine the app uses; the app itself
 # creates its KEKs (sisbajud-kek-<institution>) at boot.
+# Upstream openbao 0.30.0 limits, not settable here: in dev mode it ignores
+# server.nodeSelector/affinity/tolerations, and it always renders its helm-test Pod
+# (<release>-openbao-server-test). Pin the StatefulSet's scheduling with a
+# post-render patch (e.g. helmfile strategicMergePatches) where that matters.
 openbao:
   enabled: false
   injector:
@@ -571,8 +577,11 @@ openbao:
 # stored in the Secret named in openbao.server.extraSecretEnvironmentVars and
 # reused on upgrade via lookup. Set it (an AVP placeholder, never a literal) when
 # rendering without cluster access (GitOps/ArgoCD), or the token rotates.
+# create: false renders no token Secret at all, for an operator-managed one (e.g.
+# an ExternalSecret) under that same name and key.
 openbaoDevToken:
   token: ""
+  create: true
 
 # -- Transit bootstrap Job for the bundled OpenBao (rendered only when
 # openbao.enabled). Idempotent: enables the Transit engine at the resolved

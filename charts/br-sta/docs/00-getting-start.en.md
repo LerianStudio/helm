@@ -45,7 +45,7 @@ chart fails fast until the external connections and secrets are set (section 5).
 | S3-compatible object storage | Always in production (the transfer bucket holds both directions) | `global.objectStorage.sta` (+ `staAuditExports` for audit exports) + `common.secrets.AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` or an IRSA / workload-identity annotation on `serviceAccount` |
 | Kafka / Redpanda | On by default: business facts on `lerian.streaming.br-sta` (+ `.dlq`), the topic br-sisbajud consumes | `global.streaming` (brokers required) + `common.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`. With `topicAutoProvision: true` (the default) both binaries create the topics at boot when the principal has CreateTopics; with `false` (IaC topics) they must exist first |
 | plugin-access-manager | Mandatory outside a development-class env (the app accepts `PLUGIN_AUTH_ENABLED=false` only in development/develop/dev/local/test) | `global.auth.enabled` + `global.auth.host` |
-| Lerian license gateway | Production (`LICENSE_KEY` + `ORGANIZATION_IDS`); the pods need egress to it | `common.secrets.LICENSE_KEY`, `common.license.organizationIds` |
+| Lerian license gateway | Every environment (`LICENSE_KEY` + `ORGANIZATION_IDS`; the app refuses to boot without a license, there is no unlicensed mode); the pods need egress to it | `common.secrets.LICENSE_KEY`, `common.license.organizationIds` |
 | BACEN STA | The real upstream (homologation or production host) | `common.bacen.environment` (`homologation` default) |
 | Tenant manager | Only with multi-tenancy | `global.multiTenant` + `common.secrets.MULTI_TENANT_SERVICE_API_KEY` |
 
@@ -61,8 +61,14 @@ RabbitMQ exchanges and queues at boot.
 
 ```bash
 kubectl create namespace sta-dev
-helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml
+helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
+  --set common.secrets.LICENSE_KEY=<your-license-key> \
+  --set common.license.organizationIds=<your-organization-id>
 ```
+
+`values-dev.yaml` only carries placeholder license values: the manager and the worker
+do not boot until a real key and organization id are set (a key issued by the dev
+license gateway also needs `common.license.isDevelopment: "true"`).
 
 All images are public, so no pull secret is needed. For a private mirror, set
 `imagePullSecrets` (root key): the manager, worker, migrations Job and mock STA server
@@ -212,7 +218,7 @@ verifier/export generator).
 
 | Topic | What to know | Before enabling / how to confirm |
 |---|---|---|
-| Fail-fast render | The chart mirrors the app's boot validation: `MASTER_KEYS` (format and version), auth switch, single-tenant Postgres/Redis host, RabbitMQ host + health-check URL, production gates (Postgres password, no `sslmode=disable`, RabbitMQ + outbox + business channel on, transfer bucket, `LICENSE_KEY` + `ORGANIZATION_IDS`, no wildcard CORS), streaming brokers/SASL, reporter bridge exchange + resolver | Read the render error: it names the exact value to set |
+| Fail-fast render | The chart mirrors the app's boot validation: `MASTER_KEYS` (format and version), auth switch, single-tenant Postgres/Redis host, RabbitMQ host + health-check URL, the license in every environment (`LICENSE_KEY` + `ORGANIZATION_IDS`), production gates (Postgres password, no `sslmode=disable`, RabbitMQ + outbox + business channel on, transfer bucket, no wildcard CORS), streaming brokers/SASL, reporter bridge exchange + resolver | Read the render error: it names the exact value to set |
 | Production guard | `redpandaBundle` and `mockSta` are refused outside a development-class environment | `helm template ... --set global.env.name=staging` fails naming both |
 | Worker is single-replica | No leader election for every loop: exactly one replica, `Recreate` | Do not scale it; scale the manager instead |
 | Transfer scheduler | `TRANSFER_SCHEDULER_ENABLED` (default `true`) is the only path that uploads to BACEN | Worker log `Transfers outbound fanout started` |
@@ -231,8 +237,8 @@ verifier/export generator).
 | Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging are validated on this production gateway too. `common.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) switches to `https://license.dev.lerian.io`: use it only for keys issued by the dev gateway |
 | Refresh and grace | The key is re-validated every 6 h. When the gateway does not answer (network error or 5xx) after it has confirmed the key once, the process keeps serving through decaying grace windows (2 d, 1 d, 12 h, 6 h, so at most 3 d 18 h) and then exits. A process that was never confirmed gets 6 h only. A 4xx refusal ends the grace at once. The windows live in memory: a pod restarted during an outage starts unconfirmed |
 | Offline | No offline license mode in this app version |
-| Render gate | With `global.env.name=production` the render fails without `LICENSE_KEY` and `ORGANIZATION_IDS` |
-| How to confirm | `GET /readyz` -> `checks.license` `up` (`n/a` when no license client is wired) |
+| Render gate | In every environment the render fails without `LICENSE_KEY` and `ORGANIZATION_IDS` (the app refuses to boot without a license; there is no unlicensed mode) |
+| How to confirm | `GET /readyz` -> `checks.license` `up` |
 
 ---
 
@@ -250,7 +256,7 @@ curl -s localhost:14028/health                    # liveness
 |---|---|---|---|
 | Pods | `kubectl get pods` | manager and worker `1/1 Running`, 0 restarts | `CrashLoopBackOff`: the last log line names the failing dependency (section 7) |
 | Migrations | `kubectl get jobs` | `br-sta-migrations-<hash>` `Complete` | Postgres host/password, `ALLOW_INSECURE_TLS` for a plaintext Postgres |
-| Readiness | `GET /readyz` | `200`, `status: healthy`; `postgres`, `redis`, `rabbitmq`, `storage_transfer` `up` (`license` `n/a` without a key; `storage_audit_exports` `skipped` on the manager) | A `down` check names the dependency; a missing bucket shows as `storage_transfer` down |
+| Readiness | `GET /readyz` | `200`, `status: healthy`; `postgres`, `redis`, `rabbitmq`, `storage_transfer`, `license` `up` (`storage_audit_exports` `skipped` on the manager) | A `down` check names the dependency; a missing bucket shows as `storage_transfer` down |
 | Liveness | `GET /health` | `200 {"status":"available"}` | — |
 | Worker loops | `kubectl logs deploy/<fullname>-worker` | audit publisher/consumer, business publisher, outbound fanout, `scheduler: starting leader campaign`, periodic `poll outcome` | Missing loop: its toggle under `worker.*` / `common.transfer.*` |
 | Dev transfer flow | upload a file under `outbound/` in the transfer bucket, `POST /v1/credentials`, then `POST /v1/transfers` (`sourceProduct`, `documentType` e.g. `AJUD302`, `fileRef: outbound/<file>`, `fileName`) with a bearer token | The worker packages it, gets a protocol from the mock, polls `10 -> 15 -> 35` and the transfer ends `Accepted`; a fact lands on `lerian.streaming.br-sta` | With auth off the API still requires a bearer naming a principal (not verified in development) |
@@ -266,7 +272,7 @@ curl -s localhost:14028/health                    # liveness
 | `redpanda-topics` Job stuck on `waiting for ...` | The bundled Redpanda's Kafka API is not up yet (the Job waits on `rpk topic list`) | Check the `redpanda-0` pod and its logs; the Job retries until the broker answers |
 | Postgres `password authentication failed` after changing the dev passwords | The data volume keeps the password it was initialised with | `helm uninstall`, delete the PVCs, reinstall |
 | Browser calls blocked although `CORS_ALLOWED_ORIGINS` is set | The CORS middleware reads `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `common.cors.allowedOrigins`; `*` needs `common.security.allowCorsWildcard: true` and is refused in production |
-| Boot refused in production, license errors | `LICENSE_KEY` / `ORGANIZATION_IDS` missing, a key for another product (`LCS-1005`) or an unknown key (`LCS-1002`), or no egress to the license gateway (there is no offline license mode in this app version) | Set both, use this product's key, allow egress (section 5, License) |
+| Boot refused, license errors | `LICENSE_KEY` / `ORGANIZATION_IDS` missing, a key for another product (`LCS-1005`) or an unknown key (`LCS-1002`), or no egress to the license gateway (there is no offline license mode in this app version) | Set both, use this product's key, allow egress (section 5, License) |
 | `Failed to connect to plugin-auth` at boot | plugin-access-manager is not installed or not reachable yet | Informational: the pods still become Ready. Authenticated calls need plugin-access-manager |
 | `PLUGIN_AUTH_ENABLED=false is only accepted in a development-class environment` | Auth off in `staging`/`production` | Enable `global.auth` or use a development-class `global.env.name` |
 | `MASTER_KEYS is malformed` / `must reference a key present` | Wrong `version:hex` shape or `MASTER_KEY_VERSION` mismatch | `v1:<64 hex chars>` and `common.credentials.masterKeyVersion: v1` |

@@ -18,8 +18,9 @@ global:
   # -- aws | gcp | azure presets TLS/ssl/scheme for the masks below ("" = self-managed).
   cloud: ""
   # -- production (the default) turns on the app's production gates: TLS,
-  # license, mandatory audit transport, transfer bucket. development | develop |
-  # dev | local | test are the development class (auth may be off).
+  # mandatory audit transport, transfer bucket. development | develop |
+  # dev | local | test are the development class (auth may be off). The license
+  # (LICENSE_KEY + ORGANIZATION_IDS) is required in every environment.
   env:
     name: "production"
   datastores:
@@ -91,7 +92,7 @@ common:
   # Access-manager permission declaration (manager); off by default:
   # identity: { declarationEnabled: true, host: "<access-manager-idp-url>", m2mClientId: "<client-id>" }
   license:
-    organizationIds: ""                # <- REQUIRED in production
+    organizationIds: ""                # <- REQUIRED (every environment)
   bacen:
     environment: "homologation"        # production => the live BACEN STA host
   transfer:
@@ -104,7 +105,7 @@ common:
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""          # <- REQUIRED in production (or a full RABBITMQ_URL)
     # RABBITMQ_URL: ""                 # amqps://user:pass@host:5671/vhost — replaces host/user/pass
-    LICENSE_KEY: ""                    # <- REQUIRED in production
+    LICENSE_KEY: ""                    # <- REQUIRED (every environment)
     AWS_ACCESS_KEY_ID: ""              # or an IRSA / workload-identity service account
     AWS_SECRET_ACCESS_KEY: ""
     STREAMING_SASL_PASSWORD: ""        # <- REQUIRED (global.streaming.saslMechanism is set)

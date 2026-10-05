@@ -944,7 +944,7 @@ RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{- end }}
 {{- /* ORGANIZATION_IDS (an identifier whose home is common.license.organizationIds)
    is also accepted in common.secrets for tiers that source it from the secret
-   store: it flows through the verbatim pass-through below, and the production
+   store: it flows through the verbatim pass-through below, and the license
    gate counts it there. */}}
 {{- range $k := list "RABBITMQ_DEFAULT_PASS" "RABBITMQ_URL" "RABBITMQ_ERLANG_COOKIE" "POSTGRES_REPLICA_PASSWORD" "MASTER_KEYS" "LICENSE_KEY" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "IDP_M2M_CLIENT_SECRET" }}
 {{- with index $s $k }}
@@ -1162,7 +1162,7 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- fail (printf "\n\nERROR: br-sta: %s=true is not allowed in production.\n" $k) -}}
 {{- end -}}
 {{- end -}}
-{{- /* Transfer bucket, business channel and license: production-only gates. */ -}}
+{{- /* Transfer bucket and business channel: production-only gates. */ -}}
 {{- include $req (dict "context" $ "key" "TRANSFER_OBJECT_STORAGE_BUCKET" "value" (index $data "TRANSFER_OBJECT_STORAGE_BUCKET") "why" "in production (the bucket that holds both transfer directions)" "set" "global.objectStorage.sta.bucket (or common.objectStorage.sta.bucket)") -}}
 {{- if ne (include $isTrue (index $data "BUSINESS_EVENTS_ENABLED")) "true" -}}
 {{- fail "\n\nERROR: br-sta: BUSINESS_EVENTS_ENABLED must be true in production (outbound result delivery is mandatory).\n  set: common.businessEvents.enabled=true\n" -}}
@@ -1170,9 +1170,11 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- if not (trim (toString (index $data "BUSINESS_EVENTS_EXCHANGE"))) -}}
 {{- fail "\n\nERROR: br-sta: BUSINESS_EVENTS_EXCHANGE is required in production.\n  set: common.businessEvents.exchange\n" -}}
 {{- end -}}
-{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" "in production (ENV_NAME=production; any other ENV_NAME runs without license enforcement)" "set" "common.secrets.LICENSE_KEY") -}}
-{{- include $req (dict "context" $ "key" "ORGANIZATION_IDS" "value" (index $data "ORGANIZATION_IDS") "secret" true "why" "in production" "set" "common.license.organizationIds") -}}
 {{- end -}}
+{{- /* License: required in EVERY environment (bootstrap/license.go
+   errLicenseNotConfigured). The published image has no unlicensed mode. */ -}}
+{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" "in every environment (the app refuses to boot without a license; there is no unlicensed mode)" "set" "common.secrets.LICENSE_KEY") -}}
+{{- include $req (dict "context" $ "key" "ORGANIZATION_IDS" "value" (index $data "ORGANIZATION_IDS") "secret" true "why" "in every environment (the app refuses to boot without a license; there is no unlicensed mode)" "set" "common.license.organizationIds") -}}
 {{- /* DEPLOYMENT_MODE vocabulary (normalizeDeploymentMode: trimmed, case-insensitive;
    empty means local): any other value refuses boot. */ -}}
 {{- $deployMode := lower (trim (toString (index $data "DEPLOYMENT_MODE" | default ""))) -}}

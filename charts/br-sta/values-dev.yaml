@@ -13,13 +13,17 @@
 # off, TLS is off everywhere, nothing reaches BACEN, and the chart refuses the
 # Redpanda / mock STA bundles outside a development-class environment.
 #
-# What development relaxes in the app: an empty LICENSE_KEY disables license
-# enforcement, PLUGIN_AUTH_ENABLED=false is accepted, plaintext Postgres /
+# What development relaxes in the app: PLUGIN_AUTH_ENABLED=false is accepted, plaintext Postgres /
 # RabbitMQ / broker are allowed, and the production gates (mandatory audit
 # transport, transfer bucket, business channel) are off. Features that need
 # services this bundle does not provide are OFF: inbound auth
 # (plugin-access-manager), the access-manager declaration publisher,
 # multi-tenancy, the reporter -> BACEN bridge.
+#
+# The license is NOT relaxed: the app refuses to boot in every ENV_NAME without
+# LICENSE_KEY and ORGANIZATION_IDS. The values below are placeholders so the
+# chart renders; the pods will not boot until you set a real key and
+# organization id (or a dev-gateway key with common.license.isDevelopment: "true").
 #
 # Pairs with the br-sisbajud dev bundle: point br-sisbajud at this release's
 # transfers API (brSisbajud.sta.transfersBaseUrl =
@@ -45,6 +49,11 @@ global:
 common:
   swagger:
     enabled: true
+  license:
+    # PLACEHOLDER: replace with your Lerian organization id.
+    organizationIds: "REPLACE_WITH_YOUR_ORGANIZATION_ID"
+    # Set "true" only for a key issued by the Lerian dev license gateway.
+    # isDevelopment: "true"
   secrets:
     # Public, dev-only values. They never land in a ConfigMap.
     # Envelope-encryption key material: "v1:<64 hex chars>" (an all-zero key —
@@ -57,6 +66,9 @@ common:
     # so it needs SOME credentials (any value works).
     AWS_ACCESS_KEY_ID: "any"
     AWS_SECRET_ACCESS_KEY: "any"
+    # PLACEHOLDER: the license is required in every environment. The pods will
+    # not boot until this is a real license key for this product.
+    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
 
 # Explicit dev passwords: the subcharts otherwise generate random ones, which a
 # GitOps render (no Helm `lookup`) regenerates on every sync while the data

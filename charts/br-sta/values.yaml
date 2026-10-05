@@ -67,7 +67,8 @@ global:
   # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT. development | develop | dev | local |
   # test are the app's development class (PLUGIN_AUTH_ENABLED=false is accepted,
   # dev-only bundles are allowed); `production` turns on the app's production
-  # gates (TLS, license, mandatory audit transport). Default: production.
+  # gates (TLS, mandatory audit transport). The license (LICENSE_KEY +
+  # ORGANIZATION_IDS) is required in every environment. Default: production.
   # Example: env: { name: "development" }
   env: {}
   # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
@@ -176,7 +177,7 @@ common:
   # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
   # a bundled plaintext datastore is enabled), allowCorsWildcard, allowInsecureOtel.
   security: {}
-  # -- organizationIds (ORGANIZATION_IDS — required in production), isDevelopment
+  # -- organizationIds (ORGANIZATION_IDS — required in every environment), isDevelopment
   # (routes the license SDK to the dev gateway). LICENSE_KEY is a secret.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
@@ -264,7 +265,8 @@ common:
   # never in configmap. Use AVP <path:...> placeholders in GitOps values, never
   # real credentials. Keys the chart models: POSTGRES_PASSWORD,
   # POSTGRES_REPLICA_PASSWORD, REDIS_PASSWORD, RABBITMQ_DEFAULT_PASS, RABBITMQ_URL,
-  # RABBITMQ_ERLANG_COOKIE (bundled rabbitmq only), MASTER_KEYS, LICENSE_KEY,
+  # RABBITMQ_ERLANG_COOKIE (bundled rabbitmq only), MASTER_KEYS, LICENSE_KEY
+  # (required in every environment),
   # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, IDP_M2M_CLIENT_SECRET,
   # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
   # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, when a tier sources it from

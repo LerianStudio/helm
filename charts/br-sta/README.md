@@ -5,7 +5,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `common.secrets.MASTER_KEYS` always (credential envelope-encryption key material; the manager aborts boot without it). In `production` (the default environment): `POSTGRES_PASSWORD` (external Postgres), `RABBITMQ_DEFAULT_PASS` (or a full `RABBITMQ_URL`) and `LICENSE_KEY`. `STREAMING_SASL_PASSWORD` when a SASL mechanism is set (streaming is on by default); `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on; `RABBITMQ_DEFAULT_PASS` + `RABBITMQ_ERLANG_COOKIE` with the bundled RabbitMQ. The chart fails the render with the exact key to set when one is missing. With `common.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql` / `valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
+- Required secrets: `common.secrets.MASTER_KEYS` always (credential envelope-encryption key material; the manager aborts boot without it). `LICENSE_KEY` (with `common.license.organizationIds`) in every environment: the app refuses to boot without a license and there is no unlicensed mode. In `production` (the default environment): `POSTGRES_PASSWORD` (external Postgres) and `RABBITMQ_DEFAULT_PASS` (or a full `RABBITMQ_URL`). `STREAMING_SASL_PASSWORD` when a SASL mechanism is set (streaming is on by default); `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on; `RABBITMQ_DEFAULT_PASS` + `RABBITMQ_ERLANG_COOKIE` with the bundled RabbitMQ. The chart fails the render with the exact key to set when one is missing. With `common.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql` / `valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
 - Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `rabbitmq` (groundhog2k 2.1.11), `seaweedfs` (4.0.393) and `redpanda` (26.2.4, dev only) subcharts, plus an optional mock STA server (dev only), are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, RabbitMQ, S3 and Kafka are the production path; Redpanda and the mock STA are refused outside a development-class environment. plugin-access-manager, the tenant manager and BACEN STA itself are external services.
 - Production overrides: `global.datastores` (postgres, redis, broker), `global.objectStorage` (sta, staAuditExports), `global.kms`, `global.auth`, `global.streaming`, `global.env`, the Secret keys above (or per-key `common.secretRefs`, `common.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `common.cors.allowedOrigins`, `common.license.organizationIds`, `common.bacen.environment`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Apache-2.0. The br-sta service itself is proprietary (Lerian Studio); its images are public on GHCR.
@@ -32,7 +32,7 @@ The chart tracks application **1.0.0** (`appVersion`); the three images follow `
 | S3-compatible object storage | The transfer bucket (both directions) and audit exports | `global.objectStorage.sta` / `staAuditExports` + `secrets.AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (or IRSA) |
 | Kafka / Redpanda (on by default) | Business facts on `lerian.streaming.br-sta` (+ `.dlq`), the topic br-sisbajud consumes | `global.streaming` (brokers required) + `secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
 | plugin-access-manager | Inbound JWT validation (mandatory outside a development-class env), permission declaration | `global.auth`, `common.identity` |
-| Lerian license | Runtime license validation (enforced in production) | `secrets.LICENSE_KEY`, `common.license.organizationIds` |
+| Lerian license | Runtime license validation (enforced in every environment; the app refuses to boot without it) | `secrets.LICENSE_KEY`, `common.license.organizationIds` |
 | BACEN STA (RSFN) | The upstream: `sta-h.bcb.gov.br` (homologation) / `sta.bcb.gov.br` (production) | `common.bacen.environment` |
 | Tenant manager (optional) | Multi-tenancy | `global.multiTenant` + `secrets.MULTI_TENANT_SERVICE_API_KEY` |
 
@@ -118,9 +118,9 @@ Every application env key is resolved with this precedence (lerian-common):
 
 | `ENV_NAME` | Effect |
 |------------|--------|
-| `production` (default) | The app's production gates: `POSTGRES_PASSWORD`, no `sslmode=disable`, mandatory RabbitMQ + outbox, transfer bucket, business channel, `LICENSE_KEY` + `ORGANIZATION_IDS`; Swagger forced off, rate limiting forced on. The chart mirrors them as render failures. |
-| `development`, `develop`, `dev`, `local`, `test` | Development class: `PLUGIN_AUTH_ENABLED=false` is accepted (it is the chart default there), no license enforcement without a key, dev-only bundles allowed. |
-| anything else (e.g. `staging`) | Not production (no production gates), but inbound auth stays mandatory (`PLUGIN_AUTH_ENABLED` defaults to `true`) and dev-only bundles are refused. |
+| `production` (default) | The app's production gates: `POSTGRES_PASSWORD`, no `sslmode=disable`, mandatory RabbitMQ + outbox, transfer bucket, business channel; Swagger forced off, rate limiting forced on. The chart mirrors them as render failures. |
+| `development`, `develop`, `dev`, `local`, `test` | Development class: `PLUGIN_AUTH_ENABLED=false` is accepted (it is the chart default there), dev-only bundles allowed. The license is still required (`LICENSE_KEY` + `ORGANIZATION_IDS`). |
+| anything else (e.g. `staging`) | Not production (no production gates; the license is still required), but inbound auth stays mandatory (`PLUGIN_AUTH_ENABLED` defaults to `true`) and dev-only bundles are refused. |
 
 ### Grouped parameters and defaults
 
@@ -140,7 +140,7 @@ Shared (`common.*`):
 | `cors.exposeHeaders` / `allowCredentials` | `CORS_EXPOSE_HEADERS` / `CORS_ALLOW_CREDENTIALS` | `""` / `false` |
 | `security.allowInsecureTls` | `ALLOW_INSECURE_TLS` | `true` only with a bundled plaintext datastore, else `false` |
 | `security.allowCorsWildcard` / `allowInsecureOtel` | `ALLOW_CORS_WILDCARD` / `ALLOW_INSECURE_OTEL` | unset |
-| `license.organizationIds` / `isDevelopment` | `ORGANIZATION_IDS` / `IS_DEVELOPMENT` | unset (organizationIds required in production) |
+| `license.organizationIds` / `isDevelopment` | `ORGANIZATION_IDS` / `IS_DEVELOPMENT` | unset (organizationIds required in every environment) |
 | `postgres.maxOpenConns` / `maxIdleConns` / `connMaxLifetimeMins` / `connMaxIdleTimeMins` / `connectTimeoutSec` | `POSTGRES_MAX_OPEN_CONNS` / `..._MAX_IDLE_CONNS` / `..._CONN_MAX_LIFETIME_MINS` / `..._CONN_MAX_IDLE_TIME_MINS` / `..._CONNECT_TIMEOUT_SEC` | `25` / `5` / `30` / `5` / `10` |
 | `redis.db` / `protocol` / `poolSize` / `minIdleConns` | `REDIS_DB` / `REDIS_PROTOCOL` / `REDIS_POOL_SIZE` / `REDIS_MIN_IDLE_CONNS` | `0` / `3` / `10` / `2` |
 | `redis.readTimeout` / `writeTimeout` / `dialTimeout` / `poolTimeout` | `REDIS_READ_TIMEOUT` / `REDIS_WRITE_TIMEOUT` / `REDIS_DIAL_TIMEOUT` / `REDIS_POOL_TIMEOUT` | `3` / `3` / `5` / `2` |
@@ -214,8 +214,8 @@ Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`,
 | `REDIS_PASSWORD` | The external Redis requires auth |
 | `RABBITMQ_DEFAULT_PASS` / `RABBITMQ_URL` | Production (password, or a full DSN that overrides the parts) / the bundled RabbitMQ (password) |
 | `RABBITMQ_ERLANG_COOKIE` | The bundled RabbitMQ (stable across upgrades) |
-| `LICENSE_KEY` | Production |
-| `ORGANIZATION_IDS` | Optional here: an identifier whose home is `common.license.organizationIds` (required in production); accepted in the Secret for tiers that source it from the secret store |
+| `LICENSE_KEY` | Always (every environment; the app refuses to boot without a license) |
+| `ORGANIZATION_IDS` | Optional here: an identifier whose home is `common.license.organizationIds` (required in every environment); accepted in the Secret for tiers that source it from the secret store |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | The object store needs static credentials (not with IRSA / workload identity) |
 | `STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` | SASL mechanism set / broker CA not in the system pool |
 | `IDP_M2M_CLIENT_SECRET` | `identity.declarationEnabled` |
@@ -232,7 +232,8 @@ The render fails with the exact value to set (mirroring the app's boot validatio
 - `MASTER_KEYS` is missing, malformed (not `version:key`, or not hex under `envvar`), or `MASTER_KEY_VERSION` is not one of its versions; `MASTER_KEY_KMS_KEY_ID` is missing under `aws-kms`;
 - `PLUGIN_AUTH_ENABLED` is `false` outside a development-class environment (or with `DEPLOYMENT_MODE=saas`), or `true` without `PLUGIN_AUTH_HOST`;
 - `POSTGRES_HOST` / `REDIS_HOST` are empty in single-tenant mode; RabbitMQ is enabled without a host or `RABBITMQ_URL`, without a management health-check URL, or with a plain-`http` health-check URL but no `allowInsecureHealthCheck`;
-- production lacks `POSTGRES_PASSWORD`, `RABBITMQ_DEFAULT_PASS`, `LICENSE_KEY`, `ORGANIZATION_IDS` or the transfer bucket, uses `sslmode=disable`, disables RabbitMQ, the outbox or the business channel, or allows insecure RabbitMQ TLS / health checks;
+- `LICENSE_KEY` or `ORGANIZATION_IDS` is missing (in every environment: the app refuses to boot without a license);
+- production lacks `POSTGRES_PASSWORD`, `RABBITMQ_DEFAULT_PASS` or the transfer bucket, uses `sslmode=disable`, disables RabbitMQ, the outbox or the business channel, or allows insecure RabbitMQ TLS / health checks;
 - streaming is on (the default) without `STREAMING_BROKERS`, a SASL mechanism is set without a username/password or without TLS, streaming is on with `DEPLOYMENT_MODE=saas` and TLS off, or `STREAMING_CLOUDEVENTS_SOURCE` is anything but `br-sta`;
 - `DEPLOYMENT_MODE` is anything but `byoc`, `saas` or `local` (the app's other `saas` TLS rules — Postgres, Redis, RabbitMQ, S3, tenant manager — are enforced at boot, not at render);
 - multi-tenancy is on without the tenant-manager URL, its Redis host, the service API key or inbound auth;
@@ -276,8 +277,12 @@ The Job is named after a hash of its spec (`<fullname>-migrations-<hash>`): a ne
 `values-dev.yaml` is a self-contained dev / evaluation install:
 
 ```console
-$ helm install br-sta charts/br-sta -f charts/br-sta/values-dev.yaml -n sta-dev --create-namespace
+$ helm install br-sta charts/br-sta -f charts/br-sta/values-dev.yaml -n sta-dev --create-namespace \
+    --set common.secrets.LICENSE_KEY=<your-license-key> \
+    --set common.license.organizationIds=<your-organization-id>
 ```
+
+`values-dev.yaml` carries placeholder license values so it renders; the pods do not boot until a real `LICENSE_KEY` and organization id are set (a key issued by the dev license gateway also needs `common.license.isDevelopment: "true"`).
 
 It bundles, in the release namespace:
 
@@ -290,7 +295,7 @@ It bundles, in the release namespace:
 | redpanda | 26.2.4 | `redpandaBundle.enabled` | 1 broker, no TLS, no SASL, no external listener |
 | mock STA server | app tag | `mockSta.enabled` | BACEN STA simulator over HTTP; every upload ends in `defaultTerminalStatus` |
 
-It runs with `ENV_NAME=development`: inbound auth off, no license enforcement, plaintext datastores and broker allowed, streaming on. The reporter bridge, the declaration publisher and multi-tenancy are off.
+It runs with `ENV_NAME=development`: inbound auth off, license still enforced, plaintext datastores and broker allowed, streaming on. The reporter bridge, the declaration publisher and multi-tenancy are off.
 
 ### Derived connections
 

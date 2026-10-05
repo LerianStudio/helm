@@ -29,6 +29,10 @@ common:
     RABBITMQ_ERLANG_COOKIE: "dev-only-erlang-cookie-not-for-production"
     AWS_ACCESS_KEY_ID: "any"
     AWS_SECRET_ACCESS_KEY: "any"
+    # Placeholder: the license is required in every environment (render gate).
+    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
+  license:
+    organizationIds: "REPLACE_WITH_YOUR_ORGANIZATION_ID"
 
 postgresql:
   enabled: true

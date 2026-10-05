@@ -1325,6 +1325,10 @@ var allowedDanglingSecrets = map[string]bool{
 	// cert Secret at runtime via --enable-cert-rotation/--cert-secret-name. KEDA
 	// creates it; no Helm chart renders it.
 	"kedaorg-certs": true,
+	// br-jd-courier renders no Secret by contract: every role and its migration
+	// Job read one operator-provisioned Secret, named by secrets.existingSecret or
+	// the release fullname, which this gate's release name makes br-jd-courier.
+	"br-jd-courier": true,
 }
 
 // danglingSecretRefMessage parses rendered multi-document Helm output, collects

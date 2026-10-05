@@ -1,0 +1,2 @@
+{{- include "br-jd-courier.guards" . }}
+{{- include "br-jd-courier.deployment" (dict "ctx" $ "key" "spbConsumer" "role" "spb-consumer" "ports" (list "http")) }}

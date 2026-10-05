@@ -1,5 +1,111 @@
 # Midaz Changelog
 
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment for staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.4.0)
+
+Features:
+- Render the ledger seam token wait timeout. (@andreimatiazi)
+- Render the ledger tracer seam credentials. (@andreimatiazi)
+- Support AWS IAM Roles Anywhere on the ledger. (@andreimatiazi)
+
+Fixes:
+- Name the seam token wait `TRACER_M2M_WAIT_TIMEOUT_MS`. (@andreimatiazi)
+- Update `midaz-ledger@4.1.2`, `midaz-tracer@4.1.2`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.3.0...midaz-v9.4.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+Features:
+- Update `midaz-ledger@4.1.0` and `midaz-tracer@4.1.0`. (@guimoreirar)
+- Introduce new environment variables for `midaz-ledger@4.1.0` and `midaz-tracer@4.1.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guides for `midaz` versions: `v9.2.5`, `v9.2.7`, `v9.2.8`, `v9.2.9`, `v9.2.10`, `v9.2.11`, `v9.2.12`, `v9.2.13`, `v9.2.14`, and `v9.2.15`. (@guimoreirar)
+
+Fixes:
+- Correct upgrade guides for `midaz` versions: `v9.2.8`, `v9.2.9`, `v9.2.10`, `v9.2.13`, `v9.2.14`, and `v9.2.15`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, including new environment variables.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions 9.2.5, 9.2.7, 9.2.8, 9.2.9, 9.2.10, 9.2.11, 9.2.12, 9.2.13, 9.2.14, and 9.2.15.
+  - Corrected upgrade guides for versions 9.2.8, 9.2.9, 9.2.10, 9.2.13, 9.2.14, and 9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.2.5 through v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8 through v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements**
+  - Added Helm upgrade guides for versions v9.2.5, v9.2.7, v9.2.8, v9.2.9, v9.2.10, v9.2.11, v9.2.12, v9.2.13, v9.2.14, and v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8, v9.2.9, v9.2.10, v9.2.13, v9.2.14, and v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
 ## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
 
 - **Features:**

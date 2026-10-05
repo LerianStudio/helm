@@ -1,5 +1,153 @@
 # Reporter Changelog
 
+## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
+
+Fixes:
+- Update `reporter-manager` to `4.5.0` and `reporter-worker` to `4.5.0`. (@guimoreirar, @lerian-studio)
+- Update `reporter-manager` to `4.4.0` and `reporter-worker` to `4.4.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `reporter` `v4.3.6`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.8`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.9`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.10`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.12...reporter-v4.3.13)
+
+---
+
+## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
+
+Fixes:
+- Update `reporter-manager` to `4.5.0` and `reporter-worker` to `4.5.0`. (@guimoreirar, @lerian-studio)
+- Update `reporter-manager` to `4.4.0` and `reporter-worker` to `4.4.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `reporter` `v4.3.6`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.8`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.9`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.10`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.12...reporter-v4.3.13)
+
+---
+
+## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
+
+Fixes:
+- Update `reporter-manager` to `@4.5.0` and `reporter-worker` to `@4.5.0`. (@guimoreirar, @lerian-studio)
+- Update `reporter-manager` to `@4.4.0` and `reporter-worker` to `@4.4.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `reporter` `v4.3.6`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.8`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.9`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.10`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.12...reporter-v4.3.13)
+
+---
+
+## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
+
+Fixes:
+- Updated `reporter-manager` to `@4.5.0` and `reporter-worker` to `@4.5.0`. (@guimoreirar, @lerian-studio)
+- Updated `reporter-manager` to `@4.4.0` and `reporter-worker` to `@4.4.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Added Helm upgrade guide for `reporter` `v4.3.6`. (@guimoreirar)
+- Added Helm upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Added Helm upgrade guide for `reporter` `v4.3.8`. (@guimoreirar)
+- Added Helm upgrade guide for `reporter` `v4.3.9`. (@guimoreirar)
+- Added Helm upgrade guide for `reporter` `v4.3.10`. (@guimoreirar)
+- Added Helm upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Added Helm upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+- Corrected upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Corrected upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Corrected upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.12...reporter-v4.3.13)
+
+---
+
+## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
+
+- **Fixes:**
+  - Updated `reporter-manager` to version 4.5.0.
+  - Updated `reporter-worker` to version 4.5.0.
+  - Updated `reporter-manager` to version 4.4.0.
+  - Updated `reporter-worker` to version 4.4.0.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions 4.3.6, 4.3.7, 4.3.8, 4.3.9, 4.3.10, 4.3.11, and 4.3.12.
+  - Corrected upgrade guides for versions 4.3.7, 4.3.11, and 4.3.12.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.12...reporter-v4.3.13)
+
+---
+
+## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
+
+- **Fixes:**
+  - Updated `reporter-manager` to version 4.5.0.
+  - Updated `reporter-worker` to version 4.5.0.
+  - Updated `reporter-manager` to version 4.4.0.
+  - Updated `reporter-worker` to version 4.4.0.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions 4.3.6 to 4.3.12.
+  - Corrected upgrade guides for versions 4.3.7, 4.3.11, and 4.3.12.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.12...reporter-v4.3.13)
+
+---
+
+## [4.3.12](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.12)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping with a public password.
+  - Gave the bundled broker user the management tag only.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.11...reporter-v4.3.12)
+
+---
+
+## [4.3.12](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.12)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping with a public password.
+  - Assigned the management tag only to the bundled broker user.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.11...reporter-v4.3.12)
+
+---
+
 ## [4.3.12](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.12)
 
 - Fixes:

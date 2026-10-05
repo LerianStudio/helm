@@ -1,0 +1,32 @@
+# Operator-provided values for br-jd-courier.
+#
+# Placeholders are empty on purpose: this file is a template, never a credential
+# store. Not exhaustive; values.yaml carries the annotated surface.
+
+jd-courier:
+  image:
+    # Pin the published tag in production. Registry tags have no leading `v`.
+    tag: ""
+
+secrets:
+  # The Secret every role and the migration Job read. It must exist before
+  # install; the chart never renders one. Empty = the release fullname.
+  # Keys: LICENSE_KEY, POSTGRES_PASSWORD, and DATABASE_URL for the migration Job.
+  existingSecret: ""
+
+# Non-secret environment, one ConfigMap shared by every role. Secret keys and
+# COURIER_ROLES are refused here.
+config:
+  ENVIRONMENT_NAME: ""
+  # One organization per Courier deployment.
+  ORGANIZATION_IDS: ""
+  POSTGRES_HOST: ""
+  POSTGRES_USER: ""
+  POSTGRES_NAME: ""
+  # verify-full in production.
+  POSTGRES_SSLMODE: ""
+  # The Access Manager's address; every role needs it with authentication on.
+  PLUGIN_AUTH_HOST: ""
+  # Single-tenant pix-ingress only: the Pix vendor's credential subjects. In
+  # multi-tenant set SYSTEMPLANE_ENABLED=true instead.
+  PIX_VENDOR_SUBJECTS: ""

@@ -3,6 +3,15 @@
 ## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
 
 Fixes:
+- Ensure the RabbitMQ plugin user does not have the management tag. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)
+
+---
+
+## [3.1.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.1.4)
+
+Fixes:
 - Give the RabbitMQ plugin user no management tag. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.3...fetcher-v3.1.4)

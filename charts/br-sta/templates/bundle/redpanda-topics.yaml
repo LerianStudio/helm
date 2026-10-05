@@ -1,0 +1,91 @@
+{{- /*
+Topic bootstrap for the bundled Redpanda (dev only). The app never creates its
+topics — its credential is granted on the literal names only — so this Job
+ensures redpandaTopics.list (lerian.streaming.br-sta and .dlq by default, the
+topic br-sisbajud consumes) with rpk: list, create only the missing ones, then
+verify all exist. A regular Job named after a hash of its spec (see
+seaweedfs-buckets.yaml for why it is not a hook). Against an EXTERNAL broker the
+topics are provisioned by the environment.
+*/ -}}
+{{- define "br-sta.topicsJobSpec" -}}
+{{- $job := .Values.redpandaTopics -}}
+backoffLimit: {{ $job.backoffLimit | default 6 }}
+activeDeadlineSeconds: {{ $job.activeDeadlineSeconds | default 900 }}
+template:
+  metadata:
+    labels:
+      {{- include "br-sta.jobLabels" (dict "root" . "name" (include "br-sta.componentFullname" (dict "root" . "component" "redpanda-topics")) "component" "bootstrap") | nindent 6 }}
+    annotations:
+      {{- include "br-sta.meshAnnotations" . | nindent 6 }}
+  spec:
+    restartPolicy: Never
+    automountServiceAccountToken: false
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 101
+      runAsGroup: 101
+      seccompProfile:
+        type: RuntimeDefault
+    containers:
+      - name: topics
+        image: "{{ $job.image.repository }}:{{ $job.image.tag }}"
+        imagePullPolicy: {{ $job.image.pullPolicy | default "IfNotPresent" }}
+        env:
+          - name: HOME
+            value: /tmp
+          - name: BROKERS
+            value: {{ include "br-sta.redpandaBrokers" . | quote }}
+          - name: TOPICS
+            value: {{ join " " ($job.list | default list) | quote }}
+          - name: PARTITIONS
+            value: {{ $job.partitions | default 1 | toString | quote }}
+          - name: REPLICAS
+            value: {{ $job.replicationFactor | default 1 | toString | quote }}
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            i=0
+            # Kafka API readiness (rpk cluster health talks to the admin API, not -X brokers).
+            until rpk topic list -X brokers="$BROKERS" >/dev/null 2>&1; do
+              i=$((i + 1)); [ "$i" -ge 120 ] && { echo "timeout waiting for $BROKERS"; exit 1; }
+              echo "waiting for $BROKERS..."; sleep 5
+            done
+            list() { rpk topic list -X brokers="$BROKERS" | awk 'NR > 1 {print $1}'; }
+            existing="$(list)"
+            for t in $TOPICS; do
+              if printf '%s\n' "$existing" | grep -qx "$t"; then
+                echo "topic exists: $t"
+              else
+                echo "creating topic: $t"
+                rpk topic create "$t" -X brokers="$BROKERS" -p "$PARTITIONS" -r "$REPLICAS"
+              fi
+            done
+            existing="$(list)"
+            for t in $TOPICS; do
+              printf '%s\n' "$existing" | grep -qx "$t" || { echo "topic missing after create: $t"; exit 1; }
+            done
+            echo "topics ready: $TOPICS"
+        securityContext:
+          {{- include "br-sta.jobContainerSecurity" (dict "uid" 101) | nindent 10 }}
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
+        resources:
+          {{- toYaml $job.resources | nindent 10 }}
+    volumes:
+      - name: tmp
+        emptyDir: {}
+{{- end -}}
+{{- if eq (include "br-sta.redpandaEnabled" .) "true" }}
+{{- $spec := include "br-sta.topicsJobSpec" . }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "br-sta.jobName" (dict "base" (include "br-sta.componentFullname" (dict "root" . "component" "redpanda-topics")) "spec" $spec) }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "br-sta.jobLabels" (dict "root" . "name" (include "br-sta.componentFullname" (dict "root" . "component" "redpanda-topics")) "component" "bootstrap") | nindent 4 }}
+spec:
+  {{- $spec | nindent 2 }}
+{{- end }}

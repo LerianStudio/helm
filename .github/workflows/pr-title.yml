@@ -37,6 +37,7 @@ jobs:
             reporter
             plugin-fees
             plugin-br-pix-jd
+            br-jd-courier
             plugin-br-pix-indirect-btg
             plugin-br-pix-lerian
             plugin-br-bank-transfer

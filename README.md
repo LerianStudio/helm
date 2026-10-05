@@ -98,6 +98,21 @@ component that changed, so their tags may legitimately differ.
 | `0.4.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
 -----------------
 
+### BR JD Courier
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-jd-courier).
+
+Multi-component chart for the JD Courier: four role Deployments (`spb-consumer`,
+`spb-sender`, `pix-ingress`, `admin`) off one image, `ghcr.io/lerianstudio/br-jd-courier`.
+The release bumps `jd-courier.image.tag`, which is the column below.
+
+#### Application Version Mapping
+
+| Chart Version | Br-Jd-Courier Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0 |
+-----------------
+
 ### Plugin BR Pix Lerian
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-lerian).

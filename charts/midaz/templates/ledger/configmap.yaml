@@ -46,12 +46,19 @@ data:
   # =============================================================================
   ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ $envName | quote }}
+  # Service name the ledger registers with the tenant manager; REQUIRED when
+  # MULTI_TENANT_ENABLED=true (the app refuses to boot without it) and part of the
+  # tenants/{ENV_NAME}/{tenant}/{APPLICATION_NAME}/m2m/tracer secret path.
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "ledger" | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "debug" | quote }}
 
   SERVER_PORT: {{ $cm.SERVER_PORT | default "3002" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":3002" | quote }}
+
+  # OpenAPI document/UI (off by default, as the app does).
+  OPENAPI_DOCS_ENABLED: {{ $cm.OPENAPI_DOCS_ENABLED | default "false" | quote }}
 
   # =============================================================================
   # SWAGGER
@@ -95,6 +102,10 @@ data:
         "emitRedis" true
         "requiredUrl" true
         "requiredRedisHost" true) | nindent 2 }}
+  {{- if $mtEnabled }}
+  # Seconds between tenant-connection health checks; 0 keeps the library default.
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "0" | quote }}
+  {{- end }}
 
   # =============================================================================
   # DB POSTGRESQL - ONBOARDING MODULE (host/user/port/ssl/replicaHost via datastore mask)
@@ -154,6 +165,9 @@ data:
   # Connection pool
   DB_TRANSACTION_MAX_OPEN_CONNS: {{ $cm.DB_TRANSACTION_MAX_OPEN_CONNS | default "3000" | quote }}
   DB_TRANSACTION_MAX_IDLE_CONNS: {{ $cm.DB_TRANSACTION_MAX_IDLE_CONNS | default "3000" | quote }}
+  # Transactional-flow reads go to the primary, not the replica (the app defaults
+  # it on, so a just-written row is never read stale from a lagging replica).
+  DB_TRANSACTION_ROUTE_TX_READS_TO_PRIMARY: {{ hasKey $cm "DB_TRANSACTION_ROUTE_TX_READS_TO_PRIMARY" | ternary (toString (index $cm "DB_TRANSACTION_ROUTE_TX_READS_TO_PRIMARY")) "true" | quote }}
 
   # =============================================================================
   # MONGO DB - TRANSACTION MODULE (host/user/port via datastore mask)
@@ -233,6 +247,25 @@ data:
   TRACER_TLS_CERT_FILE: {{ $cm.TRACER_TLS_CERT_FILE | default "" | quote }}
   TRACER_TLS_KEY_FILE: {{ $cm.TRACER_TLS_KEY_FILE | default "" | quote }}
   TRACER_TLS_CA_FILE: {{ $cm.TRACER_TLS_CA_FILE | default "" | quote }}
+  {{- /* Reservation seam token identity (PLUGIN_AUTH_ENABLED=true, single-tenant):
+     the ledger's Access Manager application client id. Its secret is
+     ledger.secrets.TRACER_M2M_CLIENT_SECRET. Emitted only when set. */}}
+  {{- if $cm.TRACER_M2M_CLIENT_ID }}
+  TRACER_M2M_CLIENT_ID: {{ $cm.TRACER_M2M_CLIENT_ID | quote }}
+  {{- end }}
+  {{- /* How long a reservation seam call may wait for an M2M token that is not
+     cached yet, before the TRACER_TIMEOUT_MS budget of the call itself starts.
+     3000 is the ledger's own default (tracerclient.DefaultTokenWaitTimeout). */}}
+  TRACER_M2M_WAIT_TIMEOUT_MS: {{ $cm.TRACER_M2M_WAIT_TIMEOUT_MS | default "3000" | quote }}
+  {{- /* Where the multi-tenant seam identity (each tenant's
+     ledger-m2m-tracer-{tenant} client) is read from: "" (off), "aws" (Secrets
+     Manager at tenants/{ENV_NAME}/{tenant}/{APPLICATION_NAME}/m2m/tracer/
+     credentials) or "vault". AWS_REGION is read by the AWS SDK for the "aws"
+     backend; empty falls through to the SDK's other region sources. */}}
+  M2M_SECRETS_BACKEND: {{ $cm.M2M_SECRETS_BACKEND | default "" | quote }}
+  # Vault KV v2 mount holding those credentials when M2M_SECRETS_BACKEND=vault.
+  M2M_VAULT_MOUNT: {{ $cm.M2M_VAULT_MOUNT | default "" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "" | quote }}
 
   # =============================================================================
   # REDIS (shared between modules; host via datastore mask, tuning via passthrough)
@@ -298,6 +331,8 @@ data:
   RABBITMQ_HOST: {{ $rabbitHost | quote }}
   RABBITMQ_PORT_HOST: {{ $rabbitPort | quote }}
   RABBITMQ_PORT_AMQP: {{ $rabbitAmqpPort | quote }}
+  # TLS to the broker (AmazonMQ requires it). Native key, else the broker mask's tls.
+  RABBITMQ_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "tls" "nativeKey" "RABBITMQ_TLS" "default" "false") | quote }}
   RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "transaction") | quote }}
   RABBITMQ_CONSUMER_USER: {{ $cm.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
   RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
@@ -357,6 +392,8 @@ data:
   BALANCE_SYNC_BATCH_SIZE: {{ $cm.BALANCE_SYNC_BATCH_SIZE | default "50" | quote }}
   BALANCE_SYNC_FLUSH_TIMEOUT_MS: {{ $cm.BALANCE_SYNC_FLUSH_TIMEOUT_MS | default "500" | quote }}
   BALANCE_SYNC_POLL_INTERVAL_MS: {{ $cm.BALANCE_SYNC_POLL_INTERVAL_MS | default "50" | quote }}
+  # How often the cache TTL of every synced balance is refreshed (ms).
+  BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS: {{ $cm.BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS | default "300000" | quote }}
 
   # =============================================================================
   # RATE LIMITING

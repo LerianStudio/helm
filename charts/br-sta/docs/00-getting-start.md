@@ -61,8 +61,11 @@ do RabbitMQ no boot.
 
 ```bash
 kubectl create namespace sta-dev
+# a chave de licença fica num arquivo: nunca vai para o histórico do shell nem para os args do processo
+kubectl create secret generic br-sta-license -n sta-dev \
+  --from-file=LICENSE_KEY=./br-sta.license
 helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
-  --set common.secrets.LICENSE_KEY=<sua-chave-de-licenca> \
+  --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}' \
   --set common.license.organizationIds=<seu-organization-id>
 ```
 

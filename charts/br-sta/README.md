@@ -277,10 +277,14 @@ The Job is named after a hash of its spec (`<fullname>-migrations-<hash>`): a ne
 `values-dev.yaml` is a self-contained dev / evaluation install:
 
 ```console
-$ helm install br-sta charts/br-sta -f charts/br-sta/values-dev.yaml -n sta-dev --create-namespace \
-    --set common.secrets.LICENSE_KEY=<your-license-key> \
+$ kubectl create namespace sta-dev
+$ kubectl create secret generic br-sta-license -n sta-dev --from-file=LICENSE_KEY=./br-sta.license
+$ helm install br-sta charts/br-sta -f charts/br-sta/values-dev.yaml -n sta-dev \
+    --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}' \
     --set common.license.organizationIds=<your-organization-id>
 ```
+
+The key is read from a file into a Secret, so it never lands in shell history or process arguments; `common.secretRefs.LICENSE_KEY` overrides the dev placeholder.
 
 `values-dev.yaml` carries placeholder license values so it renders; the pods do not boot until a real `LICENSE_KEY` and organization id are set (a key issued by the dev license gateway also needs `common.license.isDevelopment: "true"`).
 

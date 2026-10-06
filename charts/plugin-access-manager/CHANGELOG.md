@@ -10,6 +10,30 @@ Features:
 
 Fixes:
 
+- Validate the `3.9.0` startup contract to ensure proper functionality. (@guimoreirar)
+- Validate the remaining parts of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS to enhance security. (@dy-shimizu)
+
+Improvements:
+
+- Provide an upgrade guide for `9.5.8` focusing on startup checks. (@guimoreirar)
+- Clarify the SD skip process in the documentation. (@dy-shimizu)
+- Note the requirement for HTTPS in Caradhras documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
 - Validate the `3.9.0` startup contract. (@guimoreirar)
 - Validate the rest of the `3.9.0` startup contract. (@guimoreirar)
 - Require HTTPS for JWKS. (@dy-shimizu)

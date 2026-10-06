@@ -1,5 +1,14 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.4.7](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.7)
+
+Fixes:
+- Bumped the app to the hotfix version `1.0.1`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.6...plugin-br-pix-jd-v0.4.7)
+
+---
+
 ## [0.4.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.6)
 
 Fixes:

@@ -8,7 +8,7 @@
 
 api:
   image:
-    # Pin the published app tag explicitly in production (2.0.1 for this chart).
+    # Pin the published app tag explicitly in production (1.0.0 for this chart).
     # Empty inherits Chart.appVersion; registry tags have no leading v.
     tag: ""
 
@@ -34,6 +34,11 @@ api:
     # tenancy/jd_integration_binding, field "ispb", and a missing or malformed value
     # fails the boot with a named error. A JD_ISPB left set here is passed through
     # and produces one startup WARN saying it was ignored.
+
+    # RETIRED in app 1.0.0 — do not set: MIDAZ_ORGANIZATION_ID, MIDAZ_LEDGER_ID,
+    # MIDAZ_ASSET_ID, MIDAZ_EXTERNAL_ID. They come from tenancy/jd_integration_binding
+    # and tenant_policy/midaz.{asset_id,external_id}; a value left set is passed
+    # through and produces one startup WARN.
 
     # Comma-separated list of organization UUIDs the license covers. Not a secret.
     ORGANIZATION_IDS: ""

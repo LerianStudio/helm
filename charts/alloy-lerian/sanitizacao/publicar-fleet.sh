@@ -156,7 +156,15 @@ VERSAO="$(echo "$VERSAO" | tr -cd '[:alnum:]' | cut -c1-12)"
 # byte a byte identicas.
 #
 # Por isso o nome nao carrega o cliente, e o matcher tambem nao.
-BASE="config_global"
+# `byoc` no nome e deliberado: distingue a config dos CLIENTES da que serve os
+# ambientes internos. Nao e o cliente — a config e byte a byte identica entre
+# clientes (ver acima) — e a CATEGORIA de destino.
+#
+# ⚠️ O BASE governa DUAS coisas: o nome do novo pipeline E quais antigos remover
+# (`startswith(base + "_")` em publicar-fleet-antigos.py). Mudar o BASE faz a
+# limpeza parar de reconhecer as versoes publicadas sob o nome anterior — elas
+# precisam ser removidas a mao UMA vez, na transicao.
+BASE="config_global_byoc"
 NOME="${BASE}_${VERSAO}"
 CORPO="$(mktemp)"
 python3 "${RAIZ}/publicar-fleet-corpo.py" "$MODULO" "$NOME" > "$CORPO"

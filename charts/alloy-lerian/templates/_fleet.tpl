@@ -122,7 +122,23 @@ remotecfg {
     // diferentes; sem isto um pipeline cairia nos dois, e o de escopo de cluster
     // replicado no DaemonSet é exatamente a duplicação que esta migração corrigiu.
     "role"         = {{ $papel | quote }},
+    // Separa o universo BYOC do interno. FIXO no chart, NAO parametrizavel: este
+    // chart E o agente dos clientes; os ambientes da propria Lerian rodam
+    // `alloy-lerian-internal` (k8s-monitoring), que nao passa por aqui.
+    //
+    // POR QUE EXISTE: sem ele os matchers disponiveis sao genericos
+    // (`collector.os="linux"`, `role="node"`, `platform="kubernetes"`) e um
+    // agente interno que subisse com esse par casaria a config dos clientes. A
+    // separacao hoje vive so no NOME do pipeline, e nome nao e matcher.
+    //
+    // ⚠️ NAO E FRONTEIRA DE SEGURANCA. Atributos de remotecfg sao
+    // auto-declarados e nao autenticados (ver docs/FLEET-MANAGEMENT.md): servem
+    // para ENDERECAR configuracao, nunca para isolar tenant.
+    "tipo"         = "byoc",
 {{- range $k, $v := ($f.attributes | default dict) }}
+{{- if has $k (list "tipo" "platform" "client_id" "role") }}
+{{- fail (printf "\n\nalloy-lerian: `fleetManagement.attributes.%s` colide com um atributo que o\nchart ja declara.\n\nO bloco `attributes` do remotecfg nao aceita a mesma chave duas vezes — o\nrender produziria duas linhas `%s = ...` e o comportamento do agente e\nindefinido.\n\nOs quatro reservados e de onde vem cada um:\n\n  platform   fixo (kubernetes)\n  client_id  de `origin.id`\n  role       do papel (node/singleton)\n  tipo       fixo (byoc) — este chart E o agente dos clientes\n\nUse outra chave em `attributes`, ou remova esta entrada.\n" $k $k)}}
+{{- end }}
     {{ $k | quote }} = {{ $v | quote }},
 {{- end }}
   }

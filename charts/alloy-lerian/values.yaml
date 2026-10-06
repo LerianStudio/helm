@@ -1135,10 +1135,18 @@ fleetManagement:
 
   # Copiar VERBATIM da interface do Fleet Management. O formato do host varia por
   # stack e região, e construí-lo à mão é erro documentado.
-  url: ""
+  # ⚠️ NAO e para o cliente mexer. Sao infraestrutura NOSSA, iguais para todos os
+  # BYOC: apontam para a stack de Fleet Management da Lerian. O unico valor que
+  # o cliente fornece e o TOKEN, via Secret (`tokenSecret` abaixo).
+  #
+  # Vem preenchidos de proposito: deixa-los vazios transferiria ao cliente uma
+  # decisao que nao e dele e que o render recusaria de qualquer forma — a guarda
+  # em _fleet.tpl falha quando `url` esta vazia, nao e https, ou `username` esta
+  # vazio. Melhor nascer correto do que falhar no install do cliente.
+  url: "https://fleet-management-prod-015.grafana.net"
 
   # Identificador numérico da stack, mostrado na mesma interface.
-  username: ""
+  username: "1563949"
 
   # Token de leitura de config remota. Mesmo Secret da credencial de telemetria,
   # chave distinta — o cliente cria UM Secret, não dois.

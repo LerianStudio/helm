@@ -154,6 +154,40 @@ otelcol.processor.transform "procedencia" {
     context    = "resource"
     statements = [`set(attributes["client.id"], "` + sys.env("ALLOY_CLIENT_ID") + `")`]
   }
+  // PARIDADE COM O AGENTE QUE SAI: o otel-collector-lerian remove este atributo
+  // no pipeline de traces (transform/remove_sensitive_attributes). Sem isto, o
+  // corpo INTEIRO da requisicao viaja no span — nao um campo, a requisicao toda.
+  //
+  // As regras de sanitizacao (_sanitizacao.tpl) sao TODAS log_statements e nao
+  // alcancam span algum, entao este delete_key e a unica defesa do caminho de
+  // trace. Nao substitui mascara por forma: remove a carga util por completo,
+  // que e a postura correta para um payload de requisicao de instituicao
+  // financeira.
+  trace_statements {
+    context    = "span"
+    statements = [
+      `delete_key(attributes, "app.request.payload")`,
+
+      // ESPELHAMENTO SEMCONV — paridade com transform/normalize_http_semconv do
+      // agente que sai. Precisa rodar ANTES do conector de spanmetrics, porque
+      // as dimensoes sao lidas do span.
+      //
+      // POR QUE IMPORTA: 75 regras de alerta consultam `http_status_code` e
+      // ZERO consultam `http_response_status_code`. Um servico ja migrado para
+      // lib-observability emite so a forma canonica e SOME dessas 75 regras,
+      // sem erro nenhum. MEDIDO 2026-10-06 em calls_total: Banqi-Prd,
+      // Cappta-Prd e Cappta-Stg tem apenas `http_status_code`; so voluti-prd e
+      // voluti-stg tem as duas formas.
+      //
+      // `_OTHER` e excluido de proposito: e o valor que o SDK usa para metodo
+      // HTTP nao reconhecido, e propagar isso para a forma antiga poluiria a
+      // dimensao com um valor que nao existe no vocabulario legado.
+      `set(attributes["http.method"], attributes["http.request.method"]) where attributes["http.method"] == nil and attributes["http.request.method"] != nil and attributes["http.request.method"] != "_OTHER"`,
+      `set(attributes["http.request.method"], attributes["http.method"]) where attributes["http.request.method"] == nil and attributes["http.method"] != nil`,
+      `set(attributes["http.status_code"], attributes["http.response.status_code"]) where attributes["http.status_code"] == nil and attributes["http.response.status_code"] != nil`,
+      `set(attributes["http.response.status_code"], attributes["http.status_code"]) where attributes["http.response.status_code"] == nil and attributes["http.status_code"] != nil`,
+    ]
+  }
   metric_statements {
     context    = "resource"
     statements = [`set(attributes["client.id"], "` + sys.env("ALLOY_CLIENT_ID") + `")`]

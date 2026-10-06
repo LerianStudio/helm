@@ -1,0 +1,1 @@
+{"body": "{\\\"orderId\\\":\\\"ord_12345\\\",\\\"status\\\":\\\"ok\\\"}", "categoria": "ausente", "descricao": "Sem nome de pessoa no corpo JSON: a regra de nome nao atua. NOTA: o id opaco `ord_` tambem nao e mascarado aqui — a regra de id opaco exige delimitador logfmt e nao alcanca corpo JSON. Divida registrada, fora do escopo deste caso."}

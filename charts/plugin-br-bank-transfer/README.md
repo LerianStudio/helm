@@ -101,6 +101,42 @@ managed-cloud install. `values.yaml` is the full power-user reference;
 
 ---
 
+## Pod Spreading (`global.scheduling.spread`)
+
+The bank-transfer Deployment renders `topologySpreadConstraints` from the `lerian-common` spread
+preset. The default is **soft** (`ScheduleAnyway`) on both nodes and zones, so
+replicas are spread across nodes (e.g. spot nodes) and zones whenever possible,
+but a pod is never left `Pending` because of it.
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ScheduleAnyway     # topology.kubernetes.io/zone: same values
+      maxSkew: 1               # integer >= 1
+bankTransfer:
+  spread: { hostname: DoNotSchedule }  # field-level override
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset
+```
+
+Precedence: `bankTransfer.topologySpreadConstraints` (non-empty, wins entirely) >
+`bankTransfer.spread.<field>` > `global.scheduling.spread.<field>` > off. Each preset
+constraint selects only this Deployment's own pods (`labelSelector` = its
+`spec.selector.matchLabels`) of the same ReplicaSet (`matchLabelKeys:
+[pod-template-hash]`), so a rolling update is never blocked by the old ReplicaSet's
+pods, even with `DoNotSchedule`. Requires Kubernetes >= 1.27 with the
+`MatchLabelKeysInPodTopologySpread` feature gate enabled (beta, on by default). Use
+`DoNotSchedule` only when the cluster can always provide enough distinct nodes/zones
+for the replica count. Jobs are not spread.
+
+**Upgrade note:** the preset is on by default, so upgrading to the chart version
+that introduces it adds `topologySpreadConstraints` to the pod template and
+triggers **one rolling restart** of the Deployment. No values change is required.
+To keep the previous pod template exactly, set
+`global.scheduling.spread.enabled: false`.
+
 ## Configuring Ingress for Different Controllers
 
 The Plugin Bank Transfer Helm Chart optionally supports different Ingress Controllers for exposing services when necessary.
@@ -159,6 +195,9 @@ bankTransfer:
 | `bankTransfer.autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
 | `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas | `2` |
 | `bankTransfer.autoscaling.maxReplicas` | Maximum number of replicas | `5` |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: ScheduleAnyway, maxSkew: 1}` |
+| `bankTransfer.spread` | Field-level override of `global.scheduling.spread` | `{}` |
+| `bankTransfer.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `bankTransfer.nodeSelector` | Node selector for scheduling pods | `{}` |
 | `bankTransfer.tolerations` | Tolerations for scheduling on tainted nodes | `[]` |
 | `bankTransfer.affinity` | Affinity rules for pod scheduling | `{}` |

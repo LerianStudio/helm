@@ -157,17 +157,14 @@ spec:
             failureThreshold: {{ .Values.bankTransfer.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.bankTransfer.resources | nindent 12 }}
-      {{- with .Values.bankTransfer.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.bankTransfer.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.bankTransfer.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, bankTransfer.spread, bankTransfer.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.bankTransfer
+            "global" .Values.global
+            "selectorLabels" (include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
       {{- with .Values.bankTransfer.hostAliases }}
       hostAliases:

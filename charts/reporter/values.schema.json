@@ -100,6 +100,51 @@
           },
           "description": "Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED"
         },
+        "scheduling": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "spread": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Master switch for the spread preset"
+                },
+                "hostname": {
+                  "type": "string",
+                  "default": "ScheduleAnyway",
+                  "enum": [
+                    "ScheduleAnyway",
+                    "DoNotSchedule",
+                    ""
+                  ],
+                  "description": "Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | \"\" (off)"
+                },
+                "zone": {
+                  "type": "string",
+                  "default": "ScheduleAnyway",
+                  "enum": [
+                    "ScheduleAnyway",
+                    "DoNotSchedule",
+                    ""
+                  ],
+                  "description": "Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | \"\" (off)"
+                },
+                "maxSkew": {
+                  "type": "integer",
+                  "default": 1,
+                  "minimum": 1,
+                  "description": "Max allowed pod-count difference between topology domains"
+                }
+              },
+              "description": "topologySpreadConstraints preset (lerian-common.topologySpreadConstraints) applied to every Deployment"
+            }
+          },
+          "description": "Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset applied to every Deployment."
+        },
         "serviceDiscovery": {
           "type": "object",
           "additionalProperties": true,
@@ -345,6 +390,47 @@
             }
           },
           "additionalProperties": true
+        },
+        "spread": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Master switch for the spread preset"
+            },
+            "hostname": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | \"\" (off)"
+            },
+            "zone": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | \"\" (off)"
+            },
+            "maxSkew": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Max allowed pod-count difference between topology domains"
+            }
+          },
+          "description": "Per-component override of global.scheduling.spread (field by field)"
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Raw Kubernetes topologySpreadConstraints; non-empty replaces the spread preset entirely"
         },
         "nodeSelector": {
           "type": "object",
@@ -753,6 +839,47 @@
             }
           },
           "additionalProperties": true
+        },
+        "spread": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Master switch for the spread preset"
+            },
+            "hostname": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | \"\" (off)"
+            },
+            "zone": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | \"\" (off)"
+            },
+            "maxSkew": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Max allowed pod-count difference between topology domains"
+            }
+          },
+          "description": "Per-component override of global.scheduling.spread (field by field)"
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Raw Kubernetes topologySpreadConstraints; non-empty replaces the spread preset entirely"
         },
         "nodeSelector": {
           "type": "object",

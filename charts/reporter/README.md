@@ -119,6 +119,44 @@ render-equivalent for the bundled dev topology (no override needed) unless noted
 unintentional short-name drift was caught in review) are unchanged from the
 pre-adoption defaults — kept byte-identical for existing installs.
 
+### Pod Spreading (`global.scheduling.spread`)
+
+Every Deployment of this chart (the manager, and the worker when it runs as a
+Deployment with `keda.enabled=false`) renders `topologySpreadConstraints` from the
+`lerian-common` spread preset. The default is **soft** (`ScheduleAnyway`) on both
+nodes and zones, so replicas are spread across nodes (e.g. spot nodes) and zones
+whenever possible, but a pod is never left `Pending` because of it.
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ScheduleAnyway     # topology.kubernetes.io/zone: same values
+      maxSkew: 1               # integer >= 1
+manager:
+  spread: { hostname: DoNotSchedule }  # field-level override of the global preset
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
+```
+
+Precedence: `<component>.topologySpreadConstraints` (non-empty, wins entirely) >
+`<component>.spread.<field>` > `global.scheduling.spread.<field>` > off. Each
+preset constraint selects only the component's own pods
+(`labelSelector` = the Deployment's `spec.selector.matchLabels`) of the same
+ReplicaSet (`matchLabelKeys: [pod-template-hash]`), so a rolling update is never
+blocked by the old ReplicaSet's pods, even with `DoNotSchedule`. Requires
+Kubernetes >= 1.27 (`matchLabelKeys`; GA in 1.33). Use `DoNotSchedule` only when
+the cluster can always provide enough distinct nodes/zones for the replica count
+(a hard constraint leaves extra pods `Pending` otherwise). The KEDA `ScaledJob`
+worker (the default) is a Job and is not spread.
+
+**Upgrade note:** the preset is on by default, so upgrading to the chart version
+that introduces it adds `topologySpreadConstraints` to the manager (and the
+Deployment-mode worker) pod template and triggers **one rolling restart** of
+those Deployments. No values change is required. To keep the previous pod
+template exactly, set `global.scheduling.spread.enabled: false`.
+
 ### Common Settings
 
 | Parameter | Description | Default |

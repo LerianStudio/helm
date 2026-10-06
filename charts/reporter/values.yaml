@@ -60,6 +60,23 @@ global:
   # gate today; other MULTI_TENANT_* keys are set via common.configmap.<KEY>.
   # Example: multiTenant: { enabled: true }
   multiTenant: {}
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to every Deployment (manager, and
+  # the worker when it runs as a Deployment, i.e. keda.enabled=false). Each constraint
+  # counts only the component's own pods (labelSelector = its selector labels) of the
+  # same ReplicaSet (matchLabelKeys: [pod-template-hash]), so rolling updates never
+  # deadlock. A component's `spread` overrides these fields one by one; a component's
+  # raw `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      zone: ScheduleAnyway
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
@@ -177,6 +194,13 @@ manager:
     requests:
       cpu: 100m
       memory: 256Mi
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -346,6 +370,13 @@ worker:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes

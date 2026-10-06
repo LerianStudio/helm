@@ -10,6 +10,10 @@
 | `global.streaming` | object | `{}` | Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when STREAMING_ENABLED=true. Fields: enabled, brokers, saslUsername, tlsEnabled, compression, requiredAcks, ... (brokers gates emission). Per-app identity stays in common.configmap. |
 | `global.serviceDiscovery` | object | `{}` | Env-wide service discovery (Consul). Placeholder block: reporter keeps SD_* as configmap passthrough because its lib-service-discovery contract (SD_ADDRESS / SD_ADVERTISE_*) differs from lerian-common.serviceDiscovery.env (SD_INTERNAL_*/EXTERNAL_*). |
 | `global.multiTenant` | object | `{}` | Env-wide multi-tenant infra (reserved). Reporter emits only the MULTI_TENANT_ENABLED gate today; other MULTI_TENANT_* keys are set via common.configmap.<KEY>. |
+| `global.scheduling.spread.enabled` | bool | `true` | Master switch for the topologySpreadConstraints preset (lerian-common.topologySpreadConstraints) applied to every Deployment (manager; worker when `keda.enabled=false`). Each constraint counts only the component's own pods of the same ReplicaSet (`matchLabelKeys: [pod-template-hash]`). |
+| `global.scheduling.spread.hostname` | string | `"ScheduleAnyway"` | Spread across nodes (`kubernetes.io/hostname`): `ScheduleAnyway` (soft) \| `DoNotSchedule` (hard) \| `""` (off). |
+| `global.scheduling.spread.zone` | string | `"ScheduleAnyway"` | Spread across zones (`topology.kubernetes.io/zone`): `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off). |
+| `global.scheduling.spread.maxSkew` | int | `1` | Max allowed pod-count difference between topology domains (integer >= 1). |
 | `global.externalMongoDefinitions` | object | `{}` | Bootstrap job for external MongoDB: creates users and grants privileges |
 | `global.externalMongoDefinitions.enabled` | bool | `false` | Enable or disable the MongoDB bootstrap job |
 | `global.externalMongoDefinitions.connection` | object | `{}` | MongoDB connection settings |
@@ -44,6 +48,8 @@
 | `manager.service.annotations` | object | `{}` | Annotations for the service |
 | `manager.resources.limits` | object | `{}` | CPU and memory limits for pods |
 | `manager.resources.requests` | object | `{}` | Minimum CPU and memory requests |
+| `manager.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew); each field set here wins over the global one. |
+| `manager.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `manager.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
 | `manager.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
 | `manager.affinity` | object | `{}` | Affinity rules for pod scheduling |
@@ -71,6 +77,8 @@
 | `worker.service.annotations` | object | `{}` | Annotations for the service |
 | `worker.resources.limits` | object | `{}` | CPU and memory limits for pods |
 | `worker.resources.requests` | object | `{}` | Minimum CPU and memory requests |
+| `worker.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew); each field set here wins over the global one. |
+| `worker.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `worker.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
 | `worker.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
 | `worker.affinity` | object | `{}` | Affinity rules for pod scheduling |

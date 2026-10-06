@@ -112,7 +112,8 @@ each consumer declares these keys in its own values.yaml / schema):
 Every preset constraint carries `matchLabelKeys: [pod-template-hash]` so only
 pods of the SAME ReplicaSet are counted: during a rolling update the old
 ReplicaSet's pods do not block the new ones (avoids a DoNotSchedule deadlock).
-Requires Kubernetes >= 1.27 (beta, on by default); GA in 1.33.
+Requires Kubernetes >= 1.27 with the MatchLabelKeysInPodTopologySpread feature
+gate enabled (beta since 1.27 and on by default, including 1.33; it can be disabled).
 
 Invalid input fails the render with an explicit message: unknown spread field,
 non-bool enabled, whenUnsatisfiable outside {ScheduleAnyway, DoNotSchedule, ""},
@@ -121,7 +122,21 @@ to render with empty selectorLabels.
 */}}
 {{- define "lerian-common.topologySpreadConstraints" -}}
 {{- $comp := .component | default dict -}}
-{{- $globalSpread := ((.global | default dict).scheduling | default dict).spread | default dict -}}
+{{- /* Type-check every explicitly supplied (non-null) value BEFORE `default`:
+       `default` treats false / [] / {} as empty and would silently swallow a
+       wrong-typed value. An empty map / list stays valid (documented default). */ -}}
+{{- $globalScheduling := (.global | default dict).scheduling -}}
+{{- if and (not (kindIs "invalid" $globalScheduling)) (not (kindIs "map" $globalScheduling)) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: global.scheduling must be a map, got %s" (kindOf $globalScheduling)) -}}
+{{- end -}}
+{{- $globalScheduling = $globalScheduling | default dict -}}
+{{- if and (not (kindIs "invalid" $globalScheduling.spread)) (not (kindIs "map" $globalScheduling.spread)) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: global.scheduling.spread must be a map, got %s" (kindOf $globalScheduling.spread)) -}}
+{{- end -}}
+{{- if and (not (kindIs "invalid" $comp.spread)) (not (kindIs "map" $comp.spread)) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: <component>.spread must be a map, got %s" (kindOf $comp.spread)) -}}
+{{- end -}}
+{{- $globalSpread := $globalScheduling.spread | default dict -}}
 {{- $compSpread := $comp.spread | default dict -}}
 {{- $sel := .selectorLabels | default dict -}}
 {{- if kindIs "string" $sel -}}
@@ -132,7 +147,7 @@ to render with empty selectorLabels.
 {{- end -}}
 {{- $constraints := list -}}
 {{- $raw := $comp.topologySpreadConstraints -}}
-{{- if and $raw (not (kindIs "slice" $raw)) -}}
+{{- if and (not (kindIs "invalid" $raw)) (not (kindIs "slice" $raw)) -}}
 {{- fail (printf "lerian-common.topologySpreadConstraints: <component>.topologySpreadConstraints must be a list, got %s" (kindOf $raw)) -}}
 {{- end -}}
 {{- if $raw -}}

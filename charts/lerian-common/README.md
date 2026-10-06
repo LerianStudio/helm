@@ -91,7 +91,9 @@ Resolution, first match wins:
 Every preset constraint carries `labelSelector.matchLabels: <selectorLabels>` and
 `matchLabelKeys: [pod-template-hash]`, so only pods of the same ReplicaSet are
 counted and a rolling update never deadlocks on the old ReplicaSet's pods
-(Kubernetes >= 1.27; GA in 1.33). Invalid input fails the render with an explicit
+(Kubernetes >= 1.27 with the `MatchLabelKeysInPodTopologySpread` feature gate
+enabled: beta since 1.27 and on by default, including 1.33, but it can be disabled).
+Invalid input fails the render with an explicit
 `lerian-common.topologySpreadConstraints: ...` message (unknown field, non-bool
 `enabled`, bad `whenUnsatisfiable`, `maxSkew` < 1 or non-integer, non-list raw
 constraints, empty `selectorLabels`).

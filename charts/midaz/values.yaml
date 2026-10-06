@@ -192,6 +192,23 @@ global:
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):
   #   address: "consul:8500"
   #   namespace: "midaz"
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to every Deployment of this
+  # chart (ledger, crm, tracer). Each constraint counts only the component's own pods
+  # (labelSelector = its selector labels) of the same ReplicaSet
+  # (matchLabelKeys: [pod-template-hash]), so rolling updates never deadlock. A
+  # component's `spread` overrides these fields one by one; a component's raw
+  # `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      zone: ScheduleAnyway
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
 ledger:
   # -- `wait-for-dependencies` init container tuning.
   # The init container blocks pod startup until ALL ledger datastore/broker
@@ -360,6 +377,13 @@ ledger:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -634,6 +658,13 @@ crm:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -843,6 +874,13 @@ tracer:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes

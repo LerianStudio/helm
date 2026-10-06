@@ -51,6 +51,10 @@
 | `global.streaming` | object | `{}` | Env-wide streaming (lib-streaming / RedPanda): brokers / saslMechanism / saslUsername / tlsEnabled / ... |
 | `global.auth` | object | `{}` | Env-wide auth (plugin-access-manager): enabled / host. |
 | `global.serviceDiscovery` | object | `{}` | Env-wide service discovery (Consul): see lerian-common.serviceDiscovery.env. |
+| `global.scheduling.spread.enabled` | bool | `true` | Master switch for the topologySpreadConstraints preset (lerian-common.topologySpreadConstraints) applied to every Deployment (ledger, crm and tracer). Each constraint counts only the component's own pods of the same ReplicaSet (`matchLabelKeys: [pod-template-hash]`). |
+| `global.scheduling.spread.hostname` | string | `"ScheduleAnyway"` | Spread across nodes (`kubernetes.io/hostname`): `ScheduleAnyway` (soft) \| `DoNotSchedule` (hard) \| `""` (off). |
+| `global.scheduling.spread.zone` | string | `"ScheduleAnyway"` | Spread across zones (`topology.kubernetes.io/zone`): `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off). |
+| `global.scheduling.spread.maxSkew` | int | `1` | Max allowed pod-count difference between topology domains (integer >= 1). |
 | `ledger.readinessProbe` | object | `{}` | Readiness probe configuration. All fields override chart defaults. |
 | `ledger.livenessProbe` | object | `{}` | Liveness probe configuration. All fields override chart defaults. |
 | `ledger.name` | string | `ledger` | Service name |
@@ -104,6 +108,8 @@
 | `ledger.autoscaling.minReplicas` | int | `2` | Minimum number of replicas |
 | `ledger.autoscaling.maxReplicas` | int | `9` | Maximum number of replicas |
 | `ledger.autoscaling.targetCPUUtilizationPercentage` | int | `80` | Target CPU utilization percentage for autoscaling |
+| `ledger.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew); each field set here wins over the global one. |
+| `ledger.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `ledger.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
 | `ledger.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
 | `ledger.affinity` | object | `{}` | Affinity rules for pod scheduling |
@@ -170,6 +176,8 @@
 | `crm.autoscaling.minReplicas` | int | `1` | Minimum number of replicas |
 | `crm.autoscaling.maxReplicas` | int | `3` | Maximum number of replicas |
 | `crm.autoscaling.targetCPUUtilizationPercentage` | int | `80` | Target CPU utilization percentage for autoscaling |
+| `crm.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew); each field set here wins over the global one. |
+| `crm.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `crm.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
 | `crm.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
 | `crm.affinity` | object | `{}` | Affinity rules for pod scheduling |
@@ -236,6 +244,8 @@
 | `tracer.autoscaling.minReplicas` | int | `1` | Minimum number of replicas |
 | `tracer.autoscaling.maxReplicas` | int | `5` | Maximum number of replicas |
 | `tracer.autoscaling.targetCPUUtilizationPercentage` | int | `80` | Target CPU utilization percentage for autoscaling |
+| `tracer.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew); each field set here wins over the global one. |
+| `tracer.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `tracer.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
 | `tracer.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
 | `tracer.affinity` | object | `{}` | Affinity rules for pod scheduling |

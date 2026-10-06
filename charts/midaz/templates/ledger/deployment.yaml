@@ -241,16 +241,13 @@ spec:
       {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.ledger.aws "iamTlsDefault" (printf "%s-iam-tls" (include "midaz-ledger.fullname" .))) | nindent 6 }}
       {{- end }}
-      {{- with .Values.ledger.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.ledger.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.ledger.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, ledger.spread, ledger.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.ledger
+            "global" .Values.global
+            "selectorLabels" (include "midaz.selectorLabels" (dict "context" . "name" .Values.ledger.name ))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
 {{- end }}

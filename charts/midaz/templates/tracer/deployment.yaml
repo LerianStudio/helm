@@ -129,16 +129,13 @@ spec:
             timeoutSeconds: {{ .Values.tracer.livenessProbe.timeoutSeconds | default 5 }}
             successThreshold: {{ .Values.tracer.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.tracer.livenessProbe.failureThreshold | default 3 }}
-      {{- with .Values.tracer.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tracer.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tracer.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, tracer.spread, tracer.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.tracer
+            "global" .Values.global
+            "selectorLabels" (include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
 {{- end }}

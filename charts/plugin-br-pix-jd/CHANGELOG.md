@@ -1,5 +1,16 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.4.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.6)
+
+Fixes:
+
+- Bumped the app to `1.0.0` following the release-train reset. (@jeffersonrodrigues92)
+- Built against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.5...plugin-br-pix-jd-v0.4.6)
+
+---
+
 ## [0.4.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.5)
 
 Features:

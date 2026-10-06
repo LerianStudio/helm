@@ -741,22 +741,38 @@ JD_USE_SERVICE_SEGMENTS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm
    processed is never re-fired; only GETs and idempotency-keyed POSTs retry. */}}
 JDPI_MAX_RETRIES: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_MAX_RETRIES" "default" "2") | quote }}
 JDPI_RETRY_BASE_DELAY_MS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_RETRY_BASE_DELAY_MS" "default" "100") | quote }}
-{{- /* Midaz ledger. MIDAZ_ASSET_ID has NO safe default: the app silently backfills "1"
-   when it is empty, which posts against a fabricated asset instead of failing. The
-   chart refuses instead — same defect class the app's own smoke report flagged. */ -}}
-{{- /* O `}}` abaixo NÃO right-trima de propósito: o comentário acima e este
-   assignment trimam ambos os lados, então esta é a newline que termina a última
-   chave emitida antes do bloco Midaz. Sem ela as duas se juntam numa linha só. */ -}}
-{{- $assetId := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_ASSET_ID" "default" "") }}
-MIDAZ_ORGANIZATION_ID: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_ORGANIZATION_ID" "default" "") | quote }}
-MIDAZ_LEDGER_ID: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_LEDGER_ID" "default" "") | quote }}
-MIDAZ_ASSET_ID: {{ required "\n\nERROR: api.configmap.MIDAZ_ASSET_ID is required.\nAn empty value is NOT inert: the app backfills \"1\" and posts against a fabricated\nasset instead of failing closed. Set the real asset code (for example BRL).\n" $assetId | quote }}
-MIDAZ_EXTERNAL_ID: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_EXTERNAL_ID" "default" "") | quote }}
+{{- /* JDPI transport budgets (ms). CALL bounds one HTTP attempt; TOTAL bounds a whole
+   call (token, attempts, backoff) and must stay below the ingress timeout so a hung JD
+   answers 504 PIX-1051 instead of the proxy's 504. Deployment-level in both modes. */}}
+JDPI_CALL_TIMEOUT_MS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_CALL_TIMEOUT_MS" "default" "30000") | quote }}
+JDPI_TOTAL_TIMEOUT_MS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_TOTAL_TIMEOUT_MS" "default" "50000") | quote }}
+{{- /* Midaz ledger. MIDAZ_ORGANIZATION_ID, MIDAZ_LEDGER_ID, MIDAZ_ASSET_ID and
+   MIDAZ_EXTERNAL_ID are NO LONGER READ BY THE APP (1.0.0+), in either deployment mode:
+   the organization and ledger come from tenancy/jd_integration_binding, the asset code
+   and the external account from tenant_policy/midaz.asset_id and midaz.external_id.
+   Same shape as JD_ISPB above: emitted only when an operator set them, because the
+   app's ignored-env scanner WARNs on a PRESENT variable (empty counts). */ -}}
+{{- range $k := (list "MIDAZ_ORGANIZATION_ID" "MIDAZ_LEDGER_ID" "MIDAZ_ASSET_ID" "MIDAZ_EXTERNAL_ID") }}
+{{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" $k "default" "")) }}
+{{ $k }}: {{ . | quote }}
+{{- end }}
+{{- end }}
 MIDAZ_TIMEOUT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_TIMEOUT" "default" "30000") | quote }}
 MIDAZ_URL_ONBOARDING: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_ONBOARDING" "default" "") | quote }}
 MIDAZ_URL_TRANSACTION: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_TRANSACTION" "default" "") | quote }}
+{{- /* Fee mode: auto posts on /v2 when the ledger's /version reports 4.1.0+, else /v1.
+   The app's envDefault is not applied by its loader, so an unset key reads as legacy;
+   emitting the defaults is what makes "auto" real. */}}
+MIDAZ_FEE_MODE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_FEE_MODE" "default" "auto") | quote }}
+MIDAZ_FEE_MODE_REFRESH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_FEE_MODE_REFRESH" "default" "5m") | quote }}
 {{- /* CRM — alias resolution. */}}
 CRM_URL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "CRM_URL" "default" "") | quote }}
+{{- /* Courier ownership map, single-tenant only: multi-tenant reads it from the tenant's
+   jd-spi bundle and WARNs on a present COURIER_URL, so it is emitted only when set.
+   Must point at the Courier `admin` role, the only one that serves the lookup. */}}
+{{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "COURIER_URL" "default" "")) }}
+COURIER_URL: {{ . | quote }}
+{{- end }}
 {{- /* Transaction limits: the clock bounds separating the daily and nightly buckets. */}}
 TRANSACTION_LIMIT_DAILY_PERIOD_INIT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "TRANSACTION_LIMIT_DAILY_PERIOD_INIT" "default" "06:00") | quote }}
 TRANSACTION_LIMIT_DAILY_PERIOD_END: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "TRANSACTION_LIMIT_DAILY_PERIOD_END" "default" "20:00") | quote }}
@@ -869,7 +885,7 @@ Input dict: root, comp (the component values block).
 {{- $s := mergeOverwrite (deepCopy $api) $own -}}
 {{- $mt := eq (index (.root.Values.api.configmap | default dict) "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
 {{- $lines := list -}}
-{{- range $k := (list "JD_CLIENT_ID" "JD_SECRET" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "SENDGRID_API_KEY" "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN") -}}
+{{- range $k := (list "JD_CLIENT_ID" "JD_SECRET" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "COURIER_CLIENT_ID" "COURIER_CLIENT_SECRET" "SENDGRID_API_KEY" "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN") -}}
 {{- with (index $s $k) -}}
 {{- $lines = append $lines (printf "%s: %s" $k (. | b64enc | quote)) -}}
 {{- end -}}

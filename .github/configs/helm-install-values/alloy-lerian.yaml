@@ -1,0 +1,46 @@
+# O chart recusa subir sem credencial de destino quando `profile: client`, e a
+# guarda e deliberada: o ponto de entrada responde 401 sem ela, que e falha
+# PERMANENTE — o dado e descartado na hora, sem reenvio. Falhar a criacao do pod
+# e ruidoso e recuperavel; subir sem credencial e perda silenciosa e continua.
+#
+# Esta porta instala em `-n it-alloy-lerian` sem criar Secret algum, entao o
+# `profile: client` deixaria os dois papeis em CreateContainerConfigError
+# esperando `alloy-lerian/telemetry-token` — que e exatamente o que a execucao
+# em 2026-10-06 reportou ("secret \"alloy-lerian\" not found", x26 em 9m57s).
+#
+# `profile: own` e a postura correta para esta porta: e o perfil dos ambientes
+# da propria Lerian, onde o destino e um LB interno sem autenticacao, logo
+# nenhum Secret e exigido. O que a porta precisa exercitar e se o chart SOBE e
+# se o upgrade preserva o workload — nao o caminho de credencial, que ja tem
+# cobertura propria nas guardas de render.
+#
+# As duas variaveis abaixo sao injetadas pelo Fleet em producao; aqui elas vem
+# literais porque `fleetManagement.enabled: false` e o unico modo em que o
+# ConfigMap local contem a cadeia inteira, que e o que esta porta deve validar.
+profile: own
+
+origin:
+  # Convencao <cliente>-<ambiente>; o render recusa qualquer outra forma.
+  id: porta-stg
+
+fleetManagement:
+  # Com o Fleet ligado o template PARA antes da cadeia de coleta e o ConfigMap
+  # sai sem receptor, sanitizacao nem destino. A porta ficaria verde sem ter
+  # exercitado nada do que importa.
+  enabled: false
+
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_CLIENT_ID
+        value: porta-stg
+      - name: ALLOY_DESTINATION_ENDPOINT
+        value: http://localhost:4318
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_CLIENT_ID
+        value: porta-stg
+      - name: ALLOY_DESTINATION_ENDPOINT
+        value: http://localhost:4318

@@ -134,6 +134,8 @@
       "type": "object",
       "properties": {
         "FLOWKER_BASE_PATH": { "type": ["string", "null"] },
+        "LENDER_BASE_PATH": { "type": ["string", "null"] },
+        "MATCHER_BASE_PATH": { "type": ["string", "null"] },
         "MFA_ENABLED": { "type": ["string", "boolean", "null"] },
         "MIDAZ_V2_BASE_PATH": { "type": ["string", "null"] },
         "PLUGIN_AUTH_PUBLIC_BASE_PATH": { "type": ["string", "null"] },

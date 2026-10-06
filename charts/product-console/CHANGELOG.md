@@ -1,5 +1,14 @@
 # Product-console Changelog
 
+## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.3.0)
+
+Features:
+- Declare lender and matcher base paths in the product-console. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.2.7...product-console-v4.3.0)
+
+---
+
 ## [4.2.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.2.7)
 
 Fixes:

@@ -17,7 +17,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 1.1.0
+version: 1.2.0
 
 # NOTE: appVersion is the default image tag for the app, the migrations Job and
 # the topics Job. Override via brSisbajud.image.tag / migrations.image.tag /

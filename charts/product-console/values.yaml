@@ -55,6 +55,22 @@ global:
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
   # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
   observability: {}
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to the console Deployment. Each
+  # constraint counts only this component's own pods (labelSelector = its selector
+  # labels) of the same ReplicaSet (matchLabelKeys: [pod-template-hash]), so rolling
+  # updates never deadlock. A component's `spread` overrides these fields one by one;
+  # a component's raw `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      zone: ScheduleAnyway
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
@@ -174,6 +190,13 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # -- Target memory utilization percentage for autoscaling
   targetMemoryUtilizationPercentage: 80
+# -- Override of global.scheduling.spread for the console Deployment (same fields: enabled,
+# hostname, zone, maxSkew); each field set here wins over the global one.
+# Example: spread: { hostname: DoNotSchedule }
+spread: {}
+# -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+# entirely; an entry without labelSelector gets the Deployment's selector labels.
+topologySpreadConstraints: []
 # -- Node selector for scheduling pods on specific nodes
 nodeSelector: {}
 # -- Tolerations for scheduling on tainted nodes

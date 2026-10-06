@@ -70,6 +70,9 @@ empty — set a key there only to override its shipped default).
 | `configmap.MIDAZ_V2_BASE_PATH` | Address of the midaz ledger's `/v2` contract, where fees live, see [Keys with no default](#keys-with-no-default) | unset (the fees screens have no address) |
 | `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
 | `configmap.FLOWKER_BASE_PATH` / `configmap.LENDER_BASE_PATH` / `configmap.MATCHER_BASE_PATH` / `configmap.TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: ScheduleAnyway, maxSkew: 1}` |
+| `spread` | Field-level override of `global.scheduling.spread` for the console Deployment | `{}` |
+| `topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
 | `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the password this chart keeps for it, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
@@ -362,6 +365,41 @@ sets `MONGO_PARAMETERS` to the real DocumentDB connection-string shape
 (`tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&...`)
 whenever no more specific override (native key or `global.datastores.mongo.params`)
 is set. `gcp`/`azure` have no Mongo preset today.
+
+### Pod Spreading (`global.scheduling.spread`)
+
+The console Deployment renders `topologySpreadConstraints` from the `lerian-common` spread
+preset. The default is **soft** (`ScheduleAnyway`) on both nodes and zones, so
+replicas are spread across nodes (e.g. spot nodes) and zones whenever possible,
+but a pod is never left `Pending` because of it.
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ScheduleAnyway     # topology.kubernetes.io/zone: same values
+      maxSkew: 1               # integer >= 1
+spread: { hostname: DoNotSchedule }  # field-level override (top-level key)
+topologySpreadConstraints: []        # raw list; non-empty replaces the preset
+```
+
+Precedence: `topologySpreadConstraints` (non-empty, wins entirely) >
+`spread.<field>` > `global.scheduling.spread.<field>` > off. Each preset
+constraint selects only this Deployment's own pods (`labelSelector` = its
+`spec.selector.matchLabels`) of the same ReplicaSet (`matchLabelKeys:
+[pod-template-hash]`), so a rolling update is never blocked by the old ReplicaSet's
+pods, even with `DoNotSchedule`. Requires Kubernetes >= 1.27 with the
+`MatchLabelKeysInPodTopologySpread` feature gate enabled (beta, on by default). Use
+`DoNotSchedule` only when the cluster can always provide enough distinct nodes/zones
+for the replica count. Jobs are not spread.
+
+**Upgrade note:** the preset is on by default, so upgrading to the chart version
+that introduces it adds `topologySpreadConstraints` to the pod template and
+triggers **one rolling restart** of the Deployment. No values change is required.
+To keep the previous pod template exactly, set
+`global.scheduling.spread.enabled: false`.
 
 ## Uninstalling the Chart
 

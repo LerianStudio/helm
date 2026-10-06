@@ -183,15 +183,18 @@ spec:
             timeoutSeconds: {{ include "caradhras.livenessProbeTimeoutSeconds" . }}
             successThreshold: {{ .Values.caradhras.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.caradhras.livenessProbe.failureThreshold | default 3 }}
-      {{- with .Values.auth.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations stay on auth.* (unchanged: caradhras has
+             always been placed with auth); spreading is caradhras' own
+             (global.scheduling.spread preset, caradhras.spread, caradhras.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" (dict
+                "nodeSelector" .Values.auth.nodeSelector
+                "affinity" .Values.auth.affinity
+                "tolerations" .Values.auth.tolerations
+                "spread" .Values.caradhras.spread
+                "topologySpreadConstraints" .Values.caradhras.topologySpreadConstraints)
+            "global" .Values.global
+            "selectorLabels" (include "plugin-caradhras.selectorLabels" (dict "context" . "name" .Values.caradhras.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

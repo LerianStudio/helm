@@ -104,16 +104,13 @@ spec:
               port: {{ $uiSvc.port | default 8080 }}
             initialDelaySeconds: {{ $uiLP.initialDelaySeconds | default 15 }}
             periodSeconds: {{ $uiLP.periodSeconds | default 20 }}
-      {{- with $ui.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $ui.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $ui.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, caradhras.ui.spread, caradhras.ui.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" $ui
+            "global" .Values.global
+            "selectorLabels" (include "plugin-caradhras-ui.selectorLabels" (dict "context" . "name" $ui.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
 {{- end }}

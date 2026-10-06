@@ -37,6 +37,24 @@ global:
   # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
   # Example: observability: { enabled: true }
   observability: {}
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to every Deployment of this
+  # chart (auth, identity, caradhras, and caradhras.ui when enabled). Each
+  # constraint counts only the component's own pods (labelSelector = its selector
+  # labels) of the same ReplicaSet (matchLabelKeys: [pod-template-hash]), so
+  # rolling updates never deadlock. A
+  # component's `spread` overrides these fields one by one; a component's raw
+  # `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      zone: ScheduleAnyway
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
 
 # Common configuration shared between components
 common:
@@ -189,6 +207,13 @@ identity:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -347,6 +372,13 @@ auth:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -551,6 +583,14 @@ caradhras:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # nodeSelector / affinity / tolerations for caradhras still come from auth.*.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   migrations:
     image:
       # -- Empty preserves auth.backend.migrations.image.repository overrides;
@@ -570,6 +610,8 @@ caradhras:
   # -- ingress shape) live in templates/caradhras/ui-*.yaml — set
   # -- caradhras.ui.enabled=true and any of the fields those templates read
   # -- (image, service, ingress, resources, autoscaling, ...) to turn it on.
+  # -- Pod spreading for the console follows global.scheduling.spread; override
+  # -- per component with caradhras.ui.spread / caradhras.ui.topologySpreadConstraints.
   ui:
     enabled: false
 

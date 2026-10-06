@@ -186,6 +186,43 @@ ingress:
         - midaz.example.com
 ```
 
+## Pod Spreading (`global.scheduling.spread`)
+
+Every Deployment of this chart (auth, identity, caradhras, and the caradhras UI when `caradhras.ui.enabled=true`) renders
+`topologySpreadConstraints` from the `lerian-common` spread preset. The default is
+**soft** (`ScheduleAnyway`) on both nodes and zones, so replicas of the same
+component are spread across nodes (e.g. spot nodes) and zones whenever possible,
+but a pod is never left `Pending` because of it.
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ScheduleAnyway     # topology.kubernetes.io/zone: same values
+      maxSkew: 1               # integer >= 1
+auth:
+  spread: { hostname: DoNotSchedule }  # field-level override of the global preset
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
+```
+
+Precedence: `<component>.topologySpreadConstraints` (non-empty, wins entirely) >
+`<component>.spread.<field>` > `global.scheduling.spread.<field>` > off. Each
+preset constraint selects only the component's own pods
+(`labelSelector` = the Deployment's `spec.selector.matchLabels`) of the same
+ReplicaSet (`matchLabelKeys: [pod-template-hash]`), so a rolling update is never
+blocked by the old ReplicaSet's pods, even with `DoNotSchedule`. Requires
+Kubernetes >= 1.27 (`matchLabelKeys`). Use `DoNotSchedule` only when the cluster
+can always provide enough distinct nodes/zones for the replica count (a hard
+constraint leaves extra pods `Pending` otherwise). Caradhras keeps taking `nodeSelector` / `affinity` / `tolerations` from `auth.*` (unchanged), but is spread on its own pods via `caradhras.spread` / `caradhras.topologySpreadConstraints`. The init-user Job is not spread.
+
+**Upgrade note:** the preset is on by default, so upgrading to the chart version
+that introduces it adds `topologySpreadConstraints` to the pod template of every
+Deployment and triggers **one rolling restart** of each. No values change is
+required. To keep the previous pod template exactly, set
+`global.scheduling.spread.enabled: false`.
+
 ## Plugin Access Manager Components:
 
 ### Identity Service
@@ -219,6 +256,8 @@ ingress:
 | `autoscaling.maxReplicas` | Maximum number of replicas | `3` |
 | `autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling | `80` |
 | `autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling | `80` |
+| `spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew) | `{}` |
+| `topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `nodeSelector` | Node selector for scheduling pods | `{}` |
 | `tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `affinity` | Affinity rules for pod scheduling | `{}` |
@@ -259,6 +298,8 @@ ingress:
 | `autoscaling.maxReplicas` | Maximum number of replicas | `9` |
 | `autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling | `80` |
 | `autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling | `80` |
+| `spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew) | `{}` |
+| `topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `nodeSelector` | Node selector for scheduling pods | `{}` |
 | `tolerations` | Tolerations for scheduling on tainted nodes | `{}` |
 | `affinity` | Affinity rules for pod scheduling | `{}` |
@@ -413,6 +454,8 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.service.port` | Service port | `8000` |
 | `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
+| `caradhras.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). `nodeSelector` / `affinity` / `tolerations` for caradhras still come from `auth.*` | `{}` |
+| `caradhras.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
 | `caradhras.migrations.image.tag` | Image tag — MUST stay on the `1.2.0-beta.x` train, not the unrelated `3.2.0-beta.x` train also present in this GHCR repo | `1.2.0-beta.59` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
@@ -420,6 +463,8 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.ui.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
 | `caradhras.ui.service.port` | Service port | `80` |
 | `caradhras.ui.ingress.enabled` | Enable ingress for the UI | `false` |
+| `caradhras.ui.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew) | unset (`{}`) |
+| `caradhras.ui.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | unset (`[]`) |
 | `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |
 | `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
 | `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
@@ -558,6 +603,8 @@ caradhras both.
 | `auth.autoscaling.maxReplicas`                | Maximum number of replicas for autoscaling.                                              | `3`                                            |
 | `auth.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling.                                       | `80`                                           |
 | `auth.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling.                                    | `80`                                           |
+| `auth.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). | `{}` |
+| `auth.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset. | `[]` |
 | `auth.nodeSelector`                           | Node selectors for pod scheduling.                                                       | `{}`                                           |
 | `auth.tolerations`                            | Tolerations for pod scheduling.                                                          | `{}`                                           |
 | `auth.affinity`                               | Affinity rules for pod scheduling.                                                       | `{}`                                           |

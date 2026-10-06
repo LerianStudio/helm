@@ -266,13 +266,16 @@ otel:
 #     challenge, and a user who has MFA enabled cannot sign in at all.
 #
 #   FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
+#   LENDER_BASE_PATH:  "http://lender.lender.svc.cluster.local:4017/api/v1"
+#   MATCHER_BASE_PATH: "http://matcher.matcher.svc.cluster.local:8080"
 #   TRACER_BASE_PATH:  "http://midaz-tracer.midaz.svc.cluster.local:4020"
-#     Addresses of two OPTIONAL sibling services. Unlike the ledger and the
+#     Addresses of four OPTIONAL sibling services. Unlike the ledger and the
 #     Access Manager, these may simply not be installed, which is why the chart
 #     invents no address for them: a default would turn "this feature is not
-#     installed" into a connection error on the page. Set the one you deployed,
-#     to its own release name and namespace. TRACER_BASE_PATH is a bare origin
-#     with no /v1 — the console adds that itself; FLOWKER_BASE_PATH ends in /v1.
+#     installed" into a connection error on the page. Set the ones you deployed,
+#     each to its own release name and namespace. TRACER_BASE_PATH and
+#     MATCHER_BASE_PATH are bare origins with no /v1 — the console adds that
+#     itself; FLOWKER_BASE_PATH ends in /v1 and LENDER_BASE_PATH in /api/v1.
 configmap: {}
 # -- Extra environment variables from ConfigMap (merged with configmap values)
 # The passthrough for every console variable the chart does not declare above.

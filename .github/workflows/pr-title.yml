@@ -57,6 +57,7 @@ jobs:
             br-sta
             br-ccs
             br-slc
+            agent
             new
             charts
             common

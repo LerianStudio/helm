@@ -2,6 +2,20 @@
 
 ## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v1.0.1)
 
+Features:
+
+- Add a Helm upgrade guide for `br-jd-courier` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `br-jd-courier` to `@1.0.0`, ensuring compatibility and addressing any issues in the initial release. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v1.0.0...br-jd-courier-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v1.0.1)
+
 Fixes:
 - Update `br-jd-courier` to `@1.0.0`. (@guimoreirar, @lerian-studio)
 

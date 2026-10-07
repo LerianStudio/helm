@@ -78,7 +78,7 @@ Resolution, first match wins:
    entirely. An entry without `labelSelector` gets the component's selector labels.
 2. The `spread` preset, **field by field**: `<component>.spread.<field>` >
    `global.scheduling.spread.<field>` > built-in (`enabled: false`, `hostname: ""`,
-   `zone: ""`, `maxSkew: 1`).
+   `zone: ""`, `maxSkew: 1`, `minDomains: 0`).
 3. Nothing.
 
 | Field | Values | Renders |
@@ -87,6 +87,15 @@ Resolution, first match wins:
 | `hostname` | `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off) | constraint on `kubernetes.io/hostname` |
 | `zone` | `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off) | constraint on `topology.kubernetes.io/zone` |
 | `maxSkew` | integer >= 1 (default 1) | `maxSkew` of every preset constraint |
+| `minDomains` | integer >= 0 (default 0 = off) | `minDomains` of every `DoNotSchedule` preset constraint (the API rejects it with `ScheduleAnyway`) |
+
+`minDomains` closes a gap of hard spreads (Kubernetes >= 1.30). Skew is measured only
+against domains that already exist, so with a single eligible node, `hostname:
+DoNotSchedule` + `maxSkew: 1` still lets every replica land on it (e.g. 2 replicas on a
+fresh 1-node Karpenter pool). With `minDomains: 2` the scheduler treats the missing
+domain as empty: the second replica stays `Pending` until another node exists, and
+Karpenter (which honours `minDomains`) launches it. Use it with `DoNotSchedule` on
+autoscaled clusters; on fixed-size clusters it can leave pods `Pending`.
 
 Every preset constraint carries `labelSelector.matchLabels: <selectorLabels>` and
 `matchLabelKeys: [pod-template-hash]`, so only pods of the same ReplicaSet are
@@ -95,7 +104,8 @@ counted and a rolling update never deadlocks on the old ReplicaSet's pods
 enabled: beta since 1.27 and on by default, including 1.33, but it can be disabled).
 Invalid input fails the render with an explicit
 `lerian-common.topologySpreadConstraints: ...` message (unknown field, non-bool
-`enabled`, bad `whenUnsatisfiable`, `maxSkew` < 1 or non-integer, non-list raw
+`enabled`, bad `whenUnsatisfiable`, `maxSkew` < 1 or non-integer, `minDomains` < 0 or
+non-integer, non-list raw
 constraints, empty `selectorLabels`).
 
 A library chart cannot ship defaults to its consumers: each consumer declares the
@@ -105,10 +115,21 @@ defaults (soft, so an upgrade never leaves pods `Pending`):
 ```yaml
 global:
   scheduling:
-    spread: { enabled: true, hostname: ScheduleAnyway, zone: ScheduleAnyway, maxSkew: 1 }
+    spread: { enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1 }
 <component>:
   spread: {}
   topologySpreadConstraints: []
+```
+
+Zone is off in the recommended default: when scoring a soft spread the scheduler skips
+every node lacking the `topology.kubernetes.io/zone` label, so on clusters without zone
+labels (bare-metal, k3s) a zone constraint silently cancels the hostname spread. EKS +
+Karpenter environments typically set:
+
+```yaml
+global:
+  scheduling:
+    spread: { hostname: DoNotSchedule, zone: ScheduleAnyway, maxSkew: 1, minDomains: 2 }
 ```
 
 `global.scheduling` may hold other env-wide scheduling keys (e.g. `nodeSelector`,

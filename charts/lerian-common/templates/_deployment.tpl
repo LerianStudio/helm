@@ -92,7 +92,7 @@ Resolution (first matching tier wins):
      less constraint counts no pods and spreads nothing).
   2. Preset `spread`, resolved FIELD BY FIELD:
        component.spread.<field> > global.scheduling.spread.<field> > built-in
-     Built-in: enabled=false (off), hostname="", zone="", maxSkew=1.
+     Built-in: enabled=false (off), hostname="", zone="", maxSkew=1, minDomains=0 (off).
   3. Nothing.
 
 Expected values shape (a library chart cannot ship defaults to its consumers —
@@ -105,6 +105,7 @@ each consumer declares these keys in its own values.yaml / schema):
         hostname: ScheduleAnyway # ScheduleAnyway | DoNotSchedule | "" (off) — kubernetes.io/hostname
         zone: ScheduleAnyway     # ScheduleAnyway | DoNotSchedule | "" (off) — topology.kubernetes.io/zone
         maxSkew: 1               # int >= 1
+        minDomains: 0            # int >= 0; 0 = off. Applied to DoNotSchedule constraints only
   <component>:
     spread: {}                   # same fields; each one set overrides the global one
     topologySpreadConstraints: [] # raw k8s list; non-empty = wins entirely
@@ -115,10 +116,19 @@ ReplicaSet's pods do not block the new ones (avoids a DoNotSchedule deadlock).
 Requires Kubernetes >= 1.27 with the MatchLabelKeysInPodTopologySpread feature
 gate enabled (beta since 1.27 and on by default, including 1.33; it can be disabled).
 
+minDomains (Kubernetes >= 1.30, GA): with fewer eligible domains than
+minDomains the scheduler treats the global minimum as 0. Without it, a hard
+(DoNotSchedule) hostname spread is satisfied by a SINGLE eligible node holding
+every replica (skew is measured only against domains that exist), so e.g. 2
+replicas on a 1-node Karpenter pool share that node. minDomains: 2 keeps the
+second replica Pending until another node exists (Karpenter honours it). It is
+only emitted on DoNotSchedule constraints: the API rejects minDomains with
+ScheduleAnyway.
+
 Invalid input fails the render with an explicit message: unknown spread field,
 non-bool enabled, whenUnsatisfiable outside {ScheduleAnyway, DoNotSchedule, ""},
-non-integer or < 1 maxSkew, non-list topologySpreadConstraints, or a constraint
-to render with empty selectorLabels.
+non-integer or < 1 maxSkew, non-integer or < 0 minDomains, non-list
+topologySpreadConstraints, or a constraint to render with empty selectorLabels.
 */}}
 {{- define "lerian-common.topologySpreadConstraints" -}}
 {{- $comp := .component | default dict -}}
@@ -162,8 +172,8 @@ to render with empty selectorLabels.
 {{- else -}}
 {{- /* Tier 2: preset, field-level precedence. hasKey (not `default`/merge) so an
        explicit component `false` / "" overrides a global true / ScheduleAnyway. */ -}}
-{{- $fields := list "enabled" "hostname" "zone" "maxSkew" -}}
-{{- $s := dict "enabled" false "hostname" "" "zone" "" "maxSkew" 1 -}}
+{{- $fields := list "enabled" "hostname" "zone" "maxSkew" "minDomains" -}}
+{{- $s := dict "enabled" false "hostname" "" "zone" "" "maxSkew" 1 "minDomains" 0 -}}
 {{- range $tier := list (list "global.scheduling.spread" $globalSpread) (list "<component>.spread" $compSpread) -}}
 {{- $where := index $tier 0 -}}
 {{- $t := index $tier 1 -}}
@@ -172,7 +182,7 @@ to render with empty selectorLabels.
 {{- end -}}
 {{- range $k, $v := $t -}}
 {{- if not (has $k $fields) -}}
-{{- fail (printf "lerian-common.topologySpreadConstraints: unknown field %s.%s (allowed: enabled, hostname, zone, maxSkew)" $where $k) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: unknown field %s.%s (allowed: enabled, hostname, zone, maxSkew, minDomains)" $where $k) -}}
 {{- end -}}
 {{- if not (kindIs "invalid" $v) -}}
 {{- $_ := set $s $k $v -}}
@@ -189,6 +199,13 @@ to render with empty selectorLabels.
 {{- if or (ne (toString (int64 $skew)) (toString $skew)) (lt (int64 $skew) 1) -}}
 {{- fail (printf "lerian-common.topologySpreadConstraints: spread.maxSkew must be an integer >= 1, got %v" $skew) -}}
 {{- end -}}
+{{- $minDomains := $s.minDomains -}}
+{{- if not (or (kindIs "int" $minDomains) (kindIs "int64" $minDomains) (kindIs "float64" $minDomains)) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: spread.minDomains must be an integer >= 0 (0 = off), got %v (%s)" $minDomains (kindOf $minDomains)) -}}
+{{- end -}}
+{{- if or (ne (toString (int64 $minDomains)) (toString $minDomains)) (lt (int64 $minDomains) 0) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: spread.minDomains must be an integer >= 0 (0 = off), got %v" $minDomains) -}}
+{{- end -}}
 {{- range $k := list "hostname" "zone" -}}
 {{- $w := index $s $k -}}
 {{- if not (and (kindIs "string" $w) (has $w (list "ScheduleAnyway" "DoNotSchedule" ""))) -}}
@@ -198,12 +215,16 @@ to render with empty selectorLabels.
 {{- if $s.enabled -}}
 {{- range $k, $topo := dict "hostname" "kubernetes.io/hostname" "zone" "topology.kubernetes.io/zone" -}}
 {{- with (index $s $k) -}}
-{{- $constraints = append $constraints (dict
+{{- $tsc := dict
       "maxSkew" (int64 $skew)
       "topologyKey" $topo
       "whenUnsatisfiable" .
       "labelSelector" (dict "matchLabels" $sel)
-      "matchLabelKeys" (list "pod-template-hash")) -}}
+      "matchLabelKeys" (list "pod-template-hash") -}}
+{{- if and (eq . "DoNotSchedule") (gt (int64 $minDomains) 0) -}}
+{{- $_ := set $tsc "minDomains" (int64 $minDomains) -}}
+{{- end -}}
+{{- $constraints = append $constraints $tsc -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

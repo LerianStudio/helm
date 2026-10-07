@@ -1,0 +1,9 @@
+{{- if and .Values.agent.enabled .Values.agent.pdb.enabled }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" .Values.agent.pdb
+      "name" (include "lerian-agent.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name))
+      "selector" (include "lerian-agent.selectorLabels" (dict "context" . "name" .Values.agent.name))
+    ) }}
+{{- end }}

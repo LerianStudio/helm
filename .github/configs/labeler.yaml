@@ -73,3 +73,7 @@ br-slc:
 br-jd-courier:
   - changed-files:
       - any-glob-to-any-file: charts/br-jd-courier/**
+
+agent:
+  - changed-files:
+      - any-glob-to-any-file: charts/agent/**

@@ -92,7 +92,8 @@ Resolution (first matching tier wins):
      less constraint counts no pods and spreads nothing).
   2. Preset `spread`, resolved FIELD BY FIELD:
        component.spread.<field> > global.scheduling.spread.<field> > built-in
-     Built-in: enabled=false (off), hostname="", zone="", maxSkew=1, minDomains=0 (off).
+     Built-in: enabled=false (off), hostname="", zone="", maxSkew=1, minDomains=0 (off),
+     nodeTaintsPolicy="" (omitted: Kubernetes default Ignore).
   3. Nothing.
 
 Expected values shape (a library chart cannot ship defaults to its consumers —
@@ -106,6 +107,7 @@ each consumer declares these keys in its own values.yaml / schema):
         zone: ScheduleAnyway     # ScheduleAnyway | DoNotSchedule | "" (off) — topology.kubernetes.io/zone
         maxSkew: 1               # int >= 1
         minDomains: 0            # int >= 0; 0 = off. Applied to DoNotSchedule constraints only
+        nodeTaintsPolicy: ""     # Honor | Ignore | "" (omitted = Kubernetes default Ignore)
   <component>:
     spread: {}                   # same fields; each one set overrides the global one
     topologySpreadConstraints: [] # raw k8s list; non-empty = wins entirely
@@ -125,9 +127,17 @@ second replica Pending until another node exists (Karpenter honours it). It is
 only emitted on DoNotSchedule constraints: the API rejects minDomains with
 ScheduleAnyway.
 
+nodeTaintsPolicy (Kubernetes >= 1.26 beta, GA 1.33): with Ignore (the default)
+nodes carrying taints the pod does not tolerate still count as domains, e.g. a
+node Karpenter is draining (karpenter.sh/disrupted:NoSchedule) or a dedicated
+tainted pool matched by the node affinity. They distort skew and can satisfy
+minDomains while unable to take the pod. Honor counts only nodes whose taints the
+pod tolerates (Karpenter honours it). Applied to every preset constraint.
+
 Invalid input fails the render with an explicit message: unknown spread field,
 non-bool enabled, whenUnsatisfiable outside {ScheduleAnyway, DoNotSchedule, ""},
-non-integer or < 1 maxSkew, non-integer or < 0 minDomains, non-list
+non-integer or < 1 maxSkew, non-integer or < 0 minDomains, nodeTaintsPolicy
+outside {Honor, Ignore, ""}, non-list
 topologySpreadConstraints, or a constraint to render with empty selectorLabels.
 */}}
 {{- define "lerian-common.topologySpreadConstraints" -}}
@@ -172,8 +182,8 @@ topologySpreadConstraints, or a constraint to render with empty selectorLabels.
 {{- else -}}
 {{- /* Tier 2: preset, field-level precedence. hasKey (not `default`/merge) so an
        explicit component `false` / "" overrides a global true / ScheduleAnyway. */ -}}
-{{- $fields := list "enabled" "hostname" "zone" "maxSkew" "minDomains" -}}
-{{- $s := dict "enabled" false "hostname" "" "zone" "" "maxSkew" 1 "minDomains" 0 -}}
+{{- $fields := list "enabled" "hostname" "zone" "maxSkew" "minDomains" "nodeTaintsPolicy" -}}
+{{- $s := dict "enabled" false "hostname" "" "zone" "" "maxSkew" 1 "minDomains" 0 "nodeTaintsPolicy" "" -}}
 {{- range $tier := list (list "global.scheduling.spread" $globalSpread) (list "<component>.spread" $compSpread) -}}
 {{- $where := index $tier 0 -}}
 {{- $t := index $tier 1 -}}
@@ -182,7 +192,7 @@ topologySpreadConstraints, or a constraint to render with empty selectorLabels.
 {{- end -}}
 {{- range $k, $v := $t -}}
 {{- if not (has $k $fields) -}}
-{{- fail (printf "lerian-common.topologySpreadConstraints: unknown field %s.%s (allowed: enabled, hostname, zone, maxSkew, minDomains)" $where $k) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: unknown field %s.%s (allowed: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy)" $where $k) -}}
 {{- end -}}
 {{- if not (kindIs "invalid" $v) -}}
 {{- $_ := set $s $k $v -}}
@@ -206,6 +216,10 @@ topologySpreadConstraints, or a constraint to render with empty selectorLabels.
 {{- if or (ne (toString (int64 $minDomains)) (toString $minDomains)) (lt (int64 $minDomains) 0) -}}
 {{- fail (printf "lerian-common.topologySpreadConstraints: spread.minDomains must be an integer >= 0 (0 = off), got %v" $minDomains) -}}
 {{- end -}}
+{{- $taintPolicy := $s.nodeTaintsPolicy -}}
+{{- if not (and (kindIs "string" $taintPolicy) (has $taintPolicy (list "Honor" "Ignore" ""))) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: spread.nodeTaintsPolicy must be Honor, Ignore or \"\" (omitted), got %v" $taintPolicy) -}}
+{{- end -}}
 {{- range $k := list "hostname" "zone" -}}
 {{- $w := index $s $k -}}
 {{- if not (and (kindIs "string" $w) (has $w (list "ScheduleAnyway" "DoNotSchedule" ""))) -}}
@@ -223,6 +237,9 @@ topologySpreadConstraints, or a constraint to render with empty selectorLabels.
       "matchLabelKeys" (list "pod-template-hash") -}}
 {{- if and (eq . "DoNotSchedule") (gt (int64 $minDomains) 0) -}}
 {{- $_ := set $tsc "minDomains" (int64 $minDomains) -}}
+{{- end -}}
+{{- with $taintPolicy -}}
+{{- $_ := set $tsc "nodeTaintsPolicy" . -}}
 {{- end -}}
 {{- $constraints = append $constraints $tsc -}}
 {{- end -}}

@@ -78,7 +78,7 @@ Resolution, first match wins:
    entirely. An entry without `labelSelector` gets the component's selector labels.
 2. The `spread` preset, **field by field**: `<component>.spread.<field>` >
    `global.scheduling.spread.<field>` > built-in (`enabled: false`, `hostname: ""`,
-   `zone: ""`, `maxSkew: 1`, `minDomains: 0`).
+   `zone: ""`, `maxSkew: 1`, `minDomains: 0`, `nodeTaintsPolicy: ""`).
 3. Nothing.
 
 | Field | Values | Renders |
@@ -88,6 +88,7 @@ Resolution, first match wins:
 | `zone` | `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off) | constraint on `topology.kubernetes.io/zone` |
 | `maxSkew` | integer >= 1 (default 1) | `maxSkew` of every preset constraint |
 | `minDomains` | integer >= 0 (default 0 = off) | `minDomains` of every `DoNotSchedule` preset constraint (the API rejects it with `ScheduleAnyway`) |
+| `nodeTaintsPolicy` | `Honor` \| `Ignore` \| `""` (default, omitted = Kubernetes `Ignore`) | `nodeTaintsPolicy` of every preset constraint |
 
 `minDomains` closes a gap of hard spreads (Kubernetes >= 1.30). Skew is measured only
 against domains that already exist, so with a single eligible node, `hostname:
@@ -97,6 +98,12 @@ domain as empty: the second replica stays `Pending` until another node exists, a
 Karpenter (which honours `minDomains`) launches it. Use it with `DoNotSchedule` on
 autoscaled clusters; on fixed-size clusters it can leave pods `Pending`.
 
+`nodeTaintsPolicy: Honor` counts only nodes whose taints the pod tolerates. With the
+Kubernetes default (`Ignore`) a tainted node still counts as a domain: a node Karpenter
+is draining (`karpenter.sh/disrupted:NoSchedule`) or a dedicated tainted pool matched by
+the node affinity distorts the skew and can satisfy `minDomains` without being able to
+run the pod.
+
 Every preset constraint carries `labelSelector.matchLabels: <selectorLabels>` and
 `matchLabelKeys: [pod-template-hash]`, so only pods of the same ReplicaSet are
 counted and a rolling update never deadlocks on the old ReplicaSet's pods
@@ -105,7 +112,7 @@ enabled: beta since 1.27 and on by default, including 1.33, but it can be disabl
 Invalid input fails the render with an explicit
 `lerian-common.topologySpreadConstraints: ...` message (unknown field, non-bool
 `enabled`, bad `whenUnsatisfiable`, `maxSkew` < 1 or non-integer, `minDomains` < 0 or
-non-integer, non-list raw
+non-integer, bad `nodeTaintsPolicy`, non-list raw
 constraints, empty `selectorLabels`).
 
 A library chart cannot ship defaults to its consumers: each consumer declares the
@@ -129,7 +136,7 @@ Karpenter environments typically set:
 ```yaml
 global:
   scheduling:
-    spread: { hostname: DoNotSchedule, zone: ScheduleAnyway, maxSkew: 1, minDomains: 2 }
+    spread: { hostname: DoNotSchedule, zone: ScheduleAnyway, maxSkew: 1, minDomains: 2, nodeTaintsPolicy: Honor }
 ```
 
 `global.scheduling` may hold other env-wide scheduling keys (e.g. `nodeSelector`,

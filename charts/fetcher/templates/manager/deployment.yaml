@@ -61,9 +61,16 @@ spec:
                 name: {{ include "fetcher.fullname" . }}-common
             - secretRef:
                 name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "fetcher-manager.fullname" . }}{{ end }}
-          {{- if or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
+          {{- /* $(HOST_IP) is expanded only in env[].value, never through envFrom, so
+                 the node-local collector endpoint must be set here. Legacy path:
+                 common.configmap.ENABLE_TELEMETRY=true always uses it. Mask path
+                 (global.observability): only when the resolved endpoint is the
+                 $(HOST_IP) default, so a configured endpoint is kept. */}}
+          {{- $commonData := include "fetcher.commonConfigmapData" . | fromYaml | default dict }}
+          {{- $otelHostIP := or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and (eq (toString (index $commonData "ENABLE_TELEMETRY")) "true") (eq (toString (index $commonData "OTEL_EXPORTER_OTLP_ENDPOINT")) "http://$(HOST_IP):4317")) }}
+          {{- if or $otelHostIP (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
-          {{- if eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true" }}
+          {{- if $otelHostIP }}
             - name: "HOST_IP"
               valueFrom:
                 fieldRef:

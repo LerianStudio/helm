@@ -5,7 +5,8 @@ metadata:
   labels:
     {{- include "fetcher-worker.labels" . | nindent 4 }}
 data:
-  {{- $wc := .Values.worker.configmap | default dict }}
+  {{- $wc := deepCopy (.Values.worker.configmap | default dict) }}
+  {{- $wExtra := .Values.worker.extraEnvVars | default dict }}
   {{- /* Every key this ConfigMap generates on its own — the storage/streaming
      mask output plus VERSION/OTEL_RESOURCE_SERVICE_VERSION below — must be
      excluded from the worker.configmap and worker.extraEnvVars passthrough
@@ -20,6 +21,11 @@ data:
         "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_BUCKET" "OBJECT_STORAGE_USE_PATH_STYLE"
         "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"
   }}
+  {{- /* Legacy worker.extraEnvVars.STREAMING_* / OBJECT_STORAGE_* feed the masks
+     (worker.configmap wins) instead of being dropped by the passthrough filter. */ -}}
+  {{- range $k := $wcExplicit }}
+  {{- if and (hasKey $wExtra $k) (not (hasKey $wc $k)) (not (has $k (list "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"))) }}{{- $_ := set $wc $k (index $wExtra $k) }}{{- end }}
+  {{- end }}
   {{- range $key, $value := $wc }}
   {{- if not (has $key $wcExplicit) }}
   {{ $key }}: {{ $value | quote }}
@@ -63,9 +69,9 @@ data:
      skip any key the storage/streaming masks already generated above, else an
      operator redundantly setting one here produces a duplicate ConfigMap key
      (rejected server-side). worker.configmap remains the supported override. */ -}}
-  {{- with .Values.worker.extraEnvVars }}
+  {{- with $wExtra }}
   {{- range $key, $value := . }}
-  {{- if not (has $key $wcExplicit) }}
+  {{- if not (or (has $key $wcExplicit) (hasKey $wc $key)) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}

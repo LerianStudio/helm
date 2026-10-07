@@ -1,45 +1,33 @@
-{{- if .Values.hpa.enabled }}
-# The agent is single-instance per tenant by design (consistent polling, no
-# duplicate work claims). Only enable this if you have verified task
-# idempotency and horizontal work distribution.
+{{- if and .Values.agent.enabled .Values.agent.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "lerian-agent.name" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "lerian-agent.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
   labels:
-    {{- include "lerian-agent.labels" . | nindent 4 }}
+    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "lerian-agent.name" . }}
-  minReplicas: {{ .Values.hpa.minReplicas }}
-  maxReplicas: {{ .Values.hpa.maxReplicas }}
+    name: {{ include "lerian-agent.fullname" . }}
+  minReplicas: {{ .Values.agent.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.agent.autoscaling.maxReplicas }}
   metrics:
+    {{- with .Values.agent.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 80
+          averageUtilization: {{ . }}
+    {{- end }}
+    {{- with .Values.agent.autoscaling.targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: 80
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: 300
-      policies:
-        - type: Pods
-          value: 1
-          periodSeconds: 60
-    scaleUp:
-      stabilizationWindowSeconds: 60
-      policies:
-        - type: Pods
-          value: 1
-          periodSeconds: 30
+          averageUtilization: {{ . }}
+    {{- end }}
 {{- end }}

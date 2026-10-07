@@ -1,19 +1,27 @@
-{{- if .Values.networkPolicy.enabled }}
+{{- if and .Values.agent.enabled .Values.agent.networkPolicy.enabled }}
+{{- $name := include "lerian-agent.name" . }}
+{{- $fullname := include "lerian-agent.fullname" . }}
 # Egress of the agent and of the provisioning Jobs it runs, from one rule set.
 # No ingress rule: neither receives inbound connections.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "lerian-agent.name" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ $fullname }}
+  namespace: {{ include "global.namespace" . }}
   labels:
-    {{- include "lerian-agent.labels" . | nindent 4 }}
+    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
 spec:
-  # The name label, not the Deployment's "app" selector: the throwaway Pod a
-  # self-update runs a new build in carries it too, and needs the same egress.
+  # The name label, not the Deployment's selector: the throwaway Pod a
+  # self-update runs a new build in carries app.kubernetes.io/name=<Deployment
+  # name> and nothing the ReplicaSet would adopt, and needs the same egress.
   podSelector:
-    matchLabels:
-      app.kubernetes.io/name: {{ include "lerian-agent.name" . }}
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          {{- range list $name $fullname | uniq }}
+          - {{ . | quote }}
+          {{- end }}
   policyTypes:
     - Egress
   egress:
@@ -22,12 +30,12 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "lerian-agent.name" . }}-infra-runner
-  namespace: {{ .Release.Namespace }}
+  name: {{ $fullname }}-infra-runner
+  namespace: {{ include "global.namespace" . }}
   labels:
-    {{- include "lerian-agent.labels" . | nindent 4 }}
+    {{- include "lerian-agent.labels" (dict "context" . "component" "infra-runner" "name" .Values.agent.name) | nindent 4 }}
 spec:
-  # The labels the agent puts on every provisioning Job's pod (infra/runner.go).
+  # The labels the agent puts on every provisioning Job's pod.
   podSelector:
     matchLabels:
       app.kubernetes.io/managed-by: lerian-agent
@@ -53,40 +61,33 @@ spec:
     # Kubernetes API - required for every Helm operation.
     - to:
         - ipBlock:
-            cidr: {{ .Values.networkPolicy.kubernetesApi.cidr | quote }}
+            cidr: {{ .Values.agent.networkPolicy.kubernetesApiCidr | quote }}
       ports:
         - protocol: TCP
           port: 443
         - protocol: TCP
           port: 6443
 
-    # Control plane and chart registries: the port controlPlane.url names, 443,
-    # and every port an agent.allowedChartRegistries entry names. A port missing
-    # here is dropped, not refused: the agent hangs until its own timeout.
-    {{- $u := urlParse .Values.controlPlane.url }}
+    # Control plane and chart registries: the port CONTROL_PLANE_URL names, 443,
+    # and every port an AGENT_ALLOWED_CHART_REGISTRIES entry names. A port
+    # missing here is dropped, not refused: the agent hangs until its timeout.
+    {{- $u := urlParse .Values.agent.configmap.CONTROL_PLANE_URL }}
     {{- $cpPort := include "lerian-agent.hostPort" $u.host | default (ternary "80" "443" (eq $u.scheme "http")) }}
-    {{- $controlPlanePorts := list $cpPort "443" }}
-    {{- range .Values.agent.allowedChartRegistries }}
-    {{- with include "lerian-agent.hostPort" (first (splitList "/" (trim .))) }}
-    {{- $controlPlanePorts = append $controlPlanePorts . }}
+    {{- $ports := list $cpPort "443" }}
+    {{- range include "lerian-agent.csv" .Values.agent.configmap.AGENT_ALLOWED_CHART_REGISTRIES | fromJsonArray }}
+    {{- with include "lerian-agent.hostPort" (first (splitList "/" .)) }}
+    {{- $ports = append $ports . }}
     {{- end }}
     {{- end }}
     - to:
         - ipBlock:
-            cidr: {{ .Values.networkPolicy.controlPlane.cidr | quote }}
+            cidr: {{ .Values.agent.networkPolicy.controlPlaneCidr | quote }}
       ports:
-        {{- range $controlPlanePorts | uniq }}
+        {{- range $ports | uniq }}
         - protocol: TCP
           port: {{ . | int }}
         {{- end }}
-    {{- with .Values.networkPolicy.extraEgress }}
+    {{- with .Values.agent.networkPolicy.extraEgress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 {{- end }}
-
-{{- /* The port a host names ("reg:5000", "[fd00::1]:8443"), or nothing. */}}
-{{- define "lerian-agent.hostPort" -}}
-{{- $afterHost := . -}}
-{{- if contains "]" . }}{{ $afterHost = last (splitList "]" .) }}{{ end -}}
-{{- if contains ":" $afterHost }}{{ last (splitList ":" $afterHost) }}{{ end -}}
-{{- end -}}

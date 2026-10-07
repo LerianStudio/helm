@@ -1,15 +1,14 @@
-{{- if .Values.prometheusRule.enabled }}
-{{- /* compact BEFORE the default: a list of only blank entries is the same statement as no list at all, and letting it through renders a Role for no namespace and a rule matching namespace=~"" - both of them silent. */ -}}
-{{- $managed := .Values.agent.managedNamespaces | compact | uniq | default (list .Release.Namespace) -}}
-{{- $volume := .Values.prometheusRule.volumeAlerts | default dict -}}
+{{- if and .Values.agent.enabled .Values.agent.prometheusRule.enabled }}
+{{- $managed := include "lerian-agent.managedNamespaces" . | fromJsonArray -}}
+{{- $volume := .Values.agent.prometheusRule.volumeAlerts | default dict -}}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: {{ include "lerian-agent.name" . }}-alerts
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "lerian-agent.fullname" . }}-alerts
+  namespace: {{ include "global.namespace" . }}
   labels:
-    {{- include "lerian-agent.labels" . | nindent 4 }}
-    {{- with .Values.serviceMonitor.labels }}
+    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
+    {{- with .Values.agent.serviceMonitor.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
@@ -47,7 +46,7 @@ spec:
             runbook_url: 'https://docs.lerian.studio/runbooks/agent-stuck-work'
 
         - alert: LerianAgentDown
-          expr: up{job="lerian-agent"} == 0
+          expr: up{job="{{ include "lerian-agent.fullname" . }}"} == 0
           for: 2m
           labels:
             severity: critical
@@ -58,21 +57,9 @@ spec:
 {{- if $volume.enabled }}
 
     # Disk filling. NOT a signal the agent collects: a volume's used bytes are
-    # published by the kubelet and by nothing the agent is allowed to read, and
-    # reaching them would need a grant (nodes/proxy) that hands its holder
-    # every kubelet endpoint on the cluster, container logs and exec included.
-    # See docs/threat-model.md, "Disk filling: the signal Lerian does NOT
-    # collect".
-    #
-    # So this group exists instead: the same numbers, read by the Prometheus
-    # YOU already run and scraped from the kubelet the way every other node
-    # metric is, staying inside your cluster and reaching your own alerting.
-    # Nothing about it leaves for Lerian.
-    #
-    # Off by default because it depends on a scrape this chart does not set up:
-    # kubelet_volume_stats_* comes from the kubelet's /metrics/resource and
-    # kube-prometheus-stack collects it out of the box, while a hand-rolled
-    # Prometheus may not. Turn it on once you have confirmed the series exists.
+    # published by the kubelet only, and reaching them would need a grant
+    # (nodes/proxy) that hands its holder every kubelet endpoint on the
+    # cluster. The same numbers, read by YOUR Prometheus, stay in your cluster.
     - name: lerian-agent-volumes
       rules:
         - alert: LerianManagedVolumeFillingUp

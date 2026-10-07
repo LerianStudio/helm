@@ -1,31 +1,53 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
+  "additionalProperties": true,
   "properties": {
-    "image": {
-      "type": "object",
-      "properties": {
-        "digest": {
-          "type": "string",
-          "pattern": "^(|sha256:[a-f0-9]{64})$",
-          "description": "Empty to use image.tag, or an OCI image digest written as sha256:<64 lowercase hex characters>."
-        }
-      }
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
     },
     "agent": {
       "type": "object",
       "properties": {
-        "infraRunner": {
+        "image": {
           "type": "object",
           "properties": {
-            "image": {
+            "digest": {
+              "type": "string",
+              "pattern": "^(|sha256:[a-f0-9]{64})$",
+              "description": "Empty to use image.tag, or an OCI image digest written as sha256:<64 lowercase hex characters>."
+            }
+          },
+          "additionalProperties": true
+        },
+        "configmap": {
+          "type": "object",
+          "properties": {
+            "AGENT_INFRA_RUNNER_IMAGE": {
               "type": "string",
               "pattern": "^(|[^@\\s]+@sha256:[a-f0-9]{64})$",
-              "description": "Empty to leave cloud provisioning off, or the provisioning runner pinned by content digest (repository@sha256:<64 lowercase hex characters>). A tag is refused here as well as by the agent: this is the process that holds a role over your cloud account while it runs, and a tag is a name somebody can re-point after you approved it."
+              "description": "Empty to leave cloud provisioning off, or the provisioning runner pinned by content digest (repository@sha256:<64 lowercase hex characters>)."
             }
+          },
+          "additionalProperties": true
+        },
+        "secrets": {
+          "type": "object"
+        },
+        "managedNamespaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
-      }
+      },
+      "additionalProperties": true
     }
   }
 }

@@ -1,23 +1,26 @@
-# ClusterIP service exposing the agent's health/metrics endpoints
-# internally. The agent does not serve external traffic - it only polls the
-# control plane outbound.
+{{- if .Values.agent.enabled }}
+{{- /*
+The agent serves no external traffic - it only polls the control plane
+outbound. This exposes its health and metrics endpoints inside the cluster.
+*/}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "lerian-agent.name" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "lerian-agent.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
   labels:
-    {{- include "lerian-agent.labels" . | nindent 4 }}
+    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
+  {{- with .Values.agent.service.annotations }}
   annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "8081"
-    prometheus.io/path: "/metrics"
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
-  type: ClusterIP
-  selector:
-    app: {{ include "lerian-agent.name" . }}
+  type: {{ .Values.agent.service.type }}
   ports:
-    - name: metrics
-      port: 8081
-      targetPort: 8081
+    - name: http
+      port: {{ .Values.agent.service.port }}
+      targetPort: http
       protocol: TCP
+  selector:
+    {{- include "lerian-agent.selectorLabels" (dict "context" . "name" .Values.agent.name) | nindent 4 }}
+{{- end }}

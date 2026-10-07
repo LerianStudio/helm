@@ -1,721 +1,300 @@
-# Default values for lerian-agent.
-# See README.md for the full explanation of every field below.
+# Default values for the Lerian agent.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
 #
-# There is no `namespace` value: this chart does not create or select a
-# Namespace object, it just uses whatever namespace the release targets.
-# Set it with `helm install --namespace lerian-system --create-namespace`
-# (see README.md).
-
-# controlPlane.url is required: the base URL the agent polls for work and
-# sends heartbeats to (e.g. https://cp.example.com). Must be https://: the
-# agent sends its per-agent bearer token on every request, so a cleartext
-# http:// URL would expose the credential in transit.
-controlPlane:
-  url: ""
-
-  # allowInsecureURL permits a cleartext http:// controlPlane.url, for
-  # isolated dev/test clusters only (e.g. a kind-based smoke test where the
-  # control plane has no TLS). Never enable this in production: it also
-  # sets AGENT_ALLOW_INSECURE_HTTP=true on the agent, which otherwise
-  # refuses to send its bearer token over cleartext to a non-loopback host.
-  allowInsecureURL: false
+# The agent runs in YOUR cluster, polls the Lerian control plane over an
+# outbound-only connection and executes the Helm operations it is assigned.
+# See README.md for what it is allowed to do and what leaves your cluster.
+nameOverride: "lerian-agent"
+fullnameOverride: ""
+namespaceOverride: ""
 
 agent:
-  # agent.token is the credential this agent talks to the control plane with,
-  # and it takes one of TWO kinds. Required unless agent.existingSecret is set.
-  # Never set both.
-  #
-  #   * A PER-AGENT token, returned by the registration call
-  #     (POST /api/tenants/:id/agents). It only authenticates paired with the
-  #     agent UUID from the same response, so agent.id below is required with
-  #     it.
-  #
-  #   * An ENROLLMENT token (it starts with "lerian_enroll_"), returned by
-  #     POST /api/tenants/:id/agents/enrollments. Single-use, short-lived and
-  #     bound to one tenant: the agent redeems it on its first call, the
-  #     control plane issues the agent its own id and per-agent token, and the
-  #     enrollment token is dead from that moment. This is what `lerian
-  #     bootstrap aws` and the Marketplace CloudFormation stack put here, so a
-  #     cluster that does not exist yet can be handed a credential safely.
-  #     Leave agent.id EMPTY with one - the control plane assigns it.
-  token: ""
+  # -- Component name
+  name: agent
 
-  # agent.id is the agent UUID from the SAME registration response as a
-  # per-agent agent.token. Required whenever agent.token is a per-agent token
-  # (and thus agent.existingSecret is not set): a token only authenticates
-  # paired with the exact agent ID it was issued for, so `helm
-  # template`/`install` fails fast with a clear error if you set one without
-  # the other.
-  #
-  # Leave it empty when agent.token is an enrollment token. See README.md
-  # "Why agent.id matters".
-  id: ""
+  # -- Component description
+  description: "Lerian BYOC agent: executes the control plane's Helm operations in this cluster"
 
-  # agent.managedNamespaces lists every namespace this agent may WRITE to:
-  # install, upgrade and uninstall releases, write the Secrets a release
-  # needs, read pod logs and events when an install fails. Empty retains the
-  # chart's existing default: the release namespace is the sole stack-management
-  # namespace. The chart separately grants get/update on the one enrollment
-  # identity Secret, whether or not the release namespace appears in an explicit
-  # list here.
-  #
-  # Outside this list the agent can only read cluster-shape information
-  # (nodes, namespaces, pod/service counts, capability checks) - it cannot
-  # create a pod, so it cannot mount another ServiceAccount's token.
-  #
-  # An entry that is blank is dropped, and a list whose entries are ALL blank
-  # is read as no list at all: the release namespace, exactly as if the value
-  # were left empty. That is the only safe reading - a list that compacts to
-  # nothing would otherwise render no namespace Role and an alert rule matching
-  # no namespace, both of them silently.
-  #
-  # Every namespace listed here must already exist when the chart installs,
-  # and adding one later needs a `helm upgrade` of this chart. See README.md,
-  # "Which namespaces the agent may write to".
-  #
-  # Add `lerian-infra` if you want the deployer to be able to INSTALL the
-  # cluster components a red preflight offers (a default StorageClass, and
-  # whatever else the catalogue grows) instead of reporting them for somebody
-  # to install by hand. Not defaulted, because a namespace listed here has to
-  # exist already and defaulting it would fail every install that has not
-  # created it. See README.md, "Repairing a cluster from its preflight".
-  #
-  #   --set 'agent.managedNamespaces={midaz,lerian-infra}'
-  managedNamespaces: []
-
-  # agent.allowedChartRegistries lists the OCI registries this agent may pull
-  # CHARTS from. Empty means Lerian's own two chart hosts:
-  # ghcr.io/lerianstudio (the deployer's own charts) and
-  # registry-1.docker.io/lerianstudio (the product catalog: Midaz, Access
-  # Manager, Product Console).
-  #
-  # The control plane already tells the agent exactly which bytes to install
-  # (a content digest), but a digest never says whose host served them - so a
-  # control plane that has been taken over could name any registry and pin a
-  # perfectly valid digest for its own bytes. This list is the other half of
-  # that answer: the digest fixes what, this fixes from whom.
-  #
-  # Matching is by path component, not by text prefix: "ghcr.io/lerianstudio"
-  # allows "ghcr.io/lerianstudio/midaz" and refuses
-  # "ghcr.io/lerianstudio-evil/midaz". A bare host ("registry.internal.example")
-  # allows everything on that host. References carrying credentials are
-  # always refused. A mirror on a non-default port is allowed only when the
-  # entry names that exact host:port, for example
-  # "registry.internal.example:5000/mirrors".
-  #
-  # Set this when you mirror Lerian charts into your own registry, or install
-  # a third-party chart. There is no value that means "any registry": an empty
-  # list is the Lerian default, not a bypass.
-  #
-  #   --set 'agent.allowedChartRegistries={ghcr.io/lerianstudio,registry.internal.example/mirrors}'
-  allowedChartRegistries: []
-
-  # agent.allowedImageRegistries lists the registries this agent may pull its
-  # OWN IMAGE from. Empty means ghcr.io/lerianstudio - the single registry
-  # Lerian publishes the deployer's own images to. Same matching rules as
-  # allowedChartRegistries above.
-  #
-  # Narrower than the chart list, and that is not an oversight: the product
-  # catalog (Midaz, Access Manager, Product Console) is published to Docker
-  # Hub by other repositories, while every deployer image is on ghcr.io alone.
-  # One list for both would let a self-update pull from a registry that
-  # publishes no agent image at all. Set this when you mirror the agent image
-  # internally, or if you are still pinned to an image from before the move.
-  #
-  # One difference from the chart list, because container images are written
-  # differently: an image name with NO host means Docker Hub, not the first
-  # entry of this list. That is why image.repository below writes its host out
-  # in full ("ghcr.io/lerianstudio/agent"), and why a bare
-  # "lerianstudio/agent" is refused by this default - it names Docker
-  # Hub without saying so. If you mirror internally, write the host in
-  # image.repository too.
-  allowedImageRegistries: []
-
-  # agent.chartRegistry is the credential this agent presents when it pulls a
-  # CHART from a registry that refuses anonymous reads - a ghcr.io package
-  # published with `internal` visibility, or your own private mirror.
-  #
-  # Leave it empty - the default - and every chart pull is anonymous, exactly
-  # as it was before this existed. Public charts need nothing here.
-  #
-  # It is NOT the allowlist above and it does not widen it. The allowlist says
-  # which registries this agent may pull from at all; this says how it proves
-  # who it is at one of them. A chart from a host the allowlist refuses is
-  # refused before this credential is ever reached.
-  #
-  # HOW IT REACHES THE AGENT. As a `kubernetes.io/dockerconfigjson` Secret -
-  # the ordinary pull-secret shape, the one `kubectl create secret
-  # docker-registry` writes - mounted read-only as a file. The pod's
-  # environment carries the path, never the token, so reading this pod's
-  # environment yields nothing. The agent re-reads the file on every chart
-  # pull, so ROTATING THE SECRET NEEDS NO RESTART: update it and the next pull
-  # uses the new value, about a minute later, which is how long the kubelet
-  # takes to refresh a mounted Secret.
-  #
-  # ONE CREDENTIAL PER REGISTRY, and the host is what makes holding one safe.
-  # A credential is offered only to the registry its entry is keyed for: a
-  # chart reference naming any other registry is pulled anonymously, never with
-  # this password. That matters because the chart reference arrives from the
-  # control plane, and a credential that followed whatever host a reference
-  # named would let whoever writes that reference choose where your registry
-  # token goes.
-  #
-  # NARROW IT TO YOUR ORGANISATION. "ghcr.io/lerianstudio" is the recommended
-  # value, not just "ghcr.io": the agent matches a docker config key by longest
-  # prefix at a path boundary - the rule containerd and the kubelet apply - so
-  # that key is offered for Lerian's charts and for nothing else on ghcr.io.
-  #
-  # Write the rest exactly as it appears in your chart references. This chart
-  # folds only what it can fold without guessing: surrounding whitespace, the
-  # case of the HOST (a repository path keeps its case, because OCI path
-  # components are lowercase by specification), one leading `oci://`,
-  # `https://` or `http://`, and one trailing slash. A second scheme is refused
-  # here, because it is the one spelling this chart and the agent used to
-  # disagree about.
-  #
-  # A `:443` port and Docker Hub's other names are NOT folded when this file is
-  # rendered: the key is written as you spell it, and the AGENT folds both when
-  # it reads the file - "ghcr.io:443" and "ghcr.io" are one registry to it, as
-  # are "docker.io" and "registry-1.docker.io". So a rendered Secret may read
-  # `"ghcr.io:443"` and still be the credential used for `oci://ghcr.io/...`.
-  #
-  # Anything that cannot be a host at all - credentials before the host, an
-  # empty port, a trailing dot, whitespace inside it - is refused by the AGENT
-  # at boot, with the same code that compares this key against a chart
-  # reference. It is not restated here: one owner per rule, or the two drift.
-  #
-  # TLS ONLY. The credential travels as an HTTP Basic header and this agent
-  # never downgrades a request to cleartext, so a plain-HTTP mirror is not
-  # reachable with a credential - by design. Put your mirror behind TLS.
-  chartRegistry:
-    # chartRegistry.host is the registry the credential below belongs to -
-    # "ghcr.io/lerianstudio" for Lerian's own charts, which is the narrowest
-    # form and the one to prefer. There is no default: a credential whose scope
-    # was guessed would be offered to a registry nobody named, so a username
-    # and password set without a host are refused at render time here.
-    #
-    # A host with NO credential beside it is refused too. It used to render an
-    # agent that mounted nothing and pulled every chart anonymously, which
-    # against the private registry just named is a bare "unauthorized" from the
-    # one registry you are certain you configured.
-    #
-    # It applies to chartRegistry.username/password only. With
-    # chartRegistry.existingSecret the hosts are inside the Secret, so setting
-    # a host beside one is refused rather than silently ignored.
-    host: ""
-
-    # chartRegistry.username and chartRegistry.password are the credential
-    # itself - for ghcr.io, an org member's username and a personal access
-    # token with read:packages. BOTH or NEITHER, and always with host above:
-    # half a credential is refused at render time rather than left to produce
-    # an Authorization header the registry answers with the same flat
-    # "unauthorized" it answers an anonymous request with.
-    #
-    # Prefer chartRegistry.existingSecret below over putting a token in a
-    # values file. Set through --set, these land in the release's own stored
-    # values as well as in the Secret.
-    username: ""
-    password: ""
-
-    # chartRegistry.existingSecret references a Secret you manage yourself -
-    # one synced by External Secrets Operator, or one you created with
-    # `kubectl create secret docker-registry` - instead of having this chart
-    # create one from host/username/password above. Setting it alongside any of
-    # those three is refused at render time: they are two ways to produce the
-    # same object and one of them would be dead configuration.
-    #
-    # It must be of type `kubernetes.io/dockerconfigjson`, which is what both
-    # of those tools produce. That one Secret may name SEVERAL registries, one
-    # entry per host, and the agent honours all of them - which the
-    # host/username/password path above cannot express.
-    #
-    # Narrow it the same way: `--docker-server=ghcr.io/lerianstudio` scopes the
-    # credential to that organisation rather than to all of ghcr.io.
-    #
-    # This chart mounts the Secret into the agent and does nothing else with
-    # it. It is NOT added to any workload's imagePullSecrets. You may reuse the
-    # same Secret as an imagePullSecret yourself - the format is the kubelet's -
-    # but that is your values file's decision, not this chart's.
-    #
-    # Its lifecycle is yours, with one consequence: if it is missing when the
-    # pod starts, Kubernetes will not start the pod at all (it waits on the
-    # volume) rather than letting the agent fall back to anonymous pulls.
-    # Rotating it needs no restart, the same as the chart-created one.
-    existingSecret: ""
-
-  # agent.infraRunner configures how this agent provisions the MANAGED
-  # datastores of a stack - a database, cache or broker the deployer creates in
-  # YOUR OWN cloud account rather than one you point it at.
-  #
-  # The agent never provisions anything itself. It starts a Job in its own
-  # namespace from the runner image named here, and that Job holds the cloud
-  # role you granted. The agent holds no cloud credential at any point, which is
-  # why the two are separate images: reading the agent's process or environment
-  # does not yield your cloud role.
-  #
-  # WHAT IT DOES NOT DO, said here rather than left to be assumed. Setting this
-  # value installs a Role letting the agent create Jobs in its own namespace,
-  # and creating a Job here means naming any ServiceAccount of this namespace -
-  # including the one below, the one carrying your cloud role. An agent that is
-  # fully compromised can therefore reach that role by starting a Job of its
-  # own. The pin to a digest and the registry allowlist are enforced by agent
-  # code, which is exactly what a compromised agent is not running. If that
-  # matters to you - and on a production cloud account it should - add an
-  # admission policy (ValidatingAdmissionPolicy or Kyverno) in this namespace
-  # that admits a Job using the runner ServiceAccount only when its pod names
-  # the runner image by the digest you approved. That control is yours and the
-  # agent cannot rewrite it. docs/threat-model.md carries the same statement
-  # beside the grant.
-  #
-  # WHAT IT NEEDS FROM YOUR NETWORK. A provisioning Job reaches two places, and
-  # a cluster with restricted egress must allow both or the Job fails on its
-  # first step:
-  #
-  #   - your cloud provider's own API endpoints, which is the work itself;
-  #   - the provider registry the infrastructure binary downloads its plugins
-  #     from (registry.opentofu.org by default), on the first run in a given
-  #     module. The plugins are pinned: the run verifies every one of them
-  #     against the checksums recorded in the module bundle's dependency lock
-  #     and refuses anything else. It is a pinned fetch, not an unpinned one -
-  #     but it IS a fetch, and a cluster that blocks it sees a Job that cannot
-  #     start rather than a message about egress.
-  #
-  # Leave image empty - the default - if none of your stacks use managed
-  # datastores. The agent then refuses provisioning work and says so, rather
-  # than guessing an image, and the Job grant above is not installed at all.
-  infraRunner:
-    # infraRunner.image is the runner, pinned by content digest
-    # ("repository@sha256:..."). A tag is refused: this is the process that
-    # will hold a role over your cloud account, and a tag is a name somebody
-    # can re-point after you approved it.
-    #
-    #   --set 'agent.infraRunner.image=ghcr.io/lerianstudio/agent-infra-runner@sha256:...'
-    image: ""
-
-    # infraRunner.serviceAccount is the identity the provisioning Job runs as,
-    # in this release's namespace. It is where YOU attach the cloud role: on
-    # EKS an IRSA annotation, on GKE workload identity, on AKS the equivalent.
-    #
-    # Empty means the namespace's default ServiceAccount, which carries no
-    # cloud role - a provisioning run under it reaches your cloud with no
-    # credentials and fails saying so. Create the ServiceAccount yourself: the
-    # role it carries is a grant you make, and a chart that created it would be
-    # a chart claiming a permission on your behalf.
-    #
-    # The cloud role is ALL the provisioning Job gets. Its pod is created with
-    # automountServiceAccountToken disabled, so this ServiceAccount's Kubernetes
-    # API token is not mounted into it: the runner calls no Kubernetes API, and
-    # a process holding a role over your whole cloud account should not also
-    # hold an identity inside your cluster. Your cloud credential is unaffected
-    # - IRSA, EKS Pod Identity and GKE workload identity all deliver theirs
-    # through a volume their own admission webhook projects or through the
-    # node's metadata service, neither of which is that mount.
-    #
-    # Scope the role to what one class of datastore needs, prefixed by the
-    # stack's own name. A convenience module for that lives in the module
-    # bundle's own repository rather than here, because the grant is yours to
-    # make and yours to read before making it.
-    serviceAccount: ""
-
-    # The provisioning Job's requests AND limits; an RDS plan peaks near 450Mi and dies at 384Mi.
-    resources:
-      cpu: 500m
-      memory: 1Gi
-
-    # infraRunner.priorityClassName names a PriorityClass you created for the
-    # provisioning Job's pod. Empty leaves the cluster's default priority.
-    priorityClassName: ""
-
-    # infraRunner.allowedRegistries lists the registries a provisioning run may
-    # be assembled from - the runner image above AND the module bundles it
-    # executes. Empty means ghcr.io/lerianstudio, where Lerian publishes both.
-    #
-    # A third list rather than a widening of the two above, because what is at
-    # the end of it is different in kind: an image on the other lists runs
-    # inside your cluster, bounded by the namespaces you declared, while these
-    # run with a role over your whole cloud account and create things that
-    # bill. One list for both halves, because they compose into one process
-    # holding one role - moving provisioning to your own registry moves all of
-    # it.
-    allowedRegistries: []
-
-  # agent.secretVault is YOUR secret manager, and setting it changes where the
-  # credentials of everything this agent installs actually live.
-  #
-  # Without it, a credential the deployer generates for you - a session signing
-  # key, a factory administrator password, an OAuth client secret - exists in
-  # the control plane's database and as a Secret in this cluster, and nowhere
-  # else. Losing the cluster loses it. Rotating it means asking Lerian. And the
-  # login of a database the deployer provisions in your cloud account cannot
-  # reach your products at all, because the module writes it into your vault as
-  # it creates the database and nothing carries it out.
-  #
-  # With it, every one of those gets a home in YOUR vault at a stable address,
-  # and this cluster keeps its copy filled from there. A rotation you perform in
-  # your own vault reaches the running product without a redeploy, and a cluster
-  # you rebuild from nothing refills itself from your vault.
-  #
-  # WHAT IT NEEDS. The External Secrets operator installed in this cluster, and
-  # a SecretStore (or ClusterSecretStore) you created pointing at your vault -
-  # that store is what holds the cloud identity, and the agent never sees it.
-  # https://external-secrets.io. Scope that store's identity to the paths under
-  # pathPrefix: it is the control that keeps this agent from being able to name
-  # a path belonging to something else of yours.
-  secretVault:
-    # secretVault.provider is which cloud's secret manager it is: aws, gcp or
-    # azure. Empty turns all of this off.
-    provider: ""
-
-    # secretVault.storeName is the External Secrets store you created, and
-    # storeKind which of the two kinds it is - "ClusterSecretStore" (the
-    # default) or "SecretStore" for one scoped to a namespace. A store named
-    # here that does not exist is not an error you will see: the objects are
-    # accepted, never sync, and the install waits for a Secret that never
-    # arrives. Check the name.
-    storeName: ""
-    storeKind: ""
-
-    # secretVault.pathPrefix is where under your vault these secrets go. Empty
-    # means "lerian/deployer". Set it if your vault is shared with the rest of
-    # your estate - and scope the store's identity to the same prefix.
-    pathPrefix: ""
-
-    # secretVault.refreshInterval is how often this cluster re-reads your vault,
-    # as a duration ("1h", "15m"). Empty means one hour. It is the ceiling on
-    # how long a rotation you perform takes to reach a running product, and its
-    # cost is one vault read per secret per interval.
-    #
-    # Zero is NOT "as often as possible": External Secrets reads it as "fetch
-    # once and never again", which switches off both the rotation and the
-    # self-healing this vault is for. The platform refuses a vault reporting it,
-    # so on a cluster that never had one, secrets go back to being written the
-    # old way - into this cluster only. Set a real interval or leave it empty.
-    #
-    # And it is NOT how you turn a configured vault off. A refused report
-    # changes nothing on the platform side, so the vault already recorded for
-    # this cluster - with the interval it was recorded with - stays in force,
-    # and secrets keep being published into it. To turn it off, empty
-    # secretVault.provider and secretVault.storeName: that is what travels as
-    # "this cluster has no vault", and it is the only thing read as a removal.
-    refreshInterval: ""
-
-  # agent.existingSecret references a Secret you manage yourself (for
-  # example one synced by External Secrets Operator) instead of having this
-  # chart create one from agent.token/agent.id. When set, the chart creates
-  # no Secret. The referenced Secret must have the keys "token" and (per
-  # agent.id above) "agent-id".
-  existingSecret: ""
-
-image:
-  # Matches what the release pipeline actually publishes: the repository
-  # name, "agent" (see .github/workflows/release.yml). Not lerian-agent -
-  # that name has never been published as an image.
-  #
-  # The host is written out rather than left implicit. A host-less name means
-  # Docker Hub to every container runtime, and the deployer's images are
-  # published to ghcr.io/lerianstudio and nowhere else - so the short form
-  # would name a registry that receives no build, and be refused by
-  # agent.allowedImageRegistries above on the agent's first self-update.
-  repository: ghcr.io/lerianstudio/agent
-  # Empty by default: falls back to the chart's appVersion (see Chart.yaml),
-  # which the publish workflow sets to the release tag. Override to pin a
-  # specific agent version independent of the chart's own version.
-  tag: ""
-
-  # image.digest pins the agent image by content ("sha256:..."), and wins over
-  # image.tag when set.
-  #
-  # Set it after the control plane has moved this agent to a newer build. The
-  # agent updates itself by writing a digest onto its own Deployment, and this
-  # values file is the only place that change can be recorded: leave the digest
-  # empty and the next routine `helm upgrade` re-renders image.tag, walking the
-  # agent back to the older build with nothing in the diff saying that is what
-  # happened. Read the digest off the running Deployment:
-  #
-  #   kubectl -n <namespace> get deploy lerian-agent \
-  #     -o jsonpath='{.spec.template.spec.containers[0].image}'
-  digest: ""
-
-  pullPolicy: IfNotPresent
-
-# Names of Secrets holding credentials for pulling the agent image from a
-# private registry (BYOC clusters commonly mirror images internally).
-# Same shape Kubernetes expects: [{name: my-pull-secret}].
-imagePullSecrets: []
-
-resources:
-  requests:
-    memory: "64Mi"
-    cpu: "100m"
-  limits:
-    memory: "128Mi"
-    cpu: "200m"
-
-# Extra environment variables on the agent container, e.g. HTTPS_PROXY/
-# NO_PROXY for clusters behind a corporate proxy (open the proxy's port in
-# networkPolicy.extraEgress), or overriding a default
-# like LOG_LEVEL. Same shape as a pod spec's env: list
-# ([{name: ..., value: ...}] or [{name: ..., valueFrom: {...}}]). Appended
-# after the chart's own env vars - Kubernetes resolves a duplicate name to
-# whichever entry comes last in the list (verified: it is not "first
-# wins"), so anything set here overrides the chart's own same-named var.
-#
-# HELM_TIMEOUT bounds how long the agent waits for a single helm
-# install/upgrade to become ready before giving up and reporting the deploy
-# as failed. Default 15m. Raise it for heavy charts (a full Midaz stack, or
-# anything waiting on PVC provisioning or cold-node image pulls); lower it
-# if you would rather fail fast.
-#
-# extraEnv:
-#   - name: HELM_TIMEOUT
-#     value: "30m"
-extraEnv: []
-
-# The certificate authorities this agent trusts when it checks the addresses
-# your releases publish.
-#
-# By default it judges them the way a public browser does: the public roots
-# this container ships with, and nothing else. If you terminate TLS with your
-# OWN certificate authority - an internal PKI, a corporate root - then every
-# address you publish is correctly reported as one the agent cannot validate,
-# and you get an alert about each of them describing a cluster that is working
-# exactly as you built it.
-#
-# Point this at a ConfigMap in this release's namespace holding your root
-# certificates in PEM, one or more keys, and the agent judges those addresses
-# the way the browsers inside your organisation judge them.
-#
-#   kubectl -n lerian-system create configmap corporate-roots --from-file=root.pem
-#   --set trust.additionalCABundle=corporate-roots
-#
-# The ConfigMap is mounted read only and read once, at start: change it and
-# restart the agent (`kubectl rollout restart deploy/lerian-agent`). It needs
-# no RBAC - a mounted ConfigMap is the kubelet's read, not the agent's - so
-# turning this on grants the agent no new permission anywhere.
-#
-# Every connection the agent and its provisioning Job open trusts these roots
-# beside the public ones: behind a TLS-inspecting proxy, put its CA here. An
-# SSL_CERT_DIR of your own in extraEnv replaces this one.
-#
-# What happens when it is wrong, because each failure looks different:
-#
-#   * A key that is not a certificate (a note, a truncated PEM) is skipped
-#     with a warning and the agent starts on the public roots alone. Nothing
-#     refuses to come up - one bad key must not take an agent down - so the
-#     symptom you actually see is the alert flood this knob exists to prevent.
-#     Check the agent's log for "additional certificate authority bundle"
-#     after mounting one.
-#   * A private KEY in the bundle is ignored the same way, and only its
-#     filename is logged.
-#   * A ConfigMap that does not exist, with this set, is the loud failure: the
-#     pod schedules and then sits in ContainerCreating with a FailedMount
-#     event naming the missing ConfigMap. It never starts, so there is nothing
-#     silent about it. `kubectl describe pod` says which name it wanted.
-trust:
-  additionalCABundle: ""
-
-# BYOC clusters commonly have tainted or dedicated nodes (e.g. a
-# platform-tools node pool). Same shape as a pod spec's nodeSelector/
-# tolerations.
-nodeSelector: {}
-tolerations: []
-
-# WHAT THIS AGENT SENDS OUT OF YOUR CLUSTER, and what causes each of it.
-# There is no value to set here - the cadence and every ceiling are fixed in
-# the agent and in the control plane's policy - so it is written where you are
-# deciding whether to install rather than left to be discovered. The CEILINGS
-# are not repeated here: they live in one table in this chart's README ("What
-# leaves your cluster"), and a third copy would be the one that goes stale.
-#
-# CONTINUOUS, at the observation interval, nobody asks for it:
-#
-#   - A HEARTBEAT: this agent's id, the moment, that it is connected, the build
-#     it runs, and - if you set agent.secretVault below - which vault your
-#     secrets live in (provider, store name and kind, PATH PREFIX, refresh
-#     interval). No secret material. Plus the registries your cluster holds
-#     a chart-pull credential for - the hostnames and path prefixes off your
-#     pull Secret's own keys, re-read on every beat, never the credential.
-#     Part of the same list also leaves inside a failed chart pull's error
-#     text, cut to the named-scopes ceiling in the README's table.
-#
-#   - The HEALTH of each release the control plane asked this agent to watch:
-#     Helm's own status word, your workloads and their replica counts, your
-#     pods with phase, readiness and restart count, and anything the cluster
-#     refused to answer. This one leaves WHATEVER the capture switch says.
-#
-#   - The CONTAINER OUTPUT of a release that already looks wrong: the tail of
-#     what its stopped containers printed. Secret-shaped fields are removed BY
-#     NAME inside your cluster, before anything reaches the wire.
-#
-#   - The WARNING EVENTS of that release's namespace - where image-pull,
-#     scheduling and quota refusals live, none of which a pod reports.
-#
-#   - FIVE NUMBERS per release: CPU millicores, memory bytes, desired and ready
-#     replicas, restarts - each summed over the release's own pods. No pod
-#     name, no container name, no image, no label of yours.
-#
-# ON FAILURE:
-#
-#   - FAILURE EVIDENCE: the same output and the same events, on a failed
-#     install, upgrade, rollback or uninstall.
-#
-#   - THE TEXT OF A FAILURE: the error string verbatim, plus a sentence naming
-#     the operation. This one is NOT redacted - the redaction pass reaches
-#     container output and the cluster's own messages and nothing else - so it
-#     can carry a permission denial naming your ServiceAccount, verb, resource
-#     and namespace, an admission webhook's rejection echoing part of a
-#     manifest, or a registry's or TLS stack's own words. It leaves on the
-#     failure of ANY operation above or below, not only a deployment.
-#
-# ONLY WHEN A LERIAN OPERATOR ASKS, each read behind your consent and written
-# to your access log:
-#
-#   - A PREFLIGHT REPORT, which carries your own naming: your StorageClass and
-#     IngressClass names, what in-cluster DNS resolves to, registry hosts your
-#     pod cannot reach, the names of nodes a stack cannot land on and why, your
-#     nodes' platforms, and - if your cluster serves no IngressClass - ONE
-#     Service, its namespace and its public load-balancer address.
-#
-#   - A release's COMPUTED VALUES, which is everything Helm would use for it.
-#
-#   - LIVE RESOURCE STATS for one release: per-pod CPU and memory WITH the
-#     pod's name, replica counts, and your HorizontalPodAutoscaler by name.
-#     If the metrics API will not answer, the read still SUCCEEDS and carries
-#     that API's own refusal verbatim, cut to the ceiling in the README.
-#
-#   - An UPGRADE PREVIEW, before an upgrade is approved. Not one body but
-#     several: the manifests CURRENTLY DEPLOYED, read live out of your
-#     cluster; the manifests the upgrade would render; and a line diff of the
-#     two, which for an added or removed resource is every one of its lines.
-#
-#   - A STATUS CHECK's answer: Helm's status word and revision, the chart and
-#     its app version, your workloads' counts, your full pod list with names,
-#     and what the cluster refused to answer.
-#
-#   - A PROVISIONING RUN's result, when a stack has a managed datastore: plan
-#     or apply outcome, the approved change addresses and attribute paths
-#     (never their values), and THE ANSWERS THE MODULE PUBLISHED, names and
-#     values - your datastore's endpoint, port and database name. On failure,
-#     a sentence the agent composed, not your engine's output. The state
-#     backend is sent TO the agent, so it does not leave.
-#
-# WHAT NEVER LEAVES. Your complete continuous log: nothing here ships a log
-# stream, and a release that is behaving is never asked what it printed.
-# Anything outside agent.managedNamespaces - with ONE exception, the preflight,
-# which lists Services cluster-wide and may name one of them and its public
-# address, because otherwise "will anything route to this stack's hostnames" is
-# unanswerable. And this chart installs no log store and no dashboard of your
-# own - where your continuous logs live is your arrangement, and it is
-# unaffected by anything above.
-#
-# YOUR SWITCH. Each deployment carries an evidence-capture switch, on by
-# default, which you turn off with your own credential at
-# PUT /api/tenants/:id/deployments/:deploymentId/evidence-capture. Off, the
-# agent stops asking the cluster AND the control plane refuses to store what an
-# agent sent anyway. What stops is the container output, the Warning events and
-# the five numbers. Health is still observed and still reported: a Lerian
-# operator loses the WHY, never the WHAT. The HEARTBEAT is untouched too - the
-# switch is per deployment, the heartbeat is per agent - so everything listed
-# under it above keeps leaving, your declared registries included.
-
-# NetworkPolicies restricting the egress of the agent and of the provisioning
-# Jobs it runs to DNS, the Kubernetes API, the control plane and chart
-# registries. Enabled by default - neither needs ingress.
-networkPolicy:
+  # -- Enable or disable the agent
   enabled: true
 
-  # Kubernetes API egress. Default is permissive (any IP on 443/6443) for
-  # out-of-the-box compatibility. Restrict to your cluster's API/VPC CIDR in
-  # production.
-  kubernetesApi:
-    cidr: "0.0.0.0/0"
+  # -- Number of replicas. One agent per cluster is the supported model.
+  replicaCount: 1
 
-  # Control plane and chart registry egress: the port controlPlane.url names,
-  # 443, and every port an agent.allowedChartRegistries entry names. Scope this
-  # CIDR to the control plane alone and open your registry in extraEgress.
-  controlPlane:
-    cidr: "0.0.0.0/0"
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
 
-  # Egress rules appended verbatim to both policies. With both CIDRs narrowed, add
-  # the infra runner's cloud API and registry.opentofu.org (or a mirror). A proxy:
-  #   - {to: [{ipBlock: {cidr: 10.0.0.5/32}}], ports: [{protocol: TCP, port: 3128}]}
-  extraEgress: []
+  image:
+    # -- Repository for the agent container image. The host is written out:
+    # a host-less name means Docker Hub, and the agent refuses a self-update
+    # from a registry outside AGENT_ALLOWED_IMAGE_REGISTRIES.
+    repository: ghcr.io/lerianstudio/agent
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag used for deployment. Empty falls back to the chart's appVersion.
+    tag: ""
+    # -- Image digest ("sha256:..."), wins over tag. Set it after the control
+    # plane moved the agent to a newer build, so a routine `helm upgrade` does
+    # not walk it back.
+    digest: ""
 
-  # Narrowing BOTH CIDRs above also turns off certificate watching, silently.
-  #
-  # The agent learns when a published address's certificate is about to expire
-  # by making an ordinary TLS handshake to that address on 443, from inside
-  # this cluster - the same connection a browser makes.
-  #
-  # Both rules above open TCP 443, and egress rules are a union: a packet
-  # leaves if ANY rule admits it. So while either CIDR is still 0.0.0.0/0 the
-  # dials get out through that one, whatever the other says. Narrowing
-  # controlPlane.cidr alone - which the note above recommends - does NOT stop
-  # them, and neither does narrowing kubernetesApi.cidr alone.
-  #
-  # Narrow both, which is the production shape, and every dial is dropped: each
-  # address is then reported as unreachable, no expiry date is ever learned,
-  # and the certificate alerts go quiet - not because the certificates are
-  # healthy, but because nobody can see them.
-  #
-  # So when you narrow the second of the two, add the addresses your releases
-  # publish on 443 to extraEgress. Lerian counts the unreachable addresses on
-  # its side and a future release will alert you that certificate watching has
-  # gone blind; today it is this comment.
+  # -- Secrets for pulling images from a private registry
+  imagePullSecrets: []
 
-# Prometheus Operator ServiceMonitor. Off by default so the chart installs
-# cleanly on clusters without the monitoring.coreos.com CRDs.
-serviceMonitor:
-  enabled: false
-  interval: 30s
-  scrapeTimeout: 10s
-  # Extra labels merged onto the ServiceMonitor object itself (not the
-  # selector, which matches the Service, not this). kube-prometheus-stack
-  # only picks up ServiceMonitors carrying its own release label - commonly
-  # `release: prometheus`, but check `helm get values` on your prometheus
-  # release for the value it actually expects.
-  labels: {}
+  # -- Pod annotations for additional metadata
+  podAnnotations: {}
 
-# Prometheus Operator PrometheusRule with the agent's baseline alerts
-# (circuit breaker open, high poll error rate, stuck work items, agent
-# down). Off by default, same reasoning as serviceMonitor above - reuses
-# serviceMonitor.labels for the same release-label requirement.
-prometheusRule:
-  enabled: false
+  podSecurityContext:
+    # -- Ensures the pod does not run as root
+    runAsNonRoot: true
+    # -- Defines the user ID for the pod
+    runAsUser: 65532
+    # -- Defines the group ID for the pod
+    runAsGroup: 65532
+    # -- Group owning mounted volumes; the chart-registry credential file is
+    # readable only through it
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
 
-  # Disk-filling alerts for the volumes of the releases this agent manages.
-  #
-  # This is the one Epic-4.2 signal Lerian does NOT collect. A volume's USED
-  # bytes are published by the kubelet and by nothing in the Kubernetes API,
-  # and the grant that reaches them (nodes/proxy) hands its holder every
-  # kubelet endpoint on the cluster - container logs included, and with
-  # `create`, exec into any pod. That is not a permission worth a disk-usage
-  # number, so the agent does not ask for it and Lerian never sees these
-  # numbers. See docs/threat-model.md.
-  #
-  # What you get instead is this rule group: the same measurement, read by
-  # YOUR Prometheus from the kubelet it already scrapes, alerting through your
-  # own Alertmanager. Nothing about it leaves your cluster.
-  #
-  # Requires prometheusRule.enabled above, and a Prometheus that scrapes
-  # kubelet_volume_stats_* (kube-prometheus-stack does out of the box; a
-  # hand-rolled Prometheus may not). Confirm the series exists before turning
-  # this on, or the rule is a group that can never fire.
-  volumeAlerts:
+  securityContext:
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    allowPrivilegeEscalation: false
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
     enabled: false
-    # Fire when less than this fraction of a volume's capacity is free.
-    freeRatio: 0.15
-    # ...and has been for this long. A backup or a log burst recovers inside
-    # fifteen minutes; a volume genuinely filling does not.
-    for: 15m
+    # -- Maximum number of unavailable pods. minAvailable with a single replica
+    # would block every node drain.
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
 
-# One agent per cluster is the supported model (consistent polling,
-# no duplicate work claims): HPA and PDB exist for edge cases, off by
-# default.
-hpa:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 1
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Recreate: a rolling update would briefly run two pods with the same
+    # agent identity, both able to claim work
+    type: Recreate
 
-pdb:
-  enabled: false
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    # -- Port of the health and metrics endpoints. Matches HEALTH_SERVER_PORT.
+    port: 8081
+    # -- Service annotations
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8081"
+      prometheus.io/path: "/metrics"
+
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 100m
+      memory: 64Mi
+
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling. Only for an agent whose
+    # work distribution was verified: the agent is single-instance by design.
+    enabled: false
+    # -- Minimum number of replicas
+    minReplicas: 1
+    # -- Maximum number of replicas
+    maxReplicas: 1
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    # -- Target memory utilization percentage for autoscaling
+    targetMemoryUtilizationPercentage: 80
+
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: []
+
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+
+  # -- Startup probe configuration. All fields override chart defaults.
+  # The default allows 600s, which covers enrollment retries at first boot.
+  startupProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+
+  # -- Seconds a stopping pod is given: HELM_TIMEOUT (15m) plus the 5m
+  # rollback of a failed upgrade, so a running operation finishes before
+  # SIGKILL. Raise it together with HELM_TIMEOUT.
+  terminationGracePeriodSeconds: 1200
+
+  # -- ConfigMap for environment variables and configurations.
+  # An empty value is not rendered, and the agent applies its own default.
+  # @default -- templates/configmap.yaml
+  configmap:
+    # -- Base URL of the Lerian control plane (required). Must be https://:
+    # the agent sends its bearer token on every request.
+    CONTROL_PLANE_URL: ""
+    # -- Accept a cleartext http:// CONTROL_PLANE_URL. Isolated dev/test
+    # clusters only - never in production.
+    AGENT_ALLOW_INSECURE_HTTP: "false"
+
+    # Application Settings
+    ENV_NAME: "production"
+    LOG_LEVEL: "info"
+    HEARTBEAT_INTERVAL: "30s"
+    HEALTH_SERVER_PORT: "8081"
+    # -- How long one Helm install/upgrade may take before it is reported as
+    # failed. Raise terminationGracePeriodSeconds with it.
+    HELM_TIMEOUT: "15m"
+
+    # OpenTelemetry
+    ENABLE_TELEMETRY: "false"
+    OTEL_SERVICE_NAME: "lerian-agent"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+    # Registry allowlists, comma-separated. Empty means the agent's built-in
+    # Lerian defaults; there is no value meaning "any registry".
+    # -- OCI registries the agent may pull CHARTS from. Default:
+    # ghcr.io/lerianstudio and registry-1.docker.io/lerianstudio.
+    AGENT_ALLOWED_CHART_REGISTRIES: ""
+    # -- Registries the agent may pull its OWN image from. Default:
+    # ghcr.io/lerianstudio.
+    AGENT_ALLOWED_IMAGE_REGISTRIES: ""
+    # -- Registries a provisioning run (runner image and module bundles) may
+    # come from. Default: ghcr.io/lerianstudio.
+    AGENT_ALLOWED_PROVISIONING_REGISTRIES: ""
+
+    # Managed datastores in your own cloud account. Leave the image empty if
+    # no stack uses them: provisioning work is then refused, and the Job
+    # grant is not installed.
+    # -- Provisioning runner image, pinned by digest (repository@sha256:...)
+    AGENT_INFRA_RUNNER_IMAGE: ""
+    # -- ServiceAccount the provisioning Job runs as - where you attach the
+    # cloud role. Create it yourself.
+    AGENT_INFRA_RUNNER_SERVICE_ACCOUNT: ""
+    # -- Provisioning Job CPU (request and limit)
+    AGENT_INFRA_RUNNER_CPU: "500m"
+    # -- Provisioning Job memory (request and limit)
+    AGENT_INFRA_RUNNER_MEMORY: "1Gi"
+    # -- PriorityClass of the provisioning Job's pod
+    AGENT_INFRA_RUNNER_PRIORITY_CLASS: ""
+
+  # -- Secrets for storing sensitive data
+  # @default -- templates/secrets.yaml
+  secrets:
+    # -- A PER-AGENT token from POST /api/tenants/:id/agents, or a single-use
+    # ENROLLMENT token (lerian_enroll_...) from
+    # POST /api/tenants/:id/agents/enrollments
+    AGENT_TOKEN: ""
+    # -- The agent UUID from the same registration response as a per-agent
+    # token. Leave empty with an enrollment token.
+    AGENT_ID: ""
+
+  # -- Use an existing Secret (keys AGENT_TOKEN and, with a per-agent token,
+  # AGENT_ID) instead of the one this chart creates
+  useExistingSecret: false
+  existingSecretName: ""
+
+  # -- Extra environment variables, appended after the chart's own
+  # (e.g. HTTPS_PROXY/NO_PROXY for clusters behind a corporate proxy)
+  extraEnvVars: []
+
+  serviceAccount:
+    # -- Specifies whether a ServiceAccount should be created
+    create: true
+    # -- Annotations for the ServiceAccount
+    annotations: {}
+    # -- Name of the service account
+    # @default -- `lerian-agent.fullname`
+    name: ""
+
+  # -- Every namespace the agent may WRITE to: install, upgrade and uninstall
+  # releases, write their Secrets, read pod logs and events on failure. Empty
+  # means the release namespace only. Each must already exist, and adding one
+  # needs a `helm upgrade` of this chart.
+  managedNamespaces: []
+
+  # -- Credential the agent presents when pulling CHARTS from a registry that
+  # refuses anonymous reads. Empty: every chart pull is anonymous. It does not
+  # widen AGENT_ALLOWED_CHART_REGISTRIES. Use host + username + password, or
+  # existingSecret (a kubernetes.io/dockerconfigjson Secret), never both.
+  chartRegistry:
+    # -- Registry the credential belongs to; prefer "ghcr.io/lerianstudio"
+    host: ""
+    username: ""
+    password: ""
+    existingSecret: ""
+
+  # -- Your own secret manager, through the External Secrets operator: the
+  # credentials of everything this agent installs get a home in YOUR vault,
+  # and the cluster keeps its copy filled from there. Needs the operator and a
+  # store you created, scoped to pathPrefix. Empty provider turns it off.
+  secretVault:
+    # -- aws, gcp or azure
+    provider: ""
+    # -- The External Secrets store you created
+    storeName: ""
+    # -- ClusterSecretStore (default) or SecretStore
+    storeKind: ""
+    # -- Where under your vault the secrets go. Default: lerian/deployer
+    pathPrefix: ""
+    # -- How often the cluster re-reads your vault. Default: 1h. Never 0:
+    # External Secrets reads it as "fetch once".
+    refreshInterval: ""
+
+  trust:
+    # -- ConfigMap in the release namespace holding your own root certificates
+    # (PEM), trusted beside the public roots on every connection the agent and
+    # its provisioning Job open
+    additionalCABundle: ""
+
+  # -- Egress of the agent and of its provisioning Jobs: DNS, the Kubernetes
+  # API, the control plane and chart registries
+  networkPolicy:
+    # -- Enable or disable the NetworkPolicies
+    enabled: true
+    # -- Kubernetes API CIDR (443/6443). Restrict in production.
+    kubernetesApiCidr: "0.0.0.0/0"
+    # -- Control plane and chart registry CIDR. Restrict in production, and
+    # open your registry in extraEgress.
+    controlPlaneCidr: "0.0.0.0/0"
+    # -- Egress rules appended verbatim to both policies. Narrowing both CIDRs
+    # also stops certificate watching: add the addresses your releases
+    # publish on 443 here.
+    extraEgress: []
+
+  # -- Prometheus Operator ServiceMonitor (needs the monitoring.coreos.com CRDs)
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    # -- Extra labels for the ServiceMonitor and PrometheusRule, e.g.
+    # `release: prometheus` for kube-prometheus-stack
+    labels: {}
+
+  # -- Prometheus Operator PrometheusRule with the agent's baseline alerts
+  prometheusRule:
+    enabled: false
+    # -- Disk-filling alerts for the volumes of the managed releases, read by
+    # YOUR Prometheus from kubelet_volume_stats_*
+    volumeAlerts:
+      enabled: false
+      # -- Fire when less than this fraction of a volume is free...
+      freeRatio: 0.15
+      # -- ...for this long
+      for: 15m

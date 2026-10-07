@@ -55,3 +55,5 @@ global: {}
   #     hostname: ScheduleAnyway # kubernetes.io/hostname — ScheduleAnyway | DoNotSchedule | "" (off)
   #     zone: ScheduleAnyway     # topology.kubernetes.io/zone — same values
   #     maxSkew: 1               # integer >= 1
+  #     minDomains: 0            # integer >= 0, 0 = off; DoNotSchedule constraints only
+  #     nodeTaintsPolicy: ""     # Honor | Ignore | "" (omitted = Kubernetes default Ignore)

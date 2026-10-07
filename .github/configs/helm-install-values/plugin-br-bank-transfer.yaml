@@ -1,0 +1,10 @@
+# Since app 3.0.2 the service refuses to boot with ENV_NAME=production (the
+# chart default) unless LICENSE_KEY is set:
+#   ASSERTION FAILED: LICENSE_KEY is required in production
+# kind has no license, so the gate runs the workload as a non-production
+# environment. ENV_NAME goes through the global mask (global.env.name), the
+# same path an operator uses; the production license guard itself is the
+# application's contract, not the chart's.
+global:
+  env:
+    name: "development"

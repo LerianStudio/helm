@@ -130,16 +130,13 @@ spec:
       {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" "reporter-iam-tls") | trimPrefix "volumes:\n" | nindent 6 }}
       {{- end }}
-      {{- with .Values.worker.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.worker.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.worker.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, worker.spread, worker.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.worker
+            "global" .Values.global
+            "selectorLabels" (include "plugin-worker.selectorLabels" (dict "context" . "name" .Values.worker.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
 {{- end }}

@@ -166,7 +166,7 @@ so there is nothing to migrate onto that mask.
 | `common.configmap.REDIS_HOST` | Redis/Valkey host | `valkey` |
 | `common.configmap.REDIS_PORT` | Redis/Valkey port | `6379` |
 | `common.configmap.ALLOW_INSECURE_TLS` | Skip TLS certificate validation for MongoDB/RabbitMQ/Redis connections. Bundled dev-mode dependencies have no TLS, so the app refuses to connect unless this is `"true"`. Set to `"false"` in production with TLS-terminated backends. | `"true"` |
-| `worker.configmap.STREAMING_ENABLED` | Enable lib-streaming (CloudEvents) job notifications. The worker hard-requires this to be `"true"` and will not start without a reachable broker. | `"true"` |
+| `global.streaming.enabled` | Enables lib-streaming (CloudEvents) job notifications for the worker. When unset, the template defaults `STREAMING_ENABLED` to `"true"`. `worker.configmap.STREAMING_ENABLED` overrides it. With streaming on, the worker needs a reachable broker. | unset (template default `"true"`) |
 | `worker.configmap.STREAMING_BROKERS` | **REQUIRED when the worker is deployed** - Kafka/Redpanda bootstrap address(es), e.g. `redpanda.<namespace>:9092`. No working default; not bundled by this chart. | `""` |
 
 ### Secrets

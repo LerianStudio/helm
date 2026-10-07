@@ -206,15 +206,17 @@ topologySpreadConstraints, or a constraint to render with empty selectorLabels.
 {{- if not (or (kindIs "int" $skew) (kindIs "int64" $skew) (kindIs "float64" $skew)) -}}
 {{- fail (printf "lerian-common.topologySpreadConstraints: spread.maxSkew must be an integer >= 1, got %v (%s)" $skew (kindOf $skew)) -}}
 {{- end -}}
-{{- if or (ne (toString (int64 $skew)) (toString $skew)) (lt (int64 $skew) 1) -}}
-{{- fail (printf "lerian-common.topologySpreadConstraints: spread.maxSkew must be an integer >= 1, got %v" $skew) -}}
+{{- /* Numeric (not toString) integrality check: a large YAML number arrives as
+       float64 and would stringify in scientific notation. Upper bound: int32 in the API. */ -}}
+{{- if or (ne (float64 (int64 $skew)) (float64 $skew)) (lt (int64 $skew) 1) (gt (int64 $skew) 2147483647) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: spread.maxSkew must be an integer between 1 and 2147483647, got %v" $skew) -}}
 {{- end -}}
 {{- $minDomains := $s.minDomains -}}
 {{- if not (or (kindIs "int" $minDomains) (kindIs "int64" $minDomains) (kindIs "float64" $minDomains)) -}}
 {{- fail (printf "lerian-common.topologySpreadConstraints: spread.minDomains must be an integer >= 0 (0 = off), got %v (%s)" $minDomains (kindOf $minDomains)) -}}
 {{- end -}}
-{{- if or (ne (toString (int64 $minDomains)) (toString $minDomains)) (lt (int64 $minDomains) 0) -}}
-{{- fail (printf "lerian-common.topologySpreadConstraints: spread.minDomains must be an integer >= 0 (0 = off), got %v" $minDomains) -}}
+{{- if or (ne (float64 (int64 $minDomains)) (float64 $minDomains)) (lt (int64 $minDomains) 0) (gt (int64 $minDomains) 2147483647) -}}
+{{- fail (printf "lerian-common.topologySpreadConstraints: spread.minDomains must be an integer between 0 (off) and 2147483647, got %v" $minDomains) -}}
 {{- end -}}
 {{- $taintPolicy := $s.nodeTaintsPolicy -}}
 {{- if not (and (kindIs "string" $taintPolicy) (has $taintPolicy (list "Honor" "Ignore" ""))) -}}

@@ -1,0 +1,38 @@
+apiVersion: v2
+name: agent-helm
+description: >-
+  Lerian BYOC agent - runs in a customer's Kubernetes cluster, polls the Lerian
+  control plane over an outbound-only connection, and executes the Helm
+  operations the control plane assigns to it.
+type: application
+annotations:
+  lerian.studio/chart-type: single-service
+
+version: 1.0.0
+
+appVersion: "1.0.0"
+# The floor is the oldest Kubernetes the fleet actually boots and installs
+# this chart on, not the oldest one its API versions would tolerate
+# (autoscaling/v2 in hpa.yaml is stable since 1.23, policy/v1 in pdb.yaml
+# since 1.21). Promising a version nothing ever runs is a promise nobody
+# checked. The window lives in LerianStudio/deployer hack/fleet-matrix.json,
+# whose fleet installs this chart on every Kubernetes version in it.
+kubeVersion: ">=1.33.0-0"
+icon: https://avatars.githubusercontent.com/LerianStudio
+home: https://github.com/LerianStudio/helm
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/agent
+  - https://github.com/LerianStudio/agent
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+keywords:
+  - lerian
+  - byoc
+  - agent
+  - midaz
+
+dependencies:
+  - name: lerian-common-helm
+    version: "2.2.0"
+    repository: "oci://ghcr.io/lerianstudio"

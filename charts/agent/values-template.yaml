@@ -1,0 +1,51 @@
+# Template values for the agent deployment
+# Copy this file and customize for your environment
+
+namespaceOverride: ""
+
+agent:
+  enabled: true
+
+  image:
+    repository: ghcr.io/lerianstudio/agent
+    pullPolicy: IfNotPresent
+    tag: ""
+    digest: ""
+
+  imagePullSecrets: []
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+
+  configmap:
+    CONTROL_PLANE_URL: ""
+    ENV_NAME: "production"
+    LOG_LEVEL: "info"
+    AGENT_ALLOWED_CHART_REGISTRIES: ""
+    AGENT_ALLOWED_IMAGE_REGISTRIES: ""
+
+  secrets:
+    AGENT_TOKEN: ""
+    AGENT_ID: ""
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  managedNamespaces: []
+
+  chartRegistry:
+    host: ""
+    username: ""
+    password: ""
+    existingSecret: ""
+
+  networkPolicy:
+    enabled: true
+    kubernetesApiCidr: "0.0.0.0/0"
+    controlPlaneCidr: "0.0.0.0/0"
+    extraEgress: []

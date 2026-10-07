@@ -144,6 +144,10 @@ datastores a stack uses (RDS, ElastiCache, DocumentDB, Amazon MQ) are created
 with lerian-cli (`lerian infra`). The agent holds no cloud credential, and a
 provisioning work item is refused with that answer.
 
+This is separate from the preflight repair described above: installing a
+cluster component such as a default StorageClass is an ordinary Helm release
+into `lerian-infra`, inside the cluster, which the agent still performs.
+
 ## Updating the agent
 
 The control plane can move the agent to a newer build: the agent runs the

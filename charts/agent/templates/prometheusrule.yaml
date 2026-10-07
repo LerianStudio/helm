@@ -54,7 +54,7 @@ spec:
             severity: critical
           annotations:
             summary: 'Lerian Agent is down'
-            description: 'Agent {{ "{{ $labels.instance }}" }} has been down for more than 2 minutes'
+            description: 'Agent {{ "{{ $labels.job }}" }} in namespace {{ "{{ $labels.namespace }}" }} has been down, or absent from scraping, for more than 2 minutes'
             runbook_url: 'https://docs.lerian.studio/runbooks/agent-down'
 {{- if $volume.enabled }}
 

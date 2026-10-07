@@ -111,5 +111,11 @@ singleton:
 # Para o cluster de cliente ela vem desligada, porque o canal de configuração
 # remota é acordado caso a caso. Quando for habilitada, a Lerian entrega os três
 # valores e a chave `fleet-token` no mesmo Secret.
+# OBRIGATORIO nos BYOC: e o que permite ajustar a configuracao de coleta sem
+# pedir nada ao cliente — nenhum upgrade de chart, nenhuma janela de manutencao.
+#
+# `url` e `username` NAO aparecem aqui de proposito: sao infraestrutura nossa,
+# iguais para todos os clientes, e vem como default do chart. O unico valor que
+# o cliente fornece e o TOKEN, pelo Secret criado antes do install.
 fleetManagement:
-  enabled: false
+  enabled: true

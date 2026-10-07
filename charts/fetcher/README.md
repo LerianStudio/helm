@@ -117,7 +117,7 @@ so there is nothing to migrate onto that mask.
 | `nameOverride` | Override chart name | `""` |
 | `fullnameOverride` | Override full name | `""` |
 | `namespaceOverride` | Override namespace | `""` |
-| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1}` |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew / minDomains / nodeTaintsPolicy), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1, minDomains: 0, nodeTaintsPolicy: ""}` |
 | `manager.spread`, `worker.spread` | Field-level override of `global.scheduling.spread` for that Deployment | `{}` |
 | `manager.topologySpreadConstraints`, `worker.topologySpreadConstraints` | Raw list; non-empty replaces the preset entirely | `[]` |
 
@@ -236,6 +236,8 @@ global:
       hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
       zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
       maxSkew: 1               # integer >= 1
+      minDomains: 0            # DoNotSchedule constraints only; 0 = off
+      nodeTaintsPolicy: ""     # Honor | Ignore | "" (Kubernetes default Ignore)
 worker:
   spread: { hostname: DoNotSchedule }  # field-level override of the global preset
   topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
@@ -244,6 +246,25 @@ worker:
 Each constraint counts only the component's own pods of the same ReplicaSet
 (`matchLabelKeys: [pod-template-hash]`), so rolling updates never deadlock.
 Requires Kubernetes >= 1.27.
+
+On EKS + Karpenter use a hard node spread:
+
+```yaml
+global:
+  scheduling:
+    spread:
+      hostname: DoNotSchedule
+      zone: ScheduleAnyway
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: Honor
+```
+
+`minDomains: 2` is required with `DoNotSchedule`. Skew is measured only against nodes
+that already exist, so on a single eligible node both replicas would otherwise share it.
+With fewer than 2 nodes the second replica stays `Pending` until Karpenter launches
+another node. `nodeTaintsPolicy: Honor` stops tainted nodes (for example a node being
+drained) from counting as domains.
 
 ## Examples
 

@@ -1,8 +1,8 @@
-controlPlane:
-  url: "https://cp.example.com"
-
 agent:
-  token: "sample-agent-token"
-  id: "00000000-0000-0000-0000-000000000000"
+  configmap:
+    CONTROL_PLANE_URL: "https://cp.example.com"
+  secrets:
+    AGENT_TOKEN: "sample-agent-token"
+    AGENT_ID: "00000000-0000-0000-0000-000000000000"
   managedNamespaces:
     - midaz

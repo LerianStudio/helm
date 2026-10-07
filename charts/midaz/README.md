@@ -181,9 +181,15 @@ ingress:
 
 Every Deployment of this chart (ledger, crm and tracer) renders
 `topologySpreadConstraints` from the `lerian-common` spread preset. The default is
-**soft** (`ScheduleAnyway`) on both nodes and zones, so replicas of the same
-component are spread across nodes (e.g. spot nodes) and zones whenever possible,
-but a pod is never left `Pending` because of it.
+**soft** (`ScheduleAnyway`) across nodes, so replicas of the same
+component are spread across nodes (e.g. spot nodes)
+whenever possible, but a pod is never left `Pending` because of it.
+
+Zone spreading is **off** by default (`zone: ""`). When scoring a soft spread, the
+scheduler skips every node that lacks the `topology.kubernetes.io/zone` label, so on
+clusters without zone labels (bare-metal, k3s) a zone constraint silently cancels the
+node spread. Turn it on (`zone: ScheduleAnyway`) where every node carries zone labels
+(EKS, GKE, AKS).
 
 ```yaml
 global:
@@ -191,7 +197,7 @@ global:
     spread:
       enabled: true            # master switch
       hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
-      zone: ScheduleAnyway     # topology.kubernetes.io/zone: same values
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
       maxSkew: 1               # integer >= 1
 ledger:
   spread: { hostname: DoNotSchedule }  # field-level override of the global preset

@@ -53,7 +53,7 @@
 | `global.serviceDiscovery` | object | `{}` | Env-wide service discovery (Consul): see lerian-common.serviceDiscovery.env. |
 | `global.scheduling.spread.enabled` | bool | `true` | Master switch for the topologySpreadConstraints preset (lerian-common.topologySpreadConstraints) applied to every Deployment (ledger, crm and tracer). Each constraint counts only the component's own pods of the same ReplicaSet (`matchLabelKeys: [pod-template-hash]`). |
 | `global.scheduling.spread.hostname` | string | `"ScheduleAnyway"` | Spread across nodes (`kubernetes.io/hostname`): `ScheduleAnyway` (soft) \| `DoNotSchedule` (hard) \| `""` (off). |
-| `global.scheduling.spread.zone` | string | `"ScheduleAnyway"` | Spread across zones (`topology.kubernetes.io/zone`): `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off). |
+| `global.scheduling.spread.zone` | string | `""` | Spread across zones (`topology.kubernetes.io/zone`): `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off). Off by default: nodes without the zone label are skipped when scoring a soft spread, which would cancel the hostname spread on bare-metal/k3s. |
 | `global.scheduling.spread.maxSkew` | int | `1` | Max allowed pod-count difference between topology domains (integer >= 1). |
 | `ledger.readinessProbe` | object | `{}` | Readiness probe configuration. All fields override chart defaults. |
 | `ledger.livenessProbe` | object | `{}` | Liveness probe configuration. All fields override chart defaults. |

@@ -14,9 +14,6 @@
 # se o upgrade preserva o workload — nao o caminho de credencial, que ja tem
 # cobertura propria nas guardas de render.
 #
-# As duas variaveis abaixo sao injetadas pelo Fleet em producao; aqui elas vem
-# literais porque `fleetManagement.enabled: false` e o unico modo em que o
-# ConfigMap local contem a cadeia inteira, que e o que esta porta deve validar.
 profile: own
 
 origin:
@@ -29,18 +26,13 @@ fleetManagement:
   # exercitado nada do que importa.
   enabled: false
 
-node:
-  alloy:
-    extraEnv:
-      - name: ALLOY_CLIENT_ID
-        value: porta-stg
-      - name: ALLOY_DESTINATION_ENDPOINT
-        value: http://localhost:4318
-
-singleton:
-  alloy:
-    extraEnv:
-      - name: ALLOY_CLIENT_ID
-        value: porta-stg
-      - name: ALLOY_DESTINATION_ENDPOINT
-        value: http://localhost:4318
+# ALLOY_CLIENT_ID e ALLOY_DESTINATION_ENDPOINT NAO sao declarados: o chart os
+# deriva de `origin.id` e `destination.endpoint` e entrega por `envFrom`.
+# Declara-los aqui reintroduziria a divergencia que o chart agora recusa.
+#
+# O endpoint aponta para localhost porque esta porta nao entrega telemetria a
+# lugar nenhum — ela valida que o chart SOBE e que o upgrade preserva o
+# workload. `http` so passa a guarda porque o perfil `own` nao autentica, e sem
+# credencial nao ha o que vazar em texto claro.
+destination:
+  endpoint: http://localhost:4318

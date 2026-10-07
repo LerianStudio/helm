@@ -313,6 +313,15 @@ alloy-lerian-node
 alloy-lerian-singleton
 {{- end -}}
 
+{{/*
+Nome do ConfigMap de variaveis derivadas. Fixo pela MESMA razao que os dois
+acima: o `envFrom` que o referencia vive no values do subchart, que e YAML
+estatico e nao alcanca `.Release.Name`.
+*/}}
+{{- define "alloy-lerian.envConfigMapName" -}}
+alloy-lerian-env
+{{- end -}}
+
 
 {{/*
 ==============================================================================

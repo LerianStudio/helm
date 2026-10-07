@@ -272,9 +272,10 @@ Esse é exatamente o modo de falha silenciosa que este chart já corrigiu quatro
 vezes (credencial, cAdvisor 403, overlay nulo, token do Fleet `optional: true`).
 Daí a guarda no render.
 
-O valor VEM de `origin.id`, e o cliente não o repete: o exemplo declara
-`valueFrom` apontando para o mesmo lugar. O chart não consegue injetar sozinho —
-`extraEnv` é do subchart, estático no values.
+O valor VEM de `origin.id`, e o cliente não o repete: o chart o deriva e entrega
+por `envFrom`, de um ConfigMap que ele mesmo renderiza. Esta guarda continua
+valendo para quem SOBRESCREVE a variável a mão — e aí confere também se o valor
+diverge, logo abaixo.
 */}}
 {{- define "alloy-lerian.assertClientIdEnv" -}}
 {{- range $papel := list "node" "singleton" -}}
@@ -282,11 +283,51 @@ O valor VEM de `origin.id`, e o cliente não o repete: o exemplo declara
 {{- if $cfg -}}
 {{- if $cfg.enabled -}}
 {{- $nomes := list -}}
+{{- $valores := dict -}}
 {{- range $e := (($cfg.alloy).extraEnv | default list) -}}
 {{- $nomes = append $nomes $e.name -}}
+{{- if hasKey $e "value" -}}
+{{- $_ := set $valores $e.name (toString $e.value) -}}
+{{- end -}}
+{{- end -}}
+{{/*
+As variaveis DERIVADAS chegam por `envFrom`, apontando o ConfigMap que o chart
+renderiza de `origin.id` e `destination.endpoint`. Conta como declarada: para o
+contêiner, `envFrom` e `extraEnv` produzem a mesma variavel.
+
+So vale quando o envFrom e O NOSSO. Um envFrom para outro ConfigMap nao diz nada
+sobre estas chaves, e tratar como equivalente devolveria a falha silenciosa que a
+guarda existe para impedir.
+*/}}
+{{- range $ef := (($cfg.alloy).envFrom | default list) -}}
+{{- if eq (($ef.configMapRef).name | default "") (include "alloy-lerian.envConfigMapName" $) -}}
+{{- $nomes = append $nomes "ALLOY_CLIENT_ID" -}}
+{{- $nomes = append $nomes "ALLOY_DESTINATION_ENDPOINT" -}}
+{{- end -}}
 {{- end -}}
 {{- if not (has "ALLOY_CLIENT_ID" $nomes) -}}
 {{- fail (printf "\n\nalloy-lerian: `%s.alloy.extraEnv` nao declara ALLOY_CLIENT_ID.\n\nA configuracao de coleta e a MESMA para todos os clientes; o que distingue um do\noutro e esta variavel. Sem ela a telemetria chega INATRIBUIVEL — `sys.env` de\nvariavel ausente devolve string vazia, o agente sobe normalmente, e o cliente\ndesaparece de todo painel e dos alertas de ingestao.\n\nAcrescente em `%s.alloy.extraEnv`:\n\n  - name: ALLOY_CLIENT_ID\n    value: <o mesmo valor de origin.id>\n\nVer examples/values-cliente.yaml.\n" $papel $papel) -}}
+{{- end -}}
+{{/*
+Divergencia entre a variavel e `origin.id`.
+
+O caminho normal nem chega aqui: a variavel vem derivada por `envFrom`, da mesma
+fonte, e nao ha o que divergir. Isto cobre quem SOBRESCREVE a mao em `extraEnv` —
+que continua possivel, e e onde a divergencia nasce.
+
+⚠️ Por que diverge na pratica: `origin.id` e a procedencia que o chart valida, e
+`ALLOY_CLIENT_ID` e o que o agente carimba em cada registro — sao DOIS lugares
+com o mesmo valor, repetido a mao. Trocar um e esquecer o outro nao falha em
+lugar nenhum: o agente sobe, a telemetria chega, e chega carimbada com o cliente
+ERRADO. Pior que ausente, porque ausente ao menos some do painel; divergente
+aparece no painel de outro cliente.
+
+So compara `value` literal. Um `valueFrom` nao e legivel no render — o valor so
+existe no pod — e ai a conferencia fica com a guarda de presenca.
+*/}}
+{{- $cid := index $valores "ALLOY_CLIENT_ID" -}}
+{{- if and $cid (ne $cid $.Values.origin.id) -}}
+{{- fail (printf "\n\nalloy-lerian: ALLOY_CLIENT_ID diverge de origin.id.\n\n  origin.id ................................. %s\n  %s.alloy.extraEnv/ALLOY_CLIENT_ID ......... %s\n\nOs dois carregam o mesmo valor: `origin.id` e a procedencia que o chart valida,\ne a variavel e o que o agente carimba em CADA registro. Divergentes, nada falha —\no agente sobe, a telemetria chega, e chega atribuida ao cliente ERRADO, aparecendo\nno painel de outro.\n\nDeixe os dois com o valor de `origin.id`, ou remova o `value` e aponte a variavel\npara a mesma fonte. Ver examples/values-cliente.yaml.\n" $.Values.origin.id $papel $cid) -}}
 {{- end -}}
 {{/*
 Mesma familia de falha que a variavel acima, com consequencia diferente: sem
@@ -298,6 +339,15 @@ estourar. O sintoma e "nao chega nada", sem nenhum erro que aponte a causa.
 */}}
 {{- if not (has "ALLOY_DESTINATION_ENDPOINT" $nomes) -}}
 {{- fail (printf "\n\nalloy-lerian: `%s.alloy.extraEnv` nao declara ALLOY_DESTINATION_ENDPOINT.\n\nO destino saiu do texto da configuracao publicada e passou a vir do ambiente do\npod, porque a configuracao no Fleet e UMA para todos e o destino NAO e igual para\ntodos: os ambientes internos entregam a um balanceador interno que nao passa pelo\ngateway.\n\nMEDIDO: com o endpoint errado o ponto de entrada responde 403, que e falha\nPERMANENTE — o dado e descartado na hora, sem reenvio.\n\nAcrescente em `%s.alloy.extraEnv`:\n\n  - name: ALLOY_DESTINATION_ENDPOINT\n    value: <o mesmo valor de destination.endpoint>\n\n⚠️ O valor de `destination.endpoint` no values CONTINUA sendo obrigatorio: e ele\nque o chart valida (recusa http quando o perfil envia credencial). A variavel e o\nque chega ao agente; a entrada do values e o que e conferido. Os dois precisam\ndizer a mesma coisa.\n\nVer examples/values-cliente.yaml.\n" $papel $papel) -}}
+{{- end -}}
+{{/*
+Mesma conferencia de divergencia, para o destino. O custo de errar aqui esta
+MEDIDO: endpoint errado recebe 403, que e falha PERMANENTE — descarte na hora,
+sem reenvio.
+*/}}
+{{- $ep := index $valores "ALLOY_DESTINATION_ENDPOINT" -}}
+{{- if and $ep (ne $ep $.Values.destination.endpoint) -}}
+{{- fail (printf "\n\nalloy-lerian: ALLOY_DESTINATION_ENDPOINT diverge de destination.endpoint.\n\n  destination.endpoint ............................. %s\n  %s.alloy.extraEnv/ALLOY_DESTINATION_ENDPOINT ..... %s\n\nA entrada do values e o que o chart CONFERE (recusa http quando o perfil envia\ncredencial); a variavel e o que o agente USA. Divergentes, a conferencia passa\nsobre um endereco que nao e o que vai ser usado.\n\nMEDIDO: endpoint errado responde 403, que e falha PERMANENTE — o dado e\ndescartado na hora, sem reenvio.\n\nOs dois sobrescrevem juntos ou nenhum. Ver examples/values-cliente.yaml.\n" $.Values.destination.endpoint $papel $ep) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

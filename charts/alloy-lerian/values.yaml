@@ -773,6 +773,23 @@ node:
     # out-of-band secret allowlist so the render gate does not flag it.
     # Remove this entry for the own profile, where the platform does not
     # validate the credential.
+    # ⚠️ ESTE e o lugar certo para default de variavel, e `extraEnv` NAO e.
+    #
+    # `extraEnv` e LISTA, e lista de values nao faz merge: o cliente que declara
+    # a sua SUBSTITUI a do chart inteira. MEDIDO — com o cliente declarando so
+    # ALLOY_CLIENT_ID, o pod sobe com `[ALLOY_DEPLOY_MODE HOSTNAME
+    # K8S_NODE_NAME ALLOY_CLIENT_ID]`: endpoint, credencial e Fleet somem todos.
+    #
+    # `envFrom` e chave SEPARADA no subchart (verificado em
+    # containers/_agent.yaml do upstream), entao o cliente mexe em `extraEnv`
+    # sem derrubar estas. O ConfigMap e renderizado pelo chart a partir de
+    # `origin.id` e `destination.endpoint` — mesma fonte, nada a divergir.
+    #
+    # Nome fixo, nao derivado do release: este values e estatico e nao alcanca
+    # `.Release.Name`. Mesma razao dos ConfigMaps de configuracao.
+    envFrom:
+      - configMapRef:
+          name: alloy-lerian-env
     extraEnv:
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
@@ -813,11 +830,17 @@ node:
           secretKeyRef:
             name: alloy-lerian
             key: fleet-token
-            # Opcional aqui, ao contrário da credencial de telemetria: enquanto
-            # o Fleet Management estiver desligado a chave não precisa existir
-            # no Secret. Quando ligado, a guarda do chart exige a variável, e a
-            # ausência da chave falha na criação do pod.
-            optional: true
+            # `false`, acompanhando o default de `fleetManagement.enabled: true`.
+            #
+            # Era `true` de quando o Fleet vinha desligado — e ai o default fazia
+            # sentido: sem Fleet a chave nao precisa existir. Com o Fleet LIGADO
+            # por padrao, `true` virou o default errado, do mesmo tipo que este
+            # chart ja corrigiu quatro vezes: o agente sobe, remotecfg autentica,
+            # falha, e nunca recebe configuracao — visivel SO no log do pod.
+            #
+            # Quem roda sem Fleet e o perfil `own`, que desliga
+            # `fleetManagement.enabled` e com isso sai do caminho desta chave.
+            optional: false
     resources:
       requests:
         cpu: 100m
@@ -985,6 +1008,23 @@ singleton:
     # No inbound ports: this role watches the cluster API and scrapes, it does
     # not receive pushes.
     extraPorts: []
+    # ⚠️ ESTE e o lugar certo para default de variavel, e `extraEnv` NAO e.
+    #
+    # `extraEnv` e LISTA, e lista de values nao faz merge: o cliente que declara
+    # a sua SUBSTITUI a do chart inteira. MEDIDO — com o cliente declarando so
+    # ALLOY_CLIENT_ID, o pod sobe com `[ALLOY_DEPLOY_MODE HOSTNAME
+    # K8S_NODE_NAME ALLOY_CLIENT_ID]`: endpoint, credencial e Fleet somem todos.
+    #
+    # `envFrom` e chave SEPARADA no subchart (verificado em
+    # containers/_agent.yaml do upstream), entao o cliente mexe em `extraEnv`
+    # sem derrubar estas. O ConfigMap e renderizado pelo chart a partir de
+    # `origin.id` e `destination.endpoint` — mesma fonte, nada a divergir.
+    #
+    # Nome fixo, nao derivado do release: este values e estatico e nao alcanca
+    # `.Release.Name`. Mesma razao dos ConfigMaps de configuracao.
+    envFrom:
+      - configMapRef:
+          name: alloy-lerian-env
     extraEnv:
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
@@ -1017,7 +1057,8 @@ singleton:
           secretKeyRef:
             name: alloy-lerian
             key: fleet-token
-            optional: true
+            # ver a nota no papel node
+            optional: false
     resources:
       requests:
         cpu: 50m

@@ -17,29 +17,16 @@ destination:
 # sem isto — de propósito: um pod que sobe sem credencial recebe 401, que é falha
 # PERMANENTE, e perde telemetria em silêncio.
 #
+# ALLOY_CLIENT_ID e ALLOY_DESTINATION_ENDPOINT NAO aparecem: o chart os deriva de
+# `origin.id` e `destination.endpoint` e entrega por `envFrom`. Declara-los aqui
+# reintroduziria a divergencia que o chart agora recusa no render.
+#
 # Espelha examples/values-cliente.yaml, que é o que o cliente realmente usa. A
 # fixture precisa exercitar a mesma configuração; se divergir, a porta de render
 # valida um caminho que ninguém instala.
 node:
   alloy:
     extraEnv:
-      # ⚠️ A config publicada no Fleet e UMA SO para todos os clientes.
-      # Esta variavel e o que distingue um do outro — sem ela a telemetria
-      # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
-      - name: ALLOY_CLIENT_ID
-        value: sample-prd
-      # ⚠️ Precisa dizer o MESMO que `destination.endpoint` acima.
-      #
-      # O destino saiu do texto da configuracao publicada no Fleet: aquela
-      # configuracao e UMA para todos os clientes, e o destino nao e igual para
-      # todos — os ambientes internos entregam a um balanceador interno que nao
-      # passa pelo gateway.
-      #
-      # A entrada do values continua obrigatoria: e ela que o chart valida
-      # (recusa http quando o perfil envia credencial, para o token nao viajar
-      # em texto claro). Esta variavel e o que chega ao agente.
-      - name: ALLOY_DESTINATION_ENDPOINT
-        value: https://telemetry.invalid/v1
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
           secretKeyRef:
@@ -60,23 +47,6 @@ node:
 singleton:
   alloy:
     extraEnv:
-      # ⚠️ A config publicada no Fleet e UMA SO para todos os clientes.
-      # Esta variavel e o que distingue um do outro — sem ela a telemetria
-      # chega INATRIBUIVEL, sem nenhum erro. Use o mesmo valor de origin.id.
-      - name: ALLOY_CLIENT_ID
-        value: sample-prd
-      # ⚠️ Precisa dizer o MESMO que `destination.endpoint` acima.
-      #
-      # O destino saiu do texto da configuracao publicada no Fleet: aquela
-      # configuracao e UMA para todos os clientes, e o destino nao e igual para
-      # todos — os ambientes internos entregam a um balanceador interno que nao
-      # passa pelo gateway.
-      #
-      # A entrada do values continua obrigatoria: e ela que o chart valida
-      # (recusa http quando o perfil envia credencial, para o token nao viajar
-      # em texto claro). Esta variavel e o que chega ao agente.
-      - name: ALLOY_DESTINATION_ENDPOINT
-        value: https://telemetry.invalid/v1
       - name: ALLOY_DESTINATION_CREDENTIAL
         valueFrom:
           secretKeyRef:

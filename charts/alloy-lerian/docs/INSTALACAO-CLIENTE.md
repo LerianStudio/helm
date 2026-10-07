@@ -178,36 +178,6 @@ abaixo.
 
 ---
 
-## Apontar suas aplicações para o agente
-
-As aplicações Lerian já vêm configuradas. Esta seção é para aplicações suas que
-você queira enviar ao mesmo agente.
-
-O agente recebe OTLP nas portas **4317** (gRPC) e **4318** (HTTP) no IP do nó.
-Cada pod descobre o IP do próprio nó pela API do Kubernetes:
-
-```yaml
-env:
-  - name: HOST_IP
-    valueFrom:
-      fieldRef:
-        fieldPath: status.hostIP
-  - name: OTEL_EXPORTER_OTLP_ENDPOINT
-    value: "http://$(HOST_IP):4318"
-```
-
-> ⚠️ **Use o IP do nó, não o nome do Service.** Os dois funcionam, mas o Service
-> balanceia entre todos os nós e o tráfego acaba atravessando a rede do
-> cluster. O IP do nó mantém cada envio no agente local — menos latência, e a
-> origem de cada registro fica corretamente identificada.
-
-**Só os namespaces onde os produtos Lerian estão instalados são coletados**
-(`midaz` e `midaz-plugins`, por padrão). Telemetria vinda de outros namespaces é
-descartada no agente. Se os seus produtos Lerian estão em outro lugar, avise a
-Lerian — o ajuste é feito remotamente, sem mexer na sua instalação.
-
----
-
 ## Problemas comuns
 
 | Sintoma | Causa | O que fazer |
@@ -218,37 +188,11 @@ Lerian — o ajuste é feito remotamente, sem mexer na sua instalação.
 | `Exporting failed... 403` | Chamada chegando por caminho inesperado | Acione a Lerian com a linha de log completa |
 | `Exporting failed... connection refused` ou timeout | Saída HTTPS bloqueada | Veja [Quais acessos de saída o agente precisa?](#quais-acessos-de-saída-o-agente-precisa) no FAQ |
 | Nenhum `successfully loaded remote configuration` | Token do Fleet inválido ou destino do Fleet bloqueado | Confira a chave `fleet-token` e os acessos de saída, no FAQ |
-| Pod que reiniciou não volta, e os outros seguem rodando | O Fleet está indisponível no momento do reinício | Veja a nota abaixo |
-
-### Sobre a dependência do Fleet
-
-O agente busca a configuração de coleta no Fleet **ao iniciar**. Uma
-indisponibilidade do Fleet não derruba os pods que já estão rodando — mas um pod
-que reiniciar durante ela (por OOM, drenagem de nó ou autoscaler) **não sobe**
-até o Fleet voltar.
-
-É um comportamento conhecido e medido. Se acontecer, acione a Lerian: o
-diagnóstico e a retomada são do nosso lado.
+| Pod que reiniciou não volta, e os outros seguem rodando | O Fleet está indisponível no momento do reinício | Acione a Lerian: o diagnóstico e a retomada são do nosso lado |
 
 ---
 
-## Operação
-
-### Aumentar o detalhe do log do agente
-
-O agente registra apenas erros, por padrão, para não consumir o disco do seu
-cluster com operação normal. Para investigar um problema:
-
-```console
-helm upgrade alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm \
-  --version <mesma versão> -n monitoring -f values.yaml \
-  --set logging.level=debug
-```
-
-Valores aceitos: `error` (padrão), `warn`, `info`, `debug`. Reproduza o
-problema, colete o log e **volte para `error`** — `debug` gera volume alto.
-
-### Atualizar
+## Atualizar
 
 ```console
 helm upgrade alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm \
@@ -258,7 +202,7 @@ helm upgrade alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm \
 O `values.yaml` continua o mesmo. Ajustes na coleta normalmente **não** exigem
 atualização: a Lerian os aplica remotamente pelo Fleet.
 
-### Desinstalar
+## Desinstalar
 
 ```console
 helm uninstall alloy-lerian -n monitoring
@@ -377,6 +321,20 @@ Não. A maior parte dos ajustes é aplicada remotamente. Atualizações de chart
 acontecem quando há mudança no próprio agente, e a Lerian avisa quando for o
 caso.
 
+### Como aumentar o detalhe do log do agente
+
+O agente registra apenas erros, por padrão, para não consumir o disco do seu
+cluster com operação normal. Para investigar um problema:
+
+```console
+helm upgrade alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm \
+  --version <mesma versão> -n monitoring -f values.yaml \
+  --set logging.level=debug
+```
+
+Valores aceitos: `error` (padrão), `warn`, `info`, `debug`. Reproduza o
+problema, colete o log e **volte para `error`** — `debug` gera volume alto.
+
 ---
 
 ## Suporte
@@ -385,4 +343,3 @@ Acione o time de operações da Lerian com:
 
 1. `kubectl get pods -n monitoring`
 2. `kubectl logs -n monitoring -l 'app.kubernetes.io/instance=alloy-lerian,app.kubernetes.io/name in (node,singleton)' -c alloy --tail=100`
-3. O identificador do seu ambiente (`origin.id`)

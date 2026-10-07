@@ -56,6 +56,34 @@ global:
   # infra (plaintext).
   # Example: cloud: "aws"
   cloud: ""
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to the bank-transfer Deployment. Each
+  # constraint counts only this component's own pods (labelSelector = its selector
+  # labels) of the same ReplicaSet (matchLabelKeys: [pod-template-hash]), so rolling
+  # updates never deadlock. A component's `spread` overrides these fields one by one;
+  # a component's raw `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      # Off by default: the scheduler skips nodes without the zone label when scoring a
+      # soft spread, so on clusters missing it (bare-metal, k3s) a zone constraint
+      # silently cancels the hostname spread. Enable it where every node has zone labels (EKS, GKE, AKS).
+      zone: ""
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
+      # -- Minimum eligible domains for DoNotSchedule constraints (0 = off). With
+      # fewer domains the scheduler treats the global minimum as 0, so a hard
+      # hostname spread never stacks replicas on a single node; the extra replica
+      # waits for a new node (Karpenter launches it). Use on autoscaled clusters.
+      minDomains: 0
+      # -- Honor | Ignore | "" (omitted = Kubernetes default Ignore). Honor counts
+      # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
+      # draining, tainted karpenter.sh/disrupted).
+      nodeTaintsPolicy: ""
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job
@@ -302,6 +330,13 @@ bankTransfer:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Override of global.scheduling.spread for the bank-transfer Deployment (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the Deployment's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes

@@ -2,6 +2,20 @@
 
 ## [9.5.10](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.10)
 
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.9`. (@guimoreirar)
+
+Fixes:
+
+- Bump Caradhras to `1.4.0` in `plugin-access-manager`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.9...plugin-access-manager-v9.5.10)
+
+---
+
+## [9.5.10](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.10)
+
 Fixes:
 - Bumped Caradhras dependency to `1.4.0` for improved compatibility. (@jeffersonrodrigues92)
 

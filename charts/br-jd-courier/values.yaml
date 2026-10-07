@@ -8,7 +8,7 @@ jd-courier:
   image:
     repository: ghcr.io/lerianstudio/br-jd-courier
     # Registry tags have no leading `v`. Empty falls back to the chart's appVersion.
-    tag: "1.0.0"
+    tag: "1.1.0"
     pullPolicy: IfNotPresent
 imagePullSecrets: []
 # Non-secret environment shared by every role, rendered into one ConfigMap.

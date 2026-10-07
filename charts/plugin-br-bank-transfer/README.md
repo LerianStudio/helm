@@ -114,7 +114,7 @@ global:
     spread:
       enabled: true            # master switch
       hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
-      zone: ScheduleAnyway     # topology.kubernetes.io/zone: same values
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
       maxSkew: 1               # integer >= 1
 bankTransfer:
   spread: { hostname: DoNotSchedule }  # field-level override
@@ -195,7 +195,7 @@ bankTransfer:
 | `bankTransfer.autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
 | `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas | `2` |
 | `bankTransfer.autoscaling.maxReplicas` | Maximum number of replicas | `5` |
-| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: ScheduleAnyway, maxSkew: 1}` |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1}` |
 | `bankTransfer.spread` | Field-level override of `global.scheduling.spread` | `{}` |
 | `bankTransfer.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `bankTransfer.nodeSelector` | Node selector for scheduling pods | `{}` |

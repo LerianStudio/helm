@@ -1,33 +1,8 @@
 {{- if and .Values.agent.enabled .Values.agent.autoscaling.enabled }}
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: {{ include "lerian-agent.fullname" . }}
-  namespace: {{ include "global.namespace" . }}
-  labels:
-    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: {{ include "lerian-agent.fullname" . }}
-  minReplicas: {{ .Values.agent.autoscaling.minReplicas }}
-  maxReplicas: {{ .Values.agent.autoscaling.maxReplicas }}
-  metrics:
-    {{- with .Values.agent.autoscaling.targetCPUUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: {{ . }}
-    {{- end }}
-    {{- with .Values.agent.autoscaling.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: {{ . }}
-    {{- end }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" .Values.agent.autoscaling
+      "name" (include "lerian-agent.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name))
+    ) }}
 {{- end }}

@@ -31,3 +31,8 @@ keywords:
   - byoc
   - agent
   - midaz
+
+dependencies:
+  - name: lerian-common-helm
+    version: "2.2.0"
+    repository: "oci://ghcr.io/lerianstudio"

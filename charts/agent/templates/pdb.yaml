@@ -1,24 +1,9 @@
 {{- if and .Values.agent.enabled .Values.agent.pdb.enabled }}
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: {{ include "lerian-agent.fullname" . }}
-  namespace: {{ include "global.namespace" . }}
-  labels:
-    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
-  {{- with .Values.agent.pdb.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  {{- if .Values.agent.pdb.minAvailable }}
-  minAvailable: {{ .Values.agent.pdb.minAvailable }}
-  {{- else if kindIs "invalid" .Values.agent.pdb.maxUnavailable }}
-  maxUnavailable: 1
-  {{- else }}
-  maxUnavailable: {{ .Values.agent.pdb.maxUnavailable }}
-  {{- end }}
-  selector:
-    matchLabels:
-      {{- include "lerian-agent.selectorLabels" (dict "context" . "name" .Values.agent.name) | nindent 6 }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" .Values.agent.pdb
+      "name" (include "lerian-agent.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name))
+      "selector" (include "lerian-agent.selectorLabels" (dict "context" . "name" .Values.agent.name))
+    ) }}
 {{- end }}

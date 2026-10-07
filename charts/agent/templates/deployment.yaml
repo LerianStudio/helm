@@ -10,13 +10,11 @@ metadata:
     {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.agent.revisionHistoryLimit | default 10 }}
-  strategy:
-    type: {{ .Values.agent.deploymentUpdate.type }}
-    {{- if eq .Values.agent.deploymentUpdate.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.agent.deploymentUpdate.maxSurge | default 0 }}
-      maxUnavailable: {{ .Values.agent.deploymentUpdate.maxUnavailable | default 1 }}
-    {{- end }}
+  {{- include "lerian-common.deploymentStrategy" (dict
+        "type" .Values.agent.deploymentUpdate.type
+        "maxSurge" (.Values.agent.deploymentUpdate.maxSurge | default 0)
+        "maxUnavailable" (.Values.agent.deploymentUpdate.maxUnavailable | default 1)
+      ) | nindent 2 }}
   {{- if not .Values.agent.autoscaling.enabled }}
   replicas: {{ .Values.agent.replicaCount }}
   {{- end }}
@@ -37,8 +35,7 @@ spec:
         {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 8 }}
     spec:
       {{- with .Values.agent.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
       serviceAccountName: {{ include "lerian-agent.serviceAccountName" . }}
       securityContext:
@@ -99,12 +96,7 @@ spec:
           {{- end }}
           {{- if eq (toString .Values.agent.configmap.ENABLE_TELEMETRY) "true" }}
           {{- if not .Values.agent.configmap.OTEL_EXPORTER_OTLP_ENDPOINT }}
-          - name: HOST_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: OTEL_EXPORTER_OTLP_ENDPOINT
-            value: "$(HOST_IP):4317"
+          {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 10 }}
           {{- end }}
           {{- end }}
           {{- with .Values.agent.extraEnvVars }}
@@ -114,32 +106,18 @@ spec:
             - name: http
               containerPort: {{ .Values.agent.service.port }}
               protocol: TCP
-          startupProbe:
-            httpGet:
-              path: {{ .Values.agent.startupProbe.path | default "/health/live" }}
-              port: http
-            initialDelaySeconds: {{ .Values.agent.startupProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.agent.startupProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.agent.startupProbe.timeoutSeconds | default 3 }}
-            failureThreshold: {{ .Values.agent.startupProbe.failureThreshold | default 120 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.agent.livenessProbe.path | default "/health/live" }}
-              port: http
-            initialDelaySeconds: {{ .Values.agent.livenessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.agent.livenessProbe.periodSeconds | default 15 }}
-            timeoutSeconds: {{ .Values.agent.livenessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ .Values.agent.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.agent.livenessProbe.failureThreshold | default 3 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.agent.readinessProbe.path | default "/health/ready" }}
-              port: http
-            initialDelaySeconds: {{ .Values.agent.readinessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.agent.readinessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.agent.readinessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ .Values.agent.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.agent.readinessProbe.failureThreshold | default 3 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "startupProbe" "probe" .Values.agent.startupProbe "port" "http"
+                "path" "/health/live" "initialDelay" 5 "period" 5 "timeout" 3 "success" 1 "failure" 120
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" .Values.agent.livenessProbe "port" "http"
+                "path" "/health/live" "initialDelay" 5 "period" 15 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" .Values.agent.readinessProbe "port" "http"
+                "path" "/health/ready" "initialDelay" 5 "period" 10 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
           resources:
             {{- toYaml .Values.agent.resources | nindent 12 }}
           volumeMounts:
@@ -180,16 +158,7 @@ spec:
             name: {{ $trust | quote }}
             defaultMode: 0444
         {{- end }}
-      {{- with .Values.agent.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.agent.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.agent.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- if or .Values.agent.nodeSelector .Values.agent.affinity .Values.agent.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.agent | trim | nindent 6 }}
       {{- end }}
 {{- end }}

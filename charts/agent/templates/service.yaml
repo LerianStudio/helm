@@ -3,24 +3,11 @@
 The agent serves no external traffic - it only polls the control plane
 outbound. This exposes its health and metrics endpoints inside the cluster.
 */}}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "lerian-agent.fullname" . }}
-  namespace: {{ include "global.namespace" . }}
-  labels:
-    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
-  {{- with .Values.agent.service.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  type: {{ .Values.agent.service.type }}
-  ports:
-    - name: http
-      port: {{ .Values.agent.service.port }}
-      targetPort: http
-      protocol: TCP
-  selector:
-    {{- include "lerian-agent.selectorLabels" (dict "context" . "name" .Values.agent.name) | nindent 4 }}
+{{- include "lerian-common.service" (dict
+      "service" .Values.agent.service
+      "name" (include "lerian-agent.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name))
+      "selector" (include "lerian-agent.selectorLabels" (dict "context" . "name" .Values.agent.name))
+    ) }}
 {{- end }}

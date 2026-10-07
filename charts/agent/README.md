@@ -115,6 +115,12 @@ Each listed namespace must already exist, and adding one later needs a
 install the cluster components a failed preflight offers (a default
 StorageClass, for example) instead of reporting them.
 
+On Cilium, `ipBlock` rules do not match in-cluster addresses by default, so
+when the API server runs on cluster nodes (kubeadm, k3s, RKE2, Talos) the
+policy's `agent.networkPolicy.kubernetesApiCidr` rule lets nothing through to
+it. Set Cilium's `policyCIDRMatchMode: nodes`, or add a `CiliumNetworkPolicy`
+allowing the `kube-apiserver` entity for the agent and infra-runner pods.
+
 The full list of grants, and why each exists, is in
 [`templates/rbac.yaml`](templates/rbac.yaml).
 
@@ -249,7 +255,7 @@ Warning event carries the object it is about the same way.
 
 | Ceiling | Value | Where it is enforced |
 | --- | --- | --- |
-| `observation interval` | `30s` | `internal/bootstrap/config.go`, `DefaultHeartbeatInterval`; `charts/lerian-agent/templates/deployment.yaml`, `HEARTBEAT_INTERVAL` |
+| `observation interval` | `30s` | `internal/bootstrap/config.go`, `DefaultHeartbeatInterval`; `charts/agent/values.yaml`, `agent.configmap.HEARTBEAT_INTERVAL` |
 | `log lines per container` | `50` | `internal/kubernetes/evidence.go`, `evidenceLogLines` |
 | `log bytes per container` | `8192` | `internal/kubernetes/evidence.go`, `evidenceMaxLogBytes` |
 | `log read per container` | `10s` | `internal/kubernetes/evidence.go`, `evidenceMaxLogWait` |

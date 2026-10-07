@@ -46,7 +46,9 @@ spec:
             runbook_url: 'https://docs.lerian.studio/runbooks/agent-stuck-work'
 
         - alert: LerianAgentDown
-          expr: up{job="{{ include "lerian-agent.fullname" . }}"} == 0
+          expr: |-
+            up{job="{{ include "lerian-agent.fullname" . }}", namespace="{{ include "global.namespace" . }}"} == 0
+              or absent(up{job="{{ include "lerian-agent.fullname" . }}", namespace="{{ include "global.namespace" . }}"})
           for: 2m
           labels:
             severity: critical

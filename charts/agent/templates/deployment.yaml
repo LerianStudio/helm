@@ -14,8 +14,8 @@ spec:
     type: {{ .Values.agent.deploymentUpdate.type }}
     {{- if eq .Values.agent.deploymentUpdate.type "RollingUpdate" }}
     rollingUpdate:
-      maxSurge: {{ .Values.agent.deploymentUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.agent.deploymentUpdate.maxUnavailable }}
+      maxSurge: {{ .Values.agent.deploymentUpdate.maxSurge | default 0 }}
+      maxUnavailable: {{ .Values.agent.deploymentUpdate.maxUnavailable | default 1 }}
     {{- end }}
   {{- if not .Values.agent.autoscaling.enabled }}
   replicas: {{ .Values.agent.replicaCount }}

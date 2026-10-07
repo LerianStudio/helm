@@ -1,6 +1,9 @@
 {{- if .Values.agent.enabled }}
 {{- $name := include "lerian-agent.fullname" . -}}
 {{- $sa := include "lerian-agent.serviceAccountName" . -}}
+{{- if eq $sa "default" }}
+{{- fail "agent.serviceAccount must name a ServiceAccount of the agent's own: the chart binds cluster-wide and managed-namespace grants to it, and binding them to \"default\" hands them to every pod of the namespace that runs as it. Set agent.serviceAccount.create=true, or agent.serviceAccount.name to a dedicated ServiceAccount." }}
+{{- end }}
 {{- $ns := include "global.namespace" . -}}
 {{- $labels := include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) -}}
 {{- $managed := include "lerian-agent.managedNamespaces" . | fromJsonArray -}}

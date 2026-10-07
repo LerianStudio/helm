@@ -1,9 +1,9 @@
 apiVersion: v2
 name: agent-helm
 description: >-
-  Lerian BYOC agent - runs in a customer's Kubernetes cluster, polls the
-  Lerian control plane over an outbound-only connection, and executes the
-  Helm operations the control plane assigns to it.
+  Lerian BYOC agent - runs in a customer's Kubernetes cluster, polls the Lerian
+  control plane over an outbound-only connection, and executes the Helm
+  operations the control plane assigns to it.
 type: application
 annotations:
   lerian.studio/chart-type: single-service

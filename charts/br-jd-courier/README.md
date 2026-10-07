@@ -9,7 +9,7 @@ Lerian rail engines.
 - Chart type: `multi-component`
 - Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD` and, for the migration Job, `DATABASE_URL`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
 - Dependency notes: no subcharts. PostgreSQL, the Access Manager and the licence gateway are external services.
-- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production`, `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, and `PIX_VENDOR_SUBJECTS` (single-tenant) or `SYSTEMPLANE_ENABLED=true` (multi-tenant). Multi-tenant installs must set `migrations.enabled=false`.
+- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production` (required in every environment), `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, and `PIX_VENDOR_SUBJECTS` (single-tenant) or `SYSTEMPLANE_ENABLED=true` (multi-tenant); `DEPLOYMENT_MODE=saas` on Lerian Cloud. The spb-sender needs one SOAP TLS shape under `roles.spbSender` (`ingress`, `soapTls.existingSecret` or `soapTls.terminatedUpstream`). On EKS, an IAM role for Secrets Manager through `serviceAccount`. Multi-tenant installs must set `migrations.enabled=false`.
 - Source/license: [LerianStudio/br-jd-courier](https://github.com/LerianStudio/br-jd-courier). The Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
 ## Release bump
@@ -31,6 +31,86 @@ Deployment sets `COURIER_ROLES` to its own role; the chart refuses an override.
 | `spb-sender` | `<release>-br-jd-courier-spb-sender` | SOAP port (`ports.soap`, 8081) | N | `RollingUpdate` |
 | `pix-ingress` | `<release>-br-jd-courier-pix-ingress` | HTTP port (`ports.http`, 8080) | N | `RollingUpdate` |
 | `admin` | `<release>-br-jd-courier-admin` | HTTP port | N (≥1) | `RollingUpdate` |
+
+## Environment
+
+`config.ENVIRONMENT_NAME` is **required**: the render fails without it. The
+service reads it to turn its production checks on (`production`, exact), and
+uses it as the environment segment of every Pix engine `credentialRef` and
+multi-tenant JD bundle path (`tenants/{env}/...`). Unset, it would boot as
+`development` with none of those checks. The service still reads the deprecated
+`ENV_NAME` as a fallback; the chart does not, so rename `config.ENV_NAME` to
+`config.ENVIRONMENT_NAME`.
+
+The production checks run in the service at boot, not in the render: a
+production pod refuses to start on `POSTGRES_SSLMODE=disable` or with no TLS on
+the spb-sender's SOAP listener. The chart checks neither, nor
+`ALLOW_INSECURE_TLS`.
+
+`config.DEPLOYMENT_MODE` defaults to `byoc` (`local`, `byoc`, `saas`). Only
+`saas` makes the service refuse a datastore connection without TLS; set it on
+Lerian Cloud.
+
+## SOAP TLS (spb-sender)
+
+The spb-sender's SOAP listener (`ports.soap`) is what the engines call, and they
+refuse plain HTTP, so it needs TLS in homologation as much as in production.
+Three shapes, all off by default; in production the spb-sender refuses to boot
+with none of them:
+
+| Shape | Values | What the chart does |
+|---|---|---|
+| Ingress | `roles.spbSender.ingress.enabled=true`, plus `className`, `annotations`, `hosts`, `tls` | renders an Ingress to the SOAP Service and sets `SOAP_TLS_TERMINATED_UPSTREAM=true` |
+| Certificate in the pod | `roles.spbSender.soapTls.existingSecret=<kubernetes.io/tls Secret>` | mounts it read-only at `/etc/jd-courier/soap-tls` and sets `SOAP_TLS_CERT_FILE`/`SOAP_TLS_KEY_FILE`; the listener serves TLS itself |
+| Terminated outside the chart | `roles.spbSender.soapTls.terminatedUpstream=true` | sets `SOAP_TLS_TERMINATED_UPSTREAM=true`, for a mesh or load balancer the chart does not render |
+
+The Ingress must terminate TLS (a `tls:` block or the controller's certificate
+annotation); the chart sets `SOAP_TLS_TERMINATED_UPSTREAM=true` without checking.
+On AWS, use the ALB with `target-type: ip` (the Service is ClusterIP). The
+Ingress routes only the SOAP port, and the SOAP listener is not a health
+endpoint: point the ALB health check at `/health` on `ports.http` (8080 unless
+overridden), the liveness probe's endpoint:
+
+```yaml
+roles:
+  spbSender:
+    ingress:
+      enabled: true
+      className: alb
+      annotations:
+        alb.ingress.kubernetes.io/target-type: ip
+        alb.ingress.kubernetes.io/certificate-arn: <ACM certificate ARN>
+        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+        alb.ingress.kubernetes.io/healthcheck-port: "8080"
+        alb.ingress.kubernetes.io/healthcheck-path: /health
+        alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+```
+
+Combining the Ingress with `soapTls.existingSecret` re-encrypts to the pod: set
+`alb.ingress.kubernetes.io/backend-protocol: HTTPS`; the health check stays
+HTTP on 8080. The certificate is read once at boot; rotating the Secret needs
+`kubectl rollout restart`. `config.SOAP_TLS_*` is refused: those keys follow
+these values.
+
+## AWS identity
+
+The Courier reads AWS Secrets Manager: each Pix engine's `credentialRef`, and
+in multi-tenant each tenant's JD bundle. Give it an IAM role through
+`serviceAccount` (off by default; every role then runs as the namespace's
+`default`):
+
+```yaml
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<account>:role/<role>   # IRSA
+```
+
+`serviceAccount.name` runs every role as an existing ServiceAccount instead.
+An EKS Pod Identity association works on either. Every role Deployment uses it;
+the migration Job does not.
+Pods keep `automountServiceAccountToken: false`: the Courier never calls the
+Kubernetes API, and IRSA and Pod Identity project their own token regardless.
 
 ## The single-writer guard
 
@@ -110,7 +190,8 @@ the guard can read it.
 
 Metrics and traces leave over OTLP only; nothing is scraped. Every role sends
 to `telemetry.otlpEndpoint`, by default `$(NODE_IP):4317`, the collector on the
-pod's own node. The chart sets it in the pod env, where Kubernetes expands
+pod's own node. `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` follows
+`config.ENVIRONMENT_NAME` unless `config` sets it. The chart sets it in the pod env, where Kubernetes expands
 `$(NODE_IP)`, and refuses `config.OTEL_EXPORTER_OTLP_ENDPOINT`, which the pod
 env would silently shadow. **Production boots with the defaults:** that hop never
 leaves the node, so for the default endpoint alone the chart sets
@@ -126,12 +207,13 @@ indistinguishable from an idle one.
 - **Co-locating `admin` with `spb-sender`** (a BYOC knob to
   save a pod at the cost of one NetworkPolicy covering operator and engine
   traffic) is not a value yet. Disable `roles.admin` only once it exists.
-- No Ingress, NetworkPolicy, HPA or PodDisruptionBudget. `spb-consumer` must
-  never get an HPA.
+- No Ingress beyond the spb-sender's SOAP one, no NetworkPolicy, HPA or
+  PodDisruptionBudget. `spb-consumer` must never get an HPA.
 
 ## Checks
 
 ```bash
 helm lint charts/br-jd-courier
+helm template t charts/br-jd-courier -f .github/configs/helm-render-values/br-jd-courier.yaml
 cd .github/scripts && go test ./validate-helm-charts -run Courier   # the render contract above
 ```

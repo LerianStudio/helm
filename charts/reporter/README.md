@@ -174,7 +174,9 @@ preset constraint selects only the component's own pods
 ReplicaSet (`matchLabelKeys: [pod-template-hash]`), so a rolling update is never
 blocked by the old ReplicaSet's pods, even with `DoNotSchedule`. Requires
 Kubernetes >= 1.27 (`matchLabelKeys`, beta since 1.27 and enabled by default);
-on 1.19–1.26 set `global.scheduling.spread.enabled: false`. Use `DoNotSchedule` only when
+on 1.19–1.26 set `global.scheduling.spread.enabled: false`, leave every
+`<component>.spread.enabled` unset or `false`, and drop `matchLabelKeys` from any raw
+`<component>.topologySpreadConstraints` (both override the global switch). Use `DoNotSchedule` only when
 the cluster can always provide enough distinct nodes/zones for the replica count
 (a hard constraint leaves extra pods `Pending` otherwise). The KEDA `ScaledJob`
 worker (the default) is a Job and is not spread.

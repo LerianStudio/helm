@@ -206,7 +206,7 @@ legacy overrides and then the defaults below.
 {{- end }}
 
 {{- define "caradhras.imageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.3.2") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.4.0") -}}
 {{- end }}
 
 {{- define "caradhras.imagePullPolicy" -}}
@@ -240,7 +240,7 @@ legacy overrides remain visible, including to the repository guard below.
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.3.2") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.4.0") -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImagePullPolicy" -}}

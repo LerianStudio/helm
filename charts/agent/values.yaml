@@ -32,8 +32,9 @@ agent:
     repository: ghcr.io/lerianstudio/agent
     # -- Image pull policy
     pullPolicy: IfNotPresent
-    # -- Image tag used for deployment. Empty falls back to the chart's appVersion.
-    tag: ""
+    # -- Image tag used for deployment. Kept equal to appVersion; the release
+    # dispatch from LerianStudio/agent updates it.
+    tag: "1.0.0-beta.1"
     # -- Image digest ("sha256:..."), wins over tag. Set it after the control
     # plane moved the agent to a newer build, so a routine `helm upgrade` does
     # not walk it back.
@@ -161,6 +162,20 @@ agent:
     # -- How long one Helm install/upgrade may take before it is reported as
     # failed. Raise terminationGracePeriodSeconds with it.
     HELM_TIMEOUT: "15m"
+    # -- How many assigned operations the agent runs at the same time
+    MAX_CONCURRENT_WORK: "3"
+
+    # Reliability of the control-plane connection
+    # -- Total attempts at one control-plane call before it is given up
+    MAX_RETRY_ATTEMPTS: "3"
+    # -- First retry backoff; it grows exponentially on each further attempt
+    RETRY_BACKOFF_INITIAL: "1s"
+    # -- Ceiling of the retry backoff
+    RETRY_BACKOFF_MAX: "30s"
+    # -- Consecutive control-plane failures that open the circuit breaker
+    CIRCUIT_BREAKER_MAX_FAILURES: "5"
+    # -- How long the circuit breaker stays open before it lets a call through
+    CIRCUIT_BREAKER_TIMEOUT: "30s"
 
     # OpenTelemetry
     ENABLE_TELEMETRY: "false"

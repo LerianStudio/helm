@@ -94,7 +94,7 @@
                 },
                 "zone": {
                   "type": "string",
-                  "default": "ScheduleAnyway",
+                  "default": "",
                   "enum": [
                     "ScheduleAnyway",
                     "DoNotSchedule",

@@ -70,7 +70,7 @@ empty — set a key there only to override its shipped default).
 | `configmap.MIDAZ_V2_BASE_PATH` | Address of the midaz ledger's `/v2` contract, where fees live, see [Keys with no default](#keys-with-no-default) | unset (the fees screens have no address) |
 | `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
 | `configmap.FLOWKER_BASE_PATH` / `configmap.LENDER_BASE_PATH` / `configmap.MATCHER_BASE_PATH` / `configmap.TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
-| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: ScheduleAnyway, maxSkew: 1}` |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1}` |
 | `spread` | Field-level override of `global.scheduling.spread` for the console Deployment | `{}` |
 | `topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
@@ -379,7 +379,7 @@ global:
     spread:
       enabled: true            # master switch
       hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
-      zone: ScheduleAnyway     # topology.kubernetes.io/zone: same values
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
       maxSkew: 1               # integer >= 1
 spread: { hostname: DoNotSchedule }  # field-level override (top-level key)
 topologySpreadConstraints: []        # raw list; non-empty replaces the preset

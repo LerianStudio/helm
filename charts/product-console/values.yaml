@@ -68,7 +68,10 @@ global:
       # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
       hostname: ScheduleAnyway
       # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
-      zone: ScheduleAnyway
+      # Off by default: the scheduler skips nodes without the zone label when scoring a
+      # soft spread, so on clusters missing it (bare-metal, k3s) a zone constraint
+      # silently cancels the hostname spread. Enable it where every node has zone labels (EKS, GKE, AKS).
+      zone: ""
       # -- Max allowed pod-count difference between topology domains (integer >= 1).
       maxSkew: 1
   # -- Bootstrap job for external MongoDB: creates users and grants privileges

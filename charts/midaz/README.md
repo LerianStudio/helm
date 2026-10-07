@@ -199,10 +199,31 @@ global:
       hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
       zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
       maxSkew: 1               # integer >= 1
+      minDomains: 0            # DoNotSchedule constraints only; 0 = off
+      nodeTaintsPolicy: ""     # Honor | Ignore | "" (Kubernetes default Ignore)
 ledger:
   spread: { hostname: DoNotSchedule }  # field-level override of the global preset
   topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
 ```
+
+On EKS + Karpenter use a hard node spread:
+
+```yaml
+global:
+  scheduling:
+    spread:
+      hostname: DoNotSchedule
+      zone: ScheduleAnyway
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: Honor
+```
+
+`minDomains: 2` is required with `DoNotSchedule`. Skew is measured only against nodes
+that already exist, so on a single eligible node all replicas would otherwise share
+it. With fewer than 2 nodes the extra replica stays `Pending` until Karpenter launches
+another node. `nodeTaintsPolicy: Honor` stops tainted nodes (for example a node being
+drained) from counting as domains.
 
 Precedence: `<component>.topologySpreadConstraints` (non-empty, wins entirely) >
 `<component>.spread.<field>` > `global.scheduling.spread.<field>` > off. Each

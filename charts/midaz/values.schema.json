@@ -115,7 +115,25 @@
                   "type": "integer",
                   "default": 1,
                   "minimum": 1,
-                  "description": "Max allowed pod-count difference between topology domains"
+                  "description": "Max allowed pod-count difference between topology domains",
+                  "maximum": 2147483647
+                },
+                "minDomains": {
+                  "type": "integer",
+                  "default": 0,
+                  "minimum": 0,
+                  "maximum": 2147483647,
+                  "description": "Minimum eligible domains for DoNotSchedule constraints (0 = off)"
+                },
+                "nodeTaintsPolicy": {
+                  "type": "string",
+                  "default": "",
+                  "enum": [
+                    "Honor",
+                    "Ignore",
+                    ""
+                  ],
+                  "description": "Honor | Ignore | \"\" (omitted = Kubernetes default Ignore)"
                 }
               },
               "description": "topologySpreadConstraints preset (lerian-common.topologySpreadConstraints) applied to every Deployment"
@@ -511,7 +529,23 @@
             "maxSkew": {
               "type": "integer",
               "minimum": 1,
-              "description": "Max allowed pod-count difference between topology domains"
+              "description": "Max allowed pod-count difference between topology domains",
+              "maximum": 2147483647
+            },
+            "minDomains": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "Minimum eligible domains for DoNotSchedule constraints (0 = off)"
+            },
+            "nodeTaintsPolicy": {
+              "type": "string",
+              "enum": [
+                "Honor",
+                "Ignore",
+                ""
+              ],
+              "description": "Honor | Ignore | \"\" (omitted = Kubernetes default Ignore)"
             }
           },
           "description": "Per-component override of global.scheduling.spread (field by field)"
@@ -1132,7 +1166,23 @@
             "maxSkew": {
               "type": "integer",
               "minimum": 1,
-              "description": "Max allowed pod-count difference between topology domains"
+              "description": "Max allowed pod-count difference between topology domains",
+              "maximum": 2147483647
+            },
+            "minDomains": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "Minimum eligible domains for DoNotSchedule constraints (0 = off)"
+            },
+            "nodeTaintsPolicy": {
+              "type": "string",
+              "enum": [
+                "Honor",
+                "Ignore",
+                ""
+              ],
+              "description": "Honor | Ignore | \"\" (omitted = Kubernetes default Ignore)"
             }
           },
           "description": "Per-component override of global.scheduling.spread (field by field)"
@@ -1853,7 +1903,23 @@
             "maxSkew": {
               "type": "integer",
               "minimum": 1,
-              "description": "Max allowed pod-count difference between topology domains"
+              "description": "Max allowed pod-count difference between topology domains",
+              "maximum": 2147483647
+            },
+            "minDomains": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "Minimum eligible domains for DoNotSchedule constraints (0 = off)"
+            },
+            "nodeTaintsPolicy": {
+              "type": "string",
+              "enum": [
+                "Honor",
+                "Ignore",
+                ""
+              ],
+              "description": "Honor | Ignore | \"\" (omitted = Kubernetes default Ignore)"
             }
           },
           "description": "Per-component override of global.scheduling.spread (field by field)"

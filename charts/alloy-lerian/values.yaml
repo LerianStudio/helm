@@ -848,6 +848,21 @@ node:
       limits:
         memory: 512Mi
   controller:
+    # ⚠️ SEM ISTO O AGENTE NAO RODA EM NO COM TAINT, e o sintoma e a ausencia de
+    # dado, nao um erro. MEDIDO em bancada 2026-10-07, cluster de 2 nos: o
+    # DaemonSet subiu `desired=1` em vez de 2 — o no control-plane tem o taint
+    # `node-role.kubernetes.io/control-plane:NoSchedule` e ficou SEM coleta.
+    # Nada falha: o DaemonSet se declara saudavel, porque 1 de 1 agendado esta
+    # pronto. So olhando no por no da para perceber.
+    #
+    # No cluster de cliente isso alcanca qualquer no com taint — control-plane,
+    # nos dedicados, pools de GPU. `operator: Exists` sem `key` tolera TODOS,
+    # que e a postura certa para um coletor: onde ha carga, ha telemetria.
+    #
+    # E a mesma escolha do chart guarda-chuva da Grafana e do node-exporter,
+    # pela mesma razao.
+    tolerations:
+      - operator: Exists
     # Writable volume for `storagePath` — REQUIRED by readOnlyRootFilesystem.
     # The upstream chart mounts only the ConfigMap and provides nothing writable,
     # so a read-only root kills the agent at startup:

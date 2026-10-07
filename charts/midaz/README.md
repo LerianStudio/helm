@@ -177,6 +177,70 @@ ingress:
 ```
 
 
+## Pod Spreading (`global.scheduling.spread`)
+
+Every Deployment of this chart (ledger, crm and tracer) renders
+`topologySpreadConstraints` from the `lerian-common` spread preset. The default is
+**soft** (`ScheduleAnyway`) across nodes, so replicas of the same
+component are spread across nodes (e.g. spot nodes)
+whenever possible, but a pod is never left `Pending` because of it.
+
+Zone spreading is **off** by default (`zone: ""`). When scoring a soft spread, the
+scheduler skips every node that lacks the `topology.kubernetes.io/zone` label, so on
+clusters without zone labels (bare-metal, k3s) a zone constraint silently cancels the
+node spread. Turn it on (`zone: ScheduleAnyway`) where every node carries zone labels
+(EKS, GKE, AKS).
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
+      maxSkew: 1               # integer >= 1
+      minDomains: 0            # DoNotSchedule constraints only; 0 = off
+      nodeTaintsPolicy: ""     # Honor | Ignore | "" (Kubernetes default Ignore)
+ledger:
+  spread: { hostname: DoNotSchedule }  # field-level override of the global preset
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
+```
+
+On EKS + Karpenter use a hard node spread:
+
+```yaml
+global:
+  scheduling:
+    spread:
+      hostname: DoNotSchedule
+      zone: ScheduleAnyway
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: Honor
+```
+
+`minDomains: 2` is required with `DoNotSchedule`. Skew is measured only against nodes
+that already exist, so on a single eligible node all replicas would otherwise share
+it. With fewer than 2 nodes the extra replica stays `Pending` until Karpenter launches
+another node. `nodeTaintsPolicy: Honor` stops tainted nodes (for example a node being
+drained) from counting as domains.
+
+Precedence: `<component>.topologySpreadConstraints` (non-empty, wins entirely) >
+`<component>.spread.<field>` > `global.scheduling.spread.<field>` > off. Each
+preset constraint selects only the component's own pods
+(`labelSelector` = the Deployment's `spec.selector.matchLabels`) of the same
+ReplicaSet (`matchLabelKeys: [pod-template-hash]`), so a rolling update is never
+blocked by the old ReplicaSet's pods, even with `DoNotSchedule`. Requires
+Kubernetes >= 1.27 (`matchLabelKeys`). Use `DoNotSchedule` only when the cluster
+can always provide enough distinct nodes/zones for the replica count (a hard
+constraint leaves extra pods `Pending` otherwise). Jobs (migrations, bootstrap) keep their `nodeSelector` / `affinity` / `tolerations` and are not spread.
+
+**Upgrade note:** the preset is on by default, so upgrading to the chart version
+that introduces it adds `topologySpreadConstraints` to the pod template of every
+Deployment and triggers **one rolling restart** of each. No values change is
+required. To keep the previous pod template exactly, set
+`global.scheduling.spread.enabled: false`.
+
 ## Midaz Components
 
 Midaz deploys the following core services:
@@ -215,6 +279,8 @@ Midaz deploys the following core services:
 | `ledger.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `5` |
 | `ledger.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
 | `ledger.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
+| `ledger.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). | `{}` |
+| `ledger.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset. | `[]` |
 | `ledger.nodeSelector` | Node selectors for pod scheduling. | `{}` |
 | `ledger.tolerations` | Tolerations for pod scheduling. | `{}` |
 | `ledger.affinity` | Affinity rules for pod scheduling. | `{}` |
@@ -307,6 +373,8 @@ For more details, refer to the official documentation: [CRM Documentation](https
 | `crm.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `3` |
 | `crm.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
 | `crm.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
+| `crm.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). | `{}` |
+| `crm.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset. | `[]` |
 | `crm.nodeSelector` | Node selectors for pod scheduling. | `{}` |
 | `crm.tolerations` | Tolerations for pod scheduling. | `{}` |
 | `crm.affinity` | Affinity rules for pod scheduling. | `{}` |

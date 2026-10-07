@@ -110,16 +110,13 @@ spec:
             timeoutSeconds: {{ .Values.crm.livenessProbe.timeoutSeconds | default 1 }}
             successThreshold: {{ .Values.crm.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.crm.livenessProbe.failureThreshold | default 3 }}
-      {{- with .Values.crm.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.crm.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.crm.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, crm.spread, crm.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.crm
+            "global" .Values.global
+            "selectorLabels" (include "midaz-crm.selectorLabels" (dict "context" . "name" .Values.crm.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
 {{- end }}

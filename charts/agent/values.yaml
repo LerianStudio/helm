@@ -34,7 +34,7 @@ agent:
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment. Kept equal to appVersion; the release
     # dispatch from LerianStudio/agent updates it.
-    tag: "1.0.0-beta.1"
+    tag: "1.0.0"
     # -- Image digest ("sha256:..."), wins over tag. Set it after the control
     # plane moved the agent to a newer build, so a routine `helm upgrade` does
     # not walk it back.

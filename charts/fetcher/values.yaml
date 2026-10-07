@@ -25,6 +25,15 @@ global:
       zone: ""
       # -- Max allowed pod-count difference between topology domains (integer >= 1).
       maxSkew: 1
+      # -- Minimum eligible domains for DoNotSchedule constraints (0 = off). With
+      # fewer domains the scheduler treats the global minimum as 0, so a hard
+      # hostname spread never stacks replicas on a single node; the extra replica
+      # waits for a new node (Karpenter launches it). Use on autoscaled clusters.
+      minDomains: 0
+      # -- Honor | Ignore | "" (omitted = Kubernetes default Ignore). Honor counts
+      # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
+      # draining, tainted karpenter.sh/disrupted).
+      nodeTaintsPolicy: ""
   # -- Managed-cloud topology preset: aws | gcp | azure (unset = bundled
   # in-cluster infra, plaintext). Sets TOPOLOGY defaults (tls/scheme/ports/
   # object-storage path-style) for every lerian-common mask below — see

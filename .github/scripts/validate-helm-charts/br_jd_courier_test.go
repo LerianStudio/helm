@@ -205,6 +205,9 @@ func TestCourierDefaultRender(t *testing.T) {
 	if ingresses := ofKind(docs, "Ingress"); len(ingresses) != 0 {
 		t.Errorf("the default render carries %d Ingress(es), want none", len(ingresses))
 	}
+	if sas := ofKind(docs, "ServiceAccount"); len(sas) != 0 {
+		t.Errorf("the default render carries %d ServiceAccount(s), want none", len(sas))
+	}
 
 	deployments := ofKind(docs, "Deployment")
 	pods := append(append([]map[string]interface{}{}, deployments...), ofKind(docs, "Job")...)
@@ -240,6 +243,9 @@ func TestCourierDefaultRender(t *testing.T) {
 		}
 		if role != "spb-consumer" && strategy != "RollingUpdate" {
 			t.Errorf("%s: strategy %v, want RollingUpdate", name, strategy)
+		}
+		if spec := dig(d, "spec", "template", "spec"); dig(spec, "serviceAccountName") != "default" || dig(spec, "automountServiceAccountToken") != false {
+			t.Errorf("%s: must run as the namespace default with no API token, got %v %v", name, dig(spec, "serviceAccountName"), dig(spec, "automountServiceAccountToken"))
 		}
 		lk := dig(byName["LICENSE_KEY"], "valueFrom", "secretKeyRef")
 		if dig(lk, "name") != "t-br-jd-courier" || dig(lk, "key") != "LICENSE_KEY" || dig(lk, "optional") != nil {
@@ -360,5 +366,33 @@ func TestCourierRendersWholeNumbersAsDigits(t *testing.T) {
 	}
 	if dig(cm[0], "data", "BIG_WHOLE") != "10485760" || dig(cm[0], "data", "FRACTION") != "1.5" {
 		t.Errorf("numbers from a values file rendered as %v", dig(cm[0], "data"))
+	}
+}
+
+// Every role runs as the one ServiceAccount the AWS identity hangs on, with no Kubernetes API token.
+func TestCourierServiceAccount(t *testing.T) {
+	for _, c := range []struct {
+		args       []string
+		want       string
+		rendersOne bool
+	}{
+		{[]string{"--set", "serviceAccount.create=true", "--set", "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn=arn:aws:iam::1:role/courier"}, "t-br-jd-courier", true},
+		{[]string{"--set", "serviceAccount.create=true", "--set", "serviceAccount.name=courier"}, "courier", true},
+		{[]string{"--set", "serviceAccount.name=existing"}, "existing", false},
+	} {
+		docs := courierManifests(t, c.args...)
+		sas := ofKind(docs, "ServiceAccount")
+		if c.rendersOne != (len(sas) == 1) || (c.rendersOne && nestedString(sas[0], "metadata", "name") != c.want) {
+			t.Errorf("%v: rendered ServiceAccounts %v, want %q rendered=%v", c.args, sas, c.want, c.rendersOne)
+		}
+		if len(sas) == 1 && c.want == "t-br-jd-courier" && dig(sas[0], "metadata", "annotations", "eks.amazonaws.com/role-arn") != "arn:aws:iam::1:role/courier" {
+			t.Errorf("%v: the IRSA annotation must reach the ServiceAccount: %v", c.args, sas[0])
+		}
+		for _, d := range ofKind(docs, "Deployment") {
+			spec := dig(d, "spec", "template", "spec")
+			if dig(spec, "serviceAccountName") != c.want || dig(spec, "automountServiceAccountToken") != false {
+				t.Errorf("%v: %s runs as %v (automount %v), want %q with no API token", c.args, nestedString(d, "metadata", "name"), dig(spec, "serviceAccountName"), dig(spec, "automountServiceAccountToken"), c.want)
+			}
+		}
 	}
 }

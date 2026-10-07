@@ -11,6 +11,17 @@ jd-courier:
     tag: "1.1.0"
     pullPolicy: IfNotPresent
 imagePullSecrets: []
+# The ServiceAccount every role runs as. The Courier reads AWS Secrets Manager
+# (each Pix engine's credentialRef, and the per-tenant JD bundle in
+# multi-tenant): give it an IAM role here, e.g. annotations
+# eks.amazonaws.com/role-arn for IRSA, or an EKS Pod Identity association on
+# this ServiceAccount. Off, every role runs as the namespace's `default` (or as
+# `name`, when it names an existing one). Pods mount no Kubernetes API token
+# either way; the AWS identity token is projected separately.
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
 # Non-secret environment shared by every role, rendered into one ConfigMap.
 # COURIER_ROLES is set by the chart per Deployment and is refused here, and so
 # is every secret key: those arrive through `secrets.existingSecret` only.

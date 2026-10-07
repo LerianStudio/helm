@@ -22,6 +22,15 @@
 {{- .Values.secrets.existingSecret | default (include "br-jd-courier.fullname" .) -}}
 {{- end -}}
 
+{{- /* Every role's ServiceAccount: the namespace default unless serviceAccount says otherwise. */ -}}
+{{- define "br-jd-courier.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "br-jd-courier.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "br-jd-courier.image" -}}
 {{ printf "%s:%s" (index .Values "jd-courier" "image").repository ((index .Values "jd-courier" "image").tag | default .Chart.AppVersion) }}
 {{- end -}}
@@ -150,6 +159,9 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      serviceAccountName: {{ include "br-jd-courier.serviceAccountName" $ctx }}
+      # No Kubernetes API token: the Courier never calls the API. IRSA and EKS Pod
+      # Identity inject their own projected token regardless of this field.
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: {{ $ctx.Values.terminationGracePeriodSeconds }}
       securityContext:

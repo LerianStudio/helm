@@ -8,6 +8,14 @@ jd-courier:
     # Pin the published tag in production. Registry tags have no leading `v`.
     tag: ""
 
+# The IAM role that reads Secrets Manager (Pix engine credentials, per-tenant
+# JD bundles). On EKS with IRSA: create: true and the annotation
+# eks.amazonaws.com/role-arn: arn:aws:iam::<account>:role/<role>.
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+
 secrets:
   # The Secret every role and the migration Job read. It must exist before
   # install; the chart never renders one. Empty = the release fullname.

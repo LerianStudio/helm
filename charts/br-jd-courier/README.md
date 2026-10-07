@@ -9,7 +9,7 @@ Lerian rail engines.
 - Chart type: `multi-component`
 - Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD` and, for the migration Job, `DATABASE_URL`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
 - Dependency notes: no subcharts. PostgreSQL, the Access Manager and the licence gateway are external services.
-- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production` (required in every environment), `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, and `PIX_VENDOR_SUBJECTS` (single-tenant) or `SYSTEMPLANE_ENABLED=true` (multi-tenant); `DEPLOYMENT_MODE=saas` on Lerian Cloud. The spb-sender needs one SOAP TLS shape under `roles.spbSender` (`ingress`, `soapTls.existingSecret` or `soapTls.terminatedUpstream`). Multi-tenant installs must set `migrations.enabled=false`.
+- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production` (required in every environment), `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, and `PIX_VENDOR_SUBJECTS` (single-tenant) or `SYSTEMPLANE_ENABLED=true` (multi-tenant); `DEPLOYMENT_MODE=saas` on Lerian Cloud. The spb-sender needs one SOAP TLS shape under `roles.spbSender` (`ingress`, `soapTls.existingSecret` or `soapTls.terminatedUpstream`). On EKS, an IAM role for Secrets Manager through `serviceAccount`. Multi-tenant installs must set `migrations.enabled=false`.
 - Source/license: [LerianStudio/br-jd-courier](https://github.com/LerianStudio/br-jd-courier). The Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
 ## Release bump
@@ -78,6 +78,26 @@ once at boot; rotating the Secret needs `kubectl rollout restart`.
 `config.SOAP_TLS_*` is refused: those keys follow these values. The Ingress
 routes only the SOAP port; the probes listen on `ports.http`, which it never
 reaches.
+
+## AWS identity
+
+The Courier reads AWS Secrets Manager: each Pix engine's `credentialRef`, and
+in multi-tenant each tenant's JD bundle. Give it an IAM role through
+`serviceAccount` (off by default; every role then runs as the namespace's
+`default`):
+
+```yaml
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<account>:role/<role>   # IRSA
+```
+
+`serviceAccount.name` runs every role as an existing ServiceAccount instead.
+An EKS Pod Identity association works on either. Every role Deployment uses it;
+the migration Job does not.
+Pods keep `automountServiceAccountToken: false`: the Courier never calls the
+Kubernetes API, and IRSA and Pod Identity project their own token regardless.
 
 ## The single-writer guard
 

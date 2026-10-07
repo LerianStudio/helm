@@ -16,6 +16,10 @@
     "imagePullSecrets": {
       "type": "array"
     },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "config": {
       "type": "object",
       "additionalProperties": true

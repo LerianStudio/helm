@@ -1,95 +1,37 @@
 # Instalação do alloy-lerian — guia do cliente
 
 Este guia é o passo a passo completo para instalar o agente de telemetria da
-Lerian no seu cluster Kubernetes. Foi escrito para quem opera o cluster.
+Lerian no cluster Kubernetes.
 
 O agente coleta telemetria (logs, métricas e traces) dos produtos Lerian
-instalados no seu ambiente e a envia para a plataforma de observabilidade da
+instalados no ambiente e a envia para a plataforma de observabilidade da
 Lerian, pela internet, por HTTPS de saída.
 
-**Tempo estimado:** 15 minutos. São 4 passos.
+**Tempo estimado:** 15 minutos. São 3 passos.
 
 ---
 
-## O que você vai precisar da Lerian
+## O que você vai precisar?
 
 Dois tokens, entregues pelo time de operações da Lerian por canal seguro:
 
 | Item | Para que serve |
 |---|---|
 | **Token de telemetria** | Autentica o envio dos dados ao destino. |
-| **Token do Fleet** | Permite que a Lerian ajuste a configuração de coleta remotamente, sem pedir nada a você. |
+| **Token do Fleet** | Ajuste a configuração de coleta remotamente no Grafana. |
 
-Você não precisa de mais nada da Lerian: endereço de destino, perímetro de
+Não precisa de mais nada da Lerian: endereço de destino, perímetro de
 coleta e regras de tratamento de dados já vêm no chart.
 
 ---
 
-## Pré-requisitos no seu cluster
+## Passo 1 — Criar o Secret com os tokens
 
-Confira antes de começar — o passo 4 valida tudo isso na prática.
-
-### 1. Saída HTTPS para dois destinos
-
-O agente só faz conexões **de saída**. Nada disca para dentro do seu cluster.
-
-| Destino | Porta | Para quê |
-|---|---|---|
-| `telemetry.lerian.io` | 443 | Envio da telemetria |
-| `fleet-management-prod-015.grafana.net` | 443 | Busca da configuração de coleta |
-
-Se há proxy ou firewall de saída, estes dois domínios precisam estar liberados.
-
-### 2. `hostNetwork` permitido para o DaemonSet
-
-O agente que recebe a telemetria das aplicações roda com `hostNetwork: true`.
-
-É necessário porque as aplicações enviam para o IP do nó em que elas mesmas
-rodam, mantendo o tráfego local — sem isso, a telemetria atravessa a rede do
-cluster e o agente perde a identificação de qual nó originou cada registro.
-
-> ⚠️ **Se o seu cluster aplica Pod Security Admission no modo `restricted`**, o
-> namespace de instalação precisa de exceção: o perfil `restricted` proíbe
-> `hostNetwork`. É o ponto de atrito mais comum nesta instalação.
->
-> ```console
-> kubectl label namespace monitoring \
->   pod-security.kubernetes.io/enforce=privileged --overwrite
-> ```
->
-> O agente continua rodando **não-root** (uid 473), com sistema de arquivos raiz
-> somente-leitura e sem privilégios elevados. A exceção é só para a rede.
-
-### 3. Permissão para criar RBAC de escopo de cluster
-
-O chart cria um `ClusterRole` e um `ClusterRoleBinding`. São permissões de
-**leitura apenas**, necessárias para associar cada registro ao pod e namespace
-de origem, e para ler métricas de consumo dos contêineres.
-
-### 4. Capacidade
-
-Por nó (DaemonSet): 100m de CPU e 128Mi de memória de requisição, com teto de
-512Mi. Mais um pod único no cluster: 50m de CPU e 128Mi, teto de 256Mi.
-
----
-
-## Passo 1 — Criar o namespace
+O chart **lê** este Secret e nunca o cria. Ele precisa existir antes da instalação, com este nome exato e estas duas chaves — por isso o namespace também é criado aqui. O comando abaixo não falha se ele já existir.
 
 ```console
-kubectl create namespace monitoring
-```
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 
-Se preferir outro namespace, troque `monitoring` por ele em **todos** os
-comandos deste guia.
-
----
-
-## Passo 2 — Criar o Secret com os tokens
-
-O chart **lê** este Secret e nunca o cria. Ele precisa existir antes da
-instalação, com este nome exato e estas duas chaves.
-
-```console
 read -rs TELEMETRY_TOKEN   # cole o token de telemetria e tecle Enter (não aparece na tela)
 read -rs FLEET_TOKEN       # cole o token do Fleet e tecle Enter
 
@@ -115,7 +57,7 @@ Deve listar `fleet-token` e `telemetry-token`.
 
 ---
 
-## Passo 3 — Criar o `values.yaml` e instalar
+## Passo 2 — Criar o `values.yaml` e instalar
 
 ### O arquivo
 
@@ -179,7 +121,7 @@ silêncio. Copie como está.
 ```console
 helm install alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm \
   --version <versão informada pela Lerian> \
-  -n monitoring -f values.yaml
+  -n monitoring --create-namespace -f values.yaml
 ```
 
 Se algo estiver faltando no values, a instalação **falha na hora**, com uma
@@ -187,7 +129,7 @@ mensagem dizendo o que falta e como corrigir. Ela não sobe pela metade.
 
 ---
 
-## Passo 4 — Verificar
+## Passo 3 — Verificar
 
 ### Os pods estão de pé?
 
@@ -270,12 +212,12 @@ Lerian — o ajuste é feito remotamente, sem mexer na sua instalação.
 
 | Sintoma | Causa | O que fazer |
 |---|---|---|
-| Pod em `CreateContainerConfigError` | O Secret não existe, ou falta uma das duas chaves | Refaça o passo 2. A mensagem do pod nomeia a chave que falta: `kubectl describe pod -n monitoring <pod>` |
-| Pod em `Pending` ou rejeitado na criação | Pod Security Admission bloqueando `hostNetwork` | Veja o pré-requisito 2 |
+| Pod em `CreateContainerConfigError` | O Secret não existe, ou falta uma das duas chaves | Refaça o passo 1. A mensagem do pod nomeia a chave que falta: `kubectl describe pod -n monitoring <pod>` |
+| Pod em `Pending` ou rejeitado na criação | Pod Security Admission bloqueando `hostNetwork` | Veja [Por que o agente usa `hostNetwork`?](#por-que-o-agente-usa-hostnetwork) no FAQ |
 | `Exporting failed... 401` | Token de telemetria inválido | Peça a reemissão à Lerian. 401 é permanente: o dado é descartado na hora, sem nova tentativa |
 | `Exporting failed... 403` | Chamada chegando por caminho inesperado | Acione a Lerian com a linha de log completa |
-| `Exporting failed... connection refused` ou timeout | Saída HTTPS bloqueada | Veja o pré-requisito 1 |
-| Nenhum `successfully loaded remote configuration` | Token do Fleet inválido ou destino do Fleet bloqueado | Confira a chave `fleet-token` e o pré-requisito 1 |
+| `Exporting failed... connection refused` ou timeout | Saída HTTPS bloqueada | Veja [Quais acessos de saída o agente precisa?](#quais-acessos-de-saída-o-agente-precisa) no FAQ |
+| Nenhum `successfully loaded remote configuration` | Token do Fleet inválido ou destino do Fleet bloqueado | Confira a chave `fleet-token` e os acessos de saída, no FAQ |
 | Pod que reiniciou não volta, e os outros seguem rodando | O Fleet está indisponível no momento do reinício | Veja a nota abaixo |
 
 ### Sobre a dependência do Fleet
@@ -327,18 +269,113 @@ A coleta para imediatamente. Nada do seu ambiente é alterado.
 
 ---
 
-## Sobre os dados coletados
+## FAQ
 
-- **O que é coletado:** telemetria dos namespaces dos produtos Lerian — logs de
-  aplicação, métricas de uso e traces de requisição.
-- **Dados sensíveis são mascarados no seu cluster**, antes de qualquer envio.
-  CPF, CNPJ, e-mail, telefone, nome de pessoa, dados de conta e credenciais são
-  tratados na origem. O mascaramento não é configurável e não pode ser
-  desligado — nem localmente, nem remotamente pelo Fleet.
-- **Sentido do tráfego:** somente saída, HTTPS na porta 443. Nenhuma porta é
-  aberta para fora do cluster e nada disca para dentro dele.
-- **Os tokens ficam no seu cluster**, no Secret que você criou. O Fleet nunca
-  recebe o valor deles.
+### Já rodamos kube-state-metrics no cluster. Vai haver conflito?
+
+Não, mas vale ajustar. Por padrão o chart instala a própria instância, e duas
+rodando ao mesmo tempo é desperdício — ambas produzem a mesma informação.
+
+Para reusar a que já existe, acrescente ao `values.yaml`:
+
+```yaml
+kube-state-metrics:
+  enabled: false
+
+collection:
+  # host:porta do Service existente, em qualquer namespace
+  clusterObjectTarget: kube-state-metrics.kube-system.svc.cluster.local:8080
+```
+
+O agente passa a ler a instância de vocês e nenhuma nova é criada. O namespace
+não importa — basta o Service ser alcançável de dentro do cluster.
+
+### Quais acessos de saída o agente precisa?
+
+Somente saída, HTTPS na porta 443. Nada disca para dentro do cluster.
+
+| Destino | Para quê |
+|---|---|
+| `telemetry.lerian.io` | Envio da telemetria |
+| `fleet-management-prod-015.grafana.net` | Busca da configuração de coleta |
+
+Se houver proxy ou firewall de saída, os dois domínios precisam estar liberados.
+
+### Por que o agente usa `hostNetwork`?
+
+As aplicações enviam telemetria para o IP do nó em que elas mesmas rodam, o que
+mantém o tráfego local. Sem `hostNetwork`, cada envio atravessaria a rede do
+cluster e o agente deixaria de identificar corretamente o nó de origem de cada
+registro.
+
+O agente continua rodando **não-root** (uid 473), com sistema de arquivos raiz
+somente-leitura e sem privilégios elevados. A exceção é só para a rede.
+
+> Se o cluster aplica Pod Security Admission no modo `restricted`, o namespace
+> precisa de exceção — esse perfil proíbe `hostNetwork`:
+>
+> ```console
+> kubectl label namespace monitoring \
+>   pod-security.kubernetes.io/enforce=privileged --overwrite
+> ```
+
+### Quais permissões o chart cria no cluster?
+
+Um `ClusterRole` e um `ClusterRoleBinding`, de **leitura apenas**. Servem para
+associar cada registro ao pod e namespace de origem, e para ler as métricas de
+consumo dos contêineres. O agente não cria, altera nem remove nada no cluster.
+
+### Quanto consome?
+
+| Componente | CPU (requisição) | Memória (requisição / limite) |
+|---|---|---|
+| Agente por nó | 100m | 128Mi / 512Mi |
+| Agente único do cluster | 50m | 128Mi / 256Mi |
+
+### Posso instalar em outro namespace?
+
+Pode. Troque `monitoring` por ele em todos os comandos. O Secret precisa ser
+criado no mesmo namespace da instalação.
+
+### A telemetria de outras aplicações nossas também é coletada?
+
+Só os namespaces onde os produtos Lerian estão instalados são coletados
+(`midaz` e `midaz-plugins`, por padrão). Telemetria de outros namespaces é
+descartada no agente, antes de qualquer envio.
+
+Se os produtos Lerian estão em outro lugar no cluster de vocês, avise a Lerian:
+o ajuste é remoto, sem mexer na instalação.
+
+### O que exatamente é coletado?
+
+Logs de aplicação, métricas de uso e traces de requisição, dos namespaces onde
+os produtos Lerian estão instalados.
+
+Os tokens ficam no cluster de vocês, no Secret criado no passo 1 — a Lerian
+nunca recebe o valor deles.
+
+### Dados sensíveis saem do nosso cluster?
+
+Não. CPF, CNPJ, e-mail, telefone, nome de pessoa, dados de conta e credenciais
+são mascarados **dentro do cluster de vocês**, antes de qualquer envio.
+
+O mascaramento não é configurável e não pode ser desligado — nem na instalação,
+nem remotamente pela Lerian.
+
+### O que a Lerian consegue mudar remotamente?
+
+A configuração de coleta: quais sinais são coletados, de quais namespaces, com
+qual frequência e qual tratamento recebem. É o que evita pedir um upgrade de
+chart ou uma janela de manutenção a cada ajuste.
+
+O que a gestão remota **não** faz: não executa comandos no cluster, não acessa
+outros recursos e não desliga o mascaramento de dados sensíveis.
+
+### Precisamos atualizar o chart com frequência?
+
+Não. A maior parte dos ajustes é aplicada remotamente. Atualizações de chart
+acontecem quando há mudança no próprio agente, e a Lerian avisa quando for o
+caso.
 
 ---
 

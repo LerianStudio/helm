@@ -12,11 +12,6 @@ dev/test cluster.
 {{- if not (and $parsed.host $parsed.hostname (or (eq $parsed.scheme "https") (and (eq $parsed.scheme "http") $insecure))) }}
 {{- fail (printf "agent.configmap.CONTROL_PLANE_URL must be an https:// URL with a host (got %q): the agent sends its bearer token on every request. Set AGENT_ALLOW_INSECURE_HTTP=\"true\" only for isolated dev/test clusters." $url) }}
 {{- end }}
-{{- with $config.AGENT_INFRA_RUNNER_IMAGE }}
-{{- if not (regexMatch "^[^@\\s]+@sha256:[a-f0-9]{64}$" .) }}
-{{- fail (printf "agent.configmap.AGENT_INFRA_RUNNER_IMAGE must be pinned by digest (repository@sha256:<64 hex>), got %q: this is the process that holds a role over your cloud account, and a tag is a name somebody can re-point." .) }}
-{{- end }}
-{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

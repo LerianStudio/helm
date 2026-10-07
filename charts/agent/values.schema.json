@@ -28,13 +28,6 @@
         },
         "configmap": {
           "type": "object",
-          "properties": {
-            "AGENT_INFRA_RUNNER_IMAGE": {
-              "type": "string",
-              "pattern": "^(|[^@\\s]+@sha256:[a-f0-9]{64})$",
-              "description": "Empty to leave cloud provisioning off, or the provisioning runner pinned by content digest (repository@sha256:<64 lowercase hex characters>)."
-            }
-          },
           "additionalProperties": true
         },
         "secrets": {

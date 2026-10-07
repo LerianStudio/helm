@@ -1,8 +1,7 @@
 {{- if and .Values.agent.enabled .Values.agent.networkPolicy.enabled }}
 {{- $name := include "lerian-agent.name" . }}
 {{- $fullname := include "lerian-agent.fullname" . }}
-# Egress of the agent and of the provisioning Jobs it runs, from one rule set.
-# No ingress rule: neither receives inbound connections.
+# Egress of the agent. No ingress rule: it receives no inbound connections.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -22,24 +21,6 @@ spec:
           {{- range list $name $fullname | uniq }}
           - {{ . | quote }}
           {{- end }}
-  policyTypes:
-    - Egress
-  egress:
-{{- include "lerian-agent.egress" . }}
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: {{ $fullname }}-infra-runner
-  namespace: {{ include "global.namespace" . }}
-  labels:
-    {{- include "lerian-agent.labels" (dict "context" . "component" "infra-runner" "name" .Values.agent.name) | nindent 4 }}
-spec:
-  # The labels the agent puts on every provisioning Job's pod.
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/managed-by: lerian-agent
-      app.kubernetes.io/component: infra-runner
   policyTypes:
     - Egress
   egress:

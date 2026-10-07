@@ -190,24 +190,6 @@ agent:
     # -- Registries the agent may pull its OWN image from. Default:
     # ghcr.io/lerianstudio.
     AGENT_ALLOWED_IMAGE_REGISTRIES: ""
-    # -- Registries a provisioning run (runner image and module bundles) may
-    # come from. Default: ghcr.io/lerianstudio.
-    AGENT_ALLOWED_PROVISIONING_REGISTRIES: ""
-
-    # Managed datastores in your own cloud account. Leave the image empty if
-    # no stack uses them: provisioning work is then refused, and the Job
-    # grant is not installed.
-    # -- Provisioning runner image, pinned by digest (repository@sha256:...)
-    AGENT_INFRA_RUNNER_IMAGE: ""
-    # -- ServiceAccount the provisioning Job runs as - where you attach the
-    # cloud role. Create it yourself.
-    AGENT_INFRA_RUNNER_SERVICE_ACCOUNT: ""
-    # -- Provisioning Job CPU (request and limit)
-    AGENT_INFRA_RUNNER_CPU: "500m"
-    # -- Provisioning Job memory (request and limit)
-    AGENT_INFRA_RUNNER_MEMORY: "1Gi"
-    # -- PriorityClass of the provisioning Job's pod
-    AGENT_INFRA_RUNNER_PRIORITY_CLASS: ""
 
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
@@ -274,12 +256,12 @@ agent:
 
   trust:
     # -- ConfigMap in the release namespace holding your own root certificates
-    # (PEM), trusted beside the public roots on every connection the agent and
-    # its provisioning Job open
+    # (PEM), trusted beside the public roots on every connection the agent
+    # opens
     additionalCABundle: ""
 
-  # -- Egress of the agent and of its provisioning Jobs: DNS, the Kubernetes
-  # API, the control plane and chart registries
+  # -- Egress of the agent: DNS, the Kubernetes API, the control plane and
+  # chart registries
   networkPolicy:
     # -- Enable or disable the NetworkPolicies
     enabled: true

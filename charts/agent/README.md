@@ -5,7 +5,7 @@
 - Chart type: `single-service`
 - Required secrets: `agent.secrets.AGENT_TOKEN` (and `agent.secrets.AGENT_ID` with a per-agent token) from the control plane's agent registration, or `agent.useExistingSecret` with a Secret carrying the same keys. `agent.configmap.CONTROL_PLANE_URL` is required as well.
 - Dependency notes: No dependency chart is bundled. The agent only makes outbound requests: to the Lerian control plane, and to the registries it is allowed to pull from.
-- Production overrides: `agent.managedNamespaces` (every namespace the agent may install into), `agent.useExistingSecret`, the registry allowlists, `agent.configmap.AGENT_INFRA_RUNNER_IMAGE` when cloud provisioning is used, `agent.networkPolicy` CIDRs, resources, and `agent.image.digest` once the agent has moved itself to a newer build.
+- Production overrides: `agent.managedNamespaces` (every namespace the agent may install into), `agent.useExistingSecret`, the registry allowlists, `agent.networkPolicy` CIDRs, resources, and `agent.image.digest` once the agent has moved itself to a newer build.
 - Source/license: The chart is in `github.com/LerianStudio/helm` (Apache-2.0); the agent application is in `github.com/LerianStudio/agent`.
 
 Installs the Lerian BYOC agent: it runs in your Kubernetes cluster, polls the
@@ -85,16 +85,13 @@ and the agent applies its own default.
 | `agent.configmap.HELM_TIMEOUT` | `"15m"` | How long one install/upgrade may take. Raise `agent.terminationGracePeriodSeconds` with it |
 | `agent.configmap.AGENT_ALLOWED_CHART_REGISTRIES` | agent default | Comma-separated registries charts may be pulled from |
 | `agent.configmap.AGENT_ALLOWED_IMAGE_REGISTRIES` | agent default | Registries the agent may pull its own image from |
-| `agent.configmap.AGENT_ALLOWED_PROVISIONING_REGISTRIES` | agent default | Registries a provisioning run may come from |
-| `agent.configmap.AGENT_INFRA_RUNNER_IMAGE` | `""` | Provisioning runner, pinned by digest. Empty turns cloud provisioning off |
-| `agent.configmap.AGENT_INFRA_RUNNER_SERVICE_ACCOUNT` | `""` | ServiceAccount the provisioning Job runs as (carries your cloud role) |
 | `agent.secretVault.*` | empty | Your own secret manager, through External Secrets |
 | `agent.secrets.AGENT_TOKEN` / `AGENT_ID` | `""` | The agent's credential |
 | `agent.useExistingSecret` / `agent.existingSecretName` | `false` / `""` | Use your own credential Secret |
 | `agent.managedNamespaces` | release namespace | Namespaces the agent may write to |
 | `agent.chartRegistry.*` | empty | Credential for pulling charts from a private registry |
 | `agent.trust.additionalCABundle` | `""` | ConfigMap with your own root certificates |
-| `agent.networkPolicy.*` | enabled, open CIDRs | Egress of the agent and its provisioning Jobs |
+| `agent.networkPolicy.*` | enabled, open CIDRs | Egress of the agent |
 | `agent.image.digest` | `""` | Pins the agent image by digest, wins over the tag |
 | `agent.serviceMonitor.enabled` / `agent.prometheusRule.enabled` | `false` | Prometheus Operator resources |
 | `agent.extraEnvVars` | `[]` | Extra environment variables (e.g. `HTTPS_PROXY`) |
@@ -119,7 +116,7 @@ On Cilium, `ipBlock` rules do not match in-cluster addresses by default, so
 when the API server runs on cluster nodes (kubeadm, k3s, RKE2, Talos) the
 policy's `agent.networkPolicy.kubernetesApiCidr` rule lets nothing through to
 it. Set Cilium's `policyCIDRMatchMode: nodes`, or add a `CiliumNetworkPolicy`
-allowing the `kube-apiserver` entity for the agent and infra-runner pods.
+allowing the `kube-apiserver` entity for the agent's pods.
 
 The full list of grants, and why each exists, is in
 [`templates/rbac.yaml`](templates/rbac.yaml).
@@ -140,23 +137,12 @@ a `kubernetes.io/dockerconfigjson` Secret. The credential is mounted as a file,
 offered only to the registry it is keyed for, and re-read on every pull, so
 rotating it needs no restart.
 
-## Cloud provisioning
+## Cloud infrastructure
 
-Managed datastores of a stack (a database, cache or broker the deployer creates
-in your own cloud account) are provisioned by a Job the agent starts from the
-runner image in `agent.configmap.AGENT_INFRA_RUNNER_IMAGE`, pinned by digest.
-The Job holds the cloud role you attach to
-`AGENT_INFRA_RUNNER_SERVICE_ACCOUNT`; the agent holds no cloud credential.
-
-Setting the runner image installs a Role letting the agent create Jobs in its
-own namespace, which means naming any ServiceAccount there - including the one
-carrying your cloud role. On a production cloud account, add an admission
-policy that admits a Job using that ServiceAccount only with the runner image
-digest you approved.
-
-A provisioning Job needs egress to your cloud provider's API and to the
-provider registry the infrastructure binary downloads its (checksum-pinned)
-plugins from.
+The agent provisions no cloud infrastructure. The cluster and the managed
+datastores a stack uses (RDS, ElastiCache, DocumentDB, Amazon MQ) are created
+with lerian-cli (`lerian infra`). The agent holds no cloud credential, and a
+provisioning work item is refused with that answer.
 
 ## Updating the agent
 
@@ -195,7 +181,6 @@ in the closed table at the end of this section.
 | **A release's computed values** - everything Helm would use for that release | On request | A Lerian operator | The work item. Deleted by the next sweep after the item expires - the sweep runs on its own interval below. The item's clock starts when it became CLAIMABLE, not when it finished: it runs for the retention window below, extended while the operation is still going, up to the lifetime ceiling below |
 | **Live resource stats for one release** - per-pod CPU and memory **with the pod's name**, replica counts, and your HorizontalPodAutoscaler by name. If the metrics API will not answer, the read still SUCCEEDS and carries a note holding that API's own refusal verbatim, cut to the recorded-read-error ceiling below | On request | A Lerian operator | The work item. Deleted by the next sweep after the item expires - the sweep runs on its own interval below. The item's clock starts when it became CLAIMABLE, not when it finished: it runs for the retention window below, extended while the operation is still going, up to the lifetime ceiling below |
 | **An upgrade preview** - not one body but several: the manifests CURRENTLY DEPLOYED, read live out of your cluster, so every object the release owns as it stands; the manifests the upgrade would render; and a line diff of the two, which is not a summary - an added or removed resource contributes every one of its lines, and so does a change too large for the comparison budget | On request, before an upgrade is approved | A Lerian operator | The work item (deleted by the next sweep after the item expires - the sweep runs on its own interval below. The item's clock starts when it became CLAIMABLE, not when it finished: it runs for the retention window below, extended while the operation is still going, up to the lifetime ceiling below) and the deployment's history, where it has no expiry at all |
-| **A provisioning run's result** - whether plan or apply succeeded, the approved change addresses and attribute paths (never their values), and **the answers the module published, names and values**: your managed datastore's endpoint, port and database name. On failure, a sentence the agent composed - not your engine's output. The state backend is sent TO the agent, so it does not leave | On request, when a stack has a managed datastore | A Lerian operator approving the run | The work item (deleted by the next sweep after the item expires - the sweep runs on its own interval below. The item's clock starts when it became CLAIMABLE, not when it finished: it runs for the retention window below, extended while the operation is still going, up to the lifetime ceiling below) and the stack member's row |
 
 **What never leaves:**
 
@@ -233,7 +218,7 @@ the WHY, never the WHAT. The HEARTBEAT is untouched - the switch is per
 deployment and the heartbeat is per agent - so everything its row above lists
 keeps leaving, your declared registries included. And with the switch off a
 Lerian operator who asks for an upgrade preview, your computed values, live
-resource stats, a preflight or a provisioning run still gets them; what gates
+resource stats or a preflight still gets them; what gates
 those is the consent you granted, not this switch.
 
 **Who reads it.** A Lerian operator reaching any of this through the control

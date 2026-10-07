@@ -96,8 +96,6 @@ spec:
             value: /etc/lerian-agent/trust
           - name: SSL_CERT_DIR
             value: /etc/lerian-agent/trust
-          - name: AGENT_TRUST_BUNDLE_CONFIGMAP
-            value: {{ $trust | quote }}
           {{- end }}
           {{- if eq (toString .Values.agent.configmap.ENABLE_TELEMETRY) "true" }}
           {{- if not .Values.agent.configmap.OTEL_EXPORTER_OTLP_ENDPOINT }}

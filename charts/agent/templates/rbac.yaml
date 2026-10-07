@@ -58,8 +58,7 @@ rules:
 
   # Cluster-wide pod and Service reads. Pods: the capacity preflight sums what
   # every pod already requests, the denominator of every "will this stack fit"
-  # answer, and a provisioning run's result is read off its pod in the agent's
-  # own namespace. Services: the ingress preflight's fallback, looking for a
+  # answer. Services: the ingress preflight's fallback, looking for a
   # LoadBalancer Service with an address when the cluster serves no
   # IngressClass. Read-only, and cluster-wide on purpose - counting only the
   # managed namespaces would answer a different question.
@@ -255,8 +254,7 @@ rules:
   # stop a running product's credential being refreshed, and the objects are
   # looked up by the exact name of the Secret they fill rather than enumerated.
   #
-  # Rendered ONLY for a client who configured a vault, the same way the
-  # provisioning runner's Job grant below is. A client who left
+  # Rendered ONLY for a client who configured a vault. A client who left
   # agent.secretVault.provider empty never has a Secret with a residence to fill - the
   # control plane composes one only for a cluster that REPORTED a vault - so the
   # grant would be a standing power nobody exercises. It is not an idle one
@@ -284,108 +282,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: {{ $name }}
-subjects:
-  - kind: ServiceAccount
-    name: {{ $sa }}
-    namespace: {{ $ns }}
-{{- end }}
-
-{{- if .Values.agent.configmap.AGENT_INFRA_RUNNER_IMAGE }}
-
----
-# =============================================================================
-# Provisioning runner: start a Job in this namespace, and wait for it
-# =============================================================================
-# When a stack has a managed datastore, the agent does not provision it. It
-# starts a Job from a separate runner image, in THIS namespace, and waits for
-# it. The infrastructure binary lives in that Job and never in the agent, so a
-# compromised agent cannot read a cloud credential out of its own process.
-#
-# It does NOT put the client's cloud account out of reach, and this comment used
-# to say that it did. The runner's ServiceAccount - the one carrying the cloud
-# role, which the client creates in THIS namespace - can be named by anything
-# allowed to create a pod here, and `batch/jobs create` is exactly that. The
-# digest pin and the registry allowlist that bound what the runner may be live
-# in agent code, and code is what a compromised agent is not running. So the
-# honest statement is: the pod boundary keeps the cloud credential out of the
-# agent's memory and environment, and a fully compromised agent can still reach
-# the cloud role transitively, by starting a Job of its own choosing under that
-# ServiceAccount. docs/threat-model.md carries the row and the client-side
-# mitigation (an admission policy pinning the runner Job's image and
-# ServiceAccount), and this Role is why the two must be read together.
-#
-# Rendered ONLY when a runner image is configured. A client with no managed
-# datastores leaves agent.configmap.AGENT_INFRA_RUNNER_IMAGE empty, their agent refuses
-# provisioning work by name, and this standing grant is not installed at all -
-# which is the point, given what the paragraph above says a holder can reach.
-#
-# Three rules: create a Job here and read it until it finishes, create the one
-# Secret that Job reads its request from, and list why a Job never got a pod.
-#
-# The Secret is why `delete` on Jobs is here, and the threat model's row says
-# what it costs. The run's request - its inputs and the address of the state
-# file - is not written into the Job's pod template, where everyone who can
-# read a Job or a pod in this namespace reads it and etcd stores it in clear.
-# It is written into a Secret of that run's own, owned by the Job so Kubernetes
-# clears it with the run. The owner has to exist before the dependent can name
-# it, so the Job is created first - and a Secret that then cannot be created
-# leaves a Job whose pod can never start, under the deterministic name every
-# later attempt adopts. Removing it is the only thing that closes that, and it
-# is a power a compromised agent already has by other means: the agent is the
-# only party that starts these runs, so one that wanted them not to happen
-# would simply not start them.
-#
-# No delete on the Secret: it goes away with its Job, through the ownerReference
-# and the same ttlSecondsAfterFinished. No get, list or watch on Secrets either
-# - the agent writes the request and never reads one back, and read is the verb
-# that would reach the OTHER Secrets of this namespace, the agent's own
-# enrollment identity among them. No patch or update on Jobs - a Job's pod
-# template is immutable after creation, so the verbs would buy nothing but the
-# ability to cancel a run somebody approved. No watch either: the agent POLLS
-# the one Job it started (jobPollInterval in
-# internal/kubernetes/jobs.go), because a watch would have to
-# hold an open connection for the length of a provisioning run - tens of
-# minutes for a managed database - and be re-established across every API
-# server restart in between.
-#
-# Declared in the release namespace on its own rather than folded into the
-# managed-namespace Role above, which already carries a wider Job grant. That
-# Role exists once per namespace in agent.managedNamespaces, and a client who
-# lists only their product namespaces - the recommended thing to do - would
-# leave the agent's own namespace without it. Provisioning would then fail with
-# Forbidden on a cluster that is configured exactly as documented.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: {{ $name }}-infra-runner
-  namespace: {{ $ns }}
-  labels:
-    {{- $labels | nindent 4 }}
-rules:
-  - apiGroups: ["batch"]
-    resources: ["jobs"]
-    verbs: ["create", "delete", "get", "list"]
-
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["create"]
-
-  - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["list"]
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: {{ $name }}-infra-runner
-  namespace: {{ $ns }}
-  labels:
-    {{- $labels | nindent 4 }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: {{ $name }}-infra-runner
 subjects:
   - kind: ServiceAccount
     name: {{ $sa }}

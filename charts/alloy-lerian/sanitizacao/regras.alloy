@@ -46,6 +46,7 @@ otelcol.processor.transform "sanitizacao" {
 
       // Documento fiscal pontuado: 123.456.789-01 -> 123.***.***-**
       `replace_pattern(body, "([0-9]{3})\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}", "$1.***.***-**")`,
+      `replace_pattern(body, "([0-9]{2})\\.[0-9]{3}\\.[0-9]{3}/[0-9]{4}-[0-9]{2}", "$1.***.***/****-**")`,
 
       // Documento fiscal de 11 digitos seguidos: preserva 3 primeiros, mascara 8.
       `replace_pattern(body, "([^0-9A-Za-z]|^)([0-9]{3})([0-9]{8})([^0-9A-Za-z]|$)", "$1$2********$4")`,
@@ -81,7 +82,7 @@ otelcol.processor.transform "sanitizacao" {
       //
       // Verificado: 1 termo nao e mascarado, 2/3/4 termos sao mascarados por
       // inteiro, e um campo `chave=valor` seguinte nao e consumido.
-      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)(?:Name|_name)\\W{1,4})(\\p{Lu}[\\p{L}]*)(?: \\p{Lu}[\\p{L}]*)+", "$1$2 **********")`,
+      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)(?:Name|_name)\\W{1,4})(\\p{Lu}[\\p{L}]*)(?: (?:(?i:d[aeio]s?|e|y|del|la) )?\\p{Lu}[\\p{L}]*)+", "$1$2 **********")`,
 
       // --- ENDERECO DE CORREIO ELETRONICO ---
       // Preserva os 2 primeiros caracteres da parte local e o dominio INTEIRO.

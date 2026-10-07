@@ -71,6 +71,19 @@ otelcol.processor.transform {{ $nome | quote }} {
       // this rule would not match what that one already masked.
       `replace_pattern(body, "([0-9]{3})\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}", "$1.***.***-**")`,
 
+      // CNPJ pontuado (`11.222.333/0001-81`). Mesma logica da linha acima, para a
+      // outra forma: a regra de digitos corridos NAO alcanca a pontuada, porque os
+      // separadores quebram a sequencia de 14.
+      //
+      // ⚠️ MEDIDO em bancada (2026-10-07, agente real, cadeia servida pelo Fleet):
+      // sem esta regra, `cnpj=11.222.333/0001-81` chegava INTACTO ao destino,
+      // enquanto `48028905000104` na MESMA linha era mascarado. A forma pontuada e
+      // a grafia comum em log de aplicacao — e era a unica das duas que vazava.
+      //
+      // Preserva os 2 primeiros digitos, como a regra de digitos corridos, para
+      // manter correlacao sem reconstituir o documento.
+      `replace_pattern(body, "([0-9]{2})\\.[0-9]{3}\\.[0-9]{3}/[0-9]{4}-[0-9]{2}", "$1.***.***/****-**")`,
+
       // Eleven consecutive digits. Preserves the first three for correlation.
       // ⚠️ FRONTEIRA nos DOIS lados, e nenhum dos delimitadores pode ser letra ou
       // digito. Sem isso a regra casava 11 digitos em qualquer contexto. MEDIDO em
@@ -177,7 +190,24 @@ otelcol.processor.transform {{ $nome | quote }} {
       // rule. The given name is kept for legibility in diagnosis; everything
       // after it goes. Verified: 1 term is left alone, 2/3/4 terms are fully
       // masked, and a following `key=value` field is not consumed.
-      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)(?:Name|_name)\\W{1,4})(\\p{Lu}[\\p{L}]*)(?: \\p{Lu}[\\p{L}]*)+", "$1$2 **********")`,
+      //
+      // ⚠️ PARTICULA MINUSCULA (`da`, `de`, `dos`, `e`) faz parte do termo seguinte,
+      // nao encerra o nome. Sem isto a regra PARAVA na particula e o sobrenome
+      // vazava — e em nome brasileiro a particula e o caso comum, nao a excecao.
+      //
+      // MEDIDO em bancada (2026-10-07, agente real, cadeia servida pelo Fleet), as
+      // duas formas lado a lado na MESMA execucao:
+      //
+      //   {"customerName":"Joao Carlos Silva"} -> {"customerName":"Joao **********"}
+      //   {"customerName":"Joao da Silva"}     -> {"customerName":"Joao da Silva"}
+      //
+      // A segunda saiu INTACTA. A porta de entrega nao pegava porque o caso
+      // canonico usa tres termos capitalizados — ha agora um caso para a particula.
+      //
+      // A particula e aceita apenas ENTRE termos: ela nao pode iniciar nem encerrar
+      // a captura, entao `cliente da empresa` continua sem casar e a ancora de
+      // capitalizacao segue valendo.
+      `replace_pattern(body, "((?:customer|sender|recipient|receiver|client|holder)(?:Name|_name)\\W{1,4})(\\p{Lu}[\\p{L}]*)(?: (?:(?i:d[aeio]s?|e|y|del|la) )?\\p{Lu}[\\p{L}]*)+", "$1$2 **********")`,
 
       // --- EMAIL ADDRESS ---
       // Preserves two characters of the local part and the WHOLE domain. The

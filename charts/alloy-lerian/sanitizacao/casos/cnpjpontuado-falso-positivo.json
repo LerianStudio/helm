@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "versao 1.222.333/0001 build 12.345.678"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

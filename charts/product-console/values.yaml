@@ -26,7 +26,7 @@ image:
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)
-  tag: "2.8.0"
+  tag: "2.9.0"
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
 # - name: regcred
@@ -379,7 +379,8 @@ mongodb:
     # -- Secret with the root password. The default points the subchart at the one
     # this chart keeps across uninstall (templates/mongodb-secret.yaml); the
     # console's templates read it as empty. Name your own Secret to replace it.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   resourcesPreset: "medium"
   persistence:
     size: 8Gi

@@ -260,6 +260,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0` | `1.0.0` | `1.0.0` | `1.0.0` |
 -----------------
 
+### Agent
+
+Lerian BYOC agent: runs in your Kubernetes cluster, polls the Lerian control plane over an outbound-only connection and executes the Helm operations it is assigned.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/agent).
+
+#### Application Version Mapping
+
+| Chart Version | Agent Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0 |
+-----------------
+
 ### Lerian Common (Library)
 
 Library chart consumed by other Lerian charts — renders nothing on its own.

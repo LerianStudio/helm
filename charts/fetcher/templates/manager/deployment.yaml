@@ -55,10 +55,12 @@ spec:
                 name: {{ include "fetcher-manager.fullname" . }}
             - configMapRef:
                 name: {{ include "fetcher.fullname" . }}-common
-            - secretRef:
-                name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "fetcher-manager.fullname" . }}{{ end }}
+            # Shared secrets first: the component Secret (or its existingSecret)
+            # comes after and wins on any key both define.
             - secretRef:
                 name: {{ include "fetcher.fullname" . }}-common
+            - secretRef:
+                name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "fetcher-manager.fullname" . }}{{ end }}
           {{- if or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
           {{- if eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true" }}
@@ -155,15 +157,12 @@ spec:
               - key: tls.key
                 path: tls.key
       {{- end }}
-      {{- with .Values.manager.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.manager.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.manager.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, manager.spread, manager.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.manager
+            "global" .Values.global
+            "selectorLabels" (include "fetcher-manager.selectorLabels" .)) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

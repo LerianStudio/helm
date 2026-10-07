@@ -48,10 +48,12 @@ spec:
                 name: {{ include "fetcher-worker.fullname" . }}
             - configMapRef:
                 name: {{ include "fetcher.fullname" . }}-common
-            - secretRef:
-                name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "fetcher-worker.fullname" . }}{{ end }}
+            # Shared secrets first: the component Secret (or its existingSecret)
+            # comes after and wins on any key both define.
             - secretRef:
                 name: {{ include "fetcher.fullname" . }}-common
+            - secretRef:
+                name: {{ if .Values.worker.useExistingSecret }}{{ .Values.worker.existingSecretName }}{{ else }}{{ include "fetcher-worker.fullname" . }}{{ end }}
           {{- if or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
           {{- if eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true" }}
@@ -126,15 +128,12 @@ spec:
               - key: tls.key
                 path: tls.key
       {{- end }}
-      {{- with .Values.worker.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.worker.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.worker.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, worker.spread, worker.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.worker
+            "global" .Values.global
+            "selectorLabels" (include "fetcher-worker.selectorLabels" .)) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

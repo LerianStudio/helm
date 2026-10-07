@@ -117,6 +117,9 @@ so there is nothing to migrate onto that mask.
 | `nameOverride` | Override chart name | `""` |
 | `fullnameOverride` | Override full name | `""` |
 | `namespaceOverride` | Override namespace | `""` |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1}` |
+| `manager.spread`, `worker.spread` | Field-level override of `global.scheduling.spread` for that Deployment | `{}` |
+| `manager.topologySpreadConstraints`, `worker.topologySpreadConstraints` | Raw list; non-empty replaces the preset entirely | `[]` |
 
 ### Manager Settings
 
@@ -178,6 +181,11 @@ so there is nothing to migrate onto that mask.
 | `manager.secrets.RABBITMQ_DEFAULT_PASS`, `worker.secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | unset |
 | `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
 
+The top-level `secrets.*` block renders a shared `<release>-common` Secret with its
+non-empty keys only. Both Deployments load it **before** their own Secret
+(`manager.secrets` / `worker.secrets`, or `existingSecretName` when
+`useExistingSecret=true`), so the component Secret wins on any key both define.
+
 ### External RabbitMQ Bootstrap
 
 When using an external RabbitMQ instance, you can enable the bootstrap job to automatically apply the required queue, exchange, and binding definitions.
@@ -206,6 +214,36 @@ The chart includes optional dependencies that can be enabled for local developme
 | RabbitMQ | `rabbitmq.enabled` | Message broker for async processing |
 | Valkey | `valkey.enabled` | In-memory data store (Redis alternative) |
 | KEDA | `keda.enabled` | Event-driven autoscaling |
+
+## Pod Spreading (`global.scheduling.spread`)
+
+The manager and worker Deployments render `topologySpreadConstraints` from the
+`lerian-common` spread preset. The default is **soft** (`ScheduleAnyway`) across
+nodes, so replicas are spread across nodes (e.g. spot nodes) whenever possible,
+but a pod is never left `Pending` because of it.
+
+Zone spreading is **off** by default (`zone: ""`). When scoring a soft spread, the
+scheduler skips every node that lacks the `topology.kubernetes.io/zone` label, so on
+clusters without zone labels (bare-metal, k3s) a zone constraint silently cancels the
+node spread. Turn it on (`zone: ScheduleAnyway`) where every node carries zone labels
+(EKS, GKE, AKS).
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
+      maxSkew: 1               # integer >= 1
+worker:
+  spread: { hostname: DoNotSchedule }  # field-level override of the global preset
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
+```
+
+Each constraint counts only the component's own pods of the same ReplicaSet
+(`matchLabelKeys: [pod-template-hash]`), so rolling updates never deadlock.
+Requires Kubernetes >= 1.27.
 
 ## Examples
 

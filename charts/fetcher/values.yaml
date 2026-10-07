@@ -5,6 +5,26 @@ nameOverride: ""
 fullnameOverride: ""
 namespaceOverride: "fetcher"
 global:
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to the manager and worker
+  # Deployments. Each constraint counts only the component's own pods
+  # (labelSelector = its selector labels) of the same ReplicaSet
+  # (matchLabelKeys: [pod-template-hash]), so rolling updates never deadlock.
+  # A component's `spread` overrides these fields one by one; a component's raw
+  # `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      # Off by default: the scheduler skips nodes without the zone label when scoring a
+      # soft spread, so on clusters missing it (bare-metal, k3s) a zone constraint
+      # silently cancels the hostname spread. Enable it where every node has zone labels (EKS, GKE, AKS).
+      zone: ""
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
   # -- Managed-cloud topology preset: aws | gcp | azure (unset = bundled
   # in-cluster infra, plaintext). Sets TOPOLOGY defaults (tls/scheme/ports/
   # object-storage path-style) for every lerian-common mask below — see
@@ -147,6 +167,13 @@ manager:
   nodeSelector: {}
   tolerations: {}
   affinity: {}
+  # -- Per-component override of `global.scheduling.spread` (fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   serviceAccount:
     create: true
     annotations: {}
@@ -236,6 +263,13 @@ worker:
   nodeSelector: {}
   tolerations: {}
   affinity: {}
+  # -- Per-component override of `global.scheduling.spread` (fields: enabled,
+  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   serviceAccount:
     create: true
     annotations: {}
@@ -319,13 +353,7 @@ secrets:
   MONGO_USER: "fetcher"
   MONGO_PASSWORD: ""
   RABBITMQ_DEFAULT_USER: "plugin"
-  # -- Password the app uses to authenticate as the "plugin" RabbitMQ user.
-  # Matches the fixed password_hash baked into files/rabbitmq/load_definitions.json
-  # (loaded automatically when rabbitmq.enabled=true, bundled dev-mode broker).
-  # DEV-ONLY default — for production/external RabbitMQ, override this AND
-  # regenerate load_definitions.json's password_hash (rabbit_password_hashing_sha256)
-  # to match, or use externalRabbitmqDefinitions with your own credentials.
-  RABBITMQ_DEFAULT_PASS: "fetcher-dev-only"
+  RABBITMQ_DEFAULT_PASS: ""
   REDIS_USER: ""
   REDIS_PASSWORD: ""
   LICENSE_KEY: ""

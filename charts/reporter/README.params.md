@@ -14,6 +14,8 @@
 | `global.scheduling.spread.hostname` | string | `"ScheduleAnyway"` | Spread across nodes (`kubernetes.io/hostname`): `ScheduleAnyway` (soft) \| `DoNotSchedule` (hard) \| `""` (off). |
 | `global.scheduling.spread.zone` | string | `""` | Spread across zones (`topology.kubernetes.io/zone`): `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off). Off by default: nodes without the zone label are skipped when scoring a soft spread, which would cancel the hostname spread on bare-metal/k3s. |
 | `global.scheduling.spread.maxSkew` | int | `1` | Max allowed pod-count difference between topology domains (integer >= 1). |
+| `global.scheduling.spread.minDomains` | int | `0` | Minimum eligible domains for `DoNotSchedule` constraints (0 = off). With fewer domains the scheduler treats the global minimum as 0, so a hard hostname spread never stacks replicas on one node. |
+| `global.scheduling.spread.nodeTaintsPolicy` | string | `""` | `Honor` \| `Ignore` \| `""` (omitted = Kubernetes default `Ignore`). `Honor` counts only nodes whose taints the pod tolerates. |
 | `global.externalMongoDefinitions` | object | `{}` | Bootstrap job for external MongoDB: creates users and grants privileges |
 | `global.externalMongoDefinitions.enabled` | bool | `false` | Enable or disable the MongoDB bootstrap job |
 | `global.externalMongoDefinitions.connection` | object | `{}` | MongoDB connection settings |
@@ -48,7 +50,7 @@
 | `manager.service.annotations` | object | `{}` | Annotations for the service |
 | `manager.resources.limits` | object | `{}` | CPU and memory limits for pods |
 | `manager.resources.requests` | object | `{}` | Minimum CPU and memory requests |
-| `manager.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew); each field set here wins over the global one. |
+| `manager.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one. |
 | `manager.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `manager.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
 | `manager.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
@@ -77,7 +79,7 @@
 | `worker.service.annotations` | object | `{}` | Annotations for the service |
 | `worker.resources.limits` | object | `{}` | CPU and memory limits for pods |
 | `worker.resources.requests` | object | `{}` | Minimum CPU and memory requests |
-| `worker.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew); each field set here wins over the global one. |
+| `worker.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one. |
 | `worker.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `worker.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
 | `worker.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |

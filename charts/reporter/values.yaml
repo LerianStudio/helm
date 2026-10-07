@@ -80,6 +80,15 @@ global:
       zone: ""
       # -- Max allowed pod-count difference between topology domains (integer >= 1).
       maxSkew: 1
+      # -- Minimum eligible domains for DoNotSchedule constraints (0 = off). With
+      # fewer domains the scheduler treats the global minimum as 0, so a hard
+      # hostname spread never stacks replicas on a single node; the extra replica
+      # waits for a new node (Karpenter launches it). Use on autoscaled clusters.
+      minDomains: 0
+      # -- Honor | Ignore | "" (omitted = Kubernetes default Ignore). Honor counts
+      # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
+      # draining, tainted karpenter.sh/disrupted).
+      nodeTaintsPolicy: ""
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
@@ -198,7 +207,7 @@ manager:
       cpu: 100m
       memory: 256Mi
   # -- Per-component override of global.scheduling.spread (same fields: enabled,
-  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
   # Example: spread: { hostname: DoNotSchedule }
   spread: {}
   # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
@@ -374,7 +383,7 @@ worker:
     seccompProfile:
       type: RuntimeDefault
   # -- Per-component override of global.scheduling.spread (same fields: enabled,
-  # hostname, zone, maxSkew); each field set here wins over the global one.
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
   # Example: spread: { hostname: DoNotSchedule }
   spread: {}
   # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset

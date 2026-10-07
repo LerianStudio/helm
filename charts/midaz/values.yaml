@@ -225,7 +225,7 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.0.3"
+    tag: "4.2.0"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -306,9 +306,7 @@ ledger:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 1
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
@@ -398,6 +396,15 @@ ledger:
     IDP_DECLARATION_ENABLED: "false"
     IDP_HOST: ""
     IDP_M2M_CLIENT_ID: ""
+    # -- Tracer reservation seam token identity (PLUGIN_AUTH_ENABLED=true,
+    # single-tenant): the ledger's Access Manager application client id. Pairs with
+    # ledger.secrets.TRACER_M2M_CLIENT_SECRET; rendered only when set.
+    TRACER_M2M_CLIENT_ID: ""
+    # -- Milliseconds a reservation seam call may wait for an M2M token that is not
+    # cached yet (pod start, or a tenant idle long enough for its token to expire),
+    # before the TRACER_TIMEOUT_MS budget of the call starts. Empty uses the ledger
+    # default (3000).
+    TRACER_M2M_WAIT_TIMEOUT_MS: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -408,7 +415,7 @@ ledger:
   secrets:
     # -- Onboarding module passwords.
     # DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from
-    # the Bitnami postgresql subchart Secret (keys `password` / `replication-password`)
+    # the Bitnami postgresql subchart Secret (key `password`, replicas included)
     # and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret
     # (key `mongodb-root-password`). Only set these for an EXTERNAL backend
     # (subchart disabled / .external=true) without an existingSecret override.
@@ -438,8 +445,8 @@ ledger:
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
     # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
-    # existingSecret override. RABBITMQ_* remain operator-provided (see README
-    # "Known limitation" — RabbitMQ is not yet single-sourced).
+    # existingSecret override. RABBITMQ_* are operator-provided; the bundled
+    # RabbitMQ gives them to its transaction and consumer users.
     REDIS_PASSWORD: ""
     RABBITMQ_DEFAULT_PASS: ""
     RABBITMQ_CONSUMER_PASS: ""
@@ -449,6 +456,13 @@ ledger:
     # -- RI permission declaration M2M client secret. Operator-provided; only set
     # when IDP_DECLARATION_ENABLED=true. Rendered into the ledger Secret, never the ConfigMap.
     IDP_M2M_CLIENT_SECRET: ""
+    # -- Tracer reservation seam token identity client secret (pairs with
+    # ledger.configmap.TRACER_M2M_CLIENT_ID). Operator-provided; rendered into the
+    # ledger Secret, never the ConfigMap.
+    TRACER_M2M_CLIENT_SECRET: ""
+    # -- Tracer reservation seam API key identity (PLUGIN_AUTH_ENABLED=false; the
+    # tracer must run with API_KEY_ENABLED=true). Rendered into the ledger Secret.
+    TRACER_API_KEY: ""
     # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
     # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
     # they are rendered into the ledger Secret (never the ConfigMap).
@@ -462,6 +476,56 @@ ledger:
     # -- Name of the service account
     # @default -- `midaz-ledger.fullname`
     name: ""
+  # -- AWS credential source for the multi-tenant ledger, which reads its
+  # per-tenant Tracer M2M credential from Secrets Manager at runtime
+  # (tenants/{env}/{tenant}/ledger/m2m/tracer/credentials).
+  #
+  # TWO MUTUALLY EXCLUSIVE OPTIONS — pick by cluster, never enable both:
+  #
+  #   EKS            -> IRSA. Leave rolesAnywhere.enabled=false and put the role ARN
+  #                     in ledger.serviceAccount.annotations["eks.amazonaws.com/role-arn"].
+  #   anywhere else  -> IAM Roles Anywhere (below). An aws-signing-helper sidecar
+  #                     trades an X.509 client certificate for temporary credentials
+  #                     and serves them on a loopback IMDS endpoint that the AWS SDK
+  #                     inside the ledger picks up.
+  #
+  # Enabling this adds the sidecar to the ledger pod only, mounts the certificate
+  # Secret read-only, and replaces ledger.podSecurityContext with fsGroup 65532 so
+  # the sidecar can read it. The certificate is NOT created by this chart —
+  # provision it (cert-manager or otherwise) into a Secret with tls.crt / tls.key.
+  # The ledger refuses to boot multi-tenant without a region: set AWS_REGION in
+  # ledger.extraEnvVars to the region the credentials live in.
+  aws:
+    rolesAnywhere:
+      # -- Enable the aws-signing-helper sidecar on the ledger. Keep false on EKS.
+      enabled: false
+      # -- Required when enabled; the render fails without them.
+      trustAnchorArn: ""
+      profileArn: ""
+      roleArn: ""
+      # -- Region the credentials are minted in.
+      region: "us-east-2"
+      # -- Credential lifetime in seconds; the helper refreshes before expiry.
+      sessionDuration: 3600
+      # -- Secret holding tls.crt / tls.key.
+      # @default -- `<midaz-ledger.fullname>-iam-tls`
+      certificateSecretName: ""
+      sidecar:
+        image:
+          # Same floating, amd64-only tag the sibling charts use. Pin a digest
+          # for production.
+          repository: public.ecr.aws/rolesanywhere/credential-helper
+          tag: latest-amd64
+          pullPolicy: IfNotPresent
+        # -- Loopback port the IMDS shim listens on.
+        port: 9911
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
 crm:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -512,9 +576,7 @@ crm:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 0
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
@@ -524,8 +586,13 @@ crm:
     type: RollingUpdate
     # -- Maximum number of pods that can be created over the desired number of pods
     maxSurge: 1
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 1
+    # -- Maximum number of pods that can be unavailable during the update.
+    # 0 = surge the new pod and wait for it Ready before terminating the old one,
+    # giving zero-downtime rollouts for single-replica components — matches the
+    # ledger default. Important where the replacement pod may briefly stay Pending
+    # (e.g. a required nodeAffinity that waits for a Karpenter node to be launched):
+    # with maxUnavailable=1 the old pod is torn down first and the service blips.
+    maxUnavailable: 0
   service:
     # -- Kubernetes service type
     type: ClusterIP
@@ -633,7 +700,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.0.3"
+    tag: "4.2.0"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -714,9 +781,8 @@ tracer:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods. Setting `maxUnavailable` in an
-    # override takes precedence over this value.
-    minAvailable: 1
+    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
+    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
   # -- Deployment update strategy
@@ -725,8 +791,13 @@ tracer:
     type: RollingUpdate
     # -- Maximum number of pods that can be created over the desired number of pods
     maxSurge: 1
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 1
+    # -- Maximum number of pods that can be unavailable during the update.
+    # 0 = surge the new pod and wait for it Ready before terminating the old one,
+    # giving zero-downtime rollouts for single-replica components — matches the
+    # ledger default. Important where the replacement pod may briefly stay Pending
+    # (e.g. a required nodeAffinity that waits for a Karpenter node to be launched):
+    # with maxUnavailable=1 the old pod is torn down first and the service blips.
+    maxUnavailable: 0
   service:
     # -- Kubernetes service type
     type: ClusterIP
@@ -860,6 +931,8 @@ postgresql:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+    # latest (PostgreSQL 18.6.0), pinned: PostgreSQL refuses a data directory of another major.
+    digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
   external: false
   architecture: replication
   replication:
@@ -873,6 +946,9 @@ postgresql:
     database: "onboarding"
     replicationUsername: "replicator"
     replicationPassword: ""
+    # -- Secret with the passwords. The default points the subchart at the one this chart keeps across
+    # uninstall (templates/datastore-secrets.yaml); midaz's own templates read it as empty. Name yours to replace it.
+    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname" . }}{{ end }}'
   primary:
     extraVolumes:
       - name: init-script
@@ -939,20 +1015,30 @@ mongodb:
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
+    # latest (MongoDB 8.3.11), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:c8babafb7d15a7412543a9a391ffee8ba206c4d10dd6a1ba2ae2bf74fdfe538b"
   external: false
   auth:
     enabled: true
     rootUser: midaz
     rootPassword: ""
+    # -- Secret with the passwords, as postgresql.auth.existingSecret.
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
+  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
+  # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+  updateStrategy:
+    type: Recreate
   persistence:
     size: 8Gi
+    # -- The data volume outlives the release, like the PostgreSQL ones.
+    resourcePolicy: keep
 rabbitmq:
   enabled: true
   image:
     tag: "3.13.6"
-  persistence:
-    size: 8Gi
+  # -- No persistent volume (emptyDir): queues and messages are lost when the broker pod is recreated. Kubernetes
+  # refuses changes to a StatefulSet's volumeClaimTemplates, so adding `storage.requestedSize` later needs it deleted first.
   resources:
     requests:
       cpu: 250m

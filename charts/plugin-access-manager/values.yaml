@@ -109,7 +109,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.1.0"
+    tag: "3.9.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -214,6 +214,13 @@ identity:
   # @default -- templates/identity/configmap.yaml
   configmap:
     ALLOW_INSECURE_TLS: "true"
+    # SSO probe and self-service flags (default "false" in templates/identity/configmap.yaml):
+    # PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: "false"  # only for an IdP with no TLS
+    # PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: "false"    # BYOC/on-prem IdP on RFC1918 only
+    # ENABLE_FORGOT_PASSWORD: "false"                     # needs an email provider linked to the app
+    # Optional keys, omitted from the ConfigMap unless set:
+    # AUTH_M2M_JWKS_URL: ""  # empty derives it from the Casdoor address
+    # AUTH_M2M_JWKS_REFRESH_INTERVAL: "5m"
     # Environment name is resolved via the global mask (global.env.name) — same
     # rule as the datastore masks: do NOT pin ENV_NAME here, it WINS over the
     # mask and defeats it. The default ("development") lives in
@@ -261,7 +268,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.1.0"
+    tag: "3.9.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -378,12 +385,15 @@ auth:
     # -- Multi-factor authentication gate. Unset (the default) omits MFA_ENABLED
     # from the ConfigMap, leaving the application's own default in force.
     # MFA_ENABLED: "false"
+    # Optional keys, omitted from the ConfigMap unless set:
+    # PLUGIN_AUTH_SSO_STATIC_ORGANIZATION: ""  # BYOC single-tenant SSO org; refused when MULTI_TENANT_ENABLED=true
+    # AUTH_JWKS_CACHE_TTL: "5m"
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
   # @default -- templates/auth/secrets.yaml
   secrets:
-    # DB_PASSWORD is single-sourced from the auth-database subchart Secret
+    # DB_PASSWORD is single-sourced from the auth-database Secret this chart keeps
     # (<release>-auth-database, key "password"), read via secretKeyRef. Leave empty with
     # the bundled subchart. Only set this for an EXTERNAL database (auth-database.external=true)
     # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
@@ -521,7 +531,7 @@ caradhras:
     # -- to override.
     repository: ghcr.io/lerianstudio/caradhras
     pullPolicy: Always
-    tag: "1.3.2"
+    tag: "1.4.0"
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -550,7 +560,7 @@ caradhras:
       # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
       pullPolicy: ""
       # -- Empty preserves auth.backend.migrations.image.tag overrides;
-      # -- otherwise defaults to 1.3.2 in templates/_helpers.tpl.
+      # -- otherwise defaults to 1.4.0 in templates/_helpers.tpl.
       # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
   # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
@@ -574,12 +584,17 @@ auth-database:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+    # latest (PostgreSQL 18.6.0), pinned: PostgreSQL refuses a data directory of another major.
+    digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
   auth:
     enabled: true
     enablePostgresUser: false
     username: "auth"
     password: ""
     database: "casdoor"
+    # -- Secret with the password. The default points the subchart at the one this chart keeps across
+    # uninstall (templates/auth-database/secrets.yaml); this chart's own templates read it as empty.
+    existingSecret: '{{ if eq .Chart.Name "auth-database" }}{{ include "common.names.fullname" . }}{{ end }}'
   primary:
     persistence:
       size: 8Gi
@@ -614,6 +629,8 @@ valkey:
   image:
     repository: bitnamisecure/valkey
     tag: "latest"
+    # latest (Valkey 9.1.2), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:26e25932c8e8026708cff3360032efc1978588da5ea680e151b3315913a3a38d"
   architecture: standalone
   auth:
     enabled: false

@@ -58,11 +58,11 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- /* The bundled MongoDB generates a random root password into its own
+          {{- /* The bundled MongoDB runs on a random root password this chart keeps in a
              Secret, while the console's own Secret carries MONGODB_PASS "" until
              somebody fills it in, so a default install used to bring up a console
              that could reach its database and not authenticate to it. Read the
-             password from the subchart's Secret instead: an explicit env entry
+             password from that Secret instead: an explicit env entry
              overrides the same name coming from envFrom, so this fills the blank
              without an operator copying a generated password by hand.
              Skipped, deliberately, when:
@@ -77,7 +77,11 @@ spec:
           {{- if or .Values.otel.enabled .Values.otel.external $mongoSecretReadable }}
           env:
             {{- if $mongoSecretReadable }}
-            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGODB_PASS") | nindent 12 }}
+            - name: MONGODB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "product-console.mongodb.secretName" . }}
+                  key: mongodb-root-password
             {{- end }}
             {{- if or .Values.otel.enabled .Values.otel.external }}
             {{- if .Values.otel.host }}

@@ -86,8 +86,7 @@
 | `ledger.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `ledger.pdb` | object | `{}` | PodDisruptionBudget configuration |
 | `ledger.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `ledger.pdb.minAvailable` | int | `1` | Minimum number of available pods |
-| `ledger.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods |
+| `ledger.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `ledger.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
 | `ledger.deploymentUpdate` | object | `{}` | Deployment update strategy |
 | `ledger.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
@@ -113,7 +112,7 @@
 | `ledger.useExistingSecret` | bool | `false` | Existing secrets name |
 | `ledger.extraEnvVars` | object | `{}` | Extra environment variables |
 | `ledger.secrets` | object | `templates/ledger/secrets.yaml` | Secrets for storing sensitive data |
-| `ledger.secrets.DB_ONBOARDING_PASSWORD` | string | `""` | Onboarding module passwords. DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from the Bitnami postgresql subchart Secret (keys `password` / `replication-password`) and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret (key `mongodb-root-password`). Only set these for an EXTERNAL backend (subchart disabled / .external=true) without an existingSecret override. |
+| `ledger.secrets.DB_ONBOARDING_PASSWORD` | string | `""` | Onboarding module passwords. DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from the Bitnami postgresql subchart Secret (key `password`, replicas included) and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret (key `mongodb-root-password`). Only set these for an EXTERNAL backend (subchart disabled / .external=true) without an existingSecret override. |
 | `ledger.secrets.DB_TRANSACTION_PASSWORD` | string | `""` | Transaction module passwords (same single-source rule as onboarding; both DB_* authenticate as role `midaz`, both MONGO_* as the mongo root user). |
 | `ledger.secrets.MONGO_CRM_PASSWORD` | string | `""` | CRM and Fees module passwords. The unified ledger binary (midaz v4) opens these Mongo databases in-process; same single-source rule as the modules above. Rendered into the ledger Secret, never the ConfigMap. |
 | `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` | string | `""` | CRM holder-field crypto (lib-crypto). Operator-provided key material protecting PII at rest. Required when the ledger serves CRM and KMS_VENDOR is unset or "none" (legacy mode, local symmetric keys). |
@@ -124,6 +123,16 @@
 | `ledger.serviceAccount.create` | bool | `true` | Specifies whether a ServiceAccount should be created |
 | `ledger.serviceAccount.annotations` | object | `{}` | Annotations for the ServiceAccount |
 | `ledger.serviceAccount.name` | string | ``midaz-ledger.fullname`` | Name of the service account |
+| `ledger.aws.rolesAnywhere.enabled` | bool | `false` | Enable the aws-signing-helper sidecar on the ledger (IAM Roles Anywhere, for clusters without IRSA). Keep false on EKS and use `ledger.serviceAccount.annotations` instead. |
+| `ledger.aws.rolesAnywhere.trustAnchorArn` | string | `""` | Roles Anywhere trust anchor ARN. Required when enabled. |
+| `ledger.aws.rolesAnywhere.profileArn` | string | `""` | Roles Anywhere profile ARN. Required when enabled. |
+| `ledger.aws.rolesAnywhere.roleArn` | string | `""` | IAM role ARN the sidecar assumes. Required when enabled. |
+| `ledger.aws.rolesAnywhere.region` | string | `"us-east-2"` | Region the credentials are minted in. |
+| `ledger.aws.rolesAnywhere.sessionDuration` | int | `3600` | Credential lifetime in seconds; the helper refreshes before expiry. |
+| `ledger.aws.rolesAnywhere.certificateSecretName` | string | ``<midaz-ledger.fullname>-iam-tls`` | Secret holding the client certificate (`tls.crt` / `tls.key`). Not created by this chart. |
+| `ledger.aws.rolesAnywhere.sidecar.image.repository` | string | `"public.ecr.aws/rolesanywhere/credential-helper"` | Sidecar image repository. |
+| `ledger.aws.rolesAnywhere.sidecar.image.tag` | string | `"latest-amd64"` | Sidecar image tag. Floating and amd64-only; pin a digest for production. |
+| `ledger.aws.rolesAnywhere.sidecar.port` | int | `9911` | Loopback port the IMDS shim listens on. |
 | `crm.readinessProbe` | object | `{}` | Readiness probe configuration. All fields override chart defaults. |
 | `crm.livenessProbe` | object | `{}` | Liveness probe configuration. All fields override chart defaults. |
 | `crm.name` | string | `crm` | Service name |
@@ -143,8 +152,7 @@
 | `crm.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `crm.pdb` | string | `{}` | PodDisruptionBudget configuration |
 | `crm.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `crm.pdb.minAvailable` | int | `0` | Minimum number of available pods |
-| `crm.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods |
+| `crm.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `crm.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
 | `crm.deploymentUpdate` | string | `{}` | Deployment update strategy |
 | `crm.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
@@ -209,7 +217,7 @@
 | `tracer.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `tracer.pdb` | object | `{}` | PodDisruptionBudget configuration |
 | `tracer.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `tracer.pdb.minAvailable` | int | `1` | Minimum number of available pods. Setting `maxUnavailable` in an override takes precedence over this value. |
+| `tracer.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `tracer.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
 | `tracer.deploymentUpdate` | object | `{}` | Deployment update strategy |
 | `tracer.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |

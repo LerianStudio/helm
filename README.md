@@ -98,6 +98,21 @@ component that changed, so their tags may legitimately differ.
 | `0.4.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
 -----------------
 
+### BR JD Courier
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-jd-courier).
+
+Multi-component chart for the JD Courier: four role Deployments (`spb-consumer`,
+`spb-sender`, `pix-ingress`, `admin`) off one image, `ghcr.io/lerianstudio/br-jd-courier`.
+The release bumps `jd-courier.image.tag`, which is the column below.
+
+#### Application Version Mapping
+
+| Chart Version | Br-Jd-Courier Version |
+| :---: | :---: |
+| `1.0.0` | 1.1.0 |
+-----------------
+
 ### Plugin BR Pix Lerian
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-lerian).
@@ -145,19 +160,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
 | `3.1.0` | 3.0.2 | 3.0.2 |
------------------
-
-### Lender
-
-For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
-
-#### Application Version Mapping
-
-| Chart Version | Lender Version |
-| :---: | :---: |
-| `1.0.0-beta.1` | 1.0.0-beta.48 |
 -----------------
 
 ### Tracer
@@ -220,6 +222,18 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0-beta.4` | 0.1.0 |
 -----------------
 
+### BR SISBAJUD
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sisbajud).
+
+#### Application Version Mapping
+
+| Chart Version | App Version | Migrations Version |
+| :---: | :---: | :---: |
+| `1.2.0` | `1.2.0` | `1.2.0` |
+| `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
+-----------------
+
 ### BR Consignado GW
 
 API gateway and same-origin operator console for the Dataprev consignado rail.
@@ -231,6 +245,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version | App Version |
 | :---: | :---: |
 | `1.1.0` | `1.3.0-beta.36` |
+-----------------
+
+### BR STA
+
+BACEN STA (Sistema de Transferência de Arquivos): file transfers to and from BACEN, operator credentials and the audit trail.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
+
+#### Application Version Mapping
+
+| Chart Version | Manager Version | Worker Version | Migrations Version |
+| :---: | :---: | :---: | :---: |
+| `1.0.0` | `1.0.0` | `1.0.0` | `1.0.0` |
 -----------------
 
 ### Lerian Common (Library)

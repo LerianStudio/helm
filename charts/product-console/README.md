@@ -69,10 +69,10 @@ empty — set a key there only to override its shipped default).
 | `configmap.PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address used for the SSO redirect, see [Keys with no default](#keys-with-no-default) | unset (falls back to the cluster-internal `PLUGIN_AUTH_BASE_PATH`) |
 | `configmap.MIDAZ_V2_BASE_PATH` | Address of the midaz ledger's `/v2` contract, where fees live, see [Keys with no default](#keys-with-no-default) | unset (the fees screens have no address) |
 | `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
-| `configmap.FLOWKER_BASE_PATH` / `configmap.TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
+| `configmap.FLOWKER_BASE_PATH` / `configmap.LENDER_BASE_PATH` / `configmap.MATCHER_BASE_PATH` / `configmap.TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
-| `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the subchart's own generated password, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
+| `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the password this chart keeps for it, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
 | `secrets.PLUGIN_AUTH_CLIENT_ID` | Alternative to `configmap.PLUGIN_AUTH_CLIENT_ID` when the client_id shouldn't sit in a ConfigMap; when set, the ConfigMap key is omitted | `""` |
 
 ### Inter-service defaults (cross-namespace)
@@ -96,7 +96,7 @@ service/namespace names.
 ### Keys with no default
 
 Most `configmap.<KEY>` entries ship a default that is right for a standard
-in-cluster install. Six do not, because no default is safe to invent for
+in-cluster install. Eight do not, because no default is safe to invent for
 them: an address that depends on where you deployed a sibling release, or an
 assertion about the deployment. The chart writes nothing for an unset one, so
 the console keeps whatever its own image does.
@@ -108,9 +108,11 @@ the console keeps whatever its own image does.
 | `MIDAZ_V2_BASE_PATH` | The midaz ledger's `/v2` contract, where fees live — same host and port as `MIDAZ_BASE_PATH`, `/v1` swapped for `/v2`, **ending in a slash**. See [Fees and the ledger's /v2 contract](#fees-and-the-ledgers-v2-contract) | Missing: every fees screen fails and the health check reports `MIDAZ_V2_BASE_PATH is not set` |
 | `MFA_ENABLED` | Assertion that the Access Manager in front of this console may answer a correct password with an MFA challenge. It enables MFA for nobody — that is per user, in the Access Manager | Missing where MFA is on: the console does not recognise the challenge, and a user with MFA enabled cannot sign in at all |
 | `FLOWKER_BASE_PATH` | Flowker's address, ends in `/v1` | Missing: the console has nowhere to send Flowker calls |
+| `LENDER_BASE_PATH` | Lender's address, **ends in `/api/v1`** — the version prefix is part of it | Missing: the console has nowhere to send Lender calls; without `/api/v1` every call misses Lender's routes |
+| `MATCHER_BASE_PATH` | Matcher's address, **bare origin, no `/v1`** — the console adds it | Missing: the console has nowhere to send Matcher calls; with a `/v1` suffix every call goes to `/v1/v1/...` |
 | `TRACER_BASE_PATH` | Tracer's address, **bare origin, no `/v1`** — the console adds it | Missing: the console has nowhere to send Tracer calls; with a `/v1` suffix every call goes to `/v1/v1/...` |
 
-Those two sibling services are optional deployments, which is why the chart
+Those four sibling services are optional deployments, which is why the chart
 invents no address for them: a default would turn "this feature is not
 installed" into a connection error on the page.
 
@@ -233,7 +235,7 @@ invisible and lets the walk reach a hop the caller wrote. Narrow is correct.
 **With the bundled MongoDB, land both in one namespace and there is nothing to
 configure.** `configmap.MONGO_HOST` defaults to the Service the subchart really
 creates for the topology shipped here, and `MONGODB_PASS` is read straight from
-the Secret the subchart generates (key `mongodb-root-password`), so the console
+the Secret this chart keeps for it (key `mongodb-root-password`), so the console
 reaches its database and authenticates to it without an operator copying a
 generated password by hand.
 
@@ -282,10 +284,10 @@ secrets:
 
 Moving the subchart re-creates the database. With the shipped values it is a
 standalone Deployment plus a PersistentVolumeClaim named after it, and that
-claim carries no `helm.sh/resource-policy`, so the upgrade brings the database
-up in the console's namespace with an empty volume and deletes the volume it
-left behind. Back up whatever that database holds before you run it and restore
-it afterwards: nothing carries the data across. Whether a split console ever
+claim carries `helm.sh/resource-policy: keep`, so the upgrade brings the database
+up in the console's namespace with an empty volume and leaves the old volume
+behind for you to delete. Back up whatever that database holds before you run
+it and restore it afterwards: nothing carries the data across. Whether a split console ever
 authenticated against that database depends on credentials the operator wired
 by hand, which the chart cannot see, so do not assume the volume is empty.
 
@@ -364,5 +366,20 @@ is set. `gcp`/`azure` have no Mongo preset today.
 ## Uninstalling the Chart
 
 ```bash
-helm uninstall product-console
+helm uninstall product-console -n product-console
 ```
+
+**Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB's
+volume (PVC `<release>-mongodb`) and the Secret holding its root password
+(`<release>-mongodb`), so a reinstall under the same release name opens the same
+data with the same password. This chart, not the MongoDB subchart, owns that
+Secret. Deleting the data is a separate, manual step, in the namespace the
+bundled MongoDB runs in, once the uninstall has succeeded:
+
+```bash
+kubectl delete pvc product-console-mongodb -n product-console
+kubectl delete secret product-console-mongodb -n product-console
+```
+
+Delete both. Deleting only the Secret resets nothing: a reinstall generates a
+new password that the kept data never learned, so the console cannot log in.

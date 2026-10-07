@@ -1,0 +1,770 @@
+# Default values for the br-sta (BACEN STA) chart.
+# Multi-component chart: the MANAGER (cmd/manager — HTTP API: transfers,
+# credentials, audit read API) and the WORKER (cmd/worker — the BACEN transfer
+# scheduler, inbound polling, audit publisher/consumer, business-event delivery,
+# scheduled jobs). Both binaries read the SAME configuration, so the app
+# environment is one shared ConfigMap + one shared Secret (the `common` block);
+# the worker layers a small ConfigMap of worker-only keys on top.
+#
+# Configuration precedence for every application env key (lerian-common):
+#
+#   common.configmap.<KEY>              escape hatch — the native env key, wins over everything
+#   > common.<group>.<field>            grouped chart parameter (cfgValue)
+#   > common.datastores / objectStorage / kms   dedicated connection masks
+#   > global.<block>.<field>            env-wide contract, set once per environment
+#   > global.cloud preset               managed-cloud topology defaults (aws | gcp | azure)
+#   > chart default                     lives in templates/_helpers.tpl, NOT here
+#
+# common.configmap, common.secrets and worker.configmap are EMPTY by default on
+# purpose: a key set there shadows the grouped/global API for that key. Any key
+# the chart does not model can still be added there and is emitted verbatim.
+nameOverride: "br-sta"
+fullnameOverride: ""
+namespaceOverride: ""
+
+# =============================================================================
+# global — the env-wide contract (lerian-common). Set these ONCE per environment
+# (umbrella / GitOps layer). Every block is empty by default, so the chart falls
+# back to its own defaults. A native common.configmap.<KEY> still wins.
+# =============================================================================
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  # -- Managed-cloud topology preset: aws | gcp | azure. Sets TLS/ssl/scheme
+  # defaults for the masks below in one knob (e.g. "aws" => POSTGRES_SSLMODE=require,
+  # REDIS_TLS=true, RABBITMQ_SCHEME=amqps on 5671). Leave "" for self-managed /
+  # bundled infra. Endpoints (host/port/user) still come from global.datastores.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Shared datastore masks (lerian-common.datastore.value).
+  # postgres: host | port | user | name | ssl | replicaHost
+  # redis:    host ("host:port") | tls | caCert
+  # broker:   host | amqpPort | port (management API) | user | scheme (amqp | amqps)
+  # Example:
+  #   datastores:
+  #     postgres: { host: "postgresql.internal", user: "br_sta", name: "br_sta", ssl: "require" }
+  #     redis:    { host: "valkey.internal:6379", tls: "true" }
+  #     broker:   { host: "rabbitmq.internal", amqpPort: "5671", user: "br_sta", scheme: "amqps" }
+  datastores: {}
+  # -- Shared object storage masks (lerian-common.objectStorage.value).
+  # sta:             endpoint | region | bucket | usePathStyle
+  #                  -> TRANSFER_S3_ENDPOINT / TRANSFER_S3_REGION /
+  #                     TRANSFER_OBJECT_STORAGE_BUCKET / TRANSFER_S3_PATH_STYLE
+  #                  The SAME block br-sisbajud reads for its STA inbound bucket
+  #                  (STA_INBOUND_BUCKET / STA_OBJECT_STORAGE_ENDPOINT): set it once
+  #                  at the umbrella and both charts agree on the transfer bucket.
+  # staAuditExports: endpoint | region | bucket | usePathStyle
+  #                  -> AUDIT_EXPORT_GENERATOR_S3_* (endpoint/region/path style
+  #                     default to the `sta` values; the bucket is separate).
+  # Access keys are secrets: common.secrets.AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+  # (or an IRSA / workload-identity service account annotation).
+  # Example:
+  #   objectStorage:
+  #     sta:             { endpoint: "https://s3.sa-east-1.amazonaws.com", region: "sa-east-1", bucket: "br-sta-transfer" }
+  #     staAuditExports: { bucket: "br-sta-audit-exports" }
+  objectStorage: {}
+  # -- Env-wide environment name -> ENV_NAME and (by default)
+  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT. development | develop | dev | local |
+  # test are the app's development class (PLUGIN_AUTH_ENABLED=false is accepted,
+  # dev-only bundles are allowed); `production` turns on the app's production
+  # gates (TLS, mandatory audit transport). The license (LICENSE_KEY +
+  # ORGANIZATION_IDS) is required in every environment. Default: production.
+  # Example: env: { name: "development" }
+  env: {}
+  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
+  # With enabled=true and no otlpEndpoint, the pods ship to the node-local
+  # collector at http://$(HOST_IP):4317.
+  # Example: observability: { enabled: true }
+  observability: {}
+  # -- Env-wide auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
+  # The app refuses a blank switch and accepts PLUGIN_AUTH_ENABLED=false only in a
+  # development-class environment, so the chart defaults it to "true" everywhere
+  # else (and then requires the host).
+  # Example: auth: { enabled: true, host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" }
+  auth: {}
+  # -- Env-wide streaming (lib-streaming / Redpanda / Kafka): enabled | brokers |
+  # tlsEnabled | saslMechanism | saslUsername | saslAllowPlaintext | compression |
+  # requiredAcks | batchLingerMs | importantEmitTimeoutMs | topicAutoProvision.
+  # SASL password and CA cert are secrets: common.secrets.STREAMING_SASL_PASSWORD /
+  # STREAMING_TLS_CA_CERT.
+  # br-sta publishes its business facts on `lerian.streaming.br-sta` (+ `.dlq`),
+  # the topic br-sisbajud consumes. ON by default (STREAMING_ENABLED=true): brokers
+  # are then REQUIRED (the render fails without them); facts produced while it is
+  # off are never re-sent. Set enabled: false only for an install with no broker.
+  # topicAutoProvision (STREAMING_TOPIC_AUTO_PROVISION, default "true"): both
+  # binaries create the two topics at boot when the principal has CreateTopics
+  # (a denied create is a WARN, not a boot failure); set "false" when the topics
+  # are provisioned through IaC — they must then exist before the first boot.
+  # The facts leave through the worker's business publisher: keep
+  # common.businessEvents.enabled and common.rabbitmq.enabled on (both default true).
+  # Example:
+  #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sta" }
+  streaming:
+    enabled: true
+  # -- Env-wide multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls | redisCaCert.
+  # The service API key is a secret: common.secrets.MULTI_TENANT_SERVICE_API_KEY.
+  # Example: multiTenant: { enabled: true, url: "http://tenant-manager:4026", redisHost: "valkey.internal" }
+  multiTenant: {}
+  # -- Env-wide KMS for the credential envelope-encryption master key:
+  # vendor | keyId | awsRegion. vendor: envvar (default — MASTER_KEYS carries hex
+  # keys) | aws (MASTER_KEYS carries base64 KMS ciphertext wrapped by the CMK keyId).
+  # MASTER_KEYS itself is ALWAYS a secret: common.secrets.MASTER_KEYS.
+  # Example: kms: { vendor: "aws", keyId: "arn:aws:kms:sa-east-1:<account>:key/<id>" }
+  kms: {}
+
+# -- Pull secrets for the manager, worker, migrations Job and mock STA. The images are
+# public on GHCR, so none is needed by default; set it only for a private mirror or
+# registry, e.g. [{name: my-registry-credential}]. Per-component lists override it.
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# -- Pod-level security context
+podSecurityContext: {}
+
+# -- Container security context (alpine nonroot image — UID/GID 65532)
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Image used by the wait-for-dependencies initContainers.
+waitImage: busybox:1.36
+
+# =============================================================================
+# common — the SHARED application configuration (manager + worker). Rendered as
+# ONE ConfigMap and ONE Secret that both Deployments load via envFrom.
+# =============================================================================
+common:
+  # ---------------------------------------------------------------------------
+  # Dedicated connection masks — override global.datastores / global.kms /
+  # global.objectStorage for THIS release only. Same fields as the global blocks.
+  # ---------------------------------------------------------------------------
+  datastores: {}
+  kms: {}
+  objectStorage: {}
+
+  # ---------------------------------------------------------------------------
+  # Grouped parameters (lerian-common.cfgValue). Each field maps to ONE env key;
+  # the defaults are in templates/_helpers.tpl and listed in README.md. Leave a
+  # group empty to keep every default.
+  # ---------------------------------------------------------------------------
+  # -- ENV_NAME comes from global.env.name. Fields: logLevel, defaultTenantId,
+  # deploymentMode, systemplaneEnabled, infraConnectTimeoutSec,
+  # dbMetricsIntervalSec, idempotencyRetryWindowSec, circuitBreakerEnabled,
+  # configApiEnabled. deploymentMode (DEPLOYMENT_MODE) defaults to "byoc" (the
+  # customer's cloud); "saas" makes the app refuse any non-TLS dependency
+  # (Postgres, Redis, RabbitMQ, S3, broker, tenant manager); "local" for a
+  # workstation. Any other value is refused at render.
+  app: {}
+  # -- address (defaults to 0.0.0.0:<manager containerPort>), bodyLimitBytes,
+  # tlsTerminatedUpstream, tlsCertFile, tlsKeyFile, trustedProxies
+  # (SERVER_TRUSTED_PROXIES — the Fiber layer / audit client IP).
+  server: {}
+  # -- allowedOrigins, allowedMethods, allowedHeaders, exposeHeaders, allowCredentials.
+  # Production MUST set allowedOrigins to the real UI origins.
+  cors: {}
+  # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
+  # a bundled plaintext datastore is enabled), allowCorsWildcard, allowInsecureOtel.
+  security: {}
+  # -- organizationIds (ORGANIZATION_IDS — required in every environment), isDevelopment
+  # (routes the license SDK to the dev gateway). LICENSE_KEY is a secret.
+  license: {}
+  # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
+  # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
+  postgres: {}
+  # -- Redis tuning: db, protocol, poolSize, minIdleConns, readTimeout,
+  # writeTimeout, dialTimeout, poolTimeout, maxRetries, minRetryBackoff,
+  # maxRetryBackoff, masterName. Connection identity lives in datastores.
+  redis: {}
+  # -- RabbitMQ (audit transport + business-event channel): enabled, vhost,
+  # exchange, queue, healthCheckUrl, healthCheckAllowedHosts,
+  # requireHealthAllowedHosts, allowInsecureHealthCheck, allowInsecureTls,
+  # publisherConfirmTimeoutMs, publisherRecoveryInitialMs, publisherRecoveryMaxMs,
+  # publisherMaxRecoveries. host/ports/user/scheme live in datastores.broker;
+  # RABBITMQ_DEFAULT_PASS (or a full RABBITMQ_URL) is a secret.
+  rabbitmq: {}
+  # -- Transactional outbox: enabled, tableName, dispatchIntervalSec, batchSize,
+  # publishMaxAttempts, publishBackoffMs, retryWindowSec, maxDispatchAttempts,
+  # processingTimeoutSec, maxFailedPerBatch, includeTenantMetrics,
+  # priorityEventTypes, allowEmptyTenant.
+  outbox: {}
+  # -- Per-app streaming identity: cloudeventsSource (leave unset — the app pins
+  # "br-sta" and refuses anything else), clientId, cbFailureRatio, cbMinRequests,
+  # cbTimeoutSec, closeTimeoutSec. Brokers/TLS/SASL come from global.streaming.
+  streaming: {}
+  # -- Inbound auth extras: trustedProxies (TRUSTED_PROXIES — lib-auth's client-IP
+  # forwarding; set it to the ingress/LB CIDR). enabled/host come from global.auth.
+  auth: {}
+  # -- Access-manager permission declaration publisher (lib-auth WireFromEnv,
+  # manager only): declarationEnabled, host, m2mClientId. IDP_M2M_CLIENT_SECRET is a secret.
+  identity: {}
+  # -- M2M credential provider (multi-tenant): targetService, credentialCacheTtlSec.
+  m2m: {}
+  # -- AWS SDK: region (AWS_REGION — S3 signing region fallback, M2M, KMS region fallback).
+  aws: {}
+  # -- Multi-tenant client tuning (only when multi-tenancy is on; url / redis come
+  # from global.multiTenant): poolMaxConns, poolMaxIdleConns, maxTenantPools,
+  # idleTimeoutSec, timeoutSec, cacheTtlSec, connectionsCheckIntervalSec,
+  # circuitBreakerThreshold, circuitBreakerTimeoutSec, allowInsecureHttp.
+  multiTenant: {}
+  # -- OTEL identity: serviceName (unset: each binary seeds br-sta-manager /
+  # br-sta-worker), libraryName. enabled/endpoint come from global.observability.
+  observability: {}
+  # -- Rate limiting: enabled, max, windowSec, aggressiveMax, aggressiveWindowSec,
+  # relaxedMax, relaxedWindowSec, auditExportMax, auditExportWindowSec.
+  rateLimit: {}
+  # -- Swagger: enabled, title, description, version, host, schemes, basePath, leftDelim, rightDelim.
+  swagger: {}
+  # -- Pagination: maxLimit, maxMonthDateRange.
+  pagination: {}
+  # -- Audit read API (manager): defaultPageSize, maxPageSize, maxExportDateRangeDays.
+  auditApi: {}
+  # -- Credential envelope encryption: masterKeyVersion (MASTER_KEY_VERSION, the
+  # active version inside MASTER_KEYS). The provider and the KMS key come from
+  # the kms mask. MASTER_KEYS is ALWAYS required (the manager aborts boot without it).
+  credentials: {}
+  # -- BACEN upstream: environment (homologation | production). Selects the real
+  # BACEN STA host; unrecognised values fall back to homologation.
+  bacen: {}
+  # -- STA client redirect (DEV/TEST ONLY — points the STA client at a mock
+  # instead of BACEN): scheme, fileHost, passwordHost. Derived from mockSta when
+  # the bundled mock is on. Leave unset in production.
+  sta: {}
+  # -- BACEN transfer pipeline: schedulerEnabled (the ONLY path that uploads to
+  # BACEN — worker), inboundEnabled (BACEN-pulled files), maxFileSizeBytes,
+  # inboundMaxFileSizeBytes, inboundExtractMaxExpansionRatio,
+  # inboundExtractMaxExtractedBytes, chunkSizeBytes, maxAttempts, ttlHours,
+  # pollIntervalSeconds, workerConcurrency, inboundLockClassId. Bucket, endpoint,
+  # region and path style come from objectStorage.sta.
+  transfer: {}
+  # -- Business-event delivery channel (worker publishes, production requires it):
+  # enabled, exchange, intervalSec, batchSize, maxAttempts, serviceName,
+  # lockClassId, confirmTimeoutSec.
+  businessEvents: {}
+  # -- Reporter -> BACEN bridge consumer (worker): consumerEnabled, exchange
+  # (required when on), queue, dlqExchange, alternateExchange, idleWindowSec,
+  # dedupTtlSec, reconciliationWindowSec, redeliveryWindowSec, doctypeResolver
+  # (required when on: payload in production), doctypeMap.
+  reporterEvents: {}
+
+  # -- Escape hatch: native env keys emitted verbatim into the SHARED ConfigMap.
+  # A key here wins over the grouped/global parameters above. Empty by default.
+  configmap: {}
+  # -- Secret keys (stringData), shared by manager + worker. Credentials only,
+  # never in configmap. Use AVP <path:...> placeholders in GitOps values, never
+  # real credentials. Keys the chart models: POSTGRES_PASSWORD,
+  # POSTGRES_REPLICA_PASSWORD, REDIS_PASSWORD, RABBITMQ_DEFAULT_PASS, RABBITMQ_URL,
+  # RABBITMQ_ERLANG_COOKIE (bundled rabbitmq only), MASTER_KEYS, LICENSE_KEY
+  # (required in every environment),
+  # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, IDP_M2M_CLIENT_SECRET,
+  # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
+  # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, when a tier sources it from
+  # the secret store). Any other key is emitted verbatim.
+  secrets: {}
+  # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
+  # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
+  # secretKeyRef env entry on the manager AND worker pods, so credentials never
+  # need raw extraEnvVars. A component's own extraEnvVars entry of the same name
+  # wins. The fail-fast checks count a reference as set, and the migrations Job
+  # reads POSTGRES_PASSWORD from it (the Secret must exist before the hook runs).
+  # Example:
+  #   secretRefs:
+  #     STREAMING_SASL_PASSWORD: { name: redpanda-br-sta, key: password }
+  secretRefs: {}
+  # -- Use an operator-provided Secret instead of the chart-managed one (manager,
+  # worker and — unless migrations.useExistingSecret says otherwise — the
+  # migrations Job). The chart then skips its secret fail-fast checks: the Secret
+  # must carry every credential the enabled features need.
+  useExistingSecret: false
+  existingSecretName: ""
+
+# =============================================================================
+# manager — cmd/manager: the HTTP API (transfers, credentials, audit read API,
+# connectivity probe). Stateless; scales horizontally.
+# =============================================================================
+manager:
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sta-manager
+    # -- Defaults to Chart.appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  # -- Annotations on the Deployment object itself (e.g. an ArgoCD sync-option).
+  deploymentAnnotations: {}
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  # -- The port the manager container listens on (SERVER_ADDRESS defaults to
+  # 0.0.0.0:<containerPort>). Empty = manager.service.port (4028, the app default).
+  containerPort: ""
+  service:
+    type: ClusterIP
+    # -- Service port; the Service targets the container's `http` port, so it may
+    # differ from containerPort (e.g. port 8080 in front of a container on 4028).
+    port: 4028
+    # -- Service name override. Empty = <fullname>-manager. Set it (e.g. "br-sta")
+    # to keep an existing in-cluster address that clients already call.
+    name: ""
+    annotations: {}
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  pdb:
+    enabled: true
+    minAvailable: 0
+    # maxUnavailable is intentionally unset so minAvailable takes effect.
+    # Set to an integer (including 0) to switch to maxUnavailable mode.
+    # maxUnavailable: 1
+    annotations: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  # /readyz probes Postgres, Redis, RabbitMQ and the transfer bucket.
+  readinessProbe:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  # -- Extra env vars rendered as explicit `env:` entries on the manager pod (a
+  # list of {name, value|valueFrom}). They win over the ConfigMap and the Secret.
+  extraEnvVars: []
+  # -- Extra pod volumes / container mounts, e.g. a private CA bundle for the
+  # RabbitMQ management API or amqps (the app trusts the system pool; point
+  # SSL_CERT_FILE at a bundle through extraEnvVars). Empty by default.
+  extraVolumes: []
+  extraVolumeMounts: []
+
+# =============================================================================
+# worker — cmd/worker: the background process (BACEN outbound scheduler, inbound
+# polling, audit publisher/consumer, business-event delivery, partition manager,
+# verifier, export generator, reporter bridge). It has NO leader election for
+# every job, so it runs as exactly ONE replica with a Recreate strategy.
+# =============================================================================
+worker:
+  enabled: true
+  revisionHistoryLimit: 10
+  image:
+    repository: ghcr.io/lerianstudio/br-sta-worker
+    # -- Defaults to manager.image.tag, then Chart.appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  podAnnotations: {}
+  # -- Annotations on the Deployment object itself (e.g. an ArgoCD sync-option).
+  deploymentAnnotations: {}
+  terminationGracePeriodSeconds: 60
+  # -- The probe-server bind (WorkerMode serves /health, /readyz, /version,
+  # /metrics only). No Service is rendered for the worker.
+  port: 4029
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  readinessProbe:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  # ---------------------------------------------------------------------------
+  # Worker-only grouped parameters, rendered into the worker ConfigMap (layered
+  # over the shared one). Defaults in templates/_helpers.tpl / README.md.
+  # ---------------------------------------------------------------------------
+  # -- Leader-gated scheduler (BACEN verdict polling + maintenance jobs):
+  # enabled, serviceName, leaderTtlSeconds, heartbeatSeconds,
+  # credentialIntervalHours, staleCleanupIntervalHours, retentionIntervalHours,
+  # quarantineRetentionDays, filingSweepEnabled, filingSweepIntervalMinutes,
+  # filingSweepAgeMinutes (a SAFETY knob — see README), filingSweepBatchLimit.
+  scheduler: {}
+  # -- Credential recovery sweep at boot: recoveryOnBoot.
+  credentials: {}
+  # -- Audit outbox publisher: enabled, intervalSec, batchSize, maxAttempts,
+  # exchange, lockClassId, serviceName, alternateExchange, confirmTimeoutSec.
+  auditPublisher: {}
+  # -- Audit consumer: enabled, queue, exchange, dedupTtlSec, lockClassId,
+  # maxRetryAttempts, dlqExchange, serviceName, alternateExchange.
+  auditConsumer: {}
+  # -- Audit partition manager (LEAVE ON — the only forward creator of the audit
+  # partitions): enabled, intervalHours, lookaheadMonths, serviceName.
+  auditPartition: {}
+  # -- Audit outbox cleanup: enabled, intervalHours, retentionDays, serviceName.
+  auditCleanup: {}
+  # -- Audit hash-chain verifier: enabled, intervalHours, sampleRows, serviceName.
+  auditVerifier: {}
+  # -- Audit export generator: enabled (defaults to "true" when an audit export
+  # bucket is configured), intervalSec, batchSize, objectPrefix, serviceName.
+  # Bucket/endpoint/region/path style come from objectStorage.staAuditExports.
+  auditExportGenerator: {}
+
+  # -- Escape hatch: native env keys emitted verbatim into the WORKER ConfigMap
+  # (it is loaded after the shared one, so a key here wins for the worker only).
+  configmap: {}
+  # -- Extra env vars rendered as explicit `env:` entries on the worker pod.
+  extraEnvVars: []
+  # -- Extra pod volumes / container mounts (same use as manager.extraVolumes).
+  extraVolumes: []
+  extraVolumeMounts: []
+
+# =============================================================================
+# Detached migrations — the br-sta-migrations image applies the SQL schema to the
+# br_sta database before the app boots (golang-migrate via lib-commons). The
+# connection follows the app's resolved POSTGRES_* values unless overridden here.
+# SINGLE-TENANT ONLY: the runner refuses MULTI_TENANT_ENABLED=true, so the Job is
+# not rendered when multi-tenancy is on (tenant schemas are provisioned by the
+# tenant manager).
+#   External Postgres: Helm pre-install/pre-upgrade + ArgoCD PreSync Secret + Job
+#                      (the app never boots unmigrated).
+#   Bundled Postgres:  a regular Job created with the release (see README).
+# =============================================================================
+migrations:
+  enabled: true
+  image:
+    repository: ghcr.io/lerianstudio/br-sta-migrations
+    # -- Defaults to Chart.appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Postgres connection for the migration Job. Empty fields fall back to the
+  # app's resolved POSTGRES_* values (configmap > datastores > global > default)
+  # and common.secrets.POSTGRES_PASSWORD.
+  postgres:
+    host: ""
+    port: ""
+    user: ""
+    database: ""
+    sslMode: ""
+    password: ""
+  # -- MIGRATIONS_TIMEOUT_SEC for the runner ("" = its default, 300).
+  timeoutSec: ""
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# -- Values block for the lerian-common library dependency. INERT (a library
+# chart renders nothing and reads no values), but it must be declared: Helm
+# injects a values key for every declared dependency, and the closed root schema
+# (additionalProperties: false) would otherwise reject the render with
+# "additional properties 'lerian-common-helm' not allowed".
+lerian-common-helm: {}
+
+# =============================================================================
+# Bundled infra subcharts — DISABLED by default. External PostgreSQL, Valkey,
+# RabbitMQ and S3 object storage are the production path: wire them via
+# global.datastores / global.objectStorage (or the common.* dedicated masks).
+# Enable these only for a self-contained (dev / evaluation) install
+# (values-dev.yaml turns them all on).
+#
+# Images: the bitnami/* tags the pinned subcharts default to were removed from
+# Docker Hub; bitnamilegacy/* serves the SAME tags (checked with a registry
+# manifest HEAD). Pinned by TAG, never by digest — a digest would silently win
+# over an operator's registry/tag override. allowInsecureImages only lifts the
+# Bitnami "unrecognized image" guard for the non-bitnami repository name.
+# =============================================================================
+postgresql:
+  enabled: false
+  external: true
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/postgresql
+    tag: "17.2.0-debian-12-r5"
+  # When bundled, create the app role + database the chart defaults point at.
+  auth:
+    username: br_sta
+    database: br_sta
+
+valkey:
+  enabled: false
+  external: true
+  architecture: standalone
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/valkey
+    tag: "8.0.2-debian-12-r6"
+
+# -- Bundled RabbitMQ (groundhog2k/rabbitmq), DISABLED by default. Single-source
+# credentials (Pattern B): the broker reads its user, password and Erlang cookie
+# from the chart's SHARED app Secret (common.secrets.RABBITMQ_DEFAULT_PASS /
+# RABBITMQ_ERLANG_COOKIE; the user is copied from the resolved
+# RABBITMQ_DEFAULT_USER). authentication.existingSecret MUST equal that Secret's
+# name (the chart fails the render otherwise). The app declares its own
+# exchanges and queues at boot. When enabled and no host is set explicitly,
+# RABBITMQ_HOST derives from this subchart's Service.
+rabbitmq:
+  enabled: false
+  image:
+    tag: "4.1.4"
+  initImage:
+    # The subchart default is busybox:stable (unpinned).
+    tag: "1.36"
+  authentication:
+    existingSecret: "br-sta"
+    user:
+      secretKey: RABBITMQ_DEFAULT_USER
+    password:
+      secretKey: RABBITMQ_DEFAULT_PASS
+    erlangCookie:
+      secretKey: RABBITMQ_ERLANG_COOKIE
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# -- Bundled SeaweedFS (S3-compatible object storage), DISABLED by default.
+# When enabled and no endpoint is set explicitly, TRANSFER_S3_ENDPOINT (and the
+# audit-export endpoint) derive from this subchart's S3 Service
+# (http://<seaweedfs.nameOverride|seaweedfs>-s3.<release namespace>.svc.cluster.local:<s3.port>)
+# with path-style addressing. The app never creates buckets: the chart's bucket
+# Job (seaweedfsBuckets below) creates TRANSFER_OBJECT_STORAGE_BUCKET and
+# AUDIT_EXPORT_GENERATOR_S3_BUCKET from the resolved values.
+# DEV-ONLY: S3 auth is OFF (s3.enableAuth: false); the AWS SDK still signs every
+# request, so set any non-empty common.secrets.AWS_ACCESS_KEY_ID /
+# AWS_SECRET_ACCESS_KEY (values-dev.yaml does). To turn auth on, set
+# s3.enableAuth: true + s3.existingConfigSecret (the SeaweedFS identities JSON)
+# with the matching keys.
+seaweedfs:
+  enabled: false
+  global:
+    # The subchart otherwise creates a FIXED-NAME cluster-scoped ClusterRole that
+    # collides across releases; it only backs an optional post-migration hack.
+    createClusterRole: false
+    serviceAccountName: "br-sta-seaweedfs"
+  master:
+    enabled: true
+    replicas: 1
+    # The subchart pins kubernetes.io/arch: amd64; "" drops it (multi-arch).
+    nodeSelector: ""
+    data:
+      type: "persistentVolumeClaim"
+      size: "1Gi"
+      storageClass: ""
+    logs:
+      type: "emptyDir"
+  volume:
+    enabled: true
+    replicas: 1
+    nodeSelector: ""
+    dataDirs:
+      - name: data
+        type: "persistentVolumeClaim"
+        size: "10Gi"
+        storageClass: ""
+        maxVolumes: 0
+    # The resize hook pulls bitnami/kubectl:latest (unpinned); off for the dev bundle.
+    resizeHook:
+      enabled: false
+  filer:
+    enabled: true
+    replicas: 1
+    nodeSelector: ""
+    data:
+      type: "persistentVolumeClaim"
+      size: "5Gi"
+      storageClass: ""
+    logs:
+      type: "emptyDir"
+  s3:
+    enabled: true
+    nodeSelector: ""
+    port: 8333
+    enableAuth: false
+    logs:
+      type: "emptyDir"
+
+# -- Bucket bootstrap Job for the bundled SeaweedFS (rendered only when
+# seaweedfs.enabled). Idempotent list-then-create via `weed shell`. A regular Job
+# named after a hash of its spec (not a hook): the app's /readyz fails until the
+# transfer bucket exists, so a hook that waits for the release to be ready would
+# never run. The bucket names come from the app's resolved
+# TRANSFER_OBJECT_STORAGE_BUCKET / AUDIT_EXPORT_GENERATOR_S3_BUCKET plus any extraBuckets.
+seaweedfsBuckets:
+  image:
+    # Same image/tag the pinned seaweedfs 4.0.393 subchart runs (appVersion 3.93).
+    repository: chrislusf/seaweedfs
+    tag: "3.93"
+    pullPolicy: IfNotPresent
+  extraBuckets: []
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# -- Toggle for the bundled Redpanda below. It lives OUTSIDE the redpanda block
+# because the redpanda chart's values schema is closed and rejects `enabled`.
+redpandaBundle:
+  enabled: false
+
+# -- Bundled Redpanda (Kafka API), DISABLED by default (redpandaBundle.enabled). DEV
+# ONLY: one broker, no TLS, no SASL, no external listener, no cert-manager — the
+# chart refuses to render it in a production-like environment. When enabled and
+# no explicit brokers are set, STREAMING_BROKERS derives from the subchart Service
+# (<fullnameOverride|release>.<release namespace>.svc.cluster.local.:<kafka port>),
+# and the redpandaTopics Job creates the br-sta topics.
+redpanda:
+  # The subchart names its Services after the RELEASE (no suffix); pin a name so
+  # it can never collide with this chart's own Services.
+  fullnameOverride: "redpanda"
+  console:
+    enabled: false
+  statefulset:
+    replicas: 1
+    podAntiAffinity:
+      type: soft
+  tls:
+    enabled: false
+  auth:
+    sasl:
+      enabled: false
+  external:
+    enabled: false
+  # Privileged tuning container — not for a dev bundle.
+  tuning:
+    tune_aio_events: false
+  resources:
+    cpu:
+      cores: 1
+      overprovisioned: true
+    memory:
+      container:
+        max: 2Gi
+  storage:
+    persistentVolume:
+      enabled: true
+      size: 5Gi
+  # Runs rpk cluster-config against the broker after install; not needed here.
+  post_install_job:
+    enabled: false
+
+# -- Topic bootstrap Job for the bundled Redpanda (rendered only with
+# redpandaBundle.enabled). The app never creates its topics (its credential is
+# granted on the literal names only), so this Job ensures them idempotently with
+# rpk. Against an EXTERNAL broker, topics are provisioned by the environment.
+redpandaTopics:
+  image:
+    # The broker image of the pinned redpanda 26.2.4 subchart (appVersion v26.2.3); it ships rpk.
+    repository: docker.redpanda.com/redpandadata/redpanda
+    tag: "v26.2.3"
+    pullPolicy: IfNotPresent
+  partitions: 1
+  replicationFactor: 1
+  list:
+    - lerian.streaming.br-sta
+    - lerian.streaming.br-sta.dlq
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# -- Bundled mock STA server, DISABLED by default. DEV ONLY: a BACEN STA
+# counterparty simulator (file transfer + password web services over plain HTTP),
+# so a dev install exercises uploads and verdict polling without touching BACEN.
+# When enabled, STA_SCHEME / STA_FILE_HOST / STA_PASSWORD_HOST point the STA client
+# at it (a native common.configmap key still wins). The chart refuses it in a
+# production-like environment.
+# The image is public on GHCR (it follows the app's imagePullSecrets, if any).
+mockSta:
+  enabled: false
+  image:
+    repository: ghcr.io/lerianstudio/mock-sta-server
+    # -- Defaults to Chart.appVersion (released with the app under the same tag).
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  service:
+    port: 80
+  # The mock's own env (MOCK_* / LOG_*): requireCredentials (MOCK_STA_REQUIRE_CREDENTIALS),
+  # defaultTerminalStatus (MOCK_STA_DEFAULT_TERMINAL_STATUS: the BACEN status every
+  # upload ends in; 35 = accepted), chaosEnabled, logLevel, readTimeout, writeTimeout.
+  requireCredentials: "false"
+  defaultTerminalStatus: "35"
+  chaosEnabled: "false"
+  logLevel: "info"
+  readTimeout: "330s"
+  writeTimeout: "330s"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

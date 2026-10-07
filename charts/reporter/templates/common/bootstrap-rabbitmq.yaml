@@ -410,6 +410,11 @@ spec:
   parallelism: 1
   backoffLimit: 3
   template:
+    metadata:
+      # A mesh proxy injected as a regular container never exits and the Job never completes.
+      annotations:
+        sidecar.istio.io/nativeSidecar: "true"
+        config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
     spec:
       restartPolicy: OnFailure
       {{- /* This Job talks to the RabbitMQ management API and to nothing else — it

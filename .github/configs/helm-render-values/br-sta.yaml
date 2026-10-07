@@ -1,0 +1,55 @@
+# CI-only render fixture for charts/br-sta (render gate + install test).
+# NOT a production example. It renders the FULL dev bundle, the same shape as
+# charts/br-sta/values-dev.yaml: bundled PostgreSQL, Valkey, RabbitMQ, SeaweedFS,
+# Redpanda and the mock STA server. The render gate then checks every
+# secretKeyRef the chart points at the subchart Secrets and at the shared app
+# Secret (the bundled RabbitMQ reads it), the release-name collapse, the derived
+# endpoints (POSTGRES_HOST, REDIS_HOST, RABBITMQ_HOST, TRANSFER_S3_ENDPOINT,
+# STREAMING_BROKERS, STA_FILE_HOST) and the bootstrap Jobs (migrations, buckets,
+# topics). Redpanda and the mock STA are refused outside a development-class
+# environment, so this fixture runs in development. Every credential below is a
+# public, dev-only dummy value (an all-zero master key).
+global:
+  env:
+    name: "development"
+  auth:
+    enabled: false
+  streaming:
+    enabled: true
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+    staAuditExports:
+      bucket: "br-sta-audit-exports"
+
+common:
+  secrets:
+    MASTER_KEYS: "v1:0000000000000000000000000000000000000000000000000000000000000000"
+    RABBITMQ_DEFAULT_PASS: "dev-only-rabbitmq"
+    RABBITMQ_ERLANG_COOKIE: "dev-only-erlang-cookie-not-for-production"
+    AWS_ACCESS_KEY_ID: "any"
+    AWS_SECRET_ACCESS_KEY: "any"
+    # Placeholder: the license is required in every environment (render gate).
+    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
+  license:
+    organizationIds: "REPLACE_WITH_YOUR_ORGANIZATION_ID"
+
+postgresql:
+  enabled: true
+  external: false
+  auth:
+    password: "dev-only-postgres"
+    postgresPassword: "dev-only-postgres-admin"
+valkey:
+  enabled: true
+  external: false
+  auth:
+    password: "dev-only-valkey"
+rabbitmq:
+  enabled: true
+seaweedfs:
+  enabled: true
+redpandaBundle:
+  enabled: true
+mockSta:
+  enabled: true

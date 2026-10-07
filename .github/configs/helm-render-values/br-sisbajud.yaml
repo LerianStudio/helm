@@ -1,0 +1,39 @@
+# CI-only render fixture for charts/br-sisbajud (render gate + install test).
+# NOT a production example. It renders the FULL dev bundle, the same shape as
+# charts/br-sisbajud/values-dev.yaml: bundled PostgreSQL, Valkey, SeaweedFS,
+# OpenBao (dev mode) and Redpanda. The render gate then checks every secretKeyRef
+# the chart points at the subchart Secrets, the release-name collapse, the derived
+# endpoints (POSTGRES_HOST, REDIS_HOST, SEAWEEDFS_S3_ENDPOINT, VAULT_ADDR,
+# STREAMING_BROKERS) and the bootstrap Jobs (buckets, Transit, migrations and
+# topics as bundle-aware hooks). OpenBao/Redpanda are refused in a production-like
+# environment, so this fixture runs in development. The OpenBao dev root token is
+# generated at render (no reusable credential in this file).
+global:
+  env:
+    name: "development"
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+
+brSisbajud:
+  vault:
+    tokenRenewEnabled: false
+  # App 1.2.0+ requires LICENSE_KEY in every environment (the render fails
+  # without it). Fake placeholder: renders, but the app does not boot on it.
+  license:
+    organizationIds: "global"
+  secrets:
+    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
+
+postgresql:
+  enabled: true
+  external: false
+valkey:
+  enabled: true
+  external: false
+seaweedfs:
+  enabled: true
+openbao:
+  enabled: true
+redpandaBundle:
+  enabled: true

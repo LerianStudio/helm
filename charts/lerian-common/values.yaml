@@ -44,3 +44,14 @@ global: {}
   #   redisHost: ""          # MULTI_TENANT_REDIS_HOST
   #   redisPort: "6379"      # MULTI_TENANT_REDIS_PORT
   #   redisTls: "false"      # MULTI_TENANT_REDIS_TLS
+  #
+  # -- Pod scheduling. `spread` is the topologySpreadConstraints preset read by
+  #    lerian-common.topologySpreadConstraints (and lerian-common.scheduling in its
+  #    dict form). A component's `spread` overrides it field by field; a component's
+  #    raw `topologySpreadConstraints` list replaces it entirely.
+  # scheduling:
+  #   spread:
+  #     enabled: true            # master switch (built-in: false)
+  #     hostname: ScheduleAnyway # kubernetes.io/hostname — ScheduleAnyway | DoNotSchedule | "" (off)
+  #     zone: ScheduleAnyway     # topology.kubernetes.io/zone — same values
+  #     maxSkew: 1               # integer >= 1

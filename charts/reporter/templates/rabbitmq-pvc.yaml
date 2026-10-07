@@ -1,0 +1,24 @@
+{{- /* Queued messages outlive pod restarts, upgrades and helm uninstall. The chart renders the claim and
+   names it to the subchart: an existing StatefulSet cannot gain the subchart's volumeClaimTemplates. */ -}}
+{{- $st := .Values.rabbitmq.storage }}
+{{- if and .Values.rabbitmq.enabled $st.persistentVolumeClaimName $st.requestedSize }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $st.persistentVolumeClaimName }}
+  labels:
+    app.kubernetes.io/name: rabbitmq
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- with $st.className }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $st.requestedSize }}
+{{- end }}

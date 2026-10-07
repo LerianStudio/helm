@@ -3,15 +3,51 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the bundled `auth-database` subchart Secret (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
+- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
-- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence.
-- Initial admin: the bootstrap admin (`admin@midaz.tech`) is first seeded from `init_data.json` baked into the `ghcr.io/lerianstudio/caradhras` image at first boot, with a placeholder password. While `auth.initUser.enabled` is true (the default), a `post-install` hook Job then sets that account's password to the operator-supplied credential, which therefore always replaces the image placeholder: `auth.initUser.adminPassword` when `auth.initUser.useExistingSecret=false`, otherwise the `adminPasswordSecretKey` value from the Secret named by `auth.initUser.adminPasswordSecretName`. The hook runs on `helm install` only, never on upgrades, so upgrades and later value changes neither reset the password nor recreate a deleted admin account, and passwords rotated inside Caradhras are preserved. If `auth.initUser.enabled=false`, the chart never touches the account and the image placeholder stays live; rotate it immediately after the first login.
+- Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
+- Initial admin: `auth.initUser.enabled` controls a `post-install` bootstrap Job only. It never runs on upgrades, so upgrades and later values changes do not reset the password or recreate a deleted admin account. The v3.9.0 init-user binary preserves existing users instead of resetting their credentials. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow; do not assume `auth.initUser.adminPassword` overwrites them. For a new account, supply that value or the key selected by `auth.initUser.adminPasswordSecretName` / `adminPasswordSecretKey`.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+
+> **Uninstall keeps the identity data.** `helm uninstall` leaves the bundled database volume (`data-<release>-auth-database-0`) and its password Secret (`<release>-auth-database`), so a reinstall under the same release name opens the same users, organizations and applications with the same password. This chart, not the Bitnami subchart, owns that Secret: it takes `auth-database.auth.password` when set, else the Secret already in the namespace, else a new random password. Deleting the data is a separate, manual step: delete that PVC and that Secret together (the Valkey volume `valkey-data-<release>-valkey-primary-0`, sessions and cached tokens only, is left too). Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned.
 
 This helm chart installs [Plugin Acess Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance and open-source ledger.
 
 ---
+
+## Startup validation (chart source after 9.5.8)
+
+The published `9.5.8` package does not contain these render-time guards. A new
+chart release is required to distribute them; changing this repository does not
+mutate that package.
+
+- **JWKS over HTTPS.** Outside `development`, `staging` or `local`, auth and
+  identity must reach Caradhras over `https`; the chart refuses to render the
+  combinations the application would refuse to boot, and names every failing
+  component in one error. What is checked and what is skipped (images below
+  `3.3.0`, identity loopback, auth with service discovery) is in
+  [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https).
+- **MFA.** `auth.configmap.MFA_ENABLED` (or its legacy `extraEnvVars` form) requires
+  `auth.secrets.MFA_SECRET` when the chart creates the Secret. With
+  `auth.useExistingSecret=true`, provide `auth.existingSecretName` and ensure the
+  existing Secret has a non-empty `MFA_SECRET`. Offline rendering checks the
+  reference, not Secret contents. Never put `MFA_SECRET` in `extraEnvVars`, which
+  writes a ConfigMap. Do not disable MFA to work around missing configuration.
+- **Chart-owned keys.** Put `ENV_NAME` and `AUTHORIZER_ADDRESS` in each component's
+  `configmap`, and identity's auth switch in `identity.configmap.AUTH_ENABLED`, not in
+  `extraEnvVars`: they are already emitted and duplicate YAML keys are refused. Set
+  `AUTH_M2M_JWKS_URL` in one place only.
+- These checks validate chart-visible settings only; they do not certify an
+  end-to-end upgrade, TLS trust, licenses, or existing users' MFA recovery paths.
+  See the [9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md) before rollout.
+
+The offline regression suite in `tests/` is not wired into CI yet. Run it from the
+repository root; it needs Helm 3 and PyYAML, no cluster:
+
+```bash
+helm dependency build charts/plugin-access-manager
+python3 charts/plugin-access-manager/tests/test_startup_contract.py
+```
 
 ## Install Plugin Access Manager Helm Chart:
 
@@ -56,7 +92,7 @@ valkey:
   enabled: false
 
 # auth.secrets.DB_PASSWORD/REDIS_PASSWORD are normally single-sourced from the
-# bundled subcharts' own Secrets. With both disabled above, supply the managed
+# bundled datastores' Secrets. With both disabled above, supply the managed
 # instances' credentials explicitly (or point auth.existingSecretName at a
 # pre-created Secret with the same keys instead of inlining them here):
 auth:
@@ -210,9 +246,9 @@ ingress:
 | `ingress.tls` | TLS configuration for ingress | `[]` |
 | `service.type` | Kubernetes service type | `ClusterIP` |
 | `service.port` | Service port | `4000` |
-| `deploymentStrategy` | Deployment strategy | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1}}` |
+| `deploymentStrategy` | Deployment strategy of auth; caradhras always rolls with `maxSurge: 1`, `maxUnavailable: 0` | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1}}` |
 | `podSecurityContext` | Pod security context | `{}` |
-| `securityContext` | Security context for the container | `{}` |
+| `securityContext` | Security context for every auth-side container: auth, caradhras (including its migrate init container) and its UI, the init-user Job, and their init containers | See `values.yaml` |
 | `pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
 | `pdb.maxUnavailable` | Maximum number of unavailable pods | `1` |
 | `pdb.minAvailable` | Minimum number of available pods | `0` |
@@ -373,14 +409,15 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.replicaCount` | Number of replicas | `1` |
 | `caradhras.name` | Name of the caradhras component | `<release>-caradhras` |
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
-| `caradhras.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
+| `caradhras.image.tag` | Image tag used for deployment | `1.4.0` |
 | `caradhras.service.port` | Service port | `8000` |
+| `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
-| `caradhras.migrations.image.tag` | Image tag — MUST stay on the `1.2.0-beta.x` train, not the unrelated `3.2.0-beta.x` train also present in this GHCR repo | `1.2.0-beta.59` |
+| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions | `1.4.0` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
 | `caradhras.ui.image.repository` | Repository for the caradhras-ui container image | `ghcr.io/lerianstudio/caradhras-ui` |
-| `caradhras.ui.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
+| `caradhras.ui.image.tag` | Image tag used for deployment | `1.4.0` |
 | `caradhras.ui.service.port` | Service port | `80` |
 | `caradhras.ui.ingress.enabled` | Enable ingress for the UI | `false` |
 | `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |
@@ -391,6 +428,28 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
+
+#### Production: reach Caradhras over HTTPS
+
+Since application `3.3.0`, auth and identity fetch the Caradhras JWKS over
+`https` only, unless `ENV_NAME` is `development`, `staging` or `local`; no
+setting relaxes this. Precisely: identity also accepts http to a loopback host
+and fetches no JWKS when `PLUGIN_AUTH_ENABLED` is false, auth has no loopback
+exemption, and images below `3.3.0` are unaffected. Caradhras serves plain
+http, and the default
+`AUTHORIZER_ADDRESS` is its in-cluster Service, so a production install has to
+put TLS in front of it with `caradhras.ingress`, using a certificate from a
+public CA, and set `auth.configmap.AUTHORIZER_ADDRESS` and
+`identity.configmap.AUTHORIZER_ADDRESS` to the **same** `https` URL (identity
+also pins that address as the M2M token issuer). Keep that ingress internal:
+it exposes the Caradhras admin panel and API.
+
+The chart **refuses to render** an `ENV_NAME` outside that list together with a
+JWKS URL the application would reject, because the pods would otherwise
+crash-loop before logging anything to your collector. With service discovery
+on (`SD_ENABLED=true`) the chart cannot see the address auth resolves, so it
+does not check auth; discovery must still resolve Caradhras to `https`. Worked
+example, pre-upgrade check and caveats: `docs/UPGRADE-9.5.8.md`.
 
 #### Session store (required above one replica)
 
@@ -462,7 +521,8 @@ caradhras both.
 | `auth-database.auth.enabled` | Enable authentication for the database | `true` |
 | `auth-database.auth.enablePostgresUser` | Enable the default postgres user | `false` |
 | `auth-database.auth.username` | Username for the database | `auth` |
-| `auth-database.auth.password` | Password for the database (auto-generated by the subchart when left empty) | `""` |
+| `auth-database.auth.password` | Password for the database (generated by this chart when left empty, and kept across uninstall) | `""` |
+| `auth-database.auth.existingSecret` | Your own Secret with the database password (key `password`), replacing the one this chart keeps. LDAP and custom `secretKeys` need it | the chart's `<release>-auth-database` |
 | `auth-database.auth.database` | Name of the database | `casdoor` |
 | `auth-database.primary.persistence.size` | Persistence size for the primary node | `8Gi` |
 | `auth-database.primary.resourcesPreset` | Resource preset for the primary node | `large` |

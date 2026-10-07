@@ -36,10 +36,12 @@ spec:
       {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.ledger.name ) | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.ledger.podAnnotations }}
       annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/ledger/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/ledger/configmap.yaml") . | sha256sum }}
+        {{- with .Values.ledger.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 8 }}
     spec:
@@ -48,11 +50,15 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "midaz-ledger.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.ledger.podSecurityContext | nindent 8 }}
+      {{- /* The helper owns both branches: fsGroup 65532 when Roles Anywhere is on, so
+         the sidecar (runAsUser 65532) can read the 0440 cert volume; otherwise
+         ledger.podSecurityContext. Called unguarded on purpose. */}}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.ledger.aws "podSecurityContext" .Values.ledger.podSecurityContext) | nindent 6 }}
       initContainers:
         - name: wait-for-dependencies
           image: busybox:1.37
+          securityContext:
+            {{- toYaml .Values.ledger.securityContext | nindent 12 }}
           envFrom:
           - configMapRef:
               name: {{ include "midaz-ledger.fullname" . }}
@@ -94,15 +100,17 @@ spec:
               name: {{ include "midaz-ledger.fullname" . }}
           env:
             {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
-            {{/* PostgreSQL: single role `midaz` backs both onboarding and transaction; both
-                 module passwords map to Bitnami key `password`, both replicas to `replication-password`. */}}
+            {{/* PostgreSQL: single role `midaz` backs both modules, key `password`. The bundled read replica
+                 copies the primary's roles, so its replicas use `password` too; an operator Secret for an
+                 external PostgreSQL keeps `replication-password`, the password of its own replica user. */}}
             {{- $pg := .Values.postgresql | default dict }}
-            {{- $pgAuth := $pg.auth | default dict }}
-            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+            {{- $pgBundled := and (ne (toString $pg.enabled) "false") (not $pg.external) }}
+            {{- if or $pgBundled (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
+            {{- $replicaKey := ternary "password" "replication-password" $pgBundled }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_ONBOARDING_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 12 }}
-            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_ONBOARDING_REPLICA_PASSWORD") | nindent 12 }}
-            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "replication-password" "envName" "DB_TRANSACTION_REPLICA_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" $replicaKey "envName" "DB_ONBOARDING_REPLICA_PASSWORD") | nindent 12 }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" $replicaKey "envName" "DB_TRANSACTION_REPLICA_PASSWORD") | nindent 12 }}
             {{- else }}
             {{- if .Values.ledger.secrets.DB_ONBOARDING_PASSWORD }}
             - name: DB_ONBOARDING_PASSWORD
@@ -136,8 +144,7 @@ spec:
             {{/* MongoDB: app authenticates as root; both module passwords map to `mongodb-root-password`. */}}
             {{- include "midaz.mongodbAuthRequired" . }}
             {{- $mongo := .Values.mongodb | default dict }}
-            {{- $mongoAuth := $mongo.auth | default dict }}
-            {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) $mongoAuth.existingSecret }}
+            {{- if or (and (ne (toString $mongo.enabled) "false") (not $mongo.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "mongodb")) }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_ONBOARDING_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_TRANSACTION_PASSWORD") | nindent 12 }}
             {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_CRM_PASSWORD") | nindent 12 }}
@@ -199,6 +206,11 @@ spec:
             - name: "OTEL_RESOURCE_ATTRIBUTES"
               value: "k8s.pod.ip=$(POD_IP)"
             {{- end }}
+            {{- /* Points the AWS SDK inside the ledger at the sidecar's loopback IMDS
+               instead of the (absent) instance metadata service. */}}
+            {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
+            {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.ledger.aws) | nindent 12 }}
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.ledger.service.port | default 3002 }}
@@ -223,6 +235,12 @@ spec:
             failureThreshold: {{ .Values.ledger.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.ledger.resources | nindent 12 }}
+        {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.ledger.aws) | nindent 8 }}
+        {{- end }}
+      {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.ledger.aws "iamTlsDefault" (printf "%s-iam-tls" (include "midaz-ledger.fullname" .))) | nindent 6 }}
+      {{- end }}
       {{- with .Values.ledger.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -1,0 +1,105 @@
+{{- /*
+Bundled mock STA server (dev only; the chart refuses it outside a
+development-class environment). A BACEN STA counterparty simulator: the file
+transfer and password web services over plain HTTP. When enabled, the app's
+STA_SCHEME / STA_FILE_HOST / STA_PASSWORD_HOST default to this Service (see
+br-sta.configmapData), which also activates the app's mock profile.
+The image is public on GHCR (it follows the app's imagePullSecrets, if any).
+*/ -}}
+{{- if eq (include "br-sta.mockStaEnabled" .) "true" }}
+{{- $ms := .Values.mockSta -}}
+{{- $fullname := include "br-sta.componentFullname" (dict "root" . "component" "mock-sta") -}}
+{{- $pullSecrets := $ms.imagePullSecrets | default .Values.imagePullSecrets -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "root" . "component" "mock-sta") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "br-sta.selectorLabels" (dict "root" . "component" "mock-sta") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "br-sta.selectorLabels" (dict "root" . "component" "mock-sta") | nindent 8 }}
+    spec:
+      {{- with $pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mock-sta
+          image: "{{ $ms.image.repository }}:{{ $ms.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ $ms.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: MOCK_SERVER_PORT
+              value: "8080"
+            - name: MOCK_SERVER_READ_TIMEOUT
+              value: {{ $ms.readTimeout | default "330s" | quote }}
+            - name: MOCK_SERVER_WRITE_TIMEOUT
+              value: {{ $ms.writeTimeout | default "330s" | quote }}
+            - name: MOCK_STA_REQUIRE_CREDENTIALS
+              value: {{ $ms.requireCredentials | default "false" | toString | quote }}
+            - name: MOCK_STA_DEFAULT_TERMINAL_STATUS
+              value: {{ $ms.defaultTerminalStatus | default "35" | toString | quote }}
+            - name: CHAOS_ENABLED
+              value: {{ $ms.chaosEnabled | default "false" | toString | quote }}
+            - name: LOG_LEVEL
+              value: {{ $ms.logLevel | default "info" | quote }}
+            - name: LOG_ENCODING
+              value: "json"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 3
+          securityContext:
+            {{- include "br-sta.jobContainerSecurity" dict | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            {{- toYaml $ms.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "root" . "component" "mock-sta") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ ($ms.service | default dict).port | default 80 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "br-sta.selectorLabels" (dict "root" . "component" "mock-sta") | nindent 4 }}
+{{- end }}

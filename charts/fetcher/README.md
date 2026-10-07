@@ -174,8 +174,8 @@ so there is nothing to migrate onto that mask.
 | `worker.secrets.APP_ENC_KEY` | **REQUIRED** - Base64 encoded 32-byte encryption key | `""` |
 | `secrets.MONGO_USER` | **REQUIRED** - MongoDB username | `fetcher` |
 | `secrets.MONGO_PASSWORD` | **REQUIRED** - MongoDB password | `""` |
-| `secrets.RABBITMQ_DEFAULT_USER` | **REQUIRED** - RabbitMQ username | `plugin` |
-| `secrets.RABBITMQ_DEFAULT_PASS` | RabbitMQ password for the `plugin` user. Defaults to a fixed dev-only credential matching the hash baked into `files/rabbitmq/load_definitions.json` (used when `rabbitmq.enabled=true`). Override for production/external RabbitMQ. | `"fetcher-dev-only"` |
+| `manager.secrets.RABBITMQ_DEFAULT_USER`, `worker.secrets.RABBITMQ_DEFAULT_USER` | **REQUIRED** - RabbitMQ username (`plugin` with the bundled broker) | unset |
+| `manager.secrets.RABBITMQ_DEFAULT_PASS`, `worker.secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | unset |
 | `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
 
 ### External RabbitMQ Bootstrap
@@ -265,10 +265,14 @@ common:
 manager:
   secrets:
     APP_ENC_KEY: "<your-base64-32byte-key>"  # Generate with: openssl rand -base64 32
+    RABBITMQ_DEFAULT_USER: "plugin"
+    RABBITMQ_DEFAULT_PASS: "<your-rabbitmq-password>"
 
 worker:
   secrets:
     APP_ENC_KEY: "<your-base64-32byte-key>"  # Same key as manager
+    RABBITMQ_DEFAULT_USER: "plugin"
+    RABBITMQ_DEFAULT_PASS: "<your-rabbitmq-password>"  # Same password as manager
 
 mongodb:
   enabled: true
@@ -288,6 +292,8 @@ valkey:
 keda:
   enabled: true
 ```
+
+The bundled RabbitMQ's only login is `plugin` with the manager's `RABBITMQ_DEFAULT_PASS`, taken from `manager.secrets` or, with `manager.useExistingSecret`, read from that Secret at render (`helm template` and Argo CD cannot read it, so that render is refused). An empty password and `Lerian@123`, the public password earlier versions shipped, are refused. The broker keeps no volume and takes the password only when its pod starts: after changing it, or after upgrading from a version that shipped `Lerian@123`, run `kubectl -n <namespace> rollout restart statefulset/<release>-rabbitmq` (queued messages are lost).
 
 ### External RabbitMQ with Bootstrap
 
@@ -332,11 +338,10 @@ externalRabbitmqDefinitions:
     pluginPassword: "securepassword"  # Password for 'plugin' user (will be created)
 ```
 
-The bootstrap job will:
+The bootstrap job will, on every install and upgrade:
 1. Wait for RabbitMQ to be ready
-2. Check if definitions already exist (idempotent)
-3. Apply queues, exchanges, and bindings from `load_definitions.json`
-4. Create/update the `plugin` user with the specified password
+2. Create or update the `plugin` user with the specified password (a password containing a control character is refused)
+3. Apply the vhost, permissions, queues, exchanges, and bindings from `load_definitions.json`
 
 ## Important Notes
 

@@ -1,5 +1,963 @@
 # Plugin-access-manager Changelog
 
+## [9.5.10](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.10)
+
+Fixes:
+- Bumped Caradhras to `1.4.0` for improved compatibility. (@jeffersonrodrigues92)
+
+Improvements:
+- Added a Helm upgrade guide for `plugin-access-manager` `v9.5.9`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.9...plugin-access-manager-v9.5.10)
+
+---
+
+## [9.5.10](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.10)
+
+Fixes:
+- Bumped Caradhras to `1.4.0` for improved compatibility and performance. (@jeffersonrodrigues92)
+
+Improvements:
+- Added a Helm upgrade guide for `plugin-access-manager` `v9.5.9` to assist users in updating their installations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.9...plugin-access-manager-v9.5.10)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract to ensure proper functionality. (@guimoreirar)
+- Validate the remaining aspects of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS to enhance security. (@dy-shimizu)
+
+Improvements:
+
+- Provide an upgrade guide for `9.5.8` focusing on startup checks. (@guimoreirar)
+- Clarify the SD skip process in the documentation. (@dy-shimizu)
+- Note the use of HTTPS for Caradhras in the documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract. (@guimoreirar)
+- Validate the rest of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS. (@dy-shimizu)
+
+Improvements:
+
+- Provide an upgrade guide for `9.5.8` regarding startup checks. (@guimoreirar)
+- Clarify the SD skip documentation. (@dy-shimizu)
+- Note HTTPS Caradhras in the documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+- Validate the `3.9.0` startup contract to ensure proper functionality. (@guimoreirar)
+- Validate the rest of the `3.9.0` startup contract to address additional issues. (@guimoreirar)
+- Require HTTPS for JWKS to enhance security. (@dy-shimizu)
+
+Improvements:
+- Provide an upgrade guide for `9.5.8` focusing on startup checks. (@guimoreirar)
+- Clarify the SD skip process in the documentation. (@dy-shimizu)
+- Note the use of HTTPS in the Caradhras documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract. (@guimoreirar)
+- Validate the rest of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS. (@dy-shimizu)
+
+Improvements:
+
+- Provide an upgrade guide for `v9.5.8` regarding startup checks. (@guimoreirar)
+- Clarify the SD skip in the documentation. (@dy-shimizu)
+- Note the use of HTTPS in Caradhras documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract. (@guimoreirar)
+- Validate the rest of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS. (@dy-shimizu)
+
+Improvements:
+
+- Provide an upgrade guide for `9.5.8` focusing on startup checks. (@guimoreirar)
+- Clarify the SD skip in documentation. (@dy-shimizu)
+- Note the use of HTTPS in Caradhras documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract to ensure proper functionality. (@guimoreirar)
+- Validate the remaining aspects of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS to enhance security. (@dy-shimizu)
+
+Improvements:
+
+- Provide a `9.5.8` upgrade guide for startup checks to assist users with the transition. (@guimoreirar)
+- Clarify the SD skip process in the documentation for better understanding. (@dy-shimizu)
+- Note the use of HTTPS in Caradhras within the documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract to ensure proper functionality. (@guimoreirar)
+- Validate the remaining parts of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS to enhance security. (@dy-shimizu)
+
+Improvements:
+
+- Provide an upgrade guide for `9.5.8` focusing on startup checks. (@guimoreirar)
+- Clarify the SD skip process in the documentation. (@dy-shimizu)
+- Note the requirement for HTTPS in Caradhras documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract. (@guimoreirar)
+- Validate the rest of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS. (@dy-shimizu)
+
+Improvements:
+
+- Provide a `9.5.8` upgrade guide for the startup checks. (@guimoreirar)
+- Clarify the SD skip in documentation. (@dy-shimizu)
+- Note HTTPS Caradhras in documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract for `plugin-access-manager`. (@guimoreirar)
+- Validate the rest of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS in `plugin-access-manager`. (@dy-shimizu)
+
+Improvements:
+
+- Provide a `9.5.8` upgrade guide for the startup checks in `plugin-access-manager`. (@guimoreirar)
+- Clarify the SD skip in `plugin-access-manager` documentation. (@dy-shimizu)
+- Note HTTPS Caradhras in `plugin-access-manager` documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.9)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.5.3`. (@guimoreirar)
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.5.5`. (@guimoreirar)
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.5.8`. (@guimoreirar)
+
+Fixes:
+
+- Validate the `3.9.0` startup contract to ensure proper functionality. (@guimoreirar)
+- Validate the remaining aspects of the `3.9.0` startup contract. (@guimoreirar)
+- Require HTTPS for JWKS to enhance security. (@dy-shimizu)
+
+Improvements:
+
+- Provide an upgrade guide for `9.5.8` focusing on startup checks. (@guimoreirar)
+- Clarify the SD skip process in the documentation. (@dy-shimizu)
+- Note the use of HTTPS in Caradhras within the documentation. (@dy-shimizu)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.8...plugin-access-manager-v9.5.9)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+Features:
+- Document the optional configmap keys added for `3.9.0`. (@guimoreirar)
+
+Fixes:
+- Bump app images to `3.9.0` and expose new environment variables. (@guimoreirar)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.2`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.4`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.6`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.7`. (@guimoreirar)
+- Correct upgrade guide for `v9.5.2`. (@guimoreirar)
+- Correct upgrade guide for `v9.5.4`. (@guimoreirar)
+- Correct upgrade guide for `v9.5.7`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+Features:
+- Document the optional configmap keys added for `3.9.0`. (@guimoreirar)
+
+Fixes:
+- Bump app images to `3.9.0` and expose new environment variables. (@guimoreirar)
+
+Improvements:
+- Correct the upgrade guide for `v9.5.7`. (@guimoreirar)
+- Correct the upgrade guide for `v9.5.4`. (@guimoreirar)
+- Correct the upgrade guide for `v9.5.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+Features:
+- Document the optional configmap keys added for `3.9.0`. (@guimoreirar)
+
+Fixes:
+- Bump app images to `3.9.0` and expose new environment variables. (@guimoreirar)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.2`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.4`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.7`. (@guimoreirar)
+- Correct upgrade guide for `v9.5.7`. (@guimoreirar)
+- Correct upgrade guide for `v9.5.4`. (@guimoreirar)
+- Correct upgrade guide for `v9.5.2`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-access-manager` `v9.5.6`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+- **Features:**
+  - Documented the optional configmap keys added for version 3.9.0.
+  - Bumped app images to version 3.9.0 and exposed new environment variables.
+
+- **Fixes:**
+  - Corrected the upgrade guides for versions 9.5.2, 9.5.4, and 9.5.7.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions 9.5.2, 9.5.4, 9.5.6, and 9.5.7.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+- **Features:**
+  - Documented the optional configmap keys added for version 3.9.0.
+
+- **Fixes:**
+  - Bumped app images to version 3.9.0 and exposed new environment variables.
+  - Corrected upgrade guides for versions v9.5.2, v9.5.4, and v9.5.7.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.5.2, v9.5.4, v9.5.6, and v9.5.7.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+- **Features**
+  - Documented the optional configmap keys added for version 3.9.0.
+  - Bumped app images to version 3.9.0 and exposed new environment variables.
+
+- **Fixes**
+  - Corrected upgrade guides for versions v9.5.2, v9.5.4, and v9.5.7.
+
+- **Improvements**
+  - Added Helm upgrade guides for versions v9.5.2, v9.5.4, v9.5.6, and v9.5.7.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+- **Features:**
+  - Documented the optional configmap keys added for version 3.9.0.
+  - Exposed new environment variables and bumped app images to version 3.9.0.
+
+- **Fixes:**
+  - Corrected the upgrade guides for versions v9.5.2, v9.5.4, and v9.5.7.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.5.2, v9.5.4, v9.5.6, and v9.5.7.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+- **Features**
+  - Documented the optional configmap keys added for version 3.9.0.
+  - Bumped app images to version 3.9.0 and exposed new environment variables.
+
+- **Fixes**
+  - Corrected the upgrade guides for versions 9.5.2, 9.5.4, and 9.5.7.
+
+- **Improvements**
+  - Added Helm upgrade guides for versions 9.5.2, 9.5.4, 9.5.6, and 9.5.7.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+- **Features:**
+  - Documented the optional configmap keys added for version 3.9.0.
+  - Bumped app images to 3.9.0 and exposed new environment variables.
+
+- **Fixes:**
+  - Corrected upgrade guides for versions v9.5.2, v9.5.4, and v9.5.7.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.5.2, v9.5.4, v9.5.6, and v9.5.7.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.8)
+
+- **Features:**
+  - Documented the optional configmap keys added for version 3.9.0.
+  - Added a Helm upgrade guide for versions 9.5.2, 9.5.4, 9.5.6, and 9.5.7.
+
+- **Fixes:**
+  - Bumped app images to version 3.9.0 and exposed new environment variables.
+
+- **Improvements:**
+  - Corrected upgrade guides for versions 9.5.2, 9.5.4, and 9.5.7.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.7...plugin-access-manager-v9.5.8)
+
+---
+
+## [9.5.7](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.7)
+
+- Fixes:
+  - Pin the bundled database majors to ensure compatibility (#2324).
+
+- Improvements:
+  - Removed the date from the pin comments for better clarity.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.6...plugin-access-manager-v9.5.7)
+
+---
+
+## [9.5.7](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.7)
+
+- Fixes:
+  - Pin the bundled database majors to ensure compatibility and stability. (#2324)
+
+- Improvements:
+  - Removed the date from pin comments for better clarity and maintainability.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.6...plugin-access-manager-v9.5.7)
+
+---
+
+## [9.5.7](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.7)
+
+- Fixes:
+  - Pin the bundled database majors to ensure compatibility (#2324).
+  - Removed the date from the pin comments for better clarity.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.6...plugin-access-manager-v9.5.7)
+
+---
+
+## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
+
+- Fixes:
+  - Restart pods when their configmap changes to ensure configuration updates are applied correctly.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.5...plugin-access-manager-v9.5.6)
+
+---
+
+## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
+
+- Fixes:
+  - Restart pods when their configmap changes to ensure updated configurations are applied.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.5...plugin-access-manager-v9.5.6)
+
+---
+
+## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
+
+- Fixes:
+  - Restart pods when their configmap changes to ensure updated configurations are applied.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.5...plugin-access-manager-v9.5.6)
+
+---
+
+## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
+
+- Fixes:
+  - Restart pods when their configmap changes to ensure updated configurations are applied.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.5...plugin-access-manager-v9.5.6)
+
+---
+
+## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
+
+- Fixes:
+  - Restart pods when their configmap changes to ensure the latest configuration is applied.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.5...plugin-access-manager-v9.5.6)
+
+---
+
+## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
+
+- Fixes:
+  - Restart pods when their configmap changes to ensure updated configurations are applied.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.5...plugin-access-manager-v9.5.6)
+
+---
+
+## [9.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.6)
+
+- Fixes:
+  - Restart pods when their configmap changes to ensure updated configurations are applied.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.5...plugin-access-manager-v9.5.6)
+
+---
+
+## [9.5.5](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.5)
+
+- **Fixes:**
+  - Let the init job finish under a mesh sidecar to ensure proper initialization.
+  - Restart pods when their secret changes to maintain security and functionality.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.4...plugin-access-manager-v9.5.5)
+
+---
+
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- **Fixes:**
+  - Ensure continuous service by keeping Caradhras operational while a new pod migrates.
+  - Maintain service availability by keeping an old pod serving during rollouts.
+  - Allow `helm install --wait` to complete successfully.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- Fixes:
+  - Keep caradhras up while a new pod migrates.
+  - Ensure an old pod continues serving during rollouts.
+  - Allow `helm install --wait` to complete successfully.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- **Fixes**
+  - Ensure caradhras remains operational while a new pod migrates.
+  - Maintain service availability of an old pod during rollouts.
+  - Allow `helm install --wait` to complete successfully.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- **Fixes:**
+  - Keep Caradhras up while a new pod migrates.
+  - Ensure an old pod continues serving during rollouts.
+  - Allow `helm install --wait` to complete successfully.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- Fixes:
+  - Keep Caradhras up while a new pod migrates.
+  - Ensure an old pod continues serving during rollouts.
+  - Allow `helm install --wait` to complete successfully.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- Fixes:
+  - Keep caradhras up while a new pod migrates.
+  - Keep an old pod serving during rollouts.
+  - Let helm install --wait complete.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- Fixes:
+  - Keep caradhras up while a new pod migrates.
+  - Keep an old pod serving during rollouts.
+  - Let helm install --wait complete.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
+## [9.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.4)
+
+- Fixes:
+  - Keep Caradhras up while a new pod migrates.
+  - Keep an old pod serving during rollouts.
+  - Let helm install --wait complete.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.3...plugin-access-manager-v9.5.4)
+
+---
+
+## [9.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.3)
+
+- Fixes:
+  - Pass pod security restricted (#2243)
+  - Drop a comment as the pod block already states the necessary information
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.2...plugin-access-manager-v9.5.3)
+
+---
+
+## [9.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.3)
+
+- Fixes:
+  - Pass pod security restricted (#2243)
+  - Drop a comment as the pod block already states
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.2...plugin-access-manager-v9.5.3)
+
+---
+
+## [9.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.2)
+
+- **Fixes**
+  - Resolved an issue where the database password was not retained on uninstall.
+  - Prevented the use of an empty `auth-database existingSecret`.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.1...plugin-access-manager-v9.5.2)
+
+---
+
+## [9.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.2)
+
+- **Fixes:**
+  - Keep the database password on uninstall to prevent data loss. (#2227)
+  - Refuse an empty `auth-database existingSecret` to ensure proper authentication configuration.
+
+- **Contributors:**
+  - @fredcamaral
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.1...plugin-access-manager-v9.5.2)
+
+---
+
+## [9.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.2)
+
+- **Fixes:**
+  - Keep the database password on uninstall to prevent data loss.
+  - Refuse an empty `auth-database existingSecret` to ensure proper authentication setup.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.1...plugin-access-manager-v9.5.2)
+
+---
+
+## [9.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.2)
+
+- **Fixes:**
+  - Ensure the database password is retained on uninstall to prevent accidental data loss.
+  - Prevent the use of an empty `auth-database existingSecret` to enhance security and stability.
+
+- **Contributors:**
+  - @fredcamaral
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.1...plugin-access-manager-v9.5.2)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Fixes:**
+  - Deliver Caradhras 1.3.2 RBAC migrations.
+  - Bump Caradhras images to 1.3.2.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.3.0, v9.4.0, and v9.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Fixes**
+  - Deliver Caradhras 1.3.2 RBAC migrations.
+  - Bump Caradhras images to 1.3.2.
+
+- **Improvements**
+  - Added Helm upgrade guide for v9.3.0.
+  - Added Helm upgrade guide for v9.4.0.
+  - Added Helm upgrade guide for v9.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Fixes**
+  - Deliver Caradhras 1.3.2 RBAC migrations.
+  - Bump Caradhras images to 1.3.2.
+
+- **Improvements**
+  - Added Helm upgrade guide for versions v9.3.0, v9.4.0, and v9.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Features:**
+  - Added Helm upgrade guide for plugin-access-manager v9.3.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.4.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.5.0.
+
+- **Fixes:**
+  - Delivered Caradhras 1.3.2 RBAC migrations.
+  - Bumped Caradhras images to version 1.3.2.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Fixes**
+  - Deliver Caradhras 1.3.2 RBAC migrations.
+  - Bump Caradhras images to 1.3.2.
+
+- **Improvements**
+  - Add Helm upgrade guide for v9.3.0.
+  - Add Helm upgrade guide for v9.4.0.
+  - Add Helm upgrade guide for v9.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Features:**
+  - Added Helm upgrade guide for plugin-access-manager v9.3.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.4.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.5.0.
+
+- **Fixes:**
+  - Delivered Caradhras 1.3.2 RBAC migrations.
+  - Bumped Caradhras images to version 1.3.2.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Fixes:**
+  - Deliver Caradhras 1.3.2 RBAC migrations.
+  - Bump Caradhras images to 1.3.2.
+
+- **Improvements:**
+  - Added Helm upgrade guide for versions v9.3.0, v9.4.0, and v9.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Features**
+  - Added Helm upgrade guide for plugin-access-manager v9.3.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.4.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.5.0.
+
+- **Fixes**
+  - Delivered Caradhras 1.3.2 RBAC migrations.
+  - Bumped Caradhras images to 1.3.2.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Fixes**
+  - Deliver Caradhras 1.3.2 RBAC migrations.
+  - Bump Caradhras images to 1.3.2.
+
+- **Improvements**
+  - Added Helm upgrade guide for versions v9.3.0, v9.4.0, and v9.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Fixes:**
+  - Deliver Caradhras 1.3.2 RBAC migrations.
+  - Bump Caradhras images to 1.3.2.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.3.0, v9.4.0, and v9.5.0.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.1)
+
+- **Features:**
+  - Added Helm upgrade guide for plugin-access-manager v9.3.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.4.0.
+  - Added Helm upgrade guide for plugin-access-manager v9.5.0.
+
+- **Fixes:**
+  - Delivered Caradhras 1.3.2 RBAC migrations.
+  - Bumped Caradhras images to 1.3.2.
+
+Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio.
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.0...plugin-access-manager-v9.5.1)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.0)
+
+- **Features:**
+  - Guard the console SSO callback path to enhance security.
+  - Compose the SSO callback URL from a client base for better flexibility.
+  - Add named MFA and SSO callback chart keys for improved configuration options.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.4.0...plugin-access-manager-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.0)
+
+- **Features**
+  - Guard the console SSO callback path to enhance security.
+  - Compose the SSO callback URL from a client base for better configurability.
+  - Add named MFA and SSO callback chart keys to improve integration options.
+
+Contributors: @jeffersonrodrigues92, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.4.0...plugin-access-manager-v9.5.0)
+
+---
+
 ## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.5.0)
 
 - **Features:**

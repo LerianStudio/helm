@@ -206,7 +206,7 @@ legacy overrides and then the defaults below.
 {{- end }}
 
 {{- define "caradhras.imageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.3.2") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.4.0") -}}
 {{- end }}
 
 {{- define "caradhras.imagePullPolicy" -}}
@@ -224,8 +224,8 @@ legacy overrides and then the defaults below.
 {{/*
 caradhras.migrationsImageRepository / .migrationsImageTag /
 .migrationsImagePullPolicy — same "new wins, old is a fallback alias"
-precedence as caradhras.imageRepository/etc above, but for the migrations
-Job image. Without this, an install that only overrode the legacy
+precedence as caradhras.imageRepository/etc above, but for the caradhras
+migrate init container image. Without this, an install that only overrode the legacy
 auth.backend.migrations.image.* path would silently start running the NEW
 caradhras-migrations image against a database still on the OLD (Casdoor)
 schema the moment it upgraded. Keep these fields empty in values.yaml so
@@ -234,13 +234,13 @@ legacy overrides remain visible, including to the repository guard below.
 {{- define "caradhras.migrationsImageRepository" -}}
 {{- $repo := include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.repository "oldVal" (dig "backend" "migrations" "image" "repository" "" .Values.auth) "default" "ghcr.io/lerianstudio/caradhras-migrations") -}}
 {{- if contains "casdoor-migrations" $repo -}}
-{{- fail (printf "\n\nplugin-access-manager: the migration image repository resolves to %q, which points at the OLD casdoor-migrations image.\nOn v9.x the migration Job injects POSTGRES_* env vars, but casdoor-migrations reads DB_* and will fail at runtime with:\n  Missing required environment variables: DB_USER, DB_PASS, DB_HOST, DB_NAME\nIt is NOT a downgrade of casdoor:3.1.0 — caradhras-migrations 1.2.x is a different product line.\nSet caradhras.migrations.image.repository to ghcr.io/lerianstudio/caradhras-migrations (or leave it empty to accept the default),\nand clear any legacy auth.backend.migrations.image.repository override.\nSee docs/UPGRADE-8.6-to-9.2.md (Known Gotchas)." $repo) -}}
+{{- fail (printf "\n\nplugin-access-manager: the migration image repository resolves to %q, which points at the OLD casdoor-migrations image.\nOn v9.x the caradhras migrate init container injects POSTGRES_* env vars, but casdoor-migrations reads DB_* and will fail at runtime with:\n  Missing required environment variables: DB_USER, DB_PASS, DB_HOST, DB_NAME\nIt is NOT a downgrade of casdoor:3.1.0 — caradhras-migrations 1.2.x is a different product line.\nSet caradhras.migrations.image.repository to ghcr.io/lerianstudio/caradhras-migrations (or leave it empty to accept the default),\nand clear any legacy auth.backend.migrations.image.repository override.\nSee docs/UPGRADE-8.6-to-9.2.md (Known Gotchas)." $repo) -}}
 {{- end -}}
 {{- $repo -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.3.2") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.4.0") -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImagePullPolicy" -}}
@@ -317,23 +317,23 @@ architectures. Used as the REDIS_HOST default.
 {{/*
 plugin-auth.dbPasswordEnv — emit a single `- name: <envName> valueFrom: secretKeyRef: {name,key}`
 entry for the auth database password, single-sourced. With the bundled `auth-database`
-(aliased Bitnami postgresql) subchart, it reads the generated Secret
+(aliased Bitnami postgresql) subchart, it reads the Secret this chart keeps across uninstall
 (<release>-auth-database, key "password"); honors auth-database.auth.existingSecret; and
 falls back to the app's plugin-auth Secret (key DB_PASSWORD) only for an external database.
-Used by the auth, caradhras, and migrations/init-user workloads.
+Used by the auth, caradhras, and init-user workloads.
 Input (dict): context (root .), envName (container env var name, e.g. DB_PASSWORD or DB_PASS).
 See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 */}}
 {{- define "plugin-auth.dbPasswordEnv" -}}
 {{- $ctx := .context -}}
 {{- $db := default dict (index $ctx.Values "auth-database") -}}
-{{- $dbAuth := default dict $db.auth -}}
+{{- $opSecret := include "plugin-access-manager.operatorDbSecret" $ctx -}}
 {{- $internal := and (ne (toString $db.enabled) "false") (not $db.external) -}}
 - name: {{ .envName }}
   valueFrom:
     secretKeyRef:
-    {{- if $dbAuth.existingSecret }}
-      name: {{ $dbAuth.existingSecret }}
+    {{- if $opSecret }}
+      name: {{ $opSecret }}
       key: password
     {{- else if $internal }}
       name: {{ include "common.names.dependency.fullname" (dict "chartName" "auth-database" "chartValues" (index $ctx.Values "auth-database") "context" $ctx) }}
@@ -343,6 +343,14 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
       name: {{ if $ctx.Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding DB_PASSWORD.\n" $ctx.Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" $ctx }}{{ end }}
       key: DB_PASSWORD
     {{- end }}
+{{- end }}
+
+{{/*
+plugin-access-manager.operatorDbSecret — the Secret an operator named in auth-database.auth.existingSecret,
+"" when none. The chart default renders a name only inside the subchart (templates/auth-database/secrets.yaml).
+*/}}
+{{- define "plugin-access-manager.operatorDbSecret" -}}
+{{- tpl (dig "auth" "existingSecret" "" (index .Values "auth-database" | default dict) | toString) . -}}
 {{- end }}
 
 
@@ -700,5 +708,199 @@ which the auth component alone reads.
 {{- $extra := .Values.auth.extraEnvVars | default dict -}}
 {{- if and (not (kindIs "invalid" $cm.MFA_ENABLED)) (ne ($cm.MFA_ENABLED | toString) "") (hasKey $extra "MFA_ENABLED") -}}
 {{- fail "MFA_ENABLED is set both in auth.configmap and in auth.extraEnvVars. Both render into the same ConfigMap data map, so the key would be emitted twice and the effective value is whatever the YAML parser keeps — undefined behavior. Keep it in auth.configmap.MFA_ENABLED and remove it from auth.extraEnvVars." -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.imageBeforeJwksGate — "true" when a component's image
+predates the https-only JWKS gate (application 3.3.0), "" otherwise.
+
+The tag is resolved exactly as the component Deployment resolves it
+(<component>.image.tag, else the chart appVersion); an `@<digest>` suffix is
+ignored. Only a semantic version whose MAJOR.MINOR is below 3.3 counts: every
+3.3.0 prerelease already carries the gate. Anything that is not a semantic
+version (latest, a branch or commit tag) returns "", because the chart cannot
+place it before the gate. The version is matched by a strict regex (each
+number at most nine digits) and compared as integers, never with
+semverCompare, which errors on input it cannot parse and would break the render
+instead of answering.
+
+Input (dict): context (root .), component ("auth" | "identity").
+*/}}
+{{- define "plugin-access-manager.imageBeforeJwksGate" -}}
+{{- $image := (index .context.Values .component).image -}}
+{{- $tag := "" -}}
+{{- if kindIs "map" $image -}}
+{{- $tag = toString ($image.tag | default "") -}}
+{{- end -}}
+{{- $tag = regexReplaceAll "@.*$" ($tag | default (include "plugin.version" .context)) "" -}}
+{{- $num := `(0|[1-9][0-9]{0,8})` -}}
+{{- $ids := `[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*` -}}
+{{- if regexMatch (printf `^v?%s\.%s\.%s(-%s)?(\+%s)?$` $num $num $num $ids $ids) $tag -}}
+{{- $core := splitList "." (regexFind `^[0-9]+\.[0-9]+` (trimPrefix "v" $tag)) -}}
+{{- $major := atoi (index $core 0) -}}
+{{- $minor := atoi (index $core 1) -}}
+{{- if or (lt $major 3) (and (eq $major 3) (lt $minor 3)) -}}true{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.jwksUrlHostIsLoopback — "true" when the host of the URL
+passed as `.` is a loopback literal as lib-auth decides it, with no DNS: the
+name `localhost` (exact, case-sensitive) or an IP literal in 127.0.0.0/8 or
+::1. The host is cut out the way net/url does it: query and fragment dropped,
+the authority after `//` up to the first `/`, minus userinfo, port and the IPv6
+brackets. Only identity's JWKS client honors this exemption; auth has none.
+*/}}
+{{- define "plugin-access-manager.jwksUrlHostIsLoopback" -}}
+{{- $rest := regexReplaceAll `^[A-Za-z][A-Za-z0-9+.-]*:` (regexReplaceAll `[?#].*$` (toString .) "") "" -}}
+{{- if hasPrefix "//" $rest -}}
+{{- $host := regexReplaceAll `^.*@` (regexReplaceAll `/.*$` (trimPrefix "//" $rest) "") "" -}}
+{{- $host = regexReplaceAll `:[0-9]*$` $host "" -}}
+{{- if and (hasPrefix "[" $host) (hasSuffix "]" $host) -}}
+{{- $host = trimSuffix "]" (trimPrefix "[" $host) | lower -}}
+{{- end -}}
+{{- $octet := `(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])` -}}
+{{- $v4 := printf `127\.%s\.%s\.%s` $octet $octet $octet -}}
+{{- if or (eq $host "localhost") (regexMatch (printf `^%s$` $v4) $host) (regexMatch `^[0:]*:0{0,3}1$` $host) (regexMatch (printf `^[0:]*:ffff:%s$` $v4) $host) (regexMatch `^[0:]*:ffff:7f[0-9a-f]{2}:[0-9a-f]{1,4}$` $host) -}}true{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.jwksTlsViolation — the reason ONE component would refuse
+to boot because its Caradhras JWKS URL is not https in an environment the
+application treats as production, as a detail line for validateJwksTls; ""
+when the component boots, or when the chart cannot tell (service discovery,
+below).
+
+Since application 3.3.0, auth and identity fetch the Caradhras JWKS (the key
+set every token is verified against) over https only, unless ENV_NAME, trimmed
+and lower-cased, is development, staging or local. Any other value
+(production, empty, a typo, `dev`) fails closed, and no other setting relaxes
+it:
+  - auth: TrimRight(<Caradhras address>, "/") + "/.well-known/jwks" must parse
+    with scheme https, where the address is AUTHORIZER_ADDRESS, or the one
+    service discovery resolves when it is on; there is no loopback exemption.
+    Boot fails with "jwks cache upstream must use https".
+  - identity, only when PLUGIN_AUTH_ENABLED parses true (strconv.ParseBool:
+    1, t, T, TRUE, true, True): AUTH_M2M_JWKS_URL (trimmed; from
+    identity.configmap, else identity.extraEnvVars, which renders into the
+    same ConfigMap) or, when empty, the
+    same derivation from AUTHORIZER_ADDRESS. lib-auth accepts https, or http
+    to a loopback host. Boot fails with "initializing m2m jwks key source".
+
+Every input is resolved exactly as the component ConfigMap renders it. The
+check is skipped where the application boots anyway:
+  - ENV_NAME is development, staging or local (same lerian-common.globalValue
+    call as the ConfigMap: native key, global.env.name, cloud preset, default);
+  - the component image predates the gate (imageBeforeJwksGate);
+  - identity with PLUGIN_AUTH_ENABLED not true: the pass-through authenticator
+    fetches no JWKS;
+  - identity with an http JWKS URL on a loopback host (jwksUrlHostIsLoopback).
+It is also skipped where the chart cannot see the address, although the
+requirement still applies:
+  - auth with service discovery on (SD_ENABLED, or the legacy
+    SERVICE_DISCOVERY_ENABLED in auth.extraEnvVars, exactly "true"): the
+    Caradhras address is resolved at runtime and goes through the same https
+    gate, so discovery must resolve Caradhras to https or auth still
+    crash-loops. A render-time blind spot, not an exemption.
+The scheme is read the way net/url reads it (leading letters up to `:`,
+lower-cased), so `HTTPS://` passes as it does in the application.
+
+Input (dict): context (root .), component ("auth" | "identity").
+*/}}
+{{- define "plugin-access-manager.jwksTlsViolation" -}}
+{{- $ctx := .context -}}
+{{- $component := .component -}}
+{{- $values := index $ctx.Values $component -}}
+{{- $cm := $values.configmap | default dict -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ctx "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") -}}
+{{- $check := not (has (lower (trim $envName)) (list "development" "staging" "local")) -}}
+{{- if include "plugin-access-manager.imageBeforeJwksGate" (dict "context" $ctx "component" $component) -}}
+{{- $check = false -}}
+{{- end -}}
+{{- $addr := $cm.AUTHORIZER_ADDRESS | default (printf "http://%s:%v" (include "plugin-caradhras.fullname" $ctx) (include "caradhras.servicePort" $ctx)) | toString -}}
+{{- $url := printf "%s/.well-known/jwks" (regexReplaceAll "/+$" $addr "") -}}
+{{- $source := printf "the chart default for %s.configmap.AUTHORIZER_ADDRESS, the in-cluster Caradhras Service over plain http" $component -}}
+{{- if $cm.AUTHORIZER_ADDRESS -}}
+{{- $source = printf "%s.configmap.AUTHORIZER_ADDRESS" $component -}}
+{{- end -}}
+{{- $loopbackOk := false -}}
+{{- if eq $component "auth" -}}
+{{- $extra := $values.extraEnvVars | default dict -}}
+{{- $legacySd := "" -}}
+{{- if kindIs "map" $extra -}}
+{{- $legacySd = toString (index $extra "SERVICE_DISCOVERY_ENABLED" | default "") -}}
+{{- end -}}
+{{- if or (eq (toString ($cm.SD_ENABLED | default "false")) "true") (eq $legacySd "true") -}}
+{{- $check = false -}}
+{{- end -}}
+{{- else -}}
+{{- if not (has (toString ($cm.AUTH_ENABLED | default "true")) (list "1" "t" "T" "TRUE" "true" "True")) -}}
+{{- $check = false -}}
+{{- end -}}
+{{- $extra := $values.extraEnvVars | default dict -}}
+{{- $explicit := trim (toString ($cm.AUTH_M2M_JWKS_URL | default "")) -}}
+{{- $explicitFrom := "identity.configmap.AUTH_M2M_JWKS_URL" -}}
+{{- if and (not $explicit) (kindIs "map" $extra) -}}
+{{- $explicit = trim (toString (index $extra "AUTH_M2M_JWKS_URL" | default "")) -}}
+{{- $explicitFrom = "identity.extraEnvVars.AUTH_M2M_JWKS_URL" -}}
+{{- end -}}
+{{- if $explicit -}}
+{{- $url = $explicit -}}
+{{- $source = printf "%s, which overrides the URL derived from AUTHORIZER_ADDRESS: make it https too, or remove it" $explicitFrom -}}
+{{- end -}}
+{{- $loopbackOk = true -}}
+{{- end -}}
+{{- if $check -}}
+{{- /* The application url.Parse-s this URL and exits on an error; urlParse is
+       the same parser and aborts the render with "unable to parse url". */ -}}
+{{- $_ := urlParse $url -}}
+{{- end -}}
+{{- $scheme := trimSuffix ":" (regexFind `^[A-Za-z][A-Za-z0-9+.-]*:` $url) | lower -}}
+{{- $bootsAnyway := or (eq $scheme "https") (and $loopbackOk (eq $scheme "http") (include "plugin-access-manager.jwksUrlHostIsLoopback" $url)) -}}
+{{- if and $check (not $bootsAnyway) -}}
+{{- $envSource := "the chart default" -}}
+{{- if hasKey $cm "ENV_NAME" -}}
+{{- $envSource = printf "%s.configmap.ENV_NAME" $component -}}
+{{- else if hasKey (($ctx.Values.global | default dict).env | default dict) "name" -}}
+{{- $envSource = "global.env.name" -}}
+{{- end -}}
+{{- printf "\n   %s: ENV_NAME %q (from %s)\n      JWKS URL %q (from %s)" $component $envName $envSource $url $source -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.validateJwksTls — refuse to render a release that the
+application would refuse to boot because a component would fetch the
+Caradhras JWKS over something other than https in an environment it treats as
+production (see jwksTlsViolation for the exact rule and every case it skips).
+Included once, from templates/auth/configmap.yaml (always rendered), and
+checks BOTH components, so one failure names every component that would
+crash-loop instead of whichever template Helm happens to render first.
+
+Why fail the render: the process exits at startup before its telemetry
+flushes, so the reason is only in `kubectl logs --previous`, nothing reaches
+the log collector, the pods crash-loop and `helm upgrade --wait/--atomic` ends
+in a timeout. Caradhras has no TLS listener and the chart's default
+AUTHORIZER_ADDRESS is its in-cluster Service over http, so every
+production-like install that keeps the default hits this on the upgrade that
+crosses application 3.3.0.
+
+There is deliberately no override value: the application has none, so a knob
+here would only let a guaranteed crash render.
+*/}}
+{{- define "plugin-access-manager.validateJwksTls" -}}
+{{- $failing := list -}}
+{{- $details := "" -}}
+{{- range $component := list "auth" "identity" -}}
+{{- $violation := include "plugin-access-manager.jwksTlsViolation" (dict "context" $ "component" $component) -}}
+{{- if $violation -}}
+{{- $failing = append $failing $component -}}
+{{- $details = print $details $violation -}}
+{{- end -}}
+{{- end -}}
+{{- if $failing -}}
+{{- fail (printf "\n\nERROR: plugin-access-manager: %s would crash-loop at startup: the Caradhras JWKS URL is not https in an environment the application treats as production.%s\n   Since application 3.3.0, auth and identity fetch the JWKS over https whenever ENV_NAME is not development, staging or local, and no setting relaxes this. The process exits before its telemetry flushes, so the reason shows only in `kubectl logs --previous` and helm reports a timeout.\n   Fix: Caradhras serves plain http, so terminate TLS in front of it with caradhras.ingress, using a certificate from a public CA (the chart cannot mount a private CA), and set auth.configmap.AUTHORIZER_ADDRESS and identity.configmap.AUTHORIZER_ADDRESS to the SAME https URL: identity also pins that address as the issuer of M2M tokens.\n   Only if this environment really is not production, set global.env.name to development, staging or local instead; that also switches off the application's production-only behavior.\n   See docs/UPGRADE-9.5.8.md.\n" (join " and " $failing) $details) -}}
 {{- end -}}
 {{- end }}

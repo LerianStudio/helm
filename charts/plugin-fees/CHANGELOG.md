@@ -1,5 +1,700 @@
 # Plugin-fees Changelog
 
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+
+- Pull the bundled MongoDB from an existing image to ensure compatibility and prevent issues with non-existent images. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+
+- Ensure the bundled MongoDB is pulled from an existing image to prevent errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Pull the bundled MongoDB from an existing image to ensure compatibility and prevent errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Ensure the bundled MongoDB is pulled from an existing image to avoid errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Pull the bundled MongoDB from an existing image to ensure compatibility and availability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+
+- Pull the bundled MongoDB from an image that exists to ensure compatibility and prevent errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+
+- Pull the bundled MongoDB from an existing image to ensure compatibility and availability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Pull the bundled MongoDB from an existing image to ensure compatibility and prevent errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+
+- Pull the bundled MongoDB from an image that exists to ensure compatibility and prevent errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+
+- Pull the bundled MongoDB from an existing image to ensure compatibility and availability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Ensure the bundled MongoDB is pulled from an existing image. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Pull the bundled MongoDB from an existing image to ensure compatibility and prevent errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Pull the bundled MongoDB from an existing image to ensure compatibility and prevent errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Pull the bundled MongoDB from an existing image to ensure compatibility and availability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+Fixes:
+- Pull the bundled MongoDB from an existing image to ensure compatibility and availability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists to ensure compatibility and prevent errors.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- **Fixes**
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists to ensure compatibility and prevent errors.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- **Fixes:**
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.3)
+
+- Fixes:
+  - Pull the bundled MongoDB from an image that exists.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.2...plugin-fees-v8.0.3)
+
+---
+
+## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
+
+**Changelog for plugin-fees**
+
+- **Fixes:**
+  - Run the credential sidecar under runtime seccomp to enhance security and compliance. (#2277)
+
+- **Documentation:**
+  - Addressed CodeRabbit findings on UPGRADE-8.0.md to improve clarity and accuracy.
+  - Added an upgrade guide for plugin-fees v8.0.1 to assist users in transitioning smoothly.
+  - Clarified that the CLIENT_ID move is backward-compatible, not breaking, ensuring users are informed of compatibility.
+
+**Contributors:** @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.1...plugin-fees-v8.0.2)
+
+---
+
+## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
+
+**Changelog for plugin-fees**
+
+- **Fixes:**
+  - Run the credential sidecar under runtime seccomp to enhance security. (#2277)
+
+- **Documentation:**
+  - Addressed CodeRabbit findings on UPGRADE-8.0.md to improve clarity and accuracy.
+  - Added an upgrade guide for plugin-fees v8.0.1 to assist users with the transition.
+  - Clarified that the CLIENT_ID move is backward-compatible, not a breaking change.
+  - Created UPGRADE-8.0.md with strict rules to ensure focus on plugin-fees only, using bullet points for clarity.
+
+**Contributors:**
+- @fredcamaral
+- @guimoreirar
+- @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.1...plugin-fees-v8.0.2)
+
+---
+
+## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
+
+**Changelog for plugin-fees**
+
+- **Fixes:**
+  - Run the credential sidecar under runtime seccomp to enhance security (#2277).
+
+- **Documentation:**
+  - Addressed CodeRabbit findings on UPGRADE-8.0.md.
+  - Added an upgrade guide for plugin-fees v8.0.1.
+  - Clarified that the CLIENT_ID move is backward-compatible, not a breaking change.
+  - Created UPGRADE-8.0.md with strict rules to focus solely on plugin-fees.
+
+**Contributors:** @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.1...plugin-fees-v8.0.2)
+
+---
+
+## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
+
+**Changelog for plugin-fees**
+
+**Version 8.0.2**
+- Fix: Run the credential sidecar under runtime seccomp to enhance security. (#2277)
+
+**Version 8.0.1**
+- Documentation: Added an upgrade guide for plugin-fees v8.0.1.
+- Documentation: Clarified that the CLIENT_ID move is backward-compatible and not a breaking change.
+- Documentation: Addressed CodeRabbit findings in UPGRADE-8.0.md.
+
+**Contributors:**
+- @fredcamaral
+- @guimoreirar
+- @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.1...plugin-fees-v8.0.2)
+
+---
+
+## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
+
+**Changelog for plugin-fees**
+
+### v8.0.2
+- **Fixes**
+  - Run the credential sidecar under runtime seccomp to enhance security. (#2277)
+
+### v8.0.1
+- **Documentation**
+  - Added an upgrade guide for plugin-fees v8.0.1.
+  - Addressed CodeRabbit findings on UPGRADE-8.0.md.
+  - Clarified that the CLIENT_ID move is backward-compatible and not a breaking change.
+
+**Contributors:** @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.1...plugin-fees-v8.0.2)
+
+---
+
+## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
+
+- **Fixes:**
+  - Run the credential sidecar under runtime seccomp to enhance security and stability. (#2277)
+
+- **Documentation:**
+  - Addressed CodeRabbit findings in the UPGRADE-8.0.md document for plugin-fees.
+  - Added an upgrade guide for plugin-fees v8.0.1 to assist users with the transition.
+  - Clarified that the CLIENT_ID move is backward-compatible, ensuring no breaking changes.
+
+- **Contributors:**
+  - @fredcamaral
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.1...plugin-fees-v8.0.2)
+
+---
+
+## [8.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.2)
+
+- **Fixes**
+  - Run the credential sidecar under runtime seccomp to enhance security. (#2277, 9c0efc01)
+
+- **Documentation**
+  - Addressed CodeRabbit findings on UPGRADE-8.0.md to improve clarity and accuracy. (1b9f9648)
+  - Added an upgrade guide for plugin-fees v8.0.1 to assist users with the transition. (58c4162c)
+  - Clarified that the CLIENT_ID move is backward-compatible, not breaking, to prevent confusion. (f0fbaa07)
+  - Created UPGRADE-8.0.md with strict guidelines to ensure focus and clarity on plugin-fees updates. (340710ee)
+
+**Contributors:** @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.1...plugin-fees-v8.0.2)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore `CLIENT_ID` backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
+## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
+
+- Fixes:
+  - Restore CLIENT_ID backward compatibility
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.0...plugin-fees-v8.0.1)
+
+---
+
 ## [8.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.1)
 
 - Fixes:

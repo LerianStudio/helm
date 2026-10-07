@@ -49,6 +49,9 @@ data:
   {{- if .Values.bankTransfer.configmap.SERVER_TRUSTED_PROXIES }}
   SERVER_TRUSTED_PROXIES: {{ .Values.bankTransfer.configmap.SERVER_TRUSTED_PROXIES | quote }}
   {{- end }}
+  {{- if .Values.bankTransfer.configmap.TRUSTED_PROXIES }}
+  TRUSTED_PROXIES: {{ .Values.bankTransfer.configmap.TRUSTED_PROXIES | quote }}
+  {{- end }}
   {{- end }}
   ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
   # -- REQUIRE_UPSTREAM_HTTPS: fleet-wide TLS gate on the PII-carrying
@@ -310,6 +313,13 @@ data:
   FEES_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.FEES_AUTH_ENABLED | default "false" | quote }}
   {{- if .Values.bankTransfer.configmap.FEES_TIMEOUT_MS }}
   FEES_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.FEES_TIMEOUT_MS | quote }}
+  {{- end }}
+
+  # Courier (outbound notification/delivery integration, added in app 2.2.0).
+  # Optional — rendered only when configured; the M2M CLIENT_ID/CLIENT_SECRET
+  # live in the Secret (see templates/secrets.yaml), like CRM/FEES.
+  {{- if .Values.bankTransfer.configmap.COURIER_BASE_URL }}
+  COURIER_BASE_URL: {{ .Values.bankTransfer.configmap.COURIER_BASE_URL | quote }}
   {{- end }}
 
   # JD-SPB. In MT mode only mode + polling are exposed; the JD base URL,

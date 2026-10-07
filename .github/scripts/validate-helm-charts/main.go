@@ -62,13 +62,6 @@ var allowlistedCredentialDefaults = map[string]bool{
 	// plugin-access-manager ships a default initUser.adminPassword so existing releases keep
 	// their admin login across upgrades; operators are expected to override it in production.
 	"plugin-access-manager:auth.initUser.adminPassword": true,
-	// fetcher's bundled dev-mode RabbitMQ (rabbitmq.enabled=true) auto-loads
-	// files/rabbitmq/load_definitions.json, which bakes in a fixed
-	// rabbit_password_hashing_sha256 hash for the "plugin" user. This default
-	// must stay in sync with that hash for the bundled path to work
-	// out-of-the-box; operators using external RabbitMQ are expected to
-	// override it (see README's "RABBITMQ_DEFAULT_PASS" note).
-	"fetcher:secrets.RABBITMQ_DEFAULT_PASS": true,
 	// reporter's BUNDLED groundhog2k RabbitMQ (rabbitmq.enabled=true) is dev/local-only —
 	// production points at an EXTERNAL broker with real, per-tier credentials. A configured
 	// load_definitions import makes RabbitMQ skip seeding the default user, so the reporter
@@ -1332,6 +1325,10 @@ var allowedDanglingSecrets = map[string]bool{
 	// cert Secret at runtime via --enable-cert-rotation/--cert-secret-name. KEDA
 	// creates it; no Helm chart renders it.
 	"kedaorg-certs": true,
+	// br-jd-courier renders no Secret by contract: every role and its migration
+	// Job read one operator-provisioned Secret, named by secrets.existingSecret or
+	// the release fullname, which this gate's release name makes br-jd-courier.
+	"br-jd-courier": true,
 }
 
 // danglingSecretRefMessage parses rendered multi-document Helm output, collects

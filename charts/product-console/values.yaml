@@ -4,10 +4,8 @@
 
 # -- Number of replicas for the deployment
 replicaCount: 1
-
 # -- Number of old ReplicaSets to retain for deployment rollback
 revisionHistoryLimit: 10
-
 # -- Readiness probe configuration. All fields override chart defaults.
 # Defaults to '/api/admin/health/alive', which does NOT gate on MongoDB. The
 # image this chart pins opens its database connection on the first request that
@@ -22,15 +20,13 @@ readinessProbe: {}
 # Keep this on a MongoDB-independent path. Pointing it at readyz turns a
 # database outage into a crash-loop.
 livenessProbe: {}
-
 image:
   # -- Repository for the product-console container image
   repository: lerianstudio/product-console
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)
-  tag: "2.0.0"
-
+  tag: "2.8.0"
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
 # - name: regcred
@@ -41,7 +37,6 @@ nameOverride: ""
 fullnameOverride: ""
 # -- Override the namespace
 namespaceOverride: "product-console"
-
 global:
   # -- Env-wide SHARED MongoDB connection mask (set once per environment; a
   # native configmap.<KEY> still overrides it). Consumed by
@@ -96,10 +91,8 @@ global:
       roles:
         - role: "readWrite"
           db: "midaz-console"
-
 # -- Annotations to be added to the Pod
 podAnnotations: {}
-
 podSecurityContext: {}
 # fsGroup: 2000
 
@@ -118,7 +111,6 @@ securityContext:
   readOnlyRootFilesystem: true
   seccompProfile:
     type: RuntimeDefault
-
 # -- PodDisruptionBudget configuration
 pdb:
   # -- Enable or disable PodDisruptionBudget
@@ -129,7 +121,6 @@ pdb:
   maxUnavailable: 1
   # -- Annotations for the PodDisruptionBudget
   annotations: {}
-
 # -- Deployment update strategy
 deploymentStrategy:
   # -- Type of deployment strategy
@@ -139,7 +130,6 @@ deploymentStrategy:
     maxSurge: 1
     # -- Maximum number of pods that can be unavailable during the update
     maxUnavailable: 0
-
 service:
   # -- Kubernetes service type
   type: ClusterIP
@@ -147,7 +137,6 @@ service:
   port: 8081
   # -- Service annotations
   annotations: {}
-
 ingress:
   # -- Enable or disable ingress
   enabled: false
@@ -165,7 +154,6 @@ ingress:
   # - secretName: product-console-tls
   #   hosts:
   #     - product-console.example.local
-
 resources:
   # -- CPU and memory limits for pods
   limits:
@@ -175,7 +163,6 @@ resources:
   requests:
     cpu: 512m
     memory: 512Mi
-
 autoscaling:
   # -- Enable or disable horizontal pod autoscaling
   enabled: false
@@ -187,16 +174,12 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # -- Target memory utilization percentage for autoscaling
   targetMemoryUtilizationPercentage: 80
-
 # -- Node selector for scheduling pods on specific nodes
 nodeSelector: {}
-
 # -- Tolerations for scheduling on tainted nodes
 tolerations: []
-
 # -- Affinity rules for pod scheduling
 affinity: {}
-
 serviceAccount:
   # -- Specifies whether a ServiceAccount should be created
   create: true
@@ -204,7 +187,6 @@ serviceAccount:
   annotations: {}
   # -- Name of the service account (defaults to fullname)
   name: ""
-
 # -- OpenTelemetry Configuration
 # When enabled or external, configures OTEL endpoints dynamically
 otel:
@@ -218,7 +200,6 @@ otel:
   host: ""
   # -- OTEL collector HTTP port (OTLP/HTTP protocol)
   port: 4318
-
 # -- ConfigMap for environment variables and configurations.
 # All values here will be set as environment variables in the deployment.
 # Every key and its shipped default live ONLY in templates/configmap.yaml
@@ -285,15 +266,17 @@ otel:
 #     challenge, and a user who has MFA enabled cannot sign in at all.
 #
 #   FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
+#   LENDER_BASE_PATH:  "http://lender.lender.svc.cluster.local:4017/api/v1"
+#   MATCHER_BASE_PATH: "http://matcher.matcher.svc.cluster.local:8080"
 #   TRACER_BASE_PATH:  "http://midaz-tracer.midaz.svc.cluster.local:4020"
-#     Addresses of two OPTIONAL sibling services. Unlike the ledger and the
+#     Addresses of four OPTIONAL sibling services. Unlike the ledger and the
 #     Access Manager, these may simply not be installed, which is why the chart
 #     invents no address for them: a default would turn "this feature is not
-#     installed" into a connection error on the page. Set the one you deployed,
-#     to its own release name and namespace. TRACER_BASE_PATH is a bare origin
-#     with no /v1 — the console adds that itself; FLOWKER_BASE_PATH ends in /v1.
+#     installed" into a connection error on the page. Set the ones you deployed,
+#     each to its own release name and namespace. TRACER_BASE_PATH and
+#     MATCHER_BASE_PATH are bare origins with no /v1 — the console adds that
+#     itself; FLOWKER_BASE_PATH ends in /v1 and LENDER_BASE_PATH in /api/v1.
 configmap: {}
-
 # -- Extra environment variables from ConfigMap (merged with configmap values)
 # The passthrough for every console variable the chart does not declare above.
 # Each key is written into the same ConfigMap the pod loads, so it reaches the
@@ -304,7 +287,6 @@ configmap: {}
 # installs need no change, but a key set in both places is refused at render
 # time rather than emitted twice.
 extraEnvVars: {}
-
 # -- Secrets for storing sensitive data
 # All values here will be base64 encoded and set as environment variables
 secrets:
@@ -315,17 +297,15 @@ secrets:
   PLUGIN_AUTH_CLIENT_SECRET: ""
   NEXTAUTH_SECRET: ""
   # -- MongoDB password. Leave it empty with the bundled MongoDB: the console
-  # reads the subchart's own generated password. Setting it here takes over, so
+  # reads the password this chart keeps for it. Setting it here takes over, so
   # it then has to match the password the subchart actually runs with: that is
   # mongodb.auth.rootPassword, or the password inside the Secret named by
   # mongodb.auth.existingSecret whenever you set that instead.
   MONGODB_PASS: ""
-
 # -- Use existing secret instead of creating one
 useExistingSecret: false
 # -- Name of the existing secret to use
 existingSecretName: ""
-
 # =============================================================================
 # Optional Dependencies
 # =============================================================================
@@ -340,7 +320,7 @@ existingSecretName: ""
 # Service with mongodb.service.nameOverride, and there is no single right
 # default: the chart then REFUSES TO RENDER until you set configmap.MONGO_HOST
 # yourself, and the refusal prints the value to set.
-# Its PASSWORD is read for you, straight from the Secret the subchart generates
+# Its PASSWORD is read for you, straight from the Secret this chart keeps for it
 # (key mongodb-root-password), whenever that Secret lands in the same namespace
 # as the console pods: install with '-n product-console', the namespace this
 # chart pins, and leave global.namespaceOverride unset, and it does. Split them,
@@ -350,24 +330,24 @@ existingSecretName: ""
 # auth error. The install notes say which of the two cases you are in.
 mongodb:
   enabled: true
-
   global:
     security:
       allowInsecureImages: true
-
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
-
   external: false
   auth:
     enabled: true
     rootUser: midaz
     rootPassword: ""
-
+    # -- Secret with the root password. The default points the subchart at the one
+    # this chart keeps across uninstall (templates/mongodb-secret.yaml); the
+    # console's templates read it as empty. Name your own Secret to replace it.
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
-
   persistence:
     size: 8Gi
-
+    # -- The data volume outlives the release: helm uninstall keeps it.
+    resourcePolicy: keep
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

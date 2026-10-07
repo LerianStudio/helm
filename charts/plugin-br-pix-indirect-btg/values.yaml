@@ -529,11 +529,8 @@ outbound:
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
-    # Redis Configuration
-    REDIS_HOST: ""
-    # Webhook URLs (Client-specific)
+    # Webhook URLs (Client-specific). WEBHOOK_DEFAULT_URL is required when an enabled entity has no entity or flow URL.
     WEBHOOK_DEFAULT_URL: ""
-    WEBHOOK_CLIENT_URL: ""
     WEBHOOK_DICT_CLAIM_URL: ""
     WEBHOOK_DICT_INFRACTION_REPORT_URL: ""
     WEBHOOK_DICT_REFUND_URL: ""
@@ -829,6 +826,8 @@ postgresql:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+    # latest (PostgreSQL 18.6.0), pinned: PostgreSQL refuses a data directory of another major.
+    digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
   auth:
     enabled: true
     enablePostgresUser: false
@@ -872,10 +871,16 @@ mongodb:
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
+    # latest (MongoDB 8.3.11), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:c8babafb7d15a7412543a9a391ffee8ba206c4d10dd6a1ba2ae2bf74fdfe538b"
   auth:
     enabled: true
     rootUser: pix_btg
     rootPassword: ""
+  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
+  # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+  updateStrategy:
+    type: Recreate
 otel-collector-lerian:
   enabled: true
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

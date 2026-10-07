@@ -275,10 +275,6 @@
           },
           "additionalProperties": true
         },
-        "podSecurityContext": {
-          "type": "object",
-          "additionalProperties": true
-        },
         "securityContext": {
           "type": "object",
           "properties": {
@@ -717,10 +713,6 @@
               "additionalProperties": true
             }
           },
-          "additionalProperties": true
-        },
-        "podSecurityContext": {
-          "type": "object",
           "additionalProperties": true
         },
         "securityContext": {

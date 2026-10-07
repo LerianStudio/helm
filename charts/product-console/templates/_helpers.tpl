@@ -114,16 +114,12 @@ Mirror the rule the Service and the Secret follow.
 {{- end }}
 
 {{/*
-Secret the bundled MongoDB subchart's root password lives in: the one the
-operator supplied through mongodb.auth.existingSecret, else the one the subchart
-generates under its own name. Same resolution as the subchart's mongodb.secretName.
+Secret the bundled MongoDB's root password lives in: the one the operator named in
+mongodb.auth.existingSecret, else the one this chart keeps under the subchart's name
+(templates/mongodb-secret.yaml), whose shipped existingSecret renders "" here.
 */}}
 {{- define "product-console.mongodb.secretName" -}}
-{{- if .Values.mongodb.auth.existingSecret -}}
-{{- .Values.mongodb.auth.existingSecret -}}
-{{- else -}}
-{{- include "product-console.mongodb.fullname" . -}}
-{{- end -}}
+{{- tpl (.Values.mongodb.auth.existingSecret | default "" | toString) . | default (include "product-console.mongodb.fullname" .) -}}
 {{- end }}
 
 {{/*
@@ -197,6 +193,8 @@ application's own built-in default stays in force.
 {{- define "product-console.optionalConfigKeys" -}}
 {{- list
   "FLOWKER_BASE_PATH"
+  "LENDER_BASE_PATH"
+  "MATCHER_BASE_PATH"
   "MFA_ENABLED"
   "MIDAZ_V2_BASE_PATH"
   "PLUGIN_AUTH_PUBLIC_BASE_PATH"

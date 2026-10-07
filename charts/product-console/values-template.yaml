@@ -109,8 +109,11 @@ configmap:
 
   # Optional sibling services. Set only the ones you deployed; an unset key is
   # written nowhere, which is what keeps "not installed" from reading as a
-  # connection error on the page. TRACER_BASE_PATH is a bare origin, no /v1.
+  # connection error on the page. TRACER_BASE_PATH and MATCHER_BASE_PATH are
+  # bare origins, no /v1; LENDER_BASE_PATH ends in /api/v1.
   # FLOWKER_BASE_PATH: "http://flowker.flowker.svc.cluster.local:4021/v1"
+  # LENDER_BASE_PATH: "http://lender.lender.svc.cluster.local:4017/api/v1"
+  # MATCHER_BASE_PATH: "http://matcher.matcher.svc.cluster.local:8080"
   # TRACER_BASE_PATH: "http://midaz-tracer.midaz.svc.cluster.local:4020"
 
   # Client IP resolution. Comma list of CIDRs the console trusts as its own

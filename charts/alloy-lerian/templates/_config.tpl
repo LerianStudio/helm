@@ -32,7 +32,7 @@ protocol, sanitises it, and forwards it.
 // this file from semantic parameters, and manual edits are lost on upgrade.
 
 logging {
-  level  = {{ .Values.logging.level | default "info" | quote }}
+  level  = {{ include "alloy-lerian.logLevel" . | quote }}
   format = "logfmt"
 }
 {{ include "alloy-lerian.config.fleet" (dict "ctx" . "papel" "node") }}
@@ -658,7 +658,7 @@ project's own reference chart keeps a dedicated singleton role for this reason.
 // Managed by the alloy-lerian chart. Single-replica role: cluster-scope state.
 
 logging {
-  level  = {{ .Values.logging.level | default "info" | quote }}
+  level  = {{ include "alloy-lerian.logLevel" . | quote }}
   format = "logfmt"
 }
 {{ include "alloy-lerian.config.fleet" (dict "ctx" . "papel" "singleton") }}

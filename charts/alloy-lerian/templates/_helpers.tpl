@@ -121,6 +121,29 @@ bandwidth across the public network and processing at the destination.
 A value below the floor is REJECTED, not clamped. Clamping would hide the
 divergent intent of whoever configured it.
 */}}
+{{/*
+==============================================================================
+NIVEL DE LOG — validado, nunca corrigido em silencio
+==============================================================================
+O agente aceita error | warn | info | debug. Um valor fora disso ele RECUSA na
+partida — e a recusa aparece no log do pod, que e exatamente o que se estava
+tentando configurar. Falhar no render troca esse diagnostico circular por uma
+mensagem que nomeia o valor errado e os aceitos.
+
+Default `error`: o cluster e do cliente, e MEDIDO em instalacao ociosa sao 99
+linhas `info` para 7 `error`. Ver a nota no values para o que `error` esconde —
+sobretudo a confirmacao de carga do Fleet e o retry de entrega, ambos `info`.
+*/}}
+{{- define "alloy-lerian.logLevel" -}}
+{{- $n := (.Values.logging).level | default "error" -}}
+{{- $aceitos := list "error" "warn" "info" "debug" -}}
+{{- if not (has $n $aceitos) -}}
+{{- fail (printf "\n\nalloy-lerian: logging.level %q nao e aceito.\n\nValores validos: error | warn | info | debug\n\nO agente recusaria esta config na PARTIDA, e a recusa apareceria so no log do\npod — o mesmo log que se estava tentando configurar. Por isso falha aqui.\n\n  logging:\n    level: debug    # para diagnosticar; volte para `error` depois\n" $n) -}}
+{{- end -}}
+{{- $n -}}
+{{- end -}}
+
+
 {{- define "alloy-lerian.interval" -}}
 {{- $i := .Values.collection.interval | default "60s" -}}
 {{- $seconds := 0 -}}

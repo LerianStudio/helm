@@ -1104,8 +1104,44 @@ receiver:
 inspection:
   enabled: false
 
+# ---------------------------------------------------------------------------
+# NIVEL DE LOG DO AGENTE — ajustavel para troubleshooting
+# ---------------------------------------------------------------------------
+# `error` por padrao: o cluster e do cliente, e o agente nao deve gastar o disco
+# dele narrando operacao normal. MEDIDO em bancada, numa instalacao ociosa
+# (sem trafego de aplicacao): 99 linhas `info` contra 7 `error`.
+#
+# Valores aceitos: error | warn | info | debug. Qualquer outro FALHA o render —
+# o agente recusaria a config na partida, e ai a falha so apareceria no log do
+# pod, que e justamente o que esta sendo configurado.
+#
+# ⚠️ O QUE `error` DEIXA DE MOSTRAR, e isto importa saber antes de precisar:
+#
+#   - "successfully loaded remote configuration" e `info`. E a confirmacao de
+#     que o Fleet carregou — e no BYOC o Fleet governa a coleta inteira. Com
+#     `error` nao ha linha positiva alguma dizendo que a configuracao remota
+#     entrou; o silencio passa a ser o unico sinal de sucesso.
+#
+#   - falha de entrega aparece em DOIS niveis, e so o pior deles e `error`:
+#
+#       level=error  "Exporting failed. Dropping data."              <- descarte
+#       level=info   "Exporting failed. Will retry the request..."   <- retry
+#
+#     Ou seja: com `error` o cliente ve a perda definitiva, mas NAO ve o destino
+#     intermitente que ainda se recupera no retry. Um destino instavel fica
+#     invisivel ate comecar a descartar.
+#
+# Para diagnosticar, suba o nivel, reproduza e volte para `error`:
+#
+#   helm upgrade ... --set logging.level=debug
+#
+# ⚠️ `debug` em cluster de cliente merece cuidado: o volume cresce muito e o
+# agente passa a narrar avaliacao de componente a cada ciclo. Nao e canal de
+# vazamento de PII — as regras de sanitizacao atuam no corpo que TRAFEGA, e o
+# log do agente nao transcreve corpo de registro — mas `livedebugging`, esse
+# sim, transmite carga crua, e por isso e recusado no perfil `client`.
 logging:
-  level: "info"
+  level: "error"
 
 # ---------------------------------------------------------------------------
 # FLEET MANAGEMENT — gestão remota de configuração, desligada por padrão

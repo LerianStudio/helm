@@ -1,0 +1,74 @@
+{{- if and .Values.agent.enabled .Values.agent.networkPolicy.enabled }}
+{{- $name := include "lerian-agent.name" . }}
+{{- $fullname := include "lerian-agent.fullname" . }}
+# Egress of the agent. No ingress rule: it receives no inbound connections.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
+spec:
+  # The name label, not the Deployment's selector: the throwaway Pod a
+  # self-update runs a new build in carries app.kubernetes.io/name=<Deployment
+  # name> and nothing the ReplicaSet would adopt, and needs the same egress.
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          {{- range list $name $fullname | uniq }}
+          - {{ . | quote }}
+          {{- end }}
+  policyTypes:
+    - Egress
+  egress:
+{{- include "lerian-agent.egress" . }}
+{{- end }}
+
+{{- define "lerian-agent.egress" }}
+    # DNS resolution (kube-system CoreDNS only, to prevent DNS exfiltration).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Kubernetes API - required for every Helm operation.
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.agent.networkPolicy.kubernetesApiCidr | quote }}
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443
+
+    # Control plane and chart registries: the port CONTROL_PLANE_URL names, 443,
+    # and every port an AGENT_ALLOWED_CHART_REGISTRIES entry names. A port
+    # missing here is dropped, not refused: the agent hangs until its timeout.
+    {{- $u := urlParse .Values.agent.configmap.CONTROL_PLANE_URL }}
+    {{- $cpPort := include "lerian-agent.hostPort" $u.host | default (ternary "80" "443" (eq $u.scheme "http")) }}
+    {{- $ports := list $cpPort "443" }}
+    {{- range include "lerian-agent.csv" .Values.agent.configmap.AGENT_ALLOWED_CHART_REGISTRIES | fromJsonArray }}
+    {{- with include "lerian-agent.hostPort" (first (splitList "/" .)) }}
+    {{- $ports = append $ports . }}
+    {{- end }}
+    {{- end }}
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.agent.networkPolicy.controlPlaneCidr | quote }}
+      ports:
+        {{- range $ports | uniq }}
+        - protocol: TCP
+          port: {{ . | int }}
+        {{- end }}
+    {{- with .Values.agent.networkPolicy.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

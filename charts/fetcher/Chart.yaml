@@ -8,7 +8,7 @@ home: https://github.com/LerianStudio/fetcher
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 3.1.4
+version: 3.3.0
 appVersion: "3.1.0"
 keywords:
   - midaz
@@ -18,6 +18,9 @@ keywords:
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # Dependencies
 dependencies:
+  - name: lerian-common-helm
+    version: "2.3.0"
+    repository: "oci://ghcr.io/lerianstudio"
   - name: keda
     version: "2.17.1"
     repository: "https://kedacore.github.io/charts"

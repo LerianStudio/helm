@@ -50,7 +50,7 @@ spec:
           image: {{ $img | quote }}
           imagePullPolicy: Always
           {{- else }}
-          image: "{{ $img.repository | default "ghcr.io/lerianstudio/caradhras-ui" }}:{{ $img.tag | default "1.2.0" }}"
+          image: "{{ $img.repository | default "ghcr.io/lerianstudio/caradhras-ui" }}:{{ $img.tag | default "1.4.0" }}"
           imagePullPolicy: {{ $img.pullPolicy | default "Always" }}
           {{- end }}
           ports:

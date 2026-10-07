@@ -3,6 +3,32 @@
 ## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.2.0)
 
 Features:
+- Added topology spread preset and ensured component secrets take precedence over shared ones. (@guimoreirar)
+- Adopted lerian-common cloud masks for datastores, object storage, authentication, streaming, and multi-tenancy. (@guimoreirar)
+
+Fixes:
+- Merged worker service account annotations and documented `global.streaming.enabled`. (@guimoreirar)
+- Addressed review comments on telemetry, extra environment variables, and empty secrets. (@guimoreirar)
+- Defaulted `STREAMING_CLOUDEVENTS_SOURCE` to the roster name. (@guimoreirar)
+- Stopped the bundled RabbitMQ from shipping with a public password. (@fredcamaral)
+- Allowed bootstrap jobs to finish under a mesh sidecar. (@fredcamaral)
+- Reserved `VERSION/OTEL_RESOURCE_SERVICE_VERSION` in the worker deduplication list. (@guimoreirar)
+- Filtered mask-generated keys from `worker.extraEnvVars`. (@guimoreirar)
+- Pinned stable `lerian-common` `2.0.0`, derived management scheme, deduplicated streaming keys, and allow-listed kind readiness. (@guimoreirar)
+- Wired up a previously non-functional top-level secrets block, added `ALLOW_INSECURE_TLS`, and configured streaming. (@guimoreirar)
+
+Improvements:
+- Added Helm upgrade guides for `fetcher` `v3.1.2`, `v3.1.3`, and `v3.1.4`. (@guimoreirar)
+- Corrected the upgrade guide for `v3.1.4`. (@guimoreirar)
+- Maintained the mesh sidecar comment to its invariant. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.1.4...fetcher-v3.2.0)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.2.0)
+
+Features:
 - Added topology spread preset and ensured component-specific secrets take precedence over shared ones. (@guimoreirar)
 - Adopted lerian-common cloud masks for various components such as datastores, object storage, authentication, streaming, and multi-tenancy. (@guimoreirar)
 

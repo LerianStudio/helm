@@ -122,10 +122,31 @@ global:
       hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
       zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
       maxSkew: 1               # integer >= 1
+      minDomains: 0            # DoNotSchedule constraints only; 0 = off
+      nodeTaintsPolicy: ""     # Honor | Ignore | "" (Kubernetes default Ignore)
 bankTransfer:
   spread: { hostname: DoNotSchedule }  # field-level override
   topologySpreadConstraints: []        # raw list; non-empty replaces the preset
 ```
+
+On EKS + Karpenter use a hard node spread:
+
+```yaml
+global:
+  scheduling:
+    spread:
+      hostname: DoNotSchedule
+      zone: ScheduleAnyway
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: Honor
+```
+
+`minDomains: 2` is required with `DoNotSchedule`. Skew is measured only against nodes
+that already exist, so on a single eligible node all replicas would otherwise share
+it. With fewer than 2 nodes the extra replica stays `Pending` until Karpenter launches
+another node. `nodeTaintsPolicy: Honor` stops tainted nodes (for example a node being
+drained) from counting as domains.
 
 Precedence: `bankTransfer.topologySpreadConstraints` (non-empty, wins entirely) >
 `bankTransfer.spread.<field>` > `global.scheduling.spread.<field>` > off. Each preset
@@ -201,7 +222,7 @@ bankTransfer:
 | `bankTransfer.autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
 | `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas | `2` |
 | `bankTransfer.autoscaling.maxReplicas` | Maximum number of replicas | `5` |
-| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1}` |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew / minDomains / nodeTaintsPolicy), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1, minDomains: 0, nodeTaintsPolicy: ""}` |
 | `bankTransfer.spread` | Field-level override of `global.scheduling.spread` | `{}` |
 | `bankTransfer.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `bankTransfer.nodeSelector` | Node selector for scheduling pods | `{}` |

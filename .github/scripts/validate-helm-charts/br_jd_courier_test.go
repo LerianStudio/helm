@@ -14,11 +14,19 @@ import (
 // render runs against the working tree; helm-chart-standard.yml runs this file
 // on every pull request that touches charts/br-jd-courier.
 
-const courierChart = "../../../charts/br-jd-courier"
+const (
+	courierChart = "../../../charts/br-jd-courier"
+	// The render gate's values: the chart refuses to render without
+	// config.ENVIRONMENT_NAME, so every render here starts from them.
+	courierFixture = "../../configs/helm-render-values/br-jd-courier.yaml"
+)
 
 var courierRoles = []string{"admin", "pix-ingress", "spb-consumer", "spb-sender"}
 
-func renderCourier(t *testing.T, args ...string) (string, error) {
+// A production install that passes every production refusal.
+var courierProduction = []string{"--set", "config.ENVIRONMENT_NAME=production", "--set", "config.POSTGRES_SSLMODE=verify-full", "--set", "roles.spbSender.soapTls.terminatedUpstream=true"}
+
+func helmTemplate(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 	if _, err := exec.LookPath("helm"); err != nil {
 		if os.Getenv("CI") != "" {
@@ -28,6 +36,11 @@ func renderCourier(t *testing.T, args ...string) (string, error) {
 	}
 	out, err := exec.Command("helm", append([]string{"template", "t", courierChart}, args...)...).CombinedOutput()
 	return string(out), err
+}
+
+func renderCourier(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+	return helmTemplate(t, append([]string{"-f", courierFixture}, args...)...)
 }
 
 func courierManifests(t *testing.T, args ...string) []map[string]interface{} {
@@ -112,6 +125,20 @@ func TestCourierRefusesWhatTheContractForbids(t *testing.T) {
 		{"a PEM key anywhere in the values", "carries a PEM private key", []string{"--set-string", "podAnnotations.note=-----BEGIN PRIVATE KEY-----MIIB"}},
 		{"a long PEM key toYaml may fold", "carries a PEM private key", []string{"--set-string", "podAnnotations.note=" + strings.Repeat("word ", 30) + "-----BEGIN ENCRYPTED PRIVATE KEY-----MIIB"}},
 		{"a boolean MULTI_TENANT_ENABLED with the migration Job", "MULTI_TENANT_ENABLED=true", []string{"--set", "config.MULTI_TENANT_ENABLED=true"}},
+		{"an empty ENVIRONMENT_NAME", "config.ENVIRONMENT_NAME is required", []string{"--set-string", "config.ENVIRONMENT_NAME="}},
+		{"a blank ENVIRONMENT_NAME", "config.ENVIRONMENT_NAME is required", []string{"--set-string", "config.ENVIRONMENT_NAME=  "}},
+		{"a production spb-sender with no SOAP TLS", "roles.spbSender in production needs TLS", []string{"--set", "config.ENVIRONMENT_NAME=production", "--set", "config.POSTGRES_SSLMODE=verify-full"}},
+	}
+	for _, key := range []string{"SOAP_TLS_CERT_FILE", "SOAP_TLS_KEY_FILE", "SOAP_TLS_TERMINATED_UPSTREAM"} {
+		cases = append(cases, refusal{key + " as a value", "config." + key + " is refused", []string{"--set", "config." + key + "=x"}})
+	}
+	// Anything weaker than require may connect in plaintext; the driver reads the mode case-sensitively.
+	for _, mode := range []string{"", "disable", "allow", "prefer", "Require"} {
+		cases = append(cases, refusal{fmt.Sprintf("POSTGRES_SSLMODE=%q in production", mode), fmt.Sprintf("config.POSTGRES_SSLMODE=%q is refused in production", mode), append(append([]string{}, courierProduction...), "--set-string", "config.POSTGRES_SSLMODE="+mode)})
+	}
+	// Every spelling lib-commons reads as true.
+	for _, spelling := range []string{"true", "1", "yes", "on", " TRUE "} {
+		cases = append(cases, refusal{fmt.Sprintf("ALLOW_INSECURE_TLS=%q in production", spelling), "config.ALLOW_INSECURE_TLS=true is refused in production", append(append([]string{}, courierProduction...), "--set-string", "config.ALLOW_INSECURE_TLS="+spelling)})
 	}
 	for _, key := range []string{"LICENSE_KEY", "DATABASE_URL", "POSTGRES_PASSWORD", "POSTGRES_REPLICA_PASSWORD", "REDIS_PASSWORD", "MULTI_TENANT_REDIS_PASSWORD", "MULTI_TENANT_SERVICE_API_KEY", "JD_PASSWORD", "JD_PRIVATE_KEY_PEM"} {
 		cases = append(cases, refusal{key + " as a value", "config." + key + " is refused", []string{"--set", "config." + key + "=sentinel"}})
@@ -119,6 +146,9 @@ func TestCourierRefusesWhatTheContractForbids(t *testing.T) {
 	// Every spelling strconv.ParseBool reads as true, and one it does not.
 	for _, spelling := range []string{"true", "True", "t", "1", " true "} {
 		cases = append(cases, refusal{fmt.Sprintf("MULTI_TENANT_ENABLED=%q with the migration Job", spelling), "MULTI_TENANT_ENABLED=true", []string{"--set-string", "config.MULTI_TENANT_ENABLED=" + spelling}})
+	}
+	if out, err := helmTemplate(t); err == nil || !strings.Contains(out, "config.ENVIRONMENT_NAME is required") {
+		t.Errorf("the chart's own defaults must refuse for want of ENVIRONMENT_NAME: %s", oneLine(out))
 	}
 	for _, c := range cases {
 		out, err := renderCourier(t, c.args...)
@@ -136,6 +166,13 @@ func TestCourierRefusesWhatTheContractForbids(t *testing.T) {
 		{"--set", "migrations.enabled=false", "--set", "config.MULTI_TENANT_ENABLED=true"},
 		{"--set-string", "podAnnotations.ca=-----BEGIN CERTIFICATE-----MIIB", "--set-string", "podAnnotations.note=rotate the PRIVATE KEY yearly"},
 		{"--set", "roles.spbSender.replicas=5", "--set", "roles.admin.replicas=3", "--set", "roles.pixIngress.replicas=4"},
+		// Outside production the operator owns these.
+		{"--set", "config.ENVIRONMENT_NAME=staging", "--set", "config.POSTGRES_SSLMODE=disable", "--set", "config.ALLOW_INSECURE_TLS=true"},
+		courierProduction,
+		append(append([]string{}, courierProduction...), "--set", "config.ALLOW_INSECURE_TLS=false", "--set", "config.POSTGRES_SSLMODE=require"),
+		{"--set", "config.ENVIRONMENT_NAME=production", "--set", "config.POSTGRES_SSLMODE=verify-ca", "--set", "roles.spbSender.ingress.enabled=true"},
+		{"--set", "config.ENVIRONMENT_NAME=production", "--set", "config.POSTGRES_SSLMODE=verify-full", "--set", "roles.spbSender.soapTls.existingSecret=soap-tls"},
+		{"--set", "config.ENVIRONMENT_NAME=production", "--set", "config.POSTGRES_SSLMODE=verify-full", "--set", "roles.spbSender.enabled=false"},
 	} {
 		if out, err := renderCourier(t, args...); err != nil {
 			t.Errorf("%v: refused, want a render: %s", args, oneLine(out))
@@ -160,6 +197,13 @@ func TestCourierDefaultRender(t *testing.T) {
 	cm := ofKind(docs, "ConfigMap")
 	if len(cm) != 1 || dig(cm[0], "data", "PLUGIN_AUTH_ENABLED") != "true" || dig(cm[0], "data", "OTEL_EXPORTER_OTLP_ENDPOINT") != nil {
 		t.Errorf("the one ConfigMap must turn authentication on and carry no OTLP endpoint: %v", cm)
+	}
+	// A cluster install is never local, and telemetry names the environment the service runs as.
+	if dig(cm[0], "data", "DEPLOYMENT_MODE") != "byoc" || dig(cm[0], "data", "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT") != dig(cm[0], "data", "ENVIRONMENT_NAME") {
+		t.Errorf("DEPLOYMENT_MODE must default to byoc and the OTEL environment follow ENVIRONMENT_NAME: %v", dig(cm[0], "data"))
+	}
+	if ingresses := ofKind(docs, "Ingress"); len(ingresses) != 0 {
+		t.Errorf("the default render carries %d Ingress(es), want none", len(ingresses))
 	}
 
 	deployments := ofKind(docs, "Deployment")
@@ -245,6 +289,62 @@ func TestCourierValuesMoveWhatTheyName(t *testing.T) {
 		byName, _ := env(container(d))
 		if dig(byName["LICENSE_KEY"], "valueFrom", "secretKeyRef", "name") != "courier-secrets" {
 			t.Errorf("%s: secrets.existingSecret does not name the LICENSE_KEY Secret", nestedString(d, "metadata", "name"))
+		}
+	}
+
+	cm := ofKind(courierManifests(t, "--set", "config.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=prod-eu", "--set", "config.DEPLOYMENT_MODE=saas"), "ConfigMap")
+	if len(cm) != 1 || dig(cm[0], "data", "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT") != "prod-eu" || dig(cm[0], "data", "DEPLOYMENT_MODE") != "saas" {
+		t.Errorf("config must override the derived OTEL environment and DEPLOYMENT_MODE: %v", cm)
+	}
+}
+
+// Each SOAP TLS shape reaches the spb-sender alone: the other roles serve no SOAP.
+func TestCourierSOAPTLSShapes(t *testing.T) {
+	docs := courierManifests(t,
+		"--set", "roles.spbSender.ingress.enabled=true",
+		"--set", "roles.spbSender.ingress.className=alb",
+		"--set", "roles.spbSender.ingress.hosts[0].host=jd.example",
+		"--set", "roles.spbSender.ingress.hosts[0].paths[0].path=/",
+		"--set", "roles.spbSender.soapTls.existingSecret=soap-tls-cert")
+
+	ingresses := ofKind(docs, "Ingress")
+	if len(ingresses) != 1 {
+		t.Fatalf("rendered %d Ingresses, want 1", len(ingresses))
+	}
+	rule := dig(ingresses[0], "spec", "rules").([]interface{})[0]
+	backend := dig(rule, "http", "paths").([]interface{})[0]
+	if dig(ingresses[0], "spec", "ingressClassName") != "alb" || dig(rule, "host") != "jd.example" ||
+		dig(backend, "backend", "service", "name") != "t-br-jd-courier-spb-sender" || dig(backend, "backend", "service", "port", "name") != "soap" {
+		t.Errorf("the Ingress must route its host to the spb-sender's SOAP port: %v", ingresses[0])
+	}
+
+	for _, d := range ofKind(docs, "Deployment") {
+		name := nestedString(d, "metadata", "name")
+		c := container(d)
+		byName, _ := env(c)
+		volumes, _ := dig(d, "spec", "template", "spec", "volumes").([]interface{})
+		if name != "t-br-jd-courier-spb-sender" {
+			if _, ok := byName["SOAP_TLS_TERMINATED_UPSTREAM"]; ok || len(volumes) != 0 || byName["SOAP_TLS_CERT_FILE"] != nil {
+				t.Errorf("%s serves no SOAP and must carry no SOAP TLS", name)
+			}
+			continue
+		}
+		mounts, _ := c["volumeMounts"].([]interface{})
+		if dig(byName["SOAP_TLS_TERMINATED_UPSTREAM"], "value") != "true" ||
+			dig(byName["SOAP_TLS_CERT_FILE"], "value") != "/etc/jd-courier/soap-tls/tls.crt" ||
+			dig(byName["SOAP_TLS_KEY_FILE"], "value") != "/etc/jd-courier/soap-tls/tls.key" ||
+			len(volumes) != 1 || dig(volumes[0], "secret", "secretName") != "soap-tls-cert" ||
+			len(mounts) != 1 || dig(mounts[0], "mountPath") != "/etc/jd-courier/soap-tls" || dig(mounts[0], "readOnly") != true ||
+			dig(c, "securityContext", "readOnlyRootFilesystem") != true {
+			t.Errorf("%s: the Ingress and the mounted certificate must both reach the SOAP listener, read-only: %v %v", name, byName, volumes)
+		}
+	}
+
+	for _, d := range ofKind(courierManifests(t, "--set", "roles.spbSender.soapTls.terminatedUpstream=true"), "Deployment") {
+		byName, _ := env(container(d))
+		_, upstream := byName["SOAP_TLS_TERMINATED_UPSTREAM"]
+		if upstream != (nestedString(d, "metadata", "name") == "t-br-jd-courier-spb-sender") || byName["SOAP_TLS_CERT_FILE"] != nil {
+			t.Errorf("%s: soapTls.terminatedUpstream must reach the spb-sender alone, with no certificate", nestedString(d, "metadata", "name"))
 		}
 	}
 }

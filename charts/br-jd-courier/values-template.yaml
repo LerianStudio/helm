@@ -17,16 +17,43 @@ secrets:
 # Non-secret environment, one ConfigMap shared by every role. Secret keys and
 # COURIER_ROLES are refused here.
 config:
+  # Required: the render refuses without it. "production" turns on the service's
+  # production checks and the render's (POSTGRES_SSLMODE, ALLOW_INSECURE_TLS,
+  # SOAP TLS below); the value is also the environment segment of every
+  # credential path (tenants/{env}/...).
   ENVIRONMENT_NAME: ""
+  # byoc in the client's cloud, saas on Lerian Cloud (refuses non-TLS datastores).
+  DEPLOYMENT_MODE: "byoc"
   # One organization per Courier deployment.
   ORGANIZATION_IDS: ""
   POSTGRES_HOST: ""
   POSTGRES_USER: ""
   POSTGRES_NAME: ""
-  # verify-full in production.
+  # verify-full in production; the render refuses anything weaker than require.
   POSTGRES_SSLMODE: ""
   # The Access Manager's address; every role needs it with authentication on.
   PLUGIN_AUTH_HOST: ""
   # Single-tenant pix-ingress only: the Pix vendor's credential subjects. In
   # multi-tenant set SYSTEMPLANE_ENABLED=true instead.
   PIX_VENDOR_SUBJECTS: ""
+
+# The spb-sender's SOAP listener needs TLS in production (the render refuses
+# otherwise). Set at least one; Ingress plus existingSecret re-encrypts to the pod.
+roles:
+  spbSender:
+    # TLS at an Ingress in front of the SOAP Service.
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts:
+        - host: ""
+          paths:
+            - path: /
+              pathType: Prefix
+      tls: []
+    soapTls:
+      # Or: an existing kubernetes.io/tls Secret, served by the pod itself.
+      existingSecret: ""
+      # Or: TLS terminated by a mesh or load balancer outside this chart.
+      terminatedUpstream: false

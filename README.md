@@ -270,7 +270,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Agent Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0 |
+| `1.0.0` | 1.0.1 |
 -----------------
 
 ### Lerian Common (Library)

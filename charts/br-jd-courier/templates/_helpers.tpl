@@ -22,6 +22,15 @@
 {{- .Values.secrets.existingSecret | default (include "br-jd-courier.fullname" .) -}}
 {{- end -}}
 
+{{- /* Every role's ServiceAccount: the namespace default unless serviceAccount says otherwise. */ -}}
+{{- define "br-jd-courier.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "br-jd-courier.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "br-jd-courier.image" -}}
 {{ printf "%s:%s" (index .Values "jd-courier" "image").repository ((index .Values "jd-courier" "image").tag | default .Chart.AppVersion) }}
 {{- end -}}
@@ -50,6 +59,12 @@ there are three layers and not one: the boot guard reads the registry and catche
 what the chart cannot, and the chart catches what never reaches a boot.
 */ -}}
 {{- define "br-jd-courier.guards" -}}
+{{- /* Trimmed, as the service reads it. Empty would boot as
+     "development": no production checks, and a wrong segment in every secret path. */ -}}
+{{- $env := trim (toString (get $.Values.config "ENVIRONMENT_NAME" | default "")) -}}
+{{- if not $env -}}
+{{- fail "config.ENVIRONMENT_NAME is required: it turns the Courier's production checks on (production) and is the environment segment of every Pix engine credentialRef and multi-tenant JD bundle path (tenants/{env}/...). Unset, the service boots as development. config.ENV_NAME, the service's deprecated alias, does not satisfy this chart: rename it to ENVIRONMENT_NAME." -}}
+{{- end -}}
 {{- $singleWriterRoles := dict "spbConsumer" "spb-consumer" -}}
 {{- range $key, $role := $singleWriterRoles -}}
 {{- $values := index $.Values.roles $key -}}
@@ -57,9 +72,10 @@ what the chart cannot, and the chart catches what never reaches a boot.
 {{- fail (printf "roles.%s.replicas=%v: %s is a SINGLE WRITER — it drains a destructive vendor queue, and a second replica loses messages. It runs exactly one replica." $key $values.replicas $role) -}}
 {{- end -}}
 {{- end -}}
-{{- range $key := list "SERVER_ADDRESS" "SOAP_SERVER_ADDRESS" -}}
+{{- $soapTls := "roles.spbSender.soapTls and roles.spbSender.ingress" -}}
+{{- range $key, $source := dict "SERVER_ADDRESS" "ports.*" "SOAP_SERVER_ADDRESS" "ports.*" "SOAP_TLS_CERT_FILE" $soapTls "SOAP_TLS_KEY_FILE" $soapTls "SOAP_TLS_TERMINATED_UPSTREAM" $soapTls -}}
 {{- if hasKey $.Values.config $key -}}
-{{- fail (printf "config.%s is refused: the chart derives it from ports.*" $key) -}}
+{{- fail (printf "config.%s is refused: the chart derives it from %s" $key $source) -}}
 {{- end -}}
 {{- end -}}
 {{- if hasKey $.Values.config "OTEL_EXPORTER_OTLP_ENDPOINT" -}}
@@ -97,6 +113,7 @@ One role's Deployment. Called from deployment-<role>.yaml with
 {{- $ctx := .ctx -}}
 {{- $values := index $ctx.Values.roles .key -}}
 {{- $singleWriter := eq .role "spb-consumer" -}}
+{{- $soapCert := and (has "soap" .ports) $values.soapTls.existingSecret -}}
 {{- if $values.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -128,6 +145,9 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      serviceAccountName: {{ include "br-jd-courier.serviceAccountName" $ctx }}
+      # No Kubernetes API token: the Courier never calls the API. IRSA and EKS Pod
+      # Identity inject their own projected token regardless of this field.
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: {{ $ctx.Values.terminationGracePeriodSeconds }}
       securityContext:
@@ -184,6 +204,17 @@ spec:
                 secretKeyRef:
                   name: {{ include "br-jd-courier.secretName" $ctx }}
                   key: LICENSE_KEY
+            {{- if $soapCert }}
+            # Read once at boot: a rotated certificate needs a rollout restart.
+            - name: SOAP_TLS_CERT_FILE
+              value: /etc/jd-courier/soap-tls/tls.crt
+            - name: SOAP_TLS_KEY_FILE
+              value: /etc/jd-courier/soap-tls/tls.key
+            {{- end }}
+            {{- if and (has "soap" .ports) (or $values.ingress.enabled $values.soapTls.terminatedUpstream) }}
+            - name: SOAP_TLS_TERMINATED_UPSTREAM
+              value: "true"
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "br-jd-courier.fullname" $ctx }}
@@ -221,6 +252,16 @@ spec:
           {{- with $values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if $soapCert }}
+          volumeMounts:
+            - name: soap-tls
+              mountPath: /etc/jd-courier/soap-tls
+              readOnly: true
+      volumes:
+        - name: soap-tls
+          secret:
+            secretName: {{ $soapCert | quote }}
           {{- end }}
       {{- with $ctx.Values.nodeSelector }}
       nodeSelector:

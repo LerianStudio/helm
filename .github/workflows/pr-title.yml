@@ -32,6 +32,7 @@ jobs:
         with:
           scopes: |
             midaz
+            agent
             plugin-access-manager
             plugin-crm
             reporter

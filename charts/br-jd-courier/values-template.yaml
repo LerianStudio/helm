@@ -8,6 +8,14 @@ jd-courier:
     # Pin the published tag in production. Registry tags have no leading `v`.
     tag: ""
 
+# The IAM role that reads Secrets Manager (Pix engine credentials, per-tenant
+# JD bundles). On EKS with IRSA: create: true and the annotation
+# eks.amazonaws.com/role-arn: arn:aws:iam::<account>:role/<role>.
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+
 secrets:
   # The Secret every role and the migration Job read. It must exist before
   # install; the chart never renders one. Empty = the release fullname.
@@ -17,7 +25,10 @@ secrets:
 # Non-secret environment, one ConfigMap shared by every role. Secret keys and
 # COURIER_ROLES are refused here.
 config:
+  # Required; README "Environment".
   ENVIRONMENT_NAME: ""
+  # byoc in the client's cloud, saas on Lerian Cloud (refuses non-TLS datastores).
+  DEPLOYMENT_MODE: "byoc"
   # One organization per Courier deployment.
   ORGANIZATION_IDS: ""
   POSTGRES_HOST: ""
@@ -30,3 +41,24 @@ config:
   # Single-tenant pix-ingress only: the Pix vendor's credential subjects. In
   # multi-tenant set SYSTEMPLANE_ENABLED=true instead.
   PIX_VENDOR_SUBJECTS: ""
+
+# The spb-sender's SOAP listener needs TLS in production (it refuses to boot
+# otherwise). Set at least one; Ingress plus existingSecret re-encrypts to the pod.
+roles:
+  spbSender:
+    # TLS at an Ingress in front of the SOAP Service.
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts:
+        - host: ""
+          paths:
+            - path: /
+              pathType: Prefix
+      tls: []
+    soapTls:
+      # Or: an existing kubernetes.io/tls Secret, served by the pod itself.
+      existingSecret: ""
+      # Or: TLS terminated by a mesh or load balancer outside this chart.
+      terminatedUpstream: false

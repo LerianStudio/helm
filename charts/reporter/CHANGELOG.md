@@ -1,5 +1,87 @@
 # Reporter Changelog
 
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.0)
+
+Features:
+- Spread manager and worker pods across nodes to improve distribution. (@guimoreirar)
+- Expose spread `minDomains` and `nodeTaintsPolicy` settings, aligning with `lerian-common` `2.3.0`. (@guimoreirar)
+- Spread manager and worker pods across nodes and zones for enhanced resilience. (@guimoreirar)
+
+Fixes:
+- Turn off zone spread by default to prevent unintended distribution. (@guimoreirar)
+
+Improvements:
+- Document version requirements for raw spread constraint fields, ensuring clarity on compatibility. (@guimoreirar)
+- Spell out the pre-`1.27` spread opt-out process for better understanding. (@guimoreirar)
+- Accurately describe the default spread configuration in documentation. (@guimoreirar)
+- Add a Helm upgrade guide for `reporter` `v4.3.13` to assist users with updates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.13...reporter-v4.4.0)
+
+---
+
+## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
+
+Fixes:
+- Update `reporter-manager` to `@4.5.0` and `reporter-worker` to `@4.5.0`. (@guimoreirar, @lerian-studio)
+- Update `reporter-manager` to `@4.4.0` and `reporter-worker` to `@4.4.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `reporter` `v4.3.6`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.8`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.9`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.10`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.12...reporter-v4.3.13)
+
+---
+
+## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
+
+Fixes:
+- Update `reporter-manager` to `@4.5.0` and `reporter-worker` to `@4.5.0`. (@guimoreirar, @lerian-studio)
+- Update `reporter-manager` to `@4.4.0` and `reporter-worker` to `@4.4.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `reporter` `v4.3.6`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.8`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.9`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.10`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.7`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.11`. (@guimoreirar)
+- Correct upgrade guide for `reporter` `v4.3.12`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.12...reporter-v4.3.13)
+
+---
+
 ## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
 
 Fixes:

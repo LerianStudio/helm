@@ -3,6 +3,81 @@
 ## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
 
 Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Implemented the ability to run `midaz-ledger` and `midaz-tracer` version `4.2.0`. (@guimoreirar)
+- Rendered the remaining `.env.example` contract for the ledger and tracer components. (@guimoreirar)
+- Enabled the rendering of environment variables for staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allowed the configuration map keys to be read by templates even when the schema previously refused them. (@guimoreirar)
+- Made the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
 - Implemented the ability to run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
 - Rendered the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
 - Enabled rendering of the environment staging through `extraEnvVars`. (@guimoreirar)

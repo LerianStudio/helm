@@ -11,14 +11,19 @@ jd-courier:
     tag: "1.1.0"
     pullPolicy: IfNotPresent
 imagePullSecrets: []
+# The ServiceAccount every role runs as; README "AWS identity" (IRSA, Pod Identity).
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
 # Non-secret environment shared by every role, rendered into one ConfigMap.
 # COURIER_ROLES is set by the chart per Deployment and is refused here, and so
 # is every secret key: those arrive through `secrets.existingSecret` only.
 # Both SPB roles talk to JD and read SPB_VENDOR_TIMEOUT, JD_ALLOW_PRIVATE_NETWORK
 # and, in single-tenant, JD_BASE_URL, JD_SOAP_PATH, JD_LEGACY_CODE and
-# JD_USER_CODE. The spb-sender also reads SOAP_TLS_CERT_FILE/SOAP_TLS_KEY_FILE
-# (or SOAP_TLS_TERMINATED_UPSTREAM), SOAP_MAX_BODY_BYTES and
-# SPB_CHANNEL_CREDENTIAL_ROTATION_OVERLAP; the spb-consumer's
+# JD_USER_CODE. The spb-sender also reads SOAP_MAX_BODY_BYTES and
+# SPB_CHANNEL_CREDENTIAL_ROTATION_OVERLAP; its SOAP_TLS_* keys are refused here
+# and follow roles.spbSender.soapTls and roles.spbSender.ingress. The spb-consumer's
 # SPB_TAKE_BUDGET_SEC must cover SPB_VENDOR_TIMEOUT.
 # JD_PASSWORD is a secret key; JD_PRIVATE_KEY_PEM is refused everywhere — the
 # Courier holds no signing key. Where each engine takes Pix deliveries is on its
@@ -29,8 +34,13 @@ imagePullSecrets: []
 # vendor's credential subject: PIX_VENDOR_SUBJECTS in single-tenant, or
 # SYSTEMPLANE_ENABLED=true in multi-tenant, where each tenant's subjects live in
 # systemplane jd-courier.pix/vendor_subjects; without it its pods refuse to boot.
+# ENVIRONMENT_NAME is required; README "Environment".
+# OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT follows ENVIRONMENT_NAME unless set here.
 config:
   PLUGIN_AUTH_ENABLED: "true"
+  # local, byoc or saas. saas refuses to boot unless every datastore connection
+  # is TLS; byoc and local do not check. A cluster install is never local.
+  DEPLOYMENT_MODE: "byoc"
 secrets:
   # Name of the Secret loaded into every role (envFrom, and LICENSE_KEY by name
   # through secretKeyRef); defaults to the release fullname. It must exist
@@ -66,6 +76,30 @@ roles:
     resources: {}
     service:
       type: ClusterIP
+    # TLS for the SOAP listener (ports.soap). The engines refuse plain HTTP, and
+    # a production spb-sender refuses to boot unless one of these, or
+    # ingress.enabled, is set.
+    soapTls:
+      # A kubernetes.io/tls Secret (tls.crt, tls.key) mounted read-only at
+      # /etc/jd-courier/soap-tls; the listener then serves TLS itself. Read once
+      # at boot: rotating it needs a rollout restart.
+      existingSecret: ""
+      # TLS is terminated before the pod by something this chart does not
+      # render (a mesh, an external load balancer).
+      terminatedUpstream: false
+    # Routes the SOAP Service; TLS ends at the Ingress (the chart sets
+    # SOAP_TLS_TERMINATED_UPSTREAM=true). AWS annotations and the health check:
+    # README "SOAP TLS".
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts:
+        - host: ""
+          paths:
+            - path: /
+              pathType: Prefix
+      tls: []
   pixIngress:
     enabled: true
     replicas: 2

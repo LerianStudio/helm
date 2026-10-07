@@ -280,13 +280,14 @@ imagePullSecrets: []
 config:
   # Non-secret environment shared by all roles (rendered into ConfigMap)
   # Example single-tenant configuration:
+  ENVIRONMENT_NAME: "production"
   PLUGIN_AUTH_ENABLED: "true"
   PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
   JD_BASE_URL: "https://jd-consultores.example.com"
   JD_SOAP_PATH: "/soap/spb"
   JD_LEGACY_CODE: "12345"
   JD_USER_CODE: "67890"
-  SPB_VENDOR_TIMEOUT: "30s"
+  SPB_VENDOR_TIMEOUT: "7s"
   SPB_TAKE_BUDGET_SEC: "15"
   SPB_PERSIST_TIMEOUT_SEC: "60"
   JD_ALLOW_PRIVATE_NETWORK: "false"
@@ -432,13 +433,14 @@ secrets:
   existingSecret: "br-jd-courier-secrets"
 
 config:
+  ENVIRONMENT_NAME: "production"
   PLUGIN_AUTH_ENABLED: "true"
   PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
   JD_BASE_URL: "https://jd-consultores.example.com"
   JD_SOAP_PATH: "/soap/spb"
   JD_LEGACY_CODE: "12345"
   JD_USER_CODE: "67890"
-  SPB_VENDOR_TIMEOUT: "30s"
+  SPB_VENDOR_TIMEOUT: "7s"
   SPB_TAKE_BUDGET_SEC: "15"
   SPB_PERSIST_TIMEOUT_SEC: "60"
   PIX_VENDOR_SUBJECTS: "CN=PixVendor,O=Example"
@@ -496,11 +498,12 @@ secrets:
   existingSecret: "br-jd-courier-secrets"
 
 config:
+  ENVIRONMENT_NAME: "production"
   PLUGIN_AUTH_ENABLED: "true"
   PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
   MULTI_TENANT_ENABLED: "true"
   SYSTEMPLANE_ENABLED: "true"
-  SPB_VENDOR_TIMEOUT: "30s"
+  SPB_VENDOR_TIMEOUT: "7s"
   SPB_TAKE_BUDGET_SEC: "15"
   SPB_PERSIST_TIMEOUT_SEC: "60"
 

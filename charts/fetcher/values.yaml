@@ -290,7 +290,9 @@ worker:
     # real Kafka/Redpanda bootstrap address (e.g. "redpanda.<namespace>:9092")
     # via global.streaming.brokers or worker.configmap.STREAMING_BROKERS before
     # installing with the bundled worker.
-    STREAMING_CLOUDEVENTS_SOURCE: "fetcher-worker"
+    # The worker refuses to boot unless this is the roster name "fetcher": the
+    # broker topics and ACLs are provisioned for that name only.
+    STREAMING_CLOUDEVENTS_SOURCE: "fetcher"
     # Storage Provider - OBJECT_STORAGE_ENDPOINT/_REGION/_BUCKET/_USE_PATH_STYLE
     # now emitted by lerian-common.objectStorage.value (name "fetcher"); see
     # global.objectStorage.fetcher.

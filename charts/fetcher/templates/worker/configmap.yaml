@@ -50,7 +50,7 @@ data:
         "enabled" $streamingEnabled
         "configmap" $wc
         "clientId" ($wc.STREAMING_CLIENT_ID | default "fetcher-worker")
-        "cloudeventsSource" ($wc.STREAMING_CLOUDEVENTS_SOURCE | default "fetcher-worker")) | nindent 2 }}
+        "cloudeventsSource" ($wc.STREAMING_CLOUDEVENTS_SOURCE | default "fetcher")) | nindent 2 }}
   {{- end }}
   # Rate Limiting - Three-tier system with Redis backend
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)

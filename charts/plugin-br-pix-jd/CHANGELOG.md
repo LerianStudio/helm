@@ -4,6 +4,16 @@
 
 Fixes:
 
+- Bumped the application version to `1.1.0` to address issues with third-party key lookup. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.7...plugin-br-pix-jd-v0.4.8)
+
+---
+
+## [0.4.8](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.8)
+
+Fixes:
+
 - Bump app version to `1.1.0` to address third-party key lookup issues. (@jeffersonrodrigues92)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.7...plugin-br-pix-jd-v0.4.8)

@@ -1,5 +1,25 @@
 # Reporter Changelog
 
+## [4.4.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.0)
+
+Features:
+- Spread manager and worker pods across nodes to improve distribution. (@guimoreirar)
+- Expose spread `minDomains` and `nodeTaintsPolicy` settings, aligning with `lerian-common` `2.3.0`. (@guimoreirar)
+- Spread manager and worker pods across nodes and zones for enhanced resilience. (@guimoreirar)
+
+Fixes:
+- Turn off zone spread by default to prevent unintended distribution. (@guimoreirar)
+
+Improvements:
+- Document version requirements for raw spread constraint fields, ensuring clarity on compatibility. (@guimoreirar)
+- Spell out the pre-`1.27` spread opt-out process for better understanding. (@guimoreirar)
+- Accurately describe the default spread configuration in documentation. (@guimoreirar)
+- Add a Helm upgrade guide for `reporter` `v4.3.13` to assist users with updates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.3.13...reporter-v4.4.0)
+
+---
+
 ## [4.3.13](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.3.13)
 
 Fixes:

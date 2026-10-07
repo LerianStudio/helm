@@ -15,6 +15,6 @@ data:
   {{ $key }}: {{ $value | toString | quote }}
   {{- end }}
   {{- if not (hasKey . "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT") }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ get . "ENVIRONMENT_NAME" | toString | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ get . "ENVIRONMENT_NAME" | toString | trim | quote }}
   {{- end }}
 {{- end }}

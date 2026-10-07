@@ -254,7 +254,7 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.2.0"
+    tag: "4.2.1"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -743,7 +743,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.2.0"
+    tag: "4.2.1"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -998,7 +998,8 @@ postgresql:
     replicationPassword: ""
     # -- Secret with the passwords. The default points the subchart at the one this chart keeps across
     # uninstall (templates/datastore-secrets.yaml); midaz's own templates read it as empty. Name yours to replace it.
-    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   primary:
     extraVolumes:
       - name: init-script
@@ -1073,7 +1074,8 @@ mongodb:
     rootUser: midaz
     rootPassword: ""
     # -- Secret with the passwords, as postgresql.auth.existingSecret.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   resourcesPreset: "medium"
   # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
   # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.

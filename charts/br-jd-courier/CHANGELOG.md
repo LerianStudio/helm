@@ -6,6 +6,26 @@ Features:
 - Add an optional ServiceAccount for AWS access. (@fredcamaral)
 
 Fixes:
+- Require `ENVIRONMENT_NAME` and add SOAP TLS shapes, ensuring compatibility with the service. (@fredcamaral)
+- Type the `serviceAccount` values and trim the telemetry environment for better accuracy. (@fredcamaral)
+- Leave datastore and SOAP TLS checks to the service, improving reliability. (@fredcamaral)
+- Update `br-jd-courier@1.1.0` to ensure compatibility and performance improvements. (@lerian-studio)
+
+Improvements:
+- Point values comments at the README and fix the `1.0` examples for clarity. (@fredcamaral)
+- Use a vendor timeout that the app accepts in the upgrade guide for better guidance. (@fredcamaral)
+- Add a Helm upgrade guide for `br-jd-courier` `v1.0.1` to assist users in transitioning smoothly. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v1.0.1...br-jd-courier-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.0.0)
+
+Features:
+- Add an optional ServiceAccount for AWS access. (@fredcamaral)
+
+Fixes:
 - Require `ENVIRONMENT_NAME` and add SOAP TLS shapes. (@fredcamaral)
 - Type the serviceAccount values and trim the telemetry environment. (@fredcamaral)
 - Leave datastore and SOAP TLS checks to the service. (@fredcamaral)

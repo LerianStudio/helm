@@ -409,15 +409,15 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.replicaCount` | Number of replicas | `1` |
 | `caradhras.name` | Name of the caradhras component | `<release>-caradhras` |
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
-| `caradhras.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
+| `caradhras.image.tag` | Image tag used for deployment | `1.4.0` |
 | `caradhras.service.port` | Service port | `8000` |
 | `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
-| `caradhras.migrations.image.tag` | Image tag — MUST stay on the `1.2.0-beta.x` train, not the unrelated `3.2.0-beta.x` train also present in this GHCR repo | `1.2.0-beta.59` |
+| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions | `1.4.0` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
 | `caradhras.ui.image.repository` | Repository for the caradhras-ui container image | `ghcr.io/lerianstudio/caradhras-ui` |
-| `caradhras.ui.image.tag` | Image tag used for deployment | `1.2.0-beta.59` |
+| `caradhras.ui.image.tag` | Image tag used for deployment | `1.4.0` |
 | `caradhras.ui.service.port` | Service port | `80` |
 | `caradhras.ui.ingress.enabled` | Enable ingress for the UI | `false` |
 | `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |

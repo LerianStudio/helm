@@ -280,6 +280,7 @@ imagePullSecrets: []
 config:
   # Non-secret environment shared by all roles (rendered into ConfigMap)
   # Example single-tenant configuration:
+  ENVIRONMENT_NAME: "production"
   PLUGIN_AUTH_ENABLED: "true"
   PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
   JD_BASE_URL: "https://jd-consultores.example.com"
@@ -432,6 +433,7 @@ secrets:
   existingSecret: "br-jd-courier-secrets"
 
 config:
+  ENVIRONMENT_NAME: "production"
   PLUGIN_AUTH_ENABLED: "true"
   PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
   JD_BASE_URL: "https://jd-consultores.example.com"
@@ -496,6 +498,7 @@ secrets:
   existingSecret: "br-jd-courier-secrets"
 
 config:
+  ENVIRONMENT_NAME: "production"
   PLUGIN_AUTH_ENABLED: "true"
   PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
   MULTI_TENANT_ENABLED: "true"

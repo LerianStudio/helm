@@ -11,13 +11,7 @@ jd-courier:
     tag: "1.1.0"
     pullPolicy: IfNotPresent
 imagePullSecrets: []
-# The ServiceAccount every role runs as. The Courier reads AWS Secrets Manager
-# (each Pix engine's credentialRef, and the per-tenant JD bundle in
-# multi-tenant): give it an IAM role here, e.g. annotations
-# eks.amazonaws.com/role-arn for IRSA, or an EKS Pod Identity association on
-# this ServiceAccount. Off, every role runs as the namespace's `default` (or as
-# `name`, when it names an existing one). Pods mount no Kubernetes API token
-# either way; the AWS identity token is projected separately.
+# The ServiceAccount every role runs as; README "AWS identity" (IRSA, Pod Identity).
 serviceAccount:
   create: false
   name: ""
@@ -40,10 +34,7 @@ serviceAccount:
 # vendor's credential subject: PIX_VENDOR_SUBJECTS in single-tenant, or
 # SYSTEMPLANE_ENABLED=true in multi-tenant, where each tenant's subjects live in
 # systemplane jd-courier.pix/vendor_subjects; without it its pods refuse to boot.
-# ENVIRONMENT_NAME is required, and the render refuses without it: "production"
-# turns the service's production checks on, and the value is the environment
-# segment of every Pix engine credentialRef and multi-tenant JD bundle path
-# (tenants/{env}/...); the deprecated ENV_NAME does not satisfy the render.
+# ENVIRONMENT_NAME is required; README "Environment".
 # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT follows ENVIRONMENT_NAME unless set here.
 config:
   PLUGIN_AUTH_ENABLED: "true"
@@ -96,14 +87,9 @@ roles:
       # TLS is terminated before the pod by something this chart does not
       # render (a mesh, an external load balancer).
       terminatedUpstream: false
-    # Routes the SOAP Service; TLS is terminated at the Ingress, so the chart
-    # sets SOAP_TLS_TERMINATED_UPSTREAM=true. On AWS: className alb, and
-    # annotations alb.ingress.kubernetes.io/target-type: ip plus
-    # certificate-arn (ACM) and listen-ports '[{"HTTPS":443}]', and the health
-    # check on ports.http (healthcheck-port "8080", healthcheck-path /health,
-    # healthcheck-protocol HTTP): the SOAP listener is no health endpoint. With
-    # soapTls.existingSecret the pod serves TLS too: set the controller's backend
-    # protocol to HTTPS (alb.ingress.kubernetes.io/backend-protocol: HTTPS).
+    # Routes the SOAP Service; TLS ends at the Ingress (the chart sets
+    # SOAP_TLS_TERMINATED_UPSTREAM=true). AWS annotations and the health check:
+    # README "SOAP TLS".
     ingress:
       enabled: false
       className: ""

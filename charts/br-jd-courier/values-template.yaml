@@ -25,10 +25,7 @@ secrets:
 # Non-secret environment, one ConfigMap shared by every role. Secret keys and
 # COURIER_ROLES are refused here.
 config:
-  # Required: the render refuses without it (the deprecated ENV_NAME does not
-  # count). "production" turns on the service's production boot checks, SOAP
-  # TLS below included; the value is also the environment segment of every
-  # credential path (tenants/{env}/...).
+  # Required; README "Environment".
   ENVIRONMENT_NAME: ""
   # byoc in the client's cloud, saas on Lerian Cloud (refuses non-TLS datastores).
   DEPLOYMENT_MODE: "byoc"

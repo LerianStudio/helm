@@ -64,6 +64,8 @@ with none of them:
 | Certificate in the pod | `roles.spbSender.soapTls.existingSecret=<kubernetes.io/tls Secret>` | mounts it read-only at `/etc/jd-courier/soap-tls` and sets `SOAP_TLS_CERT_FILE`/`SOAP_TLS_KEY_FILE`; the listener serves TLS itself |
 | Terminated outside the chart | `roles.spbSender.soapTls.terminatedUpstream=true` | sets `SOAP_TLS_TERMINATED_UPSTREAM=true`, for a mesh or load balancer the chart does not render |
 
+The Ingress must terminate TLS (a `tls:` block or the controller's certificate
+annotation); the chart sets `SOAP_TLS_TERMINATED_UPSTREAM=true` without checking.
 On AWS, use the ALB with `target-type: ip` (the Service is ClusterIP). The
 Ingress routes only the SOAP port, and the SOAP listener is not a health
 endpoint: point the ALB health check at `/health` on `ports.http` (8080 unless

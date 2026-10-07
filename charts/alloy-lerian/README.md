@@ -191,19 +191,148 @@ identifier. Out of scope by decision, recorded as a known limit.
 configuration tweak. The marker is part of series identity at the destination, so
 a new value creates new series and orphans every existing one.
 
-## Minimal installation
+## BYOC installation
+
+### 1. Create the Secret
+
+Both tokens are handed over by Lerian through a secure channel. The chart reads
+this Secret and never creates it.
+
+```console
+read -rs TELEMETRY_TOKEN   # paste, no echo
+read -rs FLEET_TOKEN       # paste, no echo
+kubectl create secret generic alloy-lerian -n monitoring \
+  --from-file=telemetry-token=<(printf '%s' "$TELEMETRY_TOKEN") \
+  --from-file=fleet-token=<(printf '%s' "$FLEET_TOKEN")
+```
+
+> **Never use `--from-literal` for a token.** The value is visible in
+> `ps -eo args` while the command runs, and it lands in shell history.
+
+### 2. values.yaml
+
+The full client values file. Everything that is the same for every client —
+destination, Fleet Management, collection perimeter — is a chart default and is
+deliberately absent here.
 
 ```yaml
 profile: client
+
 origin:
+  # <client>-<stage>, lowercase, stage = stg | prd.
+  # The client name is ONE word: acme-prd, never acme-corp-prd.
   id: acme-prd
-destination:
-  endpoint: https://telemetry.example.net
+
+# The only reason these blocks exist is to mark the Secret as REQUIRED.
+# The chart cannot decide that on its own: the correct value depends on the
+# PROFILE, and `extraEnv` is static subchart YAML that cannot read it. The chart
+# default is `optional: true`, which is correct for the `own` profile — there
+# the destination does not authenticate and no Secret exists.
+#
+# ⚠️ `extraEnv` is a LIST and lists do not merge: declaring yours replaces the
+# chart's entirely. That is why the Fleet entries reappear here — they are the
+# same as the default and have to come back with it.
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
 ```
+
+### 3. Install
 
 ```console
-helm install alloy oci://ghcr.io/lerianstudio/alloy-lerian-helm \
-  --version <pinned> -n monitoring -f values-acme.yaml
+helm install alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm \
+  --version <pinned> -n monitoring --create-namespace -f values.yaml
 ```
 
-The credential Secret must exist in the namespace before install.
+### What is NOT in the file, and why
+
+| Setting | Default | Why the client does not set it |
+|---|---|---|
+| `ALLOY_CLIENT_ID` | derived from `origin.id` | Delivered through `envFrom`, from a ConfigMap the chart renders. It used to be repeated by hand and could drift — and when it drifts nothing fails: telemetry arrives stamped with the **wrong** client, in someone else's dashboard. The render is refused if an explicit value diverges. |
+| `ALLOY_DESTINATION_ENDPOINT` | derived from `destination.endpoint` | Same mechanism, same reason. |
+| `destination.endpoint` | `https://telemetry.lerian.io` | Our edge, not a client choice. |
+| `fleetManagement` | enabled, `url` and `username` filled in | This is what lets collection be adjusted without asking the client for anything: no chart upgrade, no maintenance window. The client supplies only the token, through the Secret above. |
+| `collection.onlyNamespaces` | `^midaz$`, `^midaz-plugins$` | Where our products are installed. Override only if this client installed them elsewhere. |
+
+## Agent log level
+
+`error` by default: the cluster belongs to the client, and the agent should not
+spend their disk narrating normal operation. MEASURED on an idle install —
+99 `info` lines to 7 `error`.
+
+```yaml
+logging:
+  level: error     # error | warn | info | debug
+```
+
+To diagnose, raise it, reproduce, then put it back:
+
+```console
+helm upgrade ... --set logging.level=debug
+```
+
+Any other value fails the render. Without that guard the agent would reject the
+config at startup, and the rejection would surface only in the pod log — the
+very log being configured.
+
+### ⚠️ What `error` hides
+
+Worth knowing before you need it:
+
+- **`successfully loaded remote configuration` is `info`.** It is the
+  confirmation that Fleet loaded, and in BYOC Fleet governs the whole collection
+  pipeline. At `error` there is no positive line saying the remote config came
+  through; silence becomes the only success signal.
+
+- **Delivery failure appears at two levels, and only the worse one is `error`:**
+
+  ```
+  level=error  "Exporting failed. Dropping data."              <- discarded
+  level=info   "Exporting failed. Will retry the request..."   <- retrying
+  ```
+
+  So at `error` the client sees permanent loss but **not** a flaky destination
+  that still recovers on retry. An unstable endpoint stays invisible until it
+  starts discarding.
+
+`debug` deserves care in a client cluster: volume grows sharply and the agent
+narrates component evaluation every cycle. It is not a PII leak path — the
+sanitisation rules act on the body in TRANSIT, and the agent log does not
+transcribe record bodies — but `livedebugging` does carry raw payloads, which is
+why it is refused in the `client` profile.

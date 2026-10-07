@@ -72,11 +72,21 @@ trap 'rm -f "$MODULO" "${CORPO:-}" "${RESP:-}"' EXIT
 # `origin.id` ainda e exigido pelo chart (marca procedencia no render), mas o
 # valor NAO entra na config: os 8 pontos usam sys.env. Um marcador explicito deixa
 # isso visivel para quem inspecionar o render.
+# ⚠️ `fleetManagement.enabled=false` E OBRIGATORIO AQUI, e nao e contradicao:
+# com o Fleet LIGADO o chart NAO renderiza a cadeia de coleta — ela vem do Fleet,
+# e o ConfigMap local sai so com os blocos de servico. Publicar esse render
+# enviaria uma config vazia. Desligar aqui faz o chart emitir a cadeia COMPLETA,
+# que e justamente o que vai ser publicado.
+#
+# Isto nao altera o values do cliente: e so o modo de render deste script.
+# MEDIDO 2026-10-07: sem esta linha o extrator falha com "nenhum ConfigMap com a
+# config do papel node", porque `sanitizacao` nao aparece no render.
 if ! helm template publicar "$CHART" -f "$VALUES_BASE" \
-      --set "origin.id=global-prd" 2>/dev/null \
+      --set "origin.id=global-prd" \
+      --set "fleetManagement.enabled=false" 2>/dev/null \
     | python3 "${RAIZ}/publicar-fleet-extrair.py" > "$MODULO"; then
   echo "  ✗ falha ao renderizar ou extrair a config do papel node"
-  echo "    Reproduza com: helm template . -f ${VALUES_BASE} --set origin.id=${CLIENT_ID}"
+  echo "    Reproduza com: helm template . -f ${VALUES_BASE} --set origin.id=${CLIENT_ID} --set fleetManagement.enabled=false"
   exit 1
 fi
 

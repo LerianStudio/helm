@@ -306,8 +306,15 @@ else
   fi
   RENDER="$(mktemp)"
   VALUES_BASE="${VALUES_BASE:-${RAIZ}/../examples/values-cliente.yaml}"
+  # ⚠️ `fleetManagement.enabled=false` pela MESMA razao que em publicar-fleet.sh:
+  # com o Fleet ligado o chart nao renderiza a cadeia de coleta (ela vem do
+  # Fleet), e o extrator nao acha a config do papel node. Sem esta linha o passo
+  # cai no aviso "nao foi possivel renderizar o chart para comparar" — que NAO
+  # falha o script, entao a comparacao mais importante deixaria de acontecer em
+  # silencio.
   if helm template verificar "${RAIZ}/.." -f "$VALUES_BASE" \
-        --set "origin.id=${CLIENT_ID}" 2>/dev/null \
+        --set "origin.id=${CLIENT_ID}" \
+        --set "fleetManagement.enabled=false" 2>/dev/null \
       | python3 "${RAIZ}/publicar-fleet-extrair.py" > "$RENDER" 2>/dev/null; then
     if SAIDA=$(python3 "${RAIZ}/verificar-fleet-diff.py" "$RESP" "$NOME_CFG" "$RENDER"); then
       ok "[$NOME_CFG] config publicada identica ao render"

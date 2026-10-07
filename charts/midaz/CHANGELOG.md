@@ -1,5 +1,23 @@
 # Midaz Changelog
 
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.0)
+
+Features:
+- Spread ledger, CRM, and tracer pods across nodes to enhance distribution. (@guimoreirar)
+- Expose configuration options for spread `minDomains` and `nodeTaintsPolicy` in `lerian-common` `2.3.0`. (@guimoreirar)
+- Spread ledger, CRM, and tracer pods across both nodes and zones for improved redundancy. (@guimoreirar)
+
+Fixes:
+- Disable zone spread by default to prevent unintended distribution. (@guimoreirar)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.5.0` to assist users with the update process. (@guimoreirar)
+- Provide a Helm upgrade guide for `midaz` `v9.4.0` to facilitate smoother transitions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.5.0...midaz-v9.6.0)
+
+---
+
 ## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
 
 Features:

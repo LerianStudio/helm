@@ -30,6 +30,12 @@ print(json.dumps({
         "matchers": [
             'collector.os="linux"',
             'role="node"',
+            # Sem isto o matcher alcancaria QUALQUER agente linux com papel node
+            # — inclusive os internos, que rodam `alloy-lerian-internal`. O
+            # atributo e fixo no chart do BYOC (_fleet.tpl), nao parametrizavel.
+            # Nao e fronteira de seguranca: atributos de remotecfg sao
+            # auto-declarados. Serve para ENDERECAR, nao para isolar.
+            'tipo="byoc"',
         ],
         "enabled": True,
     }

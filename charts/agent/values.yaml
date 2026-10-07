@@ -1,0 +1,297 @@
+# Default values for the Lerian agent.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+#
+# The agent runs in YOUR cluster, polls the Lerian control plane over an
+# outbound-only connection and executes the Helm operations it is assigned.
+# See README.md for what it is allowed to do and what leaves your cluster.
+nameOverride: "lerian-agent"
+fullnameOverride: ""
+namespaceOverride: ""
+
+agent:
+  # -- Component name
+  name: agent
+
+  # -- Component description
+  description: "Lerian BYOC agent: executes the control plane's Helm operations in this cluster"
+
+  # -- Enable or disable the agent
+  enabled: true
+
+  # -- Number of replicas. One agent per cluster is the supported model.
+  replicaCount: 1
+
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+
+  image:
+    # -- Repository for the agent container image. The host is written out:
+    # a host-less name means Docker Hub, and the agent refuses a self-update
+    # from a registry outside AGENT_ALLOWED_IMAGE_REGISTRIES.
+    repository: ghcr.io/lerianstudio/agent
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag used for deployment. Kept equal to appVersion; the release
+    # dispatch from LerianStudio/agent updates it.
+    tag: "1.0.0"
+    # -- Image digest ("sha256:..."), wins over tag. Set it after the control
+    # plane moved the agent to a newer build, so a routine `helm upgrade` does
+    # not walk it back.
+    digest: ""
+
+  # -- Secrets for pulling images from a private registry
+  imagePullSecrets: []
+
+  # -- Pod annotations for additional metadata
+  podAnnotations: {}
+
+  podSecurityContext:
+    # -- Ensures the pod does not run as root
+    runAsNonRoot: true
+    # -- Defines the user ID for the pod
+    runAsUser: 65532
+    # -- Defines the group ID for the pod
+    runAsGroup: 65532
+    # -- Group owning mounted volumes; the chart-registry credential file is
+    # readable only through it
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    allowPrivilegeEscalation: false
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: false
+    # -- Maximum number of unavailable pods. minAvailable with a single replica
+    # would block every node drain.
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Recreate: a rolling update would briefly run two pods with the same
+    # agent identity, both able to claim work
+    type: Recreate
+
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    # -- Port of the health and metrics endpoints. Matches HEALTH_SERVER_PORT.
+    port: 8081
+    # -- Service annotations
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8081"
+      prometheus.io/path: "/metrics"
+
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 100m
+      memory: 64Mi
+
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling. Only for an agent whose
+    # work distribution was verified: the agent is single-instance by design.
+    enabled: false
+    # -- Minimum number of replicas
+    minReplicas: 1
+    # -- Maximum number of replicas
+    maxReplicas: 1
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    # -- Target memory utilization percentage for autoscaling
+    targetMemoryUtilizationPercentage: 80
+
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: []
+
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+
+  # -- Startup probe configuration. All fields override chart defaults.
+  # The default allows 600s, which covers enrollment retries at first boot.
+  startupProbe: {}
+  # -- Liveness probe configuration. All fields override chart defaults.
+  livenessProbe: {}
+  # -- Readiness probe configuration. All fields override chart defaults.
+  readinessProbe: {}
+
+  # -- Seconds a stopping pod is given: HELM_TIMEOUT (15m) plus the 5m
+  # rollback of a failed upgrade, so a running operation finishes before
+  # SIGKILL. Raise it together with HELM_TIMEOUT.
+  terminationGracePeriodSeconds: 1200
+
+  # -- ConfigMap for environment variables and configurations.
+  # An empty value is not rendered, and the agent applies its own default.
+  # @default -- templates/configmap.yaml
+  configmap:
+    # -- Base URL of the Lerian control plane (required). Must be https://:
+    # the agent sends its bearer token on every request.
+    CONTROL_PLANE_URL: ""
+    # -- Accept a cleartext http:// CONTROL_PLANE_URL. Isolated dev/test
+    # clusters only - never in production.
+    AGENT_ALLOW_INSECURE_HTTP: "false"
+
+    # Application Settings
+    ENV_NAME: "production"
+    LOG_LEVEL: "info"
+    HEARTBEAT_INTERVAL: "30s"
+    HEALTH_SERVER_PORT: "8081"
+    # -- How long one Helm install/upgrade may take before it is reported as
+    # failed. Raise terminationGracePeriodSeconds with it.
+    HELM_TIMEOUT: "15m"
+    # -- How many assigned operations the agent runs at the same time
+    MAX_CONCURRENT_WORK: "3"
+
+    # Reliability of the control-plane connection
+    # -- Total attempts at one control-plane call before it is given up
+    MAX_RETRY_ATTEMPTS: "3"
+    # -- First retry backoff; it grows exponentially on each further attempt
+    RETRY_BACKOFF_INITIAL: "1s"
+    # -- Ceiling of the retry backoff
+    RETRY_BACKOFF_MAX: "30s"
+    # -- Consecutive control-plane failures that open the circuit breaker
+    CIRCUIT_BREAKER_MAX_FAILURES: "5"
+    # -- How long the circuit breaker stays open before it lets a call through
+    CIRCUIT_BREAKER_TIMEOUT: "30s"
+
+    # OpenTelemetry
+    ENABLE_TELEMETRY: "false"
+    OTEL_SERVICE_NAME: "lerian-agent"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+    # Registry allowlists, comma-separated. Empty means the agent's built-in
+    # Lerian defaults; there is no value meaning "any registry".
+    # -- OCI registries the agent may pull CHARTS from. Default:
+    # ghcr.io/lerianstudio and registry-1.docker.io/lerianstudio.
+    AGENT_ALLOWED_CHART_REGISTRIES: ""
+    # -- Registries the agent may pull its OWN image from. Default:
+    # ghcr.io/lerianstudio.
+    AGENT_ALLOWED_IMAGE_REGISTRIES: ""
+
+  # -- Secrets for storing sensitive data
+  # @default -- templates/secrets.yaml
+  secrets:
+    # -- A PER-AGENT token from POST /api/tenants/:id/agents, or a single-use
+    # ENROLLMENT token (lerian_enroll_...) from
+    # POST /api/tenants/:id/agents/enrollments
+    AGENT_TOKEN: ""
+    # -- The agent UUID from the same registration response as a per-agent
+    # token. Leave empty with an enrollment token.
+    AGENT_ID: ""
+
+  # -- Use an existing Secret (keys AGENT_TOKEN and, with a per-agent token,
+  # AGENT_ID) instead of the one this chart creates
+  useExistingSecret: false
+  existingSecretName: ""
+
+  # -- Extra environment variables, appended after the chart's own
+  # (e.g. HTTPS_PROXY/NO_PROXY for clusters behind a corporate proxy)
+  extraEnvVars: []
+
+  serviceAccount:
+    # -- Specifies whether a ServiceAccount should be created
+    create: true
+    # -- Annotations for the ServiceAccount
+    annotations: {}
+    # -- Name of the service account
+    # @default -- `lerian-agent.fullname`
+    name: ""
+
+  # -- Every namespace the agent may WRITE to: install, upgrade and uninstall
+  # releases, write their Secrets, read pod logs and events on failure. Empty
+  # means the release namespace only. Each must already exist, and adding one
+  # needs a `helm upgrade` of this chart.
+  managedNamespaces: []
+
+  # -- Credential the agent presents when pulling CHARTS from a registry that
+  # refuses anonymous reads. Empty: every chart pull is anonymous. It does not
+  # widen AGENT_ALLOWED_CHART_REGISTRIES. Use host + username + password, or
+  # existingSecret (a kubernetes.io/dockerconfigjson Secret), never both.
+  chartRegistry:
+    # -- Registry the credential belongs to; prefer "ghcr.io/lerianstudio"
+    host: ""
+    username: ""
+    password: ""
+    existingSecret: ""
+
+  # -- Your own secret manager, through the External Secrets operator: the
+  # credentials of everything this agent installs get a home in YOUR vault,
+  # and the cluster keeps its copy filled from there. Needs the operator and a
+  # store you created, scoped to pathPrefix. Empty provider turns it off.
+  secretVault:
+    # -- aws, gcp or azure
+    provider: ""
+    # -- The External Secrets store you created
+    storeName: ""
+    # -- ClusterSecretStore (default) or SecretStore
+    storeKind: ""
+    # -- Where under your vault the secrets go. Default: lerian/deployer
+    pathPrefix: ""
+    # -- How often the cluster re-reads your vault. Default: 1h. Never 0:
+    # External Secrets reads it as "fetch once".
+    refreshInterval: ""
+
+  trust:
+    # -- ConfigMap in the release namespace holding your own root certificates
+    # (PEM), trusted beside the public roots on every connection the agent
+    # opens
+    additionalCABundle: ""
+
+  # -- Egress of the agent: DNS, the Kubernetes API, the control plane and
+  # chart registries
+  networkPolicy:
+    # -- Enable or disable the NetworkPolicies
+    enabled: true
+    # -- Kubernetes API CIDR (443/6443). Restrict in production.
+    kubernetesApiCidr: "0.0.0.0/0"
+    # -- Control plane and chart registry CIDR. Restrict in production, and
+    # open your registry in extraEgress.
+    controlPlaneCidr: "0.0.0.0/0"
+    # -- Egress rules appended verbatim to both policies. Narrowing both CIDRs
+    # also stops certificate watching: add the addresses your releases
+    # publish on 443 here.
+    extraEgress: []
+
+  # -- Prometheus Operator ServiceMonitor (needs the monitoring.coreos.com CRDs)
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    # -- Extra labels for the ServiceMonitor and PrometheusRule, e.g.
+    # `release: prometheus` for kube-prometheus-stack
+    labels: {}
+
+  # -- Prometheus Operator PrometheusRule with the agent's baseline alerts
+  prometheusRule:
+    enabled: false
+    # -- Disk-filling alerts for the volumes of the managed releases, read by
+    # YOUR Prometheus from kubelet_volume_stats_*
+    volumeAlerts:
+      enabled: false
+      # -- Fire when less than this fraction of a volume is free...
+      freeRatio: 0.15
+      # -- ...for this long
+      for: 15m

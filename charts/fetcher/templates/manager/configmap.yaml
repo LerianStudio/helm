@@ -5,9 +5,21 @@ metadata:
   labels:
     {{- include "fetcher-manager.labels" . | nindent 4 }}
 data:
-  {{- range $key, $value := .Values.manager.configmap }}
+  {{- $mc := deepCopy (.Values.manager.configmap | default dict) }}
+  {{- $mExtra := .Values.manager.extraEnvVars | default dict }}
+  {{- /* Legacy manager.extraEnvVars.PLUGIN_AUTH_* feed the auth mask (manager.configmap
+     wins) instead of being emitted a second time by the passthrough below. */ -}}
+  {{- range $k := list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS" }}
+  {{- if and (hasKey $mExtra $k) (not (hasKey $mc $k)) }}{{- $_ := set $mc $k (index $mExtra $k) }}{{- end }}
+  {{- end }}
+  {{- range $key, $value := $mc }}
+  {{- if not (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS")) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  {{- end }}
+  # AUTH (plugin-access-manager) via lerian-common.auth.env — global.auth.
+  # {enabled,host}; manager.configmap.PLUGIN_AUTH_* still overrides.
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $mc "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "") | nindent 2 }}
   # Rate Limiting - Three-tier system with Redis backend
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
   # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
@@ -15,8 +27,10 @@ data:
   # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag
   VERSION: {{ .Values.manager.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.manager.image.tag | default .Chart.AppVersion | quote }}
-  {{- with .Values.manager.extraEnvVars }}
-  {{- range $key, $value := . }}
+  {{- /* Skip keys already emitted above (manager.configmap, the auth mask, VERSION/
+     OTEL_RESOURCE_SERVICE_VERSION): a duplicate ConfigMap key is rejected server-side. */ -}}
+  {{- range $key, $value := $mExtra }}
+  {{- if not (or (hasKey $mc $key) (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS" "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"))) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}

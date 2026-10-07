@@ -1,0 +1,29 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "lerian-agent.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "lerian-agent.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  # Matches the Service's own metadata.labels (lerian-agent.labels), not its
+  # spec.selector (which picks pods, not Services) - "app: lerian-agent"
+  # alone is a pod-selector-only label the Service never carries on itself.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "lerian-agent.name" . }}
+      app.kubernetes.io/component: agent
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+      scheme: http
+{{- end }}

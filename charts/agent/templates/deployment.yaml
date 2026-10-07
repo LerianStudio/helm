@@ -1,0 +1,410 @@
+{{- $registry := .Values.agent.chartRegistry | default dict -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lerian-agent.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "lerian-agent.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  # One agent per cluster is the supported model (see hpa/pdb in
+  # values.yaml): the default RollingUpdate strategy briefly runs two pods
+  # with the same agent identity/token during every upgrade, both polling
+  # and able to claim work concurrently. Recreate guarantees the old pod is
+  # gone before the new one starts.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ include "lerian-agent.name" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "lerian-agent.selectorLabels" . | nindent 8 }}
+      {{- if not .Values.agent.existingSecret }}
+      annotations:
+        # Forces a rollout when the chart-owned Secret's content changes
+        # (e.g. a rotated agent.token) - without this, `helm upgrade` with
+        # a new token updates the Secret but never restarts the pod, so
+        # the agent keeps polling with the old, now-invalid credential
+        # until something else bounces it. Not applicable to
+        # agent.existingSecret: that Secret's lifecycle is the caller's,
+        # not the chart's - see the chart README for the manual
+        # `kubectl rollout restart` step that case needs instead.
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "lerian-agent.name" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: {{ include "lerian-agent.name" . }}
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: agent
+          # image.digest wins over image.tag when set, and exists so a routine
+          # `helm upgrade` cannot silently undo a control-plane-driven agent
+          # update: without a digest here, this line re-renders the old tag and
+          # walks the agent back a version with nothing in the output saying so.
+          #
+          # values.schema.json already holds image.digest to this shape, and
+          # this repeats it because that check has a documented off switch
+          # (`--skip-schema-validation`) and this one does not. A digest pasted
+          # with the `@` still attached, or truncated by a copy, renders an
+          # image reference no registry resolves - and the workload it breaks
+          # is the agent itself, the one that cannot repair its own cluster
+          # afterwards. Refusing at render time is the only cheap moment.
+          {{- if and .Values.image.digest (not (regexMatch "^sha256:[0-9a-f]{64}$" .Values.image.digest)) }}
+          {{- fail (printf "image.digest must be written as sha256:<64 lowercase hex characters> (got %q): anything else renders an image reference the kubelet cannot pull, leaving this agent in ImagePullBackOff with nothing in the cluster able to put it back." .Values.image.digest) }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ else }}:{{ .Values.image.tag | default .Chart.AppVersion }}{{ end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            # No AGENT_VERSION here, and deliberately not. The agent reports
+            # the build stamped into its own binary; a version declared beside
+            # the image tag would keep saying the old tag after the agent
+            # replaced its own image, and the control plane would record a
+            # version nobody is running.
+
+            # Set only when the credential Secret actually carries an agent
+            # id, and optional so an enrolling agent's Secret - which has a
+            # token and nothing else - does not block the pod from starting.
+            #
+            # Absent means "this agent has no identity yet": it boots holding a
+            # single-use enrollment token, redeems it on its first call, and
+            # keeps the id and per-agent token the control plane issues in a
+            # Secret beside this Deployment (lerian-agent-identity) so any
+            # replacement pod reuses them instead of presenting a spent token.
+            # Present means the ordinary out-of-band registration, where the id
+            # and the token came from one response and only work as a pair.
+            - name: AGENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lerian-agent.secretName" . }}
+                  key: agent-id
+                  optional: true
+
+            - name: CONTROL_PLANE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: lerian-agent-config
+                  key: control-plane-url
+
+            {{- if .Values.controlPlane.allowInsecureURL }}
+            # Mirrors controlPlane.allowInsecureURL: the agent itself
+            # refuses a cleartext http:// URL to a non-loopback host
+            # unless this explicit opt-in is set (dev/test only).
+            - name: AGENT_ALLOW_INSECURE_HTTP
+              value: "true"
+            {{- end }}
+
+            # Per-agent token issued by the control plane at registration
+            # (not a shared/global API key). Sent as Authorization: Bearer.
+            - name: AGENT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lerian-agent.secretName" . }}
+                  key: token
+
+            # Where the agent persists local state (e.g. its generated
+            # identity, see AGENT_ID). Backed by an emptyDir volume below:
+            # writable despite readOnlyRootFilesystem, but does not survive
+            # pod reschedule.
+            - name: AGENT_STATE_DIR
+              value: "/var/lib/lerian-agent"
+
+            - name: HEARTBEAT_INTERVAL
+              value: "30s"
+
+            # The logger reads this itself: "production" writes JSON lines,
+            # anything else writes colored console text no log pipeline parses.
+            - name: ENV_NAME
+              value: "production"
+
+            - name: LOG_LEVEL
+              value: "info"
+
+            - name: ENABLE_TELEMETRY
+              value: "false"
+            - name: OTEL_SERVICE_NAME
+              value: "lerian-agent"
+
+            # Root filesystem is read-only (see securityContext above);
+            # Helm's OCI pull path (os.MkdirTemp) needs a writable temp dir.
+            # Points at the /tmp emptyDir mounted below.
+            - name: TMPDIR
+              value: "/tmp"
+
+            # Helm also needs a writable cache/config/data home of its own:
+            # the OCI registry client reads its config under $HELM_CONFIG_HOME
+            # and caches under $HELM_CACHE_HOME, both defaulting under $HOME
+            # and both MkdirAll-failing on a read-only root the same way TMPDIR
+            # did before the fix above. Point all three at the state emptyDir,
+            # which is already writable.
+            - name: HELM_CACHE_HOME
+              value: "/var/lib/lerian-agent/helm/cache"
+            - name: HELM_CONFIG_HOME
+              value: "/var/lib/lerian-agent/helm/config"
+            - name: HELM_DATA_HOME
+              value: "/var/lib/lerian-agent/helm/data"
+
+            # The registries the agent will pull charts, and its own image,
+            # from. Rendered only when set: unset means the agent's built-in
+            # Lerian defaults, which are narrower than anything a client
+            # would write here. There is no value meaning "any registry".
+            {{- with .Values.agent.allowedChartRegistries }}
+            - name: AGENT_ALLOWED_CHART_REGISTRIES
+              value: {{ join "," . | quote }}
+            {{- end }}
+            {{- with .Values.agent.allowedImageRegistries }}
+            - name: AGENT_ALLOWED_IMAGE_REGISTRIES
+              value: {{ join "," . | quote }}
+            {{- end }}
+
+            # Where the credential for pulling charts from a registry that
+            # refuses anonymous reads is mounted. A PATH, not the credential:
+            # what the pod's environment carries is the location of a file, and
+            # reading the environment of this pod yields no token. Rendered only
+            # when configured: absent means every chart pull is anonymous, which
+            # is what a public chart needs and what every agent did before this
+            # existed.
+            #
+            # Every registry host the file names is one this agent will
+            # authenticate to, and no other host is ever offered a credential -
+            # which matters because the chart reference arrives from the control
+            # plane.
+            {{- if or $registry.username $registry.existingSecret }}
+            - name: OCI_REGISTRY_CONFIG_FILE
+              value: {{ include "lerian-agent.chartRegistryFile" . | quote }}
+            {{- end }}
+
+            # Provisioning managed datastores in the client's own cloud account.
+            # All three are absent on a cluster that runs none, and their
+            # absence turns provisioning off rather than defaulting it: the
+            # agent then refuses infrastructure work naming why, which is the
+            # honest answer for an agent nobody gave a runner image to.
+            {{- with .Values.agent.infraRunner.image }}
+            - name: AGENT_INFRA_RUNNER_IMAGE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.agent.infraRunner.serviceAccount }}
+            - name: AGENT_INFRA_RUNNER_SERVICE_ACCOUNT
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.agent.infraRunner.allowedRegistries }}
+            - name: AGENT_ALLOWED_PROVISIONING_REGISTRIES
+              value: {{ join "," . | quote }}
+            {{- end }}
+            {{- with .Values.agent.infraRunner.resources.cpu }}
+            - name: AGENT_INFRA_RUNNER_CPU
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.agent.infraRunner.resources.memory }}
+            - name: AGENT_INFRA_RUNNER_MEMORY
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.agent.infraRunner.priorityClassName }}
+            - name: AGENT_INFRA_RUNNER_PRIORITY_CLASS
+              value: {{ . | quote }}
+            {{- end }}
+
+            # Where THIS cluster's secrets live. Reported to the control plane
+            # on every heartbeat, which is what lets a stack's credentials be
+            # given a home in your own vault instead of existing only in etcd.
+            # All absent - the default - leaves every secret exactly where it
+            # was: served by the control plane, written once, and held nowhere
+            # else afterwards.
+            {{- with .Values.agent.secretVault.provider }}
+            - name: AGENT_SECRET_VAULT_PROVIDER
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.agent.secretVault.storeName }}
+            - name: AGENT_SECRET_VAULT_STORE_NAME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.agent.secretVault.storeKind }}
+            - name: AGENT_SECRET_VAULT_STORE_KIND
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.agent.secretVault.pathPrefix }}
+            - name: AGENT_SECRET_VAULT_PATH_PREFIX
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.agent.secretVault.refreshInterval }}
+            - name: AGENT_SECRET_VAULT_REFRESH_INTERVAL
+              value: {{ . | quote }}
+            {{- end }}
+
+            # Which Deployment is this agent's own. It is the single object
+            # the self-update may write to, and the same name the RBAC grant
+            # is pinned to by resourceNames - so these two and that pin have
+            # to name the same object, which is why both come from the chart
+            # rather than from anything the control plane says. Unset (a
+            # hand-rolled manifest, a local run), the agent reports a build it
+            # was asked to run and leaves itself alone.
+            - name: AGENT_SELF_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: AGENT_SELF_DEPLOYMENT
+              value: {{ include "lerian-agent.name" . | quote }}
+
+            {{- if .Values.trust.additionalCABundle }}
+            # The client's own roots, beside the public ones: for the certificate
+            # check, for every connection this process opens (SSL_CERT_DIR adds to
+            # the image's root file), and handed to the provisioning Job by name.
+            - name: AGENT_TRUST_BUNDLE_DIR
+              value: /etc/lerian-agent/trust
+            - name: SSL_CERT_DIR
+              value: /etc/lerian-agent/trust
+            - name: AGENT_TRUST_BUNDLE_CONFIGMAP
+              value: {{ .Values.trust.additionalCABundle | quote }}
+            {{- end }}
+
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/lerian-agent
+            - name: tmp
+              mountPath: /tmp
+            {{- if or $registry.username $registry.existingSecret }}
+            - name: chart-registry
+              mountPath: {{ include "lerian-agent.chartRegistryMountPath" . | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.trust.additionalCABundle }}
+            - name: trust-bundle
+              mountPath: /etc/lerian-agent/trust
+              readOnly: true
+            {{- end }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 120 # 120 * 5s = 600s: covers enrollment retries at first boot
+
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+      # Writable destinations for the read-only root filesystem above:
+      # AGENT_STATE_DIR and /tmp (Helm's OCI chart pull). Both are emptyDir,
+      # so neither survives a pod being replaced - which is why an enrolled
+      # agent's identity is kept in the lerian-agent-identity Secret as well, and
+      # not here alone. See AGENT_STATE_DIR above.
+      volumes:
+        - name: state
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- if or $registry.username $registry.existingSecret }}
+        # The chart-registry credential, as a file rather than an environment
+        # variable. Two things follow, and both are why it is shaped this way.
+        # The kubelet keeps a mounted Secret in sync with the object behind it -
+        # about a minute after a change - and the agent re-reads the file on
+        # every chart pull, so rotating the Secret reaches a running agent with
+        # no rollout. And an environment variable holding a registry password is
+        # readable by anything that can describe this pod, while this file is
+        # readable only from inside the container.
+        #
+        # No subPath, deliberately: a subPath mount is the one shape the kubelet
+        # never refreshes, which would turn every rotation into a stale
+        # credential nobody can see is stale.
+        - name: chart-registry
+          secret:
+            secretName: {{ include "lerian-agent.chartRegistrySecretName" . }}
+            # Only the one key, named. A client-managed existingSecret is
+            # theirs, and an operator who parks a second field in it - a note,
+            # a second registry's token, a copy of something else - would
+            # otherwise have it projected into this container too.
+            items:
+              - key: .dockerconfigjson
+                path: .dockerconfigjson
+            # 0400, which the kubelet turns into 0440 because fsGroup is set
+            # on the pod above: it chowns the volume to the fsGroup and ORs in
+            # the read-only mask (0440 for a read-only volume, not the 0660 it
+            # uses for a writable one - k8s pkg/volume/volume_linux.go). That
+            # group read bit is the ONLY way this file is readable at all - a
+            # Secret volume's files are owned by root and the container runs as
+            # 65532 - so removing fsGroup from the securityContext above breaks
+            # every private chart pull, whatever mode is written here.
+            defaultMode: 0400
+        {{- end }}
+
+        {{- if .Values.trust.additionalCABundle }}
+        # The client's own certificate authorities, trusted beside the public
+        # roots on every connection the agent opens. A ConfigMap and not a
+        # Secret: a root certificate is a public document, and every browser in
+        # the client's organisation already carries it.
+        #
+        # No RBAC anywhere for this. A volume is projected by the kubelet
+        # before the container starts, out of the pod spec, so the agent's own
+        # ServiceAccount needs no verb on ConfigMaps to read what is mounted
+        # here - turning this on widens nothing the agent can reach through
+        # the API.
+        - name: trust-bundle
+          configMap:
+            name: {{ .Values.trust.additionalCABundle | quote }}
+            # Every key, unlike the chart-registry mount below which names one:
+            # an operator splitting their roots across root.pem and
+            # intermediate.pem is the ordinary way to write this, and a mount
+            # that silently took only the first would validate half a chain.
+            defaultMode: 0444
+        {{- end }}
+
+      # HELM_TIMEOUT (15m) plus the 5m rollback of a failed upgrade: running operations finish before SIGKILL.
+      terminationGracePeriodSeconds: 1200
+      restartPolicy: Always

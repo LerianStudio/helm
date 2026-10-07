@@ -1,0 +1,18 @@
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "lerian-agent.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "lerian-agent.labels" . | nindent 4 }}
+spec:
+  # minAvailable: 1 with a single replica blocks node drains forever - the
+  # only pod can never be evicted without breaking the budget. maxUnavailable
+  # allows the one pod to be evicted (and rescheduled), which is what
+  # draining a node actually needs.
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{ include "lerian-agent.name" . }}
+{{- end }}

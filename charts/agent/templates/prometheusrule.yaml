@@ -1,0 +1,91 @@
+{{- if .Values.prometheusRule.enabled }}
+{{- /* compact BEFORE the default: a list of only blank entries is the same statement as no list at all, and letting it through renders a Role for no namespace and a rule matching namespace=~"" - both of them silent. */ -}}
+{{- $managed := .Values.agent.managedNamespaces | compact | uniq | default (list .Release.Namespace) -}}
+{{- $volume := .Values.prometheusRule.volumeAlerts | default dict -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "lerian-agent.name" . }}-alerts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "lerian-agent.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: lerian-agent
+      rules:
+        - alert: LerianAgentCircuitBreakerOpen
+          expr: agent_circuit_breaker_state_info > 1
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Lerian Agent circuit breaker is open'
+            description: 'Agent {{ "{{ $labels.agent_id }}" }} circuit breaker has been open for more than 1 minute'
+            runbook_url: 'https://docs.lerian.studio/runbooks/agent-circuit-breaker'
+
+        - alert: LerianAgentHighPollErrorRate
+          expr: rate(agent_poll_errors_total[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'High poll error rate on Lerian Agent'
+            description: 'Agent {{ "{{ $labels.agent_id }}" }} is logging poll errors at more than 0.1/sec, sustained over 5 minutes'
+            runbook_url: 'https://docs.lerian.studio/runbooks/agent-poll-errors'
+
+        - alert: LerianAgentStuckWorkItems
+          expr: agent_work_items_in_progress > 10
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Work items appear stuck'
+            description: 'Agent {{ "{{ $labels.agent_id }}" }} has had more than 10 work items in progress continuously for 10 minutes'
+            runbook_url: 'https://docs.lerian.studio/runbooks/agent-stuck-work'
+
+        - alert: LerianAgentDown
+          expr: up{job="lerian-agent"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Lerian Agent is down'
+            description: 'Agent {{ "{{ $labels.instance }}" }} has been down for more than 2 minutes'
+            runbook_url: 'https://docs.lerian.studio/runbooks/agent-down'
+{{- if $volume.enabled }}
+
+    # Disk filling. NOT a signal the agent collects: a volume's used bytes are
+    # published by the kubelet and by nothing the agent is allowed to read, and
+    # reaching them would need a grant (nodes/proxy) that hands its holder
+    # every kubelet endpoint on the cluster, container logs and exec included.
+    # See docs/threat-model.md, "Disk filling: the signal Lerian does NOT
+    # collect".
+    #
+    # So this group exists instead: the same numbers, read by the Prometheus
+    # YOU already run and scraped from the kubelet the way every other node
+    # metric is, staying inside your cluster and reaching your own alerting.
+    # Nothing about it leaves for Lerian.
+    #
+    # Off by default because it depends on a scrape this chart does not set up:
+    # kubelet_volume_stats_* comes from the kubelet's /metrics/resource and
+    # kube-prometheus-stack collects it out of the box, while a hand-rolled
+    # Prometheus may not. Turn it on once you have confirmed the series exists.
+    - name: lerian-agent-volumes
+      rules:
+        - alert: LerianManagedVolumeFillingUp
+          expr: |-
+            kubelet_volume_stats_available_bytes{namespace=~"{{ join "|" $managed }}"}
+              / kubelet_volume_stats_capacity_bytes{namespace=~"{{ join "|" $managed }}"}
+              < {{ $volume.freeRatio | default 0.15 }}
+          for: {{ $volume.for | default "15m" }}
+          labels:
+            severity: warning
+          annotations:
+            summary: 'A volume of a Lerian-managed release is filling up'
+            description: 'PersistentVolumeClaim {{ "{{ $labels.namespace }}" }}/{{ "{{ $labels.persistentvolumeclaim }}" }} has less than {{ $volume.freeRatio | default 0.15 }} of its capacity free'
+            runbook_url: 'https://docs.lerian.studio/runbooks/volume-filling-up'
+{{- end }}
+{{- end }}

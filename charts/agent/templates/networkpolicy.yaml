@@ -1,0 +1,92 @@
+{{- if .Values.networkPolicy.enabled }}
+# Egress of the agent and of the provisioning Jobs it runs, from one rule set.
+# No ingress rule: neither receives inbound connections.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "lerian-agent.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "lerian-agent.labels" . | nindent 4 }}
+spec:
+  # The name label, not the Deployment's "app" selector: the throwaway Pod a
+  # self-update runs a new build in carries it too, and needs the same egress.
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "lerian-agent.name" . }}
+  policyTypes:
+    - Egress
+  egress:
+{{- include "lerian-agent.egress" . }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "lerian-agent.name" . }}-infra-runner
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "lerian-agent.labels" . | nindent 4 }}
+spec:
+  # The labels the agent puts on every provisioning Job's pod (infra/runner.go).
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: lerian-agent
+      app.kubernetes.io/component: infra-runner
+  policyTypes:
+    - Egress
+  egress:
+{{- include "lerian-agent.egress" . }}
+{{- end }}
+
+{{- define "lerian-agent.egress" }}
+    # DNS resolution (kube-system CoreDNS only, to prevent DNS exfiltration).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Kubernetes API - required for every Helm operation.
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.kubernetesApi.cidr | quote }}
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443
+
+    # Control plane and chart registries: the port controlPlane.url names, 443,
+    # and every port an agent.allowedChartRegistries entry names. A port missing
+    # here is dropped, not refused: the agent hangs until its own timeout.
+    {{- $u := urlParse .Values.controlPlane.url }}
+    {{- $cpPort := include "lerian-agent.hostPort" $u.host | default (ternary "80" "443" (eq $u.scheme "http")) }}
+    {{- $controlPlanePorts := list $cpPort "443" }}
+    {{- range .Values.agent.allowedChartRegistries }}
+    {{- with include "lerian-agent.hostPort" (first (splitList "/" (trim .))) }}
+    {{- $controlPlanePorts = append $controlPlanePorts . }}
+    {{- end }}
+    {{- end }}
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.controlPlane.cidr | quote }}
+      ports:
+        {{- range $controlPlanePorts | uniq }}
+        - protocol: TCP
+          port: {{ . | int }}
+        {{- end }}
+    {{- with .Values.networkPolicy.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
+
+{{- /* The port a host names ("reg:5000", "[fd00::1]:8443"), or nothing. */}}
+{{- define "lerian-agent.hostPort" -}}
+{{- $afterHost := . -}}
+{{- if contains "]" . }}{{ $afterHost = last (splitList "]" .) }}{{ end -}}
+{{- if contains ":" $afterHost }}{{ last (splitList ":" $afterHost) }}{{ end -}}
+{{- end -}}

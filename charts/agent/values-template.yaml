@@ -1,0 +1,16 @@
+# Template values for the agent deployment
+# Copy this file and customize for your environment
+
+controlPlane:
+  url: ""
+
+agent:
+  token: ""
+  id: ""
+  existingSecret: ""
+  managedNamespaces: []
+
+image:
+  repository: ghcr.io/lerianstudio/agent
+  tag: ""
+  digest: ""

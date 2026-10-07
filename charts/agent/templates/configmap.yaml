@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lerian-agent-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "lerian-agent.labels" . | nindent 4 }}
+data:
+  {{- /*
+  The agent authenticates with Authorization: Bearer on every request, so a
+  cleartext http:// control-plane URL would ship the token unencrypted
+  (CWE-319). Fail at template/install time unless the caller explicitly
+  opted in for an isolated dev/test cluster. The empty-URL case is left to
+  `required` below so its error message stays the canonical one.
+  */}}
+  {{- if .Values.controlPlane.url }}
+  {{- $parsed := urlParse .Values.controlPlane.url }}
+  {{- $scheme := $parsed.scheme }}
+  {{- if not (and $parsed.host $parsed.hostname (or (eq $scheme "https") (and (eq $scheme "http") .Values.controlPlane.allowInsecureURL))) }}
+  {{- fail (printf "controlPlane.url must be an https:// URL with a host (got %q): the agent sends its bearer token on every request. Set controlPlane.allowInsecureURL=true only for isolated dev/test clusters." .Values.controlPlane.url) }}
+  {{- end }}
+  {{- end }}
+  control-plane-url: {{ required "controlPlane.url is required" .Values.controlPlane.url | quote }}

@@ -104,15 +104,12 @@ spec:
             successThreshold: {{ .Values.auth.startupProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.auth.startupProbe.failureThreshold | default 5 }}
           {{- end }}
-      {{- with .Values.auth.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, auth.spread, auth.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.auth
+            "global" .Values.global
+            "selectorLabels" (include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

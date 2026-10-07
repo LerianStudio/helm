@@ -104,9 +104,15 @@ managed-cloud install. `values.yaml` is the full power-user reference;
 ## Pod Spreading (`global.scheduling.spread`)
 
 The bank-transfer Deployment renders `topologySpreadConstraints` from the `lerian-common` spread
-preset. The default is **soft** (`ScheduleAnyway`) on both nodes and zones, so
-replicas are spread across nodes (e.g. spot nodes) and zones whenever possible,
-but a pod is never left `Pending` because of it.
+preset. The default is **soft** (`ScheduleAnyway`) across nodes, so replicas
+are spread across nodes (e.g. spot nodes) whenever possible, but a pod is never
+left `Pending` because of it.
+
+Zone spreading is **off** by default (`zone: ""`). When scoring a soft spread, the
+scheduler skips every node that lacks the `topology.kubernetes.io/zone` label, so on
+clusters without zone labels (bare-metal, k3s) a zone constraint silently cancels the
+node spread. Turn it on (`zone: ScheduleAnyway`) where every node carries zone labels
+(EKS, GKE, AKS).
 
 ```yaml
 global:

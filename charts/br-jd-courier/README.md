@@ -32,24 +32,20 @@ Deployment sets `COURIER_ROLES` to its own role; the chart refuses an override.
 | `pix-ingress` | `<release>-br-jd-courier-pix-ingress` | HTTP port (`ports.http`, 8080) | N | `RollingUpdate` |
 | `admin` | `<release>-br-jd-courier-admin` | HTTP port | N (≥1) | `RollingUpdate` |
 
-## Environment and production guards
+## Environment
 
 `config.ENVIRONMENT_NAME` is **required**: the render fails without it. The
 service reads it to turn its production checks on (`production`, exact), and
 uses it as the environment segment of every Pix engine `credentialRef` and
 multi-tenant JD bundle path (`tenants/{env}/...`). Unset, it would boot as
-`development` with none of those checks.
+`development` with none of those checks. The service still reads the deprecated
+`ENV_NAME` as a fallback; the chart does not, so rename `config.ENV_NAME` to
+`config.ENVIRONMENT_NAME`.
 
-With `ENVIRONMENT_NAME=production` the render also refuses:
-
-| Value | Refused | Why |
-|---|---|---|
-| `config.POSTGRES_SSLMODE` | empty, `disable`, `allow`, `prefer` (anything but `require`, `verify-ca`, `verify-full`) | the database connection could run in plaintext |
-| `config.ALLOW_INSECURE_TLS` | `true`, `1`, `yes`, `on` | it dispenses TLS on every datastore connection, and the service deliberately does not refuse it |
-| `roles.spbSender` enabled with no SOAP TLS shape | see [SOAP TLS](#soap-tls-spb-sender) | the spb-sender refuses to boot, and the engines refuse plain HTTP |
-
-Outside production these values are left as the operator sets them. The chart
-only sees `config`: the same keys placed in the Secret are out of its sight.
+The production checks run in the service at boot, not in the render: a
+production pod refuses to start on `POSTGRES_SSLMODE=disable` or with no TLS on
+the spb-sender's SOAP listener. The chart checks neither, nor
+`ALLOW_INSECURE_TLS`.
 
 `config.DEPLOYMENT_MODE` defaults to `byoc` (`local`, `byoc`, `saas`). Only
 `saas` makes the service refuse a datastore connection without TLS; set it on
@@ -59,8 +55,8 @@ Lerian Cloud.
 
 The spb-sender's SOAP listener (`ports.soap`) is what the engines call, and they
 refuse plain HTTP, so it needs TLS in homologation as much as in production.
-Three shapes, all off by default; in production the render refuses an enabled
-spb-sender with none of them:
+Three shapes, all off by default; in production the spb-sender refuses to boot
+with none of them:
 
 | Shape | Values | What the chart does |
 |---|---|---|
@@ -68,16 +64,31 @@ spb-sender with none of them:
 | Certificate in the pod | `roles.spbSender.soapTls.existingSecret=<kubernetes.io/tls Secret>` | mounts it read-only at `/etc/jd-courier/soap-tls` and sets `SOAP_TLS_CERT_FILE`/`SOAP_TLS_KEY_FILE`; the listener serves TLS itself |
 | Terminated outside the chart | `roles.spbSender.soapTls.terminatedUpstream=true` | sets `SOAP_TLS_TERMINATED_UPSTREAM=true`, for a mesh or load balancer the chart does not render |
 
-On AWS, use `className: alb` with the annotations
-`alb.ingress.kubernetes.io/target-type: ip` (the Service is ClusterIP),
-`alb.ingress.kubernetes.io/certificate-arn` (ACM) and
-`alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'`. Combining the
-Ingress with `soapTls.existingSecret` re-encrypts to the pod: set
-`alb.ingress.kubernetes.io/backend-protocol: HTTPS`. The certificate is read
-once at boot; rotating the Secret needs `kubectl rollout restart`.
-`config.SOAP_TLS_*` is refused: those keys follow these values. The Ingress
-routes only the SOAP port; the probes listen on `ports.http`, which it never
-reaches.
+On AWS, use the ALB with `target-type: ip` (the Service is ClusterIP). The
+Ingress routes only the SOAP port, and the SOAP listener is not a health
+endpoint: point the ALB health check at `/health` on `ports.http` (8080 unless
+overridden), the liveness probe's endpoint:
+
+```yaml
+roles:
+  spbSender:
+    ingress:
+      enabled: true
+      className: alb
+      annotations:
+        alb.ingress.kubernetes.io/target-type: ip
+        alb.ingress.kubernetes.io/certificate-arn: <ACM certificate ARN>
+        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+        alb.ingress.kubernetes.io/healthcheck-port: "8080"
+        alb.ingress.kubernetes.io/healthcheck-path: /health
+        alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+```
+
+Combining the Ingress with `soapTls.existingSecret` re-encrypts to the pod: set
+`alb.ingress.kubernetes.io/backend-protocol: HTTPS`; the health check stays
+HTTP on 8080. The certificate is read once at boot; rotating the Secret needs
+`kubectl rollout restart`. `config.SOAP_TLS_*` is refused: those keys follow
+these values.
 
 ## AWS identity
 

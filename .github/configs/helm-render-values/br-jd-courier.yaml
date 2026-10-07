@@ -1,5 +1,4 @@
 # CI-only render values for br-jd-courier. Not a production example.
-# The chart refuses to render without config.ENVIRONMENT_NAME; a non-production
-# name keeps the production-only refusals (Postgres TLS, SOAP TLS) out of the gate.
+# The chart refuses to render without config.ENVIRONMENT_NAME.
 config:
   ENVIRONMENT_NAME: "ci"

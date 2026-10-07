@@ -43,10 +43,8 @@ serviceAccount:
 # ENVIRONMENT_NAME is required, and the render refuses without it: "production"
 # turns the service's production checks on, and the value is the environment
 # segment of every Pix engine credentialRef and multi-tenant JD bundle path
-# (tenants/{env}/...). With it set to production the render also refuses a
-# POSTGRES_SSLMODE weaker than require, ALLOW_INSECURE_TLS=true, and an enabled
-# spb-sender with no TLS shape in roles.spbSender. OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
-# follows ENVIRONMENT_NAME unless set here.
+# (tenants/{env}/...); the deprecated ENV_NAME does not satisfy the render.
+# OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT follows ENVIRONMENT_NAME unless set here.
 config:
   PLUGIN_AUTH_ENABLED: "true"
   # local, byoc or saas. saas refuses to boot unless every datastore connection
@@ -88,8 +86,8 @@ roles:
     service:
       type: ClusterIP
     # TLS for the SOAP listener (ports.soap). The engines refuse plain HTTP, and
-    # with ENVIRONMENT_NAME=production the render refuses an enabled spb-sender
-    # unless one of these, or ingress.enabled, is set.
+    # a production spb-sender refuses to boot unless one of these, or
+    # ingress.enabled, is set.
     soapTls:
       # A kubernetes.io/tls Secret (tls.crt, tls.key) mounted read-only at
       # /etc/jd-courier/soap-tls; the listener then serves TLS itself. Read once
@@ -101,7 +99,9 @@ roles:
     # Routes the SOAP Service; TLS is terminated at the Ingress, so the chart
     # sets SOAP_TLS_TERMINATED_UPSTREAM=true. On AWS: className alb, and
     # annotations alb.ingress.kubernetes.io/target-type: ip plus
-    # certificate-arn (ACM) and listen-ports '[{"HTTPS":443}]'. Combined with
+    # certificate-arn (ACM) and listen-ports '[{"HTTPS":443}]', and the health
+    # check on ports.http (healthcheck-port "8080", healthcheck-path /health,
+    # healthcheck-protocol HTTP): the SOAP listener is no health endpoint. With
     # soapTls.existingSecret the pod serves TLS too: set the controller's backend
     # protocol to HTTPS (alb.ingress.kubernetes.io/backend-protocol: HTTPS).
     ingress:

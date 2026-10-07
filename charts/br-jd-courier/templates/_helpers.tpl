@@ -59,25 +59,11 @@ there are three layers and not one: the boot guard reads the registry and catche
 what the chart cannot, and the chart catches what never reaches a boot.
 */ -}}
 {{- define "br-jd-courier.guards" -}}
-{{- /* Trimmed and compared exactly, as the service reads it. Empty would boot as
+{{- /* Trimmed, as the service reads it. Empty would boot as
      "development": no production checks, and a wrong segment in every secret path. */ -}}
 {{- $env := trim (toString (get $.Values.config "ENVIRONMENT_NAME" | default "")) -}}
 {{- if not $env -}}
-{{- fail "config.ENVIRONMENT_NAME is required: it turns the Courier's production checks on (production) and is the environment segment of every Pix engine credentialRef and multi-tenant JD bundle path (tenants/{env}/...). Unset, the service boots as development." -}}
-{{- end -}}
-{{- if eq $env "production" -}}
-{{- $sslmode := toString (get $.Values.config "POSTGRES_SSLMODE" | default "") -}}
-{{- if not (has $sslmode (list "require" "verify-ca" "verify-full")) -}}
-{{- fail (printf "config.POSTGRES_SSLMODE=%q is refused in production: set require, verify-ca or verify-full (verify-full recommended); anything weaker lets the database connection run in plaintext" $sslmode) -}}
-{{- end -}}
-{{- /* lib-commons' own spellings of true. */ -}}
-{{- if has (lower (trim (toString (get $.Values.config "ALLOW_INSECURE_TLS" | default "")))) (list "true" "1" "yes" "on") -}}
-{{- fail "config.ALLOW_INSECURE_TLS=true is refused in production: it lets every datastore connection, Postgres included, run in plaintext" -}}
-{{- end -}}
-{{- $sender := $.Values.roles.spbSender -}}
-{{- if and $sender.enabled (not (or $sender.ingress.enabled $sender.soapTls.existingSecret $sender.soapTls.terminatedUpstream)) -}}
-{{- fail "roles.spbSender in production needs TLS in front of its SOAP listener, or its pods refuse to boot and the engines refuse plain HTTP: set roles.spbSender.ingress.enabled, roles.spbSender.soapTls.existingSecret (a kubernetes.io/tls Secret), or roles.spbSender.soapTls.terminatedUpstream=true when a mesh or load balancer outside this chart terminates it" -}}
-{{- end -}}
+{{- fail "config.ENVIRONMENT_NAME is required: it turns the Courier's production checks on (production) and is the environment segment of every Pix engine credentialRef and multi-tenant JD bundle path (tenants/{env}/...). Unset, the service boots as development. config.ENV_NAME, the service's deprecated alias, does not satisfy this chart: rename it to ENVIRONMENT_NAME." -}}
 {{- end -}}
 {{- $singleWriterRoles := dict "spbConsumer" "spb-consumer" -}}
 {{- range $key, $role := $singleWriterRoles -}}

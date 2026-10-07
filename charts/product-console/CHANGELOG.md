@@ -5,6 +5,27 @@
 Features:
 - Spread console pods across nodes to improve distribution. (@guimoreirar)
 - Expose `minDomains` and `nodeTaintsPolicy` settings for more granular control over pod spreading. (@guimoreirar)
+- Spread console pods across nodes and zones for enhanced resilience. (@guimoreirar)
+
+Fixes:
+- Disable zone spreading by default to prevent unintended behavior. (@guimoreirar)
+- Ensure the `existingSecret` template for MongoDB remains on a single line for consistency. (@guimoreirar)
+- Update `product-console` to `@2.8.0` for improved stability. (@lerian-studio)
+
+Improvements:
+- Accurately describe the default pod spreading behavior in the documentation. (@guimoreirar)
+- Add a Helm upgrade guide for `product-console` `v4.3.0`. (@guimoreirar)
+- Add a Helm upgrade guide for `product-console` `v4.3.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.3.1...product-console-v4.4.0)
+
+---
+
+## [4.4.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.0)
+
+Features:
+- Spread console pods across nodes to improve distribution. (@guimoreirar)
+- Expose `minDomains` and `nodeTaintsPolicy` settings for more granular control over pod spreading. (@guimoreirar)
 - Spread console pods across both nodes and zones for enhanced resilience. (@guimoreirar)
 
 Fixes:

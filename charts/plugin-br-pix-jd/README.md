@@ -37,7 +37,7 @@ Each component has its own image: `plugin-br-pix-jd` (api) and `plugin-br-pix-jd
 
 ## Payment-order signing
 
-JD rejects a payment order that does not carry the participant's signature (the `hash` group), so an install cannot send a Pix without the signing key and the certificate registered at JD for it.
+JD rejects a payment order that does not carry the participant's signature (the `hash` group), so an install cannot send a Pix without the signing key and the certificate registered in JDPI Cabine for it.
 
 | Value | Where it lands | Required |
 |---|---|---|
@@ -45,6 +45,8 @@ JD rejects a payment order that does not carry the participant's signature (the 
 | `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` | api Secret, `JD_PAYMENT_SIGNING_CERTIFICATE` | yes |
 | `api.configmap.JD_PAYMENT_SIGNING_ALGORITHM` | api ConfigMap, only when set | no — empty means `ECDSA_P256_SHA256`; also `ECDSA_P384_SHA384`, `RSA_PKCS1_SHA256` |
 
+- JDPI Cabine receives **only the public certificate** (PEM), as "Certificados Hash – Assinatura Payload". The private key never leaves your environment: it goes only into `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY`.
+- `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` must be **the same certificate** registered in Cabine: the plugin derives each payment order's thumbprint from it, and JD refuses every order signed against a different one (`JDPISPI017`). Compare its SHA-1 fingerprint with Cabine's: `openssl x509 -in cert.pem -outform DER | shasum -a 1 | tr a-f A-F`.
 - Both values are PEM. Pass the files with `--set-file api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY=key.pem --set-file api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE=cert.pem`, or as YAML block scalars (`|`).
 - The render FAILS, naming the value, while either PEM is empty or has no `-----BEGIN` header, and when the algorithm is not one of the three accepted.
 - With `api.existingSecret.name` the chart renders no Secret and does not check: that Secret must carry both keys.

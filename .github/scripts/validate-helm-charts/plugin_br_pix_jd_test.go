@@ -8,9 +8,8 @@ import (
 )
 
 // The plugin-br-pix-jd payment-order signing contract. JD rejects an unsigned
-// payment order, so in single-tenant the two PEMs are a render gate; in
-// multi-tenant the app reads them from the tenant's secret bundle and the chart
-// must render none of the three keys.
+// payment order, so the two PEMs are a render gate. With MULTI_TENANT_ENABLED=true
+// the app does not read the three variables and the chart must render none of them.
 
 const pixJDFixture = "../../configs/helm-render-values/plugin-br-pix-jd.yaml"
 
@@ -91,8 +90,8 @@ func TestPixJDSingleTenantRefusesWithoutUsableSigning(t *testing.T) {
 		name, want string
 		args       []string
 	}{
-		{"no private key", "api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY is required in single-tenant", []string{"--set", "api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY="}},
-		{"no certificate", "api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE is required in single-tenant", []string{"--set", "api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE="}},
+		{"no private key", "api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY is required: the PEM private key whose certificate is registered in JDPI Cabine", []string{"--set", "api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY="}},
+		{"no certificate", "api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE is required: the PEM certificate registered in JDPI Cabine for the signing key", []string{"--set", "api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE="}},
 		{"a private key that is not PEM", "api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY must be PEM", []string{"--set", "api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY=raw-bytes"}},
 		{"a certificate that is not PEM", "api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE must be PEM", []string{"--set", "api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE=raw-bytes"}},
 		{"an algorithm the app does not sign with", "api.configmap.JD_PAYMENT_SIGNING_ALGORITHM must be one of", []string{"--set", "api.configmap.JD_PAYMENT_SIGNING_ALGORITHM=Ed25519"}},
@@ -103,6 +102,8 @@ func TestPixJDSingleTenantRefusesWithoutUsableSigning(t *testing.T) {
 			t.Errorf("%s: rendered, want a refusal", c.name)
 		} else if !strings.Contains(out, c.want) {
 			t.Errorf("%s: refused without naming %q: %s", c.name, c.want, oneLine(out))
+		} else if strings.Contains(strings.ToLower(out), "tenant") {
+			t.Errorf("%s: refusal speaks of tenancy, which the operator never configures: %s", c.name, oneLine(out))
 		}
 	}
 
@@ -129,7 +130,7 @@ func TestPixJDSingleTenantAlgorithmReachesTheConfigMap(t *testing.T) {
 
 func TestPixJDMultiTenantRendersNoSigning(t *testing.T) {
 	// A wrong algorithm and a set key prove the keys are not merely empty but
-	// never rendered: the multi-tenant app ignores them.
+	// never rendered: with MULTI_TENANT_ENABLED=true the app does not read them.
 	for _, extra := range [][]string{
 		nil,
 		{"--set", "api.configmap.JD_PAYMENT_SIGNING_ALGORITHM=Ed25519"},

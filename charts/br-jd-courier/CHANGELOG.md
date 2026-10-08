@@ -6,6 +6,22 @@ Features:
 - Serve the outbound pix transit on the admin role. (@fredcamaral)
 
 Fixes:
+- List `JD_PASSWORD` in the chart's secrets table to ensure proper configuration. (@fredcamaral)
+- Ensure compatibility with `--reuse-values` from `2.0.0`. (@fredcamaral)
+
+Improvements:
+- State the pix transit's image, callers, and JD keys in the documentation for clearer understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.0.0...br-jd-courier-v2.1.0)
+
+---
+
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.0)
+
+Features:
+- Serve the outbound pix transit on the admin role. (@fredcamaral)
+
+Fixes:
 - List `JD_PASSWORD` in the chart's secrets table. (@fredcamaral)
 - Ensure compatibility with `--reuse-values` from `2.0.0`. (@fredcamaral)
 

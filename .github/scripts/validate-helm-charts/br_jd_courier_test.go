@@ -106,6 +106,15 @@ func indexOf(values []string, want string) int {
 	return -1
 }
 
+func portNamed(ports []interface{}, name string) interface{} {
+	for _, p := range ports {
+		if dig(p, "name") == name {
+			return p
+		}
+	}
+	return nil
+}
+
 func TestCourierRefusesWhatTheContractForbids(t *testing.T) {
 	type refusal struct {
 		name, want string
@@ -155,6 +164,8 @@ func TestCourierRefusesWhatTheContractForbids(t *testing.T) {
 		{"--set", "migrations.enabled=false", "--set", "config.MULTI_TENANT_ENABLED=true"},
 		{"--set-string", "podAnnotations.ca=-----BEGIN CERTIFICATE-----MIIB", "--set-string", "podAnnotations.note=rotate the PRIVATE KEY yearly"},
 		{"--set", "roles.spbSender.replicas=5", "--set", "roles.admin.replicas=3", "--set", "roles.pixIngress.replicas=4"},
+		// Values reused from 2.0.0 (helm upgrade --reuse-values) carry no pixTransit block.
+		{"--set", "roles.admin.pixTransit=null"},
 		// Datastore and SOAP TLS in production are the service's boot checks, not the render's.
 		{"--set", "config.ENVIRONMENT_NAME=production"},
 	} {
@@ -393,9 +404,9 @@ func TestCourierPixTransit(t *testing.T) {
 		docs := courierManifests(t, "--set", "roles.admin.pixTransit.enabled=true", "--set", "ports.pixTransit=9443", "--set", shape.arg)
 		for _, s := range ofKind(docs, "Service") {
 			ports, _ := dig(s, "spec", "ports").([]interface{})
-			admin := nestedString(s, "metadata", "name") == "t-br-jd-courier-admin"
-			exposed := len(ports) == 2 && dig(ports[1], "name") == "pix-transit" && dig(ports[1], "port") == 9443 && dig(ports[1], "targetPort") == "pix-transit"
-			if exposed != admin {
+			transit := portNamed(ports, "pix-transit")
+			if admin := nestedString(s, "metadata", "name") == "t-br-jd-courier-admin"; (transit != nil) != admin ||
+				admin && (dig(transit, "port") != 9443 || dig(transit, "targetPort") != "pix-transit") {
 				t.Errorf("%s: %s exposes %v; only the admin Service carries the transit port", shape.arg, nestedString(s, "metadata", "name"), ports)
 			}
 		}
@@ -406,7 +417,7 @@ func TestCourierPixTransit(t *testing.T) {
 			ports, _ := c["ports"].([]interface{})
 			volumes, _ := dig(d, "spec", "template", "spec", "volumes").([]interface{})
 			if name != "t-br-jd-courier-admin" {
-				if byName["PIX_TRANSIT_SERVER_ADDRESS"] != nil || len(volumes) != 0 {
+				if byName["PIX_TRANSIT_SERVER_ADDRESS"] != nil || portNamed(ports, "pix-transit") != nil || len(volumes) != 0 {
 					t.Errorf("%s: %s serves no transit and must carry none", shape.arg, name)
 				}
 				continue
@@ -415,8 +426,7 @@ func TestCourierPixTransit(t *testing.T) {
 			cert := dig(byName["PIX_TRANSIT_TLS_CERT_FILE"], "value") == "/etc/jd-courier/pix-transit-tls/tls.crt" &&
 				dig(byName["PIX_TRANSIT_TLS_KEY_FILE"], "value") == "/etc/jd-courier/pix-transit-tls/tls.key" &&
 				len(volumes) == 1 && dig(volumes[0], "secret", "secretName") == "pix-transit-cert"
-			if dig(byName["PIX_TRANSIT_SERVER_ADDRESS"], "value") != ":9443" || len(ports) != 2 ||
-				dig(ports[1], "name") != "pix-transit" || dig(ports[1], "containerPort") != 9443 ||
+			if dig(byName["PIX_TRANSIT_SERVER_ADDRESS"], "value") != ":9443" || dig(portNamed(ports, "pix-transit"), "containerPort") != 9443 ||
 				cert != shape.cert || upstream != shape.upstream || (!shape.cert && len(volumes) != 0) {
 				t.Errorf("%s: the admin must listen on ports.pixTransit with exactly this TLS shape: %v %v %v", shape.arg, byName, ports, volumes)
 			}

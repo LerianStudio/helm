@@ -306,6 +306,12 @@ spec:
 {{- end }}
 {{- end -}}
 
+{{- /* The admin's ports: http, plus pixTransit while the transit is on. dig, because values
+     reused from 2.0.0 (helm upgrade --reuse-values) carry no roles.admin.pixTransit. */ -}}
+{{- define "br-jd-courier.adminPorts" -}}
+http{{ if dig "pixTransit" "enabled" false .Values.roles.admin }} pixTransit{{ end }}
+{{- end -}}
+
 {{- define "br-jd-courier.service" -}}
 {{- $ctx := .ctx -}}
 {{- $values := index $ctx.Values.roles .key -}}

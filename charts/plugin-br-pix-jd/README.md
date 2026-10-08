@@ -68,6 +68,10 @@ Set these only when your institution needs them.
 | `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY` | only if JD requires signed payment orders for your institution | PEM private key | empty |
 | `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` | only if JD requires signed payment orders for your institution | PEM certificate registered at JD | empty |
 | `api.configmap.JD_PAYMENT_SIGNING_ALGORITHM` | only if your key does not use the default algorithm | `ECDSA_P256_SHA256`, `ECDSA_P384_SHA384` or `RSA_PKCS1_SHA256` | empty, read as `ECDSA_P256_SHA256` |
+| `api.configmap.IDP_DECLARATION_ENABLED` | only in a single-tenant install that should publish the plugin's permissions to the Access Manager at startup. Needs `PLUGIN_AUTH_ENABLED=true` and the three keys below; the render fails without them | `"true"` or `"false"` | `"false"` |
+| `api.configmap.IDP_HOST` | only with `IDP_DECLARATION_ENABLED="true"` | Access Manager identity address, `http(s)://` URL without credentials | empty |
+| `api.configmap.IDP_M2M_CLIENT_ID` | only with `IDP_DECLARATION_ENABLED="true"` | client ID of the plugin's M2M application in the Access Manager | empty |
+| `api.secrets.IDP_M2M_CLIENT_SECRET` | only with `IDP_DECLARATION_ENABLED="true"` | client secret of that application | empty |
 
 - **The encryption key** protects the delivery secret of each indirect participant. Create it with `openssl rand -hex 32`. The render fails on a value that is not 64 hex characters. See [Hosting indirect participants](https://docs.lerian.studio/en/interfaces/pix-jd/hosting-indirect-participants).
 - **The signing key and the certificate go together: set both or neither.** With only one, the render fails, because the plugin would refuse every payment order. With neither, the plugin sends unsigned orders, which a JD that does not require the signature accepts.
@@ -93,7 +97,7 @@ A values file with the values above. Every value is a placeholder:
 ```yaml
 api:
   image:
-    tag: "1.1.2"
+    tag: "1.2.0"
   configmap:
     ENVIRONMENT_NAME: "production"
     ORGANIZATION_IDS: "global"

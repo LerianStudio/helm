@@ -912,6 +912,53 @@ under `data:`. Input: root context ($). */}}
 {{- end -}}
 {{- end }}
 
+{{/* declarationEnv — IDP_DECLARATION_ENABLED and, when on, IDP_HOST and
+IDP_M2M_CLIENT_ID. Api-only: the api publishes the permissions manifest to the
+Access Manager at boot; the worker never does. Off (the default) emits only the
+flag, and the app reads nothing else. On, the render fails on what the app would
+refuse at boot: an empty IDP_HOST or IDP_M2M_CLIENT_ID, a host that is not an
+http(s) URL or carries credentials, or PLUGIN_AUTH_ENABLED off (the M2M token is
+minted by the lib-auth client). Input dict: root, authEnabled. */}}
+{{- define "plugin-br-pix-jd.declarationEnv" -}}
+{{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .root) -}}
+{{- $enabled := index $cfg "IDP_DECLARATION_ENABLED" | default "false" | toString -}}
+{{- if not (has $enabled (list "true" "false")) -}}
+{{- fail (printf "\n\nERROR: api.configmap.IDP_DECLARATION_ENABLED must be \"true\" or \"false\"; got %q.\n" $enabled) -}}
+{{- end }}
+IDP_DECLARATION_ENABLED: {{ $enabled | quote }}
+{{- if eq $enabled "true" -}}
+{{- $host := index $cfg "IDP_HOST" | default "" | toString | trim -}}
+{{- $clientID := index $cfg "IDP_M2M_CLIENT_ID" | default "" | toString | trim -}}
+{{- $missing := list -}}
+{{- if not $host -}}{{- $missing = append $missing "api.configmap.IDP_HOST" -}}{{- end -}}
+{{- if not $clientID -}}{{- $missing = append $missing "api.configmap.IDP_M2M_CLIENT_ID" -}}{{- end -}}
+{{- if ne (.authEnabled | default "false" | toString) "true" -}}{{- $missing = append $missing "PLUGIN_AUTH_ENABLED=true" -}}{{- end -}}
+{{- if $missing -}}
+{{- fail (printf "\n\nERROR: IDP_DECLARATION_ENABLED=true requires %s.\nThe app refuses to boot without them: it cannot publish its permissions to the Access Manager.\n" (join ", " $missing)) -}}
+{{- end -}}
+{{- if and (not (hasPrefix "<path:" $host)) (not (regexMatch "^https?://[^/@?#[:space:]]+(/.*)?$" $host)) -}}
+{{- fail "\n\nERROR: api.configmap.IDP_HOST must be an absolute http(s) URL with a host and no user credentials.\nThe app refuses any other value at boot.\n" -}}
+{{- end }}
+IDP_HOST: {{ $host | quote }}
+IDP_M2M_CLIENT_ID: {{ $clientID | quote }}
+{{- end -}}
+{{- end }}
+
+{{/* declarationSecrets — IDP_M2M_CLIENT_SECRET as a `KEY: <b64>` line; the caller
+nindents under `data:`. Called only when the chart renders its own Secret, so an
+existingSecret is never checked. Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.declarationSecrets" -}}
+{{- $secret := index (.Values.api.secrets | default dict) "IDP_M2M_CLIENT_SECRET" | default "" | toString -}}
+{{- $enabled := index (fromYaml (include "plugin-br-pix-jd.effectiveConfig" .)) "IDP_DECLARATION_ENABLED" | default "false" | toString -}}
+{{- $viaExtra := hasKey (.Values.api.extraSecrets | default dict) "IDP_M2M_CLIENT_SECRET" -}}
+{{- if and (eq $enabled "true") (not $secret) (not $viaExtra) -}}
+{{- fail "\n\nERROR: api.secrets.IDP_M2M_CLIENT_SECRET is required when IDP_DECLARATION_ENABLED=true.\nThe app refuses to boot without it: it cannot publish its permissions to the Access Manager.\n" -}}
+{{- end -}}
+{{- if $secret -}}
+IDP_M2M_CLIENT_SECRET: {{ $secret | b64enc | quote }}
+{{- end -}}
+{{- end }}
+
 {{/*
 ------------------------------------------------------------------------------
 workerCronEnv — the worker's own surface: cron cadence and the stuck-order threshold.

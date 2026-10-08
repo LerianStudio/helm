@@ -72,6 +72,8 @@
 {{- $_ := set $http "SWAGGER_HOST" (required "\n\nERROR: api.configmap.SWAGGER_HOST is required when SWAGGER_ENABLED=true.\nThe app short-circuits on an empty host and emits an empty `servers` list, so the\ndocument renders but no request can be issued from it.\n" (index $cfg "SWAGGER_HOST" | default "")) -}}
 {{- $_ := set $http "SWAGGER_SCHEMES" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cfg "key" "SWAGGER_SCHEMES" "default" "https")) -}}
 {{- end -}}
+{{- /* Permission declaration — api-only, so it rides the api's own surface. */ -}}
+{{- $http = mergeOverwrite $http (fromYaml (include "plugin-br-pix-jd.declarationEnv" (dict "root" $ "authEnabled" (index $platform "PLUGIN_AUTH_ENABLED")))) -}}
 {{- /* Merge order IS the precedence contract: platform < rate-limit < CORS < http
    < extraConfigmap. The escape hatch merges last and therefore wins — stated
    plainly in values.yaml rather than claimed otherwise. */ -}}

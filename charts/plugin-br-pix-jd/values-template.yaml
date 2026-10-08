@@ -8,7 +8,7 @@
 
 api:
   image:
-    # Pin the published app tag explicitly in production (1.1.2 for this chart).
+    # Pin the published app tag explicitly in production (1.2.0 for this chart).
     # Empty inherits Chart.appVersion; registry tags have no leading v.
     tag: ""
 

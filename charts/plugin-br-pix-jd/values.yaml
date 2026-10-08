@@ -292,6 +292,13 @@ api:
     # one is set. Multi-line: use --set-file or a YAML block scalar.
     JD_PAYMENT_SIGNING_PRIVATE_KEY: ""
     JD_PAYMENT_SIGNING_CERTIFICATE: ""
+    # Required only with api.configmap.IDP_DECLARATION_ENABLED="true" (default "false",
+    # single-tenant only): the api then publishes its permissions to the Access Manager
+    # at boot, at api.configmap.IDP_HOST (http(s) URL), as the M2M application
+    # api.configmap.IDP_M2M_CLIENT_ID with this secret. PLUGIN_AUTH_ENABLED must be
+    # "true". IDP_HOST and IDP_M2M_CLIENT_ID may also be set here or in extraSecrets;
+    # the render fails when any of the three is blank everywhere.
+    IDP_M2M_CLIENT_SECRET: ""
   # -- Escape hatch for secret keys this chart does not model yet. Base64-encoded
   # by the template, so supply plaintext values.
   extraSecrets: {}
@@ -408,10 +415,10 @@ migrations:
   # extract-from-the-app-image approach could never run (see the Job template).
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations
-    # -- Pinned explicitly: api, worker and migrations are all published at 1.1.1.
+    # -- Pinned explicitly: api, worker and migrations are all published at 1.2.0.
     # Migrations are independently versioned; a release that does not touch the SQL
     # skips this image, so re-check the pin on every appVersion bump.
-    tag: "1.1.1"
+    tag: "1.2.0"
     pullPolicy: IfNotPresent
   # -- Optional x-migrations-table override, passed to the image as
   # POSTGRES_MIGRATIONS_TABLE; empty uses golang-migrate's default (schema_migrations)

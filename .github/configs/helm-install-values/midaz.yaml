@@ -1,7 +1,0 @@
-# The standalone CRM (crm.enabled, opt-in) defaults KMS_VENDOR to hashicorp-vault at a
-# Vault the chart does not bundle (http://midaz-hc-vault:8200), so its /readyz reports
-# "checker vault down" forever in kind. Legacy mode runs on the LCRYPTO keys the render
-# fixture already supplies.
-crm:
-  configmap:
-    KMS_VENDOR: "none"

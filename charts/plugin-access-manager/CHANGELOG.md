@@ -3,6 +3,22 @@
 ## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.6.0)
 
 Features:
+- Exposed `spread minDomains` and `nodeTaintsPolicy` settings in the plugin-access-manager, enhancing configuration flexibility. (@guimoreirar)
+- Implemented spreading of auth, identity, and caradhras pods across nodes and zones to improve resilience and availability. (@guimoreirar)
+
+Fixes:
+- Disabled zone spreading by default to prevent unintended distribution of resources across zones. (@guimoreirar)
+
+Improvements:
+- Added a Helm upgrade guide for `plugin-access-manager` `v9.5.10`, providing users with detailed instructions for upgrading. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.10...plugin-access-manager-v9.6.0)
+
+---
+
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.6.0)
+
+Features:
 - Expose spread `minDomains` and `nodeTaintsPolicy` settings, enhancing the flexibility of node and domain spreading configurations. (@guimoreirar)
 - Implement spreading of auth, identity, and caradhras pods across nodes and zones to improve resource distribution and fault tolerance. (@guimoreirar)
 

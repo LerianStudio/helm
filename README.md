@@ -175,7 +175,25 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.1.0` | 1.0.0 |
 -----------------
 
+### Alloy Lerian
+
+Telemetry collection agent for client clusters (BYOC). Replaces Otel Collector Lerian in the client-side collection role.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/alloy-lerian).
+
+#### Application Version Mapping
+
+| Chart Version | Alloy Version |
+| :---: | :---: |
+| `1.0.0` | 1.18.1 |
+-----------------
+
 ### Otel Collector Lerian
+
+> [!WARNING]
+> **Deprecated.** Superseded by [Alloy Lerian](#alloy-lerian) for client-side
+> collection. New installations should use Alloy Lerian; existing ones remain
+> supported while they migrate.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/otel-collector-lerian).
 

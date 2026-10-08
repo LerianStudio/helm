@@ -849,13 +849,13 @@ QRCODE_JWKS_CONTENT_TYPE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $c
 ------------------------------------------------------------------------------
 paymentSigning — the key that signs the JDPI payment order.
 
-JD running with HashAtivo rejects a payment order that carries no `hash` group, so an
-install without a key and the certificate registered in JDPI Cabine for it cannot send
-a single Pix. That is why the two PEMs are REQUIRED here rather than left to the app's
-boot error: a render that refuses names the value to set before anything is deployed.
+Optional, as in the app: with neither PEM the app sends unsigned orders, which a JD
+not running HashAtivo accepts; with both it signs every order. With exactly one the
+app refuses every order (409 PIX-0136), so the render refuses first, naming the
+missing value.
 
 With MULTI_TENANT_ENABLED=true the app does not read these variables, so nothing is
-rendered or required.
+rendered or checked.
 
 With api.existingSecret.name the operator's Secret carries the two PEMs and the chart
 renders no Secret of its own, so the gate does not apply.
@@ -891,17 +891,22 @@ under `data:`. Input: root context ($). */}}
 {{- define "plugin-br-pix-jd.paymentSigningSecrets" -}}
 {{- if include "plugin-br-pix-jd.paymentSigningApplies" . -}}
 {{- $s := .Values.api.secrets | default dict -}}
+{{- $key := index $s "JD_PAYMENT_SIGNING_PRIVATE_KEY" | default "" | toString -}}
+{{- $cert := index $s "JD_PAYMENT_SIGNING_CERTIFICATE" | default "" | toString -}}
 {{- $lines := list -}}
-{{- range $k := (list "JD_PAYMENT_SIGNING_PRIVATE_KEY" "JD_PAYMENT_SIGNING_CERTIFICATE") -}}
-{{- $v := index $s $k | default "" | toString -}}
-{{- if not $v -}}
-{{- $what := ternary "the PEM private key whose certificate is registered in JDPI Cabine" "the PEM certificate registered in JDPI Cabine for the signing key" (eq $k "JD_PAYMENT_SIGNING_PRIVATE_KEY") -}}
-{{- fail (printf "\n\nERROR: api.secrets.%s is required: %s.\nJD rejects a payment order without the `hash` signature, so without both no Pix can be sent.\nSet api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY and api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE\n(PEM), or point api.existingSecret.name at a Secret that carries them.\n" $k $what) -}}
+{{- if or $key $cert -}}
+{{- if not (and $key $cert) -}}
+{{- $set := ternary "JD_PAYMENT_SIGNING_PRIVATE_KEY" "JD_PAYMENT_SIGNING_CERTIFICATE" (ne $key "") -}}
+{{- $missing := ternary "JD_PAYMENT_SIGNING_CERTIFICATE" "JD_PAYMENT_SIGNING_PRIVATE_KEY" (ne $key "") -}}
+{{- $what := ternary "the PEM certificate registered in JDPI Cabine for the signing key" "the PEM private key whose certificate is registered in JDPI Cabine" (ne $key "") -}}
+{{- fail (printf "\n\nERROR: api.secrets.%s is missing: %s.\napi.secrets.%s is set, and with only one of the two the app refuses every payment order:\nset both or neither (with neither, payment orders are sent unsigned).\n" $missing $what $set) -}}
 {{- end -}}
+{{- range $k, $v := (dict "JD_PAYMENT_SIGNING_PRIVATE_KEY" $key "JD_PAYMENT_SIGNING_CERTIFICATE" $cert) -}}
 {{- if and (not (hasPrefix "<path:" $v)) (not (contains "-----BEGIN " $v)) -}}
 {{- fail (printf "\n\nERROR: api.secrets.%s must be PEM (a \"-----BEGIN ...-----\" block); got %d characters\nwith no PEM header. Pass the file content, e.g. --set-file api.secrets.%s=<file>.pem\n" $k (len $v) $k) -}}
 {{- end -}}
 {{- $lines = append $lines (printf "%s: %s" $k ($v | b64enc | quote)) -}}
+{{- end -}}
 {{- end -}}
 {{- join "\n" $lines -}}
 {{- end -}}

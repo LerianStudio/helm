@@ -77,9 +77,9 @@ api:
     # Optional: an in-cluster Redis with no auth is a legitimate topology.
     REDIS_PASSWORD: ""
 
-    # REQUIRED: the PEM key that signs the JDPI payment order and the
-    # PEM certificate registered at JD for it. JD rejects an unsigned order, so the
-    # render fails while either is empty.
+    # Optional, both or neither: the PEM key that signs the JDPI payment order and
+    # the PEM certificate registered at JD for it. Needed only when the JD enforces
+    # signed orders; the render fails when only one is set.
     JD_PAYMENT_SIGNING_PRIVATE_KEY: ""
     JD_PAYMENT_SIGNING_CERTIFICATE: ""
 

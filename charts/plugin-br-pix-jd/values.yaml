@@ -286,10 +286,10 @@ api:
     LICENSE_KEY: ""
     # Optional — a Redis with no auth is a legitimate in-cluster setup.
     REDIS_PASSWORD: ""
-    # Required: the PEM private key that signs the JDPI payment order
-    # and the PEM certificate registered at JD for it. JD rejects an unsigned order, so
-    # the render fails while either is empty. Multi-line: use --set-file or a YAML block
-    # scalar.
+    # Optional, both or neither: the PEM private key that signs the JDPI payment order
+    # and the PEM certificate registered at JD for it. Needed only when the JD enforces
+    # signed orders; with neither, orders are sent unsigned. The render fails when only
+    # one is set. Multi-line: use --set-file or a YAML block scalar.
     JD_PAYMENT_SIGNING_PRIVATE_KEY: ""
     JD_PAYMENT_SIGNING_CERTIFICATE: ""
   # -- Escape hatch for secret keys this chart does not model yet. Base64-encoded

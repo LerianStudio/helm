@@ -14,7 +14,7 @@ Helm chart for [`plugin-br-pix-jd`](https://github.com/LerianStudio/plugin-br-pi
 
 ## Before you install
 
-**Pin `api.image.tag` in production.** The chart's `appVersion` is `1.1.0`, published to `ghcr.io/lerianstudio/plugin-br-pix-jd` — registry tags have no leading `v`. Riding `appVersion` means a chart bump changes the app version. The `1.x` line is newer than `2.0.1`: the plugin's tag history was reset and the release train restarted (see [the 0.4.6 upgrade notes](docs/UPGRADE-0.4.6.md)). Migrations are pinned independently, to `1.1.0`. See [the 0.4.8 upgrade notes](docs/UPGRADE-0.4.8.md).
+**Pin `api.image.tag` in production.** The chart's `appVersion` is `1.1.1`, published to `ghcr.io/lerianstudio/plugin-br-pix-jd` — registry tags have no leading `v`. Riding `appVersion` means a chart bump changes the app version. The `1.x` line is newer than `2.0.1`: the plugin's tag history was reset and the release train restarted (see [the 0.4.6 upgrade notes](docs/UPGRADE-0.4.6.md)). Migrations are pinned independently, to `1.1.1`. See [the 0.4.9 upgrade notes](docs/UPGRADE-0.4.9.md).
 
 **The `worker` component ships disabled.** The production Dockerfile builds only `./cmd/app`, so the image carries no `/worker` binary. Until the app ships a build with both entry points (the pattern already present in its `Dockerfile.smoke`), enabling `worker` yields a CrashLoopBackOff — and transaction reconciliation, the MED pollers and the indirect-delivery drainer do not run.
 
@@ -34,6 +34,23 @@ Each component has its own image: `plugin-br-pix-jd` (api) and `plugin-br-pix-jd
 `POSTGRES_PASSWORD` is single-sourced. With the bundled subchart the password is generated into the subchart's own Secret and the container reads it through a `secretKeyRef`; the key is deliberately absent from this chart's Secret. Only on the external path does the operator supply it, and the chart fails the render with an actionable message rather than emitting an empty value.
 
 `REDIS_PASSWORD` follows the identical rule with the bundled Valkey, with one difference worth knowing: the key in the subchart Secret is `valkey-password`, not `password`. Copying the Postgres wiring verbatim yields a `secretKeyRef` to a key that does not exist, and the pod starts with no password against a Valkey that requires AUTH.
+
+## Payment-order signing
+
+Optional. Set it only when the client's JD enforces signed payment orders (`JDPI_IF__HashAtivo=true`): such a JD refuses an order that does not carry the participant's signature (the `hash` group) with `JDPISPI017`. Without the values nothing changes: the api sends unsigned orders, as before, and a JD that does not enforce the signature accepts them.
+
+| Value | Where it lands | Required |
+|---|---|---|
+| `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY` | api Secret, `JD_PAYMENT_SIGNING_PRIVATE_KEY`, only when set | no — both or neither |
+| `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` | api Secret, `JD_PAYMENT_SIGNING_CERTIFICATE`, only when set | no — both or neither |
+| `api.configmap.JD_PAYMENT_SIGNING_ALGORITHM` | api ConfigMap, only when set | no — empty means `ECDSA_P256_SHA256`; also `ECDSA_P384_SHA384`, `RSA_PKCS1_SHA256` |
+
+- JDPI Cabine receives **only the public certificate** (PEM), as "Certificados Hash – Assinatura Payload". The private key never leaves your environment: it goes only into `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY`.
+- `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` must be **the same certificate** registered in Cabine: the plugin derives each payment order's thumbprint from it, and JD refuses every order signed against a different one (`JDPISPI017`). Compare its SHA-1 fingerprint with Cabine's: `openssl x509 -in cert.pem -outform DER | shasum -a 1 | tr a-f A-F`.
+- Both values are PEM. Pass the files with `--set-file api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY=key.pem --set-file api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE=cert.pem`, or as YAML block scalars (`|`).
+- The render FAILS, naming the value, when only one of the two is set (the app would refuse every order, `409 PIX-0136`), when a set value has no `-----BEGIN` PEM header, and when the algorithm is not one of the three accepted.
+- With `api.existingSecret.name` the chart renders no Secret and does not check: to sign, that Secret must carry both keys.
+- argocd-vault-plugin: `<path:secret/data/...#KEY>` works for both keys. The PEM check is skipped for a placeholder, since AVP substitutes it after Helm runs; the Vault value must hold the PEM with real line breaks.
 
 ## Rate limiting
 

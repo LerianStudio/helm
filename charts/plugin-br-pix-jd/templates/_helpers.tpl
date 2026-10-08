@@ -847,6 +847,73 @@ QRCODE_JWKS_CONTENT_TYPE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $c
 
 {{/*
 ------------------------------------------------------------------------------
+paymentSigning — the key that signs the JDPI payment order.
+
+Optional, as in the app: with neither PEM the app sends unsigned orders, which a JD
+not running HashAtivo accepts; with both it signs every order. With exactly one the
+app refuses every order (409 PIX-0136), so the render refuses first, naming the
+missing value.
+
+With MULTI_TENANT_ENABLED=true the app does not read these variables, so nothing is
+rendered or checked.
+
+With api.existingSecret.name the operator's Secret carries the two PEMs and the chart
+renders no Secret of its own, so the gate does not apply.
+
+AVP: a `<path:...>` placeholder is substituted in the rendered manifest AFTER helm
+runs, so at template time the value is the literal placeholder and the PEM shape
+check is skipped for it. The Vault value must hold the PEM with real line breaks.
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.paymentSigningApplies" -}}
+{{- if ne (index (fromYaml (include "plugin-br-pix-jd.effectiveConfig" .)) "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+true
+{{- end -}}
+{{- end }}
+
+{{/* paymentSigningEnv — JD_PAYMENT_SIGNING_ALGORITHM, emitted only when set: blank
+means the app's own default (ECDSA_P256_SHA256), owned in one place.
+Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.paymentSigningEnv" -}}
+{{- if include "plugin-br-pix-jd.paymentSigningApplies" . -}}
+{{- $alg := index (fromYaml (include "plugin-br-pix-jd.effectiveConfig" .)) "JD_PAYMENT_SIGNING_ALGORITHM" | default "" | toString -}}
+{{- if $alg -}}
+{{- if not (has $alg (list "ECDSA_P256_SHA256" "ECDSA_P384_SHA384" "RSA_PKCS1_SHA256")) -}}
+{{- fail (printf "\n\nERROR: api.configmap.JD_PAYMENT_SIGNING_ALGORITHM must be one of ECDSA_P256_SHA256,\nECDSA_P384_SHA384 or RSA_PKCS1_SHA256; got %q. Leave it empty for ECDSA_P256_SHA256.\n" $alg) -}}
+{{- end }}
+JD_PAYMENT_SIGNING_ALGORITHM: {{ $alg | quote }}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/* paymentSigningSecrets — the two PEMs as `KEY: <b64>` lines; the caller nindents
+under `data:`. Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.paymentSigningSecrets" -}}
+{{- if include "plugin-br-pix-jd.paymentSigningApplies" . -}}
+{{- $s := .Values.api.secrets | default dict -}}
+{{- $key := index $s "JD_PAYMENT_SIGNING_PRIVATE_KEY" | default "" | toString -}}
+{{- $cert := index $s "JD_PAYMENT_SIGNING_CERTIFICATE" | default "" | toString -}}
+{{- $lines := list -}}
+{{- if or $key $cert -}}
+{{- if not (and $key $cert) -}}
+{{- $set := ternary "JD_PAYMENT_SIGNING_PRIVATE_KEY" "JD_PAYMENT_SIGNING_CERTIFICATE" (ne $key "") -}}
+{{- $missing := ternary "JD_PAYMENT_SIGNING_CERTIFICATE" "JD_PAYMENT_SIGNING_PRIVATE_KEY" (ne $key "") -}}
+{{- $what := ternary "the PEM certificate registered in JDPI Cabine for the signing key" "the PEM private key whose certificate is registered in JDPI Cabine" (ne $key "") -}}
+{{- fail (printf "\n\nERROR: api.secrets.%s is missing: %s.\napi.secrets.%s is set, and with only one of the two the app refuses every payment order:\nset both or neither (with neither, payment orders are sent unsigned).\n" $missing $what $set) -}}
+{{- end -}}
+{{- range $k, $v := (dict "JD_PAYMENT_SIGNING_PRIVATE_KEY" $key "JD_PAYMENT_SIGNING_CERTIFICATE" $cert) -}}
+{{- if and (not (hasPrefix "<path:" $v)) (not (contains "-----BEGIN " $v)) -}}
+{{- fail (printf "\n\nERROR: api.secrets.%s must be PEM (a \"-----BEGIN ...-----\" block); got %d characters\nwith no PEM header. Pass the file content, e.g. --set-file api.secrets.%s=<file>.pem\n" $k (len $v) $k) -}}
+{{- end -}}
+{{- $lines = append $lines (printf "%s: %s" $k ($v | b64enc | quote)) -}}
+{{- end -}}
+{{- end -}}
+{{- join "\n" $lines -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
 workerCronEnv — the worker's own surface: cron cadence and the stuck-order threshold.
 Input dict: root, configmap.
 ------------------------------------------------------------------------------

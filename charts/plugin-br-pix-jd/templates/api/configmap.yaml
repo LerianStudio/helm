@@ -21,6 +21,7 @@
 {{- $rateLimit := fromYaml (include "lerian-common.rateLimit.env" (dict "configmap" .Values.api.configmap "params" .Values.api.rateLimit)) -}}
 {{- $domain := fromYaml (include "plugin-br-pix-jd.domainEnv" (dict "root" $ "configmap" .Values.api.configmap)) -}}
 {{- $qrcode := fromYaml (include "plugin-br-pix-jd.qrcodeEnv" (dict "root" $ "configmap" .Values.api.configmap)) -}}
+{{- $signing := fromYaml (include "plugin-br-pix-jd.paymentSigningEnv" $) | default dict -}}
 {{- $mt := fromYaml (include "plugin-br-pix-jd.multiTenantEnv" (dict "root" $ "configmap" .Values.api.configmap)) -}}
 {{- $streaming := fromYaml (include "plugin-br-pix-jd.streamingEnv" (dict "root" $ "configmap" .Values.api.configmap "graceSeconds" .Values.api.terminationGracePeriodSeconds)) -}}
 {{- $cfg := .Values.api.configmap | default dict -}}
@@ -74,7 +75,7 @@
 {{- /* Merge order IS the precedence contract: platform < rate-limit < CORS < http
    < extraConfigmap. The escape hatch merges last and therefore wins — stated
    plainly in values.yaml rather than claimed otherwise. */ -}}
-{{- $data := mergeOverwrite $platform $domain $qrcode $mt $streaming $rateLimit $corsEnv $http (.Values.api.extraConfigmap | default dict) -}}
+{{- $data := mergeOverwrite $platform $domain $qrcode $signing $mt $streaming $rateLimit $corsEnv $http (.Values.api.extraConfigmap | default dict) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

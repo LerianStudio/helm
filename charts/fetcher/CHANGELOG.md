@@ -12,6 +12,15 @@ Features:
 ## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.3.0)
 
 Features:
+- Expose spread `minDomains` and `nodeTaintsPolicy` in `lerian-common` `2.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.2.0...fetcher-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.3.0)
+
+Features:
 - Expose spread `minDomains` and `nodeTaintsPolicy` with `lerian-common` `2.3.0`. (@guimoreirar)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.2.0...fetcher-v3.3.0)

@@ -257,6 +257,11 @@ api:
   # DEPLOYMENT_MODE="".
   # REDIS_HOST has NO default and is required — the rate limiter is fail-closed.
   #
+  # JD_PAYMENT_SIGNING_ALGORITHM picks the payment-order signature:
+  # ECDSA_P256_SHA256 (app default when empty), ECDSA_P384_SHA384 or RSA_PKCS1_SHA256.
+  # It must match the key in api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY. Emitted only
+  # when set.
+  #
   # DEPLOYMENT_MODE (saas | byoc | local, default "") is validated at render time
   # because the app rejects an unrecognized value at boot. It is INDEPENDENT of
   # ENVIRONMENT_NAME: "saas" arms TLS enforcement over Postgres, Redis and — in
@@ -281,6 +286,12 @@ api:
     LICENSE_KEY: ""
     # Optional — a Redis with no auth is a legitimate in-cluster setup.
     REDIS_PASSWORD: ""
+    # Optional, both or neither: the PEM private key that signs the JDPI payment order
+    # and the PEM certificate registered at JD for it. Needed only when the JD enforces
+    # signed orders; with neither, orders are sent unsigned. The render fails when only
+    # one is set. Multi-line: use --set-file or a YAML block scalar.
+    JD_PAYMENT_SIGNING_PRIVATE_KEY: ""
+    JD_PAYMENT_SIGNING_CERTIFICATE: ""
   # -- Escape hatch for secret keys this chart does not model yet. Base64-encoded
   # by the template, so supply plaintext values.
   extraSecrets: {}
@@ -397,10 +408,10 @@ migrations:
   # extract-from-the-app-image approach could never run (see the Job template).
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations
-    # -- Pinned explicitly: api, worker and migrations are all published at 1.1.0.
+    # -- Pinned explicitly: api, worker and migrations are all published at 1.1.1.
     # Migrations are independently versioned; a release that does not touch the SQL
     # skips this image, so re-check the pin on every appVersion bump.
-    tag: "1.1.0"
+    tag: "1.1.1"
     pullPolicy: IfNotPresent
   # -- Optional x-migrations-table override, passed to the image as
   # POSTGRES_MIGRATIONS_TABLE; empty uses golang-migrate's default (schema_migrations)

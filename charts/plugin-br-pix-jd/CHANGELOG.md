@@ -1,5 +1,25 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.0)
+
+Features:
+- Introduced payment order signing values for single-tenant setups. (@jeffersonrodrigues92)
+
+Fixes:
+- Made payment-order signing values optional to enhance flexibility. (@jeffersonrodrigues92)
+- Clarified the naming of each signing value in the render refusal process. (@jeffersonrodrigues92)
+- Updated the app to `1.1.1` to include JD payment-order signing improvements. (@jeffersonrodrigues92)
+
+Improvements:
+- Fixed and improved the workflow comment list and reflowed the upgrade note for better clarity. (@jeffersonrodrigues92)
+- Differentiated `JDPISPI017` from `PIX-0136` in the `0.4.9` checks to avoid confusion. (@jeffersonrodrigues92)
+- Clarified what JDPI Cabine receives in the `0.4.9` upgrade documentation. (@jeffersonrodrigues92)
+- Documented payment signing specifically for the operator's installation. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.4.8...plugin-br-pix-jd-v0.5.0)
+
+---
+
 ## [0.4.8](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.4.8)
 
 Fixes:

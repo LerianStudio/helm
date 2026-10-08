@@ -59,7 +59,7 @@ jobs:
 
       # The validator's own unit tests, including the renders that pin
       # product-console's refusal to write a MONGO_HOST that names no Service,
-      # and the br-jd-courier render contract (its secret and single-writer refusals).
+      # the br-jd-courier render contract (its secret and single-writer refusals),
       # and plugin-br-pix-jd's optional payment-signing contract.
       # Without this step those pins run nowhere: the render gate below only
       # renders each chart with its default values, so a refusal that only fires

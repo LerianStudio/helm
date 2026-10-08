@@ -25,9 +25,9 @@ worker and migrations images all exist at `1.1.1`.
   them, including `429`, the order is never re-sent and the hold is released.
   `JDPISPI018` has its own message.
 - **Signing settings that are set but unusable refuse the order before JD is called.**
-  Only one of the key and the certificate set, an unknown algorithm, a key that does not fit it, or a certificate
-  that is not the key's own answers `409 PIX-0136`, naming the setting. No funds move
-  and nothing reaches JD unsigned.
+  Only one of the key and the certificate set, an unknown algorithm, a key that does
+  not fit it, or a certificate that is not the key's own answers `409 PIX-0136`,
+  naming the setting. No funds move and nothing reaches JD unsigned.
 - **Access Manager and Midaz outages are named instead of answered `500` or `400`.**
   An Access Manager token call that times out answers `504 PIX-3007`, one that is
   refused or returns a 5xx answers `503 PIX-3008` (previously `500 PIX-0109 "internal

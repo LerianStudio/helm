@@ -73,9 +73,15 @@ what the chart cannot, and the chart catches what never reaches a boot.
 {{- end -}}
 {{- end -}}
 {{- $soapTls := "roles.spbSender.soapTls and roles.spbSender.ingress" -}}
-{{- range $key, $source := dict "SERVER_ADDRESS" "ports.*" "SOAP_SERVER_ADDRESS" "ports.*" "SOAP_TLS_CERT_FILE" $soapTls "SOAP_TLS_KEY_FILE" $soapTls "SOAP_TLS_TERMINATED_UPSTREAM" $soapTls -}}
+{{- $transit := "roles.admin.pixTransit" -}}
+{{- range $key, $source := dict "SERVER_ADDRESS" "ports.*" "SOAP_SERVER_ADDRESS" "ports.*" "SOAP_TLS_CERT_FILE" $soapTls "SOAP_TLS_KEY_FILE" $soapTls "SOAP_TLS_TERMINATED_UPSTREAM" $soapTls "PIX_TRANSIT_SERVER_ADDRESS" $transit "PIX_TRANSIT_TLS_CERT_FILE" $transit "PIX_TRANSIT_TLS_KEY_FILE" $transit "PIX_TRANSIT_TLS_TERMINATED_UPSTREAM" $transit -}}
 {{- if hasKey $.Values.config $key -}}
 {{- fail (printf "config.%s is refused: the chart derives it from %s" $key $source) -}}
+{{- end -}}
+{{- end -}}
+{{- with $.Values.roles.admin.pixTransit -}}
+{{- if and .enabled (not (or .tls.existingSecret .tls.terminatedUpstream)) -}}
+{{- fail "roles.admin.pixTransit.enabled needs roles.admin.pixTransit.tls.existingSecret or roles.admin.pixTransit.tls.terminatedUpstream=true: the Pix engines refuse plain HTTP" -}}
 {{- end -}}
 {{- end -}}
 {{- if hasKey $.Values.config "OTEL_EXPORTER_OTLP_ENDPOINT" -}}
@@ -84,7 +90,7 @@ what the chart cannot, and the chart catches what never reaches a boot.
 {{- if hasKey $.Values.config "ALLOW_AUTH_DISABLED_LOCAL_ONLY" -}}
 {{- fail "config.ALLOW_AUTH_DISABLED_LOCAL_ONLY is refused: authentication is off only on a developer's machine, never in a chart install" -}}
 {{- end -}}
-{{- $forbidden := list "COURIER_ROLES" "LICENSE_KEY" "DATABASE_URL" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "MULTI_TENANT_SERVICE_API_KEY" "JD_PASSWORD" "JD_PRIVATE_KEY_PEM" -}}
+{{- $forbidden := list "COURIER_ROLES" "LICENSE_KEY" "DATABASE_URL" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "MULTI_TENANT_SERVICE_API_KEY" "JD_PASSWORD" "JD_SPI_CLIENT_SECRET" "JD_PRIVATE_KEY_PEM" -}}
 {{- range $key := $forbidden -}}
 {{- if hasKey $.Values.config $key -}}
 {{- if eq $key "COURIER_ROLES" -}}
@@ -114,6 +120,12 @@ One role's Deployment. Called from deployment-<role>.yaml with
 {{- $values := index $ctx.Values.roles .key -}}
 {{- $singleWriter := eq .role "spb-consumer" -}}
 {{- $soapCert := and (has "soap" .ports) $values.soapTls.existingSecret -}}
+{{- $transit := has "pixTransit" .ports -}}
+{{- $transitCert := and $transit $values.pixTransit.tls.existingSecret -}}
+{{- /* TLS Secrets this role mounts, by volume name, at /etc/jd-courier/<name>. */ -}}
+{{- $tls := dict -}}
+{{- with $soapCert }}{{ $_ := set $tls "soap-tls" . }}{{ end -}}
+{{- with $transitCert }}{{ $_ := set $tls "pix-transit-tls" . }}{{ end -}}
 {{- if $values.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -215,17 +227,29 @@ spec:
             - name: SOAP_TLS_TERMINATED_UPSTREAM
               value: "true"
             {{- end }}
+            {{- if $transit }}
+            - name: PIX_TRANSIT_SERVER_ADDRESS
+              value: {{ printf ":%v" $ctx.Values.ports.pixTransit | quote }}
+            {{- if $transitCert }}
+            - name: PIX_TRANSIT_TLS_CERT_FILE
+              value: /etc/jd-courier/pix-transit-tls/tls.crt
+            - name: PIX_TRANSIT_TLS_KEY_FILE
+              value: /etc/jd-courier/pix-transit-tls/tls.key
+            {{- end }}
+            {{- if $values.pixTransit.tls.terminatedUpstream }}
+            - name: PIX_TRANSIT_TLS_TERMINATED_UPSTREAM
+              value: "true"
+            {{- end }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "br-jd-courier.fullname" $ctx }}
             - secretRef:
                 name: {{ include "br-jd-courier.secretName" $ctx }}
           ports:
-            - name: http
-              containerPort: {{ $ctx.Values.ports.http }}
-            {{- if has "soap" .ports }}
-            - name: soap
-              containerPort: {{ $ctx.Values.ports.soap }}
+            {{- range .ports }}
+            - name: {{ kebabcase . }}
+              containerPort: {{ index $ctx.Values.ports . }}
             {{- end }}
           # /health answers on every role, the consumer included. A revoked
           # licence never fails it: the pod stays up and says why. It
@@ -253,15 +277,19 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if $soapCert }}
+          {{- with $tls }}
           volumeMounts:
-            - name: soap-tls
-              mountPath: /etc/jd-courier/soap-tls
+            {{- range $name, $secret := . }}
+            - name: {{ $name }}
+              mountPath: /etc/jd-courier/{{ $name }}
               readOnly: true
+            {{- end }}
       volumes:
-        - name: soap-tls
+            {{- range $name, $secret := . }}
+        - name: {{ $name }}
           secret:
-            secretName: {{ $soapCert | quote }}
+            secretName: {{ $secret | quote }}
+            {{- end }}
           {{- end }}
       {{- with $ctx.Values.nodeSelector }}
       nodeSelector:
@@ -276,6 +304,12 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 {{- end }}
+{{- end -}}
+
+{{- /* The admin's ports: http, plus pixTransit while the transit is on. dig, because values
+     reused from 2.0.0 (helm upgrade --reuse-values) carry no roles.admin.pixTransit. */ -}}
+{{- define "br-jd-courier.adminPorts" -}}
+http{{ if dig "pixTransit" "enabled" false .Values.roles.admin }} pixTransit{{ end }}
 {{- end -}}
 
 {{- define "br-jd-courier.service" -}}
@@ -293,9 +327,11 @@ spec:
   selector:
     {{- include "br-jd-courier.selector" (dict "ctx" $ctx "component" .role) | nindent 4 }}
   ports:
-    - name: {{ .port }}
-      port: {{ index $ctx.Values.ports .port }}
-      targetPort: {{ .port }}
+    {{- range .ports }}
+    - name: {{ kebabcase . }}
+      port: {{ index $ctx.Values.ports . }}
+      targetPort: {{ kebabcase . }}
+    {{- end }}
 {{- end }}
 {{- end -}}
 

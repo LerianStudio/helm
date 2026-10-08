@@ -19,9 +19,11 @@ serviceAccount:
 # Non-secret environment shared by every role, rendered into one ConfigMap.
 # COURIER_ROLES is set by the chart per Deployment and is refused here, and so
 # is every secret key: those arrive through `secrets.existingSecret` only.
-# Both SPB roles talk to JD and read SPB_VENDOR_TIMEOUT, JD_ALLOW_PRIVATE_NETWORK
-# and, in single-tenant, JD_BASE_URL, JD_SOAP_PATH, JD_LEGACY_CODE and
-# JD_USER_CODE. The spb-sender also reads SOAP_MAX_BODY_BYTES and
+# Both SPB roles and the admin's Pix transit talk to JD, and
+# JD_ALLOW_PRIVATE_NETWORK governs all three. The SPB roles read
+# SPB_VENDOR_TIMEOUT and, in single-tenant, JD_BASE_URL, JD_SOAP_PATH,
+# JD_LEGACY_CODE and JD_USER_CODE; the transit's keys are in README "Pix
+# transit". The spb-sender also reads SOAP_MAX_BODY_BYTES and
 # SPB_CHANNEL_CREDENTIAL_ROTATION_OVERLAP; its SOAP_TLS_* keys are refused here
 # and follow roles.spbSender.soapTls and roles.spbSender.ingress. The spb-consumer's
 # SPB_TAKE_BUDGET_SEC must cover SPB_VENDOR_TIMEOUT.
@@ -115,9 +117,9 @@ roles:
     resources: {}
     service:
       type: ClusterIP
-    # The outbound Pix transit on ports.pixTransit: in-cluster Pix engines call
-    # it in place of JD's JDPI address. The engines refuse plain HTTP, so the
-    # render fails without one TLS shape below. README "Pix transit".
+    # The outbound Pix transit on ports.pixTransit: Pix engines call it in place
+    # of JD's JDPI address. The engines refuse plain HTTP, so the render fails
+    # without one TLS shape below. README "Pix transit".
     pixTransit:
       enabled: false
       tls:

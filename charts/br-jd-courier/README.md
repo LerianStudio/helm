@@ -94,13 +94,16 @@ these values.
 
 ## Pix transit (admin)
 
-The admin can serve the outbound Pix transit: Pix engines inside the cluster
-call it in place of JD's JDPI address, and the admin carries each call to JD on
-the Courier's own JDPI token. Off by default. `roles.admin.pixTransit.enabled=true`
-sets `PIX_TRANSIT_SERVER_ADDRESS` from `ports.pixTransit` (8082) and adds that
-port, named `pix-transit`, to the admin container and the admin Service, so the
-engines call `<release>-br-jd-courier-admin:8082`. No Ingress: the callers are
-in the cluster.
+The admin can serve the outbound Pix transit: Pix engines call it in place of
+JD's JDPI address, and the admin carries each call to JD on the Courier's own
+JDPI token. Off by default. `roles.admin.pixTransit.enabled=true` sets `PIX_TRANSIT_SERVER_ADDRESS` from `ports.pixTransit` (8082) and adds that
+port, named `pix-transit`, to the admin container and the admin Service. It
+needs Courier image 1.2.0 or later (`jd-courier.image.tag`): an older admin
+binds nothing there, and outbound Pix fails without an error.
+
+In-cluster engines call `<release>-br-jd-courier-admin:8082`. An engine outside
+the cluster (the institution's legacy core) needs an exposure this chart does not
+render, with TLS, and authenticates with its Courier-issued transit credential.
 
 The engines refuse plain HTTP, so the render fails unless one shape is set:
 
@@ -118,7 +121,9 @@ Courier's not-sent and release a hold JD may still settle.
 Single-tenant, the transit reaches JD with the institution's SPI credential:
 `config.JD_SPI_BASE_URL` (https in production), `config.JD_SPI_CLIENT_ID`, and
 `JD_SPI_CLIENT_SECRET` in the Secret (refused under `config`). Multi-tenant
-reads each tenant's `jd-spi` bundle from Secrets Manager instead.
+reads each tenant's `jd-spi` bundle from Secrets Manager instead. In both,
+`config.JD_ALLOW_PRIVATE_NETWORK` governs the transit's JD client as it does the
+SPB roles'.
 
 The admin calls the Pix engines (async validation delivery) and JD's SPI
 gateway. The chart renders no NetworkPolicy; a cluster that restricts egress
@@ -167,6 +172,7 @@ release fullname — which must exist before install and carry:
 | `LICENSE_KEY` | every role |
 | `POSTGRES_PASSWORD` | every role |
 | `DATABASE_URL` | the migration Job (`postgres://…?sslmode=…`) |
+| `JD_SPI_CLIENT_SECRET` | the admin with the [Pix transit](#pix-transit-admin), single-tenant only |
 
 ```bash
 RELEASE_NAME=courier  # the name you pass to helm install
@@ -183,8 +189,9 @@ which names the missing key, rather than letting the pod boot and refuse its own
 licence.
 
 Putting any of these, or `COURIER_ROLES`, under `config` refuses the render.
-The vendor and engine credentials are per-tenant secret bundles resolved at
-runtime, not chart values.
+Each engine's Pix credential is read from Secrets Manager at runtime. JD's
+credentials are per-tenant Secrets Manager bundles in multi-tenant; in
+single-tenant they come from this Secret (`JD_PASSWORD`, `JD_SPI_CLIENT_SECRET`).
 
 Non-secret environment goes under `config` and lands in one ConfigMap shared by
 all roles.

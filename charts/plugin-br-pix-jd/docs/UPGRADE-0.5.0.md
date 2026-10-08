@@ -1,8 +1,8 @@
-# Helm Upgrade from v0.4.8 to v0.4.9
+# Helm Upgrade from v0.4.8 to v0.5.0
 
 ## Version alignment
 
-- Chart: `0.4.8` → `0.4.9`.
+- Chart: `0.4.8` → `0.5.0`.
 - App fallback (`Chart.appVersion`): `1.1.0` → `1.1.1`.
 - Migration image default: `1.1.0` → `1.1.1`.
 

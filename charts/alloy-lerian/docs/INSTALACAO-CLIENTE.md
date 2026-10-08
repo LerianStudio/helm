@@ -265,7 +265,8 @@ somente-leitura e sem privilégios elevados. A exceção é só para a rede.
 
 ### Quais permissões o chart cria no cluster?
 
-Um `ClusterRole` e um `ClusterRoleBinding`, de **leitura apenas**. Servem para
+`ClusterRole` e `ClusterRoleBinding` de **leitura apenas** — um par por
+componente, três no total. Os verbos são `get`, `list` e `watch`, e servem para
 associar cada registro ao pod e namespace de origem, e para ler as métricas de
 consumo dos contêineres. O agente não cria, altera nem remove nada no cluster.
 

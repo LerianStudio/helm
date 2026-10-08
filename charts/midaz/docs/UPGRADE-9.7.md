@@ -26,7 +26,7 @@ Every other deployment is unaffected: one that sets `KMS_VENDOR: "none"`, or set
 | `crm.configmap.KMS_VENDOR` | `hashicorp-vault` | `none` (legacy mode, `crm.secrets.LCRYPTO_*` keys), same as the ledger |
 | `crm.configmap.KMS_VAULT_ADDR` | `http://midaz-hc-vault:8200` | none: required when `KMS_VENDOR` is `hashicorp-vault` |
 
-The chart bundles no Vault, so the old default pointed the CRM at a host that does not exist and the CRM never became Ready.
+The chart bundles no Vault, so unless an operator ran a Vault of their own at `midaz-hc-vault:8200`, the old default pointed the CRM at a host that does not resolve and the CRM never became Ready.
 
 #### Why it matters
 

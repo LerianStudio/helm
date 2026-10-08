@@ -285,9 +285,12 @@ jobs:
       # checkout ("The local branch main is behind the remote one"), and the steps
       # above take minutes: a merge in that window silently drops this release
       # (product-console 2.9.0, run 37708480081). Catch up again right before it,
-      # but only when nothing under this chart changed upstream - otherwise the
-      # release would ship content the lint and render above never saw, and the
-      # run of that later push releases this chart anyway.
+      # but only when nothing the steps above already consumed changed upstream:
+      # the chart itself, .github/configs (the .releaserc copied into the chart,
+      # the render values) and .github/scripts (the binary built above and run by
+      # the release's prepareCmd). Otherwise the release would ship with inputs
+      # the lint, render and setup never saw - and the run of that later push
+      # releases this chart anyway when the chart is what changed.
       - name: Catch up with the branch before releasing
         env:
           BRANCH: ${{ github.ref_name }}
@@ -298,11 +301,12 @@ jobs:
           if git merge-base --is-ancestor "origin/$BRANCH" HEAD; then
             exit 0
           fi
-          if git diff --quiet HEAD "origin/$BRANCH" -- "$CHART_DIR"; then
+          RELEASE_INPUTS=("$CHART_DIR" .github/configs .github/scripts)
+          if git diff --quiet HEAD "origin/$BRANCH" -- "${RELEASE_INPUTS[@]}"; then
             git merge --ff-only --quiet "origin/$BRANCH"
-            echo "::notice::$BRANCH moved during the build with no change under $CHART_DIR; fast-forwarded to $(git rev-parse --short HEAD)"
+            echo "::notice::$BRANCH moved during the build without touching ${RELEASE_INPUTS[*]}; fast-forwarded to $(git rev-parse --short HEAD)"
           else
-            echo "::notice::$BRANCH moved and changed $CHART_DIR; that push's run releases it"
+            echo "::warning::$BRANCH moved and changed $(git diff --name-only HEAD "origin/$BRANCH" -- "${RELEASE_INPUTS[@]}" | tr '\n' ' '); not fast-forwarding, so semantic-release will skip this chart"
           fi
 
       - name: Semantic Release

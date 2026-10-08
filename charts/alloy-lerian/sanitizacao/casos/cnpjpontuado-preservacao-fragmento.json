@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "documento:11.222.333/0001-81 fee:0"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

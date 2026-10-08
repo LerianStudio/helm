@@ -1,0 +1,3 @@
+{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"caso-sanitizacao"}}]},
+"scopeLogs":[{"logRecords":[{"timeUnixNano":"1700000000000000000","severityNumber":9,"severityText":"INFO",
+"body":{"stringValue":"accountId=acc_9f8e7d6c5b4a3210 vinculada"}}]}]}]}

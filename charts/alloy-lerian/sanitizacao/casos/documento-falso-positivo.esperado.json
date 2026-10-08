@@ -1,0 +1,5 @@
+{
+  "body": "sync to 8562e2e9f6ae0abcd12345678901ef commit aplicado",
+  "descricao": "SHA de commit com 11 digitos consecutivos. MEDIDO em producao (aws-devops, log do ArgoCD): a regra de 11 digitos mascarava o SHA, produzindo '...e904********e1b'. Perda de diagnostico, nao vazamento.",
+  "categoria": "falsoPositivo"
+}

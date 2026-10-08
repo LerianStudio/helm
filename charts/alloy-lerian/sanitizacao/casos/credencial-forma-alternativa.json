@@ -1,0 +1,3 @@
+{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"caso-sanitizacao"}}]},
+"scopeLogs":[{"logRecords":[{"timeUnixNano":"1700000000000000000","severityNumber":9,"severityText":"INFO",
+"body":{"stringValue":"falha ao autenticar client_secret=s3nh4-sup3r-secreta-aqui no provedor"}}]}]}]}

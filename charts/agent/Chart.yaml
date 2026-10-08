@@ -7,10 +7,8 @@ description: >-
 type: application
 annotations:
   lerian.studio/chart-type: single-service
-
-version: 1.0.0
-
-appVersion: "1.0.0"
+version: 1.0.1
+appVersion: "1.0.1"
 # The floor is the oldest Kubernetes the fleet actually boots and installs
 # this chart on, not the oldest one its API versions would tolerate
 # (autoscaling/v2 in hpa.yaml is stable since 1.23, policy/v1 in pdb.yaml
@@ -31,7 +29,6 @@ keywords:
   - byoc
   - agent
   - midaz
-
 dependencies:
   - name: lerian-common-helm
     version: "2.2.0"

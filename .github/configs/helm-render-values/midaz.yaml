@@ -32,6 +32,12 @@ ledger:
     # Secrets, so they are intentionally omitted here.
     RABBITMQ_DEFAULT_PASS: "sample"
     RABBITMQ_CONSUMER_PASS: "sample"
+rabbitmq:
+  authentication:
+    erlangCookie:
+      # Operator-provided like the RabbitMQ passwords above: the chart refuses to
+      # render the bundled broker without one.
+      value: "0123456789abcdef0123456789abcdef"
 crm:
   # Exercise the standalone CRM deployment templates in the render-gate.
   enabled: true

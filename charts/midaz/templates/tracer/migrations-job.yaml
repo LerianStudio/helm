@@ -7,11 +7,45 @@ an already-migrated database, and the release publishes a dedicated
 `midaz-tracer-migrations` image (FROM migrate/migrate) whose entrypoint applies
 the migration set from DB_* (or DATABASE_URL) and exits.
 
-The Job name carries the migration image tag because a Job spec is immutable: a
-stable name would leave the original Job in place on upgrade and silently skip
-the new migrations. Re-running is safe — golang-migrate keeps its progress in
-the schema_migrations table, not on disk.
+For plain Helm this is a regular Job created with the release, not a helm.sh/hook.
+The tracer exits at boot when its schema is missing, so it cannot become Ready
+before this Job has run. A post-install hook only starts after `helm install
+--wait` has seen every workload Ready, which then never happens; a pre-install
+hook would wait for the bundled PostgreSQL, which is created with the release.
+As a regular Job its initContainer waits for PostgreSQL, the migration lands,
+and the tracer's next restart comes up Ready.
+
+The Job name ends in a hash of its spec because a Job spec is immutable: any
+change (a new image tag, a chart-version label) is a new Job, so an upgrade
+never patches the old one. Re-running is safe — golang-migrate keeps its
+progress in the schema_migrations table, not on disk.
 */}}
+{{- $spec := include "midaz-tracer.migrationsJobSpec" . }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "midaz-tracer.migrationsFullname" (dict "context" . "spec" $spec) }}
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" (printf "%s-migrations" .Values.tracer.name) ) | nindent 4 }}
+  annotations:
+    {{- /* Run the migration as an ArgoCD Sync hook so it is excluded from the app's
+       desired-state diff — same rationale as the ledger migrations Job. Tag-pinned
+       names left prior releases' Jobs OutOfSync ("ignored (requires pruning)"), so
+       the app never reached Synced and the sync-wait gate timed out. A hook never
+       enters the diff; HookSucceeded removes the Job on completion and
+       BeforeHookCreation clears a same-named leftover before recreate (Job spec is
+       immutable). Sync phase keeps it in the same wave as the password Secret, so
+       fresh installs are unaffected. Re-running is idempotent (schema_migrations).
+       Plain helm ignores this annotation. */}}
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    {{- with .Values.tracer.migrations.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{ trim $spec }}
+{{- end }}
+
+{{- define "midaz-tracer.migrationsJobSpec" -}}
 {{- $migrations := .Values.tracer.migrations }}
 {{- $cm := .Values.tracer.configmap | default dict }}
 {{- $pg := .Values.postgresql | default dict }}
@@ -29,32 +63,6 @@ the schema_migrations table, not on disk.
 {{- $dbName := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "name" "nativeKey" "DB_NAME" "default" "tracer") }}
 {{- $dbUser := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "DB_USER" "default" "midaz") }}
 {{- $dbSsl := include $dvt (dict "context" $ "dedicated" $dst "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_SSL_MODE" "default" "disable") }}
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: {{ include "midaz-tracer.migrationsFullname" . }}
-  labels:
-    {{- include "midaz-tracer.labels" (dict "context" . "name" (printf "%s-migrations" .Values.tracer.name) ) | nindent 4 }}
-  annotations:
-    {{- /* Run the migration as an ArgoCD Sync hook so it is excluded from the app's
-       desired-state diff — same rationale as the ledger migrations Job. Tag-pinned
-       names left prior releases' Jobs OutOfSync ("ignored (requires pruning)"), so
-       the app never reached Synced and the sync-wait gate timed out. A hook never
-       enters the diff; HookSucceeded removes the Job on completion and
-       BeforeHookCreation clears a same-named leftover before recreate (Job spec is
-       immutable). Sync phase keeps it in the same wave as the password Secret, so
-       fresh installs are unaffected. Re-running is idempotent (schema_migrations). */}}
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
-    {{- /* Plain helm install/upgrade (no ArgoCD) hits the same immutable-Job
-       problem: argocd.argoproj.io/hook is ArgoCD-only, plain helm ignores it.
-       helm.sh/hook is the native equivalent — coexists safely, each controller
-       reads only its own annotation. */}}
-    helm.sh/hook: post-install,pre-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    {{- with $migrations.annotations }}
-    {{- toYaml . | nindent 4 }}
-    {{- end }}
 spec:
   backoffLimit: {{ $migrations.backoffLimit | default 6 }}
   activeDeadlineSeconds: {{ $migrations.activeDeadlineSeconds | default 600 }}
@@ -152,4 +160,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-{{- end }}
+{{- end -}}

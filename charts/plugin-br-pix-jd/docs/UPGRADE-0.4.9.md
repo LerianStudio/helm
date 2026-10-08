@@ -72,7 +72,18 @@ must carry both keys. An argocd-vault-plugin `<path:...>` placeholder is accepte
 
 2. Register the certificate in JDPI Cabine: "Gestão de Certificados" → Incluir,
    "Tipo Certificado" = "Certificados Hash – Assinatura Payload", with
-   `payment-signing.crt`.
+   `payment-signing.crt`. Cabine receives **only the public certificate** (PEM). The
+   private key `payment-signing.key` never leaves your environment: it goes only
+   into `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY`.
+
+   `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` must be **the same certificate**
+   registered in Cabine. The plugin derives from it the thumbprint each payment order
+   carries; with a different certificate JD refuses every order with `JDPISPI017`.
+   Compare its SHA-1 fingerprint with the one Cabine shows:
+
+   ```bash
+   openssl x509 -in payment-signing.crt -outform DER | shasum -a 1 | tr a-f A-F
+   ```
 3. Set the values, merged into your existing values (not a complete install
    configuration):
 
@@ -111,7 +122,8 @@ Render with the target environment's values before upgrading. Verify the API ima
 is `1.1.1`, the enabled worker uses `plugin-br-pix-jd-worker:1.1.1`, any rendered
 migration Job uses `plugin-br-pix-jd-migrations:1.1.1`, and the api Secret carries `JD_PAYMENT_SIGNING_PRIVATE_KEY` and `JD_PAYMENT_SIGNING_CERTIFICATE`.
 After the upgrade, send one Pix to another institution and confirm it reaches
-`EXECUTED`; a `JDPISPI017` means the certificate in Cabine is not the one for the key.
+`EXECUTED`; a `JDPISPI017` means the certificate in Cabine is not the one in
+`JD_PAYMENT_SIGNING_CERTIFICATE`, or that certificate is not the key's own.
 
 Rolling back to chart `0.4.8` and app `1.1.0` needs no database step. App `1.1.0`
 sends unsigned orders, which a JD with `HashAtivo=true` refuses. No environment

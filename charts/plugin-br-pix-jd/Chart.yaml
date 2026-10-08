@@ -24,7 +24,7 @@ version: 0.5.1
 
 # Registry tags have no leading `v`. Pin api.image.tag explicitly in production.
 # Migrations are independently versioned; see migrations.image.tag in values.yaml.
-appVersion: "1.1.1"
+appVersion: "1.1.2"
 
 keywords:
   - midaz

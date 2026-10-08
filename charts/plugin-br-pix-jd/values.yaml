@@ -254,6 +254,9 @@ api:
   # SERVER_ADDRESS=:8080, TLS_TERMINATED_UPSTREAM=true, POSTGRES_SSLMODE=disable,
   # POSTGRES_USER/POSTGRES_NAME=plugin-br-pix-jd, MIGRATIONS_PATH=/migrations,
   # SYSTEMPLANE_ENABLED=false, SWAGGER_ENABLED=false, ENVIRONMENT_NAME="",
+  # SYSTEM_FACTS_ENABLED=false (the System Facts producer; when true it needs
+  # SYSTEM_FACTS_URL, plus api.secrets.SYSTEM_FACTS_CLIENT_ID/_SECRET in
+  # single-tenant or M2M_SYSTEM_FACTS_TARGET_SERVICE in multi-tenant — see README),
   # DEPLOYMENT_MODE="".
   # REDIS_HOST has NO default and is required — the rate limiter is fail-closed.
   #

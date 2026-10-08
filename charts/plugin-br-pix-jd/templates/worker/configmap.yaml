@@ -12,11 +12,12 @@
 {{- $cron := fromYaml (include "plugin-br-pix-jd.workerCronEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
 {{- $mt := fromYaml (include "plugin-br-pix-jd.multiTenantEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
 {{- $streaming := fromYaml (include "plugin-br-pix-jd.streamingEnv" (dict "root" $ "configmap" .Values.worker.configmap "graceSeconds" .Values.worker.terminationGracePeriodSeconds)) -}}
+{{- $systemFacts := fromYaml (include "plugin-br-pix-jd.systemFactsEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
 {{- $cfg := .Values.worker.configmap | default dict -}}
 {{- /* NO rate-limit, CORS, Swagger or SERVER_ADDRESS block here: cmd/worker has no HTTP
    listener at all, so those keys would be inert noise the operator has to reason about.
    The worker's own surface is the cron cadence. */ -}}
-{{- $data := mergeOverwrite $platform $domain $cron $mt $streaming (.Values.worker.extraConfigmap | default dict) -}}
+{{- $data := mergeOverwrite $platform $domain $cron $mt $streaming $systemFacts (.Values.worker.extraConfigmap | default dict) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

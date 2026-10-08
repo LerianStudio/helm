@@ -76,6 +76,24 @@ Set these only when your institution needs them.
   - Pass each file with `--set-file`, as the install example shows, or as a YAML block scalar (`|`). A set value without a `-----BEGIN` PEM header, or an algorithm outside the three above, fails the render.
   - To create the pair and register the certificate, see [Payment-order signing](https://docs.lerian.studio/en/interfaces/pix-jd/payment-order-signing).
 
+### System Facts producer
+
+The plugin can record a System Facts fact for every Pix that reaches `EXECUTED` or `ERROR`. It is **off by default**: with `SYSTEM_FACTS_ENABLED` unset or `"false"` the chart only emits the flag and the plugin runs exactly the SQL it ran before. Requires a plugin image that ships the producer. Turn it on last: the System Facts service is up, the contract is registered, migration `000045_system_facts_outbox` is applied, and the credential exists. See the plugin's README "System Facts" and RUNBOOK §8 for the rollout order.
+
+| Key | When | Format | Default |
+| :-- | :--- | :----- | :------ |
+| `api.configmap.SYSTEM_FACTS_ENABLED` | to turn the producer on | `"true"` or `"false"` | `"false"` |
+| `api.configmap.SYSTEM_FACTS_URL` | required when enabled | base URL of the System Facts service | empty: the render fails |
+| `api.secrets.SYSTEM_FACTS_CLIENT_ID` / `SYSTEM_FACTS_CLIENT_SECRET` | single-tenant, when enabled | Access Manager client pair, exchanged at `PLUGIN_AUTH_HOST`; both or neither | empty |
+| `api.configmap.M2M_SYSTEM_FACTS_TARGET_SERVICE` | multi-tenant, when enabled | the segment in `.../m2m/{target}/credentials`; copy it from the provisioned secret path | empty: the render fails |
+| `api.configmap.SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE` | after every credential is rotated | `"true"` or `"false"` | `"false"` |
+| `api.configmap.SYSTEM_FACTS_INSECURE_HTTP` | only for a plaintext `http://` URL off loopback; refused by the app under `production` | `"true"` or `"false"` | not emitted |
+
+- **Api and worker carry the same variables.** `cmd/worker` records facts and never delivers them, but it runs the same boot validation. The worker inherits them from `api.configmap`; the client pair reaches both Secrets.
+- **Multi-tenant ignores the client pair.** Each tenant delivers with its own M2M credential, so the chart does not emit `SYSTEM_FACTS_CLIENT_ID` / `SYSTEM_FACTS_CLIENT_SECRET` there. The render also fails when `OUTBOX_ENABLED=true` is set beside the producer, because the plugin refuses that pair at boot.
+- A dev-only static bearer (`SYSTEM_FACTS_TOKEN`) reaches the pod through `api.extraSecrets`. The app refuses it under `production` and beside the client pair.
+- With argocd-vault-plugin, a `<path:...>` placeholder works for both client keys.
+
 ### Secrets and `existingSecret`
 
 Every value under `api.secrets` is sensitive. Keep it in a Kubernetes Secret, never in a values file in version control.

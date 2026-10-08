@@ -1112,7 +1112,52 @@ STREAMING_CLOSE_TIMEOUT_S: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $
 
 {{/*
 ------------------------------------------------------------------------------
-platformSecrets — MT, streaming and M2M credentials, shared by api and worker.
+systemFactsEnv — the System Facts producer's non-secret environment. API + worker
+both carry it: cmd/worker records facts and never delivers them, but it runs the
+same boot validation as the api, so it needs the same variables.
+
+OFF by default. With SYSTEM_FACTS_ENABLED unset or false only the flag is emitted
+and the money path runs the SQL it ran before the producer existed.
+
+Gates, each one a boot refusal in the app moved to render time:
+  - SYSTEM_FACTS_URL is required once the producer is on.
+  - Multi-tenant: M2M_SYSTEM_FACTS_TARGET_SERVICE is required (each tenant's
+    credential is read from .../m2m/{target}/credentials), and OUTBOX_ENABLED=true
+    is refused beside it, because the outbox SchemaResolver would run inside every
+    fact transaction.
+  - Single-tenant credentials are checked in platformSecrets.
+
+SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE stays false until every credential carries a
+declared source; SYSTEM_FACTS_INSECURE_HTTP is emitted only when set (the app
+refuses it under ENV_NAME=production).
+
+Input dict: root, configmap.
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.systemFactsEnv" -}}
+{{- $root := .root -}}
+{{- $cm := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) (.configmap | default dict) -}}
+{{- $enabled := eq (index $cm "SYSTEM_FACTS_ENABLED" | default "false" | toString) "true" -}}
+{{- $mt := eq (index $cm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+SYSTEM_FACTS_ENABLED: {{ $enabled | toString | quote }}
+{{- if $enabled }}
+SYSTEM_FACTS_URL: {{ required "\n\nERROR: api.configmap.SYSTEM_FACTS_URL is required when SYSTEM_FACTS_ENABLED=true.\nThe app refuses to boot an enabled producer with no address to deliver to.\n" (index $cm "SYSTEM_FACTS_URL" | default "") | quote }}
+SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE" "default" "false") | quote }}
+{{- if hasKey $cm "SYSTEM_FACTS_INSECURE_HTTP" }}
+SYSTEM_FACTS_INSECURE_HTTP: {{ index $cm "SYSTEM_FACTS_INSECURE_HTTP" | toString | quote }}
+{{- end }}
+{{- if $mt }}
+{{- if eq (index $cm "OUTBOX_ENABLED" | default "false" | toString) "true" }}
+{{- fail "\n\nERROR: SYSTEM_FACTS_ENABLED=true cannot be combined with OUTBOX_ENABLED=true in multi-tenant.\nThe app refuses to boot that pair: the outbox SchemaResolver would run inside every\nfact transaction. Turn one of them off.\n" -}}
+{{- end }}
+M2M_SYSTEM_FACTS_TARGET_SERVICE: {{ required "\n\nERROR: api.configmap.M2M_SYSTEM_FACTS_TARGET_SERVICE is required when SYSTEM_FACTS_ENABLED=true and MULTI_TENANT_ENABLED=true.\nEach tenant's System Facts credential is read from\n  tenants/{env}/{tenantOrgID}/plugin-br-pix-jd/m2m/{targetService}/credentials\nand the segment is NOT derivable from the service name: copy it from the provisioned secret path.\n" (index $cm "M2M_SYSTEM_FACTS_TARGET_SERVICE" | default "") | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+platformSecrets — MT, streaming, System Facts and M2M credentials, shared by api and worker.
 
 Emits `KEY: <b64>` lines; the caller nindents under `data:`. Gated on the feature
 being ON, because requiring a tenant-manager API key from a single-tenant install
@@ -1155,6 +1200,25 @@ Input dict: root, comp.
 {{- fail (printf "\n\nERROR: M2M_L2_ENCRYPTION_KEY must be 64 hex characters (hex-encoded AES-256); got %d.\nGenerate one with: openssl rand -hex 32\nIt encrypts the L2 cache holding every tenant clientId/clientSecret; a malformed value\nfails the boot. Leave it EMPTY to disable L2 deliberately (L1 only, one boot WARN).\n" (len $l2)) -}}
 {{- end -}}
 {{- $lines = append $lines (printf "M2M_L2_ENCRYPTION_KEY: %s" ($l2 | b64enc | quote)) -}}
+{{- end -}}
+{{- end -}}
+{{- /* System Facts, single-tenant only: the client pair is exchanged for a bearer at
+   PLUGIN_AUTH_HOST. Multi-tenant mints one bearer per tenant from the M2M entry, and
+   the app carves these keys out and WARNs them as ignored, so the chart does not
+   emit them there. Both or neither: a partial pair counts as no pair in the app. A
+   dev-only SYSTEM_FACTS_TOKEN reaches the pod through extraSecrets. */ -}}
+{{- $sfEnabled := eq (index $cm "SYSTEM_FACTS_ENABLED" | default "false" | toString) "true" -}}
+{{- if and $sfEnabled (not $mt) -}}
+{{- $sfID := index $s "SYSTEM_FACTS_CLIENT_ID" | default "" -}}
+{{- $sfSecret := index $s "SYSTEM_FACTS_CLIENT_SECRET" | default "" -}}
+{{- if and (or $sfID $sfSecret) (not (and $sfID $sfSecret)) -}}
+{{- fail "\n\nERROR: api.secrets.SYSTEM_FACTS_CLIENT_ID and api.secrets.SYSTEM_FACTS_CLIENT_SECRET go together: set both or neither.\nA partial pair counts as no pair in the app, so the producer would refuse to boot.\n" -}}
+{{- end -}}
+{{- with $sfID -}}
+{{- $lines = append $lines (printf "SYSTEM_FACTS_CLIENT_ID: %s" (. | b64enc | quote)) -}}
+{{- end -}}
+{{- with $sfSecret -}}
+{{- $lines = append $lines (printf "SYSTEM_FACTS_CLIENT_SECRET: %s" (. | b64enc | quote)) -}}
 {{- end -}}
 {{- end -}}
 {{- if $streaming -}}

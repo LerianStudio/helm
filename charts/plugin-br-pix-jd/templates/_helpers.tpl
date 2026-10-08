@@ -916,16 +916,27 @@ under `data:`. Input: root context ($). */}}
 YAML: {KEY: {cfg, sec, extraSec}}. cfg is api.extraConfigmap over api.configmap;
 sec is api.extraSecrets over api.secrets, and extraSec says the extraSecrets loop
 emits it. The api reads the keys from either the ConfigMap or the Secret, so a
-value counts wherever the operator put it. Input: root context ($). */}}
+value counts wherever the operator put it. A blank api.extraSecrets entry is
+absent: the extraSecrets loop skips it (see declarationKeys), so it cannot mount
+an empty Secret value over a ConfigMap one. The client secret counts from
+configuration only through api.extraConfigmap, the one config source that emits
+it; api.configmap.IDP_M2M_CLIENT_SECRET is never rendered, so it does not count.
+Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.declarationKeys" -}}
+{{- toJson (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
+{{- end }}
+
 {{- define "plugin-br-pix-jd.declarationSources" -}}
 {{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .) -}}
+{{- $extraCfg := .Values.api.extraConfigmap | default dict -}}
 {{- $sec := .Values.api.secrets | default dict -}}
 {{- $extra := .Values.api.extraSecrets | default dict -}}
 {{- $out := dict -}}
-{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
-{{- $viaExtra := hasKey $extra $k -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" . | fromJsonArray) -}}
+{{- $viaExtra := ne (index $extra $k | default "" | toString | trim) "" -}}
+{{- $cfgValue := ternary (index $extraCfg $k) (index $cfg $k) (eq $k "IDP_M2M_CLIENT_SECRET") -}}
 {{- $_ := set $out $k (dict
-      "cfg" (index $cfg $k | default "" | toString | trim)
+      "cfg" ($cfgValue | default "" | toString | trim)
       "sec" (ternary (index $extra $k) (index $sec $k) $viaExtra | default "" | toString | trim)
       "extraSec" $viaExtra) -}}
 {{- end -}}
@@ -957,7 +968,7 @@ IDP_DECLARATION_ENABLED: {{ $enabled | quote }}
 {{- $src := fromYaml (include "plugin-br-pix-jd.declarationSources" .root) -}}
 {{- $ownSecret := include "plugin-br-pix-jd.rendersOwnSecret" (dict "comp" .root.Values.api) -}}
 {{- $missing := list -}}
-{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" .root | fromJsonArray) -}}
 {{- $v := index $src $k -}}
 {{- if and $ownSecret (not $v.cfg) (not $v.sec) -}}{{- $missing = append $missing $k -}}{{- end -}}
 {{- end -}}
@@ -988,7 +999,7 @@ emits nothing for it: each key appears once. Input: root context ($). */}}
 {{- define "plugin-br-pix-jd.declarationSecrets" -}}
 {{- $src := fromYaml (include "plugin-br-pix-jd.declarationSources" .) -}}
 {{- $lines := list -}}
-{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" . | fromJsonArray) -}}
 {{- $v := index $src $k -}}
 {{- if and $v.sec (not $v.extraSec) -}}
 {{- $lines = append $lines (printf "%s: %s" $k ($v.sec | b64enc | quote)) -}}

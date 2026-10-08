@@ -12,7 +12,12 @@
 
 ### 1. Standalone CRM `KMS_VENDOR` now defaults to `none`
 
-**Who is affected:** a deployment that runs the standalone CRM (`crm.enabled: true`), does **not** set `crm.configmap.KMS_VENDOR`, and uses a Vault — either the old default address `midaz-hc-vault:8200` or its own `crm.configmap.KMS_VAULT_ADDR`. Every other deployment is unaffected; one that already sets `KMS_VENDOR` keeps its value.
+**Who is affected:** a deployment that runs the standalone CRM (`crm.enabled: true`) and either:
+
+- does **not** set `crm.configmap.KMS_VENDOR` and uses a Vault — either the old default address `midaz-hc-vault:8200` or its own `crm.configmap.KMS_VAULT_ADDR`; or
+- sets `KMS_VENDOR: "hashicorp-vault"` explicitly but **not** `KMS_VAULT_ADDR`, relying on the old default address. The render now fails until `KMS_VAULT_ADDR` is set.
+
+Every other deployment is unaffected: one that sets `KMS_VENDOR: "none"`, or sets both `KMS_VENDOR` and `KMS_VAULT_ADDR`, keeps its values.
 
 #### What changed
 

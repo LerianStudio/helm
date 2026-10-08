@@ -1,9 +1,15 @@
 # Publica a configuração de coleta no Fleet Management.
 #
 # ⚠️ NUNCA automático. Só `workflow_dispatch`, e por decisão: publicar altera a
-# telemetria de um cliente de produção em 1 minuto, e a janela de republicação
-# deixa o cliente SEM COLETA por ~75 segundos. Isso é operação, não entrega
-# contínua — alguém escolhe o momento.
+# coleta de TODO cliente BYOC em ~1 minuto, sem passar por upgrade de chart nem
+# por janela de manutenção. Isso é operação, não entrega contínua — alguém
+# escolhe o momento.
+#
+# A janela sem coleta NÃO existe mais: o publicador cria a configuração nova,
+# confirma que ela foi aceita e só então remove a anterior. Durante a transição
+# as duas casam o matcher e o agente carrega ambas, o que é aceitável; o inverso
+# — um instante sem nenhuma — não seria. Isso reduz o risco, não a necessidade
+# de escolher o momento: o alcance continua sendo todos os clientes de uma vez.
 #
 # A PORTA DE ENTREGA RODA ANTES, no mesmo job. Se ela falhar, não se publica.
 # É a razão de o publicador existir: a console do Grafana é um caminho de edição
@@ -48,7 +54,8 @@ jobs:
         run: docker pull grafana/alloy@sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
 
       - name: Porta de entrega (bloqueante)
-        # ⚠️ ANTES de publicar, sempre. 54 casos contra o agente real. Em produção
+        # ⚠️ ANTES de publicar, sempre. Roda todos os casos do diretório contra o
+        # agente real — a contagem cresce, não se fixa aqui. Em produção
         # `error_mode` é "ignore": regra malformada não gera erro, só saída que
         # aparenta estar mascarada — este é o único mecanismo que a pega.
         run: ./charts/alloy-lerian/sanitizacao/porta-de-entrega.sh

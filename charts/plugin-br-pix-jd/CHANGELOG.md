@@ -4,6 +4,18 @@
 
 Improvements:
 
+- Updated the README to focus on what a client can open and set, ensuring clarity and usability. (@jeffersonrodrigues92)
+- Made the README the single source for installing and configuring the chart, consolidating all necessary information in one place. (@jeffersonrodrigues92)
+- Titled the upgrade note with its version, specifically naming it after the published `0.5.0`, to maintain consistency and clarity in documentation. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.0...plugin-br-pix-jd-v0.5.1)
+
+---
+
+## [0.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.1)
+
+Improvements:
+
 - Titled the upgrade note with its version `0.5.0`. (@jeffersonrodrigues92)
 - Named the upgrade note after the published `0.5.0`. (@jeffersonrodrigues92)
 - Updated the README to focus on what a client can open and set. (@jeffersonrodrigues92)

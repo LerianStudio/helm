@@ -912,58 +912,89 @@ under `data:`. Input: root context ($). */}}
 {{- end -}}
 {{- end }}
 
-{{/* declarationEnv — IDP_DECLARATION_ENABLED and, when on, IDP_HOST and
-IDP_M2M_CLIENT_ID. Api-only: the api publishes the permissions manifest to the
-Access Manager at boot; the worker never does. Off (the default) emits only the
-flag, and the app reads nothing else. On, the render fails on what the app would
-refuse at boot: an empty IDP_HOST or IDP_M2M_CLIENT_ID, a host that is not an
-http(s) URL or carries credentials, or PLUGIN_AUTH_ENABLED off (the M2M token is
-minted by the lib-auth client). authEnabled is the platform value; an
-api.extraConfigmap override merges last and so is the one checked. Input dict:
-root, authEnabled. */}}
+{{/* declarationSources — where each declaration key effectively comes from, as
+YAML: {KEY: {cfg, sec, extraSec}}. cfg is api.extraConfigmap over api.configmap;
+sec is api.extraSecrets over api.secrets, and extraSec says the extraSecrets loop
+emits it. The api reads the keys from either the ConfigMap or the Secret, so a
+value counts wherever the operator put it. Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.declarationSources" -}}
+{{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .) -}}
+{{- $sec := .Values.api.secrets | default dict -}}
+{{- $extra := .Values.api.extraSecrets | default dict -}}
+{{- $out := dict -}}
+{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
+{{- $viaExtra := hasKey $extra $k -}}
+{{- $_ := set $out $k (dict
+      "cfg" (index $cfg $k | default "" | toString | trim)
+      "sec" (ternary (index $extra $k) (index $sec $k) $viaExtra | default "" | toString | trim)
+      "extraSec" $viaExtra) -}}
+{{- end -}}
+{{- toYaml $out -}}
+{{- end }}
+
+{{/* declarationEnv — IDP_DECLARATION_ENABLED when set and, when "true", IDP_HOST and
+IDP_M2M_CLIENT_ID if they were given as configuration. Api-only: the api publishes
+the permissions manifest to the Access Manager at boot; the worker never does.
+Unset, nothing is emitted and the app's default (off) applies; off, the app reads
+nothing else. On, the
+render fails on what the app would refuse at boot: IDP_HOST, IDP_M2M_CLIENT_ID or
+IDP_M2M_CLIENT_SECRET blank in every source, a host that is not an http(s) URL or
+carries credentials, or PLUGIN_AUTH_ENABLED off (the M2M token is minted by the
+lib-auth client). With api.existingSecret.name the Secret's content is unknown, so
+an absent value is not refused. A `<path:...>` placeholder counts as set and skips
+the format check. authEnabled is the platform value; an api.extraConfigmap
+override merges last and so is the one checked. Input dict: root, authEnabled. */}}
 {{- define "plugin-br-pix-jd.declarationEnv" -}}
 {{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .root) -}}
-{{- $enabled := index $cfg "IDP_DECLARATION_ENABLED" | default "false" | toString -}}
+{{- $raw := index $cfg "IDP_DECLARATION_ENABLED" -}}
+{{- if not (kindIs "invalid" $raw) -}}
+{{- $enabled := $raw | toString -}}
 {{- if not (has $enabled (list "true" "false")) -}}
 {{- fail (printf "\n\nERROR: api.configmap.IDP_DECLARATION_ENABLED must be \"true\" or \"false\"; got %q.\n" $enabled) -}}
 {{- end }}
 IDP_DECLARATION_ENABLED: {{ $enabled | quote }}
 {{- if eq $enabled "true" -}}
-{{- $host := index $cfg "IDP_HOST" | default "" | toString | trim -}}
-{{- $clientID := index $cfg "IDP_M2M_CLIENT_ID" | default "" | toString | trim -}}
+{{- $src := fromYaml (include "plugin-br-pix-jd.declarationSources" .root) -}}
+{{- $ownSecret := include "plugin-br-pix-jd.rendersOwnSecret" (dict "comp" .root.Values.api) -}}
 {{- $missing := list -}}
-{{- if not $host -}}{{- $missing = append $missing "api.configmap.IDP_HOST" -}}{{- end -}}
-{{- if not $clientID -}}{{- $missing = append $missing "api.configmap.IDP_M2M_CLIENT_ID" -}}{{- end -}}
+{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
+{{- $v := index $src $k -}}
+{{- if and $ownSecret (not $v.cfg) (not $v.sec) -}}{{- $missing = append $missing $k -}}{{- end -}}
+{{- end -}}
 {{- $extra := .root.Values.api.extraConfigmap | default dict -}}
 {{- $auth := ternary (index $extra "PLUGIN_AUTH_ENABLED") .authEnabled (hasKey $extra "PLUGIN_AUTH_ENABLED") -}}
 {{- if ne ($auth | default "false" | toString) "true" -}}{{- $missing = append $missing "PLUGIN_AUTH_ENABLED=true" -}}{{- end -}}
 {{- if $missing -}}
-{{- fail (printf "\n\nERROR: IDP_DECLARATION_ENABLED=true requires %s.\nThe app refuses to boot without them: it cannot publish its permissions to the Access Manager.\n" (join ", " $missing)) -}}
+{{- fail (printf "\n\nERROR: IDP_DECLARATION_ENABLED=true requires %s.\nSet each in api.configmap or api.secrets (or their extra* overrides). The app refuses to\nboot without them: it cannot publish its permissions to the Access Manager.\n" (join ", " $missing)) -}}
 {{- end -}}
-{{- if and (not (hasPrefix "<path:" $host)) (not (regexMatch "^https?://[^/@?#[:space:]]+(/.*)?$" $host)) -}}
-{{- fail "\n\nERROR: api.configmap.IDP_HOST must be an absolute http(s) URL with a host and no user credentials.\nThe app refuses any other value at boot.\n" -}}
-{{- end }}
-IDP_HOST: {{ $host | quote }}
-IDP_M2M_CLIENT_ID: {{ $clientID | quote }}
+{{- /* The Secret is mounted after the ConfigMap, so a secret value is the one the app reads. */ -}}
+{{- $host := (index $src "IDP_HOST").sec | default (index $src "IDP_HOST").cfg -}}
+{{- if and $host (not (hasPrefix "<path:" $host)) (not (regexMatch "^https?://[^/@?#[:space:]]+(/.*)?$" $host)) -}}
+{{- fail "\n\nERROR: IDP_HOST must be an absolute http(s) URL with a host and no user credentials.\nThe app refuses any other value at boot.\n" -}}
+{{- end -}}
+{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID") -}}
+{{- with (index $src $k).cfg }}
+{{ $k }}: {{ . | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end }}
 
-{{/* declarationSecrets — IDP_M2M_CLIENT_SECRET as a `KEY: <b64>` line; the caller
-nindents under `data:`. Called only when the chart renders its own Secret, so an
-existingSecret is never checked. An api.extraSecrets entry wins and is emitted by
-the extraSecrets loop, so this helper then emits nothing: the key appears once.
-Input: root context ($). */}}
+{{/* declarationSecrets — IDP_HOST, IDP_M2M_CLIENT_ID and IDP_M2M_CLIENT_SECRET from
+api.secrets as `KEY: <b64>` lines; the caller nindents under `data:`. A key in
+api.extraSecrets wins and is emitted by the extraSecrets loop, so this helper then
+emits nothing for it: each key appears once. Input: root context ($). */}}
 {{- define "plugin-br-pix-jd.declarationSecrets" -}}
-{{- $extra := .Values.api.extraSecrets | default dict -}}
-{{- $viaExtra := hasKey $extra "IDP_M2M_CLIENT_SECRET" -}}
-{{- $secret := ternary (index $extra "IDP_M2M_CLIENT_SECRET") (index (.Values.api.secrets | default dict) "IDP_M2M_CLIENT_SECRET") $viaExtra | default "" | toString -}}
-{{- $enabled := index (fromYaml (include "plugin-br-pix-jd.effectiveConfig" .)) "IDP_DECLARATION_ENABLED" | default "false" | toString -}}
-{{- if and (eq $enabled "true") (not (trim $secret)) -}}
-{{- fail "\n\nERROR: api.secrets.IDP_M2M_CLIENT_SECRET is required when IDP_DECLARATION_ENABLED=true.\nThe app refuses to boot without it: it cannot publish its permissions to the Access Manager.\n" -}}
+{{- $src := fromYaml (include "plugin-br-pix-jd.declarationSources" .) -}}
+{{- $lines := list -}}
+{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
+{{- $v := index $src $k -}}
+{{- if and $v.sec (not $v.extraSec) -}}
+{{- $lines = append $lines (printf "%s: %s" $k ($v.sec | b64enc | quote)) -}}
 {{- end -}}
-{{- if and $secret (not $viaExtra) -}}
-IDP_M2M_CLIENT_SECRET: {{ $secret | b64enc | quote }}
 {{- end -}}
+{{- join "\n" $lines -}}
 {{- end }}
 
 {{/*

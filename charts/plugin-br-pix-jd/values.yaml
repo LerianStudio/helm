@@ -296,7 +296,8 @@ api:
     # single-tenant only): the api then publishes its permissions to the Access Manager
     # at boot, at api.configmap.IDP_HOST (http(s) URL), as the M2M application
     # api.configmap.IDP_M2M_CLIENT_ID with this secret. PLUGIN_AUTH_ENABLED must be
-    # "true". The render fails when any of them is missing.
+    # "true". IDP_HOST and IDP_M2M_CLIENT_ID may also be set here or in extraSecrets;
+    # the render fails when any of the three is blank everywhere.
     IDP_M2M_CLIENT_SECRET: ""
   # -- Escape hatch for secret keys this chart does not model yet. Base64-encoded
   # by the template, so supply plaintext values.

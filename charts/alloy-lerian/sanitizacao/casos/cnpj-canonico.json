@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "documento 30251055000135 conta"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+ "body": "__CORPO_NAO_STRING__",
+ "categoria": "risco",
+ "descricao": "LACUNA CONHECIDA, documentada em vez de escondida. replace_pattern opera sobre body como STRING; um corpo kvlist/map atravessa TODAS as regras intocado sob error_mode ignore. MEDIDO na benedita: 20 de 20 corpos reais sao string, entao a lacuna nao se manifesta no trafego atual — mas o mecanismo permite. O marcador __CORPO_NAO_STRING__ existe porque o agente nao imprime linha 'Body: Str(...)' para corpo nao-string: a AUSENCIA e a evidencia."
+}

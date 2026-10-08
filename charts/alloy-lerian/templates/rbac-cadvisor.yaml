@@ -1,0 +1,41 @@
+{{- if (.Values.collection).containerUsage }}
+{{- if not (.Values.collection).containerUsageTarget }}
+{{- /*
+Scraping cAdvisor through the API server proxy needs `nodes/proxy`, which the
+upstream chart's ClusterRole does NOT grant — it grants `nodes/metrics`, a
+different resource. MEASURED: without this, every scrape returns
+`403 Forbidden`, and the failure is invisible at default log level: the
+component reports healthy, the target count is 1, and no error surfaces until
+logging.level=debug.
+
+Only created when we scrape through the proxy. With an explicit
+`containerUsageTarget` the traffic does not pass through the API server, so the
+permission is not needed and is not granted.
+*/}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "alloy-lerian.fullname" . }}-cadvisor
+  labels:
+    {{- include "alloy-lerian.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes/proxy"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "alloy-lerian.fullname" . }}-cadvisor
+  labels:
+    {{- include "alloy-lerian.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "alloy-lerian.fullname" . }}-cadvisor
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-node
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

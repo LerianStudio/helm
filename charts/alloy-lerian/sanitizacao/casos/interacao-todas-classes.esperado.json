@@ -1,0 +1,5 @@
+{
+ "body": "customerName=Ana ********** documento 123******** email=an****@lerian.studio phone=+5511******** pixKey=a1b2c3d4-****-****-****-ef1234567890 accountId=acc_9f8e****** endereco=********** authorization: Bearer ********** processado",
+ "categoria": "interacao",
+ "descricao": "TODAS as 8 classes no mesmo registro, mascaradas sem interferencia mutua. Este caso encontrou uma interacao real: a regra de endereco parava so em ' [a-z]+=', e 'authorization:' usa dois-pontos — o endereco engolia a credencial inteira. Delimitador corrigido para [=:] e preservado num grupo."
+}

@@ -15,7 +15,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 2.0.0
+version: 2.1.0
 # Registry tags have no leading `v`. jd-courier.image.tag is the key the release
 # dispatch bumps; this is what an empty tag falls back to.
 appVersion: "1.1.0"

@@ -12,6 +12,15 @@ Fixes:
 ## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
 
 Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
 - Removed the committed `__pycache__` directory and ensured that tests are excluded from the package. (@guimoreirar)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)

@@ -172,6 +172,7 @@ release fullname — which must exist before install and carry:
 | `LICENSE_KEY` | every role |
 | `POSTGRES_PASSWORD` | every role |
 | `DATABASE_URL` | the migration Job (`postgres://…?sslmode=…`) |
+| `JD_PASSWORD` | both SPB roles (`spb-consumer`, `spb-sender`), single-tenant only |
 | `JD_SPI_CLIENT_SECRET` | the admin with the [Pix transit](#pix-transit-admin), single-tenant only |
 
 ```bash

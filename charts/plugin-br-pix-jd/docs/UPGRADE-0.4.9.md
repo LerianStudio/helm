@@ -6,10 +6,10 @@
 - App fallback (`Chart.appVersion`): `1.1.0` → `1.1.1`.
 - Migration image default: `1.1.0` → `1.1.1`.
 
-This is a patch release of the app with a **breaking chart change for single-tenant
-installs**: the render fails until the payment-order signing key and certificate are
-set (see [Configuration changes](#configuration-changes)). Multi-tenant installs are not
-affected by that gate. The GHCR API, worker and migrations images all exist at `1.1.1`.
+This is a patch release of the app with a **breaking chart change**: the render fails
+until the payment-order signing key and certificate are set (see
+[Configuration changes](#configuration-changes)). The GHCR API, worker and migrations
+images all exist at `1.1.1`.
 
 ## What the application fixes
 
@@ -50,22 +50,15 @@ New values, consumed by the app's API only:
 
 | Value | Where it lands | Required |
 |---|---|---|
-| `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY` | api Secret | **single-tenant** |
-| `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` | api Secret | **single-tenant** |
+| `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY` | api Secret | **yes** |
+| `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` | api Secret | **yes** |
 | `api.configmap.JD_PAYMENT_SIGNING_ALGORITHM` | api ConfigMap, only when set | no — empty means `ECDSA_P256_SHA256`; also `ECDSA_P384_SHA384`, `RSA_PKCS1_SHA256` (RSA 3072 or larger) |
 
-**BREAKING (single-tenant, `MULTI_TENANT_ENABLED` not `true`):** `helm template` and
+**BREAKING:** `helm template` and
 `helm upgrade` fail, naming the value, while either PEM is empty or has no
 `-----BEGIN` header, and when the algorithm is not one of the three above. With
 `api.existingSecret.name` the chart renders no Secret and does not check: that Secret
 must carry both keys. An argocd-vault-plugin `<path:...>` placeholder is accepted.
-
-**Multi-tenant:** none of the three is rendered or required. Each participant's
-signing material goes in the tenant's JD credential bundle in Secrets Manager
-(`.../plugin-br-pix-jd/external/jd-spi/credentials`, or `jd-spi-{ispb}` for an
-additional participant), next to `jd.client_id`:
-`jd.payment_signing.private_key`, `jd.payment_signing.certificate` and, optionally,
-`jd.payment_signing.algorithm`. A bundle without them sends unsigned orders.
 
 ## Operator configuration
 
@@ -80,8 +73,8 @@ additional participant), next to `jd.client_id`:
 2. Register the certificate in JDPI Cabine: "Gestão de Certificados" → Incluir,
    "Tipo Certificado" = "Certificados Hash – Assinatura Payload", with
    `payment-signing.crt`.
-3. Set the values. Single-tenant, merged into your existing values (not a complete
-   install configuration):
+3. Set the values, merged into your existing values (not a complete install
+   configuration):
 
    ```yaml
    api:
@@ -107,9 +100,6 @@ additional participant), next to `jd.client_id`:
    ```
 
    Or pass the files: `--set-file api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY=payment-signing.key --set-file api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE=payment-signing.crt`.
-   Multi-tenant: write the `jd.payment_signing.*` keys into each tenant's bundle
-   instead; the change applies on the next client the app builds
-   (`MULTI_TENANT_INTEGRATION_CACHE_TTL_SEC`).
 4. Upgrade the chart.
 
 Explicit image tags in an existing values file win over chart defaults; update
@@ -119,8 +109,7 @@ them to `1.1.1`.
 
 Render with the target environment's values before upgrading. Verify the API image
 is `1.1.1`, the enabled worker uses `plugin-br-pix-jd-worker:1.1.1`, any rendered
-migration Job uses `plugin-br-pix-jd-migrations:1.1.1`, and, in single-tenant, the api
-Secret carries `JD_PAYMENT_SIGNING_PRIVATE_KEY` and `JD_PAYMENT_SIGNING_CERTIFICATE`.
+migration Job uses `plugin-br-pix-jd-migrations:1.1.1`, and the api Secret carries `JD_PAYMENT_SIGNING_PRIVATE_KEY` and `JD_PAYMENT_SIGNING_CERTIFICATE`.
 After the upgrade, send one Pix to another institution and confirm it reaches
 `EXECUTED`; a `JDPISPI017` means the certificate in Cabine is not the one for the key.
 

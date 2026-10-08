@@ -123,7 +123,8 @@ is `1.1.1`, the enabled worker uses `plugin-br-pix-jd-worker:1.1.1`, any rendere
 migration Job uses `plugin-br-pix-jd-migrations:1.1.1`, and the api Secret carries `JD_PAYMENT_SIGNING_PRIVATE_KEY` and `JD_PAYMENT_SIGNING_CERTIFICATE`.
 After the upgrade, send one Pix to another institution and confirm it reaches
 `EXECUTED`; a `JDPISPI017` means the certificate in Cabine is not the one in
-`JD_PAYMENT_SIGNING_CERTIFICATE`, or that certificate is not the key's own.
+`JD_PAYMENT_SIGNING_CERTIFICATE`. A certificate that is not the key's own never reaches
+JD: the order is refused `409 PIX-0136`.
 
 Rolling back to chart `0.4.8` and app `1.1.0` needs no database step. App `1.1.0`
 sends unsigned orders, which a JD with `HashAtivo=true` refuses. No environment

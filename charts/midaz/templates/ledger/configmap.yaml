@@ -75,7 +75,13 @@ data:
   # =============================================================================
   # AUTH CONFIGS (shared) — via lerian-common.auth.env (global.auth contract)
   # =============================================================================
-  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST") | nindent 2 }}
+  {{- $authEnv := include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST") }}
+  {{- $authEnv | nindent 2 }}
+  {{- /* Render-time mirror of the 4.x ledger boot gate (validateBootAuthGates): ENV_NAME=production
+     without PLUGIN_AUTH_ENABLED=true exits at boot, so fail here instead of shipping a CrashLoopBackOff. */}}
+  {{- if and (include "midaz.tagIsV4" (.Values.ledger.image.tag | default .Chart.AppVersion)) (eq (lower (trim $envName)) "production") (not (include "midaz.isTrue" (($authEnv | fromYaml).PLUGIN_AUTH_ENABLED | default "false"))) }}
+  {{- fail "ledger: ENV_NAME=production requires PLUGIN_AUTH_ENABLED=true (the 4.x ledger refuses to boot unauthenticated in production). Set global.auth.enabled / ledger.configmap.PLUGIN_AUTH_ENABLED=\"true\", or a non-production global.env.name / ledger.configmap.ENV_NAME" }}
+  {{- end }}
 
   # =============================================================================
   # RI PERMISSION DECLARATION (IdP identity service :4001 — distinct from auth :4000)

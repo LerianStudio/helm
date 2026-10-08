@@ -24,6 +24,9 @@ ledger:
       name: "tx_ci"
   configmap:
     AUDIT_LOG_ENABLED: "true"
+    # The 4.x ledger refuses ENV_NAME=production without PLUGIN_AUTH_ENABLED=true, and no
+    # auth service is bundled; the chart fails the render on that pair.
+    ENV_NAME: "development"
   secrets:
     LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

@@ -1,0 +1,49 @@
+# The render fixture describes the EXTERNAL datastore path: POSTGRES_HOST
+# "postgresql" and REDIS_HOST "valkey:6379" are names nothing in kind answers, so
+# the migrations pre-install hook failed with
+#   failed to open database: dial tcp: lookup postgresql ... server misbehaving
+# The gate installs the chart's other supported topology instead — bundled Postgres
+# and Valkey, the one the anacleto chaos lane runs — so the hook, the app and the
+# upgrade all meet a database that exists.
+#
+# null removes a key the render fixture set: on the bundled path the chart derives
+# POSTGRES_HOST from the subchart Service and reads both passwords from the
+# subcharts' own Secrets, and refuses a POSTGRES_PASSWORD it would ignore.
+#
+# REDIS_HOST cannot be nulled the same way: the library reads it with hasKey, so a
+# null key renders REDIS_HOST "" instead of the derived authority. The Valkey name
+# is pinned instead, which keeps it independent of the release name (the upgrade
+# leg reuses these values on a release with a different name).
+api:
+  configmap:
+    POSTGRES_HOST: null
+    REDIS_HOST: "valkey-primary:6379"
+    # The bundled datastores are plaintext and the app refuses them otherwise:
+    #   postgres-primary: TLS required (set ALLOW_INSECURE_TLS=true to bypass)
+    ALLOW_INSECURE_TLS: "true"
+    # The license client still requires an organization ID under IS_DEVELOPMENT;
+    # "global" is the single-tenant value the internal environments use.
+    ORGANIZATION_IDS: "global"
+  # kind has no license the Lerian gateway accepts. IS_DEVELOPMENT points the
+  # license client at the DEV gateway, as the anacleto chaos lane runs; the chart
+  # refuses it only under ENVIRONMENT_NAME=production.
+  extraConfigmap:
+    IS_DEVELOPMENT: "true"
+  secrets:
+    POSTGRES_PASSWORD: null
+postgresql:
+  enabled: true
+  external: false
+  primary:
+    # PG 15+ does not let the database owner CREATE in schema public on this image,
+    # and the migrations need it (see the postgresql block in the chart's values).
+    initdb:
+      scripts:
+        grant_permissions.sql: |
+          GRANT ALL ON SCHEMA public TO "plugin-br-pix-jd";
+          ALTER SCHEMA public OWNER TO "plugin-br-pix-jd";
+valkey:
+  enabled: true
+  external: false
+  architecture: standalone
+  fullnameOverride: valkey

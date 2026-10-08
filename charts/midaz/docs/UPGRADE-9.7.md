@@ -12,7 +12,7 @@
 
 ### 1. Standalone CRM `KMS_VENDOR` now defaults to `none`
 
-**Who is affected:** only a deployment that runs the standalone CRM (`crm.enabled: true`), does **not** set `crm.configmap.KMS_VENDOR`, and runs its own Vault reachable as `midaz-hc-vault:8200`. Every other deployment is unaffected; one that already sets `KMS_VENDOR` keeps its value.
+**Who is affected:** a deployment that runs the standalone CRM (`crm.enabled: true`), does **not** set `crm.configmap.KMS_VENDOR`, and uses a Vault — either the old default address `midaz-hc-vault:8200` or its own `crm.configmap.KMS_VAULT_ADDR`. Every other deployment is unaffected; one that already sets `KMS_VENDOR` keeps its value.
 
 #### What changed
 
@@ -25,7 +25,7 @@ The chart bundles no Vault, so the old default pointed the CRM at a host that do
 
 #### Why it matters
 
-A deployment that relied on the old default with its own Vault at `midaz-hc-vault` would switch from envelope encryption to legacy mode on upgrade. Holder fields already written with envelope encryption could stop decrypting.
+A deployment that left `KMS_VENDOR` unset while using a Vault (at `midaz-hc-vault` or at a custom `KMS_VAULT_ADDR`) would switch from envelope encryption to legacy mode on upgrade. Holder fields already written with envelope encryption could stop decrypting.
 
 #### Action required
 

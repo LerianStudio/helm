@@ -5,7 +5,8 @@
 - **[Breaking: standalone CRM KMS default](#1-standalone-crm-kms_vendor-now-defaults-to-none)**
 - **[Fixes](#fixes)**
   - [2. RabbitMQ Erlang cookie is required at render](#2-rabbitmq-erlang-cookie-is-required-at-render)
-  - [3. Tracer migrations run as a regular Job under plain Helm](#3-tracer-migrations-run-as-a-regular-job-under-plain-helm)
+  - [3. Tracer migrations run as a regular Job on a plain Helm install](#3-tracer-migrations-run-as-a-regular-job-on-a-plain-helm-install)
+  - [4. Ledger refuses to render with ENV_NAME=production and auth off](#4-ledger-refuses-to-render-with-env_nameproduction-and-auth-off)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
@@ -59,15 +60,41 @@ rabbitmq:
 
 Alternatively, use `rabbitmq.authentication.existingSecret` + `rabbitmq.authentication.erlangCookie.secretKey`, an `ERLANG_COOKIE` entry in `rabbitmq.env`, or `rabbitmq.extraEnvSecrets`.
 
-### 3. Tracer migrations run as a regular Job under plain Helm
+### 3. Tracer migrations run as a regular Job on a plain Helm install
 
 The tracer migration Job was a `post-install,pre-upgrade` Helm hook. `helm install --wait` runs post-install hooks only after every workload is Ready, and the tracer cannot become Ready before its schema exists, so the install never finished.
 
-Under plain Helm the Job is now a regular release resource named `midaz-tracer-migrations-<tag>-<spec hash>`; any change to its spec creates a new Job. The ArgoCD `Sync` hook annotations are unchanged.
+On `helm install` the Job is now a regular release resource, created together with PostgreSQL; the tracer becomes Ready once it has run. On `helm upgrade` it stays a `pre-upgrade` hook: the new tracer rolls out only after the migration completes, and a failed migration fails the upgrade. The Job is named `midaz-tracer-migrations-<tag>-<hash>`, so any spec change creates a new Job. The ArgoCD `Sync` hook annotations are unchanged.
 
-#### Operational impact
+#### Action required
 
-On `helm upgrade`, new tracer pods may restart until the Job has migrated the schema, while the previous ReplicaSet keeps serving. No action is required.
+None.
+
+### 4. Ledger refuses to render with `ENV_NAME=production` and auth off
+
+Since 4.0.0 the ledger refuses to boot when `ENV_NAME=production` and `PLUGIN_AUTH_ENABLED` is not `true`, and those were the chart defaults, so such a release deployed a ledger that crash-looped. The chart now applies the same rule at render: an install or upgrade with a 4.x ledger image, `ENV_NAME=production` and auth off fails with:
+
+```
+ledger: ENV_NAME=production requires PLUGIN_AUTH_ENABLED=true ...
+```
+
+#### Action required
+
+Production, with the Access Manager:
+
+```yaml
+ledger:
+  configmap:
+    PLUGIN_AUTH_ENABLED: "true"   # or global.auth.enabled: true
+```
+
+Non-production environments without the Access Manager:
+
+```yaml
+ledger:
+  configmap:
+    ENV_NAME: "staging"           # or global.env.name; any value other than production
+```
 
 ## Preview changes before upgrading
 

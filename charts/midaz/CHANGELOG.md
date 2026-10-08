@@ -3,6 +3,18 @@
 ## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
 
 Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
 
 - Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
 

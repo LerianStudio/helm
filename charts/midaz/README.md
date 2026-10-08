@@ -481,7 +481,23 @@ This chart includes the following dependencies for the default installation. All
     secrets:
       REDIS_PASSWORD: { your-host-pass }
   ```
-  
+
+- **Important — fee debts:** the Ledger keeps open fee debts of `deferrable` fees in Valkey and cannot rebuild them from another store. A flush, an eviction, or a failover that loses writes loses open fee debts. By default, the bundled Valkey runs **without persistence** (`valkey.primary.persistence.enabled: false`) and with `--maxmemory-policy allkeys-lru`. Before you set `deferrable` on a fee, make Valkey persistent and set its `maxmemory-policy` to `noeviction` or to a `volatile-*` policy. With the bundled Valkey:
+
+  ```yaml
+  valkey:
+    primary:
+      persistence:
+        enabled: true
+      extraFlags:
+        - "--maxmemory 640mb"
+        - "--maxmemory-policy noeviction"
+        - "--hz 100"
+        - "--maxclients 10000"
+  ```
+
+  `extraFlags` is a list: setting it replaces the chart default, so restate every flag you want to keep. With an external Valkey or Redis instance, configure the same persistence and `maxmemory-policy` on that instance.
+
 ### PostgreSQL
 
 - **Version:** 16.3.5
@@ -588,7 +604,9 @@ Notes:
 - **Version:** 2.1.11
 - **Repository:** https://groundhog2k.github.io/helm-charts
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
-  
+
+- **Important — no persistent volume:** by default, the bundled RabbitMQ has no persistent volume. When its pod is recreated, it loses its queues and messages. For production, give it a volume with `rabbitmq.storage.requestedSize` (for example `8Gi`, plus `rabbitmq.storage.className` if you need a specific StorageClass), or use an external RabbitMQ instance. Kubernetes refuses changes to a StatefulSet's `volumeClaimTemplates`, so adding the volume to an existing release requires deleting the RabbitMQ StatefulSet first.
+
 - **Important:** When using an external RabbitMQ instance, it is essential to create the `transaction` and `consumer` users and load the RabbitMQ definitions from the [`load_definitions.json`](https://github.com/LerianStudio/helm/blob/main/charts/midaz/files/rabbitmq/load_definitions.json) file. These definitions contain crucial configurations (the two users' permissions, queues, exchanges, bindings) required for Midaz Components to function correctly. Without these definitions, Midaz Components will not operate as expected.
 
 - **You have two options to load the definitions:**

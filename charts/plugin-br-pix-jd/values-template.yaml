@@ -40,6 +40,10 @@ api:
     # and tenant_policy/midaz.{asset_id,external_id}; a value left set is passed
     # through and produces one startup WARN.
 
+    # Single-tenant payment-order signature: ECDSA_P256_SHA256 (default when empty),
+    # ECDSA_P384_SHA384 or RSA_PKCS1_SHA256. Must match the signing key's type.
+    JD_PAYMENT_SIGNING_ALGORITHM: ""
+
     # Comma-separated list of organization UUIDs the license covers. Not a secret.
     ORGANIZATION_IDS: ""
 
@@ -72,6 +76,12 @@ api:
 
     # Optional: an in-cluster Redis with no auth is a legitimate topology.
     REDIS_PASSWORD: ""
+
+    # REQUIRED in single-tenant: the PEM key that signs the JDPI payment order and the
+    # PEM certificate registered at JD for it. JD rejects an unsigned order, so the
+    # render fails while either is empty. Not rendered in multi-tenant.
+    JD_PAYMENT_SIGNING_PRIVATE_KEY: ""
+    JD_PAYMENT_SIGNING_CERTIFICATE: ""
 
     # REQUIRED only when the bundled Postgres subchart is disabled or external.
     # With the subchart bundled, LEAVE THIS UNSET — the password is read from the

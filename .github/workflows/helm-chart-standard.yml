@@ -60,6 +60,7 @@ jobs:
       # The validator's own unit tests, including the renders that pin
       # product-console's refusal to write a MONGO_HOST that names no Service,
       # and the br-jd-courier render contract (its secret and single-writer refusals).
+      # and plugin-br-pix-jd's single-tenant payment-signing refusals.
       # Without this step those pins run nowhere: the render gate below only
       # renders each chart with its default values, so a refusal that only fires
       # under a non-default subchart topology is invisible to it.
@@ -95,7 +96,7 @@ jobs:
           # match, which would read as "no match" and skip the step.
           changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
 
-          if grep -Eq '^(charts/product-console/|charts/br-jd-courier/|\.github/scripts/validate-helm-charts/|\.github/workflows/helm-chart-standard\.yml$)' <<< "$changed_files"; then
+          if grep -Eq '^(charts/product-console/|charts/br-jd-courier/|charts/plugin-br-pix-jd/|\.github/configs/helm-render-values/plugin-br-pix-jd\.yaml$|\.github/scripts/validate-helm-charts/|\.github/workflows/helm-chart-standard\.yml$)' <<< "$changed_files"; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"

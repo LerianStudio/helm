@@ -5,7 +5,7 @@ Helm chart for [`plugin-br-pix-jd`](https://github.com/LerianStudio/plugin-br-pi
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `worker.secrets.LICENSE_KEY` (or `api.secrets.LICENSE_KEY`, which it falls back to) — required only when the worker is enabled and `IS_DEVELOPMENT` is not true. The api does NOT validate a license. `api.secrets.POSTGRES_PASSWORD` only when the bundled Postgres is disabled or marked external. Everything else is optional at this chart version; the JD / Midaz / CRM / notification credentials land in a later phase of this chart's rollout.
+- Required secrets: `worker.secrets.LICENSE_KEY` (or `api.secrets.LICENSE_KEY`, which it falls back to) — required only when the worker is enabled and `IS_DEVELOPMENT` is not true. The api does NOT validate a license. `api.secrets.POSTGRES_PASSWORD` only when the bundled Postgres is disabled or marked external. In single-tenant (`MULTI_TENANT_ENABLED` not `true`), `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY` and `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` — see [Payment-order signing](#payment-order-signing). Everything else is optional at this chart version; the JD / Midaz / CRM / notification credentials land in a later phase of this chart's rollout.
 - Dependency notes: three dependencies. `lerian-common-helm` is the published library chart (`oci://ghcr.io/lerianstudio`, `2.1.2`) — it renders nothing and supplies the shared env and workload helpers. `postgresql` is the Bitnami subchart, pinned to `16.3.5`, bundled by default and gated on `postgresql.enabled`; set `postgresql.enabled=false` or `postgresql.external=true` for an operator-provided datastore. A third, `valkey` (2.4.7, Bitnami), is gated on `valkey.enabled` and is OFF by default — the same posture as `postgresql`, so every install that points `REDIS_HOST` at an external Valkey renders byte-identically.
 - Production overrides: `api.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE` (production requires SSL), `api.configmap.REDIS_HOST`, `api.existingSecret.name` for operator-managed credentials, and `api.ingress.*`. Never set the `ALLOW_*` bypasses in production — the app fails its boot when they are present under `ENVIRONMENT_NAME=production`.
 - AWS credentials (multi-tenant only — M2M resolves per-tenant Midaz/CRM/JD credentials from Secrets Manager at runtime). Two mutually exclusive options, chosen by cluster: on **EKS** use IRSA — set `serviceAccount.annotations["eks.amazonaws.com/role-arn"]` and leave `aws.rolesAnywhere.enabled=false`. **Anywhere else**, where IRSA does not exist, set `aws.rolesAnywhere.enabled=true` plus `trustAnchorArn` / `profileArn` / `roleArn`; the chart then adds an `aws-signing-helper` sidecar to both the api and the worker pods, mounts the client certificate read-only from `aws.rolesAnywhere.certificateSecretName` (default `<fullname>-iam-tls`, keys `tls.crt` / `tls.key`), and sets the pod `fsGroup` to 65532 so the sidecar can read it. The certificate is NOT created by this chart — provision it with cert-manager or equivalent. Never enable both paths.
@@ -34,6 +34,22 @@ Each component has its own image: `plugin-br-pix-jd` (api) and `plugin-br-pix-jd
 `POSTGRES_PASSWORD` is single-sourced. With the bundled subchart the password is generated into the subchart's own Secret and the container reads it through a `secretKeyRef`; the key is deliberately absent from this chart's Secret. Only on the external path does the operator supply it, and the chart fails the render with an actionable message rather than emitting an empty value.
 
 `REDIS_PASSWORD` follows the identical rule with the bundled Valkey, with one difference worth knowing: the key in the subchart Secret is `valkey-password`, not `password`. Copying the Postgres wiring verbatim yields a `secretKeyRef` to a key that does not exist, and the pod starts with no password against a Valkey that requires AUTH.
+
+## Payment-order signing
+
+JD rejects a payment order that does not carry the participant's signature (the `hash` group), so a single-tenant install cannot send a Pix without the signing key and the certificate registered at JD for it.
+
+| Value | Where it lands | Required |
+|---|---|---|
+| `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY` | api Secret, `JD_PAYMENT_SIGNING_PRIVATE_KEY` | single-tenant |
+| `api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE` | api Secret, `JD_PAYMENT_SIGNING_CERTIFICATE` | single-tenant |
+| `api.configmap.JD_PAYMENT_SIGNING_ALGORITHM` | api ConfigMap, only when set | no — empty means `ECDSA_P256_SHA256`; also `ECDSA_P384_SHA384`, `RSA_PKCS1_SHA256` |
+
+- Both values are PEM. Pass the files with `--set-file api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY=key.pem --set-file api.secrets.JD_PAYMENT_SIGNING_CERTIFICATE=cert.pem`, or as YAML block scalars (`|`).
+- In single-tenant the render FAILS, naming the value, while either PEM is empty or has no `-----BEGIN` header, and when the algorithm is not one of the three accepted.
+- With `api.existingSecret.name` the chart renders no Secret and does not check: that Secret must carry both keys.
+- argocd-vault-plugin: `<path:secret/data/...#KEY>` works for both keys. The PEM check is skipped for a placeholder, since AVP substitutes it after Helm runs; the Vault value must hold the PEM with real line breaks.
+- In multi-tenant (`MULTI_TENANT_ENABLED=true`) none of the three is rendered or required: the app reads them from each tenant's Secrets Manager bundle.
 
 ## Rate limiting
 

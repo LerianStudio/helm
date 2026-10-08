@@ -6,6 +6,7 @@
 #
 # Gates this file satisfies:
 #   api.secrets.LICENSE_KEY   — required whenever the api renders its own Secret
+#   api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY / _CERTIFICATE — required in single-tenant
 #   api.configmap.REDIS_HOST  — required because the rate limiter is fail-closed
 #   api.configmap.ENVIRONMENT_NAME — required so the production gates are deliberate
 #   api.configmap.POSTGRES_HOST    — required desde que o default de
@@ -34,3 +35,14 @@ api:
   secrets:
     LICENSE_KEY: "ci-only-not-a-real-license"
     POSTGRES_PASSWORD: "ci-only-not-a-real-password"
+    # Required in single-tenant (the default here): JD rejects an unsigned payment
+    # order. The chart checks only for a PEM header, so these are PEM-shaped
+    # placeholders, not key material — nothing for a secret scanner to flag.
+    JD_PAYMENT_SIGNING_PRIVATE_KEY: |
+      -----BEGIN PRIVATE KEY-----
+      ci-only-not-a-real-key
+      -----END PRIVATE KEY-----
+    JD_PAYMENT_SIGNING_CERTIFICATE: |
+      -----BEGIN CERTIFICATE-----
+      ci-only-not-a-real-certificate
+      -----END CERTIFICATE-----

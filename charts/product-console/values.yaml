@@ -386,4 +386,4 @@ mongodb:
     size: 8Gi
     # -- The data volume outlives the release: helm uninstall keeps it.
     resourcePolicy: keep
-# ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)
+# ci: re-trigger release — 2.9.0 skipped in run 37708480081 (main moved during semantic-release)

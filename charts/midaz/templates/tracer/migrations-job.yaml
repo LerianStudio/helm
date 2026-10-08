@@ -7,24 +7,30 @@ an already-migrated database, and the release publishes a dedicated
 `midaz-tracer-migrations` image (FROM migrate/migrate) whose entrypoint applies
 the migration set from DB_* (or DATABASE_URL) and exits.
 
-For plain Helm this is a regular Job created with the release, not a helm.sh/hook.
-The tracer exits at boot when its schema is missing, so it cannot become Ready
+Plain Helm, install: a regular Job created with the release, not a hook. The
+tracer exits at boot when its schema is missing, so it cannot become Ready
 before this Job has run. A post-install hook only starts after `helm install
 --wait` has seen every workload Ready, which then never happens; a pre-install
 hook would wait for the bundled PostgreSQL, which is created with the release.
 As a regular Job its initContainer waits for PostgreSQL, the migration lands,
 and the tracer's next restart comes up Ready.
 
-The Job name ends in a hash of its spec because a Job spec is immutable: any
-change (a new image tag, a chart-version label) is a new Job, so an upgrade
-never patches the old one. Re-running is safe — golang-migrate keeps its
-progress in the schema_migrations table, not on disk.
+Plain Helm, upgrade: a pre-upgrade hook. The database already exists, and Helm
+waits for a hook Job to complete before it rolls out the new tracer — a regular
+Job is not waited on, so a failed or still-running migration would otherwise
+report a successful upgrade.
+
+The Job name ends in a hash of its spec and of the phase above, because a Job
+spec is immutable: any change (a new image tag, a chart-version label) is a new
+Job, and the upgrade hook never collides with the Job the install created.
+Re-running is safe — golang-migrate keeps its progress in the
+schema_migrations table, not on disk.
 */}}
 {{- $spec := include "midaz-tracer.migrationsJobSpec" . }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "midaz-tracer.migrationsFullname" (dict "context" . "spec" $spec) }}
+  name: {{ include "midaz-tracer.migrationsFullname" (dict "context" . "spec" (printf "%s\nupgrade=%t" $spec .Release.IsUpgrade)) }}
   labels:
     {{- include "midaz-tracer.labels" (dict "context" . "name" (printf "%s-migrations" .Values.tracer.name) ) | nindent 4 }}
   annotations:
@@ -39,6 +45,10 @@ metadata:
        Plain helm ignores this annotation. */}}
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    {{- if .Release.IsUpgrade }}
+    helm.sh/hook: pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    {{- end }}
     {{- with .Values.tracer.migrations.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

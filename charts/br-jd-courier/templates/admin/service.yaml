@@ -1,1 +1,2 @@
-{{- include "br-jd-courier.service" (dict "ctx" $ "key" "admin" "role" "admin" "port" "http") }}
+{{- $ports := ternary (list "http" "pixTransit") (list "http") .Values.roles.admin.pixTransit.enabled }}
+{{- include "br-jd-courier.service" (dict "ctx" $ "key" "admin" "role" "admin" "ports" $ports) }}

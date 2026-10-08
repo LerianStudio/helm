@@ -1,2 +1,3 @@
 {{- include "br-jd-courier.guards" . }}
-{{- include "br-jd-courier.deployment" (dict "ctx" $ "key" "admin" "role" "admin" "ports" (list "http")) }}
+{{- $ports := ternary (list "http" "pixTransit") (list "http") .Values.roles.admin.pixTransit.enabled }}
+{{- include "br-jd-courier.deployment" (dict "ctx" $ "key" "admin" "role" "admin" "ports" $ports) }}

@@ -124,11 +124,12 @@ func TestCourierRefusesWhatTheContractForbids(t *testing.T) {
 		{"a boolean MULTI_TENANT_ENABLED with the migration Job", "MULTI_TENANT_ENABLED=true", []string{"--set", "config.MULTI_TENANT_ENABLED=true"}},
 		{"ENV_NAME in place of ENVIRONMENT_NAME", "config.ENV_NAME, the service's deprecated alias, does not satisfy", []string{"--set-string", "config.ENVIRONMENT_NAME=", "--set", "config.ENV_NAME=production"}},
 		{"a blank ENVIRONMENT_NAME", "config.ENVIRONMENT_NAME is required", []string{"--set-string", "config.ENVIRONMENT_NAME=  "}},
+		{"the Pix transit with no TLS shape", "the Pix engines refuse plain HTTP", []string{"--set", "roles.admin.pixTransit.enabled=true"}},
 	}
-	for _, key := range []string{"SOAP_TLS_CERT_FILE", "SOAP_TLS_KEY_FILE", "SOAP_TLS_TERMINATED_UPSTREAM"} {
+	for _, key := range []string{"SOAP_TLS_CERT_FILE", "SOAP_TLS_KEY_FILE", "SOAP_TLS_TERMINATED_UPSTREAM", "PIX_TRANSIT_SERVER_ADDRESS", "PIX_TRANSIT_TLS_CERT_FILE", "PIX_TRANSIT_TLS_KEY_FILE", "PIX_TRANSIT_TLS_TERMINATED_UPSTREAM"} {
 		cases = append(cases, refusal{key + " as a value", "config." + key + " is refused", []string{"--set", "config." + key + "=x"}})
 	}
-	for _, key := range []string{"LICENSE_KEY", "DATABASE_URL", "POSTGRES_PASSWORD", "POSTGRES_REPLICA_PASSWORD", "REDIS_PASSWORD", "MULTI_TENANT_REDIS_PASSWORD", "MULTI_TENANT_SERVICE_API_KEY", "JD_PASSWORD", "JD_PRIVATE_KEY_PEM"} {
+	for _, key := range []string{"LICENSE_KEY", "DATABASE_URL", "POSTGRES_PASSWORD", "POSTGRES_REPLICA_PASSWORD", "REDIS_PASSWORD", "MULTI_TENANT_REDIS_PASSWORD", "MULTI_TENANT_SERVICE_API_KEY", "JD_PASSWORD", "JD_SPI_CLIENT_SECRET", "JD_PRIVATE_KEY_PEM"} {
 		cases = append(cases, refusal{key + " as a value", "config." + key + " is refused", []string{"--set", "config." + key + "=sentinel"}})
 	}
 	// Every spelling strconv.ParseBool reads as true, and one it does not.
@@ -375,6 +376,49 @@ func TestCourierServiceAccount(t *testing.T) {
 			spec := dig(d, "spec", "template", "spec")
 			if dig(spec, "serviceAccountName") != c.want || dig(spec, "automountServiceAccountToken") != false {
 				t.Errorf("%v: %s runs as %v (automount %v), want %q with no API token", c.args, nestedString(d, "metadata", "name"), dig(spec, "serviceAccountName"), dig(spec, "automountServiceAccountToken"), c.want)
+			}
+		}
+	}
+}
+
+// The Pix transit reaches the admin alone, on ports.pixTransit, with the TLS shape it was given.
+func TestCourierPixTransit(t *testing.T) {
+	for _, shape := range []struct {
+		arg            string
+		cert, upstream bool
+	}{
+		{"roles.admin.pixTransit.tls.existingSecret=pix-transit-cert", true, false},
+		{"roles.admin.pixTransit.tls.terminatedUpstream=true", false, true},
+	} {
+		docs := courierManifests(t, "--set", "roles.admin.pixTransit.enabled=true", "--set", "ports.pixTransit=9443", "--set", shape.arg)
+		for _, s := range ofKind(docs, "Service") {
+			ports, _ := dig(s, "spec", "ports").([]interface{})
+			admin := nestedString(s, "metadata", "name") == "t-br-jd-courier-admin"
+			exposed := len(ports) == 2 && dig(ports[1], "name") == "pix-transit" && dig(ports[1], "port") == 9443 && dig(ports[1], "targetPort") == "pix-transit"
+			if exposed != admin {
+				t.Errorf("%s: %s exposes %v; only the admin Service carries the transit port", shape.arg, nestedString(s, "metadata", "name"), ports)
+			}
+		}
+		for _, d := range ofKind(docs, "Deployment") {
+			name := nestedString(d, "metadata", "name")
+			c := container(d)
+			byName, _ := env(c)
+			ports, _ := c["ports"].([]interface{})
+			volumes, _ := dig(d, "spec", "template", "spec", "volumes").([]interface{})
+			if name != "t-br-jd-courier-admin" {
+				if byName["PIX_TRANSIT_SERVER_ADDRESS"] != nil || len(volumes) != 0 {
+					t.Errorf("%s: %s serves no transit and must carry none", shape.arg, name)
+				}
+				continue
+			}
+			_, upstream := byName["PIX_TRANSIT_TLS_TERMINATED_UPSTREAM"]
+			cert := dig(byName["PIX_TRANSIT_TLS_CERT_FILE"], "value") == "/etc/jd-courier/pix-transit-tls/tls.crt" &&
+				dig(byName["PIX_TRANSIT_TLS_KEY_FILE"], "value") == "/etc/jd-courier/pix-transit-tls/tls.key" &&
+				len(volumes) == 1 && dig(volumes[0], "secret", "secretName") == "pix-transit-cert"
+			if dig(byName["PIX_TRANSIT_SERVER_ADDRESS"], "value") != ":9443" || len(ports) != 2 ||
+				dig(ports[1], "name") != "pix-transit" || dig(ports[1], "containerPort") != 9443 ||
+				cert != shape.cert || upstream != shape.upstream || (!shape.cert && len(volumes) != 0) {
+				t.Errorf("%s: the admin must listen on ports.pixTransit with exactly this TLS shape: %v %v %v", shape.arg, byName, ports, volumes)
 			}
 		}
 	}

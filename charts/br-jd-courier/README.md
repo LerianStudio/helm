@@ -30,7 +30,7 @@ Deployment sets `COURIER_ROLES` to its own role; the chart refuses an override.
 | `spb-consumer` | `<release>-br-jd-courier-spb-consumer` | none | **exactly 1** | `Recreate` |
 | `spb-sender` | `<release>-br-jd-courier-spb-sender` | SOAP port (`ports.soap`, 8081) | N | `RollingUpdate` |
 | `pix-ingress` | `<release>-br-jd-courier-pix-ingress` | HTTP port (`ports.http`, 8080) | N | `RollingUpdate` |
-| `admin` | `<release>-br-jd-courier-admin` | HTTP port | N (≥1) | `RollingUpdate` |
+| `admin` | `<release>-br-jd-courier-admin` | HTTP port, plus `ports.pixTransit` (8082) with the [Pix transit](#pix-transit-admin) | N (≥1) | `RollingUpdate` |
 
 ## Environment
 
@@ -91,6 +91,38 @@ Combining the Ingress with `soapTls.existingSecret` re-encrypts to the pod: set
 HTTP on 8080. The certificate is read once at boot; rotating the Secret needs
 `kubectl rollout restart`. `config.SOAP_TLS_*` is refused: those keys follow
 these values.
+
+## Pix transit (admin)
+
+The admin can serve the outbound Pix transit: Pix engines inside the cluster
+call it in place of JD's JDPI address, and the admin carries each call to JD on
+the Courier's own JDPI token. Off by default. `roles.admin.pixTransit.enabled=true`
+sets `PIX_TRANSIT_SERVER_ADDRESS` from `ports.pixTransit` (8082) and adds that
+port, named `pix-transit`, to the admin container and the admin Service, so the
+engines call `<release>-br-jd-courier-admin:8082`. No Ingress: the callers are
+in the cluster.
+
+The engines refuse plain HTTP, so the render fails unless one shape is set:
+
+| Shape | Values | What the chart does |
+|---|---|---|
+| Certificate in the pod | `roles.admin.pixTransit.tls.existingSecret=<kubernetes.io/tls Secret>` | mounts it read-only at `/etc/jd-courier/pix-transit-tls` and sets `PIX_TRANSIT_TLS_CERT_FILE`/`PIX_TRANSIT_TLS_KEY_FILE`; the listener serves TLS itself |
+| Terminated outside the chart | `roles.admin.pixTransit.tls.terminatedUpstream=true` | sets `PIX_TRANSIT_TLS_TERMINATED_UPSTREAM=true`, for a mesh or load balancer the chart does not render |
+
+The certificate must name what the engines dial, and is read once at boot:
+rotating the Secret needs `kubectl rollout restart`. `config.PIX_TRANSIT_*` is
+refused: those keys follow these values. No proxy between an engine and the
+transit may retry a `503`: a retry of JD's own `503` could come back as the
+Courier's not-sent and release a hold JD may still settle.
+
+Single-tenant, the transit reaches JD with the institution's SPI credential:
+`config.JD_SPI_BASE_URL` (https in production), `config.JD_SPI_CLIENT_ID`, and
+`JD_SPI_CLIENT_SECRET` in the Secret (refused under `config`). Multi-tenant
+reads each tenant's `jd-spi` bundle from Secrets Manager instead.
+
+The admin calls the Pix engines (async validation delivery) and JD's SPI
+gateway. The chart renders no NetworkPolicy; a cluster that restricts egress
+must allow both.
 
 ## AWS identity
 

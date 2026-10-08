@@ -25,9 +25,9 @@ serviceAccount:
 # SPB_CHANNEL_CREDENTIAL_ROTATION_OVERLAP; its SOAP_TLS_* keys are refused here
 # and follow roles.spbSender.soapTls and roles.spbSender.ingress. The spb-consumer's
 # SPB_TAKE_BUDGET_SEC must cover SPB_VENDOR_TIMEOUT.
-# JD_PASSWORD is a secret key; JD_PRIVATE_KEY_PEM is refused everywhere — the
-# Courier holds no signing key. Where each engine takes Pix deliveries is on its
-# registry row, not here.
+# JD_PASSWORD and JD_SPI_CLIENT_SECRET are secret keys; JD_PRIVATE_KEY_PEM is
+# refused everywhere — the Courier holds no signing key. Where each engine
+# takes Pix deliveries is on its registry row, not here.
 # Authentication is on, and every role then needs PLUGIN_AUTH_HOST (the Access
 # Manager's address). ALLOW_AUTH_DISABLED_LOCAL_ONLY is refused: a chart install
 # is never a developer's machine. The pix-ingress role also needs the Pix
@@ -63,6 +63,9 @@ ports:
   # The mirrored SPB SOAP surface — a separate stdlib net/http listener,
   # served by the spb-sender only.
   soap: 8081
+  # The outbound Pix transit, served by the admin only while
+  # roles.admin.pixTransit.enabled.
+  pixTransit: 8082
 roles:
   # SINGLE WRITER: drains a destructive vendor queue. Exactly one replica,
   # Recreate strategy; the chart refuses to render more than one.
@@ -112,6 +115,19 @@ roles:
     resources: {}
     service:
       type: ClusterIP
+    # The outbound Pix transit on ports.pixTransit: in-cluster Pix engines call
+    # it in place of JD's JDPI address. The engines refuse plain HTTP, so the
+    # render fails without one TLS shape below. README "Pix transit".
+    pixTransit:
+      enabled: false
+      tls:
+        # A kubernetes.io/tls Secret (tls.crt, tls.key) mounted read-only at
+        # /etc/jd-courier/pix-transit-tls; the listener then serves TLS itself.
+        # Read once at boot: rotating it needs a rollout restart.
+        existingSecret: ""
+        # TLS is terminated before the pod by something this chart does not
+        # render (a mesh, a load balancer).
+        terminatedUpstream: false
 migrations:
   # A pre-install/pre-upgrade Job running `migrate up` against the Courier's own
   # database. Single-tenant only: the chart refuses it under

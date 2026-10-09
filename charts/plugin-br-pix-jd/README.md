@@ -97,7 +97,7 @@ A values file with the values above. Every value is a placeholder:
 ```yaml
 api:
   image:
-    tag: "1.2.0"
+    tag: "1.2.1"
   configmap:
     ENVIRONMENT_NAME: "production"
     ORGANIZATION_IDS: "global"

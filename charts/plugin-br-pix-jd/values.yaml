@@ -415,10 +415,10 @@ migrations:
   # extract-from-the-app-image approach could never run (see the Job template).
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations
-    # -- Pinned explicitly: api, worker and migrations are all published at 1.2.0.
+    # -- Pinned explicitly: api, worker and migrations are all published at 1.2.1.
     # Migrations are independently versioned; a release that does not touch the SQL
     # skips this image, so re-check the pin on every appVersion bump.
-    tag: "1.2.0"
+    tag: "1.2.1"
     pullPolicy: IfNotPresent
   # -- Optional x-migrations-table override, passed to the image as
   # POSTGRES_MIGRATIONS_TABLE; empty uses golang-migrate's default (schema_migrations)

@@ -270,7 +270,7 @@ Input: root context ($).
    limiter, and (IS_DEVELOPMENT) the worker per-tick license validation, which leaves
    the settlement-reconcile poller running unlicensed. Catching them at render beats a
    CrashLoop. ALLOW_INSECURE_TLS is deliberately NOT here: the app treats it as the one
-   sovereign switch for internal-datastore TLS in any environment. */ -}}
+   sovereign switch for plaintext datastores and http upstreams in any environment. */ -}}
 {{- if $isProduction -}}
 {{- $rl := .Values.api.rateLimit | default dict -}}
 {{- $bypasses := dict
@@ -575,11 +575,16 @@ MIGRATIONS_PATH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "
    It is emitted ONLY when explicitly set: absent means the app's own safe default
    (false). The chart never ships it enabled.
 
+   Since app 1.2.1 it is also the one opt-out for plain-http upstreams: the ledger, the
+   Access Manager token exchange, the tenant manager, a tenant's jd.base_url and
+   indirect-participant delivery. It replaces MULTI_TENANT_ALLOW_INSECURE_HTTP, which
+   the app no longer reads and the chart no longer emits.
+
    Deliberately NOT in the production-bypass gate, unlike the other three ALLOW_*: the
-   app treats this one as the single sovereign switch for internal-datastore TLS in ANY
-   environment (config_validation.go says so explicitly, and both the production guard
-   and the SaaS TLS enforcement defer to it). Gating it here would be the chart
-   overruling the app. The separate production check that DOES still apply is
+   app treats this one as the single sovereign switch for plaintext datastores and http
+   upstreams in ANY environment (config_validation.go says so explicitly, and both the
+   production guard and the SaaS TLS enforcement defer to it). Gating it here would be
+   the chart overruling the app. The separate production check that DOES still apply is
    POSTGRES_SSLMODE != disable — those are independent, so setting this does not buy a
    plaintext Postgres under ENVIRONMENT_NAME=production. */ -}}
 {{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ALLOW_INSECURE_TLS" "default" "")) }}
@@ -1116,7 +1121,7 @@ Input dict: root, configmap.
 {{- end }}
 {{ include "lerian-common.multiTenant.envFlat" (dict
       "configmap" $cm
-      "keys" (list "MULTI_TENANT_URL" "MULTI_TENANT_ALLOW_INSECURE_HTTP"
+      "keys" (list "MULTI_TENANT_URL"
                    "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
                    "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
                    "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS"

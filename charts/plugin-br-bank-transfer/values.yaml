@@ -210,7 +210,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.0.2"
+    tag: "3.1.0"
   # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
   # The chart-managed Secret is rendered as an earlier hook (weight -5 / sync-wave -5),
   # so it exists before this migration hook (weight -1) — migrations run against the
@@ -492,6 +492,12 @@ bankTransfer:
     # ("false") in templates/configmap.yaml.
     # MIDAZ_AUTH_ADDRESS: ""
     # MIDAZ_TIMEOUT_MS: ""
+    # Fee mode (app v3.1.0+) — defaulted in templates/configmap.yaml to the app's
+    # own defaults. "auto" turns native fees on by itself against Midaz >= 4.1;
+    # pin "legacy" to keep plugin-fees on /v1. In native mode the ledger's fee
+    # packages charge even with BTF_FEE_ENABLED=false.
+    # MIDAZ_FEE_MODE: "auto"            # auto | legacy | native
+    # MIDAZ_FEE_MODE_REFRESH: "5m"      # positive Go duration; never empty
 
     # CRM (REQUIRED — no chart default, must be set)
     CRM_BASE_URL: "http://plugin-crm.midaz-plugins.svc.cluster.local:4003"

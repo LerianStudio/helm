@@ -294,6 +294,8 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `PLUGIN_AUTH_ENABLED` | Enable authentication | `true` |
 | `JD_SANDBOX_MODE` | Enable JD sandbox mode (fake adapter) | `false` |
 | `MIDAZ_BASE_URL` | Midaz API base URL | **Required** |
+| `MIDAZ_FEE_MODE` | Fee engine: `auto` (native on Midaz >= 4.1, legacy below), `legacy` (plugin-fees on `/v1`) or `native` (Midaz embedded fees on `/v2`) | `auto` |
+| `MIDAZ_FEE_MODE_REFRESH` | How often `auto` re-reads the ledger version (positive Go duration) | `5m` |
 | `CRM_BASE_URL` | CRM adapter base URL | **Required** |
 | `FEES_BASE_URL` | Fees adapter base URL | **Required** |
 | `JD_BASE_URL` | JD SPB SOAP API URL | **Required** (unless `JD_SANDBOX_MODE=true`) |

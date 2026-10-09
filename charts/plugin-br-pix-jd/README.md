@@ -144,6 +144,8 @@ When the plugin answers its health probe (`/health`, `/readyz`), set up the prod
 
 Before you upgrade to app 1.1.0 or later (chart 0.4.8 or later), upgrade the Access Manager chart `plugin-access-manager` to 9.5.10 or later. Otherwise the key lookup route answers `403` after the upgrade.
 
+When you upgrade to app 1.2.1, `MULTI_TENANT_ALLOW_INSECURE_HTTP` is no longer read. If `MULTI_TENANT_URL` uses `http://`, set `api.configmap.ALLOW_INSECURE_TLS: "true"` instead.
+
 Replace `<pix-release>` with your release name. A new install uses `plugin-br-pix-jd`; an existing install keeps its own name, such as `plugin-br-pix-direct-jd`. An install of the earlier `plugin-br-pix-direct-jd-helm` chart keeps its settings in a `pix:` block, which this chart rejects: rewrite that values file into the `api` and `worker` blocks before you use it with this chart.
 
 ```bash

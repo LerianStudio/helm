@@ -18,8 +18,9 @@ api:
     REDIS_HOST: ""
 
     # Arms the app's production security gates: auth forced on, Postgres password
-    # and SSL required, and every ALLOW_* bypass plus IS_DEVELOPMENT=true rejected
-    # at boot. Leave empty only for development.
+    # and SSL required, and ALLOW_CORS_WILDCARD, ALLOW_RATELIMIT_FAIL_OPEN and
+    # IS_DEVELOPMENT=true rejected at boot. ALLOW_INSECURE_TLS stays allowed (see
+    # below). Leave empty only for development.
     ENVIRONMENT_NAME: ""
 
     # A production ENVIRONMENT_NAME requires SSL. Raise this from the bundled

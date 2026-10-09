@@ -71,7 +71,7 @@ WHO USES THIS CHART, which is what the rule encodes:
   - our three SaaS environments: aws-production, aws-staging, aws-devops. Reserved,
     exempt from the pattern. They predate the convention and renaming them would
     orphan the metric history of every series already carrying those names.
-  - client clusters: <client>-<stage>, lowercase, stage = stg | prd. Nothing else.
+  - client clusters: <client>-<stage>, lowercase, stage = stg | hml | prd. Nothing else.
     The client name is a SINGLE word — acme-prd, never acme-corp-prd. Composition
     is refused deliberately: the identifier is parsed by routing and cost rules
     that split on the last hyphen, and a composed name makes that split ambiguous.
@@ -81,8 +81,18 @@ case here: they report to a separate self-hosted Grafana and will not run this
 chart. No exemption is carved for them, on purpose — an exemption that nothing uses
 is a rule someone will later mistake for a supported path.
 
-Only stg and prd are accepted as stages. hml was dropped: a stage nobody routes to
-is a stage that produces telemetry nobody watches.
+Stages accepted: stg, hml and prd.
+
+⚠️ `hml` ESTAVA FORA, por "a stage nobody routes to". A premissa era falsa, e o
+dado refuta: MEDIDO na Grafana Cloud em 2026-10-09, `srm-hml` emite 52 metricas
+distintas e `Cappta-Hml` 46, ambos ativos. O values do collector-server ja os
+nomeia explicitamente (decisao de 2026-09-29, ao definir o escopo do drop de
+`-dev`), entao sao ambientes conhecidos e roteados.
+
+Manter `hml` fora recusaria o render para o cliente que primeiro vai migrar: o
+SRM tem homologacao. E alinha com a validacao de schema do chart que este
+substitui (`otel-collector-lerian`), que aceita `(stg|hml|prd)` — dois agentes
+no mesmo papel com regras divergentes produzem migracao que falha sem motivo.
 
 Clients already outside the convention do not break today. The pattern only bites
 when a cluster is upgraded to this chart, and the identifier is corrected as part of
@@ -98,12 +108,12 @@ anyway. Both messages state the required form and nothing else.
 {{- define "alloy-lerian.originId" -}}
 {{- $id := .Values.origin.id | default "" -}}
 {{- if not $id -}}
-{{- fail "\n\nalloy-lerian: `origin.id` is required and has no default.\n\nIt marks every record with the environment it came from. Without it,\ntelemetry reaches the destination unattributable.\n\n  origin:\n    id: acme-prd\n\nRequired form: <client>-<stage>, lowercase, stage = stg | prd.\n" -}}
+{{- fail "\n\nalloy-lerian: `origin.id` is required and has no default.\n\nIt marks every record with the environment it came from. Without it,\ntelemetry reaches the destination unattributable.\n\n  origin:\n    id: acme-prd\n\nRequired form: <client>-<stage>, lowercase, stage = stg | hml | prd.\n" -}}
 {{- end -}}
 {{- $reserved := list "aws-production" "aws-staging" "aws-devops" -}}
 {{- if not (has $id $reserved) -}}
-{{- if not (regexMatch "^[a-z0-9]+-(stg|prd)$" $id) -}}
-{{- fail (printf "\n\nalloy-lerian: origin.id %q is malformed.\n\nRequired form: <client>-<stage>, lowercase, stage = stg | prd.\nThe client name is a single word: acme-prd, not acme-corp-prd.\n" $id) -}}
+{{- if not (regexMatch "^[a-z0-9]+-(stg|hml|prd)$" $id) -}}
+{{- fail (printf "\n\nalloy-lerian: origin.id %q is malformed.\n\nRequired form: <client>-<stage>, lowercase, stage = stg | hml | prd.\nThe client name is a single word: acme-prd, not acme-corp-prd.\n" $id) -}}
 {{- end -}}
 {{- end -}}
 {{- $id -}}

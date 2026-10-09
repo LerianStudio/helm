@@ -63,7 +63,7 @@ Deve listar `fleet-token` e `telemetry-token`.
 
 Troque **`acme-prd`** pelo identificador que a Lerian informou para o seu
 ambiente. Ele aparece em um lugar só, e tem a forma `<cliente>-<ambiente>`, em
-minúsculas, com ambiente `stg` ou `prd`.
+minúsculas, com ambiente `stg`, `hml` ou `prd`.
 
 ```yaml
 profile: client

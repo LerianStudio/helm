@@ -219,7 +219,7 @@ deliberately absent here.
 profile: client
 
 origin:
-  # <client>-<stage>, lowercase, stage = stg | prd.
+  # <client>-<stage>, lowercase, stage = stg | hml | prd.
   # The client name is ONE word: acme-prd, never acme-corp-prd.
   id: acme-prd
 

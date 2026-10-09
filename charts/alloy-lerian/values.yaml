@@ -41,7 +41,7 @@ profile: ""
 # Marks every record with the environment it came from. Without it, telemetry
 # reaches the destination unattributable.
 #
-# Form: <client>-<stage>, lowercase, stage = stg | prd. The client name is a
+# Form: <client>-<stage>, lowercase, stage = stg | hml | prd. The client name is a
 # SINGLE word — acme-prd, never acme-corp-prd. Our three SaaS environments are the
 # only exempt values; internal test clusters do not run this chart and get no
 # exemption.

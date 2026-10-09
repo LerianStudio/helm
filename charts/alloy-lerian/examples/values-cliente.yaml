@@ -18,7 +18,7 @@
 profile: client
 
 origin:
-  # Substituir. Formato: <cliente>-<ambiente>, minusculas, ambiente = stg | prd.
+  # Substituir. Formato: <cliente>-<ambiente>, minusculas, ambiente = stg | hml | prd.
   # O nome do cliente e UMA palavra: acme-prd, nunca acme-corp-prd.
   id: SUBSTITUIR-prd
 

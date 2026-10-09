@@ -24,6 +24,9 @@ ledger:
       name: "tx_ci"
   configmap:
     AUDIT_LOG_ENABLED: "true"
+    # The 4.x ledger refuses ENV_NAME=production without PLUGIN_AUTH_ENABLED=true, and no
+    # auth service is bundled; the chart fails the render on that pair.
+    ENV_NAME: "development"
   secrets:
     LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
@@ -32,6 +35,12 @@ ledger:
     # Secrets, so they are intentionally omitted here.
     RABBITMQ_DEFAULT_PASS: "sample"
     RABBITMQ_CONSUMER_PASS: "sample"
+rabbitmq:
+  authentication:
+    erlangCookie:
+      # Operator-provided like the RabbitMQ passwords above: the chart refuses to
+      # render the bundled broker without one.
+      value: "0123456789abcdef0123456789abcdef"
 crm:
   # Exercise the standalone CRM deployment templates in the render-gate.
   enabled: true

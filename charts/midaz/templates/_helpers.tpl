@@ -134,6 +134,25 @@ Fail loud at render time so the operator fixes the configuration.
 {{- end }}
 
 {{/*
+midaz.rabbitmqErlangCookieRequired — fail when the bundled groundhog2k rabbitmq subchart is
+enabled without an Erlang cookie. The subchart only sets ERLANG_COOKIE when
+rabbitmq.authentication.erlangCookie.value (or existingSecret + erlangCookie.secretKey) is given;
+otherwise its init script writes an empty .erlang.cookie and the broker exits at boot with
+"Too short cookie string", taking every ledger pod waiting on it down too.
+*/}}
+{{- define "midaz.rabbitmqErlangCookieRequired" -}}
+{{- $auth := .Values.rabbitmq.authentication | default dict -}}
+{{- $cookie := $auth.erlangCookie | default dict -}}
+{{- /* The subchart also takes the cookie as a plain env var or from extraEnvSecrets, whose contents
+   cannot be seen at render: either one stands the check down. */ -}}
+{{- $viaEnv := .Values.rabbitmq.extraEnvSecrets -}}
+{{- range (.Values.rabbitmq.env | default list) }}{{ if eq (toString .name) "ERLANG_COOKIE" }}{{ $viaEnv = true }}{{ end }}{{ end -}}
+{{- if and (ne (toString .Values.rabbitmq.enabled) "false") (not .Values.rabbitmq.external) (not $cookie.value) (not (and $auth.existingSecret $cookie.secretKey)) (not $viaEnv) -}}
+{{- fail "\n\nERROR: rabbitmq.authentication.erlangCookie.value is REQUIRED when the bundled rabbitmq subchart is enabled.\n   Without it the broker writes an empty Erlang cookie and refuses to boot (\"Too short cookie string\").\n   Provide a stable value (it must not change across upgrades), e.g.: openssl rand -hex 32,\n   or set rabbitmq.authentication.existingSecret + rabbitmq.authentication.erlangCookie.secretKey.\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name for CRM.
 */}}
 {{- define "midaz-crm.fullname" -}}
@@ -305,13 +324,15 @@ true
 {{- end -}}
 
 {{/*
-midaz-tracer.migrationsFullname — one Job name per migration image tag. A Job
-spec is immutable, so a stable name would silently skip the run on upgrade; the
-tag suffix makes every version bump create a new Job. Re-running is safe:
+midaz-tracer.migrationsFullname — one Job name per rendered Job spec
+(dict "context" . "spec" <rendered spec>). The tracer Job is a regular release
+resource, and a Job spec is immutable, so the name has to change whenever the
+spec does: the migration image tag, then a hash of the spec. Re-running is safe:
 golang-migrate tracks progress in the schema_migrations table.
 */}}
 {{- define "midaz-tracer.migrationsFullname" -}}
-{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-tracer.fullname" .) "tag" (include "midaz-tracer.migrationsTag" .)) -}}
+{{- $tag := printf "%s-%s" (include "midaz-tracer.migrationsTag" .context) (sha256sum .spec | trunc 8) -}}
+{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-tracer.fullname" .context) "tag" $tag) -}}
 {{- end -}}
 
 {{- define "midaz-ledger.migrationsFullname" -}}

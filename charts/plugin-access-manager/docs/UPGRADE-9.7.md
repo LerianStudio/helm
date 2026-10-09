@@ -2,7 +2,7 @@
 
 Chart **9.7.0** moves Access Manager from **3.9.0** to **3.11.0** and Caradhras from **1.4.0** to **1.5.1**. Caradhras **1.5.0 is the minimum** for Access Manager 3.11.0; use 1.5.1.
 
-Application behavior below was checked against Access Manager commit [`c41e7747`](https://github.com/LerianStudio/plugin-access-manager/tree/c41e7747d77b59fc6ca509b75066fb26a9a42a9d) (the release candidate that becomes 3.11.0) and Caradhras [`v1.5.1`](https://github.com/LerianStudio/caradhras/tree/v1.5.1).
+Application behavior below was checked against Access Manager [`v3.11.0`](https://github.com/LerianStudio/plugin-access-manager/tree/v3.11.0) and Caradhras [`v1.5.1`](https://github.com/LerianStudio/caradhras/tree/v1.5.1).
 
 ## 1. Images
 
@@ -20,7 +20,7 @@ Application behavior below was checked against Access Manager commit [`c41e7747`
 - **Why 1.5.1.** It fixes Caradhras issue #254: the MFA management routes could act on a different user than the one the authorization check approved.
 - Caradhras 1.4.0 → 1.5.1 adds no database migration.
 
-Sources: [MFA step-up call](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/components/identity/internal/adapters/authserver/casdoor/casdoor.mfa_step_up.go#L39), [route in Caradhras 1.5.0](https://github.com/LerianStudio/caradhras/blob/v1.5.0/internal/http/mfa_huma.go#L120).
+Sources: [MFA step-up call](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/components/identity/internal/adapters/authserver/casdoor/casdoor.mfa_step_up.go#L39), [route in Caradhras 1.5.0](https://github.com/LerianStudio/caradhras/blob/v1.5.0/internal/http/mfa_huma.go#L120).
 
 ## 2. Configuration
 
@@ -30,7 +30,7 @@ No new environment variable is required.
 - **`identity.configmap.TRUSTED_PROXIES`** now also feeds the forgot-password rate limit (10 requests per 15 minutes per client IP, on both forgot-password routes, only when `ENABLE_FORGOT_PASSWORD` and rate limiting are on). Left empty, every request behind an ingress counts against the ingress's own address, so all users share one budget. Set it to your ingress or load balancer CIDRs, plus the console's pod CIDR when the console calls identity in-cluster.
 - **`MFA_ENABLED` without `MFA_SECRET`** no longer stops auth from booting: it logs an error and the MFA routes answer `503 AUT-0028`. The chart keeps refusing to render that combination, so nothing changes for chart installs.
 
-Sources: [build identity on `/version`](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/components/auth/internal/adapters/http/in/routes.go#L120), [forgot-password tier](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/components/identity/internal/adapters/http/in/rate_limit.go#L19-L31), [trusted proxies](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/components/identity/internal/adapters/http/in/routes.go#L580-L600).
+Sources: [build identity on `/version`](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/components/auth/internal/adapters/http/in/routes.go#L120), [forgot-password tier](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/components/identity/internal/adapters/http/in/rate_limit.go#L19-L31), [trusted proxies](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/components/identity/internal/adapters/http/in/routes.go#L580-L600).
 
 ## 3. Organization email domain (`domain`, `domainHome`)
 
@@ -42,7 +42,7 @@ Tenant discovery now reads the organization's `domain` and `domainHome` fields i
 
 Check before upgrading: every organization that used a `domain:` tag has `domain` set, and one organization per domain has `domainHome` set.
 
-Sources: [tenant discovery](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/pkg/tenantdiscovery/discover.go#L72-L160), [email-domain rule](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/components/identity/internal/services/user.go#L413-L458).
+Sources: [tenant discovery](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/pkg/tenantdiscovery/discover.go#L72-L160), [email-domain rule](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/components/identity/internal/services/user.go#L413-L458).
 
 ## 4. API changes your clients see
 
@@ -55,7 +55,7 @@ Sources: [tenant discovery](https://github.com/LerianStudio/plugin-access-manage
 - **New routes:** `GET /v1/users/{id}/tenants` and `PUT /v1/users/{id}/tenants/default` (a member lists their tenants and picks the default), `GET /v1/partners/ceiling`.
 - **Token introspection is cached for at most 60 seconds**, so a revocation made outside Access Manager takes effect within a minute.
 
-Sources: [application read mapper](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/components/identity/pkg/model/application.go#L297-L307), [IDE-0066](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/components/identity/pkg/errors_unavailable.go#L38-L55), [auth error codes](https://github.com/LerianStudio/plugin-access-manager/blob/c41e7747d77b59fc6ca509b75066fb26a9a42a9d/components/auth/pkg/constant/errors.go#L110-L185).
+Sources: [application read mapper](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/components/identity/pkg/model/application.go#L297-L307), [IDE-0066](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/components/identity/pkg/errors_unavailable.go#L38-L55), [auth error codes](https://github.com/LerianStudio/plugin-access-manager/blob/v3.11.0/components/auth/pkg/constant/errors.go#L110-L185).
 
 ## 5. Upgrade
 

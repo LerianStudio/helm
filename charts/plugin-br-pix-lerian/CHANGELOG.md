@@ -3,6 +3,44 @@
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
 
 Features:
+- Drive `STREAMING_ENABLED` configuration from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate SD_* settings via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the correct access-manager service. (@Leonardox7)
+- Prefix provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept all truthy values for `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with published versions. (@Leonardox7)
+- Put migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Ship the template with proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an environment name. (@Leonardox7)
+- Prevent defaults from discarding an explicit zero. (@Leonardox7)
+- Provide a security context for the bootstrap Postgres Job. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Drop DICT outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the `ConfigMap` surface with defaults in the template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Fix the getting-started documentation with prefixed probe paths and correct license client information. (@guimoreirar)
+- Add render assertions and a CI fixture for testing. (@Leonardox7)
+- Port the chart from the develop branch. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
 - Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
 - Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
 - Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)

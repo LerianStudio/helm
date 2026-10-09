@@ -33,7 +33,6 @@ data:
   # APP 
   SERVER_PORT: {{ .Values.auth.configmap.SERVER_PORT | default "4000" | quote }}
   SERVER_ADDRESS: {{ .Values.auth.configmap.SERVER_ADDRESS | default ":4000" | quote }}
-  VERSION: {{ .Values.auth.image.tag | quote }}
 
   # REDIS
   REDIS_HOST: {{ printf "%s:%s" (include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (include "plugin-access-manager.valkeyHost" .))) (include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | toString) | quote }}
@@ -69,10 +68,15 @@ data:
   # OPEN TELEMETRY
   {{- include "lerian-common.otel.envFlat" (dict
         "configmap" .Values.auth.configmap
+        "keys" (list
+          "OTEL_RESOURCE_SERVICE_NAME"
+          "OTEL_LIBRARY_NAME"
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
+          "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
+          "OTEL_EXPORTER_OTLP_ENDPOINT")
         "defaults" (dict
           "OTEL_RESOURCE_SERVICE_NAME" "auth"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/auth"
-          "OTEL_RESOURCE_SERVICE_VERSION" .Values.auth.image.tag
           "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "dev"
           "OTEL_EXPORTER_OTLP_ENDPOINT" "")) | nindent 2 }}
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}

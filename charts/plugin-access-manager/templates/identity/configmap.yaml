@@ -22,8 +22,7 @@ data:
   # APP 
   APPLICATION_NAME: {{ .Values.identity.configmap.APPLICATION_NAME | default "plugin-identity" | quote }}
   SERVER_PORT: {{ .Values.identity.configmap.SERVER_PORT | default "4001" | quote }}
-  SERVER_ADDRESS: {{ .Values.identity.configmap.SERVER_ADDRESS | default ":4001" | quote }} 
-  VERSION: {{ .Values.identity.image.tag | quote }}
+  SERVER_ADDRESS: {{ .Values.identity.configmap.SERVER_ADDRESS | default ":4001" | quote }}
 
   # AUTHORIZER
   AUTHORIZER_PORT: {{ .Values.identity.configmap.AUTHORIZER_PORT | default (include "caradhras.servicePort" .) | quote }}
@@ -58,13 +57,11 @@ data:
         "keys" (list
           "OTEL_RESOURCE_SERVICE_NAME"
           "OTEL_LIBRARY_NAME"
-          "OTEL_RESOURCE_SERVICE_VERSION"
           "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
           "OTEL_EXPORTER_OTLP_ENDPOINT_PORT")
         "defaults" (dict
           "OTEL_RESOURCE_SERVICE_NAME" "plugin-identity"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/identity"
-          "OTEL_RESOURCE_SERVICE_VERSION" .Values.identity.image.tag
           "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "dev")) | nindent 2 }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }} 
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}

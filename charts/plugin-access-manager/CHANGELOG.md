@@ -3,6 +3,21 @@
 ## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.0)
 
 Features:
+- Bump to app `3.11.0` and caradhras `1.5.1`. (@fredcamaral)
+
+Improvements:
+- Point the `9.7` upgrade guide at the `v3.11.0` tag. (@fredcamaral)
+
+Fixes:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.6.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.6.0...plugin-access-manager-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.0)
+
+Features:
 - Bump to app version `3.11.0` and Caradhras version `1.5.1`. (@fredcamaral)
 
 Improvements:

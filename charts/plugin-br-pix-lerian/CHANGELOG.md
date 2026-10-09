@@ -13,6 +13,41 @@ Fixes:
 - Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
 - Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
 - Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Fix getting-started documentation by prefixing probe paths and correcting the license client number. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the configmap surface with defaults in the template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
 - Put migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
 - Quote `ingressClassName` in the template. (@Leonardox7)
 - Ship the template with the proxies disabled. (@Leonardox7)

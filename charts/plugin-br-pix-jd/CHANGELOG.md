@@ -3,6 +3,21 @@
 ## [0.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.2)
 
 Features:
+- Bump app to `1.2.0` and model the permission declaration. (@jeffersonrodrigues92)
+- Bump app to `1.1.2` to include QR listing date window. (@jeffersonrodrigues92)
+
+Fixes:
+- Skip blank declaration overrides and unrendered secret to improve functionality. (@jeffersonrodrigues92)
+- Accept the declaration from every source operators use, ensuring broader compatibility. (@jeffersonrodrigues92)
+- Check the effective declaration auth and secret for enhanced security. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.1...plugin-br-pix-jd-v0.5.2)
+
+---
+
+## [0.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.2)
+
+Features:
 
 - Bump app to `1.2.0` and model the permission declaration. (@jeffersonrodrigues92)
 - Bump app to `1.1.2` to include QR listing date window. (@jeffersonrodrigues92)

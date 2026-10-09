@@ -105,6 +105,8 @@ bankTransfer:
     # Midaz — REQUIRED
     MIDAZ_BASE_URL: ""  # REQUIRED - Midaz API endpoint
     MIDAZ_TRANSACTION_URL: ""  # REQUIRED - Midaz transaction endpoint
+    # MIDAZ_FEE_MODE: "auto"  # Optional - auto | legacy | native (auto = native on Midaz >= 4.1)
+    # MIDAZ_FEE_MODE_REFRESH: "5m"  # Optional - how often auto re-reads the ledger version
 
     # CRM — REQUIRED
     CRM_BASE_URL: ""  # REQUIRED - CRM API endpoint

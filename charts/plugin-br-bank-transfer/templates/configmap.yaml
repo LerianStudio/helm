@@ -297,6 +297,13 @@ data:
   MIDAZ_TRANSACTION_URL: {{ .Values.bankTransfer.configmap.MIDAZ_TRANSACTION_URL | default .Values.bankTransfer.configmap.MIDAZ_BASE_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002" | quote }}
   MIDAZ_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ENABLED | default "false" | quote }}
   MIDAZ_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" | quote }}
+  # Fee mode (app v3.1.0+): auto | legacy | native, case-sensitive. "auto" asks the
+  # ledger GET /version and turns native (Midaz embedded fees on /v2) on by itself
+  # against Midaz >= 4.1; "legacy" keeps plugin-fees on /v1. Defaults mirror the app.
+  # The refresh default also keeps the key from rendering empty, which the app
+  # refuses at boot.
+  MIDAZ_FEE_MODE: {{ .Values.bankTransfer.configmap.MIDAZ_FEE_MODE | default "auto" | quote }}
+  MIDAZ_FEE_MODE_REFRESH: {{ .Values.bankTransfer.configmap.MIDAZ_FEE_MODE_REFRESH | default "5m" | quote }}
   {{- if .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS }}
   MIDAZ_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS | quote }}
   {{- end }}

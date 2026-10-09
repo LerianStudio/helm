@@ -8,7 +8,7 @@
 
 api:
   image:
-    # Pin the published app tag explicitly in production (1.2.0 for this chart).
+    # Pin the published app tag explicitly in production (1.2.1 for this chart).
     # Empty inherits Chart.appVersion; registry tags have no leading v.
     tag: ""
 
@@ -18,8 +18,9 @@ api:
     REDIS_HOST: ""
 
     # Arms the app's production security gates: auth forced on, Postgres password
-    # and SSL required, and every ALLOW_* bypass plus IS_DEVELOPMENT=true rejected
-    # at boot. Leave empty only for development.
+    # and SSL required, and ALLOW_CORS_WILDCARD, ALLOW_RATELIMIT_FAIL_OPEN and
+    # IS_DEVELOPMENT=true rejected at boot. ALLOW_INSECURE_TLS stays allowed (see
+    # below). Leave empty only for development.
     ENVIRONMENT_NAME: ""
 
     # A production ENVIRONMENT_NAME requires SSL. Raise this from the bundled
@@ -60,12 +61,13 @@ api:
     # bypass in production — the app rejects it at boot.
     CORS_ALLOWED_ORIGINS: ""
 
-    # Set to "true" when the datastores have NO TLS — which is the case in the
-    # benedita dev-st / stg-mt environments, where lib-commons otherwise refuses the
-    # plaintext connection to Postgres, Valkey and RabbitMQ.
-    # Unlike the other ALLOW_* switches this one is permitted in production (the app
-    # treats it as the sovereign TLS switch), so set it deliberately. It does NOT let
-    # you keep POSTGRES_SSLMODE=disable under ENVIRONMENT_NAME=production — that is a
+    # Set to "true" to let the app use plaintext connections: Postgres, Valkey and
+    # RabbitMQ without TLS, and http:// for the ledger, the Access Manager token
+    # exchange, MULTI_TENANT_URL, a tenant's JD base URL and indirect-participant
+    # delivery. Without it the app refuses each of these over plaintext.
+    # Unlike the other ALLOW_* switches this one is permitted in any environment,
+    # production included, so set it deliberately. It does NOT let you keep
+    # POSTGRES_SSLMODE=disable under ENVIRONMENT_NAME=production — that is a
     # separate check that still fires.
     ALLOW_INSECURE_TLS: ""
 

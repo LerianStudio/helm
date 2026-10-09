@@ -27,6 +27,18 @@ Improvements:
 ## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.1)
 
 Fixes:
+- Update `agent@1.0.1` to address issues. (@bedatty, @lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `agent` `v1.0.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.0...agent-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.1)
+
+Fixes:
 - Update `agent@1.0.1` to address issues in the agent. (@bedatty, @lerian-studio)
 
 Improvements:

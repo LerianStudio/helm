@@ -139,7 +139,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.9.0"
+    tag: "3.11.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -305,7 +305,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.9.0"
+    tag: "3.11.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -575,7 +575,7 @@ caradhras:
     # -- to override.
     repository: ghcr.io/lerianstudio/caradhras
     pullPolicy: Always
-    tag: "1.4.0"
+    tag: "1.5.1"
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -612,7 +612,7 @@ caradhras:
       # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
       pullPolicy: ""
       # -- Empty preserves auth.backend.migrations.image.tag overrides;
-      # -- otherwise defaults to 1.4.0 in templates/_helpers.tpl.
+      # -- otherwise defaults to 1.5.1 in templates/_helpers.tpl.
       # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
   # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying

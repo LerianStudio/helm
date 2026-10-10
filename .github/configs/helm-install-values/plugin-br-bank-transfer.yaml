@@ -8,3 +8,10 @@
 global:
   env:
     name: "development"
+
+# Since app 3.1.0 a non-empty encryption key must be 64 hex characters (AES-256),
+# and the render values' "sample" refuses boot. Test-only keys, never a real secret.
+bankTransfer:
+  secrets:
+    JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    RECIPIENT_DETAILS_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"

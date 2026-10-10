@@ -77,8 +77,8 @@ class StartupContract(unittest.TestCase):
         docs = self.succeeds({})
         images = [c['image'] for d in docs if d['kind'] == 'Deployment'
                   for c in d['spec']['template']['spec']['containers']]
-        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.11.0', images)
-        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.11.0', images)
+        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.11.1', images)
+        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.11.1', images)
         for d in docs:
             if d['kind'] == 'HorizontalPodAutoscaler':
                 self.assertGreaterEqual(d['spec']['minReplicas'], 1)
@@ -240,7 +240,7 @@ class StartupContract(unittest.TestCase):
         job = next(d for d in jobs if d['metadata']['name'].endswith('init-user'))
         self.assertEqual(job['metadata']['annotations']['helm.sh/hook'], 'post-install')
         self.assertEqual(job['spec']['template']['spec']['containers'][0]['image'],
-                         'ghcr.io/lerianstudio/caradhras-user-init:3.11.0')
+                         'ghcr.io/lerianstudio/caradhras-user-init:3.11.1')
 
 
 if __name__ == '__main__':

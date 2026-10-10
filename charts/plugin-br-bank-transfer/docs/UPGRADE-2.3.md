@@ -31,7 +31,7 @@ For each client whose fee packages live in plugin-fees:
 
 `auto` and `native` need both: the client's fee packages live in Midaz and every pod runs app 3.1.0. Until both hold, keep `legacy`, even when the fee packages already live in Midaz: with Midaz on 4.1+, during the rolling update, a pod still on app 3.0.x can settle on `/v1`, where no fee is charged, a transfer that a 3.1.0 pod started in native mode.
 
-Native mode needs two Midaz grants on Bank Transfer's credentials that legacy never used: `midaz` / `packages` / `get` and `midaz` / `estimates` / `post` (in multi-tenant, on each tenant's credentials). With `MIDAZ_FEE_MODE=native` set explicitly, Bank Transfer first checks the ledger with an authenticated `/v2` read, which also needs `midaz` / `organizations` / `get`. Without these grants, a native transfer initiation answers 503 `BTF-2000`.
+Native mode needs two Midaz grants on Bank Transfer's credentials that legacy never used: `midaz` / `packages` / `get` and `midaz` / `estimates` / `post` (in multi-tenant, on each tenant's credentials). Without them, a native transfer initiation answers 503 `BTF-2000`. With `MIDAZ_FEE_MODE=native` set explicitly, Bank Transfer first checks the ledger with an authenticated `/v2` read, which also needs `midaz` / `organizations` / `get`. Without that grant, a single-tenant pod refuses to start, and in multi-tenant every P2P and TED OUT initiation of that tenant answers 503 `BTF-2000`.
 
 ## Features
 

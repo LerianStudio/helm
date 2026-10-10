@@ -15,29 +15,9 @@ and are load-bearing:
   2. replace_pattern is an EDITOR: its own statement, never nested in set()
   3. no lookahead or lookbehind — the engine rejects both at load
 
-RULE ORDER IS A CONTRACT. Each constraint below was confirmed by deliberately
-inverting it:
-
-  phone before document   a 13-digit E.164 number matches the 11-digit document
-                          rule and becomes "+551********21" — masked, but masked
-                          wrongly: it loses the area code and keeps the tail of
-                          the subscriber number
-  dotted before plain     the punctuated document form stops matching otherwise
-  3+ names before 2       "Ana Beatriz Costa Lima" becomes
-                          "Ana ********** Beatriz Costa Lima": the full name
-                          stays exposed behind a decorative mask
-
-⚠️ OBSOLETO ATE 2026-08-28, corrigido: este paragrafo dizia que a regra de
-documento mascara "ANY 11+ digit run", com ~2% das linhas afetadas. Isso era
-verdade e deixou de ser — as regras de documento e CNPJ agora exigem FRONTEIRA
-que nao seja letra nem digito dos dois lados, o que exclui SHA, hex, epoch de 13
-digitos e `duration=...ms`. Ver o comentario de cada regra abaixo para o que
-MEDIDO permanece como limite aceito.
-
-Requiring a field prefix was evaluated and rejected, and this remains true: the
-canonical case is a bare document in running text. MEDIDO em log de producao
-(Cappta-Prd): `PIX-OUT de 05147290150` e `PIX-OUT de 48028905000104` — CPF e CNPJ
-sem nome de campo. Exigir `cpf=`/`cnpj=` vazaria esses.
+Identifiers stay in CLEAR by decision (2026-10-10): CPF, CNPJ, matricula,
+contract numbers, UUIDs and resource ids. Masked: names, e-mail, phone, postal
+address, bank account and branch, Pix keys, credentials.
 */}}
 {{- define "alloy-lerian.config.sanitizacao" -}}
 {{- $nome := .nome | default "sanitizacao" -}}
@@ -51,83 +31,16 @@ otelcol.processor.transform {{ $nome | quote }} {
   log_statements {
     context = "log"
     statements = [
-      // --- PHONE --- (before document, see header)
+      // --- PHONE ---
       // E.164 with country and area code: preserves both, masks the subscriber
       // number. Region is useful in diagnosis; the number is not.
-      // ⚠️ FRONTEIRA, pela mesma razao da regra de documento. Sem ela casava qualquer
-      // numero com `+` e 12-13 digitos. MEDIDO:
-      //
-      //   latency=+5511987654321ns  ->  latency=+5511********ns
-      //
-      // Com a fronteira, o `ns` protege o valor e o telefone real segue mascarado,
-      // inclusive em JSON.
       `replace_pattern(body, "(\\+[0-9]{2}[0-9]{2})[0-9]{8,9}", "$1********")`,
 
       // National form with separators.
       `replace_pattern(body, "(\\([0-9]{2}\\) )[0-9]{4,5}-[0-9]{4}", "$1*****-****")`,
 
-      // --- FISCAL DOCUMENT ---
-      // Punctuated form first: the plain-digit rule would not match it, and
-      // this rule would not match what that one already masked.
-      `replace_pattern(body, "([0-9]{3})\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}", "$1.***.***-**")`,
-
-      // CNPJ pontuado (`11.222.333/0001-81`). Mesma logica da linha acima, para a
-      // outra forma: a regra de digitos corridos NAO alcanca a pontuada, porque os
-      // separadores quebram a sequencia de 14.
-      //
-      // ⚠️ MEDIDO em bancada (2026-10-07, agente real, cadeia servida pelo Fleet):
-      // sem esta regra, `cnpj=11.222.333/0001-81` chegava INTACTO ao destino,
-      // enquanto `48028905000104` na MESMA linha era mascarado. A forma pontuada e
-      // a grafia comum em log de aplicacao — e era a unica das duas que vazava.
-      //
-      // Preserva os 2 primeiros digitos, como a regra de digitos corridos, para
-      // manter correlacao sem reconstituir o documento.
-      `replace_pattern(body, "([0-9]{2})\\.[0-9]{3}\\.[0-9]{3}/[0-9]{4}-[0-9]{2}", "$1.***.***/****-**")`,
-
-      // Eleven consecutive digits. Preserves the first three for correlation.
-      // ⚠️ FRONTEIRA nos DOIS lados, e nenhum dos delimitadores pode ser letra ou
-      // digito. Sem isso a regra casava 11 digitos em qualquer contexto. MEDIDO em
-      // producao (log do ArgoCD em aws-devops):
-      //
-      //   sha=8562e2e9f6ae0abcd12345678901ef  ->  ...abcd123********ef
-      //
-      // E tambem `ts=1787934092000` (epoch), `duration=...ms`, `pid=`, `objectRV=`.
-      // Nao e vazamento — e perda SILENCIOSA de diagnostico: o log parece normal.
-      //
-      // `[^0-9A-Za-z]` de cada lado exclui SHA e hex (tem letra adjacente), epoch de
-      // 13 digitos e `duration=...ms`. MEDIDO: mantem 4/4 na cobertura de CPF,
-      // incluindo texto livre e JSON, e corrompe 2 de 6 valores legitimos.
-      //
-      // ⚠️ LIMITE ACEITO: `objectRV=91656472123` e `pid=12345678901` continuam
-      // mascarados. Sao numeros de EXATAMENTE 11 digitos delimitados por `=` e fim de
-      // linha — indistinguiveis de CPF pela forma. Nenhuma regex resolve sem o nome
-      // do campo; ver pre-dev/regras-pii-falso-positivo/GAP-nomenclatura-campos.md.
-      //
-      // ⚠️ NAO exigir contexto (`cpf=`) como alternativa: MEDIDO, vaza 3 de 5 —
-      // texto livre, JSON com outra chave, e forma pontuada. Falso negativo em PII e
-      // vazamento.
-      `replace_pattern(body, "([^0-9A-Za-z]|^)([0-9]{3})([0-9]{8})([^0-9A-Za-z]|$)", "$1$2********$4")`,
-
-      // Fourteen consecutive digits (CNPJ). MESMA fronteira da regra de CPF, pela
-      // mesma razao. Preserva os 2 primeiros digitos.
-      //
-      // ⚠️ Por FORMA, nao por nome de campo. MEDIDO em log real de producao
-      // (Cappta-Prd, ledger v3.6.3): das 6 ocorrencias de CNPJ, 4 estavam em TEXTO
-      // LIVRE, sem nome de campo:
-      //
-      //   PIX-OUT de 48028905000104 de R$200.0    <- CNPJ do pagador, solto
-      //   documento 30251055000135                 <- com a palavra, mas sem `=`
-      //
-      // Exigir `cnpj=`/`documento=` vazaria as 4. Mesmo raciocinio da regra de CPF.
-      //
-      // ⚠️ LIMITE ACEITO, medido: epoch de 14 digitos (`ts=17879550984508`) e
-      // resourceVersion longo (`objectRV=91656472123456`) sao mascarados. Sao
-      // indistinguiveis de CNPJ pela forma. Ambos disponiveis por kubectl — mesmo
-      // trade-off ja aceito na regra de CPF.
-      `replace_pattern(body, "([^0-9A-Za-z]|^)([0-9]{2})([0-9]{12})([^0-9A-Za-z]|$)", "$1$2************$4")`,
-
       // --- BANK ACCOUNT AND BRANCH ---
-      // ⚠️ Estas duas SO funcionam por NOME DE CAMPO — o inverso das regras acima, e
+      // ⚠️ Estas duas SO funcionam por NOME DE CAMPO — o inverso das de telefone, e
       // a razao esta no dado real. MEDIDO em Cappta-Prd:
       //
       //   account:388408                  6 digitos
@@ -138,8 +51,8 @@ otelcol.processor.transform {{ $nome | quote }} {
       // Nao existe forma que distinga `branch:1` de `gateway:6`, `method:03` ou
       // `count:7`. Uma regra por forma mascararia metade do log de plataforma.
       //
-      // O nome do campo e o unico sinal disponivel, e aqui ele NAO tem o problema da
-      // regra de CPF: conta e agencia sempre aparecem nomeadas no log do ledger,
+      // O nome do campo e o unico sinal disponivel, e aqui ele basta: conta e
+      // agencia sempre aparecem nomeadas no log do ledger,
       // nunca soltas em texto livre. MEDIDO: 0 falso positivo em 8 entradas
       // legitimas (`bank_code:`, `ispb:`, `port=`, `count=`, `http_latency_ms:`,
       // `k8s_pod_name:`, epoch, SHA).
@@ -215,12 +128,11 @@ otelcol.processor.transform {{ $nome | quote }} {
       // and is genuinely useful in diagnosis.
       `replace_pattern(body, "([A-Za-z0-9]{1,2})[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})", "$1****$2")`,
 
-      // --- PAYMENT KEY ---
-      // A key may be a document, a phone number, an email address or a random
-      // identifier. The first three are already covered by the rules above,
-      // regardless of field name — deliberately not duplicated here. Verified:
-      // all three forms mask correctly without a dedicated rule.
-      `replace_pattern(body, "([0-9a-fA-F]{8})-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-([0-9a-fA-F]{12})", "$1-****-****-****-$2")`,
+      // --- PIX KEY ---
+      // By key label: a key can be a CPF, CNPJ or UUID, which stay in clear unlabelled.
+      // \x22 is the JSON double quote; a literal one would hide the rule from the
+      // extractor that diffs this file against regras.alloy and Fleet.
+      `replace_pattern(body, "(?i)((?:chave_?pix|pix_?key)\\x22?[=:] ?\\x22?)[^\\s\\x22,;}]+", "$1**********")`,
 
       // --- POSTAL ADDRESS ---
       // Masked ENTIRELY. Unlike an email domain or a phone area code, any
@@ -234,45 +146,21 @@ otelcol.processor.transform {{ $nome | quote }} {
       // credential is not a privacy incident, it is an authenticated session in
       // someone else's hands — and it stays exploitable until it expires.
       //
-      // Placed BEFORE the opaque-identifier rule on purpose. A JWT contains long
-      // alphanumeric runs that a later rule could partially rewrite, and a
-      // partially masked token still leaks structure while looking sanitised.
-      //
       // The SCHEME NAME is preserved and nothing else. "Bearer" versus "Basic"
       // is what makes an authentication failure diagnosable; no fragment of the
       // credential itself has diagnostic value, and preserving a JWT prefix
       // would disclose the signing algorithm. Second class with no preserved
       // part, for a different reason than postal address.
-      `replace_pattern(body, "(?i)((?:bearer|basic|digest|token|apikey|api_key)[=: ] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
+      //
+      // Scheme names are case-sensitive and key forms need `=`/`:`, so prose such
+      // as "invalid token signature" or "basic validation failed" stays readable.
+      `replace_pattern(body, "((?:Bearer|Basic|Digest) |(?i:token|apikey|api_key)[=:] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
 
       // Assignment form, where the scheme is not what precedes the value:
       // password=, secret=, client_secret=, access_token=. The KEY is preserved
       // because knowing WHICH credential appeared is what makes a leak
       // actionable — you cannot rotate what you cannot name.
       `replace_pattern(body, "(?i)((?:password|passwd|senha|secret|client_secret|access_token|refresh_token|private_key)[=:] ?)[^\\s,;}]+", "$1**********")`,
-
-      // --- OPAQUE RESOURCE IDENTIFIER ---
-      // Preserves the semantic prefix and four characters: enough to correlate
-      // records for the same resource, not enough to reconstruct the value.
-      // ⚠️ O GRUPO 2 CAPTURA O DELIMITADOR, e nao e enfeite. Sem ele a regra casava
-      // NOME DE CAMPO que comeca com o prefixo. MEDIDO:
-      //
-      //   acc_metadata_cache_hit=true  ->  acc_meta******_cache_hit=true
-      //
-      // E o comportamento era erratico, o que e pior que errado de forma
-      // consistente: `acc_metadata` casava (8 letras seguidas apos os 4), mas
-      // `acc_balance_snapshot` nao (o `_` interrompia antes dos 4 extras). Um campo
-      // corrompido, outro intacto, sem logica visivel para quem le o log.
-      //
-      // `[^0-9a-zA-Z_]|$` exige que o valor termine em delimitador que NAO seja
-      // sublinhado nem alfanumerico. Nao usa lookahead de proposito: o passo 3 do
-      // gate o proibe, e o agente nao o suporta.
-      //
-      // ⚠️ LIMITE CONHECIDO: id opaco com `_` INTERNO deixa de ser mascarado
-      // (`acc_9f8e_7d6c` fica intacto) — falso NEGATIVO. Aceito porque o contrato
-      // documentado desta regra e prefixo + 4 caracteres, e nenhum formato de id
-      // com sublinhado interno foi observado. Se aparecer, esta e a regra a revisar.
-      `replace_pattern(body, "((?:acc|txn|cus|ord)_[0-9a-zA-Z]{4})[0-9a-zA-Z]{4,}([^0-9a-zA-Z_]|$)", "$1******$2")`,
     ]
   }
 

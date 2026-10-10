@@ -1,2 +1,1 @@
-{"body":"pixKey=a1b2c3d4-****-****-****-ef1234567890 consultada","categoria":"formaCanonica",
-"descricao":"Chave aleatoria (UUID): preserva primeiro e ultimo bloco, mascara os 3 do meio"}
+{"body": "chave_pix=********** enviada", "categoria": "canonico", "descricao": "Chave Pix rotulada: o valor inteiro some, o rotulo fica. A regra de e-mail roda antes e a de Pix cobre o resultado."}

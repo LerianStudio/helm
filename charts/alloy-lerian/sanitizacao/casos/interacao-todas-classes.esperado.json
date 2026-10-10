@@ -1,5 +1,1 @@
-{
- "body": "customerName=Ana ********** documento 123******** email=an****@lerian.studio phone=+5511******** pixKey=a1b2c3d4-****-****-****-ef1234567890 accountId=acc_9f8e****** endereco=********** authorization: Bearer ********** processado",
- "categoria": "interacao",
- "descricao": "TODAS as 8 classes no mesmo registro, mascaradas sem interferencia mutua. Este caso encontrou uma interacao real: a regra de endereco parava so em ' [a-z]+=', e 'authorization:' usa dois-pontos — o endereco engolia a credencial inteira. Delimitador corrigido para [=:] e preservado num grupo."
-}
+{"body": "customerName=Ana ********** documento 12345678901 email=an****@lerian.studio phone=+5511******** pixKey=********** accountId=acc_9f8e7d6c5b4a3210 endereco=********** authorization: Bearer ********** processado", "categoria": "interacao", "descricao": "Todas as classes mascaradas no mesmo registro, sem interferencia mutua; documento e id de recurso em claro por decisao (2026-10-10). O endereco para em `[a-z_]+[=:]`, entao nao engole o `authorization:` seguinte."}

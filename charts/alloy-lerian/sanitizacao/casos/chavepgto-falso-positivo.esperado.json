@@ -1,5 +1,1 @@
-{
-  "body": "conta corrente validada pelo sistema de agencia",
-  "descricao": "Texto que menciona termos de pagamento sem nenhum identificador.",
-  "categoria": "falsoPositivo"
-}
+{"body": "chave pix invalida pix_key_type:EVP chave_pix_tipo=CPF pix_payment_type:0", "categoria": "falso-positivo", "descricao": "Campos que comecam com o rotulo mas nao sao a chave (tipo da chave, tipo do pagamento) e prosa sem `=`/`:`: intactos."}

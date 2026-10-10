@@ -301,8 +301,10 @@ nunca recebe o valor deles.
 
 ### Dados sensíveis saem do nosso cluster?
 
-Não. CPF, CNPJ, e-mail, telefone, nome de pessoa, dados de conta e credenciais
-são mascarados **dentro do cluster de vocês**, antes de qualquer envio.
+Nome de pessoa, e-mail, telefone, endereço, dados de conta, chave Pix e
+credenciais não: são mascarados **dentro do cluster de vocês**, antes de qualquer
+envio. Identificadores (CPF, CNPJ, matrícula, número de contrato) seguem em claro
+no texto do log, para que um chamado possa ser rastreado.
 
 O mascaramento não é configurável e não pode ser desligado — nem na instalação,
 nem remotamente pela Lerian.

@@ -3,6 +3,7 @@
 ## Topics
 
 - **[Overview](#overview)**
+- **[Before you upgrade](#before-you-upgrade)**
 - **[Features](#features)**
   - [1. Fee Mode Configuration](#1-fee-mode-configuration)
 - **[Configuration Reference](#configuration-reference)**
@@ -15,7 +16,22 @@
 
 Version 2.3.0 introduces support for Midaz native fee handling (available in Midaz >= 4.1) through a new fee mode configuration system. The application image is updated to v3.1.0, which adds automatic detection of the ledger's fee capabilities and allows operators to control whether the plugin uses the legacy plugin-fees service on `/v1` or the new Midaz embedded fees on `/v2`.
 
-This is a **non-breaking** minor release. All new configuration fields have sensible defaults that preserve existing behavior. No operator action is required unless you want to explicitly control the fee mode or adjust the refresh interval.
+**Operator action is required** for any client whose fee packages still live in plugin-fees. Read [Before you upgrade](#before-you-upgrade) first.
+
+## Before you upgrade
+
+> **Warning:** Under the default `MIDAZ_FEE_MODE=auto`, Bank Transfer switches to Midaz native fees as soon as the ledger reports version 4.1.0 or later, and stops calling plugin-fees. A client whose fee packages still live in plugin-fees has no Midaz fee package to apply, so its transfers are charged **zero fees, with no error**.
+
+For each client whose fee packages live in plugin-fees:
+
+1. Set `bankTransfer.configmap.MIDAZ_FEE_MODE: "legacy"` **before upgrading Midaz to 4.1+**, and **before upgrading this chart if Midaz is already 4.1+**.
+2. Before the rollout, check the rendered value: `helm template` (or `helm diff upgrade`, below) with your values must show `MIDAZ_FEE_MODE: "legacy"`.
+3. After the rollout, confirm the pin took effect: the log line `midaz: fee mode resolved` carries `feeMode=legacy` and `source=config`. A single-tenant pod logs it at boot; a multi-tenant pod logs it per tenant, on that tenant's first transfer.
+4. Move the fee packages to Midaz with the [fees migration guide](https://docs.lerian.studio/en/products/midaz/fees/fees-migration-guide), then set `auto` or `native`.
+
+If Midaz is already 4.1+, pin `legacy` for this chart upgrade even when the fee packages already live in Midaz, and set `auto` only once every pod runs app 3.1.0: during the rolling update, a pod still on app 3.0.x can settle on `/v1`, where no fee is charged, a transfer that a 3.1.0 pod started in native mode.
+
+Native mode needs two Midaz grants on Bank Transfer's credentials that legacy never used: `midaz` / `packages` / `get` and `midaz` / `estimates` / `post` (in multi-tenant, on each tenant's credentials). Without them, a native transfer initiation answers 503 `BTF-2000`.
 
 ## Features
 
@@ -100,16 +116,16 @@ data:
 
 **Operational impact:**
 
-- **No action required for most deployments:** The `auto` default preserves backward compatibility with Midaz < 4.1 (uses legacy fees) and automatically enables native fees when the ledger is upgraded to 4.1+
-- **Pin to `legacy` if you want to keep using plugin-fees:** Set `MIDAZ_FEE_MODE: "legacy"` to prevent the plugin from switching to native fees, even if Midaz 4.1+ is available
+- **`auto` is safe only once the client's fee packages live in Midaz:** it uses legacy fees against Midaz < 4.1 and switches to native fees by itself when the ledger is upgraded to 4.1+
+- **Pin to `legacy` while the client's fee packages live in plugin-fees:** Set `MIDAZ_FEE_MODE: "legacy"` to prevent the plugin from switching to native fees, even if Midaz 4.1+ is available (see [Before you upgrade](#before-you-upgrade))
 - **Pin to `native` if you know Midaz >= 4.1 is deployed:** Set `MIDAZ_FEE_MODE: "native"` to skip version detection and always use embedded fees
 - **Adjust refresh interval if needed:** The default `5m` means the plugin rechecks the ledger version every 5 minutes in `auto` mode. Increase this (e.g., `30m`, `1h`) to reduce API calls, or decrease it (e.g., `1m`) for faster detection of ledger upgrades
 
-> **Important:** In native mode, the ledger's fee packages charge fees even when `BTF_FEE_ENABLED=false`. If you rely on `BTF_FEE_ENABLED` to disable fees entirely, pin the mode to `legacy` or ensure your Midaz fee packages are configured correctly.
+> **Important:** `BTF_FEE_ENABLED` governs legacy mode only: it turns the plugin-fees call on or off. In native mode it has no effect, and a fee is turned on and off by its Midaz fee package.
 
 **Example: Pin to legacy mode**
 
-If you want to keep using the plugin-fees service on `/v1` (e.g., because you have not yet upgraded Midaz to 4.1 or want to test native fees separately), set:
+Required while the client's fee packages live in plugin-fees on `/v1`:
 
 ```yaml
 bankTransfer:
@@ -168,8 +184,8 @@ Both fields are rendered in `templates/configmap.yaml` with defaults applied via
 
 | Mode | Behavior | Use Case |
 |------|----------|----------|
-| `auto` | Calls `GET /version` on the Midaz ledger at startup and every `MIDAZ_FEE_MODE_REFRESH` interval. Uses native fees if Midaz >= 4.1, otherwise uses legacy fees. | **Recommended default.** Allows seamless migration when Midaz is upgraded to 4.1+. |
-| `legacy` | Always uses the plugin-fees service on `/v1`. Never calls `GET /version`. | Pin to this mode if you want to keep using plugin-fees, or if you have not yet upgraded Midaz to 4.1. |
+| `auto` | Calls `GET /version` on the Midaz ledger at startup and every `MIDAZ_FEE_MODE_REFRESH` interval. Uses native fees if Midaz >= 4.1, otherwise uses legacy fees. | Default. Safe once the client's fee packages live in Midaz; with packages still in plugin-fees, Midaz 4.1+ charges zero fees. |
+| `legacy` | Always uses the plugin-fees service on `/v1`. Never calls `GET /version`. | Required while the client's fee packages live in plugin-fees. |
 | `native` | Always uses Midaz embedded fees on `/v2`. Never calls `GET /version`. | Pin to this mode if you know Midaz >= 4.1 is deployed and want to skip version detection. |
 
 > **Warning:** The `MIDAZ_FEE_MODE` value is case-sensitive. Use lowercase (`auto`, `legacy`, `native`). Invalid values will cause the application to fail at startup.

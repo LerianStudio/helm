@@ -11,7 +11,10 @@ global:
 
 # Since app 3.1.0 a non-empty encryption key must be 64 hex characters (AES-256),
 # and the render values' "sample" refuses boot. Test-only keys, never a real secret.
+# The bundled Postgres serves no TLS, and the chart default sslmode is "require".
 bankTransfer:
+  configmap:
+    POSTGRES_SSLMODE: "disable"
   secrets:
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     RECIPIENT_DETAILS_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"

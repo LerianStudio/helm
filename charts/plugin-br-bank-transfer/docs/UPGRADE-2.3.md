@@ -31,7 +31,7 @@ For each client whose fee packages live in plugin-fees:
 
 `auto` and `native` need both: the client's fee packages live in Midaz and every pod runs app 3.1.0. Until both hold, keep `legacy`, even when the fee packages already live in Midaz: with Midaz on 4.1+, during the rolling update, a pod still on app 3.0.x can settle on `/v1`, where no fee is charged, a transfer that a 3.1.0 pod started in native mode.
 
-Native mode needs two Midaz grants on Bank Transfer's credentials that legacy never used: `midaz` / `packages` / `get` and `midaz` / `estimates` / `post` (in multi-tenant, on each tenant's credentials). Without them, a native transfer initiation answers 503 `BTF-2000`.
+Native mode needs two Midaz grants on Bank Transfer's credentials that legacy never used: `midaz` / `packages` / `get` and `midaz` / `estimates` / `post` (in multi-tenant, on each tenant's credentials). With `MIDAZ_FEE_MODE=native` set explicitly, Bank Transfer first checks the ledger with an authenticated `/v2` read, which also needs `midaz` / `organizations` / `get`. Without these grants, a native transfer initiation answers 503 `BTF-2000`.
 
 ## Features
 
@@ -184,9 +184,9 @@ Both fields are rendered in `templates/configmap.yaml` with defaults applied via
 
 | Mode | Behavior | Use Case |
 |------|----------|----------|
-| `auto` | Calls `GET /version` on the Midaz ledger at startup and every `MIDAZ_FEE_MODE_REFRESH` interval. Uses native fees if Midaz >= 4.1, otherwise uses legacy fees. | Default. Safe once the client's fee packages live in Midaz and every pod runs app 3.1.0; with packages still in plugin-fees, Midaz 4.1+ charges zero fees. |
+| `auto` | Reads `GET /version` on the Midaz ledger at the first transfer, and again at the first transfer after each `MIDAZ_FEE_MODE_REFRESH` interval. Uses native fees if Midaz >= 4.1; uses legacy fees on an earlier version or an unreadable one. A failed re-read keeps the current mode. | Default. Safe once the client's fee packages live in Midaz and every pod runs app 3.1.0; with packages still in plugin-fees, Midaz 4.1+ charges zero fees. |
 | `legacy` | Always uses the plugin-fees service on `/v1`. Never calls `GET /version`. | Required until the client's fee packages live in Midaz and every pod runs app 3.1.0. |
-| `native` | Always uses Midaz embedded fees on `/v2`. Never calls `GET /version`. | Once Midaz >= 4.1 is deployed, the client's fee packages live in Midaz and every pod runs app 3.1.0, to skip version detection. |
+| `native` | Always uses Midaz embedded fees on `/v2`. Never calls `GET /version`; checks the ledger with an authenticated `/v2` read instead (needs `midaz` / `organizations` / `get`). | Once Midaz >= 4.1 is deployed, the client's fee packages live in Midaz and every pod runs app 3.1.0, to skip version detection. |
 
 > **Warning:** The `MIDAZ_FEE_MODE` value is case-sensitive. Use lowercase (`auto`, `legacy`, `native`). Invalid values will cause the application to fail at startup.
 

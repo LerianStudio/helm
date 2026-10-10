@@ -57,10 +57,10 @@ Midaz 4.1+ includes native fee handling on the `/v2` API, eliminating the need f
 **Default behavior:**  
 The chart defaults to `auto` mode with a 5-minute refresh interval. This means:
 
-- On startup, the plugin calls `GET /version` on the Midaz ledger
+- The plugin calls `GET /version` on the Midaz ledger: in single-tenant at startup, in multi-tenant at each tenant's first transfer
 - If Midaz version >= 4.1, the plugin uses native fees (`/v2`)
-- If Midaz version < 4.1, the plugin uses legacy fees (`/v1` via plugin-fees)
-- The plugin rechecks the ledger version every 5 minutes and switches modes if the ledger is upgraded
+- If Midaz version < 4.1, or the version cannot be read, the plugin uses legacy fees (`/v1` via plugin-fees)
+- The recheck is not a timer: the first transfer after each 5-minute interval starts a background recheck, and the transfers after it use the new mode if the ledger was upgraded. A failed recheck keeps the current mode
 
 **Configuration fields:**
 
@@ -184,7 +184,7 @@ Both fields are rendered in `templates/configmap.yaml` with defaults applied via
 
 | Mode | Behavior | Use Case |
 |------|----------|----------|
-| `auto` | Reads `GET /version` on the Midaz ledger at the first transfer, and again at the first transfer after each `MIDAZ_FEE_MODE_REFRESH` interval. Uses native fees if Midaz >= 4.1; uses legacy fees on an earlier version or an unreadable one. A failed re-read keeps the current mode. | Default. Safe once the client's fee packages live in Midaz and every pod runs app 3.1.0; with packages still in plugin-fees, Midaz 4.1+ charges zero fees. |
+| `auto` | Reads `GET /version` on the Midaz ledger (single-tenant at startup, multi-tenant at each tenant's first transfer), then rechecks in the background at the first transfer after each `MIDAZ_FEE_MODE_REFRESH` interval. Uses native fees if Midaz >= 4.1; uses legacy fees on an earlier version or an unreadable one. A failed recheck keeps the current mode. | Default. Safe once the client's fee packages live in Midaz and every pod runs app 3.1.0; with packages still in plugin-fees, Midaz 4.1+ charges zero fees. |
 | `legacy` | Always uses the plugin-fees service on `/v1`. Never calls `GET /version`. | Required until the client's fee packages live in Midaz and every pod runs app 3.1.0. |
 | `native` | Always uses Midaz embedded fees on `/v2`. Never calls `GET /version`; checks the ledger with an authenticated `/v2` read instead (needs `midaz` / `organizations` / `get`). | Once Midaz >= 4.1 is deployed, the client's fee packages live in Midaz and every pod runs app 3.1.0, to skip version detection. |
 

@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.1)
+
+Fixes:
+- Updated the app version to `3.11.1`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.7.0...plugin-access-manager-v9.7.1)
+
+---
+
 ## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.0)
 
 Features:

@@ -3,6 +3,22 @@
 ## [0.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.3)
 
 Features:
+- Added a Helm upgrade guide for `v0.5.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `v0.5.2`. (@guimoreirar)
+
+Fixes:
+- Updated the app version to `1.2.1`. (@jeffersonrodrigues92)
+
+Improvements:
+- Scoped the production `ALLOW_*` note and mapped the removed multi-tenant key. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.2...plugin-br-pix-jd-v0.5.3)
+
+---
+
+## [0.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.3)
+
+Features:
 - Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.0`. (@guimoreirar)
 - Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.2`. (@guimoreirar)
 

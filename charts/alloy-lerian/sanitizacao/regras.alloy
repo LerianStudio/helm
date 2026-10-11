@@ -93,9 +93,9 @@ otelcol.processor.transform "sanitizacao" {
       // credencial tem valor de diagnostico, e preservar prefixo de JWT
       // revelaria o algoritmo de assinatura.
       //
-      // Esquema com caixa exata e chave so antes de `=`/`:`: prosa como
-      // "invalid token signature" ou "basic validation failed" fica legivel.
-      `replace_pattern(body, "((?:Bearer|Basic|Digest) |(?i:token|apikey|api_key)[=:] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
+      // Basic/Digest com caixa exata (bearer nao) e chave so antes de `=`/`:`: prosa
+      // como "invalid token signature" ou "basic validation failed" fica legivel.
+      `replace_pattern(body, "((?:(?i:bearer)|Basic|Digest) |(?i:token|apikey|api_key)[=:] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
 
       // Forma de atribuicao, onde o esquema nao antecede o valor.
       // A CHAVE e preservada porque saber QUAL credencial apareceu e o que torna

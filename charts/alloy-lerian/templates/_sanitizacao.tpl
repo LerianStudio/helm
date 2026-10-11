@@ -152,9 +152,9 @@ otelcol.processor.transform {{ $nome | quote }} {
       // would disclose the signing algorithm. Second class with no preserved
       // part, for a different reason than postal address.
       //
-      // Scheme names are case-sensitive and key forms need `=`/`:`, so prose such
-      // as "invalid token signature" or "basic validation failed" stays readable.
-      `replace_pattern(body, "((?:Bearer|Basic|Digest) |(?i:token|apikey|api_key)[=:] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
+      // Basic/Digest are case-sensitive (bearer is not) and key forms need `=`/`:`,
+      // so prose like "invalid token signature" or "basic validation failed" stays.
+      `replace_pattern(body, "((?:(?i:bearer)|Basic|Digest) |(?i:token|apikey|api_key)[=:] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
 
       // Assignment form, where the scheme is not what precedes the value:
       // password=, secret=, client_secret=, access_token=. The KEY is preserved

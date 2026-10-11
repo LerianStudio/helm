@@ -166,7 +166,6 @@ Sem rótulo, vale a forma do valor: e-mail e telefone mascarados, CPF e UUID em 
 
 | Classe | Preserva | Razão |
 |---|---|---|
-| Nome | primeiro e último termo | Legibilidade em diagnóstico |
 | Correio eletrônico | 2 do local + **domínio inteiro** | Domínio identifica provedor ou cliente corporativo, **não a pessoa** |
 | Telefone | país + DDD | Região é útil em diagnóstico; o número não |
 | Chave Pix | nada, só o rótulo | O valor pode ser CPF ou UUID, que não têm forma própria a mascarar |

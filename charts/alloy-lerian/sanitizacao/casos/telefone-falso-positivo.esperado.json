@@ -1,1 +1,1 @@
-{"body": "pix_key:********** pix_payment_type:0", "categoria": "falso-positivo", "descricao": "Linha real (Cappta-Prd, 2026-08-28): chave Pix E.164. A regra de telefone mascara o numero e a de chave Pix, por rotulo, cobre o valor inteiro. pix_payment_type fica intacto."}
+{"body": "job agendado scheduled_at=2026-10-10 15:04:05.999999999 +0000 UTC drift=+1500000ns limite=1e+21", "categoria": "falso-positivo", "descricao": "`+` seguido de digitos que nao e telefone: fuso do time.Time do Go, deriva em ns, expoente de numero JSON. Menos de 12 digitos apos o `+`: intactos."}

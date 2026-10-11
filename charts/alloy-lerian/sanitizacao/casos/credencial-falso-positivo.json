@@ -1,3 +1,3 @@
 {"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"caso-sanitizacao"}}]},
 "scopeLogs":[{"logRecords":[{"timeUnixNano":"1700000000000000000","severityNumber":9,"severityText":"INFO",
-"body":{"stringValue":"invalid token signature; basic validation failed; digest mismatch token_count=42"}}]}]}]}
+"body":{"stringValue":"invalid token signature; basic validation failed; digest mismatch; bearer token missing token_count=42"}}]}]}]}

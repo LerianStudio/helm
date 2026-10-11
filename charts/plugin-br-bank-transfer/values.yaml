@@ -750,8 +750,10 @@ mongodb:
       - "bank_transfer"
     passwords:
       - ""
+    # The subchart creates bank_transfer in this database and the app authenticates against it:
+    # keep it equal to bankTransfer.configmap.MONGO_DATABASE (default plugin_br_bank_transfer).
     databases:
-      - "plugin_br_bank_transfer_jd"
+      - "plugin_br_bank_transfer"
   persistence:
     enabled: true
     size: 8Gi

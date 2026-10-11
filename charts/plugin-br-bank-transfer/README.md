@@ -260,7 +260,7 @@ bankTransfer:
 | `mongodb.auth.rootPassword` | MongoDB admin password. Leave empty to let the subchart auto-generate it into the `<release>-mongodb` Secret. | `""` |
 | `mongodb.auth.usernames` | Application DB users | `["bank_transfer"]` |
 | `mongodb.auth.passwords` | Application DB passwords. Leave empty to let the subchart auto-generate them (read via `secretKeyRef`, key `mongodb-passwords`). | `[""]` |
-| `mongodb.auth.databases` | Application databases | `["plugin_br_bank_transfer_jd"]` |
+| `mongodb.auth.databases` | Application database, where the subchart creates `bank_transfer` and the authSource of the URI the chart assembles. Keep it equal to `bankTransfer.configmap.MONGO_DATABASE`. | `["plugin_br_bank_transfer"]` |
 
 ### RabbitMQ Dependency (Optional)
 

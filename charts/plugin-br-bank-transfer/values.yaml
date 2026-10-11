@@ -211,7 +211,9 @@ bankTransfer:
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
     tag: "3.1.0"
-  # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
+  # -- PostgreSQL migrations. External Postgres: a Job (Helm hook pre-install,pre-upgrade;
+  # ArgoCD PreSync). Bundled Postgres: an initContainer of each app pod, so no pod starts
+  # on an unmigrated schema; the hook notes below apply to the external Job only.
   # The chart-managed Secret is rendered as an earlier hook (weight -5 / sync-wave -5),
   # so it exists before this migration hook (weight -1) — migrations run against the
   # chart-managed Secret with NO pre-existing Secret required. Set useExistingSecret
@@ -750,8 +752,10 @@ mongodb:
       - "bank_transfer"
     passwords:
       - ""
+    # The subchart creates bank_transfer in this database and the app authenticates against it:
+    # keep it equal to bankTransfer.configmap.MONGO_DATABASE (default plugin_br_bank_transfer).
     databases:
-      - "plugin_br_bank_transfer_jd"
+      - "plugin_br_bank_transfer"
   persistence:
     enabled: true
     size: 8Gi

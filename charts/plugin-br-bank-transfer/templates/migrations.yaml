@@ -53,7 +53,7 @@
 {{- if and (empty $migrationTag) (empty $migrationDigest) }}
 {{- $migrationTag = .Values.bankTransfer.image.tag | default .Chart.AppVersion }}
 {{- end }}
-{{- end }}
+{{- end -}}
 - name: migrations
   {{- if kindIs "string" $migrationImage }}
   image: {{ $migrationImage | quote }}

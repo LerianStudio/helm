@@ -169,8 +169,8 @@ Emits a MONGO_PASSWORD env (secretKeyRef) followed by a MONGO_URI env that refer
 $(MONGO_PASSWORD) shell-style expansion (Kubernetes expands against earlier env entries in the
 same list, so MONGO_PASSWORD MUST precede MONGO_URI). The app is URI-only, so the URI is
 assembled here rather than embedding a plaintext password in the Secret.
-- Bundled subchart: MONGO_PASSWORD <- the mongodb subchart Secret / mongodb-passwords (user bank_transfer,
-  which the subchart creates in mongodb.auth.databases[0], so that database is the authSource).
+- Bundled subchart: MONGO_PASSWORD <- the mongodb subchart Secret / mongodb-passwords (user
+  mongodb.auth.usernames[0], which the subchart creates in mongodb.auth.databases[0], the authSource).
 - existingSecret override: MONGO_PASSWORD <- <existingSecret> / mongodb-passwords.
 - External inline: MONGO_PASSWORD <- app Secret / MONGO_PASSWORD.
 If the operator sets bankTransfer.secrets.MONGO_URI explicitly, that wins and is emitted verbatim
@@ -205,7 +205,7 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
   value: {{ $ctx.Values.bankTransfer.secrets.MONGO_URI | quote }}
 {{- else if $internal }}
 - name: MONGO_URI
-  value: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=%s" $mongoFullname $ns (first $mongoAuth.databases) | quote }}
+  value: {{ printf "mongodb://%s:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=%s" (first $mongoAuth.usernames) $mongoFullname $ns (first $mongoAuth.databases) | quote }}
 {{- end }}
 {{- end }}
 {{- end }}

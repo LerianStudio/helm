@@ -3,6 +3,16 @@
 ## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.2)
 
 Fixes:
+
+- Update `product-console` to `@2.12.0`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.1...product-console-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.2)
+
+Fixes:
 - Update `product-console` to `2.12.0`. (@guimoreirar, @lerian-studio)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.1...product-console-v4.4.2)

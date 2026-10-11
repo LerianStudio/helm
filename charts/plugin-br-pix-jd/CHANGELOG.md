@@ -15,6 +15,21 @@ Improvements:
 
 ---
 
+## [0.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.4)
+
+Fixes:
+
+- Update app version to `1.2.4`. (@jeffersonrodrigues92)
+- Update app version to `1.2.3`. (@jeffersonrodrigues92)
+
+Improvements:
+
+- Add Helm upgrade guide for `v0.5.3`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.3...plugin-br-pix-jd-v0.5.4)
+
+---
+
 ## [0.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.3)
 
 Features:

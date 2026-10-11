@@ -8,13 +8,20 @@
 global:
   env:
     name: "development"
+  # kind runs no Access Manager (its images need a license), and /readyz reports auth
+  # down while plugin auth is on; the app accepts it off outside production.
+  auth:
+    enabled: false
 
 # Since app 3.1.0 a non-empty encryption key must be 64 hex characters (AES-256),
 # and the render values' "sample" refuses boot. Test-only keys, never a real secret.
 # The bundled Postgres serves no TLS, and the chart default sslmode is "require".
+# kind runs no Midaz, so the app's DNS probe finds no private upstream and refuses the
+# render values' plaintext MIDAZ_BASE_URL; in a cluster with Midaz the probe allows it.
 bankTransfer:
   configmap:
     POSTGRES_SSLMODE: "disable"
+    ALLOW_PRIVATE_UPSTREAMS: "true"
   secrets:
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     RECIPIENT_DETAILS_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"

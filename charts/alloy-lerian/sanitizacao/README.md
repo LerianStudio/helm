@@ -14,7 +14,7 @@ Logo, a única verificação válida é **comparar a saída observada com a espe
 ```bash
 ./porta-de-entrega.sh             # PORTA BLOQUEANTE — 5 verificações
 ./verificar.sh                    # só os casos, todos
-./verificar.sh documento-canonico # um caso
+./verificar.sh telefone-canonico  # um caso
 ```
 
 Código de saída 0 = liberado. Diferente de 0 = bloqueado.
@@ -94,10 +94,6 @@ O caso `formaAlternativa` **falhou na primeira execução** e revelou uma lacuna
 
 **Consequência para as regras restantes:** cada classe de dado regulado precisa de verificação de forma alternativa. A ausência dessa categoria de teste é o que permite uma lacuna assim passar.
 
-## Ordem das regras importa
-
-A regra da forma pontuada vem **antes** da de dígitos seguidos. Comentado no arquivo: a mais específica precede a mais geral.
-
 ## Diferenças deliberadas em relação à produção
 
 | Aspecto | Aqui | Produção |
@@ -137,78 +133,45 @@ O motor desta versão é RE2. **Não suporta**:
 
 A regra depende de os termos de nome começarem em **maiúscula** e o texto seguinte no log ser **minúsculo**. Isso vale nos logs analisados, mas é premissa, não garantia. Se alguma aplicação logar nome em caixa alta ou baixa, a regra não casa — e o teste de forma alternativa da classe correspondente é o que detectaria.
 
-## Estado: 7 de 7 classes, 31 casos, todos passando
+## Estado: 7 classes, 10 regras, 49 casos
 
-| Classe | Casos | Regras | Estado |
-|---|---|---|---|
-| Documento fiscal | 4 | 2 (pontuada + seguida) | ✅ |
-| Nome de pessoa | 4 | 2 (3+ termos + 2 termos) | ✅ |
-| Correio eletrônico | 4 | 1 | ✅ |
-| Telefone | 4 | 2 (E.164 + nacional) | ✅ |
-| Chave de pagamento | 4 | 1 (só a forma aleatória) | ✅ |
-| Endereço postal | 4 | 1 (integral) | ✅ |
-| Identificador opaco | 4 | 1 | ✅ |
+| Classe | Casos | Regras |
+|---|---|---|
+| Nome de pessoa (`nome`, `nomejson`, `nomeparticula`) | 15 | 1 |
+| Correio eletrônico | 5 | 1 |
+| Telefone | 5 | 2 (E.164 + nacional) |
+| Conta e agência | 5 | 2 |
+| Chave Pix | 5 | 1 (por rótulo) |
+| Endereço postal | 5 | 1 (integral) |
+| Credencial | 5 | 2 (esquema/chave + atribuição) |
+
+CPF, CNPJ, matrícula, número de contrato, UUID e id de recurso ficam em **claro** por
+decisão (2026-10-10); `risco-falso-positivo` falha se alguma regra voltar a mascará-los.
 
 Mais três casos além das 4 categorias por classe:
 
 | Caso | Verifica |
 |---|---|
 | `interacao-multiclasse` | Três classes no mesmo registro |
-| `interacao-todas-classes` | **As sete classes no mesmo registro**, sem interferência |
-| `risco-falso-positivo` | Comportamento real em números longos que **não** são documento |
+| `interacao-todas-classes` | **Todas as classes no mesmo registro**, sem interferência |
+| `risco-falso-positivo` | Identificadores decididos em claro saem **intactos** |
 
-## Ordem das regras — três restrições verificadas por regressão
+## Decisão: chave Pix por rótulo
 
-A ordem não é estilística. Cada uma destas foi comprovada quebrando de propósito:
-
-| # | Restrição | O que acontece se inverter |
-|---|---|---|
-| 1 | **Telefone antes de documento** | `+5511987654321` casa a regra de 11 dígitos → `+551********21`. Mascarado, mas **errado**: perde o DDD e preserva 2 dígitos finais do número — o oposto do desejado |
-| 2 | **Documento pontuado antes de documento seguido** | A forma pontuada deixa de casar |
-| 3 | **Nome 3+ termos antes de nome 2 termos** | `Ana Beatriz Costa Lima` → `Ana ********** Beatriz Costa Lima`. **Nome completo exposto** atrás de máscara decorativa |
-
-A primeira foi descoberta **pelo teste**, não por análise: o caso canônico de telefone falhou no RED com a saída já mascarada pela regra de documento.
-
-## Decisão de projeto: chave de pagamento não duplica regras
-
-Uma chave pode ser documento, telefone, correio eletrônico ou identificador aleatório. **Só a última tem regra própria** — as três primeiras são cobertas pelas regras dessas classes, independentemente do nome do campo.
-
-**Verificado por teste** (`chavepgto-forma-alternativa`): as três formas são mascaradas corretamente sem regra dedicada. Duplicar seria redundância com risco de divergência.
+CPF, CNPJ e UUID ficam em claro, então a chave Pix é mascarada pelo **rótulo**
+(`chave_pix`, `chavePix`, `pix_key`, `pixKey`, inclusive em JSON), valor inteiro.
+Sem rótulo, vale a forma do valor: e-mail e telefone mascarados, CPF e UUID em claro.
 
 ## O que cada classe preserva, e por quê
 
 | Classe | Preserva | Razão |
 |---|---|---|
-| Documento | 3 primeiros dígitos | Correlação de registros sem reconstrução |
-| Nome | primeiro e último termo | Legibilidade em diagnóstico |
 | Correio eletrônico | 2 do local + **domínio inteiro** | Domínio identifica provedor ou cliente corporativo, **não a pessoa** |
 | Telefone | país + DDD | Região é útil em diagnóstico; o número não |
-| Chave aleatória | primeiro e último bloco | Rastreabilidade sem reconstrução |
+| Chave Pix | nada, só o rótulo | O valor pode ser CPF ou UUID, que não têm forma própria a mascarar |
 | **Endereço postal** | **nada — integral** | **Qualquer fragmento reduz drasticamente o espaço de busca da pessoa** |
-| Identificador opaco | prefixo + 4 caracteres | Correlação do mesmo recurso |
 
 O endereço é o único com mascaramento integral, e é decisão deliberada.
-
-## ⚠️ Falso positivo conhecido e aceito
-
-A regra de documento mascara **qualquer sequência de 11+ dígitos**:
-
-```
-latencia 12345678901234        → latencia 123********234
-transactionId=98765432109876   → transactionId=987********876543210
-```
-
-**Trade-off aceito:** falso positivo (perde legibilidade em diagnóstico) é preferível a falso negativo (vaza documento).
-
-**Alternativa avaliada e rejeitada:** exigir prefixo de campo (`documento=`, `cpf=`). Rejeitada porque documento aparece em log sem prefixo — o caso canônico da suíte é exatamente `documento 12345678901` em texto corrido.
-
-**Está capturado como teste**, com o comportamento real documentado. Qualquer mudança nele passa a ser detectada.
-
-**Item a medir:** quantos logs reais contêm sequência de 11+ dígitos que não seja documento. Se for volume alto, vale revisitar — mas a decisão de segurança não muda.
-
-## Próximo passo
-
-**ST-003-03 e seguintes:** traduzir as regras restantes (nome, correio eletrônico, endereço, telefone, chave de pagamento, identificador opaco), cada uma com as 4 categorias. O padrão de trabalho está estabelecido: caso primeiro (falha), regra depois (passa), quebra deliberada (detecta).
 
 ## Limite de alcance: CORPO de REGISTRO, e nada mais
 
@@ -234,6 +197,7 @@ registro de log, corpo            cpf=...        -> 529.***.***-**            MA
 ```
 
 Mesmo CPF, mesmo agente, mesmo instante: mascarado no corpo, intacto no rotulo.
+(Medido com a regra de documento, removida em 2026-10-10; o limite vale para toda regra.)
 
 ### Por que nao foi simplesmente estendido
 
@@ -288,24 +252,21 @@ O verificador trata o marcador `__CORPO_NAO_STRING__` de forma explícita, porqu
 evidência aqui é a **ausência** de uma linha `Body: Str(` — comparar texto nunca
 detectaria isso.
 
-## As 11 regras são de DUAS naturezas — e isso decide o que elas resistem
+## As 10 regras são de DUAS naturezas — e isso decide o que elas resistem
 
 Distinção que não estava escrita e é a mais importante deste arquivo:
 
 | | Reconhece por | Se a aplicação renomear o campo |
 |---|---|---|
-| **7 regras — por FORMA** | a forma do próprio valor | **continua mascarando** |
-| **4 regras — por NOME DE CAMPO** | um rótulo esperado | **passa em claro** |
+| **Por FORMA** | a forma do próprio valor | **continua mascarando** |
+| **Por NOME DE CAMPO** | um rótulo esperado | **passa em claro** |
 
-**Por forma:** documento fiscal, telefone, e-mail, chave de pagamento, e a forma de
-esquema da credencial (`Bearer <token>`). Verificado executando: um CPF sob o campo
-`documentoDoTitular=`, que não aparece em nenhum caso de teste, é mascarado — a
-regra lê o valor, não o rótulo.
+**Por forma:** telefone, e-mail e a forma de esquema da credencial (`Bearer <token>`).
 
-**Por nome de campo:** nome de pessoa, endereço, credencial por atribuição
-(`password=`), identificador opaco.
+**Por nome de campo:** nome de pessoa, conta e agência, chave Pix, endereço, e a
+credencial por chave ou atribuição (`token=`, `password=`).
 
-### Por que as 4 não podem simplesmente ser convertidas
+### Por que as ancoradas não podem simplesmente ser convertidas
 
 `João Silva` é indistinguível de `Rua Augusta` sem o rótulo do campo. Nome e
 endereço **não têm forma distintiva**, então a âncora é inevitável — é propriedade do
@@ -314,7 +275,7 @@ dado, não atalho de implementação.
 ### O tamanho da exposição, medido
 
 500 registros reais de um cluster em operação: **22 nomes de campo distintos, e
-NENHUM** era um dos rótulos que as 4 regras ancoradas procuram. Essas regras
+NENHUM** era um dos rótulos que as regras ancoradas procuram. Essas regras
 protegem uma convenção de nomenclatura que nada obriga.
 
 ### Ao editar uma regra ancorada

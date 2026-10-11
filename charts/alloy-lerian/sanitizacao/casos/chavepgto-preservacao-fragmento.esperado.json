@@ -1,2 +1,1 @@
-{"body":"dictKey=99887766-****-****-****-aabbccddeeff fim","categoria":"preservacaoDeFragmento",
-"descricao":"Primeiro e ultimo bloco DEVEM aparecer literalmente"}
+{"body": "{\\\"pixKey\\\":\\\"**********\\\",\\\"valor\\\":10}", "categoria": "preservacao-fragmento", "descricao": "Forma JSON: o rotulo com as aspas (o grupo capturado) DEVE aparecer literalmente, e o campo seguinte fica intacto."}

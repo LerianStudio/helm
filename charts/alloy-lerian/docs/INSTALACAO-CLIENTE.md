@@ -301,10 +301,22 @@ nunca recebe o valor deles.
 
 ### Dados sensíveis saem do nosso cluster?
 
-Não. CPF, CNPJ, e-mail, telefone, nome de pessoa, dados de conta e credenciais
-são mascarados **dentro do cluster de vocês**, antes de qualquer envio.
+Depende de onde o dado aparece no log.
 
-O mascaramento não é configurável e não pode ser desligado — nem na instalação,
+- **No texto da mensagem**, o agente mascara, dentro do cluster de vocês e antes
+  de qualquer envio: e-mail e telefone (com `+55` ou `(11)`) pelo formato; nome
+  de pessoa, endereço, dados de conta, chave Pix e credenciais só quando vêm
+  rotulados (`customerName=`, `endereco=`, `chave_pix=`, `password=`, `Bearer`).
+  Um valor desses sem rótulo passa como está.
+- **Nos campos estruturados** do log, o agente não mexe. Quem mascara são as
+  bibliotecas da Lerian, dentro de cada produto, pelo nome do campo: nome,
+  e-mail, telefone, endereço, dados bancários, chave Pix e segredos.
+
+CPF, CNPJ, matrícula, número de contrato, client_id, chave de idempotência, IP e
+identificadores de rastreio seguem em claro nos dois lugares, para que um chamado
+possa ser rastreado.
+
+O mascaramento do agente não é configurável e não pode ser desligado — nem na instalação,
 nem remotamente pela Lerian.
 
 ### O que a Lerian consegue mudar remotamente?

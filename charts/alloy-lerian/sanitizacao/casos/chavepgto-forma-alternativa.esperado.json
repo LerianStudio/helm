@@ -1,3 +1,1 @@
-{"body":"pixKey=123******** e pixKey=+5511******** e pixKey=an****@lerian.studio",
-"categoria":"formaAlternativa",
-"descricao":"As 3 outras formas de chave (documento, telefone, email) devem ser cobertas pelas regras dessas classes, sem regra propria de chave."}
+{"body": "chavePix=********** e pix_key=********** e PIX_KEY=**********", "categoria": "forma-alternativa", "descricao": "CPF, telefone e UUID como chave, em camelCase, snake_case e maiusculas. CPF e UUID ficam em claro sem rotulo (decisao 2026-10-10), entao so o rotulo os protege aqui."}

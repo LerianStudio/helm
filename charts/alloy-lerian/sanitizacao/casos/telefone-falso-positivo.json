@@ -1,17 +1,3 @@
-{
-  "resourceLogs": [
-    {
-      "scopeLogs": [
-        {
-          "logRecords": [
-            {
-              "body": {
-                "stringValue": "pix_key:+5561996594517 pix_payment_type:0"
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"caso-sanitizacao"}}]},
+"scopeLogs":[{"logRecords":[{"timeUnixNano":"1700000000000000000","severityNumber":9,"severityText":"INFO",
+"body":{"stringValue":"job agendado scheduled_at=2026-10-10 15:04:05.999999999 +0000 UTC drift=+1500000ns limite=1e+21"}}]}]}]}

@@ -7,7 +7,7 @@
 # Logo, a unica verificacao valida e comparar a saida observada com a esperada.
 #
 # Uso: ./verificar.sh                    (todos os casos)
-#      ./verificar.sh documento-canonico (um caso)
+#      ./verificar.sh telefone-canonico  (um caso)
 set -euo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

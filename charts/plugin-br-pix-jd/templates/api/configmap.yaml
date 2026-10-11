@@ -24,6 +24,7 @@
 {{- $signing := fromYaml (include "plugin-br-pix-jd.paymentSigningEnv" $) | default dict -}}
 {{- $mt := fromYaml (include "plugin-br-pix-jd.multiTenantEnv" (dict "root" $ "configmap" .Values.api.configmap)) -}}
 {{- $streaming := fromYaml (include "plugin-br-pix-jd.streamingEnv" (dict "root" $ "configmap" .Values.api.configmap "graceSeconds" .Values.api.terminationGracePeriodSeconds)) -}}
+{{- $systemFacts := fromYaml (include "plugin-br-pix-jd.systemFactsEnv" (dict "root" $ "configmap" .Values.api.configmap)) -}}
 {{- $cfg := .Values.api.configmap | default dict -}}
 {{- $cors := .Values.api.cors | default dict -}}
 {{- /* CORS — the live variable names are ACCESS_CONTROL_*, NOT CORS_*.
@@ -77,7 +78,7 @@
 {{- /* Merge order IS the precedence contract: platform < rate-limit < CORS < http
    < extraConfigmap. The escape hatch merges last and therefore wins — stated
    plainly in values.yaml rather than claimed otherwise. */ -}}
-{{- $data := mergeOverwrite $platform $domain $qrcode $signing $mt $streaming $rateLimit $corsEnv $http (.Values.api.extraConfigmap | default dict) -}}
+{{- $data := mergeOverwrite $platform $domain $qrcode $signing $mt $streaming $systemFacts $rateLimit $corsEnv $http (.Values.api.extraConfigmap | default dict) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

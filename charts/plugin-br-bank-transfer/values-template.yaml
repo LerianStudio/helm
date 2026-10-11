@@ -146,7 +146,7 @@ bankTransfer:
 # ==============================================================================
 # PostgreSQL: database "bank_transfer", user "bank_transfer" (full privileges)
 # Redis/Valkey: rate limiting, idempotency keys, caching — no pre-config needed
-# MongoDB (MANDATORY): database "plugin_br_bank_transfer_jd", user "bank_transfer"
+# MongoDB (MANDATORY): database "plugin_br_bank_transfer", user "bank_transfer"
 #   — audit logs, event persistence, transfer tracking
 # RabbitMQ (OPTIONAL — webhook delivery): exchange "bank_transfer.lifecycle" +
 #   ".dlx", queue "transfer.webhook.delivery" + ".dlq"

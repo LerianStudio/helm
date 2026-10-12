@@ -1,1 +1,1 @@
-{"body":"esquema Basic ********** rejeitado pelo provedor","categoria":"preservacaoFragmento","descricao":"Esquema Basic preservado; nenhum fragmento da credencial e mantido"}
+{"body": "esquema Basic ********** e bearer ********** e Digest ********** rejeitados pelo provedor", "categoria": "preservacao-fragmento", "descricao": "Esquemas Basic, bearer minusculo e Digest preservados; nenhum fragmento da credencial e mantido. bearer e o unico sem caixa exata."}

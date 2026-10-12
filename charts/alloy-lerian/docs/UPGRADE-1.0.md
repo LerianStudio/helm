@@ -296,16 +296,9 @@ node-exporter:
 
 ### 8. Regulated Data Sanitization
 
-The chart applies **8 classes of sanitization rules** to mask regulated data at the edge. This is **always active and not configurable**.
+The chart masks regulated data at the edge, in the `otelcol.processor.transform` stage. This is **always active and not configurable**.
 
-Sanitization runs in the `otelcol.processor.transform` stage and covers:
-- Credit card numbers (by form, robust to new field names)
-- CPF/CNPJ (Brazilian tax IDs)
-- Email addresses
-- Phone numbers
-- IP addresses
-- Authentication tokens
-- Request payloads in traces (removed entirely via `delete_key`)
+What it masks, what it leaves in clear, and where it does not reach: [Regulated-data sanitisation](../README.md#regulated-data-sanitisation).
 
 > **Important:** Sanitization rules are verified against the pinned Alloy version (1.18.1). Upgrading the Alloy dependency requires re-running the sanitization gate.
 

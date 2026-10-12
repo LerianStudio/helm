@@ -68,41 +68,40 @@ Runs at the edge, before anything leaves the origin cluster, and is **not
 configurable**. There is no value that disables a rule, weakens one, or produces
 unsanitised output. The absence of those knobs is the guarantee.
 
-**Eight classes** are covered: fiscal document, person name, email address, phone
-number, payment key, postal address, opaque resource identifier, authentication
-credential.
+**Seven classes** are covered: person name, email address, phone number, bank
+account and branch, Pix key, postal address, authentication credential.
+Identifiers stay in clear by decision (2026-10-10): CPF, CNPJ, matricula, contract
+numbers, UUIDs and resource ids.
 
 ### ⚠️ Read this before treating the list above as coverage
 
-The eight classes split into two kinds, and **the difference decides what happens
+The classes split into two kinds, and **the difference decides what happens
 when an application starts logging something new**:
 
 | | How it recognises the data | If a field is renamed or a new app logs it |
 |---|---|---|
-| **7 rules — by FORM** | the value's own shape (`999.999.999-99`, `x@y.z`, a JWT) | **still masked** — the field name is irrelevant |
-| **4 rules — by FIELD NAME** | an expected label (`customerName=`, `endereco=`, `password=`, `acc_`) | **passes through unmasked** |
+| **By FORM** | the value's own shape (`+5511…`, `x@y.z`, `Bearer <token>`) | **still masked** — the field name is irrelevant |
+| **By FIELD NAME** | an expected label (`customerName=`, `endereco=`, `chave_pix=`, `password=`) | **passes through unmasked** |
 
-(Eleven rules across eight classes: some classes need two rules.)
+(Ten rules across seven classes: some classes need two rules.)
 
-By form: fiscal document, phone, email, payment key, and the scheme form of
-credential. Verified — a CPF under a field name that appears in no test case
-(`documentoDoTitular=`) is masked correctly, because the rule reads the value.
+By form: phone, email, and the scheme form of credential (`Bearer <token>`).
 
-By field name: person name, postal address, the assignment form of credential
-(`password=`), and opaque identifier.
+By field name: person name, bank account and branch, Pix key, postal address, and
+the key and assignment forms of credential (`token=`, `password=`).
 
 **Why the second kind cannot simply be fixed:** `João Silva` is indistinguishable
 from `Rua Augusta` without the field label. Names and addresses have no distinctive
 form, so the anchor is unavoidable — this is a property of the data, not a shortcut.
 
 **Measured on a live cluster:** 500 real records carried **22 distinct field names,
-and none** was one of the labels the four anchored rules look for. Those rules
+and none** was one of the labels the anchored rules look for. Those rules
 protect a naming convention that nothing enforces.
 
 ### What the CI gate does and does not prove
 
-`sanitizacao/porta-de-entrega.sh` runs 36 fixed input/expected pairs against the
-pinned agent. It answers *"do the rules still do what we wrote?"* — a regression
+`sanitizacao/porta-de-entrega.sh` runs every fixed input/expected pair in
+`sanitizacao/casos/` against the pinned agent. It answers *"do the rules still do what we wrote?"* — a regression
 test, and a load-bearing one: a malformed rule produces **no error** under
 `error_mode = "ignore"`, only output that looks masked (verified — the wrong
 backreference notation emits the literal text `$1.***.***-**`).
@@ -118,22 +117,21 @@ What each class preserves, and why:
 
 | Class | Preserved | Reason |
 |---|---|---|
-| Fiscal document | first 3 digits | correlation without reconstruction |
 | Person name | **given name only** | the surname is the most identifying term — preserving it defeats the rule |
 | Email address | 1–2 local chars + **whole domain** | the domain identifies the provider, not the person |
 | Phone number | country + area code | region is useful; the number is not |
-| Payment key | first and last block | traceability without reconstruction |
+| Bank account and branch | nothing, the label only | the value has no form that tells it from `count:7` |
+| Pix key | nothing, the label only | the value may be a CPF or UUID, which have no form of their own to mask |
 | **Postal address** | **nothing — masked entirely** | **any fragment sharply narrows the search for a person** |
-| Opaque identifier | prefix + 4 chars | correlation of the same resource |
 | **Authentication credential** | **scheme name only** (`Bearer`, `Basic`) | a leaked token is access, not identification; a preserved JWT prefix would disclose the signing algorithm |
 
 ### Two further limits, documented rather than implied
 
-**Log BODIES only.** The same CPF was masked in a body and left intact in a metric
-label, in the same agent, at the same instant. Rewriting a metric label creates a
+**Log BODIES only.** Measured: a value masked in a log body was left intact in a
+metric label and a span attribute, in the same agent, at the same instant. Rewriting a metric label creates a
 new series, which is what this migration exists to reduce.
 
-**String bodies only.** A `kvlist`/`map` body traverses all eight classes untouched.
+**String bodies only.** A `kvlist`/`map` body traverses every rule untouched.
 Measured: 20 of 20 real records have string bodies, so it does not manifest in
 current traffic — but the mechanism allows it. Covered by an explicit test case
 (`risco-corpo-estruturado`) that passes by *recognising* the gap and fails if the

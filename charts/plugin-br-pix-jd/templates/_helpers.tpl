@@ -1308,8 +1308,13 @@ Input dict: root, comp.
    the app carves these keys out and WARNs them as ignored, so the chart does not
    emit them there. Both or neither: a partial pair counts as no pair in the app. A
    dev-only SYSTEM_FACTS_TOKEN reaches the pod through extraSecrets. */ -}}
-{{- $sfEnabled := eq (index $cm "SYSTEM_FACTS_ENABLED" | default "false" | toString) "true" -}}
-{{- if and $sfEnabled (not $mt) -}}
+{{- /* The gate reads the component's effective map, the same one systemFactsEnv sees
+   (api.configmap < comp.configmap < comp.extraConfigmap). Reading api.configmap alone
+   left a worker that turned the flag on by itself without its credential pair. */ -}}
+{{- $sfCm := mergeOverwrite (deepCopy $cm) (.comp.configmap | default dict) (.comp.extraConfigmap | default dict) -}}
+{{- $sfEnabled := eq (index $sfCm "SYSTEM_FACTS_ENABLED" | default "false" | toString) "true" -}}
+{{- $sfMt := eq (index $sfCm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+{{- if and $sfEnabled (not $sfMt) -}}
 {{- $sfID := index $s "SYSTEM_FACTS_CLIENT_ID" | default "" -}}
 {{- $sfSecret := index $s "SYSTEM_FACTS_CLIENT_SECRET" | default "" -}}
 {{- if and (or $sfID $sfSecret) (not (and $sfID $sfSecret)) -}}

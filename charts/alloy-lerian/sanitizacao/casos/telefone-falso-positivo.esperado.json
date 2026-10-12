@@ -1,5 +1,1 @@
-{
-  "body": "pix_key:+5561******** pix_payment_type:0",
-  "descricao": "REESCRITO em 2026-08-28 apos MEDIR log real. O caso anterior ('latencia acumulada +5511987654321 microsegundos') era IRREAL: 5511987654321 microsegundos = 63 dias, ninguem loga isso. Media em Cappta-Prd (2 dias, log de producao): TODA ocorrencia de '+' com 12-13 digitos era telefone/chave Pix de verdade — ledger update_operation.go:31 e plugin-br-pix-indirect-btg. ZERO falso positivo. Logo a regra de telefone NAO precisa de fronteira, e este caso passa a exercer a direcao normal: chave Pix E.164 real DEVE ser mascarada, preservando pais+DDD (+5561) para diagnostico de rota.",
-  "categoria": "falsoPositivo"
-}
+{"body": "job agendado scheduled_at=2026-10-10 15:04:05.999999999 +0000 UTC drift=+1500000ns limite=1e+21", "categoria": "falso-positivo", "descricao": "`+` seguido de digitos que nao e telefone: fuso do time.Time do Go, deriva em ns, expoente de numero JSON. Menos de 12 digitos apos o `+`: intactos."}

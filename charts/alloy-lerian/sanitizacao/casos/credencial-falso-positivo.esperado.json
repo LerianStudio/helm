@@ -1,5 +1,1 @@
-{
-  "body": "token_count=42 requisicoes processadas",
-  "descricao": "Campo que contem 'token' mas cujo valor e contagem numerica curta, abaixo do minimo de 8 caracteres da regra.",
-  "categoria": "falsoPositivo"
-}
+{"body": "invalid token signature; basic validation failed; digest mismatch; bearer token missing token_count=42", "categoria": "falso-positivo", "descricao": "Prosa de erro com token/basic/digest/bearer e contagem curta. A regra antiga (sem caixa, com espaco) mascarava as frases; a atual exige Basic/Digest com caixa exata, `=`/`:` apos a chave, e 8+ caracteres apos bearer."}

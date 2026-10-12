@@ -3,12 +3,12 @@
 # ============================================================================
 # O QUE ESTE FLUXO FAZ, EM UMA FRASE
 # ============================================================================
-# Sobe o agente e confere se 36 pares de texto FIXO (entrada -> saida esperada)
-# ainda produzem o resultado esperado. Nao olha log real, nao toca cluster,
-# nao le codigo de aplicacao.
+# Sobe o agente e confere se os pares de texto FIXO (entrada -> saida esperada)
+# de sanitizacao/casos/ ainda produzem o resultado esperado. Nao olha log real,
+# nao toca cluster, nao le codigo de aplicacao.
 #
-#   ENTRADA  (arquivo de teste): cliente cadastrado documento 12345678901
-#   ESPERADO (arquivo de teste): cliente cadastrado documento 123********
+#   ENTRADA  (arquivo de teste): phone=+5511987654321 confirmado
+#   ESPERADO (arquivo de teste): phone=+5511******** confirmado
 #
 # ============================================================================
 # QUANDO ELE RODA
@@ -22,8 +22,8 @@
 # ============================================================================
 # O log mostra as duas linhas que divergiram:
 #
-#   esperado: documento formatado 123.***.***-** recebido
-#   observado: documento formatado $1.***.***-** recebido
+#   esperado: phone=+5511******** confirmado
+#   observado: phone=$1******** confirmado
 #
 # Duas possibilidades, e a diferenca e toda:
 #
@@ -38,7 +38,7 @@
 # ============================================================================
 # Em producao as regras rodam com error_mode = "ignore". Regra malformada NAO
 # gera erro — produz saida que APARENTA estar mascarada. Verificado: a notacao
-# errada de retrovinculacao emite o texto literal "$1.***.***-**", sem qualquer
+# errada de retrovinculacao emite o texto literal "$1********", sem qualquer
 # aviso, e o dado original desaparece do log. Uma olhada casual conclui que
 # funcionou.
 #
@@ -53,7 +53,7 @@
 # regras cobrem o que as aplicacoes emitem?".
 #
 # Verificado por injecao: retirar apenas `holder` da regra de nome expoe
-# `holderName=Ana Silva`, e esta porta continua reportando 36 casos, 0 falhas.
+# `holderName=Ana Silva`, e esta porta continua reportando 0 falhas.
 #
 # VERDE AQUI NAO E EVIDENCIA DE QUE PII ESTA PROTEGIDA. Ver a secao de limites
 # em charts/alloy-lerian/README.md.

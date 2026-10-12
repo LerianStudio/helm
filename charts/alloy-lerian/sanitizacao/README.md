@@ -76,13 +76,14 @@ sanitizacao/
 
 ## Detecção de regressão — verificada
 
-O arcabouço foi testado contra três defeitos deliberados:
+O arcabouço foi testado contra três defeitos deliberados na regra de telefone E.164
+(reexecutado em 2026-10-12, caso `telefone-canonico`):
 
 | Defeito injetado | Saída produzida | Detectado |
 |---|---|---|
-| Regra ausente | `documento 12345678901` (dado cru) | ✅ |
-| Grupo inexistente (`$9`) | `documento ********` (fragmento **vazio**) | ✅ |
-| **Notação errada (`$$1`)** | **`documento $1********`** | ✅ |
+| Regra ausente | `phone=+5511987654321` (dado cru) | ✅ |
+| Grupo inexistente (`$9`) | `phone=********` (fragmento **vazio**) | ✅ |
+| **Notação errada (`$$1`)** | **`phone=$1********`** | ✅ |
 
 O terceiro é o cenário real de risco: asteriscos presentes, formato plausível, dado não mascarado. **Passaria por revisão de configuração.**
 
@@ -90,7 +91,7 @@ Nota sobre o segundo: grupo de captura inexistente resolve para **string vazia**
 
 ## Achado sobre as regras (não sobre o arcabouço)
 
-O caso `formaAlternativa` **falhou na primeira execução** e revelou uma lacuna real: a regra de 11 dígitos seguidos **não casa documento com separadores** (`123.456.789-01`). Foi necessária uma regra própria para a forma pontuada.
+O caso `formaAlternativa` **falhou na primeira execução** e revelou uma lacuna real: a regra de documento (removida em 2026-10-10) **não casava a forma com separadores** e precisou de uma regra própria. Telefone tem duas regras pelo mesmo motivo: E.164 e forma nacional com separadores.
 
 **Consequência para as regras restantes:** cada classe de dado regulado precisa de verificação de forma alternativa. A ausência dessa categoria de teste é o que permite uma lacuna assim passar.
 
@@ -133,7 +134,7 @@ O motor desta versão é RE2. **Não suporta**:
 
 A regra depende de os termos de nome começarem em **maiúscula** e o texto seguinte no log ser **minúsculo**. Isso vale nos logs analisados, mas é premissa, não garantia. Se alguma aplicação logar nome em caixa alta ou baixa, a regra não casa — e o teste de forma alternativa da classe correspondente é o que detectaria.
 
-## Estado: 7 classes, 10 regras, 49 casos
+## Estado: 7 classes, 10 regras, 52 casos
 
 | Classe | Casos | Regras |
 |---|---|---|
@@ -148,13 +149,17 @@ A regra depende de os termos de nome começarem em **maiúscula** e o texto segu
 CPF, CNPJ, matrícula, número de contrato, UUID e id de recurso ficam em **claro** por
 decisão (2026-10-10); `risco-falso-positivo` falha se alguma regra voltar a mascará-los.
 
-Mais três casos além das 4 categorias por classe:
+Casos além das categorias por classe:
 
 | Caso | Verifica |
 |---|---|
 | `interacao-multiclasse` | Três classes no mesmo registro |
 | `interacao-todas-classes` | **Todas as classes no mesmo registro**, sem interferência |
 | `risco-falso-positivo` | Identificadores decididos em claro saem **intactos** |
+| `risco-corpo-estruturado` | Corpo não-string atravessa intocado (lacuna conhecida) |
+| `risco-chavepgto-json-espacado` | Chave Pix em JSON com espaço em volta do `:` é mascarada |
+| `risco-credencial-json` | Valor de chave de credencial entre aspas some inteiro, a chave fica |
+| `risco-credencial-json-prosa` | Palavra de credencial entre aspas em prosa sai **intacta** |
 
 ## Decisão: chave Pix por rótulo
 
@@ -175,12 +180,12 @@ O endereço é o único com mascaramento integral, e é decisão deliberada.
 
 ## Limite de alcance: CORPO de REGISTRO, e nada mais
 
-Medido em cluster real (T-005), nao inferido do codigo. As 12 regras operam sobre
+Medido em cluster real (T-005), nao inferido do codigo. As 10 regras operam sobre
 `body` dentro de `log_statements`. Consequencia direta:
 
 | Onde o dado esta | Sanitizado |
 |---|---|
-| Corpo de registro de log | **Sim** — as 8 classes |
+| Corpo de registro de log | **Sim** — as 7 classes |
 | Atributo de registro de log | **Nao** |
 | Atributo de recurso | **Nao** |
 | Ponto de dado de metrica (rotulo) | **Nao** |
@@ -220,7 +225,7 @@ que o arcabouco cobre e nao cobre.
 ## Segundo limite: corpo NÃO-STRING atravessa intocado
 
 `replace_pattern` opera sobre `body` como **string**. Um corpo `kvlist`/`map`
-(OTLP permite) passa por todas as 8 classes sem ser tocado, e sob
+(OTLP permite) passa por todas as 7 classes sem ser tocado, e sob
 `error_mode = "ignore"` isso não gera erro nem aviso.
 
 ### Medido, não suposto
@@ -282,8 +287,8 @@ protegem uma convenção de nomenclatura que nada obriga.
 
 Acrescentar um rótulo à lista (`beneficiario`, `nomeCliente`, `pix_key`) é **baixo
 risco e alto retorno** — cada rótulo novo é cobertura que não existia. Remover um é
-o oposto, e a porta só percebe se algum dos 36 casos usar aquele rótulo:
+o oposto, e a porta só percebe se algum caso usar aquele rótulo:
 **verificado por injeção** — retirar apenas `holder` expõe `holderName=Ana Silva` e a
-porta libera com "36 casos, 0 falhas".
+porta libera com "0 falhas".
 
 Se remover um rótulo, escreva um caso para ele antes, para que a remoção apareça.

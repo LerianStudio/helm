@@ -1,6 +1,6 @@
 {{/*
 ==============================================================================
-FLEET MANAGEMENT — remote configuration, off by default
+FLEET MANAGEMENT — remote configuration, on by default
 ==============================================================================
 Renders the `remotecfg` block so enabling remote management is a flag, not a
 config edit in the client cluster.
@@ -40,8 +40,8 @@ local — remote content is a module, not top-level config.
 {{- end -}}
 
 {{/*
-Renders the remotecfg block. Emits nothing when disabled, so the rendered config
-is byte-identical to today's until someone opts in.
+Renders the remotecfg block. Emits nothing when disabled: `enabled: false` is the
+DR switch that puts the full collection chain back in the local config.
 */}}
 {{- define "alloy-lerian.config.fleet" -}}
 {{- $ctx := .ctx | default . -}}

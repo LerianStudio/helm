@@ -130,9 +130,10 @@ otelcol.processor.transform {{ $nome | quote }} {
 
       // --- PIX KEY ---
       // By key label: a key can be a CPF, CNPJ or UUID, which stay in clear unlabelled.
+      // Spaces around the separator are accepted: `{"pixKey" : "..."}` is masked too.
       // \x22 is the JSON double quote; a literal one would hide the rule from the
       // extractor that diffs this file against regras.alloy and Fleet.
-      `replace_pattern(body, "(?i)((?:chave_?pix|pix_?key)\\x22?[=:] ?\\x22?)[^\\s\\x22,;}]+", "$1**********")`,
+      `replace_pattern(body, "(?i)((?:chave_?pix|pix_?key)\\x22? *[=:] *\\x22?)[^\\s\\x22,;}]+", "$1**********")`,
 
       // --- POSTAL ADDRESS ---
       // Masked ENTIRELY. Unlike an email domain or a phone area code, any
@@ -152,15 +153,17 @@ otelcol.processor.transform {{ $nome | quote }} {
       // would disclose the signing algorithm. Second class with no preserved
       // part, for a different reason than postal address.
       //
-      // Basic/Digest are case-sensitive (bearer is not) and key forms need `=`/`:`,
-      // so prose like "invalid token signature" or "basic validation failed" stays.
-      `replace_pattern(body, "((?:(?i:bearer)|Basic|Digest) |(?i:token|apikey|api_key)[=:] ?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
+      // Basic/Digest are case-sensitive (bearer is not) and a key needs `=`/`:` after it
+      // (a quoted JSON key too), so prose like "invalid token signature", "basic
+      // validation failed" or `"token" expired` stays.
+      `replace_pattern(body, "((?:(?i:bearer)|Basic|Digest) |(?i:token|apikey|api_key)\\x22? *[=:] *\\x22?)[A-Za-z0-9._~+/=-]{8,}", "$1**********")`,
 
       // Assignment form, where the scheme is not what precedes the value:
       // password=, secret=, client_secret=, access_token=. The KEY is preserved
       // because knowing WHICH credential appeared is what makes a leak
-      // actionable — you cannot rotate what you cannot name.
-      `replace_pattern(body, "(?i)((?:password|passwd|senha|secret|client_secret|access_token|refresh_token|private_key)[=:] ?)[^\\s,;}]+", "$1**********")`,
+      // actionable — you cannot rotate what you cannot name. A quoted value is masked
+      // up to its closing quote, spaces included, and keeps both quotes.
+      `replace_pattern(body, "(?i)((?:password|passwd|senha|secret|client_secret|access_token|refresh_token|private_key)\\x22? *[=:] *)(?:(\\x22)[^\\x22]*(\\x22)|[^\\s,;}]+)", "$1$2**********$3")`,
     ]
   }
 

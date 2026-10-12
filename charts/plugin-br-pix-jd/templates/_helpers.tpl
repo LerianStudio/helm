@@ -270,7 +270,7 @@ Input: root context ($).
    limiter, and (IS_DEVELOPMENT) the worker per-tick license validation, which leaves
    the settlement-reconcile poller running unlicensed. Catching them at render beats a
    CrashLoop. ALLOW_INSECURE_TLS is deliberately NOT here: the app treats it as the one
-   sovereign switch for internal-datastore TLS in any environment. */ -}}
+   sovereign switch for plaintext datastores and http upstreams in any environment. */ -}}
 {{- if $isProduction -}}
 {{- $rl := .Values.api.rateLimit | default dict -}}
 {{- $bypasses := dict
@@ -575,11 +575,16 @@ MIGRATIONS_PATH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "
    It is emitted ONLY when explicitly set: absent means the app's own safe default
    (false). The chart never ships it enabled.
 
+   Since app 1.2.1 it is also the one opt-out for plain-http upstreams: the ledger, the
+   Access Manager token exchange, the tenant manager, a tenant's jd.base_url and
+   indirect-participant delivery. It replaces MULTI_TENANT_ALLOW_INSECURE_HTTP, which
+   the app no longer reads and the chart no longer emits.
+
    Deliberately NOT in the production-bypass gate, unlike the other three ALLOW_*: the
-   app treats this one as the single sovereign switch for internal-datastore TLS in ANY
-   environment (config_validation.go says so explicitly, and both the production guard
-   and the SaaS TLS enforcement defer to it). Gating it here would be the chart
-   overruling the app. The separate production check that DOES still apply is
+   app treats this one as the single sovereign switch for plaintext datastores and http
+   upstreams in ANY environment (config_validation.go says so explicitly, and both the
+   production guard and the SaaS TLS enforcement defer to it). Gating it here would be
+   the chart overruling the app. The separate production check that DOES still apply is
    POSTGRES_SSLMODE != disable — those are independent, so setting this does not buy a
    plaintext Postgres under ENVIRONMENT_NAME=production. */ -}}
 {{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ALLOW_INSECURE_TLS" "default" "")) }}
@@ -912,6 +917,102 @@ under `data:`. Input: root context ($). */}}
 {{- end -}}
 {{- end }}
 
+{{/* declarationSources — where each declaration key effectively comes from, as
+YAML: {KEY: {cfg, sec, extraSec}}. cfg is api.extraConfigmap over api.configmap;
+sec is api.extraSecrets over api.secrets, and extraSec says the extraSecrets loop
+emits it. The api reads the keys from either the ConfigMap or the Secret, so a
+value counts wherever the operator put it. A blank api.extraSecrets entry is
+absent: the extraSecrets loop skips it (see declarationKeys), so it cannot mount
+an empty Secret value over a ConfigMap one. The client secret counts from
+configuration only through api.extraConfigmap, the one config source that emits
+it; api.configmap.IDP_M2M_CLIENT_SECRET is never rendered, so it does not count.
+Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.declarationKeys" -}}
+{{- toJson (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
+{{- end }}
+
+{{- define "plugin-br-pix-jd.declarationSources" -}}
+{{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .) -}}
+{{- $extraCfg := .Values.api.extraConfigmap | default dict -}}
+{{- $sec := .Values.api.secrets | default dict -}}
+{{- $extra := .Values.api.extraSecrets | default dict -}}
+{{- $out := dict -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" . | fromJsonArray) -}}
+{{- $viaExtra := ne (index $extra $k | default "" | toString | trim) "" -}}
+{{- $cfgValue := ternary (index $extraCfg $k) (index $cfg $k) (eq $k "IDP_M2M_CLIENT_SECRET") -}}
+{{- $_ := set $out $k (dict
+      "cfg" ($cfgValue | default "" | toString | trim)
+      "sec" (ternary (index $extra $k) (index $sec $k) $viaExtra | default "" | toString | trim)
+      "extraSec" $viaExtra) -}}
+{{- end -}}
+{{- toYaml $out -}}
+{{- end }}
+
+{{/* declarationEnv — IDP_DECLARATION_ENABLED when set and, when "true", IDP_HOST and
+IDP_M2M_CLIENT_ID if they were given as configuration. Api-only: the api publishes
+the permissions manifest to the Access Manager at boot; the worker never does.
+Unset, nothing is emitted and the app's default (off) applies; off, the app reads
+nothing else. On, the
+render fails on what the app would refuse at boot: IDP_HOST, IDP_M2M_CLIENT_ID or
+IDP_M2M_CLIENT_SECRET blank in every source, a host that is not an http(s) URL or
+carries credentials, or PLUGIN_AUTH_ENABLED off (the M2M token is minted by the
+lib-auth client). With api.existingSecret.name the Secret's content is unknown, so
+an absent value is not refused. A `<path:...>` placeholder counts as set and skips
+the format check. authEnabled is the platform value; an api.extraConfigmap
+override merges last and so is the one checked. Input dict: root, authEnabled. */}}
+{{- define "plugin-br-pix-jd.declarationEnv" -}}
+{{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .root) -}}
+{{- $raw := index $cfg "IDP_DECLARATION_ENABLED" -}}
+{{- if not (kindIs "invalid" $raw) -}}
+{{- $enabled := $raw | toString -}}
+{{- if not (has $enabled (list "true" "false")) -}}
+{{- fail (printf "\n\nERROR: api.configmap.IDP_DECLARATION_ENABLED must be \"true\" or \"false\"; got %q.\n" $enabled) -}}
+{{- end }}
+IDP_DECLARATION_ENABLED: {{ $enabled | quote }}
+{{- if eq $enabled "true" -}}
+{{- $src := fromYaml (include "plugin-br-pix-jd.declarationSources" .root) -}}
+{{- $ownSecret := include "plugin-br-pix-jd.rendersOwnSecret" (dict "comp" .root.Values.api) -}}
+{{- $missing := list -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" .root | fromJsonArray) -}}
+{{- $v := index $src $k -}}
+{{- if and $ownSecret (not $v.cfg) (not $v.sec) -}}{{- $missing = append $missing $k -}}{{- end -}}
+{{- end -}}
+{{- $extra := .root.Values.api.extraConfigmap | default dict -}}
+{{- $auth := ternary (index $extra "PLUGIN_AUTH_ENABLED") .authEnabled (hasKey $extra "PLUGIN_AUTH_ENABLED") -}}
+{{- if ne ($auth | default "false" | toString) "true" -}}{{- $missing = append $missing "PLUGIN_AUTH_ENABLED=true" -}}{{- end -}}
+{{- if $missing -}}
+{{- fail (printf "\n\nERROR: IDP_DECLARATION_ENABLED=true requires %s.\nSet each in api.configmap or api.secrets (or their extra* overrides). The app refuses to\nboot without them: it cannot publish its permissions to the Access Manager.\n" (join ", " $missing)) -}}
+{{- end -}}
+{{- /* The Secret is mounted after the ConfigMap, so a secret value is the one the app reads. */ -}}
+{{- $host := (index $src "IDP_HOST").sec | default (index $src "IDP_HOST").cfg -}}
+{{- if and $host (not (hasPrefix "<path:" $host)) (not (regexMatch "^https?://[^/@?#[:space:]]+(/.*)?$" $host)) -}}
+{{- fail "\n\nERROR: IDP_HOST must be an absolute http(s) URL with a host and no user credentials.\nThe app refuses any other value at boot.\n" -}}
+{{- end -}}
+{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID") -}}
+{{- with (index $src $k).cfg }}
+{{ $k }}: {{ . | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/* declarationSecrets — IDP_HOST, IDP_M2M_CLIENT_ID and IDP_M2M_CLIENT_SECRET from
+api.secrets as `KEY: <b64>` lines; the caller nindents under `data:`. A key in
+api.extraSecrets wins and is emitted by the extraSecrets loop, so this helper then
+emits nothing for it: each key appears once. Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.declarationSecrets" -}}
+{{- $src := fromYaml (include "plugin-br-pix-jd.declarationSources" .) -}}
+{{- $lines := list -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" . | fromJsonArray) -}}
+{{- $v := index $src $k -}}
+{{- if and $v.sec (not $v.extraSec) -}}
+{{- $lines = append $lines (printf "%s: %s" $k ($v.sec | b64enc | quote)) -}}
+{{- end -}}
+{{- end -}}
+{{- join "\n" $lines -}}
+{{- end }}
+
 {{/*
 ------------------------------------------------------------------------------
 workerCronEnv — the worker's own surface: cron cadence and the stuck-order threshold.
@@ -1020,7 +1121,7 @@ Input dict: root, configmap.
 {{- end }}
 {{ include "lerian-common.multiTenant.envFlat" (dict
       "configmap" $cm
-      "keys" (list "MULTI_TENANT_URL" "MULTI_TENANT_ALLOW_INSECURE_HTTP"
+      "keys" (list "MULTI_TENANT_URL"
                    "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
                    "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
                    "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS"

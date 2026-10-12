@@ -5,6 +5,406 @@
 Features:
 - Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
 - Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+- Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)
+
+Fixes:
+- Point the plugin-br-pix-lerian at the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs for plugin-br-pix-lerian. (@Leonardox7)
+- Gate telemetry on the resolved flag for plugin-br-pix-lerian. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in plugin-br-pix-lerian. (@Leonardox7)
+- Align the chart and app versions with what is published. (@Leonardox7)
+- Put the migration Jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Quote `ingressClassName` in plugin-br-pix-lerian. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop extraEnvVars from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the STANDARD contract. (@guimoreirar)
+- Productize the configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Fix the getting-started documentation with prefixed probe paths and correct license client information. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope the values migration to the one key that breaks. (@Leonardox7)
+- State the `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Add render assertions and a CI fixture. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop extraEnvVars from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Fix the getting-started guide in Portuguese by prefixing probe paths and correcting the license client number. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop `VALKEY_URL` from the chart. (@Leonardox7)
+- Track `1.0.0` release. (@Leonardox7)
+- Drop DICT outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the STANDARD contract. (@guimoreirar)
+- Productize the ConfigMap surface with defaults in the template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Port the chart from develop. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize `ConfigMap` surface with defaults-in-template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop internal review checklist from the published runbook. (@guimoreirar)
+- Fix getting-started documentation by prefixing probe paths and correcting license client information. (@guimoreirar)
+- Track release `1.0.0`. (@Leonardox7)
+- Track release `1.0.0-beta.379`. (@Leonardox7)
+- Port chart from develop. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the service at the real access-manager service. (@Leonardox7)
+- Prefix provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize `ConfigMap` surface with defaults-in-template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Fix getting-start documentation with prefixed probe paths and correct license client number. (@guimoreirar)
+- Drop internal review checklist from the published runbook. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Port chart from develop. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point to the real access-manager service. (@Leonardox7)
+- Prefix provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Ship template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the ConfigMap surface with defaults-in-template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Fix getting-start documentation by prefixing probe paths and correcting the license client number. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope the values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` configuration from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate SD_* settings via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the correct access-manager service. (@Leonardox7)
+- Prefix provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept all truthy values for `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with published versions. (@Leonardox7)
+- Put migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Ship the template with proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an environment name. (@Leonardox7)
+- Prevent defaults from discarding an explicit zero. (@Leonardox7)
+- Provide a security context for the bootstrap Postgres Job. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Drop DICT outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the `ConfigMap` surface with defaults in the template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Fix the getting-started documentation with prefixed probe paths and correct license client information. (@guimoreirar)
+- Add render assertions and a CI fixture for testing. (@Leonardox7)
+- Port the chart from the develop branch. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+- Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)
+
+Fixes:
+- Point the plugin-br-pix-lerian at the real access-manager service. (@Leonardox7)
+- Prefix the plugin-br-pix-lerian provider-mock callback URLs. (@Leonardox7)
+- Gate plugin-br-pix-lerian telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in plugin-br-pix-lerian. (@Leonardox7)
+- Align plugin-br-pix-lerian's chart and app versions with what is published. (@Leonardox7)
+- Put the plugin-br-pix-lerian migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Ship plugin-br-pix-lerian's template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component plugin-br-pix-lerian's template enables. (@Leonardox7)
+- Stop plugin-br-pix-lerian `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop plugin-br-pix-lerian defaults from discarding an explicit zero. (@Leonardox7)
+- Give the plugin-br-pix-lerian bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Fix and update the getting-started documentation, including prefixed probe paths and correcting the license client number. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Restructure the plugin-br-pix-lerian README. (@Leonardox7)
+- Disambiguate two version numbers in the plugin-br-pix-lerian changelog. (@Leonardox7)
+- Scope the plugin-br-pix-lerian values migration to the one key that breaks. (@Leonardox7)
+- State plugin-br-pix-lerian's `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in plugin-br-pix-lerian. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Fix getting-started documentation by prefixing probe paths and correcting the license client number. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the configmap surface with defaults in the template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the `ConfigMap` surface with defaults in the template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Fix the getting-started documentation by prefixed probe paths and correcting the license client number. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope the values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Add render assertions and a CI fixture. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Correct the access-manager service reference for the real service. (@Leonardox7)
+- Prefix provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Ship template with proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize `ConfigMap` surface with defaults in template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Fix getting-started documentation with prefixed probe paths and correct license client number. (@guimoreirar)
+- Add getting-started runbook. (@guimoreirar)
+- Rewrite runbook tone and add English version. (@guimoreirar)
+- Drop internal review checklist from published runbook. (@guimoreirar)
+- Restructure `README`. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Port chart from develop. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
 
 Fixes:
 - Point the service at the real access-manager service. (@Leonardox7)

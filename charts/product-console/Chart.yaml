@@ -15,9 +15,9 @@ maintainers:
     email: "support@lerian.studio"
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 4.4.1
+version: 4.4.2
 # This is the version number of the application being deployed.
-appVersion: "2.9.0"
+appVersion: "2.12.0"
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
   - midaz

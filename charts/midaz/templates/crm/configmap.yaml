@@ -78,9 +78,15 @@ data:
   MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "0" | quote }}
   {{- end }}
 
-  KMS_VAULT_ADDR: {{ $cm.KMS_VAULT_ADDR | default "http://midaz-hc-vault:8200" | quote }}
+  {{- /* Same default as the ledger: legacy mode on the LCRYPTO keys. The chart bundles no Vault,
+     so envelope mode needs the operator's own address. */}}
+  KMS_VENDOR: {{ $cm.KMS_VENDOR | default "none" | quote }}
+  {{- if eq ($cm.KMS_VENDOR | default "none") "hashicorp-vault" }}
+  KMS_VAULT_ADDR: {{ required "crm.configmap.KMS_VAULT_ADDR is required when KMS_VENDOR=hashicorp-vault" $cm.KMS_VAULT_ADDR | quote }}
+  {{- else }}
+  KMS_VAULT_ADDR: {{ $cm.KMS_VAULT_ADDR | default "" | quote }}
+  {{- end }}
   KMS_VAULT_AUTH_METHOD: {{ $cm.KMS_VAULT_AUTH_METHOD | default "token" | quote }}
-  KMS_VENDOR: {{ $cm.KMS_VENDOR | default "hashicorp-vault" | quote }}
 
   # =============================================================================
   # SERVICE DISCOVERY — knob inline; server config from global.serviceDiscovery,

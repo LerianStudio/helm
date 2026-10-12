@@ -1,4 +1,5 @@
 {{- if .Values.rabbitmq.enabled }}
+{{- include "midaz.rabbitmqErlangCookieRequired" . }}
 {{- $pass := .Values.ledger.secrets }}
 {{- if .Values.ledger.useExistingSecret }}
 {{- $pass = dict }}

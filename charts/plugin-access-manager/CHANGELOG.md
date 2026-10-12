@@ -1,5 +1,134 @@
 # Plugin-access-manager Changelog
 
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.1)
+
+Fixes:
+- Update the app version to `3.11.1`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.7.0...plugin-access-manager-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.1)
+
+Fixes:
+
+- Update app version to `3.11.1`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.7.0...plugin-access-manager-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.1)
+
+Fixes:
+- Updated the app version to `3.11.1`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.7.0...plugin-access-manager-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.1)
+
+Fixes:
+- Updated the app version to `3.11.1`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.7.0...plugin-access-manager-v9.7.1)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.0)
+
+Features:
+- Bump to app `3.11.0` and caradhras `1.5.1`. (@fredcamaral)
+
+Improvements:
+- Point the `9.7` upgrade guide at the `v3.11.0` tag. (@fredcamaral)
+
+Fixes:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.6.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.6.0...plugin-access-manager-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.0)
+
+Features:
+- Bump to app version `3.11.0` and Caradhras version `1.5.1`. (@fredcamaral)
+
+Improvements:
+- Update the `9.7` upgrade guide to point at the `v3.11.0` tag. (@fredcamaral)
+- Add a Helm upgrade guide for `plugin-access-manager` version `9.6.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.6.0...plugin-access-manager-v9.7.0)
+
+---
+
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.6.0)
+
+Features:
+- Expose `spread minDomains` and `nodeTaintsPolicy` settings for enhanced configuration flexibility. This change is part of the `lerian-common` `2.3.0` update. (@guimoreirar)
+- Implement spreading of auth, identity, and caradhras pods across nodes and zones to improve resource distribution and fault tolerance. (@guimoreirar)
+
+Fixes:
+- Disable zone spreading by default to prevent unintended distribution of resources across zones. (@guimoreirar)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.5.10` to assist users in updating their deployments smoothly. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.10...plugin-access-manager-v9.6.0)
+
+---
+
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.6.0)
+
+Features:
+- Expose `spread minDomains` and `nodeTaintsPolicy` in the plugin-access-manager, aligning with `lerian-common` `2.3.0`. (@guimoreirar)
+- Spread authentication, identity, and caradhras pods across nodes and zones to improve distribution. (@guimoreirar)
+
+Fixes:
+- Turn off zone spread by default in the plugin-access-manager to prevent unintended behavior. (@guimoreirar)
+
+Improvements:
+- Add a Helm upgrade guide for plugin-access-manager `v9.5.10` to assist users in updating their configurations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.10...plugin-access-manager-v9.6.0)
+
+---
+
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.6.0)
+
+Features:
+- Exposed `spread minDomains` and `nodeTaintsPolicy` settings in the plugin-access-manager, enhancing configuration flexibility. (@guimoreirar)
+- Implemented spreading of auth, identity, and caradhras pods across nodes and zones to improve resource distribution and fault tolerance. (@guimoreirar)
+
+Fixes:
+- Disabled zone spread by default to prevent unintended distribution behavior. (@guimoreirar)
+
+Improvements:
+- Added a Helm upgrade guide for plugin-access-manager `v9.5.10`, providing users with detailed instructions for updating. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.10...plugin-access-manager-v9.6.0)
+
+---
+
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.6.0)
+
+Features:
+- Expose spread `minDomains` and `nodeTaintsPolicy` for improved configuration flexibility. (@guimoreirar)
+- Spread authentication, identity, and Caradhras pods across nodes and zones to enhance resilience and load distribution. (@guimoreirar)
+
+Fixes:
+- Turn zone spread off by default to prevent unintended distribution across zones. (@guimoreirar)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.5.10` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.5.10...plugin-access-manager-v9.6.0)
+
+---
+
 ## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.6.0)
 
 Features:

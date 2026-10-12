@@ -1,5 +1,158 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.4)
+
+Fixes:
+
+- Update app version to `1.2.4`. (@jeffersonrodrigues92)
+- Update app version to `1.2.3`. (@jeffersonrodrigues92)
+
+Improvements:
+
+- Add Helm upgrade guide for `v0.5.3`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.3...plugin-br-pix-jd-v0.5.4)
+
+---
+
+## [0.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.4)
+
+Fixes:
+
+- Update app version to `1.2.4`. (@jeffersonrodrigues92)
+- Update app version to `1.2.3`. (@jeffersonrodrigues92)
+
+Improvements:
+
+- Add Helm upgrade guide for `v0.5.3`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.3...plugin-br-pix-jd-v0.5.4)
+
+---
+
+## [0.5.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.4)
+
+Fixes:
+
+- Update app version to `1.2.4`. (@jeffersonrodrigues92)
+- Update app version to `1.2.3`. (@jeffersonrodrigues92)
+
+Improvements:
+
+- Add Helm upgrade guide for `v0.5.3`. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.3...plugin-br-pix-jd-v0.5.4)
+
+---
+
+## [0.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.3)
+
+Features:
+- Added a Helm upgrade guide for `v0.5.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `v0.5.2`. (@guimoreirar)
+
+Fixes:
+- Updated the app version to `1.2.1`. (@jeffersonrodrigues92)
+
+Improvements:
+- Scoped the production `ALLOW_*` note and mapped the removed multi-tenant key. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.2...plugin-br-pix-jd-v0.5.3)
+
+---
+
+## [0.5.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.3)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.2`. (@guimoreirar)
+
+Fixes:
+- Updated the app version to `1.2.1`. (@jeffersonrodrigues92)
+
+Improvements:
+- Scoped the production `ALLOW_*` note and mapped the removed multi-tenant key in the documentation. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.2...plugin-br-pix-jd-v0.5.3)
+
+---
+
+## [0.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.2)
+
+Features:
+- Bump app to `1.2.0` and model the permission declaration. (@jeffersonrodrigues92)
+- Bump app to `1.1.2` to include QR listing date window. (@jeffersonrodrigues92)
+
+Fixes:
+- Skip blank declaration overrides and unrendered secret to improve functionality. (@jeffersonrodrigues92)
+- Accept the declaration from every source operators use, ensuring broader compatibility. (@jeffersonrodrigues92)
+- Check the effective declaration auth and secret for enhanced security. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.1...plugin-br-pix-jd-v0.5.2)
+
+---
+
+## [0.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.2)
+
+Features:
+
+- Bump app to `1.2.0` and model the permission declaration. (@jeffersonrodrigues92)
+- Bump app to `1.1.2` to include QR listing date window. (@jeffersonrodrigues92)
+
+Fixes:
+
+- Skip blank declaration overrides and unrendered secret. (@jeffersonrodrigues92)
+- Accept the declaration from every source operators use. (@jeffersonrodrigues92)
+- Check the effective declaration auth and secret. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.1...plugin-br-pix-jd-v0.5.2)
+
+---
+
+## [0.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.2)
+
+Fixes:
+
+- Skipped blank declaration overrides and unrendered secret to prevent errors during processing. (@jeffersonrodrigues92)
+- Accepted the declaration from every source operators use, ensuring comprehensive data handling. (@jeffersonrodrigues92)
+- Checked the effective declaration authorization and secret to enhance security and accuracy. (@jeffersonrodrigues92)
+- Modeled the permission declaration and bumped the app version to `1.2.0` for improved functionality. (@jeffersonrodrigues92)
+- Bumped the app version to `1.1.2` to address the QR listing date window issue. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.1...plugin-br-pix-jd-v0.5.2)
+
+---
+
+## [0.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.2)
+
+Features:
+- Bump app to `1.2.0` and model the permission declaration. (@jeffersonrodrigues92)
+- Bump app to `1.1.2` to include QR listing date window. (@jeffersonrodrigues92)
+
+Fixes:
+- Skip blank declaration overrides and unrendered secret to prevent errors. (@jeffersonrodrigues92)
+- Accept the declaration from every source operators use, ensuring comprehensive data handling. (@jeffersonrodrigues92)
+- Check the effective declaration auth and secret for improved security and accuracy. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.1...plugin-br-pix-jd-v0.5.2)
+
+---
+
+## [0.5.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.2)
+
+Features:
+- Bump app to `1.2.0` and model the permission declaration. (@jeffersonrodrigues92)
+- Bump app to `1.1.2` to include QR listing date window. (@jeffersonrodrigues92)
+
+Fixes:
+- Skip blank declaration overrides and unrendered secret. (@jeffersonrodrigues92)
+- Accept the declaration from every source operators use. (@jeffersonrodrigues92)
+- Check the effective declaration auth and secret. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.1...plugin-br-pix-jd-v0.5.2)
+
+---
+
 ## [0.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.1)
 
 Improvements:

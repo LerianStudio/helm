@@ -1113,6 +1113,9 @@ rabbitmq:
       value: "midaz"
     password:
       value: ""
+    # -- Erlang cookie for the bundled broker. REQUIRED when rabbitmq.enabled: the chart refuses to
+    # render without it (or without existingSecret + erlangCookie.secretKey), because an empty cookie
+    # stops the broker at boot. Must stay STABLE across upgrades. Generate once: openssl rand -hex 32
     erlangCookie:
       value: ""
   extraSecrets:

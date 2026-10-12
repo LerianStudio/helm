@@ -147,6 +147,15 @@ docs/helm-chart-standard.md "Single-Source Infra Secrets" so the dual-secret sta
 {{- end }}
 
 {{/*
+bank-transfer.postgresInternal — true when the bundled Bitnami postgresql subchart provides the
+DB. It decides where migrations run: the hook Job (external) or the app pods (bundled).
+*/}}
+{{- define "bank-transfer.postgresInternal" -}}
+{{- $pg := default dict .Values.postgresql -}}
+{{- and (eq (lower (toString $pg.enabled)) "true") (ne (lower (toString $pg.external)) "true") -}}
+{{- end }}
+
+{{/*
 bank-transfer.mongoInternal — true when the bundled Bitnami mongodb subchart provides the DB.
 */}}
 {{- define "bank-transfer.mongoInternal" -}}
@@ -160,7 +169,8 @@ Emits a MONGO_PASSWORD env (secretKeyRef) followed by a MONGO_URI env that refer
 $(MONGO_PASSWORD) shell-style expansion (Kubernetes expands against earlier env entries in the
 same list, so MONGO_PASSWORD MUST precede MONGO_URI). The app is URI-only, so the URI is
 assembled here rather than embedding a plaintext password in the Secret.
-- Bundled subchart: MONGO_PASSWORD <- the mongodb subchart Secret / mongodb-passwords (user bank_transfer).
+- Bundled subchart: MONGO_PASSWORD <- the mongodb subchart Secret / mongodb-passwords (user
+  mongodb.auth.usernames[0], which the subchart creates in mongodb.auth.databases[0], the authSource).
 - existingSecret override: MONGO_PASSWORD <- <existingSecret> / mongodb-passwords.
 - External inline: MONGO_PASSWORD <- app Secret / MONGO_PASSWORD.
 If the operator sets bankTransfer.secrets.MONGO_URI explicitly, that wins and is emitted verbatim
@@ -195,7 +205,7 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
   value: {{ $ctx.Values.bankTransfer.secrets.MONGO_URI | quote }}
 {{- else if $internal }}
 - name: MONGO_URI
-  value: {{ printf "mongodb://bank_transfer:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=admin" $mongoFullname $ns | quote }}
+  value: {{ printf "mongodb://%s:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=%s" (first $mongoAuth.usernames) $mongoFullname $ns (first $mongoAuth.databases) | quote }}
 {{- end }}
 {{- end }}
 {{- end }}

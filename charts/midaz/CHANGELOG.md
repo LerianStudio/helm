@@ -1,5 +1,217 @@
 # Midaz Changelog
 
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach the Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in the `UPGRADE-9.7` documentation. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Documented the `9.7.0` upgrade, highlighting changes to CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensured the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Defaulted the standalone CRM to legacy KMS mode, aligning it with the ledger. (@jeffersonrodrigues92)
+- Prevented rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allowed a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualified the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Covered the explicit use of HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Included custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Addressed the ledger auth render guard and upgrade hook in the `UPGRADE-9.7` documentation. (@jeffersonrodrigues92)
+- Stated the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing issues with tracer schema and RabbitMQ cookie. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing issues with tracer schema and RabbitMQ cookie. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover scenarios involving an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Maintain the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach the Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover scenarios involving an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Maintain the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover explicit HashiCorp Vault usage without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
 ## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
 
 Features:

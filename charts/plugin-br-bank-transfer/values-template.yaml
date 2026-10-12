@@ -105,6 +105,8 @@ bankTransfer:
     # Midaz — REQUIRED
     MIDAZ_BASE_URL: ""  # REQUIRED - Midaz API endpoint
     MIDAZ_TRANSACTION_URL: ""  # REQUIRED - Midaz transaction endpoint
+    # MIDAZ_FEE_MODE: "auto"  # Optional - auto | legacy | native (auto = native on Midaz >= 4.1)
+    # MIDAZ_FEE_MODE_REFRESH: "5m"  # Optional - how often auto re-reads the ledger version
 
     # CRM — REQUIRED
     CRM_BASE_URL: ""  # REQUIRED - CRM API endpoint
@@ -144,7 +146,7 @@ bankTransfer:
 # ==============================================================================
 # PostgreSQL: database "bank_transfer", user "bank_transfer" (full privileges)
 # Redis/Valkey: rate limiting, idempotency keys, caching — no pre-config needed
-# MongoDB (MANDATORY): database "plugin_br_bank_transfer_jd", user "bank_transfer"
+# MongoDB (MANDATORY): database "plugin_br_bank_transfer", user "bank_transfer"
 #   — audit logs, event persistence, transfer tracking
 # RabbitMQ (OPTIONAL — webhook delivery): exchange "bank_transfer.lifecycle" +
 #   ".dlx", queue "transfer.webhook.delivery" + ".dlq"

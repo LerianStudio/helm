@@ -26,6 +26,17 @@ fleetManagement:
   # exercitado nada do que importa.
   enabled: false
 
+# `extraEnv` VAZIO nos dois papeis. O arquivo de render vem antes e declara a
+# credencial e o token do Fleet com `secretKeyRef` para `alloy-lerian`; lista nao
+# faz merge, entao sem sobrescrever aqui os pods esperam esse Secret mesmo com
+# `profile: own` e o Fleet desligado. Nenhuma das tres variaveis e lida neste caso.
+node:
+  alloy:
+    extraEnv: []
+singleton:
+  alloy:
+    extraEnv: []
+
 # ALLOY_CLIENT_ID e ALLOY_DESTINATION_ENDPOINT NAO sao declarados: o chart os
 # deriva de `origin.id` e `destination.endpoint` e entrega por `envFrom`.
 # Declara-los aqui reintroduziria a divergencia que o chart agora recusa.

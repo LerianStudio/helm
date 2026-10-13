@@ -366,7 +366,8 @@ bankTransfer:
     # templates/configmap.yaml. ENV_NAME is its deprecated alias: still
     # honoured (below ENVIRONMENT_NAME, above the mask), and the chart emits
     # both keys with the same value until the app drops the alias. Setting
-    # both keys to different values fails the render.
+    # both keys to different values fails the render. A blank value at any
+    # level counts as unset.
     # APPLICATION_NAME/SERVER_ADDRESS/HTTP_BODY_LIMIT_BYTES are NOT pinned —
     # no mask reads them and the chart already defaults them
     # ("plugin-br-bank-transfer"/":4027"/"1048576") in templates/configmap.yaml;

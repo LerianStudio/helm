@@ -30,6 +30,10 @@ The licence settings change too: `LICENSE_SERVICE_ADDRESS` is no longer rendered
 | 3 | `global.env.name` | Env-wide default shared with other charts |
 | 4 | `"production"` | Chart default, unchanged |
 
+A blank or whitespace-only value counts as unset at every level, so it falls through to the next source.
+
+> **Warning:** Earlier charts rendered a blank name as an empty `ENV_NAME`, and the app booted as `development` with its production checks off. The shipped `values-template.yaml` (`global.env.name: ""`) did exactly that. This chart renders `"production"` instead, so an install that left the name blank now boots under the production checks. If such an install is not production, set its name explicitly before upgrading.
+
 App images that read `ENVIRONMENT_NAME` fall back to `ENV_NAME` with a deprecation warning. With this chart they find both keys and log nothing. Older images read only `ENV_NAME`, which keeps its value.
 
 **Operator action:** rename `bankTransfer.configmap.ENV_NAME` to `bankTransfer.configmap.ENVIRONMENT_NAME` when convenient. The rendered ConfigMap is identical either way.

@@ -23,11 +23,16 @@ data:
   # Rendered in both modes — required by the bootstrap.
   # ENVIRONMENT_NAME is the app's key; ENV_NAME is its deprecated alias, emitted
   # with the same value for app images that still read only ENV_NAME.
+  # A blank value at any level counts as unset: an empty name boots the app
+  # as development, with its production checks off.
   # =====================================================================
-  {{- if and (hasKey $cm "ENVIRONMENT_NAME") (hasKey $cm "ENV_NAME") (ne (toString $cm.ENVIRONMENT_NAME) (toString $cm.ENV_NAME)) }}
-  {{- fail (printf "bankTransfer.configmap.ENVIRONMENT_NAME (%q) and bankTransfer.configmap.ENV_NAME (%q) name two environments: set only ENVIRONMENT_NAME, ENV_NAME is its deprecated alias" (toString $cm.ENVIRONMENT_NAME) (toString $cm.ENV_NAME)) }}
+  {{- $newEnvName := trim (toString (index $cm "ENVIRONMENT_NAME" | default "")) }}
+  {{- $oldEnvName := trim (toString (index $cm "ENV_NAME" | default "")) }}
+  {{- if and $newEnvName $oldEnvName (ne $newEnvName $oldEnvName) }}
+  {{- fail (printf "bankTransfer.configmap.ENVIRONMENT_NAME (%q) and bankTransfer.configmap.ENV_NAME (%q) name two environments: set only ENVIRONMENT_NAME, ENV_NAME is its deprecated alias" $newEnvName $oldEnvName) }}
   {{- end }}
-  {{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" (ternary "ENVIRONMENT_NAME" "ENV_NAME" (hasKey $cm "ENVIRONMENT_NAME")) "default" "production") }}
+  {{- /* globalValue treats "" as set, so it resolves only the global.env tier here. */}}
+  {{- $envName := $newEnvName | default $oldEnvName | default (trim (include "lerian-common.globalValue" (dict "context" $ "configmap" (dict) "block" "env" "field" "name" "nativeKey" "ENVIRONMENT_NAME"))) | default "production" }}
   ENVIRONMENT_NAME: {{ $envName | quote }}
   ENV_NAME: {{ $envName | quote }}
   APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}

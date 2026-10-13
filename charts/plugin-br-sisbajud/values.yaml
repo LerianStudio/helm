@@ -143,7 +143,13 @@ sisbajud:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # -- Raw topologySpreadConstraints (labelSelector defaults to this pod's
+  #    selector). When empty, the lerian-common `spread` preset below applies.
   topologySpreadConstraints: []
+  # -- lerian-common spread preset (overrides global.scheduling.spread field by
+  #    field): enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy.
+  #    Example: spread: { enabled: true, hostname: ScheduleAnyway }
+  spread: {}
 
   serviceAccount:
     create: true

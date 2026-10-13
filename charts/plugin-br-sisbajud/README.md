@@ -62,7 +62,7 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 
 ## Known limitation: object-store readiness probe
 
-The application (≤ `1.3.0-beta.2`) wires a SeaweedFS/S3 client in every mode and its `/readyz` gates on it; `SEAWEEDFS_S3_ENDPOINT` defaults to `http://localhost:8333` in code, so in executor mode the pod stays NotReady unless that endpoint answers. Executor mode never reads or writes objects. Until the app skips that probe in executor mode, point `sisbajud.configmap.SEAWEEDFS_S3_ENDPOINT` / `SEAWEEDFS_BUCKET` / `SEAWEEDFS_REGION` (and, if needed, `sisbajud.secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY`) at a reachable S3 endpoint.
+The application (≤ `1.0.0-beta.1`) wires a SeaweedFS/S3 client in every mode and its `/readyz` gates on it; `SEAWEEDFS_S3_ENDPOINT` defaults to `http://localhost:8333` in code, so in executor mode the pod stays NotReady unless that endpoint answers. Executor mode never reads or writes objects. Until the app skips that probe in executor mode, point `sisbajud.configmap.SEAWEEDFS_S3_ENDPOINT` / `SEAWEEDFS_BUCKET` / `SEAWEEDFS_REGION` (and, if needed, `sisbajud.secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY`) at a reachable S3 endpoint.
 
 ## Development profile
 

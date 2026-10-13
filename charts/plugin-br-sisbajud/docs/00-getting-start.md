@@ -48,7 +48,7 @@ kubectl -n sisbajud port-forward svc/plugin-br-sisbajud 4029:4029
 curl -s localhost:4029/readyz | jq .
 ```
 
-`/readyz` lista cada dependência. Limitação conhecida da aplicação (≤ `1.3.0-beta.2`): o probe de object store (`seaweedfs`) é registrado em todo modo e aponta por padrão para `http://localhost:8333`; no modo executor o pod fica NotReady até `SEAWEEDFS_S3_ENDPOINT` (via `sisbajud.configmap`) apontar para um S3 alcançável. Ver o README do chart.
+`/readyz` lista cada dependência. Limitação conhecida da aplicação (≤ `1.0.0-beta.1`): o probe de object store (`seaweedfs`) é registrado em todo modo e aponta por padrão para `http://localhost:8333`; no modo executor o pod fica NotReady até `SEAWEEDFS_S3_ENDPOINT` (via `sisbajud.configmap`) apontar para um S3 alcançável. Ver o README do chart.
 
 ## 5. Perfil de desenvolvimento
 

@@ -159,11 +159,9 @@ spec:
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if or $s.nodeSelector $s.affinity $s.tolerations }}
-      {{- include "lerian-common.scheduling" $s | nindent 6 }}
-      {{- end }}
-      {{- with $s.topologySpreadConstraints }}
-      topologySpreadConstraints:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (raw list, or the lib's spread preset) from lerian-common. */ -}}
+      {{- with (include "lerian-common.scheduling" (dict "component" $s "global" .Values.global "selectorLabels" (include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud"))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
 {{- end -}}

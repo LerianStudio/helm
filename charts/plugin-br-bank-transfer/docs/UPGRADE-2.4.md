@@ -63,7 +63,7 @@ The chart keeps emitting `ENV_NAME` until the app drops the fallback.
 **What changed:**
 
 - `LICENSE_SERVICE_ADDRESS` is no longer rendered. The app never passed it to the licence client, which picks its gateway itself, and newer app images no longer read it. Delete `bankTransfer.configmap.LICENSE_SERVICE_ADDRESS` from your values; a leftover entry is ignored.
-- `IS_DEVELOPMENT` is a new optional key, rendered in both tenancy modes only when set. lib-license-go reads it: exactly `"true"` selects the development licence gateway, which a development licence key needs.
+- `IS_DEVELOPMENT` is rendered again (charts before 2.0 rendered it), as an optional key in both tenancy modes only when set. lib-license-go reads it: exactly `"true"` selects the development licence gateway, which a development licence key needs.
 
 ```yaml
 bankTransfer:

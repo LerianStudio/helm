@@ -16,8 +16,8 @@ global:
   #     postgres: { host: "my-rds.example.com", user: "bank_transfer" }
   #     redis: { host: "my-elasticache.example.com:6379", user: "default", tls: "true" }
   datastores: {}
-  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
-  # "env"). Fields: name. (configmap.ENVIRONMENT_NAME, or its deprecated alias
+  # -- Env-wide environment name, read by templates/configmap.yaml. Fields:
+  # name. (configmap.ENVIRONMENT_NAME, or its deprecated alias
   # configmap.ENV_NAME, overrides.)
   # Example: env: { name: "production" }
   env: {}

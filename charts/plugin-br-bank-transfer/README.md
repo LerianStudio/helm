@@ -286,7 +286,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `ENVIRONMENT_NAME` | Environment name; `global.env.name` sets it env-wide. The chart also emits `ENV_NAME`, its deprecated alias, with the same value for app images that read only `ENV_NAME`. `configmap.ENV_NAME` is still honoured; setting both keys to different values fails the render. A blank value at any level counts as unset | `production` |
+| `ENVIRONMENT_NAME` | Environment name; `global.env.name` sets it env-wide. The chart also emits `ENV_NAME`, its deprecated alias, with the same value for app images that read only `ENV_NAME`. `configmap.ENV_NAME` is still honoured; setting both keys to different values fails the render. A blank, whitespace-only or null value at any level counts as unset | `production` |
 | `LOG_LEVEL` | Log level | `info` |
 | `SERVER_ADDRESS` | Server listen address | `:4027` |
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |

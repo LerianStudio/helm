@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY` and `RECIPIENT_DETAILS_ENCRYPTION_KEY`; JD and webhook fields are required when their non-sandbox features are enabled. The PostgreSQL, Valkey, and MongoDB passwords are **not** operator-provided with the bundled subcharts: each is auto-generated into its `<release>-{postgresql,valkey,mongodb}` Secret and read via `secretKeyRef`. The app is MongoDB-URI-only, so `MONGO_URI` is assembled on the deployment as `mongodb://<mongodb.auth.usernames[0]>:$(MONGO_PASSWORD)@<release>-mongodb…` where `MONGO_PASSWORD` is sourced from the subchart Secret (`mongodb-passwords`). For external infra, set the relevant `<subchart>.external=true` plus `<subchart>.auth.existingSecret` (and `bankTransfer.secrets.MONGO_URI` for an external Mongo). See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
+- Required secrets: `bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY` and `RECIPIENT_DETAILS_ENCRYPTION_KEY`; `LICENSE_KEY`, which the chart does not check but newer app images refuse to boot without; JD and webhook fields are required when their non-sandbox features are enabled. The PostgreSQL, Valkey, and MongoDB passwords are **not** operator-provided with the bundled subcharts: each is auto-generated into its `<release>-{postgresql,valkey,mongodb}` Secret and read via `secretKeyRef`. The app is MongoDB-URI-only, so `MONGO_URI` is assembled on the deployment as `mongodb://<mongodb.auth.usernames[0]>:$(MONGO_PASSWORD)@<release>-mongodb…` where `MONGO_PASSWORD` is sourced from the subchart Secret (`mongodb-passwords`). For external infra, set the relevant `<subchart>.external=true` plus `<subchart>.auth.existingSecret` (and `bankTransfer.secrets.MONGO_URI` for an external Mongo). See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
 - Dependency notes: Uses local PostgreSQL and MongoDB dependency charts unless external services are configured.
 - Production overrides: Provide bank-transfer credentials through chart secrets or `bankTransfer.useExistingSecret`; override Midaz/CRM/Fees/JD endpoints, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -286,7 +286,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `ENV_NAME` | Environment name | `production` |
+| `ENVIRONMENT_NAME` | Environment name; `global.env.name` sets it env-wide. The chart also emits `ENV_NAME`, its deprecated alias, with the same value for app images that read only `ENV_NAME`. `configmap.ENV_NAME` is still honoured; setting both keys to different values fails the render. A blank, whitespace-only or null value at any level counts as unset | `production` |
 | `LOG_LEVEL` | Log level | `info` |
 | `SERVER_ADDRESS` | Server listen address | `:4027` |
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |
@@ -300,8 +300,8 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `FEES_BASE_URL` | Fees adapter base URL | **Required** |
 | `JD_BASE_URL` | JD SPB SOAP API URL | **Required** (unless `JD_SANDBOX_MODE=true`) |
 | `JD_ORIGIN_ISPB` | Bank ISPB code for JD | **Required** (unless `JD_SANDBOX_MODE=true`) |
-| `LICENSE_SERVICE_ADDRESS` | License validation service URL | Optional |
-| `TENANT_IDS` | Tenant IDs for license validation | Optional |
+| `ORGANIZATION_IDS` | Organizations the licence is validated for (or set it under `bankTransfer.secrets`) | **Required** by newer app images, in every environment |
+| `IS_DEVELOPMENT` | Exactly `"true"` points lib-license-go at the development licence gateway, which a development licence key needs | Not rendered |
 
 For a complete list, see `values.yaml`.
 
@@ -317,6 +317,7 @@ Key secrets configured via `bankTransfer.secrets`:
 | `REDIS_PASSWORD` | Redis/Valkey password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external Valkey without `valkey.auth.existingSecret`. |
 | `MONGO_PASSWORD` | MongoDB password. With the bundled subchart it is read from the subchart Secret (key `mongodb-passwords`); set only for an external MongoDB without `mongodb.auth.existingSecret`. |
 | `MONGO_URI` | MongoDB connection URI. Auto-assembled on the deployment from `MONGO_PASSWORD`; set explicitly only to override (e.g. external MongoDB). |
+| `LICENSE_KEY` | Lerian licence key. **Required** by newer app images, in every environment. The chart does not check it. |
 | `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 | `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 
@@ -329,13 +330,14 @@ For local development/testing, you can disable authentication and use sandbox mo
 ```yaml
 bankTransfer:
   configmap:
-    ENV_NAME: "development"
+    ENVIRONMENT_NAME: "development"
+    IS_DEVELOPMENT: "true"   # development licence gateway, for a development licence key
     PLUGIN_AUTH_ENABLED: "false"
     POSTGRES_SSLMODE: "disable"
     JD_SANDBOX_MODE: "true"  # Uses fake JD adapter (no real bank calls)
 ```
 
-> **Note:** License validation is controlled via `LICENSE_SERVICE_ADDRESS` and `TENANT_IDS`. When these are not set, license validation is skipped.
+> **Note:** Newer app images never skip the licence: in every environment, development included, they refuse to boot without `bankTransfer.secrets.LICENSE_KEY` and `ORGANIZATION_IDS`.
 
 ---
 

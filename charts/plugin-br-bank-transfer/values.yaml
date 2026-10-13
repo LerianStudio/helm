@@ -467,11 +467,13 @@ bankTransfer:
     # =================================================================
 
     # =================================================================
-    # License gateway override (optional — defaults to lib-license-go's
-    # hard-coded endpoint when LICENSE_SERVICE_ADDRESS is unset)
+    # License gateway — the app refuses to boot without LICENSE_KEY
+    # (bankTransfer.secrets) and ORGANIZATION_IDS (below), in every
+    # environment. lib-license-go picks the gateway itself: IS_DEVELOPMENT
+    # "true" (exactly) selects the development gateway, which a development
+    # licence key needs. Rendered only when set.
     # =================================================================
-    # LICENSE_SERVICE_ADDRESS: ""
-    # TENANT_IDS: ""
+    # IS_DEVELOPMENT: "true"
 
     # =================================================================
     # OpenTelemetry
@@ -535,8 +537,6 @@ bankTransfer:
 
     # =================================================================
     # Single-tenant defaults
-    # IS_DEVELOPMENT removed: no template reads it, so it never rendered
-    # into the ConfigMap at all — dead configuration.
     # =================================================================
     ORGANIZATION_ID: ""
     ORGANIZATION_IDS: ""
@@ -582,7 +582,7 @@ bankTransfer:
     # Authentication (plugin-auth) - client secret for M2M auth
     # PLUGIN_AUTH_CLIENT_SECRET: ""
 
-    # License Key (required in production)
+    # License Key (required in every environment: the app refuses to boot without it)
     # LICENSE_KEY: ""
     # Organization IDs — alternative to configmap.ORGANIZATION_IDS; when set,
     # the ConfigMap omits its own key so envFrom doesn't declare it twice.

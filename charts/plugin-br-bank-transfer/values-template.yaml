@@ -10,7 +10,7 @@
 # STYLE (canonical, mirrors the reporter/plugin-access-manager productized
 # charts): the whole env-wide typed contract lives in ONE `global:` block,
 # FIRST — set each dependency connection ONCE with its typed mask; the chart
-# emits the app's native env keys from it. Do NOT pin ENV_NAME/
+# emits the app's native env keys from it. Do NOT pin ENVIRONMENT_NAME/
 # MULTI_TENANT_ENABLED/ENABLE_TELEMETRY or POSTGRES_*/REDIS_* connection keys
 # under bankTransfer.configmap when a mask exists below — a native key WINS
 # over its mask and defeats it.

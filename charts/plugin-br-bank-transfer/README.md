@@ -286,7 +286,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `ENV_NAME` | Environment name | `production` |
+| `ENVIRONMENT_NAME` | Environment name; `global.env.name` sets it env-wide. The chart also emits `ENV_NAME`, its deprecated alias, with the same value for app images that read only `ENV_NAME`. `configmap.ENV_NAME` is still honoured; setting both keys to different values fails the render | `production` |
 | `LOG_LEVEL` | Log level | `info` |
 | `SERVER_ADDRESS` | Server listen address | `:4027` |
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |
@@ -329,7 +329,7 @@ For local development/testing, you can disable authentication and use sandbox mo
 ```yaml
 bankTransfer:
   configmap:
-    ENV_NAME: "development"
+    ENVIRONMENT_NAME: "development"
     PLUGIN_AUTH_ENABLED: "false"
     POSTGRES_SSLMODE: "disable"
     JD_SANDBOX_MODE: "true"  # Uses fake JD adapter (no real bank calls)

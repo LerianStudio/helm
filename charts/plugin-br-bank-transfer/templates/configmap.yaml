@@ -21,8 +21,15 @@ data:
   # =====================================================================
   # APPLICATION IDENTITY
   # Rendered in both modes — required by the bootstrap.
+  # ENVIRONMENT_NAME is the app's key; ENV_NAME is its deprecated alias, emitted
+  # with the same value for app images that still read only ENV_NAME.
   # =====================================================================
-  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | quote }}
+  {{- if and (hasKey $cm "ENVIRONMENT_NAME") (hasKey $cm "ENV_NAME") (ne (toString $cm.ENVIRONMENT_NAME) (toString $cm.ENV_NAME)) }}
+  {{- fail (printf "bankTransfer.configmap.ENVIRONMENT_NAME (%q) and bankTransfer.configmap.ENV_NAME (%q) name two environments: set only ENVIRONMENT_NAME, ENV_NAME is its deprecated alias" (toString $cm.ENVIRONMENT_NAME) (toString $cm.ENV_NAME)) }}
+  {{- end }}
+  {{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" (ternary "ENVIRONMENT_NAME" "ENV_NAME" (hasKey $cm "ENVIRONMENT_NAME")) "default" "production") }}
+  ENVIRONMENT_NAME: {{ $envName | quote }}
+  ENV_NAME: {{ $envName | quote }}
   APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
   {{- if not $multiTenantEnabled }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
@@ -58,7 +65,7 @@ data:
   # CRM_BASE_URL/FEES_BASE_URL hops (v2.0.0). Default "false" keeps the
   # bundled in-cluster http URLs working; set true in staging/homologation/BYOC
   # deployments that carry real client data — production is already covered by
-  # the app's own ENV_NAME=production boot guard.
+  # the app's own ENVIRONMENT_NAME=production boot guard.
   REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
 
   # =====================================================================

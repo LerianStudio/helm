@@ -21,8 +21,8 @@ data:
   # =====================================================================
   # APPLICATION IDENTITY
   # Rendered in both modes — required by the bootstrap.
-  # ENVIRONMENT_NAME is the app's key; ENV_NAME is its deprecated alias, emitted
-  # with the same value for app images that still read only ENV_NAME.
+  # Newer app images read ENVIRONMENT_NAME, older ones only ENV_NAME (its
+  # deprecated alias); both are emitted with one value.
   # A blank or null value at any level counts as unset: an empty name boots the
   # app with neither its production checks nor its development relaxations.
   # =====================================================================
@@ -215,8 +215,8 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
 
   # =====================================================================
-  # LICENSE GATEWAY — rendered in both modes. The app refuses to boot
-  # without LICENSE_KEY (Secret) and ORGANIZATION_IDS, in every environment.
+  # LICENSE GATEWAY — rendered in both modes. Newer app images refuse to
+  # boot without LICENSE_KEY (Secret) and ORGANIZATION_IDS, in every environment.
   # IS_DEVELOPMENT is read by lib-license-go: exactly "true" selects the
   # development licence gateway, which a development licence key needs.
   # =====================================================================

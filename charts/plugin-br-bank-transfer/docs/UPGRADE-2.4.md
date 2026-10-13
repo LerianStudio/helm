@@ -11,7 +11,7 @@
 
 ## Overview
 
-Version 2.4.0 needs no change to your values. The chart now emits the environment name as `ENVIRONMENT_NAME`, the key the Bank Transfer app reads from now on, and keeps emitting `ENV_NAME` with the same value. Every app image therefore reads the right environment, whichever one this chart runs.
+Version 2.4.0 needs no change to your values, unless an install left its environment name blank (see [ENVIRONMENT_NAME replaces ENV_NAME](#1-environment_name-replaces-env_name)). Newer app images read `ENVIRONMENT_NAME` and older ones read `ENV_NAME`; the chart renders both with one value, so every image reads the right environment.
 
 The licence settings change too: `LICENSE_SERVICE_ADDRESS` is no longer rendered, and `IS_DEVELOPMENT` can be set to reach the development licence gateway.
 
@@ -30,9 +30,9 @@ The licence settings change too: `LICENSE_SERVICE_ADDRESS` is no longer rendered
 | 3 | `global.env.name` | Env-wide default shared with other charts |
 | 4 | `"production"` | Chart default, unchanged |
 
-A blank or whitespace-only value counts as unset at every level, so it falls through to the next source.
+A blank, whitespace-only or null value counts as unset at every level, so it falls through to the next source.
 
-> **Warning:** Earlier charts rendered a blank name as an empty `ENV_NAME`, and the app booted as `development` with its production checks off. The shipped `values-template.yaml` (`global.env.name: ""`) did exactly that. This chart renders `"production"` instead, so an install that left the name blank now boots under the production checks. If such an install is not production, set its name explicitly before upgrading.
+> **Warning:** Earlier charts rendered a blank name as an empty `ENV_NAME`, and the app booted with an empty environment name: neither its production checks nor its development relaxations applied. The shipped `values-template.yaml` (`global.env.name: ""`) did exactly that. This chart renders `"production"` instead, so an install that left the name blank now boots under the production checks. If such an install is not production, set its name explicitly before upgrading.
 
 App images that read `ENVIRONMENT_NAME` fall back to `ENV_NAME` with a deprecation warning. With this chart they find both keys and log nothing. Older images read only `ENV_NAME`, which keeps its value.
 
@@ -52,13 +52,6 @@ bankTransfer:
 bankTransfer:
   configmap:
     ENVIRONMENT_NAME: "staging"
-```
-
-Both render:
-
-```yaml
-ENVIRONMENT_NAME: "staging"
-ENV_NAME: "staging"
 ```
 
 > **Warning:** Setting both keys to different values fails the render, because the deployment would name two environments: `bankTransfer.configmap.ENVIRONMENT_NAME ("staging") and bankTransfer.configmap.ENV_NAME ("production") name two environments: set only ENVIRONMENT_NAME, ENV_NAME is its deprecated alias`. Setting both to the same value renders normally.

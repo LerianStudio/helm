@@ -6,7 +6,8 @@
 {{- $extra := $s.extraEnvVars | default dict -}}
 {{- $wh := ($s.executor | default dict).webhook | default dict -}}
 {{- $webhookOn := eq (include "plugin-br-sisbajud.webhookEnabled" .) "true" -}}
-{{- $mtls := ($s.mensageria | default dict).tls | default dict -}}
+{{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml -}}
+{{- $mountPair := and (eq $mt.mtls "true") $mt.tlsSecret -}}
 {{- $whTls := $wh.tls | default dict -}}
 {{- $raOn := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled -}}
 {{- /* Telemetry on and no explicit endpoint -> the node-local collector. */ -}}
@@ -121,15 +122,20 @@ spec:
             {{- . | nindent 12 }}
             {{- end }}
           {{- end }}
-          {{- include "lerian-common.httpProbe" (dict "kind" "livenessProbe" "probe" $s.livenessProbe "port" "http" "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict "kind" "livenessProbe" "probe" $s.livenessProbe "port" "http" "path" "/version" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
           {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "http" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
           resources:
             {{- toYaml $s.resources | nindent 12 }}
-          {{- if or $mtls.existingSecret (and $webhookOn $whTls.existingSecret) $s.extraVolumeMounts }}
+          {{- if or $mt.caSecret $mountPair (and $webhookOn $whTls.existingSecret) $s.extraVolumeMounts }}
           volumeMounts:
-            {{- if $mtls.existingSecret }}
+            {{- if $mt.caSecret }}
+            - name: mensageria-ca
+              mountPath: {{ $mt.caMount }}
+              readOnly: true
+            {{- end }}
+            {{- if $mountPair }}
             - name: mensageria-tls
-              mountPath: {{ $mtls.mountPath }}
+              mountPath: {{ $mt.tlsMount }}
               readOnly: true
             {{- end }}
             {{- if and $webhookOn $whTls.existingSecret }}
@@ -145,8 +151,11 @@ spec:
         {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
         {{- end }}
       {{- $volumes := list }}
-      {{- if $mtls.existingSecret }}
-      {{- $volumes = append $volumes (dict "name" "mensageria-tls" "secret" (dict "secretName" $mtls.existingSecret "defaultMode" 288 "items" (list (dict "key" $mtls.caKey "path" $mtls.caKey) (dict "key" $mtls.certKey "path" $mtls.certKey) (dict "key" $mtls.keyKey "path" $mtls.keyKey)))) }}
+      {{- if $mt.caSecret }}
+      {{- $volumes = append $volumes (dict "name" "mensageria-ca" "secret" (dict "secretName" $mt.caSecret "defaultMode" 288 "items" (list (dict "key" $mt.caKey "path" "ca.crt")))) }}
+      {{- end }}
+      {{- if $mountPair }}
+      {{- $volumes = append $volumes (dict "name" "mensageria-tls" "secret" (dict "secretName" $mt.tlsSecret "defaultMode" 288 "items" (list (dict "key" $mt.certKey "path" "tls.crt") (dict "key" $mt.keyKey "path" "tls.key")))) }}
       {{- end }}
       {{- if and $webhookOn $whTls.existingSecret }}
       {{- $volumes = append $volumes (dict "name" "webhook-tls" "secret" (dict "secretName" $whTls.existingSecret "defaultMode" 288 "items" (list (dict "key" $whTls.certKey "path" $whTls.certKey) (dict "key" $whTls.keyKey "path" $whTls.keyKey)))) }}

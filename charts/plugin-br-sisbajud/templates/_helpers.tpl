@@ -246,3 +246,52 @@ extraEnvVars as an env list (name: value map, sorted).
   value: {{ $v | toString | quote }}
 {{- end }}
 {{- end -}}
+
+{{/*
+plugin-br-sisbajud.mensageriaTls — the resolved Mensageria TLS posture as YAML,
+mirroring internal/adapters/mensageria/client.go NewTLSConfig and
+config_executor.go validateExecutorModeConfig:
+  mtls      MENSAGERIA_MTLS_ENABLED as rendered ("true" | "false"; blank = one-way).
+  caSecret  server-trust CA source: mensageria.ca.existingSecret, else (backward
+            compatible) mensageria.tls.existingSecret with tls.caKey. Optional in
+            one-way TLS (blank = system trust store), required with mTLS.
+  tlsSecret the executor client pair; mounted only with mTLS.
+In-pod files are fixed: <ca.mountPath>/ca.crt, <tls.mountPath>/tls.crt|tls.key.
+*/}}
+{{- define "plugin-br-sisbajud.mensageriaTls" -}}
+{{- $s := .Values.sisbajud -}}
+{{- $cm := $s.configmap | default dict -}}
+{{- $m := $s.mensageria | default dict -}}
+{{- $tls := $m.tls | default dict -}}
+{{- $ca := $m.ca | default dict -}}
+{{- $raw := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "MENSAGERIA_MTLS_ENABLED" "p" $m "f" "mtlsEnabled" "d" "false") | trim -}}
+{{- $caSecret := $ca.existingSecret | default "" -}}
+{{- $caKey := $ca.key | default "ca.crt" -}}
+{{- if and (not $caSecret) $tls.existingSecret -}}
+{{- $caSecret = $tls.existingSecret -}}
+{{- $caKey = $tls.caKey | default "ca.crt" -}}
+{{- end -}}
+{{- $caMount := $ca.mountPath | default "/etc/plugin-br-sisbajud/mensageria-ca" | trimSuffix "/" -}}
+{{- $tlsMount := $tls.mountPath | default "/etc/plugin-br-sisbajud/mensageria" | trimSuffix "/" -}}
+raw: {{ $raw | quote }}
+mtls: {{ ternary "true" "false" (eq $raw "true") | quote }}
+caSecret: {{ $caSecret | quote }}
+caKey: {{ $caKey | quote }}
+caMount: {{ $caMount | quote }}
+caFile: {{ printf "%s/ca.crt" $caMount | quote }}
+tlsSecret: {{ $tls.existingSecret | default "" | quote }}
+certKey: {{ $tls.certKey | default "tls.crt" | quote }}
+keyKey: {{ $tls.keyKey | default "tls.key" | quote }}
+tlsMount: {{ $tlsMount | quote }}
+certFile: {{ printf "%s/tls.crt" $tlsMount | quote }}
+keyFile: {{ printf "%s/tls.key" $tlsMount | quote }}
+{{- end -}}
+
+{{/*
+plugin-br-sisbajud.isAvpPlaceholder — "true" for an argocd-vault-plugin
+placeholder (<path:...>), substituted only after `helm template`: scheme checks
+cannot judge it at render time.
+*/}}
+{{- define "plugin-br-sisbajud.isAvpPlaceholder" -}}
+{{- if hasPrefix "<path:" (trim (toString .)) -}}true{{- end -}}
+{{- end -}}

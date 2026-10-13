@@ -1,7 +1,7 @@
 # plugin-br-sisbajud — Getting started
 
 > The SISBAJUD executor: pulls judicial orders from the **Sisbajud Mensageria** (br-sfn)
-> over the execution contract (HTTPS, **mTLS mandatory**), executes them on **Midaz**
+> over the execution contract (HTTPS always; **mTLS optional**, `sisbajud.mensageria.mtlsEnabled`, matching the Mensageria), executes them on **Midaz**
 > (block, unblock, transfer, information) and posts the results back. Runs in the client's
 > cluster next to Midaz (BYOC) or in Lerian Cloud.
 
@@ -10,7 +10,8 @@
 | Dependency | How the chart receives it |
 |---|---|
 | Sisbajud Mensageria (https URL) | `sisbajud.mensageria.baseUrl` |
-| mTLS material (server CA + client cert/key) | existing Secret in `sisbajud.mensageria.tls.existingSecret` (keys `ca.crt`, `tls.crt`, `tls.key`) |
+| Mensageria server CA | `sisbajud.mensageria.ca.existingSecret` (key `ca.crt`); optional in one-way TLS (empty = system trust store), required with mTLS |
+| Executor client pair (mTLS only) | `sisbajud.mensageria.mtlsEnabled: true` + `sisbajud.mensageria.tls.existingSecret` (keys `tls.crt`, `tls.key`), chained to the Mensageria client CA |
 | Executor M2M client in plugin-access-manager | `sisbajud.executor.m2mSubject` (the token `sub`) + `MENSAGERIA_CLIENT_ID` / `MENSAGERIA_CLIENT_SECRET` in the Secret |
 | plugin-access-manager | `global.auth.host` (the Mensageria token is minted there, even with inbound auth off) |
 | License | `LICENSE_KEY` in the Secret; `ORGANIZATION_IDS` = `global` |
@@ -25,8 +26,9 @@ Midaz routing and credentials are **per institution** (institution config API, s
 
 ```bash
 kubectl create namespace sisbajud
-kubectl -n sisbajud create secret generic sisbajud-mensageria-mtls \
-  --from-file=ca.crt=mensageria-ca.pem --from-file=tls.crt=client.pem --from-file=tls.key=client-key.pem
+kubectl -n sisbajud create secret generic sisbajud-mensageria-ca --from-file=ca.crt=mensageria-ca.pem
+# mTLS only:
+kubectl -n sisbajud create secret tls sisbajud-mensageria-client --cert=client.pem --key=client-key.pem
 
 cp values-template.yaml my-values.yaml   # fill every <...>
 helm install plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm -n sisbajud -f my-values.yaml

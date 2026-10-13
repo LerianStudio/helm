@@ -16,7 +16,6 @@ lerian-common.cfgValue (plugin-br-sisbajud.kv). No credential is emitted here.
 {{- $ex := $s.executor | default dict -}}
 {{- $wh := $ex.webhook | default dict -}}
 {{- $sqs := $ex.sqs | default dict -}}
-{{- $mtls := ($s.mensageria | default dict).tls | default dict -}}
 {{- $whTls := $wh.tls | default dict -}}
 {{- $kmsDed := $s.kms | default dict -}}
 {{- $pg := include "plugin-br-sisbajud.postgres" . | fromYaml -}}
@@ -46,15 +45,24 @@ SERVER_ADDRESS: {{ (hasKey $cm "SERVER_ADDRESS" | ternary (index $cm "SERVER_ADD
 {{- end }}
 # --- License (LICENSE_KEY lives in the Secret) ---------------------------------
 {{- include $kv (dict "cm" $cm "p" $s.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "d" "global") }}
-# --- Executor: Sisbajud Mensageria (mTLS) ---------------------------------------
+{{- include $kv (dict "cm" $cm "p" $s.license "f" "isDevelopment" "k" "IS_DEVELOPMENT" "opt" true) }}
+# --- Executor: Sisbajud Mensageria (TLS; mTLS behind MENSAGERIA_MTLS_ENABLED) ------
 {{- include $kv (dict "cm" $cm "p" $s.mensageria "f" "baseUrl" "k" "MENSAGERIA_BASE_URL" "d" "") }}
-{{- if $mtls.existingSecret }}
-MENSAGERIA_TLS_CA_FILE: {{ printf "%s/%s" (trimSuffix "/" $mtls.mountPath) $mtls.caKey | quote }}
-MENSAGERIA_TLS_CLIENT_CERT_FILE: {{ printf "%s/%s" (trimSuffix "/" $mtls.mountPath) $mtls.certKey | quote }}
-MENSAGERIA_TLS_CLIENT_KEY_FILE: {{ printf "%s/%s" (trimSuffix "/" $mtls.mountPath) $mtls.keyKey | quote }}
+{{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml }}
+MENSAGERIA_MTLS_ENABLED: {{ $mt.raw | default "false" | quote }}
+{{- if $mt.caSecret }}
+MENSAGERIA_TLS_CA_FILE: {{ $mt.caFile | quote }}
+{{- else if index $cm "MENSAGERIA_TLS_CA_FILE" }}
+MENSAGERIA_TLS_CA_FILE: {{ index $cm "MENSAGERIA_TLS_CA_FILE" | quote }}
+{{- end }}
+{{- if and (eq $mt.mtls "true") $mt.tlsSecret }}
+MENSAGERIA_TLS_CLIENT_CERT_FILE: {{ $mt.certFile | quote }}
+MENSAGERIA_TLS_CLIENT_KEY_FILE: {{ $mt.keyFile | quote }}
 {{- else }}
-{{- range $k := list "MENSAGERIA_TLS_CA_FILE" "MENSAGERIA_TLS_CLIENT_CERT_FILE" "MENSAGERIA_TLS_CLIENT_KEY_FILE" }}
-{{ $k }}: {{ index $cm $k | default "" | quote }}
+{{- range $k := list "MENSAGERIA_TLS_CLIENT_CERT_FILE" "MENSAGERIA_TLS_CLIENT_KEY_FILE" }}
+{{- if index $cm $k }}
+{{ $k }}: {{ index $cm $k | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- include $kv (dict "cm" $cm "p" $ex "f" "m2mSubject" "k" "EXECUTOR_M2M_SUBJECT" "d" "") }}

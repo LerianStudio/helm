@@ -29,13 +29,24 @@ the chart, trusted). Input: dict "context" $ "key" KEY.
 {{- if has $env (list "local" "development" "staging" "e2e" "test") -}}true{{- end -}}
 {{- end -}}
 
+{{/*
+plaintextSecretTransport — "true" when the app lets a secret (the Vault token)
+travel over plain http: ENVIRONMENT_NAME local|development|test only
+(config_helpers.go plaintextSecretTransportEnvNames; staging/e2e excluded).
+*/}}
+{{- define "plugin-br-sisbajud.plaintextSecretTransport" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- $env := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "ENVIRONMENT_NAME" "p" .Values.sisbajud.app "f" "environmentName" "d" "production") | trim | lower -}}
+{{- if has $env (list "local" "development" "test") -}}true{{- end -}}
+{{- end -}}
+
 {{- define "plugin-br-sisbajud.validate" -}}
 {{- $ := . -}}
 {{- $s := .Values.sisbajud -}}
 {{- $cm := $s.configmap | default dict -}}
 {{- $ex := $s.executor | default dict -}}
 {{- $wh := $ex.webhook | default dict -}}
-{{- $mtls := ($s.mensageria | default dict).tls | default dict -}}
+{{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml -}}
 {{- $f := "plugin-br-sisbajud.fail" -}}
 {{- $val := "plugin-br-sisbajud.val" -}}
 {{- $nonProd := eq (include "plugin-br-sisbajud.nonProduction" .) "true" -}}
@@ -58,20 +69,28 @@ the chart, trusted). Input: dict "context" $ "key" KEY.
 {{- if not $base -}}
 {{- include $f (dict "msg" "MENSAGERIA_BASE_URL is required: it is what runs the process as the executor (without it the binary boots the retired monolith and refuses STA_INBOUND_BUCKET)." "set" "sisbajud.mensageria.baseUrl=https://<mensageria-host>") -}}
 {{- end -}}
-{{- if not (hasPrefix "https://" (lower $base)) -}}
-{{- include $f (dict "msg" (printf "MENSAGERIA_BASE_URL must be an https URL (mTLS in every deployment mode), got %q." $base) "set" "sisbajud.mensageria.baseUrl") -}}
+{{- if and (not (include "plugin-br-sisbajud.isAvpPlaceholder" $base)) (not (regexMatch "^(?i)https://[^/?#]+" $base)) -}}
+{{- include $f (dict "msg" (printf "MENSAGERIA_BASE_URL must be an https URL with a host (TLS in every deployment mode), got %q." $base) "set" "sisbajud.mensageria.baseUrl") -}}
 {{- end -}}
-{{- $tlsKeys := list "MENSAGERIA_TLS_CA_FILE" "MENSAGERIA_TLS_CLIENT_CERT_FILE" "MENSAGERIA_TLS_CLIENT_KEY_FILE" -}}
-{{- if $mtls.existingSecret -}}
-{{- range $k := $tlsKeys -}}
-{{- if hasKey $cm $k -}}
-{{- include $f (dict "msg" (printf "%s is derived from sisbajud.mensageria.tls (mounted Secret %q); remove sisbajud.configmap.%s." $k $mtls.existingSecret $k) "set" "sisbajud.mensageria.tls.{caKey,certKey,keyKey,mountPath}") -}}
+{{- /* MENSAGERIA_MTLS_ENABLED: blank|true|false (config_executor.go). With "true"
+   the CA and the client pair are required; one-way TLS needs nothing (blank CA =
+   system trust store) and never loads the pair. */ -}}
+{{- if not (has $mt.raw (list "" "true" "false")) -}}
+{{- include $f (dict "msg" (printf "MENSAGERIA_MTLS_ENABLED must be true or false, got %q." $mt.raw) "set" "sisbajud.mensageria.mtlsEnabled") -}}
 {{- end -}}
+{{- if and $mt.caSecret (hasKey $cm "MENSAGERIA_TLS_CA_FILE") -}}
+{{- include $f (dict "msg" (printf "MENSAGERIA_TLS_CA_FILE is derived from the mounted CA Secret %q; remove sisbajud.configmap.MENSAGERIA_TLS_CA_FILE." $mt.caSecret) "set" "sisbajud.mensageria.ca.{existingSecret,key,mountPath}") -}}
 {{- end -}}
-{{- else -}}
-{{- range $k := $tlsKeys -}}
-{{- if not (index $cm $k) -}}
-{{- include $f (dict "msg" "the Mensageria mTLS material is required (server CA + executor client cert/key)." "set" "sisbajud.mensageria.tls.existingSecret=<secret with ca.crt, tls.crt, tls.key>") -}}
+{{- if eq $mt.mtls "true" -}}
+{{- if and (not $mt.caSecret) (not (index $cm "MENSAGERIA_TLS_CA_FILE")) -}}
+{{- include $f (dict "msg" "MENSAGERIA_MTLS_ENABLED=true requires the Mensageria server CA (MENSAGERIA_TLS_CA_FILE)." "set" "sisbajud.mensageria.ca.existingSecret (or mensageria.tls.existingSecret with caKey)") -}}
+{{- end -}}
+{{- range $k := list "MENSAGERIA_TLS_CLIENT_CERT_FILE" "MENSAGERIA_TLS_CLIENT_KEY_FILE" -}}
+{{- if and $mt.tlsSecret (hasKey $cm $k) -}}
+{{- include $f (dict "msg" (printf "%s is derived from the mounted client Secret %q; remove sisbajud.configmap.%s." $k $mt.tlsSecret $k) "set" "sisbajud.mensageria.tls.{certKey,keyKey,mountPath}") -}}
+{{- end -}}
+{{- if and (not $mt.tlsSecret) (not (index $cm $k)) -}}
+{{- include $f (dict "msg" "MENSAGERIA_MTLS_ENABLED=true requires the executor client pair (MENSAGERIA_TLS_CLIENT_CERT_FILE / _KEY_FILE)." "set" "sisbajud.mensageria.tls.existingSecret=<secret with tls.crt, tls.key>") -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -119,8 +138,10 @@ the chart, trusted). Input: dict "context" $ "key" KEY.
 {{- if not $addr -}}
 {{- include $f (dict "msg" "VAULT_ADDR is required with KMS_PROVIDER=vault." "set" "global.kms.vaultAddr (or sisbajud.kms.vaultAddr)") -}}
 {{- end -}}
-{{- if and (not $nonProd) (not (hasPrefix "https://" (lower $addr))) -}}
-{{- include $f (dict "msg" (printf "VAULT_ADDR must be https outside a developer environment, got %q." $addr) "set" "global.kms.vaultAddr") -}}
+{{- $plainOk := eq (include "plugin-br-sisbajud.plaintextSecretTransport" .) "true" -}}
+{{- $loopback := regexMatch "^(?i)http://(localhost|127\\.[0-9.]+|\\[::1\\])(:[0-9]+)?(/.*)?$" $addr -}}
+{{- if and (not $plainOk) (not $loopback) (not (include "plugin-br-sisbajud.isAvpPlaceholder" $addr)) (not (hasPrefix "https://" (lower $addr))) -}}
+{{- include $f (dict "msg" (printf "VAULT_ADDR must be https (http only for a loopback host or ENVIRONMENT_NAME local|development|test), got %q." $addr) "set" "global.kms.vaultAddr") -}}
 {{- end -}}
 {{- $method := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "vaultAuthMethod" "nativeKey" "VAULT_AUTH_METHOD" "default" "token") | lower -}}
 {{- if eq $method "approle" -}}

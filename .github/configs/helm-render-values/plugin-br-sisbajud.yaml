@@ -2,9 +2,9 @@
 # test). NOT a production example — values-template.yaml is. It renders the
 # development bundle (bundled PostgreSQL + Valkey, so every secretKeyRef points
 # at a Secret of the same release and the release-name collapse is exercised)
-# with the executor fully configured. The Mensageria mTLS Secret is
-# operator-provisioned in a real install; here the material is left to the
-# configmap file-path fallback so no out-of-band Secret is referenced.
+# with the executor fully configured. It runs the Mensageria client in one-way
+# TLS with the system trust store (mtlsEnabled false, no CA Secret), so no
+# out-of-band Secret is referenced.
 # No value here is a credential: placeholders a render needs and no cluster uses.
 global:
   auth:
@@ -21,10 +21,7 @@ sisbajud:
     deploymentMode: "local"
   mensageria:
     baseUrl: "https://mensageria.example.invalid"
-  configmap:
-    MENSAGERIA_TLS_CA_FILE: "/etc/plugin-br-sisbajud/mensageria/ca.crt"
-    MENSAGERIA_TLS_CLIENT_CERT_FILE: "/etc/plugin-br-sisbajud/mensageria/tls.crt"
-    MENSAGERIA_TLS_CLIENT_KEY_FILE: "/etc/plugin-br-sisbajud/mensageria/tls.key"
+    mtlsEnabled: false
   executor:
     m2mSubject: "render-fixture-subject"
     heartbeatEvery: "1m"

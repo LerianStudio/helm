@@ -17,7 +17,7 @@
 #   > chart default                   lives in templates/_helpers.tpl
 #
 # With the defaults alone the chart does NOT render: the executor needs the
-# Mensageria URL + mTLS Secret, its M2M identity, a license, a KMS and
+# Mensageria URL (+ its server CA), its M2M identity, a license, a KMS and
 # PostgreSQL/Redis. Every missing piece fails the render with the exact key to
 # set. Start from values-template.yaml.
 # =============================================================================
@@ -67,7 +67,7 @@ sisbajud:
   waitImage: busybox:1.37
 
   podAnnotations: {}
-  # -- fsGroup lets the nonroot container read the mounted mTLS files (0440).
+  # -- fsGroup lets the nonroot container read the mounted Mensageria TLS files (0440).
   podSecurityContext:
     fsGroup: 65532
     seccompProfile:
@@ -131,8 +131,12 @@ sisbajud:
     timeoutSeconds: 5
     successThreshold: 1
     failureThreshold: 3
+  # -- /version (static build info, always 200): the app's /health answers 503
+  #    until its startup self-probe passes, and that self-probe stays degraded
+  #    while no institution is routed (executor_institutions), so a /health
+  #    liveness probe would restart a fresh install in a loop.
   livenessProbe:
-    path: /health
+    path: /version
     initialDelaySeconds: 15
     periodSeconds: 20
     timeoutSeconds: 5
@@ -191,19 +195,39 @@ sisbajud:
   # -- ORGANIZATION_IDS. The app accepts only "global". LICENSE_KEY goes in secrets.
   license:
     organizationIds: "global"
+    # -- IS_DEVELOPMENT: "true" routes lib-license-go to the license DEV gateway
+    #    (for dev-issued keys). Unset = production gateway.
+    isDevelopment: ""
 
   # ---------------------------------------------------------------------------
   # Sisbajud Mensageria (execution contract). Setting baseUrl is what turns the
-  # process into the executor; mTLS is mandatory once it is set.
+  # process into the executor. The transport is always TLS; mutual TLS is
+  # optional (mtlsEnabled) and must match the Mensageria's
+  # SISBAJUD_EXECUTION_MTLS_ENABLED (plugin false vs Mensageria true fails the
+  # handshake on the first fetch).
   # ---------------------------------------------------------------------------
   mensageria:
     # -- MENSAGERIA_BASE_URL (https, required).
     baseUrl: ""
-    tls:
-      # -- Existing Secret with the server CA and the executor's client pair
-      #    (required). Mounted read-only at mountPath; MENSAGERIA_TLS_*_FILE
-      #    point at the files.
+    # -- MENSAGERIA_MTLS_ENABLED. true: present the executor client pair (tls.*)
+    #    and verify the server against the CA (both required). false (default,
+    #    one-way TLS): the pair is not mounted and the CA is optional.
+    mtlsEnabled: false
+    ca:
+      # -- Secret holding the CA that issued the Mensageria server certificate,
+      #    mounted at <mountPath>/ca.crt -> MENSAGERIA_TLS_CA_FILE. Optional in
+      #    one-way TLS (empty = the system trust store, which does not trust a
+      #    private in-cluster CA); required with mTLS. Empty here falls back to
+      #    tls.existingSecret + tls.caKey.
       existingSecret: ""
+      key: "ca.crt"
+      mountPath: "/etc/plugin-br-sisbajud/mensageria-ca"
+    tls:
+      # -- Secret with the executor's client pair, mounted ONLY with mtlsEnabled
+      #    at <mountPath>/tls.crt|tls.key -> MENSAGERIA_TLS_CLIENT_CERT_FILE /
+      #    _KEY_FILE. The cert must chain to the Mensageria's client CA (clientAuth EKU).
+      existingSecret: ""
+      # -- CA key in this Secret, used only when ca.existingSecret is empty.
       caKey: "ca.crt"
       certKey: "tls.crt"
       keyKey: "tls.key"

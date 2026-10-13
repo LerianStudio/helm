@@ -39,10 +39,17 @@ sisbajud:
 
   mensageria:
     baseUrl: "https://<mensageria-host>"
-    tls:
-      # kubectl create secret generic sisbajud-mensageria-mtls \
-      #   --from-file=ca.crt=<mensageria-ca.pem> --from-file=tls.crt=<client.pem> --from-file=tls.key=<client-key.pem>
-      existingSecret: "sisbajud-mensageria-mtls"
+    # Must match the Mensageria's SISBAJUD_EXECUTION_MTLS_ENABLED.
+    mtlsEnabled: false
+    ca:
+      # CA that issued the Mensageria server certificate (optional in one-way TLS:
+      # empty = system trust store; required with mTLS).
+      # kubectl create secret generic sisbajud-mensageria-ca --from-file=ca.crt=<mensageria-ca.pem>
+      existingSecret: "sisbajud-mensageria-ca"
+    # mTLS only (mtlsEnabled: true): the executor client pair.
+    # tls:
+    #   kubectl create secret tls sisbajud-mensageria-client --cert=<client.pem> --key=<client-key.pem>
+    #   existingSecret: "sisbajud-mensageria-client"
 
   executor:
     m2mSubject: "<executor-m2m-token-sub>"

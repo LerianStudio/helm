@@ -1,5 +1,7 @@
 # br-sisbajud Helm Chart
 
+> **Deprecated.** Use [`plugin-br-sisbajud`](https://charts.lerian.studio/charts/plugin-br-sisbajud) for the executor; the Sisbajud Mensageria (STA intake, return files, BACEN) is now a br-sfn rail.
+
 {% raw %}
 
 ## Chart Contract

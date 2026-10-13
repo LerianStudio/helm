@@ -1,0 +1,33 @@
+{{- if .Values.sisbajud.enabled -}}
+{{- include "plugin-br-sisbajud.validate" . -}}
+{{- /* Chart-modeled keys (_env.tpl), then the escape hatch: any other
+   sisbajud.configmap key is emitted verbatim. values.schema.json restricts the
+   escape hatch to the executor's non-credential keys. */ -}}
+{{- $body := include "plugin-br-sisbajud.configmapData" . -}}
+{{- $emitted := fromYaml $body -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-sisbajud.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud") | nindent 4 }}
+data:
+  {{- range $line := splitList "\n" $body }}
+  {{- if trim $line }}
+  {{ $line }}
+  {{- end }}
+  {{- end }}
+  {{- $extra := list }}
+  {{- range $k, $v := (.Values.sisbajud.configmap | default dict) }}
+  {{- if not (hasKey $emitted $k) }}
+  {{- $extra = append $extra $k }}
+  {{- end }}
+  {{- end }}
+  {{- if $extra }}
+  # --- Escape hatch: sisbajud.configmap keys not modeled by the chart ----------
+  {{- range $k := $extra }}
+  {{ $k }}: {{ index $.Values.sisbajud.configmap $k | toString | quote }}
+  {{- end }}
+  {{- end }}
+{{- end -}}

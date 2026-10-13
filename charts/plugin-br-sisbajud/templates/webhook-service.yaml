@@ -1,0 +1,15 @@
+{{- /* Dedicated Service for the Streaming Hub webhook listener (its own port,
+   EXECUTOR_HUB_WEBHOOK_ADDRESS), so only that path is exposed to the Hub. */ -}}
+{{- if and .Values.sisbajud.enabled (eq (include "plugin-br-sisbajud.webhookEnabled" .) "true") -}}
+{{- $wh := .Values.sisbajud.executor.webhook -}}
+{{- $svc := deepCopy ($wh.service | default dict) -}}
+{{- $out := include "lerian-common.service" (dict
+      "service" $svc
+      "name" (include "plugin-br-sisbajud.webhookFullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-sisbajud.labels" (dict "context" $ "component" "webhook"))
+      "selector" (include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud"))) -}}
+{{- /* The lib Service targets the `http` port name; the listener's container port is `webhook`. */ -}}
+{{- $out = regexReplaceAll "(?m)^(\\s+)targetPort: http$" $out "${1}targetPort: webhook" -}}
+{{- regexReplaceAll "(?m)^(\\s+)name: http$" $out "${1}name: webhook" }}
+{{- end -}}

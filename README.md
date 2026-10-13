@@ -252,6 +252,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------
 
+### Plugin BR SISBAJUD
+
+SISBAJUD executor: pulls judicial orders from the Sisbajud Mensageria (br-sfn) over mTLS, executes them on Midaz and posts the results back. Replaces `br-sisbajud`.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-sisbajud).
+
+#### Application Version Mapping
+
+| Chart Version | Sisbajud Version | Migrations Version |
+| :---: | :---: | :---: |
+| `1.0.0` | `1.3.0-beta.2` | `1.3.0-beta.2` |
+-----------------
+
 ### BR Consignado GW
 
 API gateway and same-origin operator console for the Dataprev consignado rail.

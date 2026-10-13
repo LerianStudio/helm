@@ -1,3 +1,0 @@
-{{- if $.Values.cockpit.enabled -}}
-{{ include "br-sfn.componentIngress" (dict "root" $ "name" "cockpit" "comp" $.Values.cockpit "defaultPort" 8080) }}
-{{- end -}}

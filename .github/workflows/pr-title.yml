@@ -32,33 +32,11 @@ jobs:
         with:
           scopes: |
             midaz
-            plugin-access-manager
-            plugin-crm
-            reporter
-            plugin-fees
-            plugin-br-pix-direct-jd
-            plugin-br-pix-jd
-            plugin-br-pix-indirect-btg
-            plugin-br-pix-switch
-            plugin-br-bank-transfer
-            lerian-notification
-            plugin-br-bank-transfer-jd
             templates
             dependencies
-            otel-collector
-            alloy-lerian
             plugins
             pipe
             doc
-            product-console
-            fetcher
-            lender
-            tracer
-            br-sta
-            br-ccs
-            br-slc
-            br-sfn
-            streaming-hub
             new
             charts
             common

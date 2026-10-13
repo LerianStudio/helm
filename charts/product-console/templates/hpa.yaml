@@ -1,8 +1,0 @@
-{{- if .Values.autoscaling.enabled }}
-{{- include "lerian-common.hpa" (dict
-      "autoscaling" .Values.autoscaling
-      "name" (include "product-console.fullname" .)
-      "namespace" (include "product-console.namespace" .)
-      "labels" (include "product-console.labels" .)
-    ) }}
-{{- end }}

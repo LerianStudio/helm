@@ -3,8 +3,9 @@
   "branches": [
     "main",
     {
-      "name": "develop",
-      "prerelease": "beta"
+      "name": "maintenance/midaz-9.1.x",
+      "range": "9.1.x",
+      "channel": "9.1.x"
     }
   ],
   "plugins": [
@@ -13,19 +14,52 @@
       {
         "preset": "conventionalcommits",
         "parserOpts": {
-          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES"]
+          "noteKeywords": [
+            "BREAKING CHANGE",
+            "BREAKING CHANGES"
+          ]
         },
         "releaseRules": [
-          { "type": "feat", "release": "minor" },
-          { "type": "perf", "release": "minor" },
-          { "type": "build", "release": "minor" },
-          { "type": "chore", "release": "patch" },
-          { "type": "ci", "release": "patch" },
-          { "type": "test", "release": "patch" },
-          { "type": "fix", "release": "patch" },
-          { "type": "refactor", "release": "patch" },
-          { "type": "docs", "release": "patch" },
-          { "breaking": true, "release": "major" }
+          {
+            "type": "feat",
+            "release": "minor"
+          },
+          {
+            "type": "perf",
+            "release": "minor"
+          },
+          {
+            "type": "build",
+            "release": "minor"
+          },
+          {
+            "type": "chore",
+            "release": "patch"
+          },
+          {
+            "type": "ci",
+            "release": "patch"
+          },
+          {
+            "type": "test",
+            "release": "patch"
+          },
+          {
+            "type": "fix",
+            "release": "patch"
+          },
+          {
+            "type": "refactor",
+            "release": "patch"
+          },
+          {
+            "type": "docs",
+            "release": "patch"
+          },
+          {
+            "breaking": true,
+            "release": "major"
+          }
         ]
       }
     ],
@@ -34,10 +68,17 @@
       {
         "preset": "conventionalcommits",
         "parserOpts": {
-          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
+          "noteKeywords": [
+            "BREAKING CHANGE",
+            "BREAKING CHANGES",
+            "BREAKING"
+          ]
         },
         "writerOpts": {
-          "commitsSort": ["subject", "scope"],
+          "commitsSort": [
+            "subject",
+            "scope"
+          ],
           "headerPartial": "## {{gitTag}} ({{date}})\n"
         }
       }
@@ -45,7 +86,7 @@
     [
       "semantic-release-helm3",
       {
-        "chartPath": "charts/chart-name",
+        "chartPath": ".",
         "registry": "oci://registry-1.docker.io/lerianstudio",
         "onlyUpdateVersion": true
       }
@@ -53,7 +94,8 @@
     [
       "@semantic-release/exec",
       {
-        "successCmd": "helm push charts/chart-name oci://ghcr.io/lerianstudio"
+        "prepareCmd": "CHART=$(basename \"$PWD\") && cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart \"$CHART\" --version ${nextRelease.version}",
+        "publishCmd": "PACKAGE_DIR=$(mktemp -d) && helm package . --destination \"$PACKAGE_DIR\" && set -- \"$PACKAGE_DIR\"/*.tgz && [ \"$#\" -eq 1 ] && helm push \"$1\" oci://ghcr.io/lerianstudio"
       }
     ],
     [
@@ -61,7 +103,8 @@
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
         "assets": [
-          "charts/chart-name/Chart.yaml"
+          "Chart.yaml",
+          "../../README.md"
         ]
       }
     ]

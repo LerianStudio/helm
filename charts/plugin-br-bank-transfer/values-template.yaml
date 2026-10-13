@@ -10,7 +10,7 @@
 # STYLE (canonical, mirrors the reporter/plugin-access-manager productized
 # charts): the whole env-wide typed contract lives in ONE `global:` block,
 # FIRST — set each dependency connection ONCE with its typed mask; the chart
-# emits the app's native env keys from it. Do NOT pin ENV_NAME/
+# emits the app's native env keys from it. Do NOT pin ENVIRONMENT_NAME/
 # MULTI_TENANT_ENABLED/ENABLE_TELEMETRY or POSTGRES_*/REDIS_* connection keys
 # under bankTransfer.configmap when a mask exists below — a native key WINS
 # over its mask and defeats it.
@@ -119,6 +119,10 @@ bankTransfer:
     JD_BASE_URL: ""  # REQUIRED when JD_SANDBOX_MODE=false
     JD_ORIGIN_ISPB: ""  # REQUIRED when JD_SANDBOX_MODE=false
 
+    # Licence
+    ORGANIZATION_IDS: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment
+    # IS_DEVELOPMENT: "true"  # set only with a development licence key (development licence gateway)
+
   secrets:
     # PostgreSQL / Redis / MongoDB — REQUIRED (bundled subcharts read these too)
     POSTGRES_PASSWORD: ""  # REQUIRED
@@ -128,6 +132,9 @@ bankTransfer:
     # Encryption keys — REQUIRED (hex-encoded 32-byte AES-256 keys, 64 hex chars)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""  # REQUIRED
     RECIPIENT_DETAILS_ENCRYPTION_KEY: ""  # REQUIRED
+
+    # Licence
+    LICENSE_KEY: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment; a development key also needs configmap.IS_DEVELOPMENT: "true"
 
     # JD SPB credentials — required for production (unless JD_SANDBOX_MODE=true)
     # JD_USER_CODE: ""

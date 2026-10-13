@@ -4,9 +4,6 @@ description: A Helm chart for br-sisbajud — the Lerian SISBAJUD plugin (judici
   asset blocking/unblocking integration with BACEN SISBAJUD)
 
 type: application
-# Deprecated: the executor moved to charts/plugin-br-sisbajud and the Sisbajud
-# Mensageria (STA intake, return files, BACEN) to the br-sfn rail.
-deprecated: true
 annotations:
   lerian.studio/chart-type: single-service
 

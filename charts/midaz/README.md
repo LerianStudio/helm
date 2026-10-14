@@ -8,7 +8,7 @@
 - Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the chart own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
-> **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` accordingly.
+> **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` (or the equivalent `global.datastores.*` host masks) accordingly. Two more names do not follow the release name: the component Services are always `midaz-ledger`, `midaz-crm` and `midaz-tracer` (the `midaz` prefix comes from `nameOverride`, default `midaz`), so a `TRACER_BASE_URL` points at `midaz-tracer:<port>` whatever the release is called; and the tracer's own `DB_HOST` does follow the release name (see the Tracer section). Mixed naming is therefore expected under a custom release name.
 
 > **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`<release>-mongodb`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets. Deleting only the Secrets resets nothing: a reinstall generates new passwords that the kept data never learned.
 
@@ -104,7 +104,7 @@ $ helm list -n midaz
 ---
 ## Configuring Ingress for Different Controllers
 
-The Midaz Helm Chart supports different Ingress Controllers for exposing services. You can enable Ingress for the following services: Ledger and Console. Below are configurations for commonly used controllers.
+The Midaz Helm Chart supports different Ingress Controllers for exposing services. Ingress is configured per component, under `ledger.ingress`, `crm.ingress` and `tracer.ingress`; the chart has no top-level `ingress:` key, and one placed there is silently ignored (no Ingress is rendered). The examples below use `ledger.ingress`; the same fields apply to the other two components. Below are configurations for commonly used controllers.
 
 **Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. The Ingress Controller manages external access to services. Examples include NGINX, AWS ALB, and Traefik.
 
@@ -112,22 +112,23 @@ The Midaz Helm Chart supports different Ingress Controllers for exposing service
 To use the **NGINX Ingress Controller**, configure the `values.yaml` as follows:
 
 ```yaml
-ingress:
-  enabled: true
-  className: "nginx"
-  # The `annotations` field adds custom metadata to the Nginx resource.
-  # Annotations are key-value pairs that augment the behavior of the Nginx resource.
-  # See https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
-  annotations: {}
-  hosts:
-    - host: midaz.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: midaz-tls  # Ensure this secret exists or is managed by cert-manager
-      hosts:
-        - midaz.example.com
+ledger:
+  ingress:
+    enabled: true
+    className: "nginx"
+    # The `annotations` field adds custom metadata to the Nginx resource.
+    # Annotations are key-value pairs that augment the behavior of the Nginx resource.
+    # See https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
+    annotations: {}
+    hosts:
+      - host: midaz.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: midaz-tls  # Ensure this secret exists or is managed by cert-manager
+        hosts:
+          - midaz.example.com
 ```
 
 ---
@@ -136,21 +137,22 @@ ingress:
 For **AWS ALB Ingress Controller**, use the following configuration:
 
 ```yaml
-ingress:
-  enabled: true
-  className: "alb"
-  annotations:
-    alb.ingress.kubernetes.io/scheme: internal  # Use "internet-facing" for public ALB
-    alb.ingress.kubernetes.io/target-type: ip   # Use "instance" if targeting EC2 instances
-    alb.ingress.kubernetes.io/group.name: "midaz"  # Group ALB resources under this name
-    alb.ingress.kubernetes.io/healthcheck-path: "/healthz"  # Health check path
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'  # Listen on HTTP and HTTPS
-  hosts:
-    - host: midaz.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []  # TLS is managed by the ALB using ACM certificates
+ledger:
+  ingress:
+    enabled: true
+    className: "alb"
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internal  # Use "internet-facing" for public ALB
+      alb.ingress.kubernetes.io/target-type: ip   # Use "instance" if targeting EC2 instances
+      alb.ingress.kubernetes.io/group.name: "midaz"  # Group ALB resources under this name
+      alb.ingress.kubernetes.io/healthcheck-path: "/health"  # Health check path (the ledger serves /health and /readyz)
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'  # Listen on HTTP and HTTPS
+    hosts:
+      - host: midaz.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []  # TLS is managed by the ALB using ACM certificates
 ```
 
 ---
@@ -159,21 +161,22 @@ ingress:
 For **Traefik**, configure the `values.yaml` as follows:
 
 ```yaml
-ingress:
-  enabled: true
-  className: "traefik"
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: "web, websecure"  # Entrypoints defined in Traefik
-    traefik.ingress.kubernetes.io/router.tls: "true"  # Enable TLS for this route
-  hosts:
-    - host: midaz.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: midaz-tls  # Ensure this secret exists and contains the TLS certificate
-      hosts:
-        - midaz.example.com
+ledger:
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: "web, websecure"  # Entrypoints defined in Traefik
+      traefik.ingress.kubernetes.io/router.tls: "true"  # Enable TLS for this route
+    hosts:
+      - host: midaz.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: midaz-tls  # Ensure this secret exists and contains the TLS certificate
+        hosts:
+          - midaz.example.com
 ```
 
 
@@ -249,12 +252,12 @@ Midaz deploys the following core services:
 
 | Parameter | Description | Default Value |
 |---|---|---|
-| `ledger.enabled` | Enable or disable the ledger service. | `false` |
+| `ledger.enabled` | Enable or disable the ledger service. | `true` |
 | `ledger.name` | Service name. | `"ledger"` |
-| `ledger.replicaCount` | Number of replicas for the ledger service. | `1` |
+| `ledger.replicaCount` | Number of replicas for the ledger service. | `2` |
 | `ledger.image.repository` | Repository for the ledger service container image. | `"lerianstudio/midaz-ledger"` |
 | `ledger.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
-| `ledger.image.tag` | Image tag used for deployment. | `"3.7.2"` |
+| `ledger.image.tag` | Image tag used for deployment. | See `values.yaml` |
 | `ledger.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
 | `ledger.nameOverride` | Overrides the default generated name by Helm. | `""` |
 | `ledger.fullnameOverride` | Overrides the full name generated by Helm. | `""` |
@@ -266,7 +269,7 @@ Midaz deploys the following core services:
 | `ledger.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
 | `ledger.deploymentUpdate.*` | Deployment update strategy. | See `values.yaml` |
 | `ledger.service.type` | Kubernetes service type. | `"ClusterIP"` |
-| `ledger.service.port` | Port for the HTTP API. | `3000` |
+| `ledger.service.port` | Port for the HTTP API. | `3002` |
 | `ledger.service.annotations` | Annotations for the service. | `{}` |
 | `ledger.ingress.enabled` | Specifies whether Ingress is enabled. | `false` |
 | `ledger.ingress.className` | Ingress class name. | `""` |
@@ -276,7 +279,7 @@ Midaz deploys the following core services:
 | `ledger.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
 | `ledger.autoscaling.enabled` | Specifies whether autoscaling is enabled. | `true` |
 | `ledger.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `2` |
-| `ledger.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `5` |
+| `ledger.autoscaling.maxReplicas` | Maximum number of replicas for autoscaling. | `9` |
 | `ledger.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling. | `80` |
 | `ledger.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling. | `80` |
 | `ledger.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). | `{}` |
@@ -347,7 +350,7 @@ For more details, refer to the official documentation: [CRM Documentation](https
 | `crm.replicaCount` | Number of replicas for the CRM service. | `1` |
 | `crm.image.repository` | Repository for the CRM service container image. | `"lerianstudio/midaz-crm"` |
 | `crm.image.pullPolicy` | Image pull policy. | `"Always"` |
-| `crm.image.tag` | Image tag used for deployment. | `"3.7.2"` |
+| `crm.image.tag` | Image tag used for deployment. | See `values.yaml` |
 | `crm.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
 | `crm.nameOverride` | Overrides the default generated name by Helm. | `""` |
 | `crm.fullnameOverride` | Overrides the full name generated by Helm. | `""` |
@@ -359,7 +362,7 @@ For more details, refer to the official documentation: [CRM Documentation](https
 | `crm.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
 | `crm.deploymentUpdate.type` | Type of deployment strategy. | `"RollingUpdate"` |
 | `crm.deploymentUpdate.maxSurge` | Maximum number of pods that can be created over the desired number of pods. | `1` |
-| `crm.deploymentUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during the update. | `1` |
+| `crm.deploymentUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during the update. | `0` |
 | `crm.service.type` | Kubernetes service type. | `"ClusterIP"` |
 | `crm.service.port` | Service port. | `4003` |
 | `crm.ingress.enabled` | Specifies whether Ingress is enabled. | `false` |
@@ -431,7 +434,20 @@ The `tracer` service provides real-time transaction validation and fraud prevent
 
 - **Database.** Tracer uses the bundled PostgreSQL with the same `midaz` role that owns `onboarding` and `transaction`. `tracer.configmap.DB_HOST` is empty by default and resolves to this release's PostgreSQL primary Service (`<release>-postgresql-primary`, or `<release>-postgresql` in the standalone topology), so a release name other than `midaz` still connects; set it explicitly for an external PostgreSQL, where the render fails rather than guessing. Its database (`tracer.configmap.DB_NAME`, default `tracer`) is created by `files/midaz/init.sql` on a fresh internal cluster, and by the external bootstrap Job (`global.externalPostgresDefinitions.enabled=true`) otherwise; both paths use the configured name. On a pre-existing internal cluster, initdb scripts no longer run: create the configured database once by hand before enabling tracer (`CREATE DATABASE tracer;` with the default `tracer.configmap.DB_NAME`).
 - **Migrations.** Neither tracer nor the v4 ledger migrates at startup anymore. `tracer.migrations` and `ledger.migrations` render the dedicated `midaz-tracer-migrations` / `midaz-ledger-migrations` runner Jobs, whose tag defaults to the matching application tag. The tracer Job renders when both `tracer.enabled` and `tracer.migrations.enabled` (default `true`) are true; the ledger Job is on for 4.x ledger tags only (`ledger.migrations.enabled` pins it either way). Setting either `migrations.enabled` to `false` means the schema must be applied out of band, because the v4 services no longer migrate themselves. Both Jobs are plain Sync-phase resources because the bundled PostgreSQL Secret they read is only created during Sync; while a Job renders, its Deployment carries `argocd.argoproj.io/sync-wave: "1"` (`<component>.migrations.deploymentSyncWave`) so Argo CD applies the service only after the Job reports Complete. Against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` under `<component>.migrations.annotations` instead.
-- **Ledger to tracer transport.** `ledger.configmap.TRACER_TRANSPORT` defaults to `rest`, because the bundled tracer keeps its gRPC reservation seam off (the app only starts it when `TRACER_GRPC_PORT` is set) and its Service exposes HTTP only. To use gRPC, the seam's production transport, set `tracer.configmap.TRACER_GRPC_PORT` (e.g. `":4021"`), which publishes `tracer.service.grpcPort` on the Service and container, and point `ledger.configmap.TRACER_BASE_URL` at it. Selecting `grpc` against a bundled tracer with the seam off fails the render.
+- **Ledger to tracer transport.** The ledger reaches the tracer over gRPC only. `ledger.configmap.TRACER_TRANSPORT` defaults to `rest` in this chart, and an empty value falls back to `rest` too, so `grpc` must be set explicitly. With `TRACER_BASE_URL` empty (the default) the integration is off and the transport value is never read. With `TRACER_BASE_URL` set, a ledger at app tag 4.2.0 or later refuses to boot on `rest` (`TRACER_TRANSPORT=rest is no longer supported`), so the chart default is not a working combination once the integration is on. The tracer at 4.2.0 or later listens on `:4021` whether or not `TRACER_GRPC_PORT` is set, but the chart publishes that port on the container and the Service only when `tracer.configmap.TRACER_GRPC_PORT` is set, so the ledger cannot reach it through the Service otherwise (tags before 4.2.0 start the gRPC seam only when the port is set). The working combination for a bundled tracer at app tag 4.2.x:
+
+  ```yaml
+  tracer:
+    enabled: true
+    configmap:
+      TRACER_GRPC_PORT: ":4021"        # publishes tracer.service.grpcPort (4021) on the container and Service
+  ledger:
+    configmap:
+      TRACER_BASE_URL: "midaz-tracer:4021"   # Service name is fixed, see the release-name note
+      TRACER_TRANSPORT: "grpc"
+  ```
+
+  The render fails if `TRACER_TRANSPORT=grpc` and `TRACER_BASE_URL` are set against a bundled tracer without `TRACER_GRPC_PORT`. Which seam identity and TLS mode to use (`TRACER_API_KEY`, the `TRACER_M2M_*` pair, `TRACER_TLS_MODE`) follows the tracer's `API_KEY_ENABLED` / `PLUGIN_AUTH_ENABLED` settings; see the app's `components/tracer/README.md` for the seam rules. A live ledger-to-tracer connection has not been verified with this chart.
 - **Memory.** `tracer.configmap.GOMEMLIMIT` must track `tracer.resources.limits.memory` (~90%). The image ships `GOMEMLIMIT=1800MiB`, sized for a 2Gi container, so without the override the Go heap outgrows a 512Mi cgroup and the pod is OOM-killed.
 - **Fail-fast configuration.** The chart mirrors the tracer boot validators, so misconfiguration fails `helm template` instead of crash-looping: `API_KEY_ENABLED=true` requires an API key and rejects wildcard CORS; `MULTI_TENANT_ENABLED=true` requires `PLUGIN_AUTH_ENABLED=true`, a service API key, and rejects `API_KEY_ENABLED_ONLY_VALIDATION=true`; `tracer.useExistingSecret=true` requires `tracer.existingSecretName`. Booleans are matched the way the runtime parses them (`strconv.ParseBool`), so `TRUE`, `True`, `1`, `t` and `T` are treated as enabled here too.
 
@@ -448,7 +464,7 @@ tracer:
   # EXTERNAL PostgreSQL (postgresql.enabled=false / postgresql.external=true).
 ```
 
-> **Images.** Every image this chart references is expected to be pullable anonymously, so no `imagePullSecrets` are needed for a default install. Three v4 packages do not satisfy that yet: `lerianstudio/midaz-tracer`, `lerianstudio/midaz-tracer-migrations`, and `lerianstudio/midaz-ledger-migrations` still answer `denied/unauthorized` on Docker Hub, while `lerianstudio/midaz-ledger` resolves. The chart keeps the coordinates the midaz release pipeline publishes; making those repositories public is the fix.
+> **Images.** Every image this chart references is expected to be pullable anonymously, so no `imagePullSecrets` are needed for a default install; anonymous manifest requests for the ledger, ledger-migrations, tracer, tracer-migrations and CRM tags in `values.yaml` returned HTTP 200 on Docker Hub when this was last checked. If you mirror the images to a private registry, set `imagePullSecrets` and `image.repository` on each component.
 
 ## Observability
 
@@ -721,4 +737,4 @@ crm:
     OTEL_EXPORTER_OTLP_ENDPOINT: "https://your-collector.example.com:4317"
 ```
 
-Schema is strict: only `enabled` is accepted under `otel-collector-lerian:`. Legacy keys (`external`, `extraEnvs`, `exporters`, `opentelemetry-collector`) are rejected at `helm install/upgrade` time.
+The schema declares only `enabled` under `otel-collector-lerian:` and does not reject other keys (`additionalProperties` is `true`), but the templates read only `enabled`: legacy keys such as `external`, `extraEnvs`, `exporters` or `opentelemetry-collector` render without error and have no effect.

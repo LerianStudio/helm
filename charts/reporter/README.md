@@ -56,8 +56,8 @@ SeaweedFS Service keeps the fixed name `seaweedfs-s3`. The defaults therefore ma
 only when the release is named `reporter` and installed in the `reporter`
 namespace (as in the commands below). With another release name, override the
 MongoDB, RabbitMQ and Valkey hosts through `global.datastores.*` (or the matching
-`common.configmap` keys); with another namespace, also override
-`global.objectStorage.s3.endpoint`. Otherwise the manager and worker will not reach
+`common.configmap` keys); with another namespace, override those same three hosts
+(they also hardcode the `reporter` namespace) and `global.objectStorage.s3.endpoint`. Otherwise the manager and worker will not reach
 the bundled dependencies.
 
 ## Installing the Chart

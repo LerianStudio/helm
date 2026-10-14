@@ -332,7 +332,7 @@ sisbajud:
 
   observability:
     serviceName: "plugin-br-sisbajud"
-    libraryName: "github.com/LerianStudio/br-sisbajud"
+    libraryName: "github.com/LerianStudio/plugin-br-sisbajud"
 
   swagger:
     enabled: "false"

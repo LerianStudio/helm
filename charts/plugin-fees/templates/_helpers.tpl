@@ -6,23 +6,9 @@ Expand the name of the chart and plugin fees.
 {{- end }}
 
 {{/*
-Expand the name of the chart and plugin fees.
-*/}}
-{{- define "plugin-fees-backend.name" -}}
-{{- default (default .Values.fees.backend.name) | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
 Create chart name and version as used by the chart label for plugin fees.
 */}}
 {{- define "plugin-fees.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Create chart name and version as used by the chart label for plugin fees.
-*/}}
-{{- define "plugin-fees-backend.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -33,15 +19,6 @@ If release name contains chart name it will be used as a full name.
 */}}
 {{- define "plugin-fees.fullname" -}}
 {{- default (default .Values.fees.name) | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Create a default fully qualified app name fees.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "plugin-fees-backend.fullname" -}}
-{{- default (default .Values.fees.backend.name) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -62,31 +39,11 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
 {{/*
-fees Selector labels
-*/}}
-{{- define "plugin-fees-backend.selectorLabels" -}}
-{{- if .name -}}
-app.kubernetes.io/name: {{ include "plugin-fees-backend.name" .context }}
-{{- end }}
-app.kubernetes.io/instance: {{ .context.Release.Name }}
-{{- end }}
-
-{{/*
 fees Common labels
 */}}
 {{- define "plugin-fees.labels" -}}
 helm.sh/chart: {{ include "plugin-fees.chart" .context }}
 {{ include "plugin-fees.selectorLabels" (dict "context" .context "name" .name) }}
-app.kubernetes.io/version: {{ include "plugin.version" .context }}
-app.kubernetes.io/managed-by: {{ .context.Release.Service }}
-{{- end }}
-
-{{/*
-fees Backend Common labels
-*/}}
-{{- define "plugin-fees-backend.labels" -}}
-helm.sh/chart: {{ include "plugin-fees-backend.chart" .context }}
-{{ include "plugin-fees-backend.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}

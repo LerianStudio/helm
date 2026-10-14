@@ -109,6 +109,8 @@ Chart files modified between `0.1.0` and `1.0.0-beta.3` (paths as they are now; 
 
 ## Migration Steps
 
+> **Assumed identity.** The commands in this guide use release `notifications` in namespace `notifications`. The previous guide used release `lerian-notification` in namespace `lerian-notification`. If your installation still has that identity, substitute your own release name and namespace in every `helm` and `kubectl` command.
+
 1. **Build `DATABASE_URL` before upgrading.** Choose one:
    - Inline via values: set `secrets.DATABASE_URL` to a URL-escaped Postgres DSN.
    - External Secret: ensure the Secret referenced by `secretRef.name` contains a `DATABASE_URL` key.

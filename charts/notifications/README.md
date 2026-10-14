@@ -59,7 +59,7 @@ The chart default is `config.ENV_NAME: "firmino"`. The application only applies 
 
 ## Autoscaling and PodDisruptionBudgets
 
-Only the API has an HPA and a PodDisruptionBudget template (`api.autoscaling.*`, `api.pdb.*`). `workerEmail`, `workerSms` and `workerWebhook` expose `autoscaling.*` and `pdb.*` values, but the chart ships no HPA or PDB template for them. Setting `workerX.autoscaling.enabled: true` only removes `replicas:` from that worker's Deployment, which leaves the replica count to whatever else manages it (an externally created HPA, or the Kubernetes default of 1 on first create). Scale workers with `workerX.replicaCount`, or create an HPA outside this chart.
+Only the API has an HPA and a PodDisruptionBudget template (`api.autoscaling.*`, `api.pdb.*`). `workerEmail`, `workerSms` and `workerWebhook` expose `autoscaling.*` and `pdb.*` values, but the chart ships no HPA or PDB template for them. Setting `workerX.autoscaling.enabled: true` only removes `replicas:` from that worker's Deployment, which leaves the replica count to whatever else manages it (an externally created HPA, or the Kubernetes default of 1 on first create). While `workerX.autoscaling.enabled` is `true`, `workerX.replicaCount` has no effect because the Deployment omits `replicas:`. Keep it `false` to scale with `workerX.replicaCount`, or create an HPA outside this chart.
 
 ## Release naming
 

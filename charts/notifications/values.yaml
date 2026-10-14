@@ -434,8 +434,9 @@ workerEmail:
       memory: 128Mi
   # -- NOT IMPLEMENTED for workers: the chart has no HPA template for this
   #    worker. Setting `enabled: true` only removes `replicas:` from the
-  #    Deployment; the other fields are ignored. Use `replicaCount` or an
-  #    HPA managed outside this chart.
+  #    Deployment, so `replicaCount` then has no effect; the other fields are
+  #    ignored. Keep `enabled: false` to use `replicaCount`, or manage an HPA
+  #    outside this chart.
   autoscaling:
     enabled: false
     minReplicas: 1
@@ -515,8 +516,9 @@ workerSms:
       memory: 128Mi
   # -- NOT IMPLEMENTED for workers: the chart has no HPA template for this
   #    worker. Setting `enabled: true` only removes `replicas:` from the
-  #    Deployment; the other fields are ignored. Use `replicaCount` or an
-  #    HPA managed outside this chart.
+  #    Deployment, so `replicaCount` then has no effect; the other fields are
+  #    ignored. Keep `enabled: false` to use `replicaCount`, or manage an HPA
+  #    outside this chart.
   autoscaling:
     enabled: false
     minReplicas: 1
@@ -596,8 +598,9 @@ workerWebhook:
       memory: 128Mi
   # -- NOT IMPLEMENTED for workers: the chart has no HPA template for this
   #    worker. Setting `enabled: true` only removes `replicas:` from the
-  #    Deployment; the other fields are ignored. Use `replicaCount` or an
-  #    HPA managed outside this chart.
+  #    Deployment, so `replicaCount` then has no effect; the other fields are
+  #    ignored. Keep `enabled: false` to use `replicaCount`, or manage an HPA
+  #    outside this chart.
   autoscaling:
     enabled: false
     minReplicas: 1

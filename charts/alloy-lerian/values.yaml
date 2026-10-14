@@ -91,6 +91,14 @@ destination:
     # pública — daí a credencial ser obrigatória, e 401 ser descarte permanente.
     # enabled: true
 
+    # ⚠️ NAO IMPLEMENTADO: `secretName` e `secretKey` NAO tem efeito. Os templates
+    # definem os helpers `credentialSecretName` e `credentialSecretKey`, mas
+    # nenhum os chama (verificado: `--set destination.credential.secretName=other`
+    # gera render identico). O Secret e a chave efetivos sao os do `secretKeyRef`
+    # em `node.alloy.extraEnv` e `singleton.alloy.extraEnv`; para usar outro nome
+    # ou chave, altere la, nos dois papeis. Os valores abaixo ficam apenas como
+    # registro do padrao.
+    #
     # Referência apenas. O chart LÊ este Secret e nunca o cria.
     #
     # O cliente executa UM comando antes do install, com os valores que
@@ -838,8 +846,13 @@ node:
             # chart ja corrigiu quatro vezes: o agente sobe, remotecfg autentica,
             # falha, e nunca recebe configuracao — visivel SO no log do pod.
             #
-            # Quem roda sem Fleet e o perfil `own`, que desliga
-            # `fleetManagement.enabled` e com isso sai do caminho desta chave.
+            # ATENCAO: o perfil `own` NAO desliga o Fleet. `fleetManagement.enabled`
+            # nasce `true` nos dois perfis, e `profile: own` sozinho continua
+            # renderizando o bloco `remotecfg` (verificado com `helm template
+            # --set profile=own`). Para rodar sem Fleet e preciso desligar de forma
+            # explicita: `fleetManagement.enabled: false`. Mesmo desligado, esta
+            # entrada continua `optional: false` no render: desligar o Fleet nao a
+            # torna opcional.
             optional: false
     resources:
       requests:
@@ -1223,6 +1236,8 @@ logging:
 # alguém do lado dele precisa executar o upgrade. Não há saída técnica para isso —
 # só procedimento e comunicação prévia.
 fleetManagement:
+  # Nasce `true` nos DOIS perfis. `profile: own` NAO o desliga: sem
+  # `enabled: false` explicito o bloco `remotecfg` continua sendo renderizado.
   enabled: true
 
   # Copiar VERBATIM da interface do Fleet Management. O formato do host varia por
@@ -1243,7 +1258,11 @@ fleetManagement:
   # Token de leitura de config remota. Mesmo Secret da credencial de telemetria,
   # chave distinta — o cliente cria UM Secret, não dois.
   #
-  # Aponte para outro Secret se preferir separar as credenciais.
+  # ⚠️ NAO IMPLEMENTADO: `tokenSecret.name` e `tokenSecret.key` NAO tem efeito
+  # (verificado: `--set fleetManagement.tokenSecret.name=zzz` gera render
+  # identico). O token chega pelo `secretKeyRef` de `ALLOY_FLEET_TOKEN` em
+  # `node.alloy.extraEnv` e `singleton.alloy.extraEnv`; para separar as
+  # credenciais em outro Secret, altere la, nos dois papeis.
   tokenSecret:
     name: "alloy-lerian"
     key: "fleet-token"

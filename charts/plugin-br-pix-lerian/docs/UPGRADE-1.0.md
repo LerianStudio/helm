@@ -399,7 +399,7 @@ appsIngress:
       serviceName: pixauto
 ```
 
-`values.yaml` ships a complete default `routes` list for each of the three Ingresses (the example above is a subset). The default `appsIngress` publishes `/spi`, `/v1/streaming/manifest` (Exact), `/dict-hub`, `/dict-proxy`, `/cob-hub`, `/cob-proxy`, `/pixauto/v1` and `/pixauto/readyz` (Exact). `/pixauto/internal/v1/*` is deliberately never published and the render fails if a route reintroduces it. `systemplaneIngress` maps `/spi`, `/dict`, `/cob`, `/pixauto` and `/lerian` to the matching `*Systemplane` components; `providersIngress` maps `/provider-mock` and `/lerian`.
+`values.yaml` ships a complete default `routes` list for each of the three Ingresses (the example above is a subset). A `routes` list you supply replaces the default list instead of extending it, so include every route you need; copying the example alone drops the default `/dict-proxy`, `/cob-proxy`, `/pixauto/readyz` and `/v1/streaming/manifest` routes. The default `appsIngress` publishes `/spi`, `/v1/streaming/manifest` (Exact), `/dict-hub`, `/dict-proxy`, `/cob-hub`, `/cob-proxy`, `/pixauto/v1` and `/pixauto/readyz` (Exact). `/pixauto/internal/v1/*` is deliberately never published and the render fails if a route reintroduces it. `systemplaneIngress` maps `/spi`, `/dict`, `/cob`, `/pixauto` and `/lerian` to the matching `*Systemplane` components; `providersIngress` maps `/provider-mock` and `/lerian`.
 
 | Flag | Default | Description |
 |------|---------|-------------|

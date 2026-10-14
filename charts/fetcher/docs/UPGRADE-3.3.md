@@ -59,7 +59,7 @@ global:
 
 The `minDomains` field controls the minimum number of eligible topology domains required for `DoNotSchedule` (hard) topology spread constraints. When set to a value greater than `0`, if the number of eligible domains is less than `minDomains`, the scheduler treats the global minimum as `0`. This prevents a hard hostname spread from stacking replicas on a single node when insufficient nodes are available — instead, the extra replica waits for a new node to be provisioned.
 
-**Use case:** In autoscaled clusters (e.g., with Karpenter), setting `minDomains: 2` ensures that when a hard hostname spread constraint is active and only one node exists, the scheduler will trigger node autoscaling rather than violating the spread constraint by placing multiple replicas on the same node.
+**Use case:** In autoscaled clusters (e.g., with Karpenter), setting `minDomains: 2` ensures that when a hard hostname spread constraint is active and only one node exists, the extra replica stays pending instead of being placed on the same node, which can prompt a configured autoscaler to provision an eligible node (it depends on the autoscaler and its capacity rules).
 
 **Example configuration:**
 
@@ -119,7 +119,7 @@ The following fields have been added to `global.scheduling.spread`:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `minDomains` | `0` | Minimum eligible domains for `DoNotSchedule` constraints. When set to a value greater than `0`, if fewer domains exist, the scheduler treats the global minimum as `0`, allowing autoscalers to provision new nodes instead of violating hard spread constraints. Use on autoscaled clusters. |
+| `minDomains` | `0` | Minimum eligible domains for `DoNotSchedule` constraints. When set to a value greater than `0`, if fewer domains exist, the scheduler treats the global minimum as `0`, so the extra pod stays pending instead of violating the hard spread constraint, which can prompt a configured autoscaler to provision a node. Use on autoscaled clusters. |
 | `nodeTaintsPolicy` | `""` (omitted) | Controls whether the scheduler honors node taints when counting eligible domains. `Honor` counts only nodes the pod tolerates (e.g., skips nodes with `karpenter.sh/disrupted` taints). `Ignore` counts all nodes. Empty string omits the field (Kubernetes default `Ignore`). |
 
 **Example configuration for autoscaled clusters:**

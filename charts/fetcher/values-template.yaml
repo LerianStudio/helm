@@ -174,5 +174,6 @@ rabbitmq:
 valkey:
   enabled: false
 
+# Installs the KEDA operator only; the chart has no ScaledObject template.
 keda:
   enabled: false

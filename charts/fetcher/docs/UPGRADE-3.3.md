@@ -22,34 +22,38 @@ The application version (`appVersion: 3.1.0`) is unchanged. The `lerian-common-h
 
 ### 1. Topology spread constraint enhancements
 
-The global topology spread constraint configuration now supports two additional fields to fine-tune pod scheduling behavior in autoscaled environments:
+The global spread preset (`global.scheduling.spread`) now supports two additional fields to fine-tune pod scheduling behavior in autoscaled environments. (Earlier revisions of this guide named the key `global.topologySpreadConstraints`; the chart never read it, so setting it has no effect. The per-component `manager.spread` / `worker.spread` overrides accept the same fields.)
 
 **Before (v3.2.0):**
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: ""
-    maxSkew: 1
+  scheduling:
+    spread:
+      enabled: true
+      hostname: ScheduleAnyway
+      zone: ""
+      maxSkew: 1
 ```
 
 **After (v3.3.0):**
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: ""
-    maxSkew: 1
-    minDomains: 0
-    nodeTaintsPolicy: ""
+  scheduling:
+    spread:
+      enabled: true
+      hostname: ScheduleAnyway
+      zone: ""
+      maxSkew: 1
+      minDomains: 0
+      nodeTaintsPolicy: ""
 ```
 
 | Setting | v3.2.0 | v3.3.0 |
 |---------|--------|--------|
-| `global.topologySpreadConstraints.minDomains` | (not set) | `0` (default) |
-| `global.topologySpreadConstraints.nodeTaintsPolicy` | (not set) | `""` (default, omitted) |
+| `global.scheduling.spread.minDomains` | (not set) | `0` (default) |
+| `global.scheduling.spread.nodeTaintsPolicy` | (not set) | `""` (default, omitted) |
 
 #### minDomains
 
@@ -61,11 +65,12 @@ The `minDomains` field controls the minimum number of eligible topology domains 
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: "kubernetes.io/hostname"
-    maxSkew: 1
-    minDomains: 1
+  scheduling:
+    spread:
+      enabled: true
+      hostname: DoNotSchedule
+      maxSkew: 1
+      minDomains: 1
 ```
 
 > **Note:** `minDomains` only affects `DoNotSchedule` constraints. If your topology spread constraints use `ScheduleAnyway` (soft constraints), this field has no effect. The default value of `0` disables this behavior, maintaining backward compatibility.
@@ -84,11 +89,12 @@ The `nodeTaintsPolicy` field controls whether the scheduler considers node taint
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: "kubernetes.io/hostname"
-    maxSkew: 1
-    nodeTaintsPolicy: "Honor"
+  scheduling:
+    spread:
+      enabled: true
+      hostname: DoNotSchedule
+      maxSkew: 1
+      nodeTaintsPolicy: "Honor"
 ```
 
 > **Note:** The default value is an empty string (`""`), which omits the field from the rendered topology spread constraint. This maintains backward compatibility with Kubernetes versions that do not support `nodeTaintsPolicy` or clusters where the default `Ignore` behavior is desired.
@@ -107,7 +113,7 @@ The `lerian-common-helm` dependency has been updated from version `2.2.0` to `2.
 
 ### New topology spread constraint fields
 
-The following fields have been added to the global topology spread constraint configuration:
+The following fields have been added to `global.scheduling.spread`:
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -118,24 +124,27 @@ The following fields have been added to the global topology spread constraint co
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: "kubernetes.io/hostname"
-    maxSkew: 1
-    minDomains: 1
-    nodeTaintsPolicy: "Honor"
+  scheduling:
+    spread:
+      enabled: true
+      hostname: DoNotSchedule
+      maxSkew: 1
+      minDomains: 1
+      nodeTaintsPolicy: "Honor"
 ```
 
 **Example configuration to maintain v3.2.0 behavior:**
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: ""
-    maxSkew: 1
-    minDomains: 0
-    nodeTaintsPolicy: ""
+  scheduling:
+    spread:
+      enabled: true
+      hostname: ScheduleAnyway
+      zone: ""
+      maxSkew: 1
+      minDomains: 0
+      nodeTaintsPolicy: ""
 ```
 
 > **Important:** Both fields are optional and default to values that maintain backward compatibility. No action is required unless you want to enable the new scheduling behaviors.

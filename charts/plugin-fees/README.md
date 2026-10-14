@@ -150,7 +150,7 @@ ingress:
       MONGO_PASSWORD: "{ your-db-password }"
   ```
 
-- **Data retention:** the chart does not render `helm.sh/resource-policy: keep` for the bundled MongoDB PersistentVolumeClaim or Secret, so `helm uninstall` deletes them together with the data. Back up the database before uninstalling, or use an external MongoDB.
+- **Data retention:** the chart does not render `helm.sh/resource-policy: keep` for the bundled MongoDB PersistentVolumeClaim or Secret, so `helm uninstall` deletes the PersistentVolumeClaim and the Secret. Whether the backing volume and its data are removed as well depends on the reclaim policy of the PersistentVolume (`Delete` removes them, `Retain` keeps them). Back up the database before uninstalling, or use an external MongoDB.
 
 
 ## Support

@@ -261,14 +261,14 @@ kubectl get pods -n <namespace>
 6. Check service logs for any startup issues:
 
 ```bash
-kubectl logs -n <namespace> -l app.kubernetes.io/name=plugin-bc-correios-helm --tail=50
+kubectl logs -n <namespace> -l app.kubernetes.io/name=bc-correios --tail=50
 ```
 
 7. Verify health probe endpoints are responding correctly:
 
 ```bash
-kubectl exec -n <namespace> -it <pod-name> -- wget -qO- http://localhost:8080/health/live
-kubectl exec -n <namespace> -it <pod-name> -- wget -qO- http://localhost:8080/health/ready
+kubectl exec -n <namespace> -it <pod-name> -- wget -qO- http://localhost:9090/health/live
+kubectl exec -n <namespace> -it <pod-name> -- wget -qO- http://localhost:9090/health/ready
 ```
 
 > **Warning:** The upgrade will trigger a rolling restart of the BC Correios pods. Depending on your replica count and readiness probe configuration, this may cause brief service interruptions. Plan the upgrade during a maintenance window if you run a single replica.

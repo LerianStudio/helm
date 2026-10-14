@@ -261,7 +261,7 @@ kubectl get pods -n <namespace>
 6. Check service logs for any startup issues:
 
 ```bash
-kubectl logs -n <namespace> -l app.kubernetes.io/name=bc-correios --tail=50
+kubectl logs -n <namespace> -l app.kubernetes.io/name=bc-correios,app.kubernetes.io/instance=plugin-bc-correios --tail=50
 ```
 
 7. Verify health probe endpoints are responding correctly:

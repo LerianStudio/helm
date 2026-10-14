@@ -87,7 +87,7 @@ kubectl create secret generic alloy-lerian -n alloy-lerian \
 unset TELEMETRY_TOKEN FLEET_TOKEN
 ```
 
-Do not pass a token with `--from-literal`: the value is visible in `ps -eo args` while the command runs and is saved in shell history. `fleet-token` is needed while `fleetManagement.enabled` is `true` (the default); omit that line only if you set it to `false`.
+Do not pass a token with `--from-literal`: the value is visible in `ps -eo args` while the command runs and is saved in shell history. Keep the `fleet-token` line even if you set `fleetManagement.enabled` to `false`: the default `ALLOY_FLEET_TOKEN` entry in both roles' `extraEnv` references it with `optional: false`, so a Secret without that key leaves the pods in `CreateContainerConfigError`. With Fleet off the value is never used, so a placeholder is enough. To drop the key instead, change that `extraEnv` entry in both `node` and `singleton`.
 
 2. The chart will reference this secret but never create it. If the secret does not exist and `profile: client` is set, the deployment will fail.
 
@@ -406,7 +406,7 @@ kubectl create secret generic alloy-lerian -n alloy-lerian \
 unset TELEMETRY_TOKEN FLEET_TOKEN
 ```
 
-Do not pass a token with `--from-literal`: the value is visible in `ps -eo args` while the command runs and is saved in shell history. `fleet-token` is needed while `fleetManagement.enabled` is `true` (the default); omit that line only if you set it to `false`.
+Do not pass a token with `--from-literal`: the value is visible in `ps -eo args` while the command runs and is saved in shell history. Keep the `fleet-token` line even if you set `fleetManagement.enabled` to `false`: the default `ALLOY_FLEET_TOKEN` entry in both roles' `extraEnv` references it with `optional: false`, so a Secret without that key leaves the pods in `CreateContainerConfigError`. With Fleet off the value is never used, so a placeholder is enough. To drop the key instead, change that `extraEnv` entry in both `node` and `singleton`.
 
 **values.yaml:**
 

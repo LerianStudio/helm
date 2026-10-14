@@ -240,9 +240,13 @@ data:
   # TRACER_BASE_URL empty disables the integration (nil reserver).
   # =============================================================================
   TRACER_BASE_URL: {{ $cm.TRACER_BASE_URL | default "" | quote }}
-  {{- /* The seam accepts "grpc" or "rest". The bundled tracer only serves gRPC
-         when TRACER_GRPC_PORT is set, so selecting grpc against an in-chart
-         tracer that has it unset would dial a port nothing listens on. */ -}}
+  {{- /* Ledger app up to 4.1.x accepts "grpc" or "rest"; from 4.2.0 only "grpc"
+         (rest is refused at boot). The chart default stays "rest" so installs on
+         older images render the same ConfigMap: set "grpc" once TRACER_BASE_URL is
+         set on a 4.2+ ledger (see README, Ledger to tracer transport). The bundled
+         tracer only serves gRPC through its Service when TRACER_GRPC_PORT is set, so
+         selecting grpc against an in-chart tracer that has it unset would dial a
+         port nothing listens on. */ -}}
   {{- $tracerTransport := $cm.TRACER_TRANSPORT | default "rest" }}
   {{- if and $cm.TRACER_BASE_URL (eq (lower $tracerTransport) "grpc") .Values.tracer.enabled (not .Values.tracer.configmap.TRACER_GRPC_PORT) }}
   {{- fail "ledger.configmap.TRACER_TRANSPORT=grpc requires tracer.configmap.TRACER_GRPC_PORT to be set: the bundled tracer keeps its gRPC seam off and its Service exposes only HTTP. Set the port, or use TRACER_TRANSPORT=rest" }}

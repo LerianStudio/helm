@@ -277,9 +277,11 @@ bankTransfer:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
+    # -- Minimum number of available pods. Ignored while maxUnavailable is set
+    # (templates/pdb.yaml renders maxUnavailable first); clear maxUnavailable
+    # to use it.
     minAvailable: 1
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods. Takes precedence over minAvailable
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
@@ -404,13 +406,15 @@ bankTransfer:
     # When MULTI_TENANT_ENABLED=true the chart also emits:
     #   MULTI_TENANT_URL, AWS_REGION, MULTI_TENANT_REDIS_HOST,
     #   MULTI_TENANT_REDIS_PORT, MULTI_TENANT_REDIS_TLS,
-    #   MULTI_TENANT_ENVIRONMENT, MULTI_TENANT_ALLOW_INSECURE_HTTP,
-    #   MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE
+    #   MULTI_TENANT_ENVIRONMENT, MULTI_TENANT_ALLOW_INSECURE_HTTP
     # Optional tuning (lib-commons defaults apply when unset):
     #   MULTI_TENANT_MAX_TENANT_POOLS, MULTI_TENANT_IDLE_TIMEOUT_SEC,
-    #   MULTI_TENANT_TIMEOUT, MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD,
-    #   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC, MULTI_TENANT_CACHE_TTL_SEC
+    #   MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD,
+    #   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC
     # Set those under .configmap as needed.
+    # MULTI_TENANT_TIMEOUT and MULTI_TENANT_CACHE_TTL_SEC are read by the app
+    # (defaults 30 / 120) but no template renders them from .configmap; set
+    # them through bankTransfer.extraEnvVars if you need to change them.
 
     # =================================================================
     # PostgreSQL (primary)
@@ -449,7 +453,10 @@ bankTransfer:
 
     # =================================================================
     # RabbitMQ (event bus, optional)
-    # RABBITMQ_URL is rendered from chart defaults when empty.
+    # RABBITMQ_URL is rendered from a chart default when empty, but that default
+    # embeds a $(RABBITMQ_PASSWORD) reference inside the ConfigMap, which
+    # Kubernetes does not expand for envFrom. When RABBITMQ_ENABLED=true set
+    # RABBITMQ_URL explicitly with the final URL.
     # Retries / timeouts / routing-key prefix are systemplane-managed.
     # RABBITMQ_ENABLED/RABBITMQ_EXCHANGE are NOT pinned — the chart already
     # defaults them in templates/configmap.yaml.
@@ -574,8 +581,8 @@ bankTransfer:
     # MongoDB password. With the bundled subchart it is read from the subchart Secret
     # (key mongodb-passwords); set here only for an external MongoDB without mongodb.auth.existingSecret.
     MONGO_PASSWORD: ""
-    # Authentication (plugin-auth) - client secret for M2M auth
-    # PLUGIN_AUTH_CLIENT_SECRET: ""
+    # PLUGIN_AUTH_CLIENT_ID/PLUGIN_AUTH_CLIENT_SECRET are not read by the app
+    # since v3.1.0 (inbound auth needs only PLUGIN_AUTH_ADDRESS); do not set them.
 
     # License Key (newer app images refuse to boot without it, in every environment)
     # LICENSE_KEY: ""
@@ -589,9 +596,11 @@ bankTransfer:
     # Fees Outbound M2M Credentials (optional - when FEES_AUTH_ENABLED=true)
     # FEES_CLIENT_SECRET: ""
 
-    # Systemplane Secrets (optional - for runtime config)
-    # SYSTEMPLANE_SECRET_MASTER_KEY: ""
-    # SYSTEMPLANE_POSTGRES_DSN: ""
+    # Systemplane: templates/secrets.yaml does not render SYSTEMPLANE_SECRET_MASTER_KEY,
+    # and no SYSTEMPLANE_POSTGRES_DSN exists in the app (systemplane uses the
+    # primary Postgres connection). The app's own README still lists the master
+    # key for local runs; if your image needs it, supply it through
+    # bankTransfer.useExistingSecret.
 
     # JD SPB Credentials (REQUIRED for production)
     # JD_USER_CODE: ""

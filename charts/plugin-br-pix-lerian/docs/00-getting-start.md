@@ -35,7 +35,7 @@ habilitar os workloads do seu caso de uso, apontar Postgres, e definir `LICENSE_
 | Homologação com provider mock | perfil de produção + `adapterProviderMock` | Testar ponta a ponta sem o provider real — **restrito a ambientes de desenvolvimento/homologação controlados**, ver seção 5 |
 
 - Cada perfil sempre inclui a app do domínio junto com sua Systemplane correspondente.
-- `dictProxy`/`cobProxy` e `adapterLerian`/`adapterLerianSystemplane` existem para
+- `dictProxy`/`cobProxy` (desabilitados por padrão) e `adapterLerian`/`adapterLerianSystemplane` existem para
   topologias específicas (provider já detém o estado do domínio, ou integração via
   adapter Lerian em ambiente local) — habilite-os apenas se sua topologia de provider
   exigir esse tier; ver [Hub e proxy não são intercambiáveis](../README.md#hub-and-proxy-are-not-interchangeable) no README do chart.

@@ -77,6 +77,8 @@ dictHub:
 
 > **Note:** The `adapterProviderMock` component is **disabled by default** and should **never** be enabled in production. It is a test mock for the BTG provider.
 
+> **Upgrade note — `dictProxy` and `cobProxy` now ship disabled.** The proxy tier is structural only in this release (it serves `health`, `readyz` and an OpenAPI document with no operations, and returns 404 for every business request), so the supported topology is hub-only and both components default to `enabled: false`. An existing install that relied on the earlier default (`enabled: true`) **loses the `dict-proxy` and `cob-proxy` Deployments, Services, ConfigMaps and Secrets (and their ServiceAccounts, HPAs and PodDisruptionBudgets, where configured) on `helm upgrade`**. Nothing business-facing is lost, because the proxies serve no business route. To keep them, set `dictProxy.enabled=true` / `cobProxy.enabled=true` in your values before upgrading. The `/dict-proxy` and `/cob-proxy` routes in `appsIngress.routes` are skipped while their component is disabled.
+
 ### 2. External PostgreSQL Bootstrap
 
 The chart includes an **optional bootstrap Job** that provisions PostgreSQL databases and roles for the 5 Pix Lerian databases:
@@ -399,7 +401,7 @@ appsIngress:
       serviceName: pixauto
 ```
 
-`values.yaml` ships a complete default `routes` list for each of the three Ingresses (the example above is a subset). A `routes` list you supply replaces the default list instead of extending it, so include every route you need; copying the example alone drops the default `/dict-proxy`, `/cob-proxy`, `/pixauto/readyz` and `/v1/streaming/manifest` routes. The default `appsIngress` publishes `/spi`, `/v1/streaming/manifest` (Exact), `/dict-hub`, `/dict-proxy`, `/cob-hub`, `/cob-proxy`, `/pixauto/v1` and `/pixauto/readyz` (Exact). `/pixauto/internal/v1/*` is deliberately never published and the render fails if a route reintroduces it. `systemplaneIngress` maps `/spi`, `/dict`, `/cob`, `/pixauto` and `/lerian` to the matching `*Systemplane` components; `providersIngress` maps `/provider-mock` and `/lerian`.
+`values.yaml` ships a complete default `routes` list for each of the three Ingresses (the example above is a subset). A `routes` list you supply replaces the default list instead of extending it, so include every route you need; copying the example alone drops the default `/pixauto/readyz` and `/v1/streaming/manifest` routes. The default `appsIngress` lists `/spi`, `/v1/streaming/manifest` (Exact), `/dict-hub`, `/dict-proxy`, `/cob-hub`, `/cob-proxy`, `/pixauto/v1` and `/pixauto/readyz` (Exact), and the chart renders a path only for a route whose component is enabled. With the shipped defaults `dictProxy`, `cobProxy` and `pixauto` are disabled, so `/dict-proxy`, `/cob-proxy`, `/pixauto/v1` and `/pixauto/readyz` render nothing and the Ingress carries `/spi`, `/v1/streaming/manifest`, `/dict-hub` and `/cob-hub`; a route you add for `dictProxy` or `cobProxy` renders only after you enable that component. `/pixauto/internal/v1/*` is deliberately never published and the render fails if a route reintroduces it. `systemplaneIngress` maps `/spi`, `/dict`, `/cob`, `/pixauto` and `/lerian` to the matching `*Systemplane` components; `providersIngress` maps `/provider-mock` and `/lerian`.
 
 | Flag | Default | Description |
 |------|---------|-------------|

@@ -14,7 +14,7 @@ BACEN-compliant Pix platform for the Lerian ecosystem.
 
 This chart manages 14 independently deployable Pix Lerian workloads. Each gets its own Deployment, Service, ConfigMap, Secret, ServiceAccount, and — where configured — HPA and PodDisruptionBudget. Ingress is opt-in, disabled by default on all three surfaces.
 
-**The default render is not a working installation.** `helm template` with no values succeeds, but validates structure only. With defaults: 6 of the 14 workloads are disabled; no Postgres DSN is set, so **no migration Job is rendered** and the schemas are never applied; PostgreSQL, Valkey, RabbitMQ, the external-Postgres bootstrap, and all three ingresses are off; and `LICENSE_KEY` is empty while `DEPLOYMENT_MODE` defaults to `byoc`, which the applications refuse.
+**The default render is not a working installation.** `helm template` with no values succeeds, but validates structure only. With defaults: 8 of the 14 workloads are disabled (including `dictProxy` and `cobProxy`); no Postgres DSN is set, so **no migration Job is rendered** and the schemas are never applied; PostgreSQL, Valkey, RabbitMQ, the external-Postgres bootstrap, and all three ingresses are off; and `LICENSE_KEY` is empty while `DEPLOYMENT_MODE` defaults to `byoc`, which the applications refuse.
 
 ## Compatibility
 
@@ -174,10 +174,10 @@ Critical contracts, each stated once here:
 | `adapterProviderMock` | Provider test double | No | 4103 | `/provider-mock` |
 | `dictHub` | DICT key directory — business flows | Yes | 4104 | `/dict-hub` |
 | `dictHubVsync` | DICT reconciliation worker (singleton) | No | 4105 | none |
-| `dictProxy` | DICT proxy tier | Yes | 4106 | `/dict-proxy` |
+| `dictProxy` | DICT proxy tier (structural only) | No | 4106 | `/dict-proxy` |
 | `dictSystemplane` | Runtime configuration plane for DICT | Yes | 4107 | `/dict` |
 | `cobHub` | COB / BR Code charge operations | Yes | 4108 | `/cob-hub` |
-| `cobProxy` | COB proxy tier | Yes | 4109 | `/cob-proxy` |
+| `cobProxy` | COB proxy tier (structural only) | No | 4109 | `/cob-proxy` |
 | `cobSystemplane` | Runtime configuration plane for COB | Yes | 4110 | `/cob` |
 | `adapterLerian` | Lerian provider adapter | No | 4113 | `/lerian` |
 | `adapterLerianSystemplane` | Runtime configuration plane for the adapter | No | 4115 | `/lerian` |
@@ -675,6 +675,8 @@ Before upgrading:
 2. **Read `CHANGELOG.md`** in this directory and the [compatibility table](#compatibility).
 3. **Back up the databases** whenever the target includes schema changes. This is the only reliable way back.
 4. **Review what the upgrade will do**, from a render or with `helm diff`. Optional.
+
+**`dictProxy` and `cobProxy` default to disabled.** An existing release that relied on the earlier `enabled: true` default loses the `dict-proxy` and `cob-proxy` workloads (Deployment, Service, ConfigMap, Secret, and any ServiceAccount, HPA and PodDisruptionBudget) on `helm upgrade`. To keep them, set `dictProxy.enabled=true` / `cobProxy.enabled=true`. See [Hub and proxy are not interchangeable](#hub-and-proxy-are-not-interchangeable).
 
 Then run the same command as [step 4 of the quickstart](#production-quickstart) with the new `--version`. Migration hooks run **before** the new pods roll out, so a failing migration blocks the release rather than leaving a partial rollout.
 

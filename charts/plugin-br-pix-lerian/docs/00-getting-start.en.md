@@ -35,7 +35,7 @@ workloads for your use case, pointing at Postgres, and setting `LICENSE_KEY` +
 | Homologation with provider mock | production profile + `adapterProviderMock` | End-to-end testing without a real provider — **restricted to controlled dev/homologation environments**, see section 5 |
 
 - Every profile always pairs a domain's app with its matching Systemplane workload.
-- `dictProxy`/`cobProxy` and `adapterLerian`/`adapterLerianSystemplane` exist for
+- `dictProxy`/`cobProxy` (disabled by default) and `adapterLerian`/`adapterLerianSystemplane` exist for
   specific topologies (a provider already owns the domain's state, or a local
   development integration via the Lerian adapter) — enable them only when your
   provider topology calls for that tier; see

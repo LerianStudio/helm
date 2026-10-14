@@ -4,7 +4,7 @@
 # is. Its job is to drive the render through the branches the chart's defaults
 # leave untaken, so a regression in one of them reds the PR that introduces it:
 #
-#   * all 14 components enabled at once, including the six that ship disabled;
+#   * all 14 components enabled at once, including the eight that ship disabled (the two proxies among them);
 #   * the three shared Ingresses and both per-component Ingresses, with a
 #     className that is a valid YAML integer ("123") -- spec.ingressClassName is
 #     a string field, so an unquoted render is rejected by the API server;
@@ -79,6 +79,7 @@ dictHubVsync:
   extraEnvVars:
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.example.invalid:4317"
 dictProxy:
+  # Ships disabled in values.yaml; the fixture opts in so the proxy templates stay rendered.
   enabled: true
 dictSystemplane:
   enabled: true
@@ -90,6 +91,7 @@ cobHub:
   secrets:
     DATABASE_URL: "postgres://pixswitch:render-fixture-only@postgres.example.invalid:5432/pix-cob?sslmode=disable"
 cobProxy:
+  # Ships disabled in values.yaml; the fixture opts in so the proxy templates stay rendered.
   enabled: true
 cobSystemplane:
   enabled: true

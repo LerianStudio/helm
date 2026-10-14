@@ -94,7 +94,7 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- end -}}
 {{- end -}}
 {{- end -}}
-{{- range $row := list (list "m2mSubject" "EXECUTOR_M2M_SUBJECT" "the `sub` of the executor's M2M token (execution_owner)") (list "heartbeatEvery" "EXECUTOR_HEARTBEAT_EVERY" "the INDETERMINATE heartbeat period, a Go duration > 0 (e.g. 1m)") (list "responseDeadlineMargin" "RESPONSE_DEADLINE_MARGIN" "a Go duration > 0, the SAME value as the Sisbajud Mensageria (e.g. 2h)") -}}
+{{- range $row := list (list "m2mSubject" "EXECUTOR_M2M_SUBJECT" "the `sub` of the executor's M2M token (execution_owner)") (list "heartbeatEvery" "EXECUTOR_HEARTBEAT_EVERY" "the INDETERMINATE heartbeat period, a Go duration > 0 (e.g. 1m)") (list "responseDeadlineMargin" "RESPONSE_DEADLINE_MARGIN" "a Go duration > 0, the SAME value as the Sisbajud Mensageria (e.g. 2h)") (list "streamingHubTenantId" "STREAMING_HUB_TENANT_ID" "the Streaming Hub tenant the probe answerer accepts (the hub deployment's own STREAMING_HUB_TENANT_ID)") -}}
 {{- if not (include $val (dict "cm" $cm "k" (index $row 1) "p" $ex "f" (index $row 0) "d" "") | trim) -}}
 {{- include $f (dict "msg" (printf "%s is required in executor mode: %s." (index $row 1) (index $row 2)) "set" (printf "sisbajud.executor.%s" (index $row 0))) -}}
 {{- end -}}

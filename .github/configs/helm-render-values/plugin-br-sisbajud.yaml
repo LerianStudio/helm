@@ -23,6 +23,7 @@ sisbajud:
     baseUrl: "https://mensageria.example.invalid"
     mtlsEnabled: false
   executor:
+    streamingHubTenantId: "default"
     m2mSubject: "render-fixture-subject"
     heartbeatEvery: "1m"
     responseDeadlineMargin: "2h"

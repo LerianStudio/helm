@@ -237,7 +237,8 @@ sisbajud:
     # -- EXECUTOR_M2M_SUBJECT: `sub` of the executor's M2M token (required).
     #    MENSAGERIA_CLIENT_ID / MENSAGERIA_CLIENT_SECRET go in secrets.
     m2mSubject: ""
-    # -- STREAMING_HUB_TENANT_ID: Streaming Hub canary tenant (optional).
+    # -- STREAMING_HUB_TENANT_ID: Streaming Hub tenant (required in executor mode;
+    #    the same value as the Streaming Hub deployment's STREAMING_HUB_TENANT_ID).
     streamingHubTenantId: ""
     # -- EXECUTOR_HEARTBEAT_EVERY (Go duration, required, e.g. "1m").
     heartbeatEvery: ""

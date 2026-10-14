@@ -59,7 +59,7 @@ global:
 
 The `minDomains` field controls the minimum number of eligible topology domains required for `DoNotSchedule` (hard) topology spread constraints. When set to a value greater than `0`, if the number of eligible domains is less than `minDomains`, the scheduler treats the global minimum as `0`. This prevents a hard hostname spread from stacking replicas on a single node when insufficient nodes are available — instead, the extra replica waits for a new node to be provisioned.
 
-**Use case:** In autoscaled clusters (e.g., with Karpenter), setting `minDomains: 1` ensures that when a hard hostname spread constraint is active and only one node exists, the scheduler will trigger node autoscaling rather than violating the spread constraint by placing multiple replicas on the same node.
+**Use case:** In autoscaled clusters (e.g., with Karpenter), setting `minDomains: 2` ensures that when a hard hostname spread constraint is active and only one node exists, the scheduler will trigger node autoscaling rather than violating the spread constraint by placing multiple replicas on the same node.
 
 **Example configuration:**
 
@@ -70,10 +70,12 @@ global:
       enabled: true
       hostname: DoNotSchedule
       maxSkew: 1
-      minDomains: 1
+      minDomains: 2
 ```
 
-> **Note:** `minDomains` only affects `DoNotSchedule` constraints. If your topology spread constraints use `ScheduleAnyway` (soft constraints), this field has no effect. The default value of `0` disables this behavior, maintaining backward compatibility.
+> **Note:** `minDomains` takes effect only while the number of eligible domains is lower than its value, so `minDomains: 1` has no effect on a cluster that has a single node; use `2` to make a hard hostname spread wait for a second node.
+>
+> `minDomains` only affects `DoNotSchedule` constraints. If your topology spread constraints use `ScheduleAnyway` (soft constraints), this field has no effect. The default value of `0` disables this behavior, maintaining backward compatibility.
 
 #### nodeTaintsPolicy
 
@@ -129,7 +131,7 @@ global:
       enabled: true
       hostname: DoNotSchedule
       maxSkew: 1
-      minDomains: 1
+      minDomains: 2
       nodeTaintsPolicy: "Honor"
 ```
 
@@ -156,7 +158,7 @@ This upgrade requires no manual migration steps. The new topology spread constra
 **Recommended upgrade process:**
 
 1. Review the new `minDomains` and `nodeTaintsPolicy` fields to determine if they are beneficial for your cluster environment.
-2. If running on an autoscaled cluster (e.g., with Karpenter), consider setting `minDomains: 1` and `nodeTaintsPolicy: "Honor"` to improve pod scheduling behavior.
+2. If running on an autoscaled cluster (e.g., with Karpenter), consider setting `minDomains: 2` and `nodeTaintsPolicy: "Honor"` to improve pod scheduling behavior.
 3. Preview the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
 4. Run the upgrade command during a maintenance window.
 5. Verify all pods are running and properly distributed:

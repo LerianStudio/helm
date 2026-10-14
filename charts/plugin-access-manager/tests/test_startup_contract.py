@@ -281,6 +281,22 @@ class StartupContract(unittest.TestCase):
                                  'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only'}}},
                    'identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY')
 
+    def test_google_directory_key_length(self):
+        values = {'identity': {
+            'configmap': {'GOOGLE_DIRECTORY_ENABLED': 'true', 'GOOGLE_DIRECTORY_CLIENT_ID': 'id',
+                          'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'},
+            'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only',
+                        'GOOGLE_DIRECTORY_ENCRYPTION_KEY': ' ' + 'k' * 31 + ' '}}}
+        self.fails(values, 'at least 32 bytes')
+        values['identity']['secrets']['GOOGLE_DIRECTORY_ENCRYPTION_KEY'] = 'k' * 32
+        self.succeeds(values)
+
+    def test_google_directory_extra_must_be_string(self):
+        for value in [True, 1]:
+            with self.subTest(value=value):
+                self.fails({'identity': {'extraEnvVars': {'GOOGLE_DIRECTORY_ENABLED': value}}},
+                           'must be a quoted string')
+
     def test_google_directory_existing_secret(self):
         plain = {'GOOGLE_DIRECTORY_ENABLED': 'true', 'GOOGLE_DIRECTORY_CLIENT_ID': 'id',
                  'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'}

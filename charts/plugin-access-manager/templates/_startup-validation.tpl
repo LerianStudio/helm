@@ -50,9 +50,11 @@ validates their contents.
 {{/*
 Google Workspace directory (identity 3.12.0+). Identity refuses to boot with
 GOOGLE_DIRECTORY_ENABLED=true unless all four GOOGLE_DIRECTORY_* values are
-set, so the chart refuses the same release at render time. The two secret keys
-are refused in identity.configmap (the chart would drop them) and in
-identity.extraEnvVars (it writes a ConfigMap). With
+set and GOOGLE_DIRECTORY_ENCRYPTION_KEY is at least 32 bytes, so the chart
+refuses the same release at render time. The two secret keys are refused in
+identity.configmap (the chart would drop them) and in identity.extraEnvVars
+(it writes a ConfigMap). The plain keys must be quoted strings in
+extraEnvVars, which is written to ConfigMap.data as is. With
 identity.useExistingSecret only the Secret name is checked: offline rendering
 cannot read its contents.
 */}}
@@ -63,6 +65,9 @@ cannot read its contents.
 {{- range $key := list "GOOGLE_DIRECTORY_ENABLED" "GOOGLE_DIRECTORY_CLIENT_ID" "GOOGLE_DIRECTORY_REDIRECT_URL" -}}
 {{- if and (get $cm $key) (hasKey $extra $key) -}}
 {{- fail (printf "%s is set in both identity.configmap and identity.extraEnvVars; keep only identity.configmap.%s" $key $key) -}}
+{{- end -}}
+{{- if and (hasKey $extra $key) (not (kindIs "string" (get $extra $key))) -}}
+{{- fail (printf "identity.extraEnvVars.%s must be a quoted string because it renders in ConfigMap.data; alternatively use identity.configmap.%s" $key $key) -}}
 {{- end -}}
 {{- end -}}
 {{- range $key := list "GOOGLE_DIRECTORY_CLIENT_SECRET" "GOOGLE_DIRECTORY_ENCRYPTION_KEY" -}}
@@ -91,6 +96,10 @@ cannot read its contents.
 {{- end -}}
 {{- if $missing -}}
 {{- fail (printf "GOOGLE_DIRECTORY_ENABLED=true needs a non-empty %s; identity refuses to boot without them" (join ", " $missing)) -}}
+{{- end -}}
+{{- /* Same check as identity: whitespace trimmed, length in bytes. */ -}}
+{{- if and (not $.Values.identity.useExistingSecret) (lt (len (get $secrets "GOOGLE_DIRECTORY_ENCRYPTION_KEY" | toString | trim)) 32) -}}
+{{- fail "GOOGLE_DIRECTORY_ENABLED=true needs identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY of at least 32 bytes; identity refuses to boot with a shorter key" -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

@@ -41,11 +41,11 @@ mutate that package.
   `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, the chart refuses to render
   unless `GOOGLE_DIRECTORY_CLIENT_ID` and `GOOGLE_DIRECTORY_REDIRECT_URL` are set in
   `identity.configmap`, and `GOOGLE_DIRECTORY_CLIENT_SECRET` and
-  `GOOGLE_DIRECTORY_ENCRYPTION_KEY` in `identity.secrets`. With
+  `GOOGLE_DIRECTORY_ENCRYPTION_KEY` (at least 32 bytes) in `identity.secrets`. With
   `identity.useExistingSecret=true` it checks only that `identity.existingSecretName`
   is set; add the two secret keys to that Secret yourself. The two secret keys are
-  refused in `identity.configmap` and `identity.extraEnvVars`. Unset, none of the
-  five keys is rendered.
+  refused in `identity.configmap` and `identity.extraEnvVars`; the plain keys must be
+  quoted strings in `extraEnvVars`. Unset, none of the five keys is rendered.
 - These checks validate chart-visible settings only; they do not certify an
   end-to-end upgrade, TLS trust, licenses, or existing users' MFA recovery paths.
   See the [9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md) before rollout.

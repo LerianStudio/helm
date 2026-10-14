@@ -106,7 +106,8 @@ Name that pull secret in `global.imagePullSecrets`; every workload inherits it w
 kubectl get pods -n <namespace> -l app.kubernetes.io/instance=<release-name>
 kubectl get jobs -n <namespace> -l app.kubernetes.io/instance=<release-name>
 
-# A migration Job that is ABSENT is the common cause of a pod that never becomes ready
+# Successful hook Jobs are deleted by Helm (hook-succeeded), so an empty list after a
+# good install is normal. A FAILED Job is kept: look for it here
 kubectl get jobs -n <namespace> -o name | grep migrations
 
 # First place a failed install explains itself
@@ -284,7 +285,7 @@ Set these before `helm install`. **"Required" does not mean the same thing on ev
 |---|---|---|---|
 | `DEPLOYMENT_MODE` | `configmap` | Application boot | Accepts `local`, `byoc`, `saas`, lower-case and untrimmed. **Required to be set explicitly** on `spi`, `dictHub`, `dictProxy`, `cobHub`, `cobProxy`, `pixauto` when `MULTI_TENANT_ENABLED=true`. Chart default is `byoc`. |
 | `LICENSE_KEY` | `secrets` | Application boot | **Required** whenever `DEPLOYMENT_MODE` is anything other than `local`. Empty is tolerated only in `local`. The chart ships the key on all 14 workloads. |
-| `ORGANIZATION_IDS` | `configmap` | Application boot | **Required together with `LICENSE_KEY`** — the license client refuses to initialise without it and the workload exits at boot. Use `global`, or a comma-separated list to scope it. Eight workloads build a license client and need it: `spi`, `dictHub`, `dictProxy`, `dictHubVsync`, `cobHub`, `cobProxy`, `pixauto`, `adapterLerian`. The five Systemplane workloads and `adapterProviderMock` do not, even though they carry `LICENSE_KEY`. `values-template.yaml` sets it on all eight; `values.yaml` only on `adapterLerian` and `pixauto` — add the other six if you start from defaults. |
+| `ORGANIZATION_IDS` | `configmap` | Application boot | **Required together with `LICENSE_KEY`** — the license client refuses to initialise without it and the workload exits at boot. Use `global`, or a comma-separated list to scope it. Eight workloads build a license client and need it: `spi`, `dictHub`, `dictProxy`, `dictHubVsync`, `cobHub`, `cobProxy`, `pixauto`, `adapterLerian`. The five Systemplane workloads and `adapterProviderMock` do not, even though they carry `LICENSE_KEY`. `values-template.yaml` sets it on all eight. `values.yaml` sets none; the templates default it to `global` on seven workloads (`spi`, `dictHub`, `dictHubVsync`, `dictProxy`, `cobHub`, `cobProxy`, `pixauto`) and to **empty on `adapterLerian`** — set it there explicitly whenever it carries a `LICENSE_KEY`. |
 | `ORGANIZATION_ID` | `configmap` | Application boot | Single-tenant business identity, read by `spi`, `dictHub`, `dictHubVsync`, `dictProxy`, `cobHub`, `pixauto`. The workload reads its domain's `organization_id` from the Systemplane store first and falls back to this value when the store holds nothing — so on `pixauto`, with neither set, every request answers `403 TENANT_CONFIG_NOT_FOUND`. **Must be empty** when `MULTI_TENANT_ENABLED=true` on `cobHub` and `pixauto`; a value there refuses the boot. Not interchangeable with `ORGANIZATION_IDS`. |
 | `ISPB` | `configmap` | Readiness | Single-tenant identity on `spi`, `dictHub`, `dictHubVsync`. Required to reach ready — see [Health and readiness reference](#health-and-readiness-reference). |
 | `DATABASE_URL` | `secrets` | Application boot | **Required** on `spi`, `dictHub`, `dictProxy`, `cobProxy` in every mode. **Required in single-tenant only** on `cobHub`, `dictHubVsync`, `pixauto`. Not used by `adapterLerian`, `adapterProviderMock`. |
@@ -497,12 +498,14 @@ Within one workload, highest precedence first:
 2. the imported Secret — `<component>.secrets`, or your existing Secret
 3. `<component>.configmap`
 
-Set a key in only one of them unless you mean to override. The chart **fails the render** if the same key appears in both `extraEnvVars` and `secrets` with opposing values — two deliberate overrides disagreeing is a mistake, not a preference.
+Set a key in only one of them unless you mean to override. The chart does **not** check this in general. The one render-time check is `PLUGIN_AUTH_ENABLED` on `pixauto`, evaluated only when `appsIngress` is enabled, `pixauto` is enabled and `appsIngress.routes` carries a `pixauto` route: the render then fails if `pixauto.extraEnvVars` and `pixauto.secrets` carry opposing true/false values for it. For every other key, `extraEnvVars` silently wins over `secrets` — set a key in only one place.
 
 Two things this precedence does **not** mean:
 
 - An open map means the chart forwards the key. It does **not** mean the binary reads or validates it. Unknown keys are ignored silently.
 - When `useExistingSecret: true`, the inline `secrets` map is not rendered at all, so it is not a source — see [Production secret management](#production-secret-management).
+
+**OTLP endpoint.** `OTEL_EXPORTER_OTLP_ENDPOINT` resolves as `<component>.configmap.OTEL_EXPORTER_OTLP_ENDPOINT` > `global.observability.otlpEndpoint`. When telemetry is on and neither is set, each Deployment injects `HOST_IP` (downward API) and `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` as explicit env entries, which beat the ConfigMap — so a node-local collector is the default. Setting either key above, or the same name in `extraEnvVars`, suppresses that injection.
 
 The chart reserves the pod annotation carrying the ConfigMap/Secret checksum, which is what rolls the pods when configuration changes. Overriding it would stop configuration updates from restarting pods, so the chart refuses it.
 
@@ -645,7 +648,7 @@ Also check the mode value itself: it is matched **case-sensitively and untrimmed
 
 ### A migration or bootstrap Job failed
 
-- **The Job is absent.** The DSN is empty and `useExistingSecret` is false, so the chart skipped it — the schema was never applied. Set `secrets.DATABASE_URL`.
+- **The Job is absent.** A Job that succeeded is deleted by Helm (`hook-succeeded`), so absence alone proves nothing: check the release's pre-install/pre-upgrade hook events and the readiness of the pods. If it never ran, the DSN is empty and `useExistingSecret` is false, so the chart skipped it — the schema was never applied. Set `secrets.DATABASE_URL`.
 - **The Job cannot connect.** The server in the DSN was not reachable when the hook ran: a database never provisioned, or a DSN aimed at the bundled `postgresql` subchart. See [Migration Jobs](#migration-jobs).
 - **Authentication failure on a bootstrap Job.** Check the admin credentials. Empty inline values fail at render, so a runtime failure points at wrong values or missing privileges.
 - **`invalid command \getenv`.** The bootstrap image is older than psql 15. The chart pins `postgres:17`; a pull-through mirror or an override may be serving something older.

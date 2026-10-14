@@ -362,9 +362,9 @@ securityContext:
 
 The chart supports **three Ingress resources** for routing external traffic:
 
-- **appsIngress** — Routes for user-facing APIs (spi, dict-hub, cob-hub, pixauto, adapter-lerian)
-- **providersIngress** — Routes for provider proxies (dict-proxy, cob-proxy, adapter-provider-mock)
-- **systemplanesIngress** — Routes for systemplane APIs (all `*-systemplane` components)
+- **appsIngress** — Routes for the application APIs (spi, dict-hub, dict-proxy, cob-hub, cob-proxy, pixauto)
+- **providersIngress** — Routes for the provider adapters (adapter-provider-mock, adapter-lerian)
+- **systemplaneIngress** — Routes for the Systemplane admin APIs (all `*-systemplane` components)
 
 Each Ingress is independently enabled and configured:
 
@@ -382,25 +382,33 @@ appsIngress:
         - "pix.example.com"
   routes:
     - path: /spi
+      pathType: Prefix
       component: spi
-    - path: /dict
+      serviceName: spi
+    - path: /dict-hub
+      pathType: Prefix
       component: dictHub
-    - path: /cob
+      serviceName: dict-hub
+    - path: /cob-hub
+      pathType: Prefix
       component: cobHub
-    - path: /pixauto
+      serviceName: cob-hub
+    - path: /pixauto/v1
+      pathType: Prefix
       component: pixauto
-    - path: /adapter-lerian
-      component: adapterLerian
+      serviceName: pixauto
 ```
+
+`values.yaml` ships a complete default `routes` list for each of the three Ingresses (the example above is a subset). The default `appsIngress` publishes `/spi`, `/v1/streaming/manifest` (Exact), `/dict-hub`, `/dict-proxy`, `/cob-hub`, `/cob-proxy`, `/pixauto/v1` and `/pixauto/readyz` (Exact). `/pixauto/internal/v1/*` is deliberately never published and the render fails if a route reintroduces it. `systemplaneIngress` maps `/spi`, `/dict`, `/cob`, `/pixauto` and `/lerian` to the matching `*Systemplane` components; `providersIngress` maps `/provider-mock` and `/lerian`.
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `<ingress>.enabled` | `false` | Enable the Ingress resource |
-| `<ingress>.className` | `""` | IngressClass name (e.g., `nginx`, `traefik`) |
+| `<ingress>.className` | `"nginx"` | IngressClass name (e.g., `nginx`, `traefik`) |
 | `<ingress>.annotations` | `{}` | Ingress annotations (e.g., cert-manager, rate limiting) |
 | `<ingress>.hosts` | `[]` | List of hostnames |
 | `<ingress>.tls` | `[]` | TLS configuration |
-| `<ingress>.routes` | `[]` | List of path-to-component mappings |
+| `<ingress>.routes` | see `values.yaml` | List of path-to-component mappings (defaults shipped for all three Ingresses) |
 
 > **Warning:** Each route in `routes` must name a component that exists in `values.yaml` and is enabled. The `component` key must match the camelCase values key (e.g., `dictHub`, not `dict-hub`). The optional `serviceName` key must match the kebab-case Service suffix (e.g., `dict-hub`). If both are set, they must name the **same component**, otherwise the rule pairs one component's Service with another component's port and every request fails.
 
@@ -411,7 +419,7 @@ All component Deployments include a **wait-for-dependencies init container** tha
 ```yaml
 initContainers:
   - name: wait-for-dependencies
-    image: busybox:1.36
+    image: busybox:1.37
     command: ["/bin/sh", "-c"]
     args:
       - |
@@ -607,15 +615,21 @@ appsIngress:
         - "pix.example.com"
   routes:
     - path: /spi
+      pathType: Prefix
       component: spi
-    - path: /dict
+      serviceName: spi
+    - path: /dict-hub
+      pathType: Prefix
       component: dictHub
-    - path: /cob
+      serviceName: dict-hub
+    - path: /cob-hub
+      pathType: Prefix
       component: cobHub
-    - path: /pixauto
+      serviceName: cob-hub
+    - path: /pixauto/v1
+      pathType: Prefix
       component: pixauto
-    - path: /adapter-lerian
-      component: adapterLerian
+      serviceName: pixauto
 
 spi:
   replicaCount: 3

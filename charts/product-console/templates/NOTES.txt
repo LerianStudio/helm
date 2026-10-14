@@ -154,17 +154,19 @@ Secrets (sensitive):
   server answers, no MongoDB dependency; available since app image 1.10.0).
 
   Readiness does NOT gate on MongoDB, deliberately. '/api/admin/health/readyz'
-  returns 200 only once the app has connected to MongoDB, and the image this
-  chart pins connects on the first request that needs the database rather than
-  at startup. Readiness on readyz therefore DEADLOCKS a fresh pod: not Ready,
-  so no traffic, so no connection, so never Ready. Measured on image 1.12.0:
-  readyz stays 503 for as long as the pod is left alone, and turns 200 within
-  three seconds of the first request to a Mongo-backed route.
+  returns 200 only while the app holds a MongoDB connection. Console images
+  before 2.0 opened it on the first request that needs the database rather
+  than at startup, so readyz DEADLOCKED a fresh pod: not Ready, so no traffic,
+  so no connection, so never Ready. From 2.0 on the console connects at
+  startup (retrying, and exiting non-zero if every attempt fails), so the
+  image this chart pins (image.tag in values.yaml) does not deadlock; the
+  chart keeps 'alive' as the default anyway.
 
-  - Running an image that connects EAGERLY at startup? Set
-    'readinessProbe.path: /api/admin/health/readyz' to have readiness gate on
-    the database again. Scrape readyz either way: it is the honest report of
-    whether this pod can serve a Mongo-backed page.
+  - To have readiness gate on the database, set
+    'readinessProbe.path: /api/admin/health/readyz'. Do it only on a console
+    image from 2.0 on; on an older one the pod deadlocks. Scrape readyz either
+    way: it is the honest report of whether this pod can serve a Mongo-backed
+    page.
   - Keep liveness on a Mongo-INDEPENDENT endpoint. Do NOT repoint liveness at
     readyz or any Mongo-dependent path, or a disconnected Mongo would
     crash-loop the pod instead of letting it wait for the database.

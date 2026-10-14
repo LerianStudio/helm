@@ -174,8 +174,8 @@ AWS_REGION: {{ . | quote }}
 STREAMING_ENABLED: {{ (hasKey $cm "STREAMING_ENABLED" | ternary (index $cm "STREAMING_ENABLED") "false") | quote }}
 # --- OpenTelemetry (lerian-common.otel.env) ------------------------------------------
 {{ include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "false" "endpointDefault" "localhost:4317" "deploymentEnvironmentDefault" $envName) }}
-{{- include $kv (dict "cm" $cm "p" $s.observability "f" "serviceName" "k" "OTEL_RESOURCE_SERVICE_NAME" "d" "plugin-sisbajud-lerian") }}
-{{- include $kv (dict "cm" $cm "p" $s.observability "f" "libraryName" "k" "OTEL_LIBRARY_NAME" "d" "github.com/LerianStudio/br-sisbajud") }}
+{{- include $kv (dict "cm" $cm "p" $s.observability "f" "serviceName" "k" "OTEL_RESOURCE_SERVICE_NAME" "d" "plugin-br-sisbajud") }}
+{{- include $kv (dict "cm" $cm "p" $s.observability "f" "libraryName" "k" "OTEL_LIBRARY_NAME" "d" "github.com/LerianStudio/plugin-br-sisbajud") }}
 # --- Rate limiting (lerian-common.rateLimit.env) ------------------------------------
 {{ include "lerian-common.rateLimit.env" (dict "configmap" $cm "params" $s.rateLimit) }}
 # --- Swagger -----------------------------------------------------------------------

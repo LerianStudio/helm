@@ -331,7 +331,7 @@ sisbajud:
   rateLimit: {}
 
   observability:
-    serviceName: "plugin-sisbajud-lerian"
+    serviceName: "plugin-br-sisbajud"
     libraryName: "github.com/LerianStudio/br-sisbajud"
 
   swagger:

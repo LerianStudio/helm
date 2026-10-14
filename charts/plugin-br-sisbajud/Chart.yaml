@@ -22,7 +22,7 @@ version: 1.0.0
 
 # Default image tag for the service AND the migrations Job (override with
 # sisbajud.image.tag / migrations.image.tag).
-appVersion: "1.0.0-beta.1"
+appVersion: "1.0.0-beta.2"
 
 keywords:
   - midaz

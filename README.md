@@ -254,7 +254,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Plugin BR SISBAJUD
 
-SISBAJUD executor: pulls judicial orders from the Sisbajud Mensageria (br-sfn) over mTLS, executes them on Midaz and posts the results back. Replaces `br-sisbajud`.
+SISBAJUD executor: pulls judicial orders from the Sisbajud Mensageria over TLS (optional mTLS), executes them on Midaz and posts the results back. Complements `br-sisbajud`, which deploys the Mensageria the executor calls; run both.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-sisbajud).
 

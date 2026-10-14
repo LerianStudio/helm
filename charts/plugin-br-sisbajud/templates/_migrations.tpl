@@ -33,15 +33,15 @@ Password env entry for the runner, or nothing when no source exists
     secretKeyRef:
       name: {{ $ctx.Values.migrations.existingSecret }}
       key: POSTGRES_PASSWORD
+{{- else if hasKey $extra "POSTGRES_PASSWORD" -}}
+- name: POSTGRES_PASSWORD
+  value: {{ index $extra "POSTGRES_PASSWORD" | toString | quote }}
 {{- else if $s.useExistingSecret -}}
 - name: POSTGRES_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ include "plugin-br-sisbajud.secretName" $ctx }}
       key: POSTGRES_PASSWORD
-{{- else if hasKey $extra "POSTGRES_PASSWORD" -}}
-- name: POSTGRES_PASSWORD
-  value: {{ index $extra "POSTGRES_PASSWORD" | toString | quote }}
 {{- else if ($s.secrets | default dict).POSTGRES_PASSWORD -}}
 - name: POSTGRES_PASSWORD
   valueFrom:

@@ -317,6 +317,9 @@ class StartupContract(unittest.TestCase):
         for key in ['GOOGLE_DIRECTORY_ENABLED', 'GOOGLE_DIRECTORY_CLIENT_ID', 'GOOGLE_DIRECTORY_REDIRECT_URL']:
             with self.subTest(key=key):
                 self.fails({'identity': {'configmap': {key: 'one'}, 'extraEnvVars': {key: 'two'}}}, 'both')
+        # An explicit false is a value too: extraEnvVars "true" must not override it silently.
+        self.fails({'identity': {'configmap': {'GOOGLE_DIRECTORY_ENABLED': False},
+                                 'extraEnvVars': {'GOOGLE_DIRECTORY_ENABLED': 'true'}}}, 'both')
 
     def test_init_user_post_install_only(self):
         docs = self.succeeds({'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}}})

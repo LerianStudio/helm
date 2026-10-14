@@ -63,7 +63,9 @@ cannot read its contents.
 {{- $extra := .Values.identity.extraEnvVars | default dict -}}
 {{- $secrets := .Values.identity.secrets | default dict -}}
 {{- range $key := list "GOOGLE_DIRECTORY_ENABLED" "GOOGLE_DIRECTORY_CLIENT_ID" "GOOGLE_DIRECTORY_REDIRECT_URL" -}}
-{{- if and (get $cm $key) (hasKey $extra $key) -}}
+{{- /* "Set" includes an explicit false: false + extraEnvVars "true" would enable it. */ -}}
+{{- $named := get $cm $key -}}
+{{- if and (not (kindIs "invalid" $named)) (ne (toString $named) "") (hasKey $extra $key) -}}
 {{- fail (printf "%s is set in both identity.configmap and identity.extraEnvVars; keep only identity.configmap.%s" $key $key) -}}
 {{- end -}}
 {{- if and (hasKey $extra $key) (not (kindIs "string" (get $extra $key))) -}}

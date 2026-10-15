@@ -61,7 +61,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ if .Values.auth.useExistingSecret }}{{ .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
+              name: {{ if .Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding the auth environment (AUTHORIZER_CLIENT_SECRET, LICENSE_KEY, ORGANIZATION_IDS, ...), or set auth.useExistingSecret=false.\n" .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-auth.fullname" . }}
           {{ if (index .Values "otel-collector-lerian").enabled }}

@@ -34,11 +34,20 @@ $ helm list -n midaz
 
 ## Prerequisites
 
-Before installing this chart, you need to create a Kubernetes secret containing the API key for authenticating with the central collector:
+Before installing this chart, you need to create a Kubernetes secret containing the API key for authenticating with the central collector. Do not pass the key with `--from-literal`: it would be visible in the process list and in your shell history. Read it without echo and load it from a private file instead:
 
 ```console
-$ kubectl create secret generic otel-api-key --from-literal=api-key=<your-api-key> -n midaz
+$ umask 077
+$ read -rs OTEL_API_KEY            # paste the key from Lerian; not echoed, not stored in history
+$ KEYFILE=$(mktemp)
+$ printf '%s' "$OTEL_API_KEY" > "$KEYFILE"
+$ kubectl create secret generic otel-api-key --from-file=api-key="$KEYFILE" -n midaz
+$ rm -f "$KEYFILE"; unset OTEL_API_KEY
 ```
+
+The Secret must be named `otel-api-key` and carry the key `api-key`; the collector pod does not start without it.
+
+You must also set your own `client.id` (see [Customizing the Client ID](#customizing-the-client-id)). The chart default is the placeholder `Firmino`, and nothing validates it: if you do not override it, all telemetry is stamped with that placeholder.
 
 ---
 
@@ -50,6 +59,7 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 - **OTLP**: Receives traces, logs, and metrics from instrumented applications via gRPC (port 4317) and HTTP (port 4318)
 - **k8s_cluster**: Collects cluster-level state information (pod status, deployments, HPA replicas, container status, node conditions)
 - **kubeletstats**: Collects pod/container performance metrics (CPU, memory) from the node's Kubelet
+- **jaeger** and **zipkin**: Defined by the upstream subchart defaults (ports 6831/UDP, 14250, 14268 and 9411), but no pipeline uses them. See [Node ports](#node-ports).
 - **k8sobjects**: Watches Kubernetes events (pod scheduling, image pulls, OOMKills, etc.) for the namespaces in `k8sobjects.objects[0].namespaces` (default: `midaz` and `midaz-plugins`)
 
 ### Processors
@@ -130,7 +140,7 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `config.processors.resource/add_client_id.attributes[0].value` | Client ID for multi-tenancy | `Firmino` |
+| `config.processors.resource/add_client_id.attributes[0].value` | Client ID for multi-tenancy. **Placeholder default: set your own value.** The chart does not validate it. | `Firmino` |
 
 ---
 
@@ -177,15 +187,49 @@ Carries the RED metrics derived from spans by the `spanmetrics` connector.
 
 ## Pod identity (hostNetwork + pod_association)
 
-The chart deploys the collector as a DaemonSet with `hostNetwork: true` and `dnsPolicy: ClusterFirstWithHostNet`. `hostPort` mappings are set to `0` (since hostNetwork binds the container directly to the node's network stack, hostPort would be redundant and could fight for ports during rolling updates).
+The chart deploys the collector as a DaemonSet with `hostNetwork: true` and `dnsPolicy: ClusterFirstWithHostNet`. `hostPort` is set to `0` only for the two OTLP ports (`otlp` 4317 and `otlp-http` 4318), since hostNetwork binds the container directly to the node's network stack and a hostPort mapping would be redundant. The other four ports come from the upstream subchart defaults and keep their `hostPort`: `jaeger-compact` 6831/UDP, `jaeger-grpc` 14250, `jaeger-thrift` 14268 and `zipkin` 9411. See [Node ports](#node-ports).
 
 This is required so the `k8sattributes` processor can resolve pod identity from the connection source IP — without `hostNetwork`, hostPort hairpin NAT would rewrite the source IP to the node IP and `k8sattributes` couldn't match telemetry to its originating pod.
 
 Two-tier `pod_association`:
-1. **Primary**: `from: resource_attribute, name: k8s.pod.ip` — works for any pod, no hostNetwork required. Apps need to emit `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)` (the `midaz` chart's `ledger`/`crm` templates set this automatically when `otel-collector-lerian.enabled=true`).
+1. **Primary**: `from: resource_attribute, name: k8s.pod.ip` — works for any pod, no hostNetwork required. Apps need to emit `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)` (the `midaz` chart's `ledger`, `crm` and `tracer` templates set this automatically when `otel-collector-lerian.enabled=true`).
 2. **Fallback**: `from: connection` — kicks in for apps that don't emit `k8s.pod.ip` (e.g. apps still on `lib-commons v2`). Requires the collector's `hostNetwork: true` to be honored by the cluster's Pod Security policy.
 
 If your cluster's Pod Security Standards forbid `hostNetwork: true` you can still run the chart in a restricted mode by setting `hostNetwork: false` and ensuring **every** application emits the `k8s.pod.ip` resource attribute — the primary path is enough on its own.
+
+### Node ports
+
+Because the pod runs with `hostNetwork: true`, every receiver and extension port binds on the node itself. With the default values the following ports must be free on every node:
+
+| Port | Protocol | Used for | `hostPort` in the rendered DaemonSet |
+| --- | --- | --- | --- |
+| 4317 | TCP | OTLP gRPC | none (set to `0`) |
+| 4318 | TCP | OTLP HTTP | none (set to `0`) |
+| 13133 | TCP | health check (`/`) | none |
+| 8887 | TCP | collector self metrics | none (not declared) |
+| 6831 | UDP | Jaeger compact receiver (unused by any pipeline) | 6831 |
+| 14250 | TCP | Jaeger gRPC receiver (unused by any pipeline) | 14250 |
+| 14268 | TCP | Jaeger Thrift HTTP receiver (unused by any pipeline) | 14268 |
+| 9411 | TCP | Zipkin receiver (unused by any pipeline) | 9411 |
+
+The Jaeger and Zipkin receivers are not wired into any pipeline. To stop them from reserving node ports, disable the upstream ports and drop the receivers:
+
+```yaml
+opentelemetry-collector:
+  ports:
+    jaeger-compact:
+      enabled: false
+    jaeger-thrift:
+      enabled: false
+    jaeger-grpc:
+      enabled: false
+    zipkin:
+      enabled: false
+  config:
+    receivers:
+      jaeger: null
+      zipkin: null
+```
 
 ---
 
@@ -241,23 +285,34 @@ opentelemetry-collector:
 
 ## Troubleshooting
 
+Resource names follow the Helm release name. The commands below assume release `otel-collector-lerian` in namespace `midaz`; adapt the instance label and ServiceAccount name if yours differs. The rendered names are:
+
+| Resource | Name |
+| --- | --- |
+| DaemonSet and ConfigMap | `otel-collector-lerian-opentelemetry-collector-agent` |
+| ServiceAccount, ClusterRole, ClusterRoleBinding | `otel-collector-lerian-opentelemetry-collector` |
+| Pod label | `app.kubernetes.io/name=opentelemetry-collector`, `app.kubernetes.io/instance=otel-collector-lerian` |
+
+The chart creates no Service by default (set `opentelemetry-collector.service.enabled: true` to add one; it exposes the OTLP, Jaeger and Zipkin ports but not 8887).
+
 ### Viewing Collector Logs
 
 ```console
-$ kubectl logs -l app.kubernetes.io/name=otel-collector-lerian -n midaz
+$ kubectl logs -l app.kubernetes.io/name=opentelemetry-collector,app.kubernetes.io/instance=otel-collector-lerian -n midaz
 ```
 
 ### Checking Collector Metrics
 
-The collector exposes internal metrics on port 8887:
+The collector exposes internal metrics on port 8887. There is no Service for it, so port-forward to a pod:
 
 ```console
-$ kubectl port-forward svc/otel-collector-lerian 8887:8887 -n midaz
+$ POD=$(kubectl get pod -n midaz -l app.kubernetes.io/name=opentelemetry-collector,app.kubernetes.io/instance=otel-collector-lerian -o jsonpath='{.items[0].metadata.name}')
+$ kubectl port-forward pod/$POD 8887:8887 -n midaz
 $ curl http://localhost:8887/metrics
 ```
 
 ### Verifying RBAC Permissions
 
 ```console
-$ kubectl auth can-i list pods --as=system:serviceaccount:midaz:otel-collector-lerian -n midaz
+$ kubectl auth can-i list pods --as=system:serviceaccount:midaz:otel-collector-lerian-opentelemetry-collector -n midaz
 ```

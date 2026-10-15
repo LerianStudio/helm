@@ -321,6 +321,27 @@ class StartupContract(unittest.TestCase):
         self.fails({'identity': {'configmap': {'GOOGLE_DIRECTORY_ENABLED': False},
                                  'extraEnvVars': {'GOOGLE_DIRECTORY_ENABLED': 'true'}}}, 'both')
 
+    def test_existing_secret_requires_a_name(self):
+        for component in ('auth', 'identity'):
+            with self.subTest(component=component):
+                self.fails({component: {'useExistingSecret': True}},
+                           f'{component}.useExistingSecret is true but {component}.existingSecretName is empty')
+                docs = self.succeeds({component: {'useExistingSecret': True,
+                                                  'existingSecretName': 'operator-secret'}})
+                deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                                  and d['metadata']['name'].endswith(component))
+                refs = [e['secretRef']['name'] for e in
+                        deployment['spec']['template']['spec']['containers'][0]['envFrom']
+                        if 'secretRef' in e]
+                self.assertEqual(refs, ['operator-secret'])
+
+    def test_auth_service_exposes_only_ports_the_container_serves(self):
+        docs = self.succeeds({})
+        service = next(d for d in docs if d['kind'] == 'Service' and d['metadata']['name'].endswith('-auth'))
+        deployment = next(d for d in docs if d['kind'] == 'Deployment' and d['metadata']['name'].endswith('-auth'))
+        container_ports = {p['name'] for p in deployment['spec']['template']['spec']['containers'][0]['ports']}
+        self.assertEqual({p['targetPort'] for p in service['spec']['ports']}, container_ports)
+
     def test_init_user_post_install_only(self):
         docs = self.succeeds({'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}}})
         jobs = [d for d in docs if d['kind'] == 'Job']

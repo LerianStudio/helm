@@ -254,7 +254,7 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.2.1"
+    tag: "4.2.2"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -416,7 +416,9 @@ ledger:
   # @default -- templates/ledger/configmap.yaml
   # -- Dedicated datastore masks for this component (override global.datastores).
   # Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding /
-  # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/ssl/replicaHost).
+  # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/replicaHost).
+  # The Postgres `ssl` field is read from the generic `postgres` key (`postgres.ssl`),
+  # not from `postgresOnboarding`/`postgresTransaction`: those keys' `ssl` is ignored.
   datastores: {}
   # -- Escape hatch: native environment variables override template defaults.
   configmap:
@@ -743,7 +745,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.2.1"
+    tag: "4.2.2"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.

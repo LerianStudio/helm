@@ -3,6 +3,9 @@
 
 nameOverride: ""
 fullnameOverride: ""
+# Namespace of the MongoDB bootstrap Job ONLY (global.externalMongoDefinitions). Every other
+# object, including the RabbitMQ bootstrap Job, is created in the release namespace.
+# Set it to the release namespace when that is not "fetcher".
 namespaceOverride: "fetcher"
 global:
   # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
@@ -351,6 +354,8 @@ worker:
 # global.datastores.
 datastores: {}
 common:
+  # NOTE: REDIS_TLS and RABBITMQ_TLS (read by the app) are not emitted by any datastore mask
+  # (global.datastores.*.tls/scheme, global.cloud); set them here when the endpoint needs TLS.
   # -- Shared (common) application config for BOTH the manager and worker
   # surfaces. Defaults for every shared key live in the templates
   # (fetcher.commonConfigmapData): dependency CONNECTIONS resolve through
@@ -517,6 +522,9 @@ valkey:
   auth:
     enabled: false
 # KEDA - Kubernetes Event-driven Autoscaling
+# NOTE: enabling this installs the KEDA operator only. The chart has no ScaledObject
+# template, so it does not autoscale the manager or worker; use manager.autoscaling (HPA)
+# or create your own ScaledObject.
 keda:
   enabled: false
   crds:

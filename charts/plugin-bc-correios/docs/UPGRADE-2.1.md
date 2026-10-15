@@ -81,13 +81,13 @@ kubectl get pods -n plugin-bc-correios
 5. Check init container logs to confirm SeaweedFS connectivity (if enabled)
 
 ```bash
-kubectl logs -n plugin-bc-correios -l app.kubernetes.io/name=plugin-bc-correios-helm -c wait-for-dependencies --tail=50
+kubectl logs -n plugin-bc-correios -l app.kubernetes.io/name=bc-correios,app.kubernetes.io/instance=plugin-bc-correios -c wait-for-dependencies --tail=50
 ```
 
 6. Verify application logs for any startup issues
 
 ```bash
-kubectl logs -n plugin-bc-correios -l app.kubernetes.io/name=plugin-bc-correios-helm --tail=50
+kubectl logs -n plugin-bc-correios -l app.kubernetes.io/name=bc-correios,app.kubernetes.io/instance=plugin-bc-correios --tail=50
 ```
 
 > **Note:** The upgrade will trigger a rolling restart of the BC Correios pods. Depending on your replica count and readiness probe configuration, this may cause brief service interruptions.

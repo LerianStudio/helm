@@ -310,7 +310,7 @@ worker:
 | `worker.configmap.OBJECT_STORAGE_ENDPOINT` | `""` (empty) | (removed, use `global.objectStorage.fetcher.endpoint`) |
 | `worker.configmap.OBJECT_STORAGE_REGION` | `"us-east-1"` | (removed, use `global.objectStorage.fetcher.region`) |
 | `worker.configmap.OBJECT_STORAGE_BUCKET` | `"external-data"` | (removed, use `global.objectStorage.fetcher.bucket`) |
-| `worker.configmap.OBJECT_STORAGE_USE_PATH_STYLE` | `"false"` | (removed, use `global.objectStorage.fetcher.pathStyle`) |
+| `worker.configmap.OBJECT_STORAGE_USE_PATH_STYLE` | `"false"` | (removed, use `global.objectStorage.fetcher.usePathStyle`) |
 
 > **Note:** The native `worker.configmap.OBJECT_STORAGE_*` keys still override the global mask if set explicitly. This provides backwards compatibility for existing installations.
 
@@ -410,7 +410,7 @@ global:
       endpoint: "https://s3.us-east-1.amazonaws.com"
       region: "us-east-1"
       bucket: "my-bucket"
-      pathStyle: "false"
+      usePathStyle: "false"
 ```
 
 #### global.observability
@@ -555,7 +555,7 @@ The following environment variables are now emitted by the worker ConfigMap:
 | `OBJECT_STORAGE_ENDPOINT` | `global.objectStorage.fetcher.endpoint` | (none) | S3/SeaweedFS endpoint |
 | `OBJECT_STORAGE_REGION` | `global.objectStorage.fetcher.region` | (none) | S3 region |
 | `OBJECT_STORAGE_BUCKET` | `global.objectStorage.fetcher.bucket` | (none) | S3 bucket name |
-| `OBJECT_STORAGE_USE_PATH_STYLE` | `global.objectStorage.fetcher.pathStyle` | (none) | Use path-style S3 URLs |
+| `OBJECT_STORAGE_USE_PATH_STYLE` | `global.objectStorage.fetcher.usePathStyle` | (none) | Use path-style S3 URLs |
 
 ### Common configmap changes
 
@@ -707,4 +707,55 @@ If you have custom datastore endpoints, you can migrate them to the new global c
 
 #### Option 1: Keep existing configuration (no action required)
 
-Your existing `common.configmap` values will continue to work. The chart preserves backwards compatibility by checking `common.configmap
+Your existing `common.configmap` values will continue to work. The chart preserves backwards compatibility by checking `common.configmap.<KEY>` first, so no change is needed. The native key always wins over `datastores:` and `global.datastores`.
+
+#### Option 2: Move endpoints to the global masks
+
+Set the endpoints once under `global.datastores` (shared by every Lerian chart in the environment) or under the chart-level `datastores` (this release only), then remove the matching `common.configmap.*` keys:
+
+```yaml
+global:
+  datastores:
+    mongo:
+      host: "my-mongodb.example.com"
+      port: "27017"
+    redis:
+      host: "my-redis.example.com"
+      port: "6379"
+    broker:
+      host: "my-rabbitmq.example.com"
+      amqpPort: "5672"
+```
+
+> **Note:** The datastore masks do not emit `REDIS_TLS` or `RABBITMQ_TLS`, although the manager and worker read both. If your Redis or RabbitMQ endpoint requires TLS, set `common.configmap.REDIS_TLS: "true"` and `common.configmap.RABBITMQ_TLS: "true"` explicitly. `global.datastores.redis.tls` and `global.cloud` do not set them.
+
+### Step 4: Review topology spread constraints (optional)
+
+By default both Deployments get a soft (`ScheduleAnyway`) spread across nodes (`global.scheduling.spread`). Zone spread is off. No action is required. To tune it, see [3. Pod topology spread constraints](#3-pod-topology-spread-constraints). After the upgrade, check pod distribution:
+
+```bash
+kubectl get pods -n fetcher -o wide
+```
+
+### Step 5: Validate service mesh annotations (optional)
+
+If a service mesh (Istio or Linkerd) is injected in the release namespace, confirm that the bootstrap Jobs (when `global.externalMongoDefinitions.enabled` or `externalRabbitmqDefinitions.enabled` is `true`) complete:
+
+```bash
+kubectl get jobs -n fetcher
+kubectl logs -n fetcher job/fetcher-bootstrap-rabbitmq-<revision> --all-containers
+```
+
+## Preview changes before upgrading
+
+```bash
+helm diff upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 3.2.0 -n fetcher
+```
+
+> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+
+## Command to upgrade
+
+```bash
+helm upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 3.2.0 -n fetcher
+```

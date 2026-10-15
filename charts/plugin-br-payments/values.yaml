@@ -244,6 +244,13 @@ app:
     # Reconciliation worker (in-process)
     RECONCILIATION_INTERVAL: "5m"
     RECONCILIATION_LOOKBACK_HOURS: "24"
+    # How old a boleto reservation that never received a provider id (left behind
+    # by a process that died mid-emission) must be before the worker confers it
+    # against the provider's slip search. Also the wait before searching for a
+    # single emission whose answer was lost. Clamped silently: never below 15m
+    # (the search window's margin) nor below four BTG_HTTP_TIMEOUTs; no ceiling.
+    # Too short frees the number of a live, payable slip the search has not shown.
+    RECONCILIATION_BOLETO_RESERVATION_GRACE_PERIOD: "30m"
     # Rate Limiting
     RATE_LIMIT_ENABLED: "true"
     RATE_LIMIT_MAX: "500"

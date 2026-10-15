@@ -128,6 +128,7 @@ When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `prov
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.OUTBOX_ENABLED` | `"true"` | REQUIRED — the plugin won't register routes otherwise. |
 | `app.configmap.MULTI_TENANCY_ENABLED` | `"false"` | Toggle multi-tenant mode. |
+| `app.configmap.RECONCILIATION_BOLETO_RESERVATION_GRACE_PERIOD` | `"30m"` | Age of an orphan boleto reservation (or a lost single emission) before the worker searches the provider for it. Clamped to at least `15m` and to four `BTG_HTTP_TIMEOUT`s, with no ceiling: too short a grace frees the number of a slip the provider's search has not indexed yet. |
 | `postgresql.enabled` | `true` | Deploy the in-cluster PostgreSQL subchart. |
 | `postgresql.architecture` | `replication` | Primary + read replica. |
 | `global.externalPostgresDefinitions.enabled` | `false` | Run a bootstrap Job against an external PostgreSQL. |

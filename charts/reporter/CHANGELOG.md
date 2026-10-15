@@ -1,5 +1,21 @@
 # Reporter Changelog
 
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected the README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Updated documentation to require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
 ## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
 
 Fixes:

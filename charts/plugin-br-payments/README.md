@@ -246,6 +246,11 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 |-----|---------|
 | `PLUGIN_AUTH_ENABLED` | `global.auth.enabled`, else `"true"` |
 | `PLUGIN_AUTH_ADDRESS` | `global.auth.host`, else the in-cluster plugin-access-manager |
+| `PLUGIN_AUTH_HOST` | unset (lib-auth falls back to `PLUGIN_AUTH_ADDRESS`, with a warning) |
+| `AUTH_M2M_INVERSION_ENABLED` | unset (lib-auth default `false`) |
+| `AUTH_M2M_PRODUCT_FORWARD_ENABLED` | unset (lib-auth default `false`); with the key above, M2M callers are authorized on the responsibility-inversion (RI) path |
+| `IDP_DECLARATION_ENABLED` | unset (off). When `"true"`, the app publishes its permission manifest to identity at boot and refuses to boot without `IDP_HOST` and the `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` secrets |
+| `IDP_HOST` | unset; the identity URL the manifest is published to |
 
 </details>
 
@@ -332,7 +337,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 
 </details>
 
-**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`.
+**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`.
 
 **Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES`, `TRUSTED_PROXIES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
 

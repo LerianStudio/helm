@@ -154,6 +154,23 @@ data:
   # ====================================================================
   PLUGIN_AUTH_ENABLED: {{ include $gv (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
   PLUGIN_AUTH_ADDRESS: {{ include $gv (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
+  {{- if hasKey $cm "PLUGIN_AUTH_HOST" }}
+  PLUGIN_AUTH_HOST: {{ index $cm "PLUGIN_AUTH_HOST" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "AUTH_M2M_INVERSION_ENABLED" }}
+  AUTH_M2M_INVERSION_ENABLED: {{ index $cm "AUTH_M2M_INVERSION_ENABLED" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "AUTH_M2M_PRODUCT_FORWARD_ENABLED" }}
+  AUTH_M2M_PRODUCT_FORWARD_ENABLED: {{ index $cm "AUTH_M2M_PRODUCT_FORWARD_ENABLED" | quote }}
+  {{- end }}
+  {{- /* Permission declaration (RI), read by lib-auth's declaration.WireFromEnv.
+       IDP_M2M_CLIENT_ID / IDP_M2M_CLIENT_SECRET live in the Secret. */}}
+  {{- if hasKey $cm "IDP_DECLARATION_ENABLED" }}
+  IDP_DECLARATION_ENABLED: {{ index $cm "IDP_DECLARATION_ENABLED" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "IDP_HOST" }}
+  IDP_HOST: {{ index $cm "IDP_HOST" | quote }}
+  {{- end }}
   # ====================================================================
   # PROVIDER (BTG)
   # ====================================================================

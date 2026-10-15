@@ -1,5 +1,17 @@
 # Plugin-access-manager Changelog
 
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.0)
+
+Features:
+
+- Treat an explicit false as set in the Google Directory duplicate check. (@rodrigodh)
+- Check the Google Directory key length and value types. (@rodrigodh)
+- Pass Google Workspace Directory settings to identity. (@rodrigodh)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.7.2...plugin-access-manager-v9.8.0)
+
+---
+
 ## [9.7.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.7.2)
 
 Fixes:

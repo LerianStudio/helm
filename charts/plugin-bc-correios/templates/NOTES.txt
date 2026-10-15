@@ -43,7 +43,7 @@ Your release is named {{ .Release.Name }}.
   NOTE: PostgreSQL bootstrap job will run to create the plugin-bc-correios database and role.
 {{- end }}
 {{ if .Values.global.externalRabbitmqDefinitions.enabled -}}
-  NOTE: RabbitMQ bootstrap job will run to create exchanges, queues, and users.
+  NOTE: RabbitMQ bootstrap job will run to import exchanges, queues, and bindings (vhost "/"). It does not create users: the broker account referenced by bc-correios.secrets.RABBITMQ_URL must already exist.
 {{- end }}
 
 For more information, see:

@@ -251,6 +251,8 @@ The Secret referenced by `secrets.existingSecret` may now contain:
 ```yaml
 jd-courier:
   image:
+    # Pix transit needs Courier 1.2.0 or later (see the chart README): replace this tag
+    # with the 1.2.0+ release you run. 1.1.0 has no transit listener.
     tag: "1.1.0"
 
 secrets:
@@ -281,6 +283,8 @@ roles:
 ```yaml
 jd-courier:
   image:
+    # Pix transit needs Courier 1.2.0 or later (see the chart README): replace this tag
+    # with the 1.2.0+ release you run. 1.1.0 has no transit listener.
     tag: "1.1.0"
 
 secrets:

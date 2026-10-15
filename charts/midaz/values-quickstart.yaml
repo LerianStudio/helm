@@ -10,17 +10,26 @@
 #
 #   helm install midaz charts/midaz -f values-quickstart.yaml
 #
-# Anything with CHANGE_ME MUST be set. Bundled Bitnami subcharts (postgresql,
+# Anything with CHANGE_ME MUST be set. Image tags are not pinned here: the chart
+# defaults in values.yaml track the supported app release (set `<component>.image.tag`
+# only to deviate from it). Bundled Bitnami subcharts (postgresql,
 # mongodb, valkey, rabbitmq) are ON by default, so the *host* knobs below only
 # matter when you point midaz at EXTERNAL infra (set <subchart>.enabled=false).
 # =============================================================================
 
 global:
+  # -- Environment name. A 4.x ledger refuses to boot with ENV_NAME=production (the
+  #    chart default) unless PLUGIN_AUTH_ENABLED=true, and the chart fails the render
+  #    on that pair. This quickstart has no auth service, so it runs as "development".
+  #    For production, remove this block and enable auth below (global.auth).
+  env:
+    name: "development"
   # -- Set each dependency connection ONCE here; every component emits its native
   #    env keys from it. Leave a block out to keep the in-cluster bundled default.
   datastores:
-    # postgresOnboarding: { host: "pg-primary", port: "5432", user: "midaz", ssl: "require", replicaHost: "pg-replica" }
-    # postgresTransaction: { host: "pg-primary", port: "5432", user: "midaz", ssl: "require", replicaHost: "pg-replica" }
+    # postgresOnboarding: { host: "pg-primary", port: "5432", user: "midaz", replicaHost: "pg-replica" }
+    # postgresTransaction: { host: "pg-primary", port: "5432", user: "midaz", replicaHost: "pg-replica" }
+    # postgres: { ssl: "require" }   # TLS mode for BOTH ledger databases; ssl under postgresOnboarding/postgresTransaction is ignored
     # mongoOnboarding: { host: "mongo-0", port: "27017", user: "midaz" }
     # mongoTransaction: { host: "mongo-0", port: "27017", user: "midaz" }
     # mongoCrm: { host: "mongo-0", port: "27017", user: "midaz" }
@@ -50,8 +59,8 @@ global:
 # --- LEDGER (the double-entry engine; onboarding + transaction + CRM + fees) ---
 ledger:
   enabled: true
-  image:
-    tag: "4.0.0-beta.26"   # -- pin the ledger image version
+  # image:
+  #   tag: "<ledger image tag>"   # -- optional pin; empty keeps the chart default
   ingress:
     enabled: false
     # hosts: [{ host: "ledger.example.com", paths: [{ path: "/", pathType: Prefix }] }]
@@ -81,8 +90,8 @@ ledger:
 # --- TRACER (real-time transaction validation / fraud prevention; opt-in) ---
 tracer:
   enabled: false
-  image:
-    tag: "4.0.0-beta.25"
+  # image:
+  #   tag: "<tracer image tag>"   # -- optional pin; empty keeps the chart default
   ingress:
     enabled: false
   configmap: {}
@@ -99,15 +108,23 @@ tracer:
 #     serves CRM in-process, so enable this only for the separate service) ---
 crm:
   enabled: false
-  image:
-    tag: "3.8.0"
+  # image:
+  #   tag: "<crm image tag>"   # -- optional pin; empty keeps the chart default
   secrets: {}
     # LCRYPTO_HASH_SECRET_KEY: "CHANGE_ME"   # REQUIRED when crm.enabled=true
     # LCRYPTO_ENCRYPT_SECRET_KEY: "CHANGE_ME"
+
+# --- RabbitMQ Erlang cookie. REQUIRED while the bundled rabbitmq is enabled: the chart
+#     refuses to render without it. Keep it STABLE across upgrades. Generate once with
+#     `openssl rand -hex 32`.
+rabbitmq:
+  authentication:
+    erlangCookie:
+      value: "CHANGE_ME"
 
 # --- Bundled infrastructure (set enabled=false to use your own; then fill the
 #     matching global.datastores.* host above and the *_PASSWORD secrets) ---
 # postgresql: { enabled: true }
 # mongodb:    { enabled: true, auth: { enabled: true } }
 # valkey:     { enabled: true }
-# rabbitmq:   { enabled: true }
+# rabbitmq:   { enabled: true }   # (its erlangCookie is set above)

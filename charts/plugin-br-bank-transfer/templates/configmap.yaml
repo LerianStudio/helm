@@ -21,8 +21,19 @@ data:
   # =====================================================================
   # APPLICATION IDENTITY
   # Rendered in both modes — required by the bootstrap.
+  # Newer app images read ENVIRONMENT_NAME, older ones only ENV_NAME (its
+  # deprecated alias); both are emitted with one value.
+  # A blank or null value at any level counts as unset: an empty name boots the
+  # app with neither its production checks nor its development relaxations.
   # =====================================================================
-  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | quote }}
+  {{- $newEnvName := trim (toString (index $cm "ENVIRONMENT_NAME" | default "")) }}
+  {{- $oldEnvName := trim (toString (index $cm "ENV_NAME" | default "")) }}
+  {{- if and $newEnvName $oldEnvName (ne $newEnvName $oldEnvName) }}
+  {{- fail (printf "bankTransfer.configmap.ENVIRONMENT_NAME (%q) and bankTransfer.configmap.ENV_NAME (%q) name two environments: set only ENVIRONMENT_NAME, ENV_NAME is its deprecated alias" $newEnvName $oldEnvName) }}
+  {{- end }}
+  {{- $envName := $newEnvName | default $oldEnvName | default (trim (toString (dig "env" "name" "" .Values.global | default ""))) | default "production" }}
+  ENVIRONMENT_NAME: {{ $envName | quote }}
+  ENV_NAME: {{ $envName | quote }}
   APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
   {{- if not $multiTenantEnabled }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
@@ -58,7 +69,7 @@ data:
   # CRM_BASE_URL/FEES_BASE_URL hops (v2.0.0). Default "false" keeps the
   # bundled in-cluster http URLs working; set true in staging/homologation/BYOC
   # deployments that carry real client data — production is already covered by
-  # the app's own ENV_NAME=production boot guard.
+  # the app's own ENVIRONMENT_NAME=production boot guard.
   REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
 
   # =====================================================================
@@ -204,9 +215,10 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
 
   # =====================================================================
-  # LICENSE GATEWAY
-  # ORGANIZATION_IDS is rendered in both modes (license tenancy hint).
-  # LICENSE_SERVICE_ADDRESS is single-tenant only.
+  # LICENSE GATEWAY — rendered in both modes. Newer app images refuse to
+  # boot without LICENSE_KEY (Secret) and ORGANIZATION_IDS, in every environment.
+  # IS_DEVELOPMENT is read by lib-license-go: exactly "true" selects the
+  # development licence gateway, which a development licence key needs.
   # =====================================================================
   {{- /* Can also be supplied via .Values.bankTransfer.secrets.ORGANIZATION_IDS
      (rendered into the Secret by templates/secrets.yaml, or present in an
@@ -216,10 +228,8 @@ data:
   {{- if and .Values.bankTransfer.configmap.ORGANIZATION_IDS (not (.Values.bankTransfer.secrets.ORGANIZATION_IDS | default "")) }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
   {{- end }}
-  {{- if not $multiTenantEnabled }}
-  {{- if .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS }}
-  LICENSE_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS | quote }}
-  {{- end }}
+  {{- if .Values.bankTransfer.configmap.IS_DEVELOPMENT }}
+  IS_DEVELOPMENT: {{ .Values.bankTransfer.configmap.IS_DEVELOPMENT | quote }}
   {{- end }}
 
   # =====================================================================

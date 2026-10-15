@@ -100,6 +100,36 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- end }}
 
 {{/*
+bc-correios.valkeyPasswordFromSubchart — renders "true" when CACHE_PASSWORD must be read from the
+Valkey Secret via secretKeyRef instead of the app Secret: the bundled Bitnami Valkey with auth enabled
+(it generates and enforces its own password), or any Valkey with valkey.auth.existingSecret set while
+the bundled one is off (external Valkey whose password lives in an existing Secret). Renders nothing
+otherwise (bundled Valkey with auth.enabled=false, or external Valkey without existingSecret), in which
+case CACHE_PASSWORD comes from bc-correios.secrets.CACHE_PASSWORD through envFrom.
+*/}}
+{{- define "bc-correios.valkeyPasswordFromSubchart" -}}
+{{- $vk := .Values.valkey | default dict -}}
+{{- $auth := $vk.auth | default dict -}}
+{{- $bundled := and (ne (toString $vk.enabled) "false") (not $vk.external) -}}
+{{- if or (and $bundled (ne (toString $auth.enabled) "false")) (and (not $bundled) $auth.existingSecret) -}}
+true
+{{- end -}}
+{{- end }}
+
+{{/*
+bc-correios.valkeyPasswordKey — data key holding the Valkey password. Mirrors the subchart: only
+valkey.auth.existingSecretPasswordKey (honoured together with existingSecret), else "valkey-password".
+*/}}
+{{- define "bc-correios.valkeyPasswordKey" -}}
+{{- $auth := (.Values.valkey | default dict).auth | default dict -}}
+{{- if and $auth.existingSecret $auth.existingSecretPasswordKey -}}
+{{- $auth.existingSecretPasswordKey -}}
+{{- else -}}
+valkey-password
+{{- end -}}
+{{- end }}
+
+{{/*
 bc-correios.rabbitmqErlangCookieRequired — fail when the bundled groundhog2k rabbitmq subchart is
 enabled but no erlang cookie is provided. The broker is pointed at the app Secret via
 authentication.existingSecret, which sources the cookie from secretKey RABBITMQ_ERLANG_COOKIE, so a

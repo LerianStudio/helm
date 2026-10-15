@@ -8,7 +8,7 @@
   - [2. Canary-isolated RED metrics dimension](#2-canary-isolated-red-metrics-dimension)
 - **[Configuration Changes](#configuration-changes)**
   - [K8s attributes processor label extraction](#k8s-attributes-processor-label-extraction)
-  - [Metrics transform processor dimension addition](#metrics-transform-processor-dimension-addition)
+  - [Spanmetrics connector dimension addition](#spanmetrics-connector-dimension-addition)
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
@@ -79,82 +79,66 @@ k8sattributes:
 
 ### 2. Canary-isolated RED metrics dimension
 
-The `metricstransform` processor now includes `rollouts_pod_template_hash` as a dimension on all transformed metrics. This allows metrics backends and AnalysisTemplates to filter RED metrics (rate, errors, duration) by canary vs. stable pods.
+The `spanmetrics` connector (`opentelemetry-collector.config.connectors.spanmetrics`) now includes `rollouts_pod_template_hash` in its `dimensions` list. The RED metrics (rate, errors, duration) it derives from spans can therefore be filtered by canary vs. stable pods. The chart has no `metricstransform` processor; the change is only in `connectors.spanmetrics.dimensions`.
 
 | Field | v4.2.0 | v4.3.0 |
 |-------|--------|--------|
-| Metric dimensions | 11 dimensions | 12 dimensions (added `rollouts_pod_template_hash`) |
+| Spanmetrics dimensions | 8 dimensions | 9 dimensions (added `rollouts_pod_template_hash`) |
 | Default value | N/A | `""` (empty string for non-Rollout pods) |
-| Aggregation cardinality limit | 50000 | 50000 (unchanged) |
+| `aggregation_cardinality_limit` | 50000 | 50000 (unchanged) |
 
 **Before (v4.2.0):**
 
 ```yaml
-metricstransform:
-  transforms:
-    - include: ^.*$
-      match_type: regexp
-      action: update
-      operations:
-        - action: aggregate_labels
-          label_set:
-            - name: service.name
-            - name: service.namespace
-            - name: service.instance.id
-            - name: k8s.pod.name
-            - name: k8s.deployment.name
-            - name: k8s.namespace.name
-            - name: client_id
-            - name: http.method
-            - name: http.target
-            - name: http.route
-            - name: http.status_code
-            - name: http.response.status_code
-          aggregation_cardinality_limit: 50000
+connectors:
+  spanmetrics:
+    dimensions:
+      - name: k8s.namespace.name
+      - name: k8s.deployment.name
+      - name: k8s.container.name
+      - name: http.method
+      - name: http.request.method
+      - name: http.route
+      - name: http.status_code
+      - name: http.response.status_code
+    aggregation_cardinality_limit: 50000
 ```
 
 **After (v4.3.0):**
 
 ```yaml
-metricstransform:
-  transforms:
-    - include: ^.*$
-      match_type: regexp
-      action: update
-      operations:
-        - action: aggregate_labels
-          label_set:
-            - name: service.name
-            - name: service.namespace
-            - name: service.instance.id
-            - name: k8s.pod.name
-            - name: k8s.deployment.name
-            - name: k8s.namespace.name
-            - name: client_id
-            - name: http.method
-            - name: http.target
-            - name: http.route
-            - name: http.status_code
-            - name: http.response.status_code
-            # Argo Rollouts canary/stable pod-template hash (from the k8sattributes
-            # pod-label extraction above). Low cardinality: "" for non-Rollout pods,
-            # plus the stable + canary hashes only while a rollout is in progress.
-            # Enables canary-isolated RED analysis for progressive delivery.
-            - name: rollouts_pod_template_hash
-              default: ""
-          aggregation_cardinality_limit: 50000
+connectors:
+  spanmetrics:
+    dimensions:
+      - name: k8s.namespace.name
+      - name: k8s.deployment.name
+      - name: k8s.container.name
+      - name: http.method
+      - name: http.request.method
+      - name: http.route
+      - name: http.status_code
+      - name: http.response.status_code
+      # Argo Rollouts canary/stable pod-template hash (from the k8sattributes
+      # pod-label extraction above). Low cardinality: "" for non-Rollout pods,
+      # plus the stable + canary hashes only while a rollout is in progress.
+      # Enables canary-isolated RED analysis for progressive delivery.
+      - name: rollouts_pod_template_hash
+        default: ""
+    aggregation_cardinality_limit: 50000
 ```
+
+`resource_metrics_key_attributes` (added in 4.2.0) is unchanged.
 
 **Why this matters:**
 
-- AnalysisTemplates can now query metrics with a filter like `rollouts_pod_template_hash="abc123"` to isolate canary pod metrics.
+- AnalysisTemplates can query the span-derived metrics with a filter like `rollouts_pod_template_hash="abc123"` to isolate canary pod metrics.
 - This enables automated rollback decisions based on canary-specific SLIs (e.g., error rate > 1% for canary pods only).
-- Without this dimension, metrics are aggregated across all pods, making it impossible to detect canary-specific regressions.
+- Without this dimension, span-derived metrics are aggregated across all pods of a workload, making it impossible to detect canary-specific regressions.
 
 **Operational impact:**
 
-- All existing metrics will now include the `rollouts_pod_template_hash` dimension with a default value of `""`.
-- Metrics from Rollout-managed pods will have the hash value populated during rollouts.
+- All span-derived metrics (`calls_total`, duration histogram) now carry the `rollouts_pod_template_hash` dimension with a default value of `""`.
+- Series from Rollout-managed pods have the hash value populated during rollouts.
 - No changes to existing queries are required unless you want to filter by this new dimension.
 - Cardinality impact is low because the dimension has only 1-3 unique values per service at any given time.
 
@@ -187,13 +171,13 @@ opentelemetry-collector:
 
 > **Note:** This configuration is additive. If you have existing label extractions in your `values.yaml` overrides, merge this new entry into your existing `labels` array rather than replacing it.
 
-### Metrics transform processor dimension addition
+### Spanmetrics connector dimension addition
 
-The `opentelemetry-collector.config.processors.metricstransform.transforms[0].operations[0].label_set` array has been extended with the `rollouts_pod_template_hash` dimension.
+The `opentelemetry-collector.config.connectors.spanmetrics.dimensions` list has been extended with the `rollouts_pod_template_hash` dimension.
 
 | Setting | v4.2.0 | v4.3.0 |
 |---------|--------|--------|
-| Number of dimensions | 11 | 12 |
+| Number of dimensions | 8 | 9 |
 | New dimension name | N/A | `rollouts_pod_template_hash` |
 | Default value | N/A | `""` |
 
@@ -202,16 +186,14 @@ The `opentelemetry-collector.config.processors.metricstransform.transforms[0].op
 ```yaml
 opentelemetry-collector:
   config:
-    processors:
-      metricstransform:
-        transforms:
-          - operations:
-              - label_set:
-                  - name: rollouts_pod_template_hash
-                    default: ""
+    connectors:
+      spanmetrics:
+        dimensions:
+          - name: rollouts_pod_template_hash
+            default: ""
 ```
 
-> **Note:** The `default: ""` ensures that metrics from pods without the label still include the dimension with an empty string value, preventing metric schema mismatches.
+> **Note:** The `default: ""` ensures that series from pods without the label still include the dimension with an empty string value, preventing metric schema mismatches. Because Helm replaces lists instead of merging them, an override of `dimensions` must contain the full list (see below).
 
 ## Migration Steps
 
@@ -220,7 +202,7 @@ This upgrade requires no manual migration steps. The new configuration is additi
 **Recommended upgrade process:**
 
 1. Review the rendered diff using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
-2. Verify that the diff shows only the two new configuration blocks described above.
+2. Verify that the diff shows only the two new configuration blocks described above (the `k8sattributes` label extraction and the `spanmetrics` dimension).
 3. Run the upgrade command during a normal change window.
 4. Verify that the OpenTelemetry Collector pods restart successfully:
 
@@ -228,15 +210,17 @@ This upgrade requires no manual migration steps. The new configuration is additi
 kubectl get pods -n otel-collector-lerian -l app.kubernetes.io/name=opentelemetry-collector
 ```
 
-5. Validate that metrics now include the `rollouts_pod_template_hash` dimension:
+5. Validate that the collector configuration carries the new dimension and label extraction (the default configuration has no debug exporter, so the pod logs do not print metric attributes):
 
 ```bash
-kubectl logs -n otel-collector-lerian -l app.kubernetes.io/name=opentelemetry-collector --tail=100 | grep rollouts_pod_template_hash
+kubectl get configmap -n otel-collector-lerian -l app.kubernetes.io/name=opentelemetry-collector -o yaml | grep rollouts_pod_template_hash
 ```
+
+Then query the `calls_total` series in your metrics backend and check for the `rollouts_pod_template_hash` label.
 
 6. If you use Argo Rollouts, verify that canary pods have the hash value populated during a test rollout.
 
-> **Important:** If you have custom `values.yaml` overrides for `opentelemetry-collector.config.processors.k8sattributes.extract.labels` or `opentelemetry-collector.config.processors.metricstransform.transforms`, you must merge the new entries manually. Helm will not deep-merge arrays, so your overrides will replace the default configuration entirely.
+> **Important:** If you have custom `values.yaml` overrides for `opentelemetry-collector.config.processors.k8sattributes.extract.labels` or `opentelemetry-collector.config.connectors.spanmetrics.dimensions`, you must merge the new entries manually. Helm will not deep-merge arrays, so your overrides will replace the default configuration entirely.
 
 **Example: Merging with existing label extractions**
 
@@ -271,21 +255,19 @@ opentelemetry-collector:
               from: pod
 ```
 
-**Example: Merging with existing metric dimensions**
+**Example: Merging with existing spanmetrics dimensions**
 
-If your current `values.yaml` contains custom `label_set` entries, append the new dimension:
+If your current `values.yaml` overrides `dimensions`, append the new dimension to your full list:
 
 ```yaml
 opentelemetry-collector:
   config:
-    processors:
-      metricstransform:
-        transforms:
-          - operations:
-              - label_set:
-                  # ... your existing dimensions ...
-                  - name: rollouts_pod_template_hash
-                    default: ""
+    connectors:
+      spanmetrics:
+        dimensions:
+          # ... your existing dimensions ...
+          - name: rollouts_pod_template_hash
+            default: ""
 ```
 
 ## Preview changes before upgrading

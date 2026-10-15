@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| Product / Chart | `product-console` (chart `4.0.x` / app `1.12.0`) |
+| Product / Chart | `product-console` (chart `4.0.x` onward; app version: `appVersion` in `Chart.yaml` / `image.tag` in `values.yaml`) |
 | Chart type | `single-service` — one Deployment (Next.js UI + BFF for Midaz) |
 | Owning squad | Console / Frontend |
 | Last review of this runbook | 2026-09-15, against chart `4.0.x` |
@@ -29,7 +29,7 @@ and which managed-cloud preset applies.
 
 | Profile | Shape | Use case |
 |---|---|---|
-| Standalone demo | Bundled MongoDB (`mongodb.enabled: true`, default), `ingress.enabled: false`, auth off | Local/kick-the-tyres only. **Not** for anything exposed. |
+| Standalone demo | Bundled MongoDB (`mongodb.enabled: true`, default), `ingress.enabled: false`, auth off | Local/kick-the-tyres only. The published image will not start with auth off (section 5): set `global.auth.enabled: "true"` here too. **Not** for anything exposed. |
 | Integrated dev/homolog | External MongoDB, ingress on, sibling base paths pointed at the real in-cluster services, auth on | The `benedita/dev-st` reference topology |
 | Production | External managed MongoDB (DocumentDB via `global.cloud: aws`), ingress + TLS, auth on, `NEXTAUTH_SECRET` from a secret manager, `TRUSTED_PROXIES` set to the ingress CIDR | Client-facing |
 
@@ -70,7 +70,7 @@ out of the box, so it works across namespaces with no mesh/DNS wiring — overri
    `secrets.MONGODB_PASS`, and — when auth is on — `PLUGIN_AUTH_CLIENT_ID`/`_SECRET`.
 3. Turn authorization **on explicitly** for any exposed environment:
    `global.auth.enabled: "true"` (or `configmap.PLUGIN_AUTH_ENABLED: "true"`). The
-   console does **not** fail closed on a missing switch — see section 5.
+   published console image refuses to start with authorization off (it exits 1) — see section 5.
 4. Point the inter-service base paths at your real services if the namespaces differ
    from the defaults (Midaz, access-manager, CRM, Reporter, …).
 5. Set `TRUSTED_PROXIES` to the CIDR of the hops in front of the console (normally the
@@ -137,7 +137,7 @@ discarded** — set it and confirm it lands (section 6).
 
 | Topic | What to know | Before enabling / how to confirm |
 |---|---|---|
-| **Authorization is OFF by default** | The console enforces permissions only when the rendered value is the literal word `true` (`PLUGIN_AUTH_ENABLED` server-side, `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` browser-side). `false`/empty/`1`/`TRUE`/`yes` all read as OFF; the console does **not** fail closed. | Set `global.auth.enabled: "true"` (or the native key) on every staging/prod release. Confirm with an unauthenticated request → must be 401/403. |
+| **Authorization is OFF by default** | The console enforces permissions only when the rendered value is the literal word `true` (`PLUGIN_AUTH_ENABLED` server-side, `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` browser-side). `false`/empty/`1`/`TRUE`/`yes` all read as OFF. The published image refuses to start when both `PLUGIN_AUTH_ENABLED` and `OAUTH_ENABLED` are not `true` (`[startup] FATAL`, exit 1), so the chart default `false` crash-loops rather than serving an open console. | Set `global.auth.enabled: "true"` (or the native key) on every staging/prod release. Confirm with an unauthenticated request → must be 401/403. |
 | **Server vs browser auth split** | The browser key copies the server value only while `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` is unset/empty. A non-empty browser key is used verbatim and never reconciled with the server — `"TRUE"` next to an enabled server gives server ON / browser OFF. | Leave the browser key unset, or set both to the exact word `true`. |
 | **`NEXTAUTH_SECRET` is mandatory for production** | Empty NextAuth secret ⇒ sessions are not safely signed. | Provide it via `secrets` / a secret manager before install. |
 | **`TRUSTED_PROXIES` empty = no client IP** | Empty means no `X-Forwarded-For` hop is believed, so the tenant IP allowlist is never enforced and outbound calls carry `X-Client-Ip-Resolution: unresolved; reason=trusted-proxies-not-configured`. | Set it to the ingress pod/service CIDR (e.g. `10.42.0.0/16`). **Do not widen** — a range covering real callers hides them. |

@@ -24,14 +24,6 @@ This guide helps operators upgrade the **br-sta** Helm chart from version **0.0.
   - [Scenario 3: Multi-tenant SaaS deployment](#scenario-3-multi-tenant-saas-deployment)
 - **[Configuration Reference](#configuration-reference)**
   - [Global configuration](#global-configuration)
-  - [Common application configuration](#common-application-configuration)
-  - [Manager configuration](#manager-configuration)
-  - [Worker configuration](#worker-configuration)
-  - [Migrations configuration](#migrations-configuration)
-  - [Mock STA configuration](#mock-sta-configuration)
-- **[Migration Steps](#migration-steps)**
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
 
 ---
 
@@ -44,7 +36,7 @@ Version **1.0.0** is the **initial release** of the br-sta Helm chart. There is 
 | Chart exists | No | Yes |
 | Manager component | N/A | Enabled by default |
 | Worker component | N/A | Enabled by default |
-| Database migrations | N/A | Pre-install/pre-upgrade hook |
+| Database migrations | N/A | Pre-install/pre-upgrade hook with external Postgres; a regular Job with the bundled Postgres |
 | Bundled infrastructure | N/A | Optional (PostgreSQL, Valkey, RabbitMQ, SeaweedFS, Redpanda) |
 | Multi-tenancy | N/A | Optional via tenant-manager integration |
 | Streaming | N/A | Enabled by default (Redpanda/Kafka) |
@@ -64,7 +56,7 @@ This section is not applicable for the initial release (v0.0.0 → v1.0.0). All 
 The chart deploys two primary workloads:
 
 - **Manager** (`cmd/manager`): HTTP API for transfers, credentials, and audit queries. Stateless, horizontally scalable.
-- **Worker** (`cmd/worker`): Background processor for BACEN outbound scheduling, inbound polling, audit publishing, business-event delivery, and scheduled jobs. Runs as a single replica with `Recreate` strategy (no leader election).
+- **Worker** (`cmd/worker`): Background processor for BACEN outbound scheduling, inbound polling, audit publishing, business-event delivery, and scheduled jobs. Runs as a single replica with `Recreate` strategy (not every background job is leader-elected, so it must not be scaled out).
 
 Both components share the same application configuration (one ConfigMap, one Secret) and read identical environment variables. The worker adds a small overlay ConfigMap for worker-specific keys.
 
@@ -85,12 +77,9 @@ manager:
 ```yaml
 worker:
   enabled: true
-  replicaCount: 1  # Must be exactly 1
-  deploymentUpdate:
-    type: Recreate
 ```
 
-> **Important:** The worker must run as exactly one replica. Setting `worker.replicaCount` to any value other than 1 will cause the chart to fail rendering.
+> **Important:** The worker must run as exactly one replica. The chart hard-codes `replicas: 1` and `strategy.type: Recreate` in the worker Deployment: there is no `worker.replicaCount` or `worker.deploymentUpdate` value. Setting either is accepted by the schema but ignored, and the Deployment stays at one replica. Scale the manager instead.
 
 ---
 
@@ -205,47 +194,64 @@ The chart declares five infrastructure subcharts for development and evaluation.
 | `seaweedfs` | `seaweedfs.enabled` | S3-compatible object storage | ❌ Use S3/GCS/Azure Blob |
 | `redpanda` | `redpandaBundle.enabled` | Kafka-compatible streaming broker | ❌ Use managed MSK/Confluent Cloud |
 
-**Development bundle example:**
+**Development bundle example** (this is what `values-dev.yaml` ships, trimmed; start from that file rather than from this snippet):
 
 ```yaml
 global:
   env:
     name: "development"
-  cloud: ""  # No cloud preset for local infra
+  auth:
+    enabled: false                       # accepted only in a development-class environment
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+    staAuditExports:
+      bucket: "br-sta-audit-exports"
+
+common:
+  license:
+    organizationIds: "<your-organization-id>"
+  secrets:
+    MASTER_KEYS: "v1:<64 hex chars>"     # openssl rand -hex 32
+    LICENSE_KEY: "<your-license-key>"
+    RABBITMQ_DEFAULT_PASS: "dev-only-rabbitmq"   # the bundled broker's only login
+    RABBITMQ_ERLANG_COOKIE: "dev-only-erlang-cookie"
+    AWS_ACCESS_KEY_ID: "any"             # SeaweedFS runs without S3 auth; the AWS SDK still signs
+    AWS_SECRET_ACCESS_KEY: "any"
 
 postgresql:
   enabled: true
+  external: false                        # without this the chart still expects an external Postgres
   auth:
-    username: "br_sta"
-    password: "dev-password"
-    database: "br_sta"
+    password: "dev-only-postgres"
+    postgresPassword: "dev-only-postgres-admin"
 
 valkey:
   enabled: true
+  external: false
   auth:
-    enabled: true
-    password: "dev-password"
+    password: "dev-only-valkey"
 
 rabbitmq:
-  enabled: true
-  auth:
-    username: "br_sta"
-    password: "dev-password"
+  enabled: true                          # credentials come from common.secrets, not from rabbitmq.auth
 
 seaweedfs:
   enabled: true
 
 redpandaBundle:
   enabled: true
+
+mockSta:
+  enabled: true
 ```
 
-> **Warning:** The chart refuses bundled infrastructure in production-like environments. If `global.env.name` is `production` (or unset, defaulting to `production`), enabling any bundled subchart will cause the render to fail with an error message.
+> **Warning:** The render refuses only `redpandaBundle` and `mockSta` outside a development-class environment (`global.env.name` is `development`, `develop`, `dev`, `local` or `test`). The `postgresql`, `valkey`, `rabbitmq` and `seaweedfs` bundles render in any environment and only produce a warning in `NOTES.txt`, but none of them is supported in production.
 
 ---
 
 ### 5. Database migrations
 
-The chart includes a `migrations` Job that applies the SQL schema to Postgres. It runs as a Helm hook (`pre-install`, `pre-upgrade`) or an ArgoCD `PreSync` hook, ensuring the database is ready before the application boots.
+The chart includes a `migrations` Job that applies the SQL schema to Postgres. Against an external Postgres it runs as a Helm hook (`pre-install`, `pre-upgrade`) or an ArgoCD `PreSync` hook, so the database is ready before the application boots. With the bundled Postgres it is a regular Job created with the release (its initContainer waits for Postgres). The Job name carries a hash of its spec (`<fullname>-migrations-<hash>`).
 
 **Migrations configuration:**
 
@@ -255,27 +261,26 @@ migrations:
   image:
     repository: ghcr.io/lerianstudio/br-sta-migrations
     tag: ""  # Defaults to Chart.appVersion
-  hookWeight: "-5"
-  hookDeletePolicy: "before-hook-creation"
   backoffLimit: 3
   activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
   resources:
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 50m
+      memory: 64Mi
     limits:
-      cpu: 500m
       memory: 256Mi
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `migrations.enabled` | `true` | Whether to render the migrations Job |
-| `migrations.hookWeight` | `"-5"` | Helm hook weight (runs before weight 0) |
-| `migrations.hookDeletePolicy` | `"before-hook-creation"` | Deletes previous Job before creating a new one |
 | `migrations.backoffLimit` | `3` | Number of retries on failure |
 | `migrations.activeDeadlineSeconds` | `600` | Job timeout (10 minutes) |
-| `migrations.useExistingSecret` | `false` | Use a custom Secret for `POSTGRES_PASSWORD` |
+| `migrations.useExistingSecret` | `false` | Use a custom Secret (`migrations.existingSecretName`) for `POSTGRES_PASSWORD` |
+| `migrations.postgres.*` | (empty) | Overrides the app's resolved Postgres connection for the Job, field by field |
+
+Hook weights and delete policies are fixed in the templates and are not values: the hook Secret runs at weight `-2` and the Job at `-1` (Helm `pre-install,pre-upgrade`, ArgoCD `PreSync`).
 
 > **Important:** In multi-tenant mode (`global.multiTenant.enabled: true`), the migrations Job is **not rendered**. Tenant schemas are provisioned through the tenant-manager service, not this chart.
 
@@ -382,29 +387,27 @@ The chart includes an optional mock STA server for development and testing. When
 ```yaml
 mockSta:
   enabled: true
-  replicaCount: 1
   image:
-    repository: ghcr.io/lerianstudio/br-sta-mock-sta
+    repository: ghcr.io/lerianstudio/mock-sta-server
     tag: ""  # Defaults to Chart.appVersion
   service:
-    type: ClusterIP
-    filePort: 8080
-    passwordPort: 8081
+    port: 80
+  defaultTerminalStatus: "35"  # the BACEN status every upload ends in (35 = accepted)
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `mockSta.enabled` | `false` | Enable the mock STA server |
-| `mockSta.service.filePort` | `8080` | Port for file transfer endpoints |
-| `mockSta.service.passwordPort` | `8081` | Port for password endpoints |
+| `mockSta.service.port` | `80` | Service port (targets the container's `http` port, 8080). File and password endpoints share this one port; the Service is always `ClusterIP` and the Deployment always has one replica |
+| `mockSta.defaultTerminalStatus` | `"35"` | The BACEN status every upload ends in |
 
 When `mockSta.enabled: true`, the chart automatically sets the STA client redirect environment variables:
 
-- `STA_FILE_HOST` → `http://<mock-service>.<namespace>.svc.cluster.local:8080`
-- `STA_PASSWORD_HOST` → `http://<mock-service>.<namespace>.svc.cluster.local:8081`
 - `STA_SCHEME` → `http`
+- `STA_FILE_HOST` → `<fullname>-mock-sta.<namespace>.svc.cluster.local` (host only, Service port 80)
+- `STA_PASSWORD_HOST` → the same host
 
-> **Warning:** The mock STA server is for **development and testing only**. It does not connect to BACEN. Disable it in production.
+> **Warning:** The mock STA server is for **development and testing only**. It does not connect to BACEN, and the render refuses it outside a development-class environment.
 
 ---
 
@@ -586,6 +589,8 @@ redpandaBundle:
 - Local Kubernetes cluster (kind, minikube, Docker Desktop)
 - No external dependencies
 
+The ready-made file is `values-dev.yaml`; the block below is an equivalent, rendered-and-checked variant.
+
 **values.yaml:**
 
 ```yaml
@@ -596,10 +601,14 @@ global:
   auth:
     enabled: false
   streaming:
-    enabled: true
-    brokers: "br-sta-redpanda.br-sta.svc.cluster.local:9093"
+    enabled: true            # brokers are derived from the bundled Redpanda
     tlsEnabled: false
     topicAutoProvision: true
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+    staAuditExports:
+      bucket: "br-sta-audit-exports"
   observability:
     enabled: false
 
@@ -608,15 +617,20 @@ common:
     deploymentMode: "local"
     logLevel: "debug"
   cors:
-    allowedOrigins: "*"
+    allowedOrigins: "http://localhost:3000"   # "*" is refused unless common.security.allowCorsWildcard is true
   license:
     organizationIds: "dev-org"
   secrets:
     LICENSE_KEY: "dev-license-key-placeholder"
-    MASTER_KEYS: "0000000000000000000000000000000000000000000000000000000000000000"
+    MASTER_KEYS: "v1:0000000000000000000000000000000000000000000000000000000000000000"   # version:hex, public dev-only value
+    RABBITMQ_DEFAULT_PASS: "dev-only-rabbitmq"
+    RABBITMQ_ERLANG_COOKIE: "dev-only-erlang-cookie-not-for-production"
+    AWS_ACCESS_KEY_ID: "any"
+    AWS_SECRET_ACCESS_KEY: "any"
 
 postgresql:
   enabled: true
+  external: false
   auth:
     username: "br_sta"
     password: "dev-password"
@@ -624,15 +638,13 @@ postgresql:
 
 valkey:
   enabled: true
+  external: false
   auth:
     enabled: true
     password: "dev-password"
 
 rabbitmq:
   enabled: true
-  auth:
-    username: "br_sta"
-    password: "dev-password"
 
 seaweedfs:
   enabled: true
@@ -663,7 +675,7 @@ worker:
       memory: 256Mi
 ```
 
-> **Note:** This configuration is for **local development only**. All bundled subcharts use plaintext connections and single replicas. Do not use in production.
+> **Note:** This configuration is for **local development only**. All bundled subcharts use plaintext connections and single replicas. Do not use in production. The pods do not boot until `LICENSE_KEY` and `common.license.organizationIds` are a real key and organization id.
 
 ---
 
@@ -795,7 +807,5 @@ Managed-cloud topology preset. Sets TLS/SSL defaults for datastores and object s
 **`global.env.name`** (string, default: `"production"`):
 Environment classification. Maps to `ENV_NAME` and `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`.
 
-- `"production"`: Production gates enabled (TLS required, license required, bundled infra refused)
+- `"production"`: Production gates enabled (no `sslmode=disable`, license required, RabbitMQ + outbox + transfer bucket required; `redpandaBundle` and `mockSta` refused)
 - `"development"`, `"develop"`, `"dev"`, `"local"`, `"test"`: Development class (allows `PLUGIN_AUTH_ENABLED=false`, bundled infra)
-
-**`global.datastores`** (object):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Offline render checks for the v3.9 startup prerequisites. No cluster needed."""
+import base64
 import copy
 from pathlib import Path
 from typing import Any
@@ -233,6 +234,92 @@ class StartupContract(unittest.TestCase):
         self.succeeds({})
         self.succeeds({'auth': {'configmap': {'MFA_ENABLED': 'false'}}})
         self.succeeds({'auth': {'configmap': {'MFA_ENABLED': False}}})
+
+    def identity_data(self, docs, kind):
+        name = 'startup-test-identity'
+        doc = next((d for d in docs if d['kind'] == kind and d['metadata']['name'] == name), None)
+        return None if doc is None else doc.get('data', {})
+
+    def test_google_directory_unset_adds_no_keys(self):
+        docs = self.succeeds({})
+        for kind in ['Secret', 'ConfigMap']:
+            keys = [k for k in self.identity_data(docs, kind) if k.startswith('GOOGLE_DIRECTORY_')]
+            self.assertEqual(keys, [], kind)
+
+    def test_google_directory_set_splits_secret_and_config(self):
+        docs = self.succeeds({'identity': {
+            'configmap': {'GOOGLE_DIRECTORY_ENABLED': 'true',
+                          'GOOGLE_DIRECTORY_CLIENT_ID': 'render-only.apps.googleusercontent.com',
+                          'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'},
+            'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only',
+                        'GOOGLE_DIRECTORY_ENCRYPTION_KEY': 'render-only-key-of-at-least-32-bytes'}}})
+        secret = self.identity_data(docs, 'Secret')
+        config = self.identity_data(docs, 'ConfigMap')
+        self.assertEqual(base64.b64decode(secret['GOOGLE_DIRECTORY_CLIENT_SECRET']), b'render-only')
+        self.assertIn('GOOGLE_DIRECTORY_ENCRYPTION_KEY', secret)
+        self.assertEqual(config['GOOGLE_DIRECTORY_ENABLED'], 'true')
+        self.assertEqual(config['GOOGLE_DIRECTORY_CLIENT_ID'], 'render-only.apps.googleusercontent.com')
+        self.assertEqual(config['GOOGLE_DIRECTORY_REDIRECT_URL'], 'https://console.example.test/cb')
+        for key in ['GOOGLE_DIRECTORY_CLIENT_SECRET', 'GOOGLE_DIRECTORY_ENCRYPTION_KEY']:
+            self.assertNotIn(key, config)
+
+    def test_google_directory_secret_only_without_flag(self):
+        # A secret set ahead of the flag renders and changes nothing else.
+        docs = self.succeeds({'identity': {'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only'}}})
+        self.assertIn('GOOGLE_DIRECTORY_CLIENT_SECRET', self.identity_data(docs, 'Secret'))
+        self.assertNotIn('GOOGLE_DIRECTORY_ENCRYPTION_KEY', self.identity_data(docs, 'Secret'))
+        self.succeeds({'identity': {'configmap': {'GOOGLE_DIRECTORY_ENABLED': 'false'}}})
+
+    def test_google_directory_enabled_needs_all_values(self):
+        for location in ['configmap', 'extraEnvVars']:
+            with self.subTest(location=location):
+                self.fails({'identity': {location: {'GOOGLE_DIRECTORY_ENABLED': 'true'}}},
+                           'GOOGLE_DIRECTORY_ENABLED=true needs a non-empty')
+        plain = {'GOOGLE_DIRECTORY_ENABLED': 'true', 'GOOGLE_DIRECTORY_CLIENT_ID': 'id',
+                 'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'}
+        self.fails({'identity': {'configmap': plain,
+                                 'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only'}}},
+                   'identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY')
+
+    def test_google_directory_key_length(self):
+        values = {'identity': {
+            'configmap': {'GOOGLE_DIRECTORY_ENABLED': 'true', 'GOOGLE_DIRECTORY_CLIENT_ID': 'id',
+                          'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'},
+            'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only',
+                        'GOOGLE_DIRECTORY_ENCRYPTION_KEY': ' ' + 'k' * 31 + ' '}}}
+        self.fails(values, 'at least 32 bytes')
+        values['identity']['secrets']['GOOGLE_DIRECTORY_ENCRYPTION_KEY'] = 'k' * 32
+        self.succeeds(values)
+
+    def test_google_directory_extra_must_be_string(self):
+        for value in [True, 1]:
+            with self.subTest(value=value):
+                self.fails({'identity': {'extraEnvVars': {'GOOGLE_DIRECTORY_ENABLED': value}}},
+                           'must be a quoted string')
+
+    def test_google_directory_existing_secret(self):
+        plain = {'GOOGLE_DIRECTORY_ENABLED': 'true', 'GOOGLE_DIRECTORY_CLIENT_ID': 'id',
+                 'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'}
+        values = {'identity': {'useExistingSecret': True, 'existingSecretName': 'operator-identity',
+                               'configmap': plain}}
+        docs = self.succeeds(values)
+        self.assertIsNone(self.identity_data(docs, 'Secret'))
+        values['identity']['existingSecretName'] = ''
+        self.fails(values, 'identity.existingSecretName')
+
+    def test_google_directory_secrets_refused_outside_secret(self):
+        for location in ['configmap', 'extraEnvVars']:
+            for key in ['GOOGLE_DIRECTORY_CLIENT_SECRET', 'GOOGLE_DIRECTORY_ENCRYPTION_KEY']:
+                with self.subTest(location=location, key=key):
+                    self.fails({'identity': {location: {key: 'not-secret-here'}}}, 'is sensitive')
+
+    def test_google_directory_key_in_one_place(self):
+        for key in ['GOOGLE_DIRECTORY_ENABLED', 'GOOGLE_DIRECTORY_CLIENT_ID', 'GOOGLE_DIRECTORY_REDIRECT_URL']:
+            with self.subTest(key=key):
+                self.fails({'identity': {'configmap': {key: 'one'}, 'extraEnvVars': {key: 'two'}}}, 'both')
+        # An explicit false is a value too: extraEnvVars "true" must not override it silently.
+        self.fails({'identity': {'configmap': {'GOOGLE_DIRECTORY_ENABLED': False},
+                                 'extraEnvVars': {'GOOGLE_DIRECTORY_ENABLED': 'true'}}}, 'both')
 
     def test_existing_secret_requires_a_name(self):
         for component in ('auth', 'identity'):

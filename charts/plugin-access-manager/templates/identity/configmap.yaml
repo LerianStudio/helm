@@ -131,6 +131,20 @@ data:
 
   # FORGOT PASSWORD (public self-service routes; off unless explicitly "true")
   ENABLE_FORGOT_PASSWORD: {{ .Values.identity.configmap.ENABLE_FORGOT_PASSWORD | default "false" | quote }}
+  {{- /* GOOGLE WORKSPACE DIRECTORY (identity 3.12.0+; the application keeps it
+     off unless GOOGLE_DIRECTORY_ENABLED is "true"). Each key renders only when
+     set, so an install that leaves them empty gets the same ConfigMap as
+     before. The client secret and the encryption key are not here: they live
+     in identity.secrets (templates/identity/secrets.yaml). */}}
+  {{- with $cm.GOOGLE_DIRECTORY_ENABLED }}
+  GOOGLE_DIRECTORY_ENABLED: {{ . | quote }}
+  {{- end }}
+  {{- with $cm.GOOGLE_DIRECTORY_CLIENT_ID }}
+  GOOGLE_DIRECTORY_CLIENT_ID: {{ . | quote }}
+  {{- end }}
+  {{- with $cm.GOOGLE_DIRECTORY_REDIRECT_URL }}
+  GOOGLE_DIRECTORY_REDIRECT_URL: {{ . | quote }}
+  {{- end }}
 
   # RUNTIME
   DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}

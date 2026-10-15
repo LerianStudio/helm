@@ -40,8 +40,9 @@ $ helm upgrade plugin-br-bank-transfer oci://ghcr.io/lerianstudio/plugin-br-bank
 
 - Latest stable v1: chart `1.5.0`, application `1.2.1` — see
   [UPGRADE-1.5.md](docs/UPGRADE-1.5.md).
-- Latest stable v2: chart/application `2.0.0` — see the mandatory
-  [v1-to-v2 deployment how-to](docs/UPGRADE-2.0.md). This major upgrade forbids
+- Latest stable v2: chart `2.4.0`, application `3.1.0` — see
+  [UPGRADE-2.4.md](docs/UPGRADE-2.4.md). Upgrading from v1 to v2 is covered by the mandatory
+  [v1-to-v2 deployment how-to](docs/UPGRADE-2.0.md); that major upgrade forbids
   rolling old and new binaries together.
 
 ---
@@ -200,7 +201,7 @@ bankTransfer:
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
 | `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `bankTransfer.image.tag` | Image tag used for deployment | `2.0.0` |
+| `bankTransfer.image.tag` | Image tag used for deployment | `3.1.0` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `bankTransfer.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
 | `bankTransfer.nameOverride` | Overrides the default generated name by Helm | `""` |
@@ -216,8 +217,8 @@ bankTransfer:
 | `bankTransfer.podSecurityContext` | Pod security context | `{}` |
 | `bankTransfer.securityContext` | Security context for the container | See `values.yaml` |
 | `bankTransfer.pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
-| `bankTransfer.pdb.minAvailable` | Minimum number of available pods | `1` |
-| `bankTransfer.pdb.maxUnavailable` | Maximum number of unavailable pods | `1` |
+| `bankTransfer.pdb.minAvailable` | Minimum number of available pods. Used only when `maxUnavailable` is unset or `0`/empty; the chart default sets `maxUnavailable`, so this value is ignored unless you clear it | `1` |
+| `bankTransfer.pdb.maxUnavailable` | Maximum number of unavailable pods. Takes precedence over `minAvailable` when set | `1` |
 | `bankTransfer.resources` | CPU and memory limits for pods | See `values.yaml` |
 | `bankTransfer.autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
 | `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas | `2` |
@@ -287,7 +288,6 @@ Key environment variables configured via `bankTransfer.configmap`:
 | Variable | Description | Default |
 | --- | --- | --- |
 | `ENVIRONMENT_NAME` | Environment name; `global.env.name` sets it env-wide. The chart also emits `ENV_NAME`, its deprecated alias, with the same value for app images that read only `ENV_NAME`. `configmap.ENV_NAME` is still honoured; setting both keys to different values fails the render. A blank, whitespace-only or null value at any level counts as unset | `production` |
-| `LOG_LEVEL` | Log level | `info` |
 | `SERVER_ADDRESS` | Server listen address | `:4027` |
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |
 | `REDIS_HOST` | Redis/Valkey host | Dynamic based on release |
@@ -316,7 +316,7 @@ Key secrets configured via `bankTransfer.secrets`:
 | `POSTGRES_PASSWORD` | PostgreSQL password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external PostgreSQL without `postgresql.auth.existingSecret`. |
 | `REDIS_PASSWORD` | Redis/Valkey password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external Valkey without `valkey.auth.existingSecret`. |
 | `MONGO_PASSWORD` | MongoDB password. With the bundled subchart it is read from the subchart Secret (key `mongodb-passwords`); set only for an external MongoDB without `mongodb.auth.existingSecret`. |
-| `MONGO_URI` | MongoDB connection URI. Auto-assembled on the deployment from `MONGO_PASSWORD`; set explicitly only to override (e.g. external MongoDB). |
+| `MONGO_URI` | MongoDB connection URI. Auto-assembled on the deployment from `MONGO_PASSWORD`; set explicitly only to override (e.g. external MongoDB). A value set here is rendered as a literal `env` value on the Deployment, not as a Secret reference; to keep the credential out of the pod spec use `bankTransfer.useExistingSecret`. |
 | `LICENSE_KEY` | Lerian licence key. **Required** by newer app images, in every environment. The chart does not check it. |
 | `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 | `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |

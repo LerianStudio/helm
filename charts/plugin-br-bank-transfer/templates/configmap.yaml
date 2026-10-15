@@ -11,7 +11,7 @@
    datastores): resolved once so both the emitted key AND the multi-tenant
    control-flow gate below see the same value. */ -}}
 {{- $mtRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") -}}
-{{- $multiTenantEnabled := eq (toString $mtRaw) "true" }}
+{{- $multiTenantEnabled := eq (lower (toString $mtRaw)) "true" }}
 kind: ConfigMap
 apiVersion: v1
 metadata:

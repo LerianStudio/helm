@@ -37,7 +37,10 @@ spec:
       serviceAccountName: {{ include "bank-transfer.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.bankTransfer.podSecurityContext | nindent 8 }}
-      {{- $multiTenantEnabled := eq (toString (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
+      {{- /* Same global.multiTenant mask configmap.yaml resolves MULTI_TENANT_ENABLED through, so the
+             dependency wait gate is skipped exactly when the ConfigMap omits POSTGRES_*. */}}
+      {{- $multiTenantEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" (.Values.bankTransfer.configmap | default dict) "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") }}
+      {{- $multiTenantEnabled := eq (lower (toString $multiTenantEnabledRaw)) "true" }}
       {{- if not $multiTenantEnabled }}
       # In multi-tenant mode the bootstrap does not connect to any static
       # Postgres / Redis at boot — per-tenant connections are resolved via

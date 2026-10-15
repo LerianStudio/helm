@@ -365,6 +365,14 @@ data:
   # fixed segment "system-facts" in the app. SYSTEM_FACTS_TOKEN is dev-only and
   # reaches the pod through bankTransfer.extraEnvVars / an existing Secret.
   # =====================================================================
+  {{- /* Modeled System Facts keys must come from configmap/secrets, never extraEnvVars:
+       extraEnvVars render after this block, so an override would skip the gates
+       below and emit a duplicate key. SYSTEM_FACTS_TOKEN (dev-only) stays allowed. */}}
+  {{- range $k := list "SYSTEM_FACTS_ENABLED" "SYSTEM_FACTS_URL" "SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE" "SYSTEM_FACTS_INSECURE_HTTP" "SYSTEM_FACTS_CLIENT_ID" "SYSTEM_FACTS_CLIENT_SECRET" }}
+  {{- if hasKey ($.Values.bankTransfer.extraEnvVars | default dict) $k }}
+  {{- fail (printf "\n\nERROR: bankTransfer.extraEnvVars.%s is not allowed: set it under bankTransfer.configmap (or bankTransfer.secrets for the client pair) so the System Facts render gates apply.\n" $k) }}
+  {{- end }}
+  {{- end }}
   {{- $sfEnabled := eq (lower (toString (index $cm "SYSTEM_FACTS_ENABLED" | default "false"))) "true" }}
   SYSTEM_FACTS_ENABLED: {{ $sfEnabled | toString | quote }}
   {{- if $sfEnabled }}

@@ -12,7 +12,7 @@
 
 | Campo | Valor |
 |---|---|
-| Produto / Chart | `product-console` (chart `4.0.x` / app `1.12.0`) |
+| Produto / Chart | `product-console` (chart `4.0.x` em diante; versão da app: `appVersion` no `Chart.yaml` / `image.tag` no `values.yaml`) |
 | Tipo de chart | `single-service` — um único Deployment (UI Next.js + BFF do Midaz) |
 | Squad responsável | Console / Frontend |
 | Última revisão deste runbook | 2026-09-15, contra chart `4.0.x` |
@@ -29,7 +29,7 @@ qual preset de nuvem gerenciada se aplica.
 
 | Perfil | Formato | Caso de uso |
 |---|---|---|
-| Demo standalone | MongoDB embutido (`mongodb.enabled: true`, default), `ingress.enabled: false`, auth desligado | Só local/experimentação. **Não** usar em nada exposto. |
+| Demo standalone | MongoDB embutido (`mongodb.enabled: true`, default), `ingress.enabled: false`, auth desligado | Só local/experimentação. A imagem publicada não sobe com auth desligado (seção 5): setar `global.auth.enabled: "true"` aqui também. **Não** usar em nada exposto. |
 | Dev/homolog integrado | MongoDB externo, ingress ligado, base paths dos irmãos apontando pros serviços reais no cluster, auth ligado | Topologia de referência `benedita/dev-st` |
 | Produção | MongoDB gerenciado externo (DocumentDB via `global.cloud: aws`), ingress + TLS, auth ligado, `NEXTAUTH_SECRET` de um secret manager, `TRUSTED_PROXIES` no CIDR do ingress | Voltado ao cliente |
 
@@ -68,8 +68,8 @@ só quando os nomes de serviço/namespace diferirem.
    `secrets.NEXTAUTH_SECRET` (chave de assinatura do NextAuth — a app não é segura sem
    ela), `secrets.MONGODB_PASS`, e — quando auth ligado — `PLUGIN_AUTH_CLIENT_ID`/`_SECRET`.
 3. Ligar a autorização **explicitamente** em qualquer ambiente exposto:
-   `global.auth.enabled: "true"` (ou `configmap.PLUGIN_AUTH_ENABLED: "true"`). O console
-   **não** fail-close na ausência do toggle — ver seção 5.
+   `global.auth.enabled: "true"` (ou `configmap.PLUGIN_AUTH_ENABLED: "true"`). A
+   imagem publicada do console recusa subir com a autorização desligada (sai com código 1) — ver seção 5.
 4. Apontar os base paths inter-serviço pros serviços reais se os namespaces diferirem dos
    defaults (Midaz, access-manager, CRM, Reporter, …).
 5. Setar `TRUSTED_PROXIES` no CIDR dos hops na frente do console (normalmente o CIDR de
@@ -135,7 +135,7 @@ ConfigMap nas versões do chart que carregam a chave allowlistada (LerianStudio/
 
 | Tópico | O que saber | Antes de habilitar / como confirmar |
 |---|---|---|
-| **Autorização é OFF por default** | O console aplica permissões só quando o valor renderizado é a palavra literal `true` (`PLUGIN_AUTH_ENABLED` no servidor, `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` no browser). `false`/vazio/`1`/`TRUE`/`yes` leem como OFF; o console **não** fail-close. | Setar `global.auth.enabled: "true"` (ou a chave nativa) em todo release staging/prod. Confirmar com request sem token → deve ser 401/403. |
+| **Autorização é OFF por default** | O console aplica permissões só quando o valor renderizado é a palavra literal `true` (`PLUGIN_AUTH_ENABLED` no servidor, `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` no browser). `false`/vazio/`1`/`TRUE`/`yes` leem como OFF. A imagem publicada recusa subir quando `PLUGIN_AUTH_ENABLED` e `OAUTH_ENABLED` não são `true` (`[startup] FATAL`, exit 1), então o default `false` do chart entra em crash-loop em vez de servir um console aberto. | Setar `global.auth.enabled: "true"` (ou a chave nativa) em todo release staging/prod. Confirmar com request sem token → deve ser 401/403. |
 | **Split auth servidor × browser** | A chave do browser copia o valor do servidor só enquanto `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` está vazia. Uma chave de browser não-vazia é usada literal e nunca reconciliada com o servidor — `"TRUE"` ao lado de um servidor ligado dá servidor ON / browser OFF. | Deixar a chave do browser vazia, ou setar as duas na palavra exata `true`. |
 | **`NEXTAUTH_SECRET` é obrigatório em produção** | NextAuth secret vazio ⇒ sessões não são assinadas com segurança. | Fornecer via `secrets` / secret manager antes do install. |
 | **`TRUSTED_PROXIES` vazio = nenhum client IP** | Vazio significa que nenhum hop do `X-Forwarded-For` é acreditado, então o allowlist de IP do tenant nunca é aplicado e as chamadas de saída levam `X-Client-Ip-Resolution: unresolved; reason=trusted-proxies-not-configured`. | Setar no CIDR de pod/service do ingress (ex.: `10.42.0.0/16`). **Não alargue** — um range que cobre callers reais os esconde. |

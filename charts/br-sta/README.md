@@ -204,6 +204,25 @@ Worker-only (`worker.*`, rendered into the worker ConfigMap):
 
 Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`, `REDIS_URL`) and `MASTER_ENCRYPTION_KEY` (documented in the app's `.env.example`, not read by the service), `LICENSE_SERVICE_ADDRESS` (reserved, not consumed), `MIGRATIONS_PATH` (the app does not run migrations; the Job sets it). The docker-compose server tuning (`POSTGRES_MAX_CONNECTIONS`, `POSTGRES_SHARED_BUFFERS`) and the inert keys from earlier pre-releases (`REPORTER_EVENTS_CONSUMER_ROUTING_KEY`, `REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY`, `REPORTER_EVENTS_EXPECTED_TENANT`, `TRUST_STORE_*`) are dropped from the escape hatch with a NOTES warning.
 
+#### `TRUST_STORE_*` and images built from the application source
+
+The chart drops every `TRUST_STORE_*` key (`br-sta.removedKeys`) because the published images at `appVersion` 1.0.0 do not read them: the `ghcr.io/lerianstudio/br-sta-manager:1.0.0` binary (image revision `9b19bd4c`) contains no `TRUST_STORE_S3_BUCKET` string and no `/v1/certificates` route. The application source differs: the `v1.0.0` tag (`0a3d9d4e`) and `main` (checked at `7d275b65`) still require `TRUST_STORE_S3_BUCKET` at boot (`internal/bootstrap/config_validation.go`, `validateTrustStoreConfig`: `TRUST_STORE_S3_BUCKET is required`). An image built from either ref therefore refuses to start with this chart's ConfigMap alone.
+
+With the published images no action is needed. If you run an image built from the `v1.0.0` tag or from `main`, pass the key as a pod env entry on **both** components. `common.configmap` and `common.secrets` do not work for it: the chart drops the key there and prints the NOTES warning.
+
+```yaml
+manager:
+  extraEnvVars:
+    - name: TRUST_STORE_S3_BUCKET
+      value: <trust-store-bucket>
+worker:
+  extraEnvVars:
+    - name: TRUST_STORE_S3_BUCKET
+      value: <trust-store-bucket>
+```
+
+`TRUST_STORE_S3_REGION` (app default `us-east-1`), `TRUST_STORE_S3_ENDPOINT` and `TRUST_STORE_S3_PATH_STYLE` are optional and go through `extraEnvVars` the same way when the bucket is not on the default AWS S3 endpoint. The chart does not create this bucket. Whether the chart should model these keys again depends on which application ref is released next; until then `removedKeys` follows the published image.
+
 ### Secrets
 
 | Key | Required when |

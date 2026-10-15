@@ -298,6 +298,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `RECONCILIATION_MAX_BOLETOS_PER_CYCLE` | unset (app default) |
 | `RECONCILIATION_MAX_MONEY_ITEMS_PER_CYCLE` | unset (app default) |
 | `RECONCILIATION_BOLETO_GRACE_PERIOD` | unset (app default) |
+| `RECONCILIATION_BOLETO_RESERVATION_GRACE_PERIOD` | unset (app default `30m`; clamped to at least `15m` and to four `BTG_HTTP_TIMEOUT`s, no ceiling) |
 | `RECONCILIATION_PAYMENT_GRACE_PERIOD` | unset (app default) |
 | `RECONCILIATION_WEBHOOK_CLAIM_LEASE` | unset (app default) |
 | `RECONCILIATION_WEBHOOK_SILENCE_WINDOW` | unset (app default) |

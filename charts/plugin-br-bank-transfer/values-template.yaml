@@ -81,7 +81,6 @@ bankTransfer:
     # AWS_REGION: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # MULTI_TENANT_REDIS_HOST: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # MULTI_TENANT_REDIS_TLS: "false"
-    # MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE: "tenants/{env}/{tenantId}/{applicationName}/integration/configuration"
 
     # =================================================================
     # RabbitMQ (event bus, optional)

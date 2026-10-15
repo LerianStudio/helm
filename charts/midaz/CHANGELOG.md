@@ -9,6 +9,22 @@ Fixes:
 - Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
 
 Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
 - Limit the `TRACER_TRANSPORT` note to a configured tracer integration. (@gandalf-at-lerian)
 - Explain the `TRACER_TRANSPORT` default by ledger version. (@gandalf-at-lerian)
 

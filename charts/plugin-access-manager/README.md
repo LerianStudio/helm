@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
+- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - Initial admin: `auth.initUser.enabled` controls a `post-install` bootstrap Job only. It never runs on upgrades, so upgrades and later values changes do not reset the password or recreate a deleted admin account. The init-user binary (since v3.9.0) preserves existing users instead of resetting their credentials. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow; do not assume `auth.initUser.adminPassword` overwrites them. For a new account, supply that value or the key selected by `auth.initUser.adminPasswordSecretName` / `adminPasswordSecretKey`.
@@ -37,6 +37,15 @@ mutate that package.
   `configmap`, and identity's auth switch in `identity.configmap.AUTH_ENABLED`, not in
   `extraEnvVars`: they are already emitted and duplicate YAML keys are refused. Set
   `AUTH_M2M_JWKS_URL` in one place only.
+- **Google Workspace directory (identity 3.12.0+).** With
+  `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, the chart refuses to render
+  unless `GOOGLE_DIRECTORY_CLIENT_ID` and `GOOGLE_DIRECTORY_REDIRECT_URL` are set in
+  `identity.configmap`, and `GOOGLE_DIRECTORY_CLIENT_SECRET` and
+  `GOOGLE_DIRECTORY_ENCRYPTION_KEY` (at least 32 bytes) in `identity.secrets`. With
+  `identity.useExistingSecret=true` it checks only that `identity.existingSecretName`
+  is set; add the two secret keys to that Secret yourself. The two secret keys are
+  refused in `identity.configmap` and `identity.extraEnvVars`; the plain keys must be
+  quoted strings in `extraEnvVars`. Unset, none of the five keys is rendered.
 - These checks validate chart-visible settings only; they do not certify an
   end-to-end upgrade, TLS trust, licenses, or existing users' MFA recovery paths.
   See the [9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md) before rollout.
@@ -302,6 +311,11 @@ required. To keep the previous pod template exactly, set
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
 | `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Literal callback URL for this component, overriding `common.sso.*`. Must match the auth component — see [Single sign-on](#single-sign-on-commonssobaseurl) | unset |
+| `configmap.GOOGLE_DIRECTORY_ENABLED` | `"true"` turns on the Google Workspace directory connection (identity 3.12.0+). Needs the other four `GOOGLE_DIRECTORY_*` values | unset |
+| `configmap.GOOGLE_DIRECTORY_CLIENT_ID` | Client id of Lerian's Google OAuth client | unset |
+| `configmap.GOOGLE_DIRECTORY_REDIRECT_URL` | OAuth redirect URL registered on that client (https) | unset |
+| `secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` | Client secret of that Google OAuth client. Rendered only when set | `""` |
+| `secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` | Encrypts each organization's stored Google refresh token; at least 32 bytes. Changing it forces every connected organization to reconnect. Rendered only when set | `""` |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
 

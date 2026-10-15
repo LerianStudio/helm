@@ -2,8 +2,9 @@
   "branches": [
     "main",
     {
-      "name": "develop",
-      "prerelease": "beta"
+      "name": "maintenance/midaz-9.0.x",
+      "range": "9.0.x",
+      "channel": "9.0.x"
     }
   ],
   "plugins": [

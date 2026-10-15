@@ -1,3 +1,0 @@
-{{- if $.Values.slcEdge.enabled -}}
-{{ include "br-sfn.componentPdb" (dict "root" $ "name" "slc-edge" "comp" $.Values.slcEdge) }}
-{{- end -}}

@@ -3,10 +3,12 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), and `secrets.DATASOURCE_ONBOARDING_PASSWORD`. The MongoDB password is **not** operator-provided with the bundled subchart: it is auto-generated into the `<release>-mongodb` Secret (key `mongodb-root-password`) and read via `secretKeyRef`.
+- Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), and `secrets.DATASOURCE_ONBOARDING_PASSWORD`. The MongoDB password is **not** operator-provided with the bundled subchart: it is generated into the `<release>-mongodb` Secret (key `mongodb-root-password`), which this chart owns and keeps across uninstall, and read via `secretKeyRef`.
 - Required from app 3.0.0 on: `secrets.DATASOURCE_CRED_ENC_KEY` — a hex-encoded AES key (16/24/32 bytes; `openssl rand -hex 32`) that both components use to encrypt registered data-source credentials at rest. It must be **identical** on the manager and the worker, and it **cannot be rotated** in that release. The render fails when either component's `image.tag` is `>= 3.0.0` and the key is empty; app 2.4.x (the chart's default appVersion) ignores it. See `docs/UPGRADE-4.1.md`.
-- Single-source infra secrets: MongoDB follows Pattern A (app reads the subchart Secret). RabbitMQ follows Pattern B (the groundhog2k broker is pointed at the application `reporter-manager` Secret via `rabbitmq.authentication.existingSecret`, so the broker password lives only in `secrets.RABBITMQ_DEFAULT_PASS`; this also removes the prior `midaz`-vs-`plugin` user mismatch). Valkey: the valkey.io subchart exposes no Secret-based password mechanism (auth is an inline ACL) and ships with `auth.enabled: false`, so there is no single-source wiring for it here. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
+- Single-source infra secrets: MongoDB follows Pattern A, except that the chart, not the subchart, owns the `<release>-mongodb` Secret; the subchart reads it through `mongodb.auth.existingSecret`. RabbitMQ follows Pattern B (the groundhog2k broker is pointed at the application `reporter-manager` Secret via `rabbitmq.authentication.existingSecret`, so the broker password lives only in `secrets.RABBITMQ_DEFAULT_PASS`; this also removes the prior `midaz`-vs-`plugin` user mismatch). Valkey: the valkey.io subchart exposes no Secret-based password mechanism (auth is an inline ACL) and ships with `auth.enabled: false`, so there is no single-source wiring for it here. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
 - Release name: the hardcoded infra hosts and the `<release>-mongodb` / `reporter-manager` Secret references assume the release is installed as `reporter`. If you override `manager.name`/`manager.existingSecretName`, set `rabbitmq.authentication.existingSecret` to match.
+- Broker volume: the bundled RabbitMQ keeps its queues on PVC `reporter-rabbitmq`. The first upgrade to a chart version that renders it restarts the broker once, and messages still queued in the old in-pod directory (emptyDir) are lost; let the queues drain before that upgrade.
+- Bundled broker login: with `rabbitmq.enabled` the broker's only user is `secrets.RABBITMQ_DEFAULT_USER` (tag `management`, which the app's broker health check needs) with `secrets.RABBITMQ_DEFAULT_PASS`. Until the manager and the worker escape the password in their broker URL, only letters, digits and `-._~` are safe in it: a space, `"`, `\`, a backtick, `/`, `#`, `?`, `%` or a non-ASCII letter crash-loops the manager. The render refuses an empty password, the passwords printed in this chart (`reporter123` and `Lerian@123`, defaults of earlier versions, and the `CHANGE_ME` placeholder), and `manager.useExistingSecret` or `worker.useExistingSecret` (the broker never learns an external Secret's password). The broker takes the password when its pod starts: after changing it, or after upgrading from a version that shipped `reporter123`, run `kubectl -n <namespace> rollout restart statefulset/<release>-rabbitmq`. The broker's volume keeps the users it already has: after renaming `secrets.RABBITMQ_DEFAULT_USER`, delete the old one with `kubectl -n <namespace> exec <release>-rabbitmq-0 -- rabbitmqctl delete_user <old-user>`.
 - Dependency notes: Uses local MongoDB and RabbitMQ dependency charts unless external services are configured.
 - Production overrides: Provide reporting database and messaging credentials through chart secrets or existing Secrets where supported; override manager/worker image tags, ingress, resources, KEDA settings, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -59,6 +61,8 @@ helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --ve
 ```bash
 helm uninstall reporter -n reporter
 ```
+
+Uninstall keeps the data. The bundled MongoDB volume (PVC `<release>-mongodb`) and its password Secret (`<release>-mongodb`) stay, as do the SeaweedFS report volumes (StatefulSet claims) and the RabbitMQ volume with its queued messages (PVC `reporter-rabbitmq`), so a reinstall under the same release name opens the same data with the same password. The RabbitMQ claim keeps that fixed name under any release name, so an install under another release name in the same namespace is refused until the claim is deleted. Deleting the data is a separate, manual step: `kubectl delete pvc <release>-mongodb -n reporter`, `kubectl delete pvc reporter-rabbitmq -n reporter` and `kubectl delete secret <release>-mongodb -n reporter`. Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned. The chart, not the MongoDB subchart, owns that password: set `mongodb.auth.rootPassword` to choose it, or `mongodb.auth.existingSecret` to bring your own Secret (the chart then renders none).
 
 ## Configuration
 
@@ -115,6 +119,77 @@ render-equivalent for the bundled dev topology (no override needed) unless noted
 unintentional short-name drift was caught in review) are unchanged from the
 pre-adoption defaults — kept byte-identical for existing installs.
 
+### Pod Spreading (`global.scheduling.spread`)
+
+Every Deployment of this chart (the manager, and the worker when it runs as a
+Deployment with `keda.enabled=false`) renders `topologySpreadConstraints` from the
+`lerian-common` spread preset. The default is
+**soft** (`ScheduleAnyway`) across nodes, so replicas are spread across nodes (e.g. spot nodes)
+whenever possible, but a pod is never left `Pending` because of it.
+
+Zone spreading is **off** by default (`zone: ""`). When scoring a soft spread, the
+scheduler skips every node that lacks the `topology.kubernetes.io/zone` label, so on
+clusters without zone labels (bare-metal, k3s) a zone constraint silently cancels the
+node spread. Turn it on (`zone: ScheduleAnyway`) where every node carries zone labels
+(EKS, GKE, AKS).
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
+      maxSkew: 1               # integer >= 1
+      minDomains: 0            # DoNotSchedule constraints only; 0 = off
+      nodeTaintsPolicy: ""     # Honor | Ignore | "" (Kubernetes default Ignore)
+manager:
+  spread: { hostname: DoNotSchedule }  # field-level override of the global preset
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
+```
+
+On EKS + Karpenter use a hard node spread:
+
+```yaml
+global:
+  scheduling:
+    spread:
+      hostname: DoNotSchedule
+      zone: ScheduleAnyway
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: Honor
+```
+
+`minDomains: 2` is required with `DoNotSchedule`. Skew is measured only against nodes
+that already exist, so on a single eligible node all replicas would otherwise share
+it. With fewer than 2 nodes the extra replica stays `Pending` until Karpenter launches
+another node. `nodeTaintsPolicy: Honor` stops tainted nodes (for example a node being
+drained) from counting as domains.
+
+Precedence: `<component>.topologySpreadConstraints` (non-empty, wins entirely) >
+`<component>.spread.<field>` > `global.scheduling.spread.<field>` > off. Each
+preset constraint selects only the component's own pods
+(`labelSelector` = the Deployment's `spec.selector.matchLabels`) of the same
+ReplicaSet (`matchLabelKeys: [pod-template-hash]`), so a rolling update is never
+blocked by the old ReplicaSet's pods, even with `DoNotSchedule`. Requires
+Kubernetes >= 1.27 (`matchLabelKeys`, beta since 1.27 and enabled by default);
+on 1.19–1.26 set `global.scheduling.spread.enabled: false`, leave every
+`<component>.spread.enabled` unset or `false` (both override the global switch). Raw
+`<component>.topologySpreadConstraints` must also respect the cluster version: omit
+`matchLabelKeys` (needs 1.27+), `minDomains` (GA in 1.30) and `nodeTaintsPolicy` /
+`nodeAffinityPolicy` (on by default since 1.26) on older clusters, or the API
+rejects or drops them. Use `DoNotSchedule` only when
+the cluster can always provide enough distinct nodes/zones for the replica count
+(a hard constraint leaves extra pods `Pending` otherwise). The KEDA `ScaledJob`
+worker (the default) is a Job and is not spread.
+
+**Upgrade note:** the preset is on by default, so upgrading to the chart version
+that introduces it adds `topologySpreadConstraints` to the manager (and the
+Deployment-mode worker) pod template and triggers **one rolling restart** of
+those Deployments. No values change is required. To keep the previous pod
+template exactly, set `global.scheduling.spread.enabled: false`.
+
 ### Common Settings
 
 | Parameter | Description | Default |
@@ -170,12 +245,12 @@ The `secrets` section in `values.yaml` is fully dynamic. Any key/value pair adde
 ```yaml
 secrets:
   RABBITMQ_DEFAULT_USER: reporter
-  RABBITMQ_DEFAULT_PASS: Lerian@123
+  RABBITMQ_DEFAULT_PASS: <your-rabbitmq-password>
   # Stable Erlang cookie for the bundled RabbitMQ (required when rabbitmq.enabled).
   # Generate once with: openssl rand -hex 32
   RABBITMQ_ERLANG_COOKIE: <stable-cookie>
   DATASOURCE_ONBOARDING_PASSWORD: lerian
-  # MONGO_PASSWORD is single-sourced from the bundled mongodb subchart Secret and read
+  # MONGO_PASSWORD is single-sourced from the chart's bundled-MongoDB Secret and read
   # via secretKeyRef — leave it unset; only set it for an EXTERNAL MongoDB.
   # REDIS_PASSWORD is omitted because the bundled valkey runs with auth disabled.
   # At-rest encryption of registered data-source credentials. Required by app >= 3.0.0
@@ -318,6 +393,53 @@ analytics_db:reports.monthly_summary
 ### Using Existing Secrets
 
 When `useExistingSecret` is enabled for manager/worker, datasource passwords must be included in the external secret alongside all other required keys. The chart does not create any Secret resources in this mode.
+
+### Reserved CRM Datasource (Opt-in)
+
+CRM is disabled unless at least one `DATASOURCE_CRM_*` key is supplied. When it
+is declared, Reporter requires the complete non-secret block below in
+`common.configmap`; the chart does not invent an organization ID or a connection
+default:
+
+```yaml
+common:
+  configmap:
+    DATASOURCE_CRM_CONFIG_NAME: "plugin_crm" # reserved name
+    DATASOURCE_CRM_TYPE: "mongodb"
+    DATASOURCE_CRM_HOST: "crm.example.invalid"
+    DATASOURCE_CRM_PORT: "27017"
+    DATASOURCE_CRM_DATABASE: "crm"
+    DATASOURCE_CRM_USER: "reporter"
+    DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+```
+
+`DATASOURCE_CRM_CONFIG_NAME` must remain `plugin_crm`; it is a reserved
+datasource rather than a general-purpose alias. The organization ID must be the
+organization entitled to that CRM data. The chart fails its render if CRM is
+partially configured, has a different config name or type, or omits this scope.
+Non-CRM installations are unaffected.
+
+Keep these values in `secrets:` when the chart manages its Secrets, never in a
+ConfigMap:
+
+```yaml
+secrets:
+  DATASOURCE_CRM_PASSWORD: "<crm-password>"
+  CRYPTO_HASH_SECRET_KEY_CRM: "<crm-hash-key>"
+  CRYPTO_ENCRYPT_SECRET_KEY_CRM: "<crm-encryption-key>"
+```
+
+Do not replace or rotate `DATASOURCE_CRED_ENC_KEY` as part of this setup. With
+`manager.useExistingSecret` or `worker.useExistingSecret`, Helm cannot inspect
+the external Secret; provide the same CRM keys in each selected external Secret.
+The non-secret CRM guard still applies.
+
+In single-tenant mode the Manager owns CRM bootstrap/reconciliation. It may
+backfill a missing organization ID but does not overwrite a non-empty persisted
+value. In multi-tenant mode that seed is skipped. Do not create, rotate, or edit
+`plugin_crm` through the ordinary datasource API or by manually changing the
+registry; investigate an existing scope mismatch through the supported runtime
+path.
 
 ## External RabbitMQ Bootstrap
 

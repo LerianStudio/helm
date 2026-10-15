@@ -19,8 +19,7 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ .Values.pix.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
 
   # VALKEY
-  REDIS_HOST: {{ .Values.pix.configmap.REDIS_HOST | default (include "plugin-br-pix-indirect-btg.valkeyHost" .) | quote }}
-  REDIS_PORT: {{ .Values.pix.configmap.REDIS_PORT | default "6379" | quote }}
+  REDIS_HOST: {{ .Values.pix.configmap.REDIS_HOST | default (printf "%s:6379" (include "plugin-br-pix-indirect-btg.valkeyHost" .)) | quote }}
   REDIS_USER: {{ .Values.pix.configmap.REDIS_USER | default "plugin" | quote }}
 
   # USE ONLY ON SENTINEL

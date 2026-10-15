@@ -1,0 +1,1 @@
+{"body": "clientName=Producao da regiao inicializado", "categoria": "falso-positivo", "descricao": "A particula so e aceita ENTRE termos capitalizados: 'da regiao' e minusculo, entao a captura nao avanca e a linha fica intacta."}

@@ -98,15 +98,30 @@ component that changed, so their tags may legitimately differ.
 | `0.4.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
 -----------------
 
-### Plugin BR Pix Switch
+### BR JD Courier
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-switch).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-jd-courier).
+
+Multi-component chart for the JD Courier: four role Deployments (`spb-consumer`,
+`spb-sender`, `pix-ingress`, `admin`) off one image, `ghcr.io/lerianstudio/br-jd-courier`.
+The release bumps `jd-courier.image.tag`, which is the column below.
+
+#### Application Version Mapping
+
+| Chart Version | Br-Jd-Courier Version |
+| :---: | :---: |
+| `1.0.0` | 1.1.0 |
+-----------------
+
+### Plugin BR Pix Lerian
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-lerian).
 
 #### Application Version Mapping
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0-beta.1 |
+| `1.0.0` | 1.0.0-beta.337 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -147,19 +162,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | `3.1.0` | 3.0.2 | 3.0.2 |
 -----------------
 
-### Lender
-
-For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
-
-#### Application Version Mapping
-
-| Chart Version | Lender Version |
-| :---: | :---: |
-| `1.0.0-beta.1` | 1.0.0-beta.48 |
------------------
-
 ### Tracer
 
 For more details, check out the [official documentation](https://docs.lerian.studio/en/tracer).
@@ -173,7 +175,25 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.1.0` | 1.0.0 |
 -----------------
 
+### Alloy Lerian
+
+Telemetry collection agent for client clusters (BYOC). Replaces Otel Collector Lerian in the client-side collection role.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/alloy-lerian).
+
+#### Application Version Mapping
+
+| Chart Version | Alloy Version |
+| :---: | :---: |
+| `1.0.0` | 1.18.1 |
+-----------------
+
 ### Otel Collector Lerian
+
+> [!WARNING]
+> **Deprecated.** Superseded by [Alloy Lerian](#alloy-lerian) for client-side
+> collection. New installations should use Alloy Lerian; existing ones remain
+> supported while they migrate.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/otel-collector-lerian).
 
@@ -228,18 +248,8 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version | Migrations Version |
 | :---: | :---: | :---: |
+| `1.2.0` | `1.2.0` | `1.2.0` |
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
------------------
-
-### BR SFN
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sfn).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `1.1.0` | `1.0.0-beta.1` |
 -----------------
 
 ### BR Consignado GW
@@ -255,17 +265,30 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.1.0` | `1.3.0-beta.36` |
 -----------------
 
-### Streaming Hub
+### BR STA
 
-Event delivery edge: consumes lib-streaming CloudEvents from Redpanda and fans them out per tenant to webhooks and queues.
+BACEN STA (Sistema de Transferência de Arquivos): file transfers to and from BACEN, operator credentials and the audit trail.
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/streaming-hub).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
 
 #### Application Version Mapping
 
-| Chart Version | App Version |
+| Chart Version | Manager Version | Worker Version | Migrations Version |
+| :---: | :---: | :---: | :---: |
+| `1.0.0` | `1.0.0` | `1.0.0` | `1.0.0` |
+-----------------
+
+### Agent
+
+Lerian BYOC agent: runs in your Kubernetes cluster, polls the Lerian control plane over an outbound-only connection and executes the Helm operations it is assigned.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/agent).
+
+#### Application Version Mapping
+
+| Chart Version | Agent Version |
 | :---: | :---: |
-| `1.0.0-beta.7` | `1.5.0-beta.8` |
+| `1.0.0` | 1.0.1 |
 -----------------
 
 ### Lerian Common (Library)

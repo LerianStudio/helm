@@ -16,8 +16,9 @@ global:
   #     postgres: { host: "my-rds.example.com", user: "bank_transfer" }
   #     redis: { host: "my-elasticache.example.com:6379", user: "default", tls: "true" }
   datastores: {}
-  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
-  # "env"). Fields: name. (configmap.ENV_NAME overrides.)
+  # -- Env-wide environment name, read by templates/configmap.yaml. Fields:
+  # name. (configmap.ENVIRONMENT_NAME, or its deprecated alias
+  # configmap.ENV_NAME, overrides.)
   # Example: env: { name: "production" }
   env: {}
   # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue
@@ -56,6 +57,34 @@ global:
   # infra (plaintext).
   # Example: cloud: "aws"
   cloud: ""
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to the bank-transfer Deployment. Each
+  # constraint counts only this component's own pods (labelSelector = its selector
+  # labels) of the same ReplicaSet (matchLabelKeys: [pod-template-hash]), so rolling
+  # updates never deadlock. A component's `spread` overrides these fields one by one;
+  # a component's raw `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      # Off by default: the scheduler skips nodes without the zone label when scoring a
+      # soft spread, so on clusters missing it (bare-metal, k3s) a zone constraint
+      # silently cancels the hostname spread. Enable it where every node has zone labels (EKS, GKE, AKS).
+      zone: ""
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
+      # -- Minimum eligible domains for DoNotSchedule constraints (0 = off). With
+      # fewer domains the scheduler treats the global minimum as 0, so a hard
+      # hostname spread never stacks replicas on a single node; the extra replica
+      # waits for a new node (Karpenter launches it). Use on autoscaled clusters.
+      minDomains: 0
+      # -- Honor | Ignore | "" (omitted = Kubernetes default Ignore). Honor counts
+      # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
+      # draining, tainted karpenter.sh/disrupted).
+      nodeTaintsPolicy: ""
   # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job
@@ -182,8 +211,10 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "2.1.2"
-  # -- PostgreSQL migrations job (Helm hook pre-install,pre-upgrade; ArgoCD PreSync).
+    tag: "3.1.0"
+  # -- PostgreSQL migrations. External Postgres: a Job (Helm hook pre-install,pre-upgrade;
+  # ArgoCD PreSync). Bundled Postgres: an initContainer of each app pod, so no pod starts
+  # on an unmigrated schema; the hook notes below apply to the external Job only.
   # The chart-managed Secret is rendered as an earlier hook (weight -5 / sync-wave -5),
   # so it exists before this migration hook (weight -1) — migrations run against the
   # chart-managed Secret with NO pre-existing Secret required. Set useExistingSecret
@@ -302,6 +333,13 @@ bankTransfer:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Override of global.scheduling.spread for the bank-transfer Deployment (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the Deployment's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -322,9 +360,8 @@ bankTransfer:
     # =================================================================
     # Application identity
     # =================================================================
-    # ENV_NAME is resolved via the global mask (global.env.name) — do NOT pin
-    # it here, a native configmap.ENV_NAME WINS over the mask and defeats it.
-    # The default ("production") lives in templates/configmap.yaml.
+    # ENVIRONMENT_NAME (deprecated alias: ENV_NAME) comes from global.env.name;
+    # a native key here wins over it. Default "production" (templates/configmap.yaml).
     # APPLICATION_NAME/SERVER_ADDRESS/HTTP_BODY_LIMIT_BYTES are NOT pinned —
     # no mask reads them and the chart already defaults them
     # ("plugin-br-bank-transfer"/":4027"/"1048576") in templates/configmap.yaml;
@@ -425,11 +462,13 @@ bankTransfer:
     # =================================================================
 
     # =================================================================
-    # License gateway override (optional — defaults to lib-license-go's
-    # hard-coded endpoint when LICENSE_SERVICE_ADDRESS is unset)
+    # License gateway — newer app images refuse to boot without LICENSE_KEY
+    # (bankTransfer.secrets) and ORGANIZATION_IDS (below), in every
+    # environment. lib-license-go picks the gateway itself: IS_DEVELOPMENT
+    # "true" (exactly) selects the development gateway, which a development
+    # licence key needs. Rendered only when set.
     # =================================================================
-    # LICENSE_SERVICE_ADDRESS: ""
-    # TENANT_IDS: ""
+    # IS_DEVELOPMENT: "true"
 
     # =================================================================
     # OpenTelemetry
@@ -457,6 +496,12 @@ bankTransfer:
     # ("false") in templates/configmap.yaml.
     # MIDAZ_AUTH_ADDRESS: ""
     # MIDAZ_TIMEOUT_MS: ""
+    # Fee mode (app v3.1.0+) — defaulted in templates/configmap.yaml to the app's
+    # own defaults. "auto" turns native fees on by itself against Midaz >= 4.1;
+    # pin "legacy" to keep plugin-fees on /v1. In native mode the ledger's fee
+    # packages charge even with BTF_FEE_ENABLED=false.
+    # MIDAZ_FEE_MODE: "auto"            # auto | legacy | native
+    # MIDAZ_FEE_MODE_REFRESH: "5m"      # positive Go duration; never empty
 
     # CRM (REQUIRED — no chart default, must be set)
     CRM_BASE_URL: "http://plugin-crm.midaz-plugins.svc.cluster.local:4003"
@@ -470,6 +515,13 @@ bankTransfer:
     # ("false") in templates/configmap.yaml.
     # FEES_TIMEOUT_MS: ""
 
+    # Courier (optional outbound integration, added in app 2.2.0). Set the base
+    # URL here; the CLIENT_ID/CLIENT_SECRET go under bankTransfer.secrets.
+    # COURIER_BASE_URL: ""
+
+    # TRUSTED_PROXIES (optional; complements SERVER_TRUSTED_PROXIES, added in app 2.2.0)
+    # TRUSTED_PROXIES: ""
+
     # JD-SPB (REQUIRED — no chart default, must be set — unless JD_SANDBOX_MODE=true)
     # JD_SANDBOX_MODE/JD_SOAP_PATH/JD_SIGNING_MODE/JD_POLLING_ENABLED are NOT
     # pinned — no mask reads them, and the chart already defaults them
@@ -480,8 +532,6 @@ bankTransfer:
 
     # =================================================================
     # Single-tenant defaults
-    # IS_DEVELOPMENT removed: no template reads it, so it never rendered
-    # into the ConfigMap at all — dead configuration.
     # =================================================================
     ORGANIZATION_ID: ""
     ORGANIZATION_IDS: ""
@@ -527,7 +577,7 @@ bankTransfer:
     # Authentication (plugin-auth) - client secret for M2M auth
     # PLUGIN_AUTH_CLIENT_SECRET: ""
 
-    # License Key (required in production)
+    # License Key (newer app images refuse to boot without it, in every environment)
     # LICENSE_KEY: ""
     # Organization IDs — alternative to configmap.ORGANIZATION_IDS; when set,
     # the ConfigMap omits its own key so envFrom doesn't declare it twice.
@@ -573,6 +623,10 @@ bankTransfer:
   # WEBHOOK_SIGNING_SECRET: ""
   # WEBHOOK_BROKER_EVENT_SIGNING_SECRET: ""
 
+  # Courier outbound M2M credentials (courier integration, added in app 2.2.0)
+  # COURIER_CLIENT_ID: ""
+  # COURIER_CLIENT_SECRET: ""
+
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -589,11 +643,12 @@ bankTransfer:
 # Valkey (Redis-compatible) configuration
 valkey:
   enabled: true
+  # Here, in postgresql and in mongodb: bitnami/* tags are gone; bitnamilegacy serves the same tags, so data stays readable.
   global:
     security:
-      allowInsecureImages: false
+      allowInsecureImages: true
   image:
-    repository: bitnami/valkey
+    repository: bitnamilegacy/valkey
     tag: "8.0.2"
   external: false
   architecture: standalone
@@ -616,9 +671,9 @@ postgresql:
   enabled: true
   global:
     security:
-      allowInsecureImages: false
+      allowInsecureImages: true
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: "17.4.0"
   external: false
   architecture: replication
@@ -684,9 +739,9 @@ mongodb:
   enabled: true
   global:
     security:
-      allowInsecureImages: false
+      allowInsecureImages: true
   image:
-    repository: bitnami/mongodb
+    repository: bitnamilegacy/mongodb
     tag: "8.0.5"
   architecture: standalone
   auth:
@@ -697,8 +752,10 @@ mongodb:
       - "bank_transfer"
     passwords:
       - ""
+    # The subchart creates bank_transfer in this database and the app authenticates against it:
+    # keep it equal to bankTransfer.configmap.MONGO_DATABASE (default plugin_br_bank_transfer).
     databases:
-      - "plugin_br_bank_transfer_jd"
+      - "plugin_br_bank_transfer"
   persistence:
     enabled: true
     size: 8Gi

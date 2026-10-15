@@ -1,0 +1,5 @@
+{
+ "body": "contato a****@empresa.com cadastrado",
+ "categoria": "formaAlternativa",
+ "descricao": "Local de UM caractere. A regra exigia 2 ({2}) e o endereco passava INTACTO — verificado executando. Corrigido para {1,2}: preserva 2 quando existem, 1 quando e tudo que ha, sem perder legibilidade nos casos comuns."
+}

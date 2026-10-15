@@ -1,0 +1,161 @@
+{{- /*
+Migrations Job. Runs the dedicated br-sta-migrations image, whose entrypoint
+applies the golang-migrate SQL migrations (lib-commons migrator) against the
+br_sta database and exits. SINGLE-TENANT ONLY (the runner refuses
+MULTI_TENANT_ENABLED=true).
+
+Connection: migrations.postgres.* override > the app's resolved POSTGRES_*
+(br-sta.postgres: configmap > datastores > global > cloud > default), so the Job
+and the app can never point at different databases.
+
+Ordering:
+  - EXTERNAL Postgres: a Helm pre-install/pre-upgrade + ArgoCD PreSync hook
+    (weight -1, after its hook Secret at -2), so the app never boots unmigrated.
+  - BUNDLED Postgres: the database is created in the same sync, so a PreSync hook
+    would wait forever, and a post-install / PostSync hook would wait for an app
+    that crash-loops until the schema exists. It is a regular Job created with the
+    release; its initContainer waits for Postgres.
+The Job is named after a hash of its spec (br-sta.jobName): a new image tag or
+connection is a new Job, so the immutable spec.template never blocks an
+upgrade, under Helm and ArgoCD alike.
+*/ -}}
+{{- define "br-sta.migrationsJobSpec" -}}
+{{- $app := include "br-sta.postgres" . | fromYaml -}}
+{{- $mp := .Values.migrations.postgres | default dict -}}
+{{- $pgHost := $mp.host | default $app.host -}}
+{{- $pgPort := $mp.port | default $app.port | toString -}}
+{{- $pgUser := $mp.user | default $app.user -}}
+{{- $pgDb := $mp.database | default $app.name -}}
+{{- $pgSslMode := $mp.sslMode | default $app.ssl -}}
+{{- $cmap := .Values.common.configmap | default dict -}}
+{{- $pgConnectTimeout := include "lerian-common.cfgValue" (dict "configmap" $cmap "nativeKey" "POSTGRES_CONNECT_TIMEOUT_SEC" "params" .Values.common.postgres "field" "connectTimeoutSec" "default" "10") -}}
+{{- if not $pgHost -}}
+{{- fail "\n\nERROR: br-sta: the migrations Job needs a Postgres host.\n  set: global.datastores.postgres.host (or migrations.postgres.host), or disable it with migrations.enabled=false\n" -}}
+{{- end -}}
+{{- if and .Values.migrations.useExistingSecret (not .Values.migrations.existingSecretName) -}}
+{{- fail "\n\nERROR: br-sta: migrations.existingSecretName is required when migrations.useExistingSecret is true.\n" -}}
+{{- end -}}
+{{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
+{{- $pgFromSubchart := and (not .Values.migrations.useExistingSecret) (or (eq (include "br-sta.postgresInternal" .) "true") $pgAuth.existingSecret) -}}
+{{- /* Password source when not from the subchart: migrations.existingSecretName >
+   common.secretRefs.POSTGRES_PASSWORD (br-sta.migrationsPgRef, unless
+   migrations.postgres.password is set) > the app's existing Secret
+   (common.useExistingSecret) > the PreSync Secret. */ -}}
+{{- $secretName := include "br-sta.componentFullname" (dict "root" . "component" "migrations") -}}
+{{- if .Values.migrations.useExistingSecret -}}
+{{- $secretName = .Values.migrations.existingSecretName -}}
+{{- else if .Values.common.useExistingSecret -}}
+{{- $secretName = include "br-sta.secretName" . -}}
+{{- end -}}
+{{- /* ALLOW_INSECURE_TLS: lib-commons' migrator refuses non-TLS Postgres unless this
+   is true; sslmode=disable alone is not enough. Resolution:
+   migrations.allowInsecureTLS > extraEnvVars on every app pod > the app's resolved
+   ALLOW_INSECURE_TLS (configmap > common.security.allowInsecureTls > default). */ -}}
+{{- $x := include "br-sta.extraEnv" . | fromYaml -}}
+{{- $allowInsecureTLS := include "br-sta.allowInsecureTLS" . -}}
+{{- if hasKey .Values.migrations "allowInsecureTLS" -}}
+{{- $allowInsecureTLS = toString .Values.migrations.allowInsecureTLS -}}
+{{- else if and (hasKey $x "ALLOW_INSECURE_TLS") (ne (index $x "ALLOW_INSECURE_TLS") "__valueFrom__") -}}
+{{- $allowInsecureTLS = index $x "ALLOW_INSECURE_TLS" -}}
+{{- end -}}
+{{- $pullSecrets := .Values.migrations.imagePullSecrets | default .Values.imagePullSecrets -}}
+backoffLimit: {{ .Values.migrations.backoffLimit | default 3 }}
+activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds | default 600 }}
+template:
+  metadata:
+    labels:
+      {{- include "br-sta.jobLabels" (dict "root" . "name" (include "br-sta.componentFullname" (dict "root" . "component" "migrations")) "component" "migrations") | nindent 6 }}
+    annotations:
+      {{- include "br-sta.meshAnnotations" . | nindent 6 }}
+  spec:
+    restartPolicy: Never
+    automountServiceAccountToken: false
+    securityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    {{- with $pullSecrets }}
+    imagePullSecrets:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    initContainers:
+      - name: wait-for-postgres
+        image: {{ .Values.waitImage | default "busybox:1.36" }}
+        command:
+          - /bin/sh
+          - -c
+          - >
+            echo "waiting for {{ $pgHost }}:{{ $pgPort }}...";
+            until nc -z {{ $pgHost }} {{ $pgPort }}; do
+              echo "{{ $pgHost }}:{{ $pgPort }} not ready, waiting..."; sleep 5;
+            done;
+            echo "{{ $pgHost }}:{{ $pgPort }} is ready"
+        securityContext:
+          {{- include "br-sta.jobContainerSecurity" dict | nindent 10 }}
+    containers:
+      - name: migrations
+        image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.migrations.image.pullPolicy | default "IfNotPresent" }}
+        env:
+          - name: MIGRATIONS_PATH
+            value: "/migrations"
+          - name: POSTGRES_HOST
+            value: {{ $pgHost | quote }}
+          - name: POSTGRES_PORT
+            value: {{ $pgPort | quote }}
+          - name: POSTGRES_USER
+            value: {{ $pgUser | quote }}
+          - name: POSTGRES_NAME
+            value: {{ $pgDb | quote }}
+          - name: POSTGRES_SSLMODE
+            value: {{ $pgSslMode | quote }}
+          - name: POSTGRES_CONNECT_TIMEOUT_SEC
+            value: {{ $pgConnectTimeout | quote }}
+          - name: ALLOW_INSECURE_TLS
+            value: {{ $allowInsecureTLS | quote }}
+          - name: ENV_NAME
+            value: {{ include "br-sta.envName" . | quote }}
+          {{- with .Values.migrations.timeoutSec }}
+          - name: MIGRATIONS_TIMEOUT_SEC
+            value: {{ . | toString | quote }}
+          {{- end }}
+          {{- $pgRef := include "br-sta.migrationsPgRef" . | trim }}
+          {{- if $pgFromSubchart }}
+          {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
+          {{- else if $pgRef }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                {{- $pgRef | nindent 16 }}
+          {{- else }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: POSTGRES_PASSWORD
+          {{- end }}
+        securityContext:
+          {{- include "br-sta.jobContainerSecurity" dict | nindent 10 }}
+        resources:
+          {{- toYaml .Values.migrations.resources | nindent 10 }}
+{{- end -}}
+{{- if and .Values.migrations.enabled (ne (include "br-sta.multiTenantEnabled" .) "true") }}
+{{- $spec := include "br-sta.migrationsJobSpec" . -}}
+{{- $bundled := eq (include "br-sta.postgresInternal" .) "true" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "br-sta.jobName" (dict "base" (include "br-sta.componentFullname" (dict "root" . "component" "migrations")) "spec" $spec) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.jobLabels" (dict "root" . "name" (include "br-sta.componentFullname" (dict "root" . "component" "migrations")) "component" "migrations") | nindent 4 }}
+  {{- if not $bundled }}
+  annotations:
+    {{- include "br-sta.presyncAnnotations" (dict "weight" "-1") | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not $bundled }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished | default 600 }}
+  {{- end }}
+  {{- $spec | nindent 2 }}
+{{- end }}

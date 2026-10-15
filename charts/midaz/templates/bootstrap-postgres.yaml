@@ -29,9 +29,15 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999 # the postgres image's own user
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
       - name: wait-for-dependencies
         image: busybox:1.37
+        securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
@@ -57,6 +63,7 @@ spec:
       containers:
       - name: psql
         image: postgres:16
+        securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
         env:
         - name: DB_HOST
           value: {{ .Values.global.externalPostgresDefinitions.connection.host | quote }}
@@ -130,6 +137,10 @@ spec:
             exit 0
           fi
 
+          # \password reads the password as input lines and strips a trailing CR, so a role
+          # still to be created needs a password with no CR or LF; checked before any DDL.
+          [ "$ROLE_EXISTS" = "1" ] || [ "$(printf '%s' "$DB_PASSWORD_MIDAZ" | tr -d '\r\n')" = "$DB_PASSWORD_MIDAZ" ] || { echo "DB_PASSWORD_MIDAZ contains a carriage return or line feed (often a trailing one from a Secret made with echo or on Windows); the midaz role password must be a single line." >&2; exit 1; }
+
           # Databases
           if [ "$ONB_EXISTS" = "1" ]; then
             echo "Onboarding database already exists. Skipping creation."
@@ -160,7 +171,9 @@ spec:
             echo "Role 'midaz' already exists. Skipping creation."
           else
             echo "Creating role 'midaz'..."
-            PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE midaz LOGIN PASSWORD '$DB_PASSWORD_MIDAZ'"
+            # \password hashes the password inside psql, so the server only receives its
+            # verifier, never the plaintext; the transaction never leaves a passwordless role.
+            printf '%s\n' 'BEGIN;' 'CREATE ROLE midaz LOGIN;' '\password midaz' "$DB_PASSWORD_MIDAZ" "$DB_PASSWORD_MIDAZ" 'COMMIT;' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
           fi
 
           # Privileges (safe to run repeatedly)

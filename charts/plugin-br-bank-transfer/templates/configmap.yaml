@@ -21,8 +21,19 @@ data:
   # =====================================================================
   # APPLICATION IDENTITY
   # Rendered in both modes — required by the bootstrap.
+  # Newer app images read ENVIRONMENT_NAME, older ones only ENV_NAME (its
+  # deprecated alias); both are emitted with one value.
+  # A blank or null value at any level counts as unset: an empty name boots the
+  # app with neither its production checks nor its development relaxations.
   # =====================================================================
-  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | quote }}
+  {{- $newEnvName := trim (toString (index $cm "ENVIRONMENT_NAME" | default "")) }}
+  {{- $oldEnvName := trim (toString (index $cm "ENV_NAME" | default "")) }}
+  {{- if and $newEnvName $oldEnvName (ne $newEnvName $oldEnvName) }}
+  {{- fail (printf "bankTransfer.configmap.ENVIRONMENT_NAME (%q) and bankTransfer.configmap.ENV_NAME (%q) name two environments: set only ENVIRONMENT_NAME, ENV_NAME is its deprecated alias" $newEnvName $oldEnvName) }}
+  {{- end }}
+  {{- $envName := $newEnvName | default $oldEnvName | default (trim (toString (dig "env" "name" "" .Values.global | default ""))) | default "production" }}
+  ENVIRONMENT_NAME: {{ $envName | quote }}
+  ENV_NAME: {{ $envName | quote }}
   APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
   {{- if not $multiTenantEnabled }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
@@ -49,13 +60,16 @@ data:
   {{- if .Values.bankTransfer.configmap.SERVER_TRUSTED_PROXIES }}
   SERVER_TRUSTED_PROXIES: {{ .Values.bankTransfer.configmap.SERVER_TRUSTED_PROXIES | quote }}
   {{- end }}
+  {{- if .Values.bankTransfer.configmap.TRUSTED_PROXIES }}
+  TRUSTED_PROXIES: {{ .Values.bankTransfer.configmap.TRUSTED_PROXIES | quote }}
+  {{- end }}
   {{- end }}
   ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
   # -- REQUIRE_UPSTREAM_HTTPS: fleet-wide TLS gate on the PII-carrying
   # CRM_BASE_URL/FEES_BASE_URL hops (v2.0.0). Default "false" keeps the
   # bundled in-cluster http URLs working; set true in staging/homologation/BYOC
   # deployments that carry real client data — production is already covered by
-  # the app's own ENV_NAME=production boot guard.
+  # the app's own ENVIRONMENT_NAME=production boot guard.
   REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
 
   # =====================================================================
@@ -201,9 +215,10 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
 
   # =====================================================================
-  # LICENSE GATEWAY
-  # ORGANIZATION_IDS is rendered in both modes (license tenancy hint).
-  # LICENSE_SERVICE_ADDRESS is single-tenant only.
+  # LICENSE GATEWAY — rendered in both modes. Newer app images refuse to
+  # boot without LICENSE_KEY (Secret) and ORGANIZATION_IDS, in every environment.
+  # IS_DEVELOPMENT is read by lib-license-go: exactly "true" selects the
+  # development licence gateway, which a development licence key needs.
   # =====================================================================
   {{- /* Can also be supplied via .Values.bankTransfer.secrets.ORGANIZATION_IDS
      (rendered into the Secret by templates/secrets.yaml, or present in an
@@ -213,10 +228,8 @@ data:
   {{- if and .Values.bankTransfer.configmap.ORGANIZATION_IDS (not (.Values.bankTransfer.secrets.ORGANIZATION_IDS | default "")) }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
   {{- end }}
-  {{- if not $multiTenantEnabled }}
-  {{- if .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS }}
-  LICENSE_SERVICE_ADDRESS: {{ .Values.bankTransfer.configmap.LICENSE_SERVICE_ADDRESS | quote }}
-  {{- end }}
+  {{- if .Values.bankTransfer.configmap.IS_DEVELOPMENT }}
+  IS_DEVELOPMENT: {{ .Values.bankTransfer.configmap.IS_DEVELOPMENT | quote }}
   {{- end }}
 
   # =====================================================================
@@ -294,6 +307,13 @@ data:
   MIDAZ_TRANSACTION_URL: {{ .Values.bankTransfer.configmap.MIDAZ_TRANSACTION_URL | default .Values.bankTransfer.configmap.MIDAZ_BASE_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002" | quote }}
   MIDAZ_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ENABLED | default "false" | quote }}
   MIDAZ_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" | quote }}
+  # Fee mode (app v3.1.0+): auto | legacy | native, case-sensitive. "auto" asks the
+  # ledger GET /version and turns native (Midaz embedded fees on /v2) on by itself
+  # against Midaz >= 4.1; "legacy" keeps plugin-fees on /v1. Defaults mirror the app.
+  # The refresh default also keeps the key from rendering empty, which the app
+  # refuses at boot.
+  MIDAZ_FEE_MODE: {{ .Values.bankTransfer.configmap.MIDAZ_FEE_MODE | default "auto" | quote }}
+  MIDAZ_FEE_MODE_REFRESH: {{ .Values.bankTransfer.configmap.MIDAZ_FEE_MODE_REFRESH | default "5m" | quote }}
   {{- if .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS }}
   MIDAZ_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MIDAZ_TIMEOUT_MS | quote }}
   {{- end }}
@@ -310,6 +330,13 @@ data:
   FEES_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.FEES_AUTH_ENABLED | default "false" | quote }}
   {{- if .Values.bankTransfer.configmap.FEES_TIMEOUT_MS }}
   FEES_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.FEES_TIMEOUT_MS | quote }}
+  {{- end }}
+
+  # Courier (outbound notification/delivery integration, added in app 2.2.0).
+  # Optional — rendered only when configured; the M2M CLIENT_ID/CLIENT_SECRET
+  # live in the Secret (see templates/secrets.yaml), like CRM/FEES.
+  {{- if .Values.bankTransfer.configmap.COURIER_BASE_URL }}
+  COURIER_BASE_URL: {{ .Values.bankTransfer.configmap.COURIER_BASE_URL | quote }}
   {{- end }}
 
   # JD-SPB. In MT mode only mode + polling are exposed; the JD base URL,

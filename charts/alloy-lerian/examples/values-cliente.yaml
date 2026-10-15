@@ -1,0 +1,110 @@
+# Modelo para cluster de CLIENTE (BYOC). Anel 4 do rollout.
+#
+# Antes do install, criar o Secret com as credenciais que a Lerian entrega:
+#
+#   read -rs TELEMETRY_TOKEN   # cola o token de telemetria, nao ecoa
+#   read -rs FLEET_TOKEN       # cola o token do Fleet, nao ecoa
+#   kubectl create secret generic alloy-lerian -n monitoring \
+#     --from-file=telemetry-token=<(printf '%s' "$TELEMETRY_TOKEN") \
+#     --from-file=fleet-token=<(printf '%s' "$FLEET_TOKEN")
+#
+# ⚠️ NUNCA use `--from-literal` com token: o valor fica visivel em
+# `ps -eo args` enquanto o comando roda, e no historico do shell.
+#
+#   helm upgrade --install alloy-lerian \
+#     oci://ghcr.io/lerianstudio/alloy-lerian-helm --version <fixada> \
+#     -n monitoring --create-namespace -f values.yaml
+
+profile: client
+
+origin:
+  # Substituir. Formato: <cliente>-<ambiente>, minusculas, ambiente = stg | prd.
+  # O nome do cliente e UMA palavra: acme-prd, nunca acme-corp-prd.
+  id: SUBSTITUIR-prd
+
+# ---------------------------------------------------------------------------
+# EXIGENCIA DE CREDENCIAL — as unicas linhas de extraEnv deste arquivo
+# ---------------------------------------------------------------------------
+# ⚠️ Estas quatro linhas por papel existem por um motivo so: dizer que o Secret
+# e OBRIGATORIO. O chart nao consegue decidir isso sozinho — o valor correto
+# depende do PERFIL, e `extraEnv` e YAML estatico do subchart, que nao sabe
+# qual perfil esta ativo.
+#
+# O default do chart e `optional: true`, e e o default certo para o perfil
+# `own`: la o destino e um balanceador interno que nao autentica, nenhum Secret
+# existe, e MEDIDO na benedita — com `optional: false` fixo no chart, TODO
+# ambiente proprio travava em CreateContainerConfigError.
+#
+# No perfil `client` a postura se inverte: 401 e falha PERMANENTE, o dado e
+# descartado na hora, e um pod que sobe sem credencial perde em silencio e
+# continuamente. Por isso aqui vai `false` — e o chart RECUSA o render se voce
+# esquecer, em vez de deixar passar.
+#
+# ⚠️ `extraEnv` e LISTA e NAO faz merge: declarar a sua substitui a do chart
+# inteira. MEDIDO: declarando so uma variavel, o pod sobe com
+# `[ALLOY_DEPLOY_MODE HOSTNAME K8S_NODE_NAME <a sua>]` e o resto some. Por isso
+# as entradas de Fleet voltam junto aqui — sao as mesmas do default.
+#
+# ALLOY_CLIENT_ID e ALLOY_DESTINATION_ENDPOINT NAO aparecem: vem por `envFrom`,
+# de um ConfigMap que o chart renderiza de `origin.id` e `destination.endpoint`.
+# Mesma fonte, nada a repetir e nada a divergir.
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+# ---------------------------------------------------------------------------
+# O QUE NAO ESTA AQUI, E POR QUE
+# ---------------------------------------------------------------------------
+# ALLOY_CLIENT_ID          derivado de `origin.id` pelo chart, entregue por
+# ALLOY_DESTINATION_ENDPOINT   `envFrom`. Era repetido a mao e podia divergir:
+#                          divergente, nada falha e a telemetria chega carimbada
+#                          com o cliente ERRADO, no painel de outro.
+#
+# destination.endpoint     default `https://telemetry.lerian.io`. E a nossa
+#                          borda, nao uma escolha do cliente.
+#
+# fleetManagement          default LIGADO, com `url` e `username` preenchidos.
+#                          E o que permite ajustar a coleta sem pedir nada ao
+#                          cliente: nenhum upgrade de chart, nenhuma janela de
+#                          manutencao. O cliente so fornece o token, pelo Secret.
+#
+# collection.onlyNamespaces
+#                          default `^midaz$` e `^midaz-plugins$`, onde nossos
+#                          produtos sao instalados. Sobrescreva SO se este
+#                          cliente instalou em outro lugar.

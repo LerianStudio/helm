@@ -1,0 +1,114 @@
+{{- /*
+Bucket bootstrap for the bundled SeaweedFS. The app never creates buckets, and
+the subchart's own createBuckets hook takes static names and runs on
+post-install only, so this Job creates the buckets the app is actually
+configured with — TRANSFER_OBJECT_STORAGE_BUCKET and
+AUDIT_EXPORT_GENERATOR_S3_BUCKET as resolved into the app ConfigMap, plus
+seaweedfsBuckets.extraBuckets. Idempotent: list, create only the missing ones,
+then verify all exist.
+NOT a hook: the app's /readyz fails until the transfer bucket exists, so a
+post-install hook (which `helm --wait` runs only after the release is ready) or
+an ArgoCD PostSync hook would never run. It is a regular Job created with the
+release and named after a hash of its spec (br-sta.jobName): a changed bucket
+list is a new Job, an unchanged one is not re-run.
+*/ -}}
+{{- define "br-sta.bucketsJobSpec" -}}
+{{- $os := include "br-sta.objectStorage" . | fromYaml -}}
+{{- $buckets := list -}}
+{{- range $b := concat (list $os.transferBucket $os.auditBucket) (.Values.seaweedfsBuckets.extraBuckets | default list) -}}
+{{- $b = trim (toString $b) -}}
+{{- if and $b (not (has $b $buckets)) -}}
+{{- $buckets = append $buckets $b -}}
+{{- end -}}
+{{- end -}}
+{{- $sw := .Values.seaweedfs | default dict -}}
+{{- $name := include "br-sta.seaweedfsName" . -}}
+{{- $master := printf "%s-master.%s:%v" $name .Release.Namespace (($sw.master | default dict).port | default 9333) -}}
+{{- $filer := printf "%s-filer-client.%s:%v" $name .Release.Namespace (($sw.filer | default dict).port | default 8888) -}}
+{{- $job := .Values.seaweedfsBuckets -}}
+backoffLimit: {{ $job.backoffLimit | default 6 }}
+activeDeadlineSeconds: {{ $job.activeDeadlineSeconds | default 900 }}
+template:
+  metadata:
+    labels:
+      {{- include "br-sta.jobLabels" (dict "root" . "name" (include "br-sta.componentFullname" (dict "root" . "component" "seaweedfs-buckets")) "component" "bootstrap") | nindent 6 }}
+    annotations:
+      {{- include "br-sta.meshAnnotations" . | nindent 6 }}
+  spec:
+    restartPolicy: Never
+    automountServiceAccountToken: false
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65532
+      runAsGroup: 65532
+      seccompProfile:
+        type: RuntimeDefault
+    containers:
+      - name: buckets
+        image: "{{ $job.image.repository }}:{{ $job.image.tag }}"
+        imagePullPolicy: {{ $job.image.pullPolicy | default "IfNotPresent" }}
+        env:
+          - name: HOME
+            value: /tmp
+          - name: WEED_CLUSTER_DEFAULT
+            value: "sw"
+          - name: WEED_CLUSTER_SW_MASTER
+            value: {{ $master | quote }}
+          - name: WEED_CLUSTER_SW_FILER
+            value: {{ $filer | quote }}
+          - name: BUCKETS
+            value: {{ join " " $buckets | quote }}
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            [ -z "$BUCKETS" ] && { echo "no bucket configured; nothing to do"; exit 0; }
+            wait_for() {
+              i=0
+              until wget -q --spider "http://$1/" >/dev/null 2>&1; do
+                i=$((i + 1)); [ "$i" -ge 120 ] && { echo "timeout waiting for $1"; exit 1; }
+                echo "waiting for $1..."; sleep 5
+              done
+            }
+            wait_for "$WEED_CLUSTER_SW_MASTER"
+            wait_for "$WEED_CLUSTER_SW_FILER"
+            # weed shell echoes its "> " prompt in front of the first output
+            # line; strip it before taking the bucket name (first column).
+            list() { echo "s3.bucket.list" | weed shell 2>/dev/null | sed 's/^[> ]*//' | awk '{print $1}'; }
+            existing="$(list)"
+            for b in $BUCKETS; do
+              if printf '%s\n' "$existing" | grep -qx "$b"; then
+                echo "bucket exists: $b"
+              else
+                echo "creating bucket: $b"
+                echo "s3.bucket.create -name $b" | weed shell
+              fi
+            done
+            existing="$(list)"
+            for b in $BUCKETS; do
+              printf '%s\n' "$existing" | grep -qx "$b" || { echo "bucket missing after create: $b"; exit 1; }
+            done
+            echo "buckets ready: $BUCKETS"
+        securityContext:
+          {{- include "br-sta.jobContainerSecurity" dict | nindent 10 }}
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
+        resources:
+          {{- toYaml $job.resources | nindent 10 }}
+    volumes:
+      - name: tmp
+        emptyDir: {}
+{{- end -}}
+{{- if eq (include "br-sta.seaweedfsEnabled" .) "true" }}
+{{- $spec := include "br-sta.bucketsJobSpec" . }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "br-sta.jobName" (dict "base" (include "br-sta.componentFullname" (dict "root" . "component" "seaweedfs-buckets")) "spec" $spec) }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "br-sta.jobLabels" (dict "root" . "name" (include "br-sta.componentFullname" (dict "root" . "component" "seaweedfs-buckets")) "component" "bootstrap") | nindent 4 }}
+spec:
+  {{- $spec | nindent 2 }}
+{{- end }}

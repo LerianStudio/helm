@@ -8,7 +8,6 @@
 #   api.secrets.LICENSE_KEY   — required whenever the api renders its own Secret
 #   api.configmap.REDIS_HOST  — required because the rate limiter is fail-closed
 #   api.configmap.ENVIRONMENT_NAME — required so the production gates are deliberate
-#   api.configmap.MIDAZ_ASSET_ID   — required; empty silently backfills a fake asset
 #   api.configmap.POSTGRES_HOST    — required desde que o default de
 #     postgresql.enabled virou `false` (alinhando ao go-boilerplate-ddd-helm e ao
 #     bloco valkey). Antes o host era DERIVADO do Service do subchart embarcado, que
@@ -27,9 +26,6 @@ api:
     # Required gate: an empty value would resolve to "development" in the app and
     # silently disable every production security check.
     ENVIRONMENT_NAME: "development"
-    # Required gate: an empty value is NOT inert — the app backfills "1" and posts
-    # against a fabricated asset instead of failing closed.
-    MIDAZ_ASSET_ID: "BRL"
     # NOT a gate any more — the app reads its own ISPB from the systemplane key
     # tenancy/jd_integration_binding and no longer reads this variable. It is kept
     # here so the render still exercises the conditional pass-through branch (a set

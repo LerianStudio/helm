@@ -114,16 +114,12 @@ Mirror the rule the Service and the Secret follow.
 {{- end }}
 
 {{/*
-Secret the bundled MongoDB subchart's root password lives in: the one the
-operator supplied through mongodb.auth.existingSecret, else the one the subchart
-generates under its own name. Same resolution as the subchart's mongodb.secretName.
+Secret the bundled MongoDB's root password lives in: the one the operator named in
+mongodb.auth.existingSecret, else the one this chart keeps under the subchart's name
+(templates/mongodb-secret.yaml), whose shipped existingSecret renders "" here.
 */}}
 {{- define "product-console.mongodb.secretName" -}}
-{{- if .Values.mongodb.auth.existingSecret -}}
-{{- .Values.mongodb.auth.existingSecret -}}
-{{- else -}}
-{{- include "product-console.mongodb.fullname" . -}}
-{{- end -}}
+{{- tpl (.Values.mongodb.auth.existingSecret | default "" | toString) . | default (include "product-console.mongodb.fullname" .) -}}
 {{- end }}
 
 {{/*
@@ -184,5 +180,56 @@ the fallback, and naming one is also what lifts the two refusals.
 {{- include "lerian-common.internalHost" (dict "name" (include "product-console.mongodb.fullname" .) "namespace" $ns) -}}
 {{- else -}}
 mongodb
+{{- end -}}
+{{- end }}
+
+{{/*
+The configmap keys the chart declares WITHOUT a shipped default, because no
+default is safe to invent: an address, a deployment-wide assertion, or a
+frontend flag that is only correct once the operator states it. They are
+emitted only when set, so a default render carries none of them and the
+application's own built-in default stays in force.
+*/}}
+{{- define "product-console.optionalConfigKeys" -}}
+{{- list
+  "FLOWKER_BASE_PATH"
+  "LENDER_BASE_PATH"
+  "MATCHER_BASE_PATH"
+  "MFA_ENABLED"
+  "MIDAZ_V2_BASE_PATH"
+  "PLUGIN_AUTH_PUBLIC_BASE_PATH"
+  "TRACER_BASE_PATH"
+  "TRUSTED_PROXIES"
+  | join " " -}}
+{{- end }}
+
+{{/*
+Render one optional key as a ConfigMap data entry, or nothing at all.
+Args: dict "cm" <.Values.configmap> "key" <KEY>.
+An unset key and an empty string mean the same thing here: leave it to the
+application. That is what keeps the default render byte-identical.
+*/}}
+{{- define "product-console.optionalConfigKey" -}}
+{{- $v := index .cm .key -}}
+{{- if and (not (kindIs "invalid" $v)) (ne ($v | toString) "") -}}
+{{ .key }}: {{ $v | toString | quote }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Refuse to render when an optional key is supplied through BOTH configmap and
+extraEnvVars: both write into the same ConfigMap data map, so the key would be
+emitted twice and the surviving value is whatever the YAML parser happens to
+keep. Only the keys listed above are checked, so installs that still deliver
+them through extraEnvVars alone keep working untouched.
+*/}}
+{{- define "product-console.validateOptionalConfigKeys" -}}
+{{- $cm := .Values.configmap | default dict -}}
+{{- $extra := .Values.extraEnvVars | default dict -}}
+{{- range $key := (splitList " " (include "product-console.optionalConfigKeys" .)) -}}
+{{- $v := index $cm $key -}}
+{{- if and (not (kindIs "invalid" $v)) (ne ($v | toString) "") (hasKey $extra $key) -}}
+{{- fail (printf "%s is set both in configmap and in extraEnvVars. Both render into the same ConfigMap data map, so the key would be emitted twice and the effective value is whatever the YAML parser keeps - undefined behavior. Keep it in configmap.%s and remove it from extraEnvVars." $key $key) -}}
+{{- end -}}
 {{- end -}}
 {{- end }}

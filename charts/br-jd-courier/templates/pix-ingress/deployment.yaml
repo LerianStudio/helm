@@ -1,0 +1,2 @@
+{{- include "br-jd-courier.guards" . }}
+{{- include "br-jd-courier.deployment" (dict "ctx" $ "key" "pixIngress" "role" "pix-ingress" "ports" (list "http")) }}

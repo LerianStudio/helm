@@ -1,8 +1,15 @@
-# Configuration rebuilt based on user request:
+# Configuration summary:
 # - Mode: daemonset (for kubeletstats)
-# - Receivers: OTLP, k8scluster, kubeletstats
-# - Processors: k8sattributes, transform/uuid, resource/client_id
-# - Exporters: OTLP/HTTP
+# - Receivers: otlp, k8s_cluster, kubeletstats, k8sobjects (events). The upstream
+#   subchart also defines jaeger and zipkin receivers; no pipeline uses them.
+# - Processors: memory_limiter, k8sattributes, resource/add_client_id,
+#   filter/include_midaz_namespaces, filter/drop_node_metrics,
+#   transform/remove_sensitive_attributes, transform/normalize_http_semconv,
+#   transform/mask_body_sensitive_data_replace_* (log PII masking), batch
+# - Connectors: spanmetrics
+# - Exporters: otlphttp/server (OTLP/HTTP)
+# - client.id: `resource/add_client_id` ships the placeholder `Firmino`. Set your
+#   own value; the chart does not validate it.
 
 opentelemetry-collector:
   mode: daemonset # Changed from deployment to daemonset for kubeletstats

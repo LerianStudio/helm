@@ -30,9 +30,9 @@ plugin-br-pix-jd:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-pix-jd/**
 
-plugin-br-pix-switch:
+plugin-br-pix-lerian:
   - changed-files:
-      - any-glob-to-any-file: charts/plugin-br-pix-switch/**
+      - any-glob-to-any-file: charts/plugin-br-pix-lerian/**
 
 plugin-br-payments:
   - changed-files:
@@ -69,3 +69,11 @@ br-ccs:
 br-slc:
   - changed-files:
       - any-glob-to-any-file: charts/br-slc/**
+
+br-jd-courier:
+  - changed-files:
+      - any-glob-to-any-file: charts/br-jd-courier/**
+
+agent:
+  - changed-files:
+      - any-glob-to-any-file: charts/agent/**

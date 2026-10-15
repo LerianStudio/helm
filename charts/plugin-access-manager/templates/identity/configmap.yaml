@@ -23,8 +23,7 @@ data:
   # APP 
   APPLICATION_NAME: {{ .Values.identity.configmap.APPLICATION_NAME | default "plugin-identity" | quote }}
   SERVER_PORT: {{ .Values.identity.configmap.SERVER_PORT | default "4001" | quote }}
-  SERVER_ADDRESS: {{ .Values.identity.configmap.SERVER_ADDRESS | default ":4001" | quote }} 
-  VERSION: {{ .Values.identity.image.tag | quote }}
+  SERVER_ADDRESS: {{ .Values.identity.configmap.SERVER_ADDRESS | default ":4001" | quote }}
 
   # AUTHORIZER
   AUTHORIZER_PORT: {{ .Values.identity.configmap.AUTHORIZER_PORT | default (include "caradhras.servicePort" .) | quote }}
@@ -59,13 +58,11 @@ data:
         "keys" (list
           "OTEL_RESOURCE_SERVICE_NAME"
           "OTEL_LIBRARY_NAME"
-          "OTEL_RESOURCE_SERVICE_VERSION"
           "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
           "OTEL_EXPORTER_OTLP_ENDPOINT_PORT")
         "defaults" (dict
           "OTEL_RESOURCE_SERVICE_NAME" "plugin-identity"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/identity"
-          "OTEL_RESOURCE_SERVICE_VERSION" .Values.identity.image.tag
           "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $envName)) | nindent 2 }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.identity.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "" | quote }} 
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
@@ -125,6 +122,31 @@ data:
   AUTHORIZER_ENFORCER_NAME: {{ .Values.identity.configmap.AUTHORIZER_ENFORCER_NAME | default "lerian-user-enforcer" | quote }}
   AUTHORIZER_MODEL_NAME: {{ .Values.identity.configmap.AUTHORIZER_MODEL_NAME | default "api-model" | quote }}
 
+  {{- with (include "plugin-access-manager.ssoCallbackUrl" (dict "context" $ "component" "identity")) }}
+
+  # SSO
+  PLUGIN_AUTH_SSO_CALLBACK_URL: {{ . | quote }}
+  {{- end }}
+  PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE: {{ .Values.identity.configmap.PLUGIN_AUTH_SSO_PREFLIGHT_ALLOW_INSECURE | default "false" | quote }}
+  PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS: {{ .Values.identity.configmap.PLUGIN_AUTH_SSO_ALLOW_PRIVATE_NETWORKS | default "false" | quote }}
+
+  # FORGOT PASSWORD (public self-service routes; off unless explicitly "true")
+  ENABLE_FORGOT_PASSWORD: {{ .Values.identity.configmap.ENABLE_FORGOT_PASSWORD | default "false" | quote }}
+  {{- /* GOOGLE WORKSPACE DIRECTORY (identity 3.12.0+; the application keeps it
+     off unless GOOGLE_DIRECTORY_ENABLED is "true"). Each key renders only when
+     set, so an install that leaves them empty gets the same ConfigMap as
+     before. The client secret and the encryption key are not here: they live
+     in identity.secrets (templates/identity/secrets.yaml). */}}
+  {{- with $cm.GOOGLE_DIRECTORY_ENABLED }}
+  GOOGLE_DIRECTORY_ENABLED: {{ . | quote }}
+  {{- end }}
+  {{- with $cm.GOOGLE_DIRECTORY_CLIENT_ID }}
+  GOOGLE_DIRECTORY_CLIENT_ID: {{ . | quote }}
+  {{- end }}
+  {{- with $cm.GOOGLE_DIRECTORY_REDIRECT_URL }}
+  GOOGLE_DIRECTORY_REDIRECT_URL: {{ . | quote }}
+  {{- end }}
+
   # RUNTIME
   DEPLOYMENT_MODE: {{ .Values.identity.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   TRUSTED_PROXIES: {{ .Values.identity.configmap.TRUSTED_PROXIES | default "" | quote }}
@@ -132,6 +154,12 @@ data:
 
   # M2M (lib-auth/v3 middleware — identity authorizes inbound M2M calls)
   AUTH_M2M_INVERSION_ENABLED: {{ .Values.identity.configmap.AUTH_M2M_INVERSION_ENABLED | default "false" | quote }}
+  {{- with .Values.identity.configmap.AUTH_M2M_JWKS_URL }}
+  AUTH_M2M_JWKS_URL: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.identity.configmap.AUTH_M2M_JWKS_REFRESH_INTERVAL }}
+  AUTH_M2M_JWKS_REFRESH_INTERVAL: {{ . | quote }}
+  {{- end }}
 
   # SERVICE DISCOVERY (opt-in; no-op while SD_ENABLED=false). SD_ENABLED is the
   # only key owned here. While disabled, the legacy static SD_* keys stay

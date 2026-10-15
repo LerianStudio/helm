@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "transferencia concluida sem identificador bancario"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -30,8 +30,8 @@ data:
   SCHEDULE_WORKER_RECONCILE_BATCH_SIZE: {{ .Values.schedule.configmap.SCHEDULE_WORKER_RECONCILE_BATCH_SIZE | default "50" | quote }}
 
   # Application (DOMAIN API) Endpoint the worker drives over HTTP.
-  # SCHEDULE_APP_BASE_URL and PLUGIN_AUTH_URL are operator/Vault-provided per environment.
-  SCHEDULE_APP_BASE_URL: {{ .Values.schedule.configmap.SCHEDULE_APP_BASE_URL | default "http://plugin-br-pix-indirect-btg.midaz-plugins.svc.cluster.local:4014" | quote }}
+  # SCHEDULE_APP_BASE_URL defaults to this release's API Service; PLUGIN_AUTH_URL is operator/Vault-provided.
+  SCHEDULE_APP_BASE_URL: {{ .Values.schedule.configmap.SCHEDULE_APP_BASE_URL | default (include "plugin-br-pix-indirect-btg.apiURL" .) | quote }}
   SCHEDULE_APP_HTTP_TIMEOUT: {{ .Values.schedule.configmap.SCHEDULE_APP_HTTP_TIMEOUT | default "30s" | quote }}
   PLUGIN_AUTH_URL: {{ .Values.schedule.configmap.PLUGIN_AUTH_URL | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000/v1/login/oauth/access_token" | quote }}
 

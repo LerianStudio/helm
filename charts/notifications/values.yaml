@@ -92,6 +92,10 @@ migrations:
 # under `secrets` (rendered into a separate Secret).
 config:
   # ---- Application ----
+  # -- Only the exact value `production` turns on the app's production checks
+  #    (Swagger forced off, rate limiting forced on, POSTGRES_PASSWORD required,
+  #    sslmode=disable and dev encryption keys refused). Any other value,
+  #    including the default `firmino`, leaves them off.
   ENV_NAME: "firmino"
   LOG_LEVEL: "info"
   SERVER_ADDRESS: ":8080"
@@ -226,6 +230,9 @@ config:
   DB_METRICS_INTERVAL_SEC: "15"
 
   # ---- Idempotency ----
+  # -- Window (seconds) during which a cached Idempotency-Key response is
+  #    replayed. The chart pins 300; the application's own default (used when
+  #    the variable is unset) is 86400 (24h), which is what the app docs describe.
   IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
 
   # ---- Destination Auth Cache ----
@@ -254,7 +261,8 @@ extraConfig: {}
 secrets:
   # -- DATABASE_URL is the pre-built, URL-escaped Postgres DSN consumed
   # by the migrations Job (templates/migrations-job.yaml). Required when
-  # `migrations.enabled` is true. Format:
+  # `migrations.enabled` is true: an empty value still renders, but the Job
+  # then fails at run time with an empty `-database` flag. Format:
   #   postgres://USER:URLENCODED_PW@HOST:PORT/DB?sslmode=disable
   DATABASE_URL: ""
   # -- Postgres
@@ -283,8 +291,16 @@ secrets:
   MULTI_TENANT_REDIS_PASSWORD: ""
   # -- Plugin Auth
   PLUGIN_AUTH_HOST: ""
-  # -- Destination auth cache encryption key (base64 AES-256-GCM)
+  # -- REQUIRED by the application (it refuses to boot without it): destination
+  #    auth cache encryption key (base64, 32 bytes, AES-256-GCM). Empty by
+  #    default so the chart renders; set it per env.
   NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY: ""
+  # -- REQUIRED by the application (it refuses to boot without it) but not
+  #    declared here by default: NOTIFICATION_ENCRYPTION_KEY (base64, 32 bytes),
+  #    which encrypts delivery-profile credentials at rest. Provide it via
+  #    `extraSecrets`, or as a key in the Secret named by `secretRef.name`. Do
+  #    not also add it here and in `extraSecrets`: both land in the same Secret.
+  #    Generate with `openssl rand -base64 32`.
   # -- M2M
   M2M_TARGET_SERVICE: ""
   # -- Webhook SSRF allowlist override (development only)
@@ -416,12 +432,19 @@ workerEmail:
     requests:
       cpu: 100m
       memory: 128Mi
+  # -- NOT IMPLEMENTED for workers: the chart has no HPA template for this
+  #    worker. Setting `enabled: true` only removes `replicas:` from the
+  #    Deployment, so `replicaCount` then has no effect; the other fields are
+  #    ignored. Keep `enabled: false` to use `replicaCount`, or manage an HPA
+  #    outside this chart.
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 70
+  # -- NOT IMPLEMENTED for workers: no PodDisruptionBudget template exists for
+  #    this worker; these values are ignored.
   pdb:
     enabled: false
     maxUnavailable: 1
@@ -491,12 +514,19 @@ workerSms:
     requests:
       cpu: 100m
       memory: 128Mi
+  # -- NOT IMPLEMENTED for workers: the chart has no HPA template for this
+  #    worker. Setting `enabled: true` only removes `replicas:` from the
+  #    Deployment, so `replicaCount` then has no effect; the other fields are
+  #    ignored. Keep `enabled: false` to use `replicaCount`, or manage an HPA
+  #    outside this chart.
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 70
+  # -- NOT IMPLEMENTED for workers: no PodDisruptionBudget template exists for
+  #    this worker; these values are ignored.
   pdb:
     enabled: false
     maxUnavailable: 1
@@ -566,12 +596,19 @@ workerWebhook:
     requests:
       cpu: 100m
       memory: 128Mi
+  # -- NOT IMPLEMENTED for workers: the chart has no HPA template for this
+  #    worker. Setting `enabled: true` only removes `replicas:` from the
+  #    Deployment, so `replicaCount` then has no effect; the other fields are
+  #    ignored. Keep `enabled: false` to use `replicaCount`, or manage an HPA
+  #    outside this chart.
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 70
+  # -- NOT IMPLEMENTED for workers: no PodDisruptionBudget template exists for
+  #    this worker; these values are ignored.
   pdb:
     enabled: false
     maxUnavailable: 1

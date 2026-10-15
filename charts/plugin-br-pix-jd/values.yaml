@@ -136,7 +136,7 @@ api:
   image:
     # -- Repository for the container image
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd
-    # -- Image tag. Empty falls back to .Chart.AppVersion (1.12.0-beta.8). Pin this
+    # -- Image tag. Empty falls back to .Chart.AppVersion. Pin this
     # explicitly in production rather than riding the chart's release train.
     tag: ""
     # -- Image pull policy
@@ -257,6 +257,11 @@ api:
   # DEPLOYMENT_MODE="".
   # REDIS_HOST has NO default and is required — the rate limiter is fail-closed.
   #
+  # JD_PAYMENT_SIGNING_ALGORITHM picks the payment-order signature:
+  # ECDSA_P256_SHA256 (app default when empty), ECDSA_P384_SHA384 or RSA_PKCS1_SHA256.
+  # It must match the key in api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY. Emitted only
+  # when set.
+  #
   # DEPLOYMENT_MODE (saas | byoc | local, default "") is validated at render time
   # because the app rejects an unrecognized value at boot. It is INDEPENDENT of
   # ENVIRONMENT_NAME: "saas" arms TLS enforcement over Postgres, Redis and — in
@@ -281,6 +286,19 @@ api:
     LICENSE_KEY: ""
     # Optional — a Redis with no auth is a legitimate in-cluster setup.
     REDIS_PASSWORD: ""
+    # Optional, both or neither: the PEM private key that signs the JDPI payment order
+    # and the PEM certificate registered at JD for it. Needed only when the JD enforces
+    # signed orders; with neither, orders are sent unsigned. The render fails when only
+    # one is set. Multi-line: use --set-file or a YAML block scalar.
+    JD_PAYMENT_SIGNING_PRIVATE_KEY: ""
+    JD_PAYMENT_SIGNING_CERTIFICATE: ""
+    # Required only with api.configmap.IDP_DECLARATION_ENABLED="true" (default "false",
+    # single-tenant only): the api then publishes its permissions to the Access Manager
+    # at boot, at api.configmap.IDP_HOST (http(s) URL), as the M2M application
+    # api.configmap.IDP_M2M_CLIENT_ID with this secret. PLUGIN_AUTH_ENABLED must be
+    # "true". IDP_HOST and IDP_M2M_CLIENT_ID may also be set here or in extraSecrets;
+    # the render fails when any of the three is blank everywhere.
+    IDP_M2M_CLIENT_SECRET: ""
   # -- Escape hatch for secret keys this chart does not model yet. Base64-encoded
   # by the template, so supply plaintext values.
   extraSecrets: {}
@@ -370,13 +388,12 @@ worker:
 #               minimal migration-only hook Secret at weight -5, since the chart's normal
 #               Secret does not exist yet.
 #
-# There is no separate `<app>-migrations` image for this plugin, so the Job extracts the
-# migrations tree out of the app image into an emptyDir and runs generic golang-migrate
-# over it — schema and app therefore come from the same tag by construction.
+# The Job runs the dedicated migrations.image.repository image, with golang-migrate
+# and this application's SQL baked in. Its tag is independent of the API image.
 #
-# MULTI-TENANT: incompatible, and the chart FAILS on the combination. The Tenant Manager
-# owns per-tenant database migrations; this Job targets the single-tenant database that
-# MT never uses, so leaving it on would look like success while no tenant schema moved.
+# MULTI-TENANT: the chart SKIPS this Job when MULTI_TENANT_ENABLED=true and reports
+# the skip in NOTES.txt. Tenant Manager owns per-tenant database migrations; this
+# Job targets only the single-tenant database.
 migrations:
   # -- Render the migration Job
   enabled: true
@@ -398,13 +415,10 @@ migrations:
   # extract-from-the-app-image approach could never run (see the Job template).
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations
-    # -- PIN THIS. The fallback to .Chart.AppVersion is a convention-compliant default,
-    # not a correct one: the release pipeline builds only the components a commit
-    # touched, so api, worker and migrations tags legitimately DIVERGE and no single tag
-    # names all three. Measured 2026-08-27 — api and migrations exist at 1.13.0-beta.4,
-    # worker stops at 1.13.0-beta.3. An unpinned tag surfaces as ImagePullBackOff on a
-    # PreSync hook, which blocks the whole sync.
-    tag: ""
+    # -- Pinned explicitly: api, worker and migrations are all published at 1.2.4.
+    # Migrations are independently versioned; a release that does not touch the SQL
+    # skips this image, so re-check the pin on every appVersion bump.
+    tag: "1.2.4"
     pullPolicy: IfNotPresent
   # -- Optional x-migrations-table override, passed to the image as
   # POSTGRES_MIGRATIONS_TABLE; empty uses golang-migrate's default (schema_migrations)

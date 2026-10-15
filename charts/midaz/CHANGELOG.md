@@ -1,5 +1,1572 @@
 # Midaz Changelog
 
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default based on ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Documented the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensured the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Defaulted the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevented rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allowed a fresh install to reach Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualified the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Covered an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Included custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Addressed the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- Stated the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach the Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in the `UPGRADE-9.7` documentation. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Documented the `9.7.0` upgrade, highlighting changes to CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensured the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Defaulted the standalone CRM to legacy KMS mode, aligning it with the ledger. (@jeffersonrodrigues92)
+- Prevented rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allowed a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualified the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Covered the explicit use of HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Included custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Addressed the ledger auth render guard and upgrade hook in the `UPGRADE-9.7` documentation. (@jeffersonrodrigues92)
+- Stated the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing issues with tracer schema and RabbitMQ cookie. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing issues with tracer schema and RabbitMQ cookie. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover scenarios involving an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Maintain the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach the Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover scenarios involving an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Maintain the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover explicit HashiCorp Vault usage without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger@4.2.1` and `midaz-tracer@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:  
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:  
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.0)
+
+Features:
+- Spread ledger, CRM, and tracer pods across nodes to enhance distribution. (@guimoreirar)
+- Expose configuration options for spread `minDomains` and `nodeTaintsPolicy` in `lerian-common` `2.3.0`. (@guimoreirar)
+- Spread ledger, CRM, and tracer pods across both nodes and zones for improved redundancy. (@guimoreirar)
+
+Fixes:
+- Disable zone spread by default to prevent unintended distribution. (@guimoreirar)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.5.0` to assist users with the update process. (@guimoreirar)
+- Provide a Helm upgrade guide for `midaz` `v9.4.0` to facilitate smoother transitions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.5.0...midaz-v9.6.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Implemented the ability to run `midaz-ledger` and `midaz-tracer` version `4.2.0`. (@guimoreirar)
+- Rendered the remaining `.env.example` contract for the ledger and tracer components. (@guimoreirar)
+- Enabled the rendering of environment variables for staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allowed the configuration map keys to be read by templates even when the schema previously refused them. (@guimoreirar)
+- Made the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Implemented the ability to run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Rendered the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Enabled rendering of the environment staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allowed the configmap keys that templates read but the schema previously refused. (@guimoreirar)
+- Made the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Implemented the ability to run `midaz-ledger` and `midaz-tracer` version `4.2.0`. (@guimoreirar)
+- Rendered the remaining parts of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Enabled rendering of the environment staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allowed the configuration map keys to be read by the templates, even if the schema initially refused them. (@guimoreirar)
+- Made the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment for staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment for staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.4.0)
+
+Features:
+- Render the ledger seam token wait timeout. (@andreimatiazi)
+- Render the ledger tracer seam credentials. (@andreimatiazi)
+- Support AWS IAM Roles Anywhere on the ledger. (@andreimatiazi)
+
+Fixes:
+- Name the seam token wait `TRACER_M2M_WAIT_TIMEOUT_MS`. (@andreimatiazi)
+- Update `midaz-ledger@4.1.2`, `midaz-tracer@4.1.2`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.3.0...midaz-v9.4.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+Features:
+- Update `midaz-ledger@4.1.0` and `midaz-tracer@4.1.0`. (@guimoreirar)
+- Introduce new environment variables for `midaz-ledger@4.1.0` and `midaz-tracer@4.1.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guides for `midaz` versions: `v9.2.5`, `v9.2.7`, `v9.2.8`, `v9.2.9`, `v9.2.10`, `v9.2.11`, `v9.2.12`, `v9.2.13`, `v9.2.14`, and `v9.2.15`. (@guimoreirar)
+
+Fixes:
+- Correct upgrade guides for `midaz` versions: `v9.2.8`, `v9.2.9`, `v9.2.10`, `v9.2.13`, `v9.2.14`, and `v9.2.15`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, including new environment variables.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions 9.2.5, 9.2.7, 9.2.8, 9.2.9, 9.2.10, 9.2.11, 9.2.12, 9.2.13, 9.2.14, and 9.2.15.
+  - Corrected upgrade guides for versions 9.2.8, 9.2.9, 9.2.10, 9.2.13, 9.2.14, and 9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.2.5 through v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8 through v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements**
+  - Added Helm upgrade guides for versions v9.2.5, v9.2.7, v9.2.8, v9.2.9, v9.2.10, v9.2.11, v9.2.12, v9.2.13, v9.2.14, and v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8, v9.2.9, v9.2.10, v9.2.13, v9.2.14, and v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated midaz-ledger to version 4.1.0.
+  - Updated midaz-tracer to version 4.1.0.
+  - Introduced new environment variables for midaz.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.2.5, v9.2.7, v9.2.8, v9.2.9, v9.2.10, v9.2.11, v9.2.12, v9.2.13, v9.2.14, and v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8, v9.2.9, v9.2.10, v9.2.13, v9.2.14, and v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+- **Features:**
+  - Updated `midaz-ledger` to version 4.1.0 and `midaz-tracer` to version 4.1.0, introducing new environment variables.
+
+- **Improvements:**
+  - Added Helm upgrade guides for versions v9.2.5 through v9.2.15.
+  - Corrected upgrade guides for versions v9.2.8 through v9.2.15.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
+
+- Fixes:
+  - Restart pods when their secret changes to ensure updated configurations are applied.
+  - Keep the manual ledger restart in the broker refusal process for better error handling.
+  - Drop the manual ledger restart from the broker refusal to streamline operations.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.11...midaz-v9.2.12)
+
+---
+
+## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
+
+- Fixes:
+  - Restart pods when their secret changes to ensure proper configuration updates.
+  - Keep the manual ledger restart in the broker refusal to maintain intended behavior.
+  - Drop the manual ledger restart from the broker refusal to streamline the process.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.11...midaz-v9.2.12)
+
+---
+
+## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
+
+- Fixes:
+  - Restart pods when their secret changes to ensure updated configurations are applied.
+  - Keep the manual ledger restart in the broker refusal to maintain system integrity.
+  - Drop the manual ledger restart from the broker refusal to streamline operations.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.11...midaz-v9.2.12)
+
+---
+
+## [9.2.11](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.11)
+
+- Fixes:
+  - Log the ledger into the replica with its own password.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.10...midaz-v9.2.11)
+
+---
+
+## [9.2.10](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.10)
+
+- Fixes:
+  - Stop promising a volume for the bundled broker.
+  - Name the immutable StatefulSet field precisely.
+  - Indicate that the broker loses messages when its pod is recreated.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.9...midaz-v9.2.10)
+
+---
+
+## [9.2.10](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.10)
+
+- Fixes:
+  - Stopped promising a volume for the bundled broker.
+  - Precisely named the immutable StatefulSet field.
+  - Indicated that the broker loses messages when its pod is recreated.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.9...midaz-v9.2.10)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and retained job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped the RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.8](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.8)
+
+- Fixes:
+  - Ensure the RabbitMQ bootstrap runs on upgrade and rotation.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.7...midaz-v9.2.8)
+
+---
+
+## [9.2.8](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.8)
+
+- Fixes:
+  - Ensure the RabbitMQ bootstrap runs on upgrade and rotation.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.7...midaz-v9.2.8)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- **Fixes**
+  - Run init containers under pod security restricted.
+
+- **Improvements**
+  - Updated documentation to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- Fixes:
+  - Run init containers under pod security restricted.
+
+- Improvements:
+  - Update documentation to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- **Fixes:**
+  - Run init containers under pod security restricted.
+
+- **Improvements:**
+  - Updated documentation to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- **Fixes:**
+  - Run init containers under pod security restricted.
+
+- **Improvements:**
+  - Documentation update to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- Fixes:
+  - Keep the databases and their passwords on uninstall to ensure data integrity and security.
+
+- Improvements:
+  - Documentation update to specify that the chart owns the database passwords.
+  - Enhanced documentation by pointing the required-secrets note at the kept datastore secrets.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- **Fixes:**
+  - Ensure databases and their passwords are retained on uninstall.
+
+- **Documentation:**
+  - Clarified that the chart owns the database passwords.
+  - Updated the required-secrets note to reference the maintained datastore secrets.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- **Fixes:**
+  - Keep the databases and their passwords on uninstall to prevent data loss. (Commit: 2aeea307)
+
+- **Improvements:**
+  - Documentation update to indicate that the chart owns the database passwords. (Commit: ecc8369b)
+  - Updated the required-secrets note to point at the kept datastore secrets for better clarity. (Commit: d68c32cc)
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
+## [9.2.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.5)
+
+- Fixes:
+  - Send only the role password verifier to the server.
+  - Update midaz-ledger to version 4.0.7.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.4...midaz-v9.2.5)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.4)
+
+- **Fixes:**
+  - Match the privilege check literally and read the password from the environment.
+  - Hide a failed CREATE ROLE from the server log.
+  - Quote the role password in the postgres bootstrap hook.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.3...midaz-v9.2.4)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.4)
+
+- Fixes:
+  - Match the privilege check literally and read the password from the environment.
+  - Hide a failed CREATE ROLE from the server log.
+  - Quote the role password in the postgres bootstrap hook.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.3...midaz-v9.2.4)
+
+---
+
+## [9.2.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.3)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.5.
+  - Updated `midaz-tracer` to version 4.0.5.
+
+- **Documentation:**
+  - Added Helm upgrade guide for midaz v9.2.2.
+  - Added upgrade guide for midaz v9.2.2.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.2...midaz-v9.2.3)
+
+---
+
+## [9.2.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.3)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.5.
+  - Updated `midaz-tracer` to version 4.0.5.
+
+- **Documentation**
+  - Added Helm upgrade guide for midaz v9.2.2.
+  - Added upgrade guide for midaz v9.2.2.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.2...midaz-v9.2.3)
+
+---
+
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - CRM/Tracer default set to `maxUnavailable=0` for zero-downtime rollouts.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - CRM/Tracer default set to `maxUnavailable=0` for zero-downtime rollouts.
+
+- Improvements:
+  - Added Helm upgrade guide for midaz v9.2.1.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - CRM/Tracer default to `maxUnavailable=0` for zero-downtime rollouts.
+
+- Improvements:
+  - Added Helm upgrade guide for Midaz v9.2.1.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
+
+- Fixes:
+  - crm/tracer default to maxUnavailable=0 for zero-downtime rollouts
+
+- Improvements:
+  - Added Helm upgrade guide for midaz v9.2.1
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Documentation**
+  - Added upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- Fixes:
+  - Updated midaz-ledger to version 4.0.3.
+  - Updated midaz-tracer to version 4.0.3.
+
+- Improvements:
+  - Added an upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for `midaz` version 9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Contributors:**
+  - @guimoreirar
+  - @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated midaz-ledger to version 4.0.3.
+  - Updated midaz-tracer to version 4.0.3.
+
+- **Documentation:**
+  - Added upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz version 9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Contributors:** @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Documentation:**
+  - Added upgrade guide for midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
 ## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
 
 - **Fixes:**

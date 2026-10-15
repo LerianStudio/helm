@@ -62,6 +62,15 @@ var allowlistedCredentialDefaults = map[string]bool{
 	// plugin-access-manager ships a default initUser.adminPassword so existing releases keep
 	// their admin login across upgrades; operators are expected to override it in production.
 	"plugin-access-manager:auth.initUser.adminPassword": true,
+	// reporter's BUNDLED groundhog2k RabbitMQ (rabbitmq.enabled=true) is dev/local-only —
+	// production points at an EXTERNAL broker with real, per-tier credentials. A configured
+	// load_definitions import makes RabbitMQ skip seeding the default user, so the reporter
+	// user must be declared in the definitions with a salted password_hash Helm cannot derive
+	// from the plaintext; both are shipped as a matching dev pair so a from-scratch one-command
+	// `helm install` reaches 1/1. A render-time guard forces operators who change one to change
+	// the other. Not a production credential.
+	"reporter:secrets.RABBITMQ_DEFAULT_PASS":        true,
+	"reporter:rabbitmq.loadDefinition.passwordHash": true,
 }
 
 type chartYAML struct {
@@ -433,7 +442,7 @@ var configMapKindPattern = regexp.MustCompile(`(?m)^\s*kind:\s*ConfigMap\s*$`)
 // configMapDataKeyPattern captures a data-block key/value in a ConfigMap
 // template, e.g.
 //
-//	  SOME_PASSWORD: {{ .Values.x }}
+//	SOME_PASSWORD: {{ .Values.x }}
 //
 // Group 1 is the key name, group 2 the (template) value text. Pure-template
 // lines ({{- if ... }}, comments) do not match because they lack the `KEY:`
@@ -1312,10 +1321,20 @@ var allowedDanglingSecrets = map[string]bool{
 	// its README instructs `kubectl create secret generic otel-api-key` before
 	// install, so the chart intentionally never renders it.
 	"otel-api-key": true,
+	// alloy-lerian references a Secret the client creates before install, from
+	// values we hand over — one Secret, one key per credential (telemetry and,
+	// when remote management is enabled, fleet). The chart only reads it via
+	// secretKeyRef and intentionally never renders it. That single command is the
+	// only manual step in the client installation.
+	"alloy-lerian": true,
 	// reporter bundles the KEDA subchart, whose operator self-manages this TLS
 	// cert Secret at runtime via --enable-cert-rotation/--cert-secret-name. KEDA
 	// creates it; no Helm chart renders it.
 	"kedaorg-certs": true,
+	// br-jd-courier renders no Secret by contract: every role and its migration
+	// Job read one operator-provisioned Secret, named by secrets.existingSecret or
+	// the release fullname, which this gate's release name makes br-jd-courier.
+	"br-jd-courier": true,
 }
 
 // danglingSecretRefMessage parses rendered multi-document Helm output, collects

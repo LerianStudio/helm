@@ -5,6 +5,6 @@ metadata:
   labels:
     {{- include "fetcher.labels" . | nindent 4 }}
 data:
-  {{- range $key, $value := .Values.common.configmap }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
+  # Dependency connections via lerian-common masks/helpers; everything else an
+  # escape-hatch passthrough — see fetcher.commonConfigmapData.
+  {{- include "fetcher.commonConfigmapData" . | nindent 2 }}

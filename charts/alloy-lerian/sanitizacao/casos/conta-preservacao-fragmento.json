@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "account:388408 branch:4364 ispb:05856736"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

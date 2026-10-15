@@ -1,0 +1,33 @@
+# Lerian Agent
+
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }}!
+
+## Deployment Status
+
+{{ if .Release.IsUpgrade }}
+The chart has been UPGRADED to version {{ .Chart.Version }} (appVersion {{ .Chart.AppVersion }}).
+{{ else }}
+The chart has been INSTALLED at version {{ .Chart.Version }} (appVersion {{ .Chart.AppVersion }}).
+{{ end }}
+
+## Component Deployed
+
+One agent ({{ include "lerian-agent.fullname" . }}) polling {{ .Values.agent.configmap.CONTROL_PLANE_URL }}
+over an outbound-only connection. It serves no external traffic.
+
+  Health/metrics: {{ include "lerian-agent.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ .Values.agent.service.port }}
+  Liveness:  /health/live
+  Readiness: /health/ready
+
+## Namespaces it may write to
+
+{{- range include "lerian-agent.managedNamespaces" . | fromJsonArray }}
+  - {{ . }}
+{{- end }}
+
+Installing a stack into any other namespace fails until it is added to
+agent.managedNamespaces and this chart is upgraded.
+
+## Check that it connected
+
+  kubectl -n {{ include "global.namespace" . }} logs deploy/{{ include "lerian-agent.fullname" . }} | grep -i heartbeat

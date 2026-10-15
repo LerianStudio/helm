@@ -396,6 +396,14 @@ because common.names.dependency.fullname is Bitnami-specific.
 {{- end }}
 
 {{/*
+plugin-br-pix-indirect-btg.apiURL — this release's API Service, which the inbound, reconciliation and
+schedule workers call.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.apiURL" -}}
+{{- printf "http://%s.%s.svc.cluster.local:%v" (include "plugin-br-pix-indirect-btg.fullname" .) .Release.Namespace .Values.pix.service.port -}}
+{{- end }}
+
+{{/*
 plugin-br-pix-indirect-btg.dbPasswordRequired — fail-loud gate. When the bundled postgresql
 subchart is NOT the source (external or disabled) and no operator credential or existingSecret is
 supplied, fail the render naming the exact value. On the bundled path the password comes from the
@@ -663,21 +671,6 @@ Generate warning annotations for secrets using default values
 {{- end -}}
 {{- if gt (len $warnings) 0 -}}
 lerian.studio/security-warnings: {{ $warnings | join "; " | quote }}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Generate warning annotations for missing webhook configuration
-*/}}
-{{- define "plugin-br-pix-indirect-btg.webhookWarnings" -}}
-{{- $warnings := list -}}
-{{- if .Values.outbound -}}
-{{- if not .Values.outbound.configmap.WEBHOOK_CLIENT_URL -}}
-{{- $warnings = append $warnings "WEBHOOK_CLIENT_URL is empty - outbound notifications disabled" -}}
-{{- end -}}
-{{- end -}}
-{{- if gt (len $warnings) 0 -}}
-lerian.studio/webhook-warnings: {{ $warnings | join "; " | quote }}
 {{- end -}}
 {{- end -}}
 

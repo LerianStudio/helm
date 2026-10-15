@@ -1,0 +1,5 @@
+{
+  "body": "street_lookup=OK cache_hit=true",
+  "descricao": "Campo com prefixo 'street' seguido de valor tecnico, nao endereco fisico.",
+  "categoria": "falsoPositivo"
+}

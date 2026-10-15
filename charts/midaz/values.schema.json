@@ -77,6 +77,69 @@
         "streaming": {
           "type": "object",
           "description": "Env-wide streaming (lib-streaming / RedPanda). Consumed by lerian-common.streaming.env."
+        },
+        "scheduling": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "spread": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Master switch for the spread preset"
+                },
+                "hostname": {
+                  "type": "string",
+                  "default": "ScheduleAnyway",
+                  "enum": [
+                    "ScheduleAnyway",
+                    "DoNotSchedule",
+                    ""
+                  ],
+                  "description": "Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | \"\" (off)"
+                },
+                "zone": {
+                  "type": "string",
+                  "default": "",
+                  "enum": [
+                    "ScheduleAnyway",
+                    "DoNotSchedule",
+                    ""
+                  ],
+                  "description": "Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | \"\" (off)"
+                },
+                "maxSkew": {
+                  "type": "integer",
+                  "default": 1,
+                  "minimum": 1,
+                  "description": "Max allowed pod-count difference between topology domains",
+                  "maximum": 2147483647
+                },
+                "minDomains": {
+                  "type": "integer",
+                  "default": 0,
+                  "minimum": 0,
+                  "maximum": 2147483647,
+                  "description": "Minimum eligible domains for DoNotSchedule constraints (0 = off)"
+                },
+                "nodeTaintsPolicy": {
+                  "type": "string",
+                  "default": "",
+                  "enum": [
+                    "Honor",
+                    "Ignore",
+                    ""
+                  ],
+                  "description": "Honor | Ignore | \"\" (omitted = Kubernetes default Ignore)"
+                }
+              },
+              "description": "topologySpreadConstraints preset (lerian-common.topologySpreadConstraints) applied to every Deployment"
+            }
+          },
+          "description": "Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset applied to every Deployment."
         }
       }
     },
@@ -305,13 +368,9 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "minAvailable": {
-              "default": 1,
-              "description": "Minimum number of available pods"
-            },
             "maxUnavailable": {
               "default": 1,
-              "description": "Maximum number of unavailable pods"
+              "description": "Maximum number of unavailable pods; ignored when minAvailable is set."
             },
             "annotations": {
               "type": "object",
@@ -440,6 +499,63 @@
             }
           },
           "additionalProperties": true
+        },
+        "spread": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Master switch for the spread preset"
+            },
+            "hostname": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | \"\" (off)"
+            },
+            "zone": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | \"\" (off)"
+            },
+            "maxSkew": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Max allowed pod-count difference between topology domains",
+              "maximum": 2147483647
+            },
+            "minDomains": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "Minimum eligible domains for DoNotSchedule constraints (0 = off)"
+            },
+            "nodeTaintsPolicy": {
+              "type": "string",
+              "enum": [
+                "Honor",
+                "Ignore",
+                ""
+              ],
+              "description": "Honor | Ignore | \"\" (omitted = Kubernetes default Ignore)"
+            }
+          },
+          "description": "Per-component override of global.scheduling.spread (field by field)"
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Raw Kubernetes topologySpreadConstraints; non-empty replaces the spread preset entirely"
         },
         "nodeSelector": {
           "type": "object",
@@ -710,6 +826,8 @@
               "TRACER_GRPC_PORT",
               "TRACER_TIMEOUT_MS",
               "TRACER_TLS_CA_FILE",
+              "TRACER_M2M_CLIENT_ID",
+              "TRACER_M2M_WAIT_TIMEOUT_MS",
               "TRACER_TLS_CERT_FILE",
               "TRACER_TLS_CLIENT_CA_FILE",
               "TRACER_TLS_KEY_FILE",
@@ -717,7 +835,14 @@
               "TRACER_TRANSPORT",
               "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
-              "VERSION"
+              "VERSION",
+              "RABBITMQ_TLS",
+              "M2M_SECRETS_BACKEND",
+              "AWS_REGION",
+              "M2M_VAULT_MOUNT",
+              "BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS",
+              "REDIS_PORT",
+              "TRANSACTION_BATCH_MAX_SIZE"
             ]
           }
         },
@@ -756,6 +881,11 @@
             }
           },
           "additionalProperties": true
+        },
+        "aws": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "AWS credential source (IAM Roles Anywhere sidecar) for the multi-tenant ledger's Secrets Manager reads"
         }
       },
       "additionalProperties": true
@@ -879,13 +1009,9 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "minAvailable": {
-              "default": 0,
-              "description": "Minimum number of available pods"
-            },
             "maxUnavailable": {
               "default": 1,
-              "description": "Maximum number of unavailable pods"
+              "description": "Maximum number of unavailable pods; ignored when minAvailable is set."
             },
             "annotations": {
               "type": "object",
@@ -1010,6 +1136,63 @@
             }
           },
           "additionalProperties": true
+        },
+        "spread": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Master switch for the spread preset"
+            },
+            "hostname": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | \"\" (off)"
+            },
+            "zone": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | \"\" (off)"
+            },
+            "maxSkew": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Max allowed pod-count difference between topology domains",
+              "maximum": 2147483647
+            },
+            "minDomains": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "Minimum eligible domains for DoNotSchedule constraints (0 = off)"
+            },
+            "nodeTaintsPolicy": {
+              "type": "string",
+              "enum": [
+                "Honor",
+                "Ignore",
+                ""
+              ],
+              "description": "Honor | Ignore | \"\" (omitted = Kubernetes default Ignore)"
+            }
+          },
+          "description": "Per-component override of global.scheduling.spread (field by field)"
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Raw Kubernetes topologySpreadConstraints; non-empty replaces the spread preset entirely"
         },
         "nodeSelector": {
           "type": "object",
@@ -1559,9 +1742,9 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "minAvailable": {
+            "maxUnavailable": {
               "default": 1,
-              "description": "Minimum number of available pods. Setting `maxUnavailable` in an"
+              "description": "Maximum number of unavailable pods; ignored when minAvailable is set."
             },
             "annotations": {
               "type": "object",
@@ -1691,6 +1874,63 @@
           },
           "additionalProperties": true
         },
+        "spread": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Master switch for the spread preset"
+            },
+            "hostname": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | \"\" (off)"
+            },
+            "zone": {
+              "type": "string",
+              "enum": [
+                "ScheduleAnyway",
+                "DoNotSchedule",
+                ""
+              ],
+              "description": "Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | \"\" (off)"
+            },
+            "maxSkew": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Max allowed pod-count difference between topology domains",
+              "maximum": 2147483647
+            },
+            "minDomains": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "Minimum eligible domains for DoNotSchedule constraints (0 = off)"
+            },
+            "nodeTaintsPolicy": {
+              "type": "string",
+              "enum": [
+                "Honor",
+                "Ignore",
+                ""
+              ],
+              "description": "Honor | Ignore | \"\" (omitted = Kubernetes default Ignore)"
+            }
+          },
+          "description": "Per-component override of global.scheduling.spread (field by field)"
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Raw Kubernetes topologySpreadConstraints; non-empty replaces the spread preset entirely"
+        },
         "nodeSelector": {
           "type": "object",
           "additionalProperties": true,
@@ -1728,6 +1968,10 @@
               "API_KEY_LABEL",
               "APPLICATION_NAME",
               "AUDIT_LOG_ENABLED",
+              "AUTH_BREAKER_ENABLED",
+              "AUTH_CACHE_TTL",
+              "AUTH_JWT_VERIFY_CERT",
+              "AUTH_M2M_INVERSION_ENABLED",
               "BALANCE_SYNC_BATCH_SIZE",
               "BALANCE_SYNC_FLUSH_TIMEOUT_MS",
               "BALANCE_SYNC_MAX_WORKERS",
@@ -1840,6 +2084,8 @@
               "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
               "MULTI_TENANT_ENABLED",
               "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+              "MULTI_TENANT_MAX_IDLE_CONNS_PER_TENANT",
+              "MULTI_TENANT_MAX_OPEN_CONNS_PER_TENANT",
               "MULTI_TENANT_MAX_TENANT_POOLS",
               "MULTI_TENANT_REDIS_HOST",
               "MULTI_TENANT_REDIS_PASSWORD",
@@ -1958,9 +2204,11 @@
               "TENANT_CAP_RETRY_AFTER_SECONDS",
               "TRACER_BASE_URL",
               "TRACER_GRPC_PORT",
+              "TRACER_SEAM_ALLOWED_CLIENTS",
               "TRACER_TIMEOUT_MS",
               "TRACER_TLS_CA_FILE",
               "TRACER_TLS_CERT_FILE",
+              "TRACER_TLS_CLIENT_ALLOWED_NAMES",
               "TRACER_TLS_CLIENT_CA_FILE",
               "TRACER_TLS_KEY_FILE",
               "TRACER_TLS_MODE",

@@ -36,12 +36,112 @@ via `include` by the product charts that declare it as a dependency.
   is a zero-diff refactor, before optionally migrating to the derivation helpers above.
 - **In-cluster host primitives:** `lerian-common.internalHost`, `lerian-common.internalURL`.
 - **Resource helpers:** `lerian-common.hpa`, `.service`, `.serviceAccount`, `.pdb`, `.ingress`.
-- **Deployment pod-spec fragments:** `lerian-common.scheduling`, `.imagePullSecrets`,
-  `.httpProbe`, `.rolesAnywhere.{sidecar,volume,imdsEnv,podSecurityContext}`.
+- **Deployment pod-spec fragments:** `lerian-common.scheduling`, `.topologySpreadConstraints`,
+  `.imagePullSecrets`, `.httpProbe`, `.rolesAnywhere.{sidecar,volume,imdsEnv,podSecurityContext}`.
+  See [Pod spreading](#pod-spreading-topologyspreadconstraints).
 - **Dependency helpers:** `lerian-common.dependency.fullname`, `.infraSecretRef`.
 - **`lerian-common.deploymentStrategy`.**
 
 See `values.yaml` for the standard `global.{serviceDiscovery,streaming,multiTenant}` template.
+
+## Pod spreading (topologySpreadConstraints)
+
+`lerian-common.scheduling` accepts two input shapes:
+
+1. **The component values map** (original contract) — renders `nodeSelector` /
+   `affinity` / `tolerations` only. Output is byte-identical to earlier releases;
+   no `topologySpreadConstraints` is ever rendered. Keep this shape for Jobs.
+2. **A dict with `component` + `selectorLabels`** (and optional `global`) — renders
+   the same three fields plus the `topologySpreadConstraints` resolved by
+   `lerian-common.topologySpreadConstraints` (also callable on its own by charts
+   that hand-write the other scheduling fields).
+
+{% raw %}
+```yaml
+# consumer templates/<component>/deployment.yaml (pod spec, column 6)
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.manager
+            "global" .Values.global
+            "selectorLabels" (include "myapp.manager.selectorLabels" .)) | trim) }}
+      {{- . | nindent 6 }}
+      {{- end }}
+```
+{% endraw %}
+
+`selectorLabels` must be exactly the Deployment's `spec.selector.matchLabels` (a
+dict, or the YAML string the chart's selectorLabels helper renders). The library
+never guesses labels.
+
+Resolution, first match wins:
+
+1. `<component>.topologySpreadConstraints` — non-empty raw list, replaces the preset
+   entirely. An entry without `labelSelector` gets the component's selector labels.
+2. The `spread` preset, **field by field**: `<component>.spread.<field>` >
+   `global.scheduling.spread.<field>` > built-in (`enabled: false`, `hostname: ""`,
+   `zone: ""`, `maxSkew: 1`, `minDomains: 0`, `nodeTaintsPolicy: ""`).
+3. Nothing.
+
+| Field | Values | Renders |
+|-------|--------|---------|
+| `enabled` | bool | master switch for the preset |
+| `hostname` | `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off) | constraint on `kubernetes.io/hostname` |
+| `zone` | `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off) | constraint on `topology.kubernetes.io/zone` |
+| `maxSkew` | integer >= 1 (default 1) | `maxSkew` of every preset constraint |
+| `minDomains` | integer >= 0 (default 0 = off) | `minDomains` of every `DoNotSchedule` preset constraint (the API rejects it with `ScheduleAnyway`) |
+| `nodeTaintsPolicy` | `Honor` \| `Ignore` \| `""` (default, omitted = Kubernetes `Ignore`) | `nodeTaintsPolicy` of every preset constraint |
+
+`minDomains` closes a gap of hard spreads (Kubernetes >= 1.30). Skew is measured only
+against domains that already exist, so with a single eligible node, `hostname:
+DoNotSchedule` + `maxSkew: 1` still lets every replica land on it (e.g. 2 replicas on a
+fresh 1-node Karpenter pool). With `minDomains: 2` the scheduler treats the missing
+domain as empty: the second replica stays `Pending` until another node exists, and
+Karpenter (which honours `minDomains`) launches it. Use it with `DoNotSchedule` on
+autoscaled clusters; on fixed-size clusters it can leave pods `Pending`.
+
+`nodeTaintsPolicy: Honor` counts only nodes whose taints the pod tolerates. With the
+Kubernetes default (`Ignore`) a tainted node still counts as a domain: a node Karpenter
+is draining (`karpenter.sh/disrupted:NoSchedule`) or a dedicated tainted pool matched by
+the node affinity distorts the skew and can satisfy `minDomains` without being able to
+run the pod.
+
+Every preset constraint carries `labelSelector.matchLabels: <selectorLabels>` and
+`matchLabelKeys: [pod-template-hash]`, so only pods of the same ReplicaSet are
+counted and a rolling update never deadlocks on the old ReplicaSet's pods
+(Kubernetes >= 1.27 with the `MatchLabelKeysInPodTopologySpread` feature gate
+enabled: beta since 1.27 and on by default, including 1.33, but it can be disabled).
+Invalid input fails the render with an explicit
+`lerian-common.topologySpreadConstraints: ...` message (unknown field, non-bool
+`enabled`, bad `whenUnsatisfiable`, `maxSkew` < 1 or non-integer, `minDomains` < 0 or
+non-integer, bad `nodeTaintsPolicy`, non-list raw
+constraints, empty `selectorLabels`).
+
+A library chart cannot ship defaults to its consumers: each consumer declares the
+keys in its own `values.yaml` and `values.schema.json`. Recommended consumer
+defaults (soft, so an upgrade never leaves pods `Pending`):
+
+```yaml
+global:
+  scheduling:
+    spread: { enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1 }
+<component>:
+  spread: {}
+  topologySpreadConstraints: []
+```
+
+Zone is off in the recommended default: when scoring a soft spread the scheduler skips
+every node lacking the `topology.kubernetes.io/zone` label, so on clusters without zone
+labels (bare-metal, k3s) a zone constraint silently cancels the hostname spread. EKS +
+Karpenter environments typically set:
+
+```yaml
+global:
+  scheduling:
+    spread: { hostname: DoNotSchedule, zone: ScheduleAnyway, maxSkew: 1, minDomains: 2, nodeTaintsPolicy: Honor }
+```
+
+`global.scheduling` may hold other env-wide scheduling keys (e.g. `nodeSelector`,
+`tolerations` in charts that support them); this helper reads only
+`global.scheduling.spread`.
 
 ## Usage
 

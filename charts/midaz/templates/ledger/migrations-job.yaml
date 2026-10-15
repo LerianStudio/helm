@@ -16,8 +16,7 @@ tracks progress in the schema_migrations table.
 {{- $migrations := .Values.ledger.migrations }}
 {{- $cm := .Values.ledger.configmap | default dict }}
 {{- $pg := .Values.postgresql | default dict }}
-{{- $pgAuth := $pg.auth | default dict }}
-{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
 {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
 {{- /* Resolve DB connection through the SAME datastore masks the ledger ConfigMap uses, so an
    operator who sets global/ledger.datastores.postgres{Onboarding,Transaction} migrates the SAME

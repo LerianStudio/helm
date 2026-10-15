@@ -146,18 +146,15 @@ Allows overriding it for multi-namespace deployments in combined charts.
 
 {{/*
 reporter.infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` entry
-pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+pointing at a bundled datastore's password Secret (or the operator's existingSecret override).
 Inputs (dict): context (root .), subchart ("mongodb"), key, envName.
 See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 */}}
 {{- define "reporter.infraSecretRef" -}}
 {{- $ctx := .context -}}
 {{- $sub := .subchart -}}
-{{- $auth := default dict (index $ctx.Values $sub "auth") -}}
-{{- $secretName := "" -}}
-{{- if $auth.existingSecret -}}
-{{- $secretName = $auth.existingSecret -}}
-{{- else -}}
+{{- $secretName := include "reporter.operatorSecret" . -}}
+{{- if not $secretName -}}
 {{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" (index $ctx.Values $sub) "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
@@ -165,6 +162,14 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
     secretKeyRef:
       name: {{ $secretName }}
       key: {{ .key }}
+{{- end }}
+
+{{/*
+reporter.operatorSecret — the Secret an operator named in <subchart>.auth.existingSecret, "" when none.
+The chart default renders a name only inside the subchart (templates/mongodb-secrets.yaml).
+*/}}
+{{- define "reporter.operatorSecret" -}}
+{{- tpl (dig "auth" "existingSecret" "" (index .context.Values .subchart | default dict) | toString) .context -}}
 {{- end }}
 
 {{/*
@@ -181,9 +186,7 @@ external MongoDB without an existingSecret (the operator supplies it inline). Fo
 subchart the password lives in <release>-mongodb and this emits nothing.
 */}}
 {{- define "reporter.mongoExternalSecretData" -}}
-{{- $mongo := default dict .Values.mongodb -}}
-{{- $mongoAuth := default dict $mongo.auth -}}
-{{- if and (ne (include "reporter.mongoInternal" .) "true") (not $mongoAuth.existingSecret) .Values.secrets.MONGO_PASSWORD -}}
+{{- if and (ne (include "reporter.mongoInternal" .) "true") (not (include "reporter.operatorSecret" (dict "context" . "subchart" "mongodb"))) .Values.secrets.MONGO_PASSWORD -}}
 MONGO_PASSWORD: {{ .Values.secrets.MONGO_PASSWORD | toString | b64enc | quote }}
 {{- end -}}
 {{- end }}
@@ -196,9 +199,7 @@ Input (dict): context (root .), secretName (the app Secret name for the external
 */}}
 {{- define "reporter.mongoPasswordEnv" -}}
 {{- $ctx := .context -}}
-{{- $mongo := default dict $ctx.Values.mongodb -}}
-{{- $mongoAuth := default dict $mongo.auth -}}
-{{- if or (eq (include "reporter.mongoInternal" $ctx) "true") $mongoAuth.existingSecret -}}
+{{- if or (eq (include "reporter.mongoInternal" $ctx) "true") (include "reporter.operatorSecret" (dict "context" $ctx "subchart" "mongodb")) -}}
 {{ include "reporter.infraSecretRef" (dict "context" $ctx "subchart" "mongodb" "key" "mongodb-root-password" "envName" "MONGO_PASSWORD") }}
 {{- else if $ctx.Values.secrets.MONGO_PASSWORD -}}
 - name: MONGO_PASSWORD
@@ -239,6 +240,80 @@ Custom (non-default) existingSecret values are the operator's responsibility and
 {{- $managerName := ternary .Values.manager.existingSecretName (include "plugin-manager.fullname" .) .Values.manager.useExistingSecret -}}
 {{- if and $rmqEnabled (eq (default "" $auth.existingSecret) "reporter-manager") (ne $managerName "reporter-manager") -}}
 {{- fail (printf "\n\nERROR: rabbitmq.authentication.existingSecret is still the shipped default \"reporter-manager\" but the manager Secret renders as %q.\n   The broker would reference a Secret that does not exist.\n   Update rabbitmq.authentication.existingSecret to %q (or set it to your own existing Secret).\n" $managerName $managerName) -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmDeclared — true when an operator has supplied any CRM datasource
+configuration. CRM remains optional: installations that do not set a
+DATASOURCE_CRM_* key receive no validation or defaults.
+*/}}
+{{- define "reporter.crmDeclared" -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $declared := false -}}
+{{- range $key, $_ := $cm -}}
+{{- if or (hasPrefix "DATASOURCE_CRM_" $key) (eq $key "CRYPTO_HASH_SECRET_KEY_CRM") (eq $key "CRYPTO_ENCRYPT_SECRET_KEY_CRM") -}}{{- $declared = true -}}{{- end -}}
+{{- end -}}
+{{- if $declared -}}true{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmConfigRequired — validate Reporter CRM's non-secret datasource
+contract when, and only when, CRM is declared. These fields are deliberately in
+the shared ConfigMap because both workloads need them. The chart never guesses
+an organization ID or supplies a CRM connection default.
+*/}}
+{{- define "reporter.crmConfigRequired" -}}
+{{- if eq (include "reporter.crmDeclared" .) "true" -}}
+{{- $cm := .Values.common.configmap | default dict -}}
+{{- $sensitive := list "DATASOURCE_CRM_PASSWORD" "CRYPTO_HASH_SECRET_KEY_CRM" "CRYPTO_ENCRYPT_SECRET_KEY_CRM" -}}
+{{- $misplaced := list -}}
+{{- range $key := $sensitive -}}
+{{- if hasKey $cm $key -}}{{- $misplaced = append $misplaced $key -}}{{- end -}}
+{{- end -}}
+{{- if gt (len $misplaced) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM secret keys must not be set in common.configmap: %s.\n   Put them under secrets: or in the matching external Secret.\n" (join ", " $misplaced)) -}}
+{{- end -}}
+{{- $required := list "DATASOURCE_CRM_CONFIG_NAME" "DATASOURCE_CRM_TYPE" "DATASOURCE_CRM_HOST" "DATASOURCE_CRM_PORT" "DATASOURCE_CRM_DATABASE" "DATASOURCE_CRM_USER" "DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID" -}}
+{{- $missing := list -}}
+{{- range $key := $required -}}
+{{- $value := index $cm $key -}}
+{{- if or (not (hasKey $cm $key)) (kindIs "invalid" $value) (eq (trim (toString $value)) "") -}}
+{{- $missing = append $missing $key -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $missing) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM is declared but its required non-secret configuration is incomplete: %s.\n   Set DATASOURCE_CRM_CONFIG_NAME=plugin_crm, DATASOURCE_CRM_TYPE=mongodb, HOST, PORT, DATABASE, USER and the correct DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID under common.configmap.\n   CRM is optional; remove all DATASOURCE_CRM_* keys to disable it.\n" (join ", " $missing)) -}}
+{{- end -}}
+{{- if ne (trim (toString (index $cm "DATASOURCE_CRM_CONFIG_NAME"))) "plugin_crm" -}}
+{{- fail "\n\nERROR: DATASOURCE_CRM_CONFIG_NAME must be \"plugin_crm\" when configuring Reporter CRM.\n   The plugin_crm datasource is reserved; do not substitute another name.\n" -}}
+{{- end -}}
+{{- if ne (trim (toString (index $cm "DATASOURCE_CRM_TYPE"))) "mongodb" -}}
+{{- fail "\n\nERROR: DATASOURCE_CRM_TYPE must be \"mongodb\" when configuring Reporter CRM.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+reporter.crmSecretsRequired — when CRM uses a chart-managed Secret, require its
+sensitive keys. This helper is intentionally called only from the manager/worker
+Secret templates; useExistingSecret remains opaque to Helm and valid external
+secret-manager inputs must not be blocked at render time.
+*/}}
+{{- define "reporter.crmSecretsRequired" -}}
+{{- if eq (include "reporter.crmDeclared" .context) "true" -}}
+{{- $secrets := .context.Values.secrets | default dict -}}
+{{- $required := list "DATASOURCE_CRM_PASSWORD" "CRYPTO_HASH_SECRET_KEY_CRM" "CRYPTO_ENCRYPT_SECRET_KEY_CRM" -}}
+{{- $missing := list -}}
+{{- range $key := $required -}}
+{{- $value := index $secrets $key -}}
+{{- if or (not (hasKey $secrets $key)) (kindIs "invalid" $value) (eq (trim (toString $value)) "") -}}
+{{- $missing = append $missing $key -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (len $missing) 0 -}}
+{{- fail (printf "\n\nERROR: Reporter CRM is declared and %s uses a chart-managed Secret, but these CRM secret keys are missing: %s.\n   Set them under secrets:, never common.configmap. When %s.useExistingSecret=true, provide the same keys in its external Secret instead.\n" .component (join ", " $missing) .component) -}}
+{{- end -}}
 {{- end -}}
 {{- end }}
 
@@ -306,6 +381,7 @@ Input: the root context ($).
 {{- define "reporter.commonConfigmapData" -}}
 {{- $ := . -}}
 {{- $cm := .Values.common.configmap | default dict -}}
+{{- include "reporter.crmConfigRequired" . -}}
 {{- $ded := .Values.datastores | default dict -}}
 {{- $dv := "lerian-common.datastore.value" -}}
 {{- $osv := "lerian-common.objectStorage.value" -}}

@@ -1,0 +1,5 @@
+{
+ "body": "senderName=José ********** enviado",
+ "categoria": "formaAlternativa",
+ "descricao": "Nome ACENTUADO. Com \\w (ASCII) a regra nao casava e o nome passava INTACTO — verificado executando o agente. Em contexto brasileiro acento e a norma, nao a excecao, entao esta e a forma alternativa que importa. Corrigido com \\p{Lu} e \\p{L}, suportados pelo motor desta versao."
+}

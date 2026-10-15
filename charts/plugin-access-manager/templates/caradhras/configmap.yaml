@@ -1,3 +1,6 @@
+{{- include "plugin-caradhras.validateSessionStore" . -}}
+{{- $ccm := .Values.caradhras.configmap | default dict -}}
+{{- $redisEndpoint := $ccm.redisEndpoint | default "" | toString -}}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -34,6 +37,16 @@ data:
   # STREAMING_CLOUDEVENTS_SOURCE via caradhras.extraEnvVars below — a second
   # ConfigMap key with the same name is undefined behavior.
   STREAMING_CLOUDEVENTS_SOURCE: "caradhras"
+  {{- /* The endpoint only rides in the ConfigMap when it carries no password;
+     with AUTH it arrives as env `redisEndpoint` from the caradhras Secret
+     (templates/caradhras/deployment.yaml). redisTls is not sensitive and is
+     emitted for both channels. */}}
+  {{- if $redisEndpoint }}
+  redisEndpoint: {{ $redisEndpoint | quote }}
+  {{- end }}
+  {{- if include "plugin-caradhras.sessionStoreConfigured" . }}
+  redisTls: {{ include "plugin-caradhras.sessionRedisTls" . | quote }}
+  {{- end }}
   # Extra Env Vars
   {{- with .Values.caradhras.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

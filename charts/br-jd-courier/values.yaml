@@ -1,0 +1,159 @@
+nameOverride: ""
+fullnameOverride: ""
+# One image for every role and for the migration Job. Keyed `jd-courier`
+# because that is the block the br-jd-courier release dispatch bumps
+# (helm_values_key_mappings, applied by .github/workflows/app-sync.yml as
+# `.jd-courier.image.tag`). Renaming this block breaks every release bump.
+jd-courier:
+  image:
+    repository: ghcr.io/lerianstudio/br-jd-courier
+    # Registry tags have no leading `v`. Empty falls back to the chart's appVersion.
+    tag: "1.1.0"
+    pullPolicy: IfNotPresent
+imagePullSecrets: []
+# The ServiceAccount every role runs as; README "AWS identity" (IRSA, Pod Identity).
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+# Non-secret environment shared by every role, rendered into one ConfigMap.
+# COURIER_ROLES is set by the chart per Deployment and is refused here, and so
+# is every secret key: those arrive through `secrets.existingSecret` only.
+# Both SPB roles and the admin's Pix transit talk to JD, and
+# JD_ALLOW_PRIVATE_NETWORK governs all three. The SPB roles read
+# SPB_VENDOR_TIMEOUT and, in single-tenant, JD_BASE_URL, JD_SOAP_PATH,
+# JD_LEGACY_CODE and JD_USER_CODE; the transit's keys are in README "Pix
+# transit". The spb-sender also reads SOAP_MAX_BODY_BYTES and
+# SPB_CHANNEL_CREDENTIAL_ROTATION_OVERLAP; its SOAP_TLS_* keys are refused here
+# and follow roles.spbSender.soapTls and roles.spbSender.ingress. The spb-consumer's
+# SPB_TAKE_BUDGET_SEC must cover SPB_VENDOR_TIMEOUT.
+# JD_PASSWORD and JD_SPI_CLIENT_SECRET are secret keys; JD_PRIVATE_KEY_PEM is
+# refused everywhere — the Courier holds no signing key. Where each engine
+# takes Pix deliveries is on its registry row, not here.
+# Authentication is on, and every role then needs PLUGIN_AUTH_HOST (the Access
+# Manager's address). ALLOW_AUTH_DISABLED_LOCAL_ONLY is refused: a chart install
+# is never a developer's machine. The pix-ingress role also needs the Pix
+# vendor's credential subject: PIX_VENDOR_SUBJECTS in single-tenant, or
+# SYSTEMPLANE_ENABLED=true in multi-tenant, where each tenant's subjects live in
+# systemplane jd-courier.pix/vendor_subjects; without it its pods refuse to boot.
+# ENVIRONMENT_NAME is required; README "Environment".
+# OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT follows ENVIRONMENT_NAME unless set here.
+config:
+  PLUGIN_AUTH_ENABLED: "true"
+  # local, byoc or saas. saas refuses to boot unless every datastore connection
+  # is TLS; byoc and local do not check. A cluster install is never local.
+  DEPLOYMENT_MODE: "byoc"
+secrets:
+  # Name of the Secret loaded into every role (envFrom, and LICENSE_KEY by name
+  # through secretKeyRef); defaults to the release fullname. It must exist
+  # before install and carries LICENSE_KEY,
+  # POSTGRES_PASSWORD and, for the migration Job, DATABASE_URL. The chart never
+  # renders a Secret or a secret value.
+  existingSecret: ""
+telemetry:
+  # Where every role sends OTLP (metrics and traces): by default the collector
+  # on the pod's own node, the Lerian convention. That hop never leaves the
+  # node, so for this exact value the chart sets ALLOW_INSECURE_OTEL and a
+  # production install boots in plaintext. Any other value gets no exemption:
+  # with OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=production it must be https://, or
+  # config.ALLOW_INSECURE_OTEL must carry the operator's own reason.
+  otlpEndpoint: "$(NODE_IP):4317"
+ports:
+  # JSON surfaces and the probes (/health, /readyz, /version). Metrics leave
+  # over OTLP (OTEL_EXPORTER_OTLP_ENDPOINT); nothing is scraped.
+  http: 8080
+  # The mirrored SPB SOAP surface — a separate stdlib net/http listener,
+  # served by the spb-sender only.
+  soap: 8081
+  # The outbound Pix transit, served by the admin only while
+  # roles.admin.pixTransit.enabled.
+  pixTransit: 8082
+roles:
+  # SINGLE WRITER: drains a destructive vendor queue. Exactly one replica,
+  # Recreate strategy; the chart refuses to render more than one.
+  spbConsumer:
+    enabled: true
+    replicas: 1
+    resources: {}
+  spbSender:
+    enabled: true
+    replicas: 2
+    resources: {}
+    service:
+      type: ClusterIP
+    # TLS for the SOAP listener (ports.soap). The engines refuse plain HTTP, and
+    # a production spb-sender refuses to boot unless one of these, or
+    # ingress.enabled, is set.
+    soapTls:
+      # A kubernetes.io/tls Secret (tls.crt, tls.key) mounted read-only at
+      # /etc/jd-courier/soap-tls; the listener then serves TLS itself. Read once
+      # at boot: rotating it needs a rollout restart.
+      existingSecret: ""
+      # TLS is terminated before the pod by something this chart does not
+      # render (a mesh, an external load balancer).
+      terminatedUpstream: false
+    # Routes the SOAP Service; TLS ends at the Ingress (the chart sets
+    # SOAP_TLS_TERMINATED_UPSTREAM=true). AWS annotations and the health check:
+    # README "SOAP TLS".
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts:
+        - host: ""
+          paths:
+            - path: /
+              pathType: Prefix
+      tls: []
+  pixIngress:
+    enabled: true
+    replicas: 2
+    resources: {}
+    service:
+      type: ClusterIP
+  admin:
+    enabled: true
+    replicas: 1
+    resources: {}
+    service:
+      type: ClusterIP
+    # The outbound Pix transit on ports.pixTransit: Pix engines call it in place
+    # of JD's JDPI address. The engines refuse plain HTTP, so the render fails
+    # without one TLS shape below. README "Pix transit".
+    pixTransit:
+      enabled: false
+      tls:
+        # A kubernetes.io/tls Secret (tls.crt, tls.key) mounted read-only at
+        # /etc/jd-courier/pix-transit-tls; the listener then serves TLS itself.
+        # Read once at boot: rotating it needs a rollout restart.
+        existingSecret: ""
+        # TLS is terminated before the pod by something this chart does not
+        # render (a mesh, a load balancer).
+        terminatedUpstream: false
+migrations:
+  # A pre-install/pre-upgrade Job running `migrate up` against the Courier's own
+  # database. Single-tenant only: the chart refuses it under
+  # MULTI_TENANT_ENABLED=true, where no platform mechanism applies per-tenant
+  # migrations on deploy.
+  enabled: true
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  resources: {}
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+# The spb-consumer must finish persisting what it read from the vendor before
+# the kubelet kills the pod, or that message is lost. The sequence:
+#   t=0    SIGTERM: the rail stop starts at once, apart from HTTP.
+#   t<=80  rail done: one read (SPB_TAKE_BUDGET_SEC 15) + one persist
+#          (SPB_PERSIST_TIMEOUT_SEC 60) + 5 s routing margin.
+#   t=12   readiness drain ends; the HTTP drain runs alongside the rail stop
+#          (connections bounded by 30 s read/write/idle timeouts).
+#   hooks  run after the HTTP drain, wait for the rail (already done or
+#          finishing by t=80), then 10 s for the workers closed after it.
+#   = 80 + 10 + 10 s margin = 100 s. A collector that does not answer then
+#   holds the telemetry shutdown ~15 s; a SIGKILL there loses only the last
+#   export. A handler that holds the HTTP drain past t=68 only delays the exit: the rail has stopped and the database is still
+#   open, so a SIGKILL then loses no drained message. Raise with either SPB budget.
+terminationGracePeriodSeconds: 100

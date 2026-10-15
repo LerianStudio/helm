@@ -122,6 +122,16 @@ common:
     DATASOURCE_ONBOARDING_TYPE: "postgresql"
     DATASOURCE_ONBOARDING_SSLMODE: "disable"
 
+    # Optional CRM datasource — leave this whole block commented to keep CRM disabled.
+    # The name plugin_crm is reserved; use the organization that owns the CRM data.
+    # DATASOURCE_CRM_CONFIG_NAME: "plugin_crm"
+    # DATASOURCE_CRM_TYPE: "mongodb"
+    # DATASOURCE_CRM_HOST: "crm.example.invalid"
+    # DATASOURCE_CRM_PORT: "27017"
+    # DATASOURCE_CRM_DATABASE: "crm"
+    # DATASOURCE_CRM_USER: "reporter"
+    # DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+
 # --- Credentials — placeholders only (operator fills; never a concrete value) ---
 secrets:
   RABBITMQ_DEFAULT_USER: "reporter"
@@ -141,6 +151,11 @@ secrets:
   # Generate once (openssl rand -hex 32), use the SAME value for manager and worker, and do
   # NOT rotate — a new value makes every registered data source undecryptable.
   DATASOURCE_CRED_ENC_KEY: ""
+  # Optional CRM secrets. Uncomment only with the CRM config above; use real values
+  # or provide these exact keys through manager/worker existing Secrets.
+  # DATASOURCE_CRM_PASSWORD: "CHANGE_ME"
+  # CRYPTO_HASH_SECRET_KEY_CRM: "CHANGE_ME"
+  # CRYPTO_ENCRYPT_SECRET_KEY_CRM: "CHANGE_ME"
 
 # --- Bundled dependencies. Set enabled: false to use an external instance
 # instead (then point the masks under global.datastores/objectStorage above at

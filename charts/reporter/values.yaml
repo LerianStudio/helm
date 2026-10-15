@@ -60,6 +60,35 @@ global:
   # gate today; other MULTI_TENANT_* keys are set via common.configmap.<KEY>.
   # Example: multiTenant: { enabled: true }
   multiTenant: {}
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to every Deployment (manager, and
+  # the worker when it runs as a Deployment, i.e. keda.enabled=false). Each constraint
+  # counts only the component's own pods (labelSelector = its selector labels) of the
+  # same ReplicaSet (matchLabelKeys: [pod-template-hash]), so rolling updates never
+  # deadlock. A component's `spread` overrides these fields one by one; a component's
+  # raw `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      # Off by default: the scheduler skips nodes without the zone label when scoring a
+      # soft spread, so on clusters missing it (bare-metal, k3s) a zone constraint
+      # silently cancels the hostname spread. Enable it where every node has zone labels (EKS, GKE, AKS).
+      zone: ""
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
+      # -- Minimum eligible domains for DoNotSchedule constraints (0 = off). With
+      # fewer domains the scheduler treats the global minimum as 0, so a hard
+      # hostname spread never stacks replicas on a single node; the extra replica
+      # waits for a new node (Karpenter launches it). Use on autoscaled clusters.
+      minDomains: 0
+      # -- Honor | Ignore | "" (omitted = Kubernetes default Ignore). Honor counts
+      # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
+      # draining, tainted karpenter.sh/disrupted).
+      nodeTaintsPolicy: ""
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
@@ -121,7 +150,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.0.0"
+    tag: "4.5.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -157,7 +186,6 @@ manager:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
-  podSecurityContext: {}
   securityContext:
     runAsGroup: 1000
     runAsUser: 1000
@@ -178,6 +206,13 @@ manager:
     requests:
       cpu: 100m
       memory: 256Mi
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -313,7 +348,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.0.0"
+    tag: "4.5.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -336,7 +371,6 @@ worker:
     requests:
       cpu: 100m
       memory: 128Mi
-  podSecurityContext: {}
   securityContext:
     runAsGroup: 1000
     runAsUser: 1000
@@ -348,6 +382,13 @@ worker:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -464,6 +505,69 @@ common:
   # dependency CONNECTIONS resolve through lerian-common typed masks/helpers, everything
   # else is an escape-hatch passthrough. Set common.configmap.<KEY> here to override any
   # shared key; add any other key and it flows through as-is.
+  #
+  # Optional Reporter CRM datasource (not enabled by default):
+  #   configmap:
+  #     DATASOURCE_CRM_CONFIG_NAME: "plugin_crm" # reserved name
+  #     DATASOURCE_CRM_TYPE: "mongodb"
+  #     DATASOURCE_CRM_HOST: "crm.example.invalid"
+  #     DATASOURCE_CRM_PORT: "27017"
+  #     DATASOURCE_CRM_DATABASE: "crm"
+  #     DATASOURCE_CRM_USER: "reporter"
+  #     DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+  # CRM is all-or-nothing once any DATASOURCE_CRM_* key is set. Put its password
+  # and crypto keys under secrets: (or in each component's external Secret), never here.
+  #
+  # -- CRM over TLS with an INLINE CA bundle (e.g. AWS DocumentDB / any managed MongoDB) --
+  # The CRM datasource is a MongoDB source, so it takes the same TLS knobs as any datasource:
+  # point DATASOURCE_CRM_HOST at the TLS endpoint and hand the app the trust anchor INLINE
+  # (Base64 of a PEM CA bundle) instead of a file path — no volume/mount, works with any
+  # secret manager. Requires reporter app >= the inline-CA release (3.0.2+).
+  #
+  #   configmap:
+  #     DATASOURCE_CRM_CONFIG_NAME: "plugin_crm"
+  #     DATASOURCE_CRM_TYPE: "mongodb"
+  #     # the real TLS endpoint — its hostname must match the server certificate (verify-full)
+  #     DATASOURCE_CRM_HOST: "shared-docdb.cluster-xxxx.<region>.docdb.amazonaws.com"
+  #     DATASOURCE_CRM_PORT: "27017"
+  #     DATASOURCE_CRM_DATABASE: "crm"
+  #     DATASOURCE_CRM_USER: "reporter"
+  #     DATASOURCE_CRM_MIDAZ_ORGANIZATION_ID: "<organization-id>"
+  #     # SSLMODE any value other than "disable" enables TLS for a mongo datasource. It may be
+  #     # OMITTED when SSLCA_BASE64 is set — the app then infers "require" from the configured CA.
+  #     DATASOURCE_CRM_SSLMODE: "require"
+  #     # Base64 of a PEM CA bundle. NOT a secret (a CA cert is public) — it lives here in the
+  #     # configmap, NOT under secrets:. The connection password stays in secrets.DATASOURCE_CRM_PASSWORD.
+  #     DATASOURCE_CRM_SSLCA_BASE64: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t..."   # one line, no newlines
+  #
+  # Two hard requirements for DATASOURCE_CRM_SSLCA_BASE64 (both learned the hard way):
+  #   1. SCOPE THE BUNDLE. Use the per-region / per-cluster CA, NOT the full AWS global bundle.
+  #      The global rds-combined/global-bundle.pem is ~108 certs (~220 KB Base64); as a single
+  #      env var it EXCEEDS the Linux per-arg env limit (MAX_ARG_STRLEN, 128 KB) and the container
+  #      fails to exec ("argument list too long") — the pod never starts. The regional bundle
+  #      (e.g. https://truststore.pki.rds.amazonaws.com/<region>/<region>-bundle.pem, a few KB)
+  #      still validates and is what you want. Custom PKI: ship only the issuing chain.
+  #   2. SINGLE LINE, NO NEWLINES. The app decodes with strict Base64 and rejects embedded
+  #      newlines. Produce it with:  base64 -w0 ca.pem   (macOS:  base64 ca.pem | tr -d '\n').
+  #      In this YAML use a plain double-quoted scalar — do NOT use a block scalar (| / >),
+  #      which reintroduces newlines.
+  #
+  # Fetch the regional AWS RDS/DocumentDB CA and produce the value (pick your cluster's region):
+  #   REGION=sa-east-1   # e.g. the region in the DATASOURCE_CRM_HOST endpoint
+  #   curl -fsSLO "https://truststore.pki.rds.amazonaws.com/${REGION}/${REGION}-bundle.pem"
+  #   base64 -w0 "${REGION}-bundle.pem"                 # Linux — paste the output as the value
+  #   base64 "${REGION}-bundle.pem" | tr -d '\n'        # macOS equivalent
+  # (Global bundle, DO NOT use as an env var — see requirement 1:
+  #   https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem)
+  # Sanity-check it validates before deploying (needs mongosh + network to the cluster):
+  #   # credentials as separate flags so URI-reserved chars (@ : / ? # [ ]) need no percent-encoding
+  #   mongosh "mongodb://<DATASOURCE_CRM_HOST>:27017/?tls=true&tlsCAFile=${REGION}-bundle.pem&retryWrites=false" \
+  #     --username '<user>' --password '<pass>' --authenticationDatabase admin --quiet --eval 'db.runCommand({ping:1})'
+  # Custom / non-AWS PKI: base64 -w0 the issuing chain PEM the same way.
+  #
+  # Mutually exclusive with the legacy file path: set EITHER DATASOURCE_CRM_SSLCA_BASE64 (inline)
+  # OR DATASOURCE_CRM_SSLROOTCERT (a mounted file), never both. Same pattern applies to any other
+  # DATASOURCE_<NAME>_SSLCA_BASE64.
   configmap: {}
 # -- Dedicated datastore masks for THIS release (override global.datastores). Both the
 # manager and worker surfaces share these connections. Sub-keys (each host/port/user/ssl):
@@ -493,7 +597,7 @@ secrets:
   # Chart-managed path (default): leave `useExistingSecret: false` and set the values
   # below; the chart renders them into the `<manager.name>` Secret.
   #
-  # MONGO_PASSWORD is single-sourced from the Bitnami mongodb subchart Secret
+  # MONGO_PASSWORD is single-sourced from the chart's bundled-MongoDB Secret
   # (<release>-mongodb, key mongodb-root-password) and read via secretKeyRef — leave empty
   # with the bundled subchart; only set for an external MongoDB without
   # mongodb.auth.existingSecret. See docs/helm-chart-standard.md "Single-Source Infra Secrets".
@@ -503,6 +607,9 @@ secrets:
   # RabbitMQ is single-sourced here (Pattern B): the broker is pointed at this Secret via
   # rabbitmq.authentication.existingSecret, so these are the only copies of the broker creds.
   RABBITMQ_DEFAULT_USER: reporter
+  # REQUIRED. With the bundled broker (rabbitmq.enabled) it is also the broker's only login, and
+  # passwords printed in this chart (reporter123, Lerian@123, CHANGE_ME) are refused.
+  # Only letters, digits and -._~ are safe: the apps put it unescaped in their broker URL.
   RABBITMQ_DEFAULT_PASS: ""
   # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
   # it from this Secret). Must be a STABLE value — changing it across upgrades breaks the
@@ -529,6 +636,12 @@ secrets:
   # NO ROTATION in this release: changing the value makes every already-registered data
   # source undecryptable (they must be re-registered).
   DATASOURCE_CRED_ENC_KEY: ""
+  # Optional Reporter CRM secrets (only when common.configmap.DATASOURCE_CRM_* is set):
+  # DATASOURCE_CRM_PASSWORD: ""
+  # CRYPTO_HASH_SECRET_KEY_CRM: ""
+  # CRYPTO_ENCRYPT_SECRET_KEY_CRM: ""
+  # With manager/worker.useExistingSecret=true, put these keys in each external Secret
+  # instead of setting them here. Keep DATASOURCE_CRED_ENC_KEY unchanged.
 seaweedfs:
   enabled: true
   # -- Subchart-wide settings. createClusterRole is disabled by default: the bundled
@@ -540,8 +653,17 @@ seaweedfs:
   global:
     createClusterRole: false
     serviceAccountName: "reporter-seaweedfs"
+  # -- The seaweedfs subchart hard-pins `nodeSelector: kubernetes.io/arch: amd64` on every
+  # component, so the pods stay Pending forever on arm64 nodes (e.g. Apple-Silicon minikube)
+  # and object-storage readiness never comes up. Unpinned here (empty string ⇒ the subchart's
+  # `{{ if .nodeSelector }}` drops the block) so the bundled storage schedules on any arch;
+  # amd64 is unaffected (no selector still matches amd64 nodes). Set a real selector per
+  # component to re-pin. The subchart expects a multi-line STRING, e.g.:
+  #   nodeSelector: |
+  #     kubernetes.io/arch: amd64
   master:
     enabled: true
+    nodeSelector: ""
     replicas: 1
     extraArgs:
       - "master"
@@ -559,6 +681,7 @@ seaweedfs:
       storageClass: null # Use cluster default or set a specific StorageClass
   volume:
     enabled: true
+    nodeSelector: ""
     replicas: 1
     extraArgs:
       - "volume"
@@ -579,6 +702,7 @@ seaweedfs:
         maxVolumes: 0 # 0 = let SeaweedFS decide, or set a limit
   filer:
     enabled: true
+    nodeSelector: ""
     extraArgs:
       - "filer"
       - "-port=8888"
@@ -594,6 +718,7 @@ seaweedfs:
       storageClass: null
   s3:
     enabled: true
+    nodeSelector: ""
     port: 8333
     grpcPort: 18333
     # Allow empty access key for development (disable auth)
@@ -676,8 +801,13 @@ mongodb:
     enabled: true
     rootUser: reporter
     rootPassword: ""
+    # -- Secret with the root password. The default points the subchart at the one this chart keeps
+    # across uninstall (templates/mongodb-secrets.yaml); reporter's own templates read it as empty. Name yours to replace it.
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   persistence:
     size: 8Gi
+    # -- The data volume outlives the release: helm uninstall keeps it.
+    resourcePolicy: keep
   resources:
     limits:
       cpu: 500m
@@ -731,8 +861,10 @@ rabbitmq:
   enabled: true
   image:
     tag: "3.13.6"
-  persistence:
-    size: 8Gi
+  # -- The broker's data directory: a claim this chart renders and keeps on uninstall (templates/rabbitmq-pvc.yaml).
+  storage:
+    persistentVolumeClaimName: reporter-rabbitmq
+    requestedSize: 8Gi
   resources:
     requests:
       cpu: 250m

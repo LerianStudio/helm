@@ -1,0 +1,32 @@
+{{- if .Values.worker.enabled -}}
+{{- /* Worker-only keys, loaded AFTER the shared ConfigMap (a key here wins for the
+   worker). Chart-modeled keys (br-sta.workerConfigmapData), then any other
+   worker.configmap key verbatim. */ -}}
+{{- $body := include "br-sta.workerConfigmapData" . -}}
+{{- $emitted := fromYaml $body -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "br-sta.componentFullname" (dict "root" . "component" "worker") }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "root" . "component" "worker") | nindent 4 }}
+data:
+  {{- range $line := splitList "\n" $body }}
+  {{- if trim $line }}
+  {{ $line }}
+  {{- end }}
+  {{- end }}
+  {{- $extra := list }}
+  {{- range $k, $v := (.Values.worker.configmap | default dict) }}
+  {{- if not (hasKey $emitted $k) }}
+  {{- $extra = append $extra $k }}
+  {{- end }}
+  {{- end }}
+  {{- if $extra }}
+  # --- Escape hatch: worker.configmap keys not modeled by the chart ---------------
+  {{- range $k := $extra }}
+  {{ $k }}: {{ index $.Values.worker.configmap $k | toString | quote }}
+  {{- end }}
+  {{- end }}
+{{- end -}}

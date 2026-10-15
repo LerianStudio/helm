@@ -46,12 +46,19 @@ data:
   # =============================================================================
   ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
   ENV_NAME: {{ $envName | quote }}
+  # Service name the ledger registers with the tenant manager; REQUIRED when
+  # MULTI_TENANT_ENABLED=true (the app refuses to boot without it) and part of the
+  # tenants/{ENV_NAME}/{tenant}/{APPLICATION_NAME}/m2m/tracer secret path.
+  APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "ledger" | quote }}
   VERSION: {{ .Values.ledger.image.tag | default .Chart.AppVersion | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "debug" | quote }}
 
   SERVER_PORT: {{ $cm.SERVER_PORT | default "3002" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":3002" | quote }}
+
+  # OpenAPI document/UI (off by default, as the app does).
+  OPENAPI_DOCS_ENABLED: {{ $cm.OPENAPI_DOCS_ENABLED | default "false" | quote }}
 
   # =============================================================================
   # SWAGGER
@@ -68,7 +75,13 @@ data:
   # =============================================================================
   # AUTH CONFIGS (shared) — via lerian-common.auth.env (global.auth contract)
   # =============================================================================
-  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST") | nindent 2 }}
+  {{- $authEnv := include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST") }}
+  {{- $authEnv | nindent 2 }}
+  {{- /* Render-time mirror of the 4.x ledger boot gate (validateBootAuthGates): ENV_NAME=production
+     without PLUGIN_AUTH_ENABLED=true exits at boot, so fail here instead of shipping a CrashLoopBackOff. */}}
+  {{- if and (include "midaz.tagIsV4" (.Values.ledger.image.tag | default .Chart.AppVersion)) (eq (lower (trim $envName)) "production") (not (include "midaz.isTrue" (($authEnv | fromYaml).PLUGIN_AUTH_ENABLED | default "false"))) }}
+  {{- fail "ledger: ENV_NAME=production requires PLUGIN_AUTH_ENABLED=true (the 4.x ledger refuses to boot unauthenticated in production). Set global.auth.enabled / ledger.configmap.PLUGIN_AUTH_ENABLED=\"true\", or a non-production global.env.name / ledger.configmap.ENV_NAME" }}
+  {{- end }}
 
   # =============================================================================
   # RI PERMISSION DECLARATION (IdP identity service :4001 — distinct from auth :4000)
@@ -95,6 +108,10 @@ data:
         "emitRedis" true
         "requiredUrl" true
         "requiredRedisHost" true) | nindent 2 }}
+  {{- if $mtEnabled }}
+  # Seconds between tenant-connection health checks; 0 keeps the library default.
+  MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC: {{ $cm.MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC | default "0" | quote }}
+  {{- end }}
 
   # =============================================================================
   # DB POSTGRESQL - ONBOARDING MODULE (host/user/port/ssl/replicaHost via datastore mask)
@@ -154,6 +171,9 @@ data:
   # Connection pool
   DB_TRANSACTION_MAX_OPEN_CONNS: {{ $cm.DB_TRANSACTION_MAX_OPEN_CONNS | default "3000" | quote }}
   DB_TRANSACTION_MAX_IDLE_CONNS: {{ $cm.DB_TRANSACTION_MAX_IDLE_CONNS | default "3000" | quote }}
+  # Transactional-flow reads go to the primary, not the replica (the app defaults
+  # it on, so a just-written row is never read stale from a lagging replica).
+  DB_TRANSACTION_ROUTE_TX_READS_TO_PRIMARY: {{ hasKey $cm "DB_TRANSACTION_ROUTE_TX_READS_TO_PRIMARY" | ternary (toString (index $cm "DB_TRANSACTION_ROUTE_TX_READS_TO_PRIMARY")) "true" | quote }}
 
   # =============================================================================
   # MONGO DB - TRANSACTION MODULE (host/user/port via datastore mask)
@@ -220,9 +240,15 @@ data:
   # TRACER_BASE_URL empty disables the integration (nil reserver).
   # =============================================================================
   TRACER_BASE_URL: {{ $cm.TRACER_BASE_URL | default "" | quote }}
-  {{- /* The seam accepts "grpc" or "rest". The bundled tracer only serves gRPC
-         when TRACER_GRPC_PORT is set, so selecting grpc against an in-chart
-         tracer that has it unset would dial a port nothing listens on. */ -}}
+  {{- /* Ledger app up to 4.1.x accepts "grpc" or "rest"; from 4.2.0 only "grpc"
+         (rest is refused at boot). The chart default stays "rest" so installs on
+         older images render the same ConfigMap. This only matters when the tracer
+         integration is configured: with TRACER_BASE_URL empty the ledger disables
+         it and ignores TRACER_TRANSPORT. Set "grpc" once TRACER_BASE_URL is set on
+         a 4.2+ ledger (see README, Ledger to tracer transport). The bundled
+         tracer only serves gRPC through its Service when TRACER_GRPC_PORT is set, so
+         selecting grpc against an in-chart tracer that has it unset would dial a
+         port nothing listens on. */ -}}
   {{- $tracerTransport := $cm.TRACER_TRANSPORT | default "rest" }}
   {{- if and $cm.TRACER_BASE_URL (eq (lower $tracerTransport) "grpc") .Values.tracer.enabled (not .Values.tracer.configmap.TRACER_GRPC_PORT) }}
   {{- fail "ledger.configmap.TRACER_TRANSPORT=grpc requires tracer.configmap.TRACER_GRPC_PORT to be set: the bundled tracer keeps its gRPC seam off and its Service exposes only HTTP. Set the port, or use TRACER_TRANSPORT=rest" }}
@@ -233,6 +259,25 @@ data:
   TRACER_TLS_CERT_FILE: {{ $cm.TRACER_TLS_CERT_FILE | default "" | quote }}
   TRACER_TLS_KEY_FILE: {{ $cm.TRACER_TLS_KEY_FILE | default "" | quote }}
   TRACER_TLS_CA_FILE: {{ $cm.TRACER_TLS_CA_FILE | default "" | quote }}
+  {{- /* Reservation seam token identity (PLUGIN_AUTH_ENABLED=true, single-tenant):
+     the ledger's Access Manager application client id. Its secret is
+     ledger.secrets.TRACER_M2M_CLIENT_SECRET. Emitted only when set. */}}
+  {{- if $cm.TRACER_M2M_CLIENT_ID }}
+  TRACER_M2M_CLIENT_ID: {{ $cm.TRACER_M2M_CLIENT_ID | quote }}
+  {{- end }}
+  {{- /* How long a reservation seam call may wait for an M2M token that is not
+     cached yet, before the TRACER_TIMEOUT_MS budget of the call itself starts.
+     3000 is the ledger's own default (tracerclient.DefaultTokenWaitTimeout). */}}
+  TRACER_M2M_WAIT_TIMEOUT_MS: {{ $cm.TRACER_M2M_WAIT_TIMEOUT_MS | default "3000" | quote }}
+  {{- /* Where the multi-tenant seam identity (each tenant's
+     ledger-m2m-tracer-{tenant} client) is read from: "" (off), "aws" (Secrets
+     Manager at tenants/{ENV_NAME}/{tenant}/{APPLICATION_NAME}/m2m/tracer/
+     credentials) or "vault". AWS_REGION is read by the AWS SDK for the "aws"
+     backend; empty falls through to the SDK's other region sources. */}}
+  M2M_SECRETS_BACKEND: {{ $cm.M2M_SECRETS_BACKEND | default "" | quote }}
+  # Vault KV v2 mount holding those credentials when M2M_SECRETS_BACKEND=vault.
+  M2M_VAULT_MOUNT: {{ $cm.M2M_VAULT_MOUNT | default "" | quote }}
+  AWS_REGION: {{ $cm.AWS_REGION | default "" | quote }}
 
   # =============================================================================
   # REDIS (shared between modules; host via datastore mask, tuning via passthrough)
@@ -298,6 +343,8 @@ data:
   RABBITMQ_HOST: {{ $rabbitHost | quote }}
   RABBITMQ_PORT_HOST: {{ $rabbitPort | quote }}
   RABBITMQ_PORT_AMQP: {{ $rabbitAmqpPort | quote }}
+  # TLS to the broker (AmazonMQ requires it). Native key, else the broker mask's tls.
+  RABBITMQ_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "tls" "nativeKey" "RABBITMQ_TLS" "default" "false") | quote }}
   RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "transaction") | quote }}
   RABBITMQ_CONSUMER_USER: {{ $cm.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
   RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
@@ -357,6 +404,8 @@ data:
   BALANCE_SYNC_BATCH_SIZE: {{ $cm.BALANCE_SYNC_BATCH_SIZE | default "50" | quote }}
   BALANCE_SYNC_FLUSH_TIMEOUT_MS: {{ $cm.BALANCE_SYNC_FLUSH_TIMEOUT_MS | default "500" | quote }}
   BALANCE_SYNC_POLL_INTERVAL_MS: {{ $cm.BALANCE_SYNC_POLL_INTERVAL_MS | default "50" | quote }}
+  # How often the cache TTL of every synced balance is refreshed (ms).
+  BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS: {{ $cm.BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS | default "300000" | quote }}
 
   # =============================================================================
   # RATE LIMITING
@@ -420,6 +469,7 @@ data:
   # CASDOOR
   # =============================================================================
   CASDOOR_JWK_ADDRESS: {{ $cm.CASDOOR_JWK_ADDRESS | default "" | quote }}
+  TRANSACTION_BATCH_MAX_SIZE: {{ .Values.ledger.configmap.TRANSACTION_BATCH_MAX_SIZE | default "10" | quote }}
   # Extra Env Vars
   {{- with .Values.ledger.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

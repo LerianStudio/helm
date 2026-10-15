@@ -1,0 +1,297 @@
+# br-jd-courier
+
+Helm chart for [`br-jd-courier`](https://github.com/LerianStudio/br-jd-courier), the
+Lerian JD Courier: it carries SPB and Pix traffic between JD Consultores and the
+Lerian rail engines.
+
+## Chart Contract
+
+- Chart type: `multi-component`
+- Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD` and, for the migration Job, `DATABASE_URL`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
+- Dependency notes: no subcharts. PostgreSQL, the Access Manager and the licence gateway are external services.
+- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production` (required in every environment), `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, and `PIX_VENDOR_SUBJECTS` (single-tenant) or `SYSTEMPLANE_ENABLED=true` (multi-tenant); `DEPLOYMENT_MODE=saas` on Lerian Cloud. The spb-sender needs one SOAP TLS shape under `roles.spbSender` (`ingress`, `soapTls.existingSecret` or `soapTls.terminatedUpstream`). On EKS, an IAM role for Secrets Manager through `serviceAccount`. Multi-tenant installs must set `migrations.enabled=false`.
+- Source/license: [LerianStudio/br-jd-courier](https://github.com/LerianStudio/br-jd-courier). The Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
+
+## Install
+
+The chart is published as an OCI artifact on GHCR. Anonymous `helm show chart`
+resolves it:
+
+```bash
+helm show chart oci://ghcr.io/lerianstudio/br-jd-courier-helm --version <chart version>
+helm upgrade --install <release> oci://ghcr.io/lerianstudio/br-jd-courier-helm \
+  --version <chart version> --namespace <namespace> --values values.yaml
+```
+
+Pin `--version`. From a checkout, use `charts/br-jd-courier` instead of the OCI
+reference. The `docs/UPGRADE-*.md` guides show a Docker Hub reference
+(`registry-1.docker.io/lerianstudio/...`); an anonymous pull of it is refused
+with `401`, so use the GHCR reference above unless you hold Docker Hub access.
+
+## Release bump
+
+On a stable tag the Courier release dispatches `app-sync.yml` here, which writes the
+new version to `jd-courier.image.tag` (the `helm_values_key_mappings` of the Courier
+release workflow) and to `appVersion`. The image is
+`ghcr.io/lerianstudio/br-jd-courier` (the release publishes the same tag to
+Docker Hub as `lerianstudio/br-jd-courier`); registry tags have no leading `v`.
+
+## Roles
+
+One binary, four roles, **four Deployments off one image**. Each
+Deployment sets `COURIER_ROLES` to its own role; the chart refuses an override.
+
+| Role | Deployment | Service | Replicas | Strategy |
+|---|---|---|---|---|
+| `spb-consumer` | `<release>-br-jd-courier-spb-consumer` | none | **exactly 1** | `Recreate` |
+| `spb-sender` | `<release>-br-jd-courier-spb-sender` | SOAP port (`ports.soap`, 8081) | N | `RollingUpdate` |
+| `pix-ingress` | `<release>-br-jd-courier-pix-ingress` | HTTP port (`ports.http`, 8080) | N | `RollingUpdate` |
+| `admin` | `<release>-br-jd-courier-admin` | HTTP port, plus `ports.pixTransit` (8082) with the [Pix transit](#pix-transit-admin) | N (≥1) | `RollingUpdate` |
+
+## Environment
+
+`config.ENVIRONMENT_NAME` is **required**: the render fails without it. The
+service reads it to turn its production checks on (`production`, exact), and
+uses it as the environment segment of every Pix engine `credentialRef` and
+multi-tenant JD bundle path (`tenants/{env}/...`). Unset, it would boot as
+`development` with none of those checks. The service still reads the deprecated
+`ENV_NAME` as a fallback; the chart does not, so rename `config.ENV_NAME` to
+`config.ENVIRONMENT_NAME`.
+
+The production checks run in the service at boot, not in the render: a
+production pod refuses to start on `POSTGRES_SSLMODE=disable` or with no TLS on
+the spb-sender's SOAP listener. The chart checks neither, nor
+`ALLOW_INSECURE_TLS`. In particular, `helm lint` and `helm template` succeed on
+`config.ENVIRONMENT_NAME=production` with no SOAP TLS shape (no `ingress`, no
+`soapTls.existingSecret`, no `soapTls.terminatedUpstream`); the failure shows up
+only when the spb-sender pod starts and crash-loops. Treat a clean render as
+no evidence that the SOAP TLS shape is present: check the values against the
+[SOAP TLS](#soap-tls-spb-sender) table before you install.
+
+`config.DEPLOYMENT_MODE` defaults to `byoc` (`local`, `byoc`, `saas`). Only
+`saas` makes the service refuse a datastore connection without TLS; set it on
+Lerian Cloud.
+
+## SOAP TLS (spb-sender)
+
+The spb-sender's SOAP listener (`ports.soap`) is what the engines call, and they
+refuse plain HTTP, so it needs TLS in homologation as much as in production.
+Three shapes, all off by default; in production the spb-sender refuses to boot
+with none of them:
+
+| Shape | Values | What the chart does |
+|---|---|---|
+| Ingress | `roles.spbSender.ingress.enabled=true`, plus `className`, `annotations`, `hosts`, `tls` | renders an Ingress to the SOAP Service and sets `SOAP_TLS_TERMINATED_UPSTREAM=true` |
+| Certificate in the pod | `roles.spbSender.soapTls.existingSecret=<kubernetes.io/tls Secret>` | mounts it read-only at `/etc/jd-courier/soap-tls` and sets `SOAP_TLS_CERT_FILE`/`SOAP_TLS_KEY_FILE`; the listener serves TLS itself |
+| Terminated outside the chart | `roles.spbSender.soapTls.terminatedUpstream=true` | sets `SOAP_TLS_TERMINATED_UPSTREAM=true`, for a mesh or load balancer the chart does not render |
+
+The Ingress must terminate TLS (a `tls:` block or the controller's certificate
+annotation); the chart sets `SOAP_TLS_TERMINATED_UPSTREAM=true` without checking.
+On AWS, use the ALB with `target-type: ip` (the Service is ClusterIP). The
+Ingress routes only the SOAP port, and the SOAP listener is not a health
+endpoint: point the ALB health check at `/health` on `ports.http` (8080 unless
+overridden), the liveness probe's endpoint:
+
+```yaml
+roles:
+  spbSender:
+    ingress:
+      enabled: true
+      className: alb
+      annotations:
+        alb.ingress.kubernetes.io/target-type: ip
+        alb.ingress.kubernetes.io/certificate-arn: <ACM certificate ARN>
+        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+        alb.ingress.kubernetes.io/healthcheck-port: "8080"
+        alb.ingress.kubernetes.io/healthcheck-path: /health
+        alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+```
+
+Combining the Ingress with `soapTls.existingSecret` re-encrypts to the pod: set
+`alb.ingress.kubernetes.io/backend-protocol: HTTPS`; the health check stays
+HTTP on 8080. The certificate is read once at boot; rotating the Secret needs
+`kubectl rollout restart`. `config.SOAP_TLS_*` is refused: those keys follow
+these values.
+
+## Pix transit (admin)
+
+The admin can serve the outbound Pix transit: Pix engines call it in place of
+JD's JDPI address, and the admin carries each call to JD on the Courier's own
+JDPI token. Off by default. `roles.admin.pixTransit.enabled=true` sets `PIX_TRANSIT_SERVER_ADDRESS` from `ports.pixTransit` (8082) and adds that
+port, named `pix-transit`, to the admin container and the admin Service. It
+needs Courier image 1.2.0 or later (`jd-courier.image.tag`): an older admin
+binds nothing there, and outbound Pix fails without an error. The Courier's
+1.1.0 source has no transit listener; it first appears in the 1.2.0 release
+line. The chart default tag (and `appVersion`) is still `1.1.0`, and
+the chart does not check the tag against the transit: `helm template` renders
+the transit with a `1.1.0` image without complaint. Set `jd-courier.image.tag`
+to a 1.2.0 or later image yourself whenever you enable it. The examples in
+`docs/UPGRADE-2.1.md` show `tag: "1.1.0"` next to
+`roles.admin.pixTransit.enabled: true`; replace that tag with 1.2.0 or later.
+
+In-cluster engines call `<release>-br-jd-courier-admin:8082`. An engine outside
+the cluster (the institution's legacy core) needs an exposure this chart does not
+render, with TLS, and authenticates with its Courier-issued transit credential.
+
+The engines refuse plain HTTP, so the render fails unless one shape is set:
+
+| Shape | Values | What the chart does |
+|---|---|---|
+| Certificate in the pod | `roles.admin.pixTransit.tls.existingSecret=<kubernetes.io/tls Secret>` | mounts it read-only at `/etc/jd-courier/pix-transit-tls` and sets `PIX_TRANSIT_TLS_CERT_FILE`/`PIX_TRANSIT_TLS_KEY_FILE`; the listener serves TLS itself |
+| Terminated outside the chart | `roles.admin.pixTransit.tls.terminatedUpstream=true` | sets `PIX_TRANSIT_TLS_TERMINATED_UPSTREAM=true`, for a mesh or load balancer the chart does not render |
+
+The certificate must name what the engines dial, and is read once at boot:
+rotating the Secret needs `kubectl rollout restart`. `config.PIX_TRANSIT_*` is
+refused: those keys follow these values. No proxy between an engine and the
+transit may retry a `503`: a retry of JD's own `503` could come back as the
+Courier's not-sent and release a hold JD may still settle.
+
+Single-tenant, the transit reaches JD with the institution's SPI credential:
+`config.JD_SPI_BASE_URL` (https in production), `config.JD_SPI_CLIENT_ID`, and
+`JD_SPI_CLIENT_SECRET` in the Secret (refused under `config`). Multi-tenant
+reads each tenant's `jd-spi` bundle from Secrets Manager instead. In both,
+`config.JD_ALLOW_PRIVATE_NETWORK` governs the transit's JD client as it does the
+SPB roles'.
+
+The admin calls the Pix engines (async validation delivery) and JD's SPI
+gateway. The chart renders no NetworkPolicy; a cluster that restricts egress
+must allow both.
+
+## AWS identity
+
+The Courier reads AWS Secrets Manager: each Pix engine's `credentialRef`, and
+in multi-tenant each tenant's JD bundle. Give it an IAM role through
+`serviceAccount` (off by default; every role then runs as the namespace's
+`default`):
+
+```yaml
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<account>:role/<role>   # IRSA
+```
+
+`serviceAccount.name` runs every role as an existing ServiceAccount instead.
+An EKS Pod Identity association works on either. Every role Deployment uses it;
+the migration Job does not.
+Pods keep `automountServiceAccountToken: false`: the Courier never calls the
+Kubernetes API, and IRSA and Pod Identity project their own token regardless.
+
+## The single-writer guard
+
+`spb-consumer` drains the vendor queue with a **destructive** read. A second
+replica is lost traffic, not throughput. `helm template` fails when
+`roles.spbConsumer.replicas` is above one, and the consumer uses `Recreate`
+because a rolling update runs two consumers during every rollout.
+
+The chart cannot read the rail registry, so its list of single-writer roles
+duplicates a fact the rail descriptor owns. The boot guard (layer 1) and the
+epoch fence (layer 2) are the other two layers; this one catches what never
+reaches a boot.
+
+## Secrets
+
+The chart renders **no Secret and no secret value**. Every role loads one
+existing Secret through `envFrom` — `secrets.existingSecret`, defaulting to the
+release fullname — which must exist before install and carry:
+
+| Key | Read by |
+|---|---|
+| `LICENSE_KEY` | every role |
+| `POSTGRES_PASSWORD` | every role |
+| `DATABASE_URL` | the migration Job (`postgres://…?sslmode=…`) |
+| `JD_PASSWORD` | both SPB roles (`spb-consumer`, `spb-sender`), single-tenant only |
+| `JD_SPI_CLIENT_SECRET` | the admin with the [Pix transit](#pix-transit-admin), single-tenant only |
+| `IDP_M2M_CLIENT_SECRET` | every role, single-tenant, when the Courier declares its own Access Manager grants (`IDP_DECLARATION_ENABLED=true`; see the Courier README, "Access Manager permissions") |
+
+⚠️ **`IDP_M2M_CLIENT_SECRET` is not on the chart's refused-key list.** Set under
+`config`, it renders in clear text into the shared ConfigMap and the render still
+passes. Put it only in the Secret (`secrets.existingSecret`). Its non-secret
+companions (`IDP_DECLARATION_ENABLED`, `IDP_HOST`, `IDP_M2M_CLIENT_ID`) are not
+chart values and go under `config`.
+
+```bash
+RELEASE_NAME=courier  # the name you pass to helm install
+kubectl create secret generic "${RELEASE_NAME}-br-jd-courier" --from-literal=LICENSE_KEY=… --from-literal=POSTGRES_PASSWORD=… --from-literal=DATABASE_URL=…
+```
+
+The name follows `secrets.existingSecret` when set; otherwise it is the release
+fullname, `<release>-br-jd-courier` (just `<release>` when the release name
+already contains `br-jd-courier`).
+
+`LICENSE_KEY` is read by name (`secretKeyRef`), not through `envFrom`: a Secret
+that lacks it stops the container at creation with `CreateContainerConfigError`,
+which names the missing key, rather than letting the pod boot and refuse its own
+licence.
+
+Putting any of these (except `IDP_M2M_CLIENT_SECRET`, above), or `COURIER_ROLES`,
+under `config` refuses the render, as do `REDIS_PASSWORD`,
+`MULTI_TENANT_REDIS_PASSWORD`, `MULTI_TENANT_SERVICE_API_KEY` and
+`POSTGRES_REPLICA_PASSWORD` (put those in the Secret too).
+Each engine's Pix credential is read from Secrets Manager at runtime. JD's
+credentials are per-tenant Secrets Manager bundles in multi-tenant; in
+single-tenant they come from this Secret (`JD_PASSWORD`, `JD_SPI_CLIENT_SECRET`).
+
+Non-secret environment goes under `config` and lands in one ConfigMap shared by
+all roles.
+
+## Licence
+
+A revoked licence does not restart the pod: the process stays up, answers its
+probes and refuses business traffic with `503 JDC-0902`. Liveness (`/health`)
+never fails over the licence, so look at the logs, `/readyz` and the
+`jdc_license_state` gauge (0 valid, 1 grace, 2 revoked, 3 gateway
+grace: expired, inside the gateway's grace window), not at the
+restart count. **Revoked heals by itself**: while revoked the process
+re-validates after 1 minute, doubling to every 15 minutes, and serves again at
+the first valid answer or gateway-reported grace, with no restart. Do not restart a pod while the licence
+is still invalid: it validates at boot, refuses to start and crash-loops until
+the licence is fixed.
+
+## Migrations
+
+A `pre-install` / `pre-upgrade` hook Job runs `migrate up` from the same image
+against **one** database.
+
+⚠️ **Multi-tenant installs are not covered.** Nothing on the platform applies
+per-tenant migrations on deploy. The chart refuses `migrations.enabled=true`
+together with `config.MULTI_TENANT_ENABLED` set to any spelling the service reads
+as true (`1`, `t`, `true`, in any case); per-tenant migrations are the tenant
+manager's own operation.
+
+The chart only sees `config`. A `MULTI_TENANT_ENABLED` placed in the Secret
+(`secrets.existingSecret`) is out of its sight: the render passes and the Job
+migrates the one database `DATABASE_URL` names. Keep the flag in `config`, where
+the guard can read it.
+
+## Telemetry
+
+Metrics and traces leave over OTLP only; nothing is scraped. Every role sends
+to `telemetry.otlpEndpoint`, by default `$(NODE_IP):4317`, the collector on the
+pod's own node. `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` follows
+`config.ENVIRONMENT_NAME` unless `config` sets it. The chart sets it in the pod env, where Kubernetes expands
+`$(NODE_IP)`, and refuses `config.OTEL_EXPORTER_OTLP_ENDPOINT`, which the pod
+env would silently shadow. **Production boots with the defaults:** that hop never
+leaves the node, so for the default endpoint alone the chart sets
+`ALLOW_INSECURE_OTEL`, which lib-observability requires before it sends
+plaintext under `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=production`. A remote
+endpoint must be `https://`, or `config.ALLOW_INSECURE_OTEL` must carry its own
+reason; otherwise the boot refuses and names both fixes.
+Page on the absence of Courier telemetry: a silent Courier is otherwise
+indistinguishable from an idle one.
+
+## Not provided
+
+- **Co-locating `admin` with `spb-sender`** (a BYOC knob to
+  save a pod at the cost of one NetworkPolicy covering operator and engine
+  traffic) is not a value yet. Disable `roles.admin` only once it exists.
+- No Ingress beyond the spb-sender's SOAP one, no NetworkPolicy, HPA or
+  PodDisruptionBudget. `spb-consumer` must never get an HPA.
+
+## Checks
+
+```bash
+helm lint charts/br-jd-courier
+helm template t charts/br-jd-courier -f .github/configs/helm-render-values/br-jd-courier.yaml
+cd .github/scripts && go test ./validate-helm-charts -run Courier   # the render contract above
+```

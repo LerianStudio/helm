@@ -1,0 +1,11 @@
+# Since app 3.9.0 auth (and identity) refuse to boot without at least one
+# organization ID:
+#   Invalid configuration: at least one organization ID is required
+# The chart defaults ORGANIZATION_IDS to "" (operator-provided), so the gate
+# supplies the single-tenant value the internal environments use.
+auth:
+  secrets:
+    ORGANIZATION_IDS: "global"
+identity:
+  secrets:
+    ORGANIZATION_IDS: "global"

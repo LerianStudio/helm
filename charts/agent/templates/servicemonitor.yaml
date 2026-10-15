@@ -1,0 +1,25 @@
+{{- if and .Values.agent.enabled .Values.agent.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "lerian-agent.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
+    {{- with .Values.agent.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "lerian-agent.selectorLabels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ include "global.namespace" . }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.agent.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.agent.serviceMonitor.scrapeTimeout }}
+      scheme: http
+{{- end }}

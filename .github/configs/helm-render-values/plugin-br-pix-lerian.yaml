@@ -1,0 +1,139 @@
+# Render fixture for the helm-chart-standard render gate.
+#
+# It is NOT an installation example -- charts/plugin-br-pix-lerian/values-template.yaml
+# is. Its job is to drive the render through the branches the chart's defaults
+# leave untaken, so a regression in one of them reds the PR that introduces it:
+#
+#   * all 14 components enabled at once, including the six that ship disabled;
+#   * the three shared Ingresses and both per-component Ingresses, with a
+#     className that is a valid YAML integer ("123") -- spec.ingressClassName is
+#     a string field, so an unquoted render is rejected by the API server;
+#   * explicit 0 on every knob where Go's `default` would swallow it
+#     (migrations.backoffLimit, migrations.ttlSecondsAfterFinished,
+#     readiness/livenessProbe.initialDelaySeconds);
+#   * extraEnvVars claiming HOST_IP and OTEL_EXPORTER_OTLP_ENDPOINT, the two
+#     names the deployment template also emits from the downward API;
+#   * the Postgres bootstrap Jobs, under the current credentials key.
+#
+# No value here is a credential: the passwords are literals a render needs and
+# no cluster ever sees.
+
+global:
+  externalPostgresDefinitions:
+    enabled: true
+    connection:
+      host: "postgres.example.invalid"
+      port: 5432
+    postgresAdminLogin:
+      username: "postgres"
+      password: "render-fixture-only"
+    pixLerianCredentials:
+      username: "pixswitch"
+      password: "render-fixture-only"
+
+appsIngress:
+  enabled: true
+  className: "123"
+  hosts:
+    - "pix.example.invalid"
+
+systemplaneIngress:
+  enabled: true
+  className: "123"
+  hosts:
+    - "pix-systemplane.example.invalid"
+
+providersIngress:
+  enabled: true
+  className: "123"
+  hosts:
+    - "pix-providers.example.invalid"
+
+spi:
+  enabled: true
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:render-fixture-only@postgres.example.invalid:5432/pix-spi?sslmode=disable"
+  readinessProbe:
+    initialDelaySeconds: 0
+  livenessProbe:
+    initialDelaySeconds: 0
+  migrations:
+    backoffLimit: 0
+    ttlSecondsAfterFinished: 0
+  extraEnvVars:
+    HOST_IP: "10.0.0.1"
+
+spiSystemplane:
+  enabled: true
+  secrets:
+    SYSTEMPLANE_SECRET_MASTER_KEY: "render-fixture-only"
+
+dictHub:
+  enabled: true
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:render-fixture-only@postgres.example.invalid:5432/pix-dict?sslmode=disable"
+dictHubVsync:
+  enabled: true
+  secrets:
+    RABBITMQ_URI: "amqp://guest:render-fixture-only@rabbitmq.example.invalid:5672/"
+  extraEnvVars:
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.example.invalid:4317"
+dictProxy:
+  enabled: true
+dictSystemplane:
+  enabled: true
+  secrets:
+    SYSTEMPLANE_SECRET_MASTER_KEY: "render-fixture-only"
+
+cobHub:
+  enabled: true
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:render-fixture-only@postgres.example.invalid:5432/pix-cob?sslmode=disable"
+cobProxy:
+  enabled: true
+cobSystemplane:
+  enabled: true
+  secrets:
+    SYSTEMPLANE_SECRET_MASTER_KEY: "render-fixture-only"
+  extraEnvVars:
+    HOST_IP: "10.0.0.1"
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.example.invalid:4317"
+
+adapterProviderMock:
+  enabled: true
+  ingress:
+    enabled: true
+    className: "123"
+    hosts:
+      - host: "pix-provider-mock.example.invalid"
+        paths:
+          - path: /provider-mock
+            pathType: Prefix
+
+adapterLerian:
+  enabled: true
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:render-fixture-only@postgres.example.invalid:5432/pix-adapter-lerian?sslmode=disable"
+  ingress:
+    enabled: true
+    className: "123"
+    hosts:
+      - host: "pix-adapter-lerian.example.invalid"
+        paths:
+          - path: /lerian
+            pathType: Prefix
+adapterLerianSystemplane:
+  enabled: true
+  secrets:
+    SYSTEMPLANE_SECRET_MASTER_KEY: "render-fixture-only"
+
+pixauto:
+  enabled: true
+  secrets:
+    DATABASE_URL: "postgres://pixswitch:render-fixture-only@postgres.example.invalid:5432/pix-pixauto?sslmode=disable"
+  configmap:
+    PLUGIN_AUTH_ENABLED: "true"
+pixautoSystemplane:
+  enabled: true
+  secrets:
+    SYSTEMPLANE_SECRET_MASTER_KEY: "render-fixture-only"

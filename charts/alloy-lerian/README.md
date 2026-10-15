@@ -8,7 +8,7 @@ chart and renders the collection pipeline from semantic parameters.
 - Chart type: `dependency-wrapper`
 - Required secrets: `alloy-lerian` (key `telemetry-token`) — created by the client before install, from a token we hand over, in the `client` profile. The chart reads it and never creates it. When Fleet Management is enabled, the same Secret carries a second key, `fleet-token`. One Secret, one command: it is the only manual step.
 - Dependency notes: three dependency entries, all pinned exactly. `alloy` 1.11.1 appears **twice** under the `node` and `singleton` aliases, each condition-gated on its own `enabled` value, because the upstream chart delivers one set of workloads and the design needs two topologies. `kube-state-metrics` 8.2.0 is condition-gated on `kube-state-metrics.enabled` so clusters that already run it can reuse the existing instance.
-- Production overrides: `profile` and `origin.id` are required and have no default — the render fails without them. `destination.endpoint` is required. Override `destination.retry.maxElapsedTime` and `destination.queue.size` from measured volume per environment.
+- Production overrides: `profile` and `origin.id` are required and have no default — the render fails without them. `destination.endpoint` defaults to `https://telemetry.lerian.io`; override it only for an internal destination. Override `destination.retry.maxElapsedTime` and `destination.queue.size` from measured volume per environment.
 - Source/license: [grafana/alloy](https://github.com/grafana/alloy) (Apache-2.0), [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) (Apache-2.0).
 
 ## What this chart does differently
@@ -47,6 +47,13 @@ to the client: collecting it asks for data we have no standing to act on, and
 adds traffic across the public network for no return.
 
 **Sanitisation does not vary by profile.** There is no profile without it.
+
+**Fleet Management does not vary by profile either.** `fleetManagement.enabled`
+defaults to `true` in both. `profile: own` does **not** turn it off: the
+`remotecfg` block is still rendered. To run without Fleet, set
+`fleetManagement.enabled: false` explicitly. Doing so does not make the
+`ALLOY_FLEET_TOKEN` entry in `extraEnv` optional; it stays `optional: false` in
+the render.
 
 ## Roles
 
@@ -108,7 +115,7 @@ backreference notation emits the literal text `$1.***.***-**`).
 
 It does **not** answer *"do the rules cover what the applications emit?"* Proven by
 injection: removing only `holder` from the person-name rule exposes
-`holderName=Ana Silva`, and the gate still reports 36 cases, 0 failures.
+`holderName=Ana Silva`, and the gate still reports 52 cases, 0 failures.
 
 **A green gate is not evidence that PII is protected.** Treating it as such is worse
 than not having it, because it grants confidence that does not correspond.
@@ -271,6 +278,11 @@ singleton:
             optional: false
 ```
 
+> `examples/values-cliente.yaml` is the same file as a template. Its `origin.id`
+> is the placeholder `SUBSTITUIR-prd`, and the render fails (`origin.id
+> "SUBSTITUIR-prd" is malformed`) until you replace it with the identifier Lerian
+> gave you.
+
 ### 3. Install
 
 ```console
@@ -287,6 +299,16 @@ helm install alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm \
 | `destination.endpoint` | `https://telemetry.lerian.io` | Our edge, not a client choice. |
 | `fleetManagement` | enabled, `url` and `username` filled in | This is what lets collection be adjusted without asking the client for anything: no chart upgrade, no maintenance window. The client supplies only the token, through the Secret above. |
 | `collection.onlyNamespaces` | `^midaz$`, `^midaz-plugins$` | Where our products are installed. Override only if this client installed them elsewhere. |
+
+### Values that exist but are NOT IMPLEMENTED
+
+These keys are present in `values.yaml` but no template reads them; setting them
+changes nothing in the render:
+
+| Key | What actually controls it |
+|---|---|
+| `destination.credential.secretName`, `destination.credential.secretKey` | the `secretKeyRef` of `ALLOY_DESTINATION_CREDENTIAL` in `node.alloy.extraEnv` and `singleton.alloy.extraEnv` |
+| `fleetManagement.tokenSecret.name`, `fleetManagement.tokenSecret.key` | the `secretKeyRef` of `ALLOY_FLEET_TOKEN` in the same two `extraEnv` lists |
 
 ## Agent log level
 

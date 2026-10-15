@@ -372,6 +372,17 @@ bankTransfer:
     # stands).
 
     # =================================================================
+    # System Facts producer (OFF by default; rendered "false" by the template)
+    # When true it needs SYSTEM_FACTS_URL plus bankTransfer.secrets.SYSTEM_FACTS_CLIENT_ID/_SECRET
+    # (both modes: single-tenant delivers+registers with it, multi-tenant registers
+    # the contract with it). The app registers its own contract at boot; see README.
+    # SYSTEM_FACTS_ENABLED: "false"
+    # SYSTEM_FACTS_URL: ""
+    # SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE: "false"  # true only after every credential is rotated
+    # SYSTEM_FACTS_INSECURE_HTTP: "false"            # plaintext URL off loopback; refused in production
+    # =================================================================
+
+    # =================================================================
     # TLS / proxy
     # TLS_TERMINATED_UPSTREAM is NOT pinned — the chart already defaults it
     # ("true") in templates/configmap.yaml.
@@ -631,6 +642,10 @@ bankTransfer:
   # Webhook secrets (when WEBHOOK_ENABLED=true)
   # WEBHOOK_SIGNING_SECRET: ""
   # WEBHOOK_BROKER_EVENT_SIGNING_SECRET: ""
+
+  # System Facts client pair (required when SYSTEM_FACTS_ENABLED=true; both or neither)
+  # SYSTEM_FACTS_CLIENT_ID: ""
+  # SYSTEM_FACTS_CLIENT_SECRET: ""
 
   # Courier outbound M2M credentials (courier integration, added in app 2.2.0)
   # COURIER_CLIENT_ID: ""

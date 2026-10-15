@@ -232,6 +232,24 @@ bankTransfer:
 | `bankTransfer.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `bankTransfer.existingSecretName` | The name of the existing secret to use | `""` |
 
+### System Facts producer
+
+The plugin can record a `ted.transfer_settled` fact for every transfer that reaches `COMPLETED`. It is **off by default**: with `SYSTEM_FACTS_ENABLED` unset or `"false"` the chart only emits the flag and the plugin builds no emitter, no registry client and runs no fact SQL. Requires a plugin image that ships the producer and migration `000063_system_facts_outbox`. The app registers its own contract at boot and holds the forwarder until that contract is ACTIVE; there is no reconciler Job, init container or hook to run. See the plugin's `docs/runbooks/system-facts.md` (§7 rollout order).
+
+| Key | When | Format | Default |
+| --- | --- | --- | --- |
+| `bankTransfer.configmap.SYSTEM_FACTS_ENABLED` | to turn the producer on | `"true"` or `"false"` | `"false"` |
+| `bankTransfer.configmap.SYSTEM_FACTS_URL` | required when enabled | base URL of the System Facts service (delivery and registration) | empty: the render fails |
+| `bankTransfer.secrets.SYSTEM_FACTS_CLIENT_ID` / `SYSTEM_FACTS_CLIENT_SECRET` | when enabled | Access Manager client pair, exchanged at `PLUGIN_AUTH_ADDRESS`; both or neither | empty |
+| `bankTransfer.configmap.SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE` | after every credential is rotated | `"true"` or `"false"` | `"false"` |
+| `bankTransfer.configmap.SYSTEM_FACTS_INSECURE_HTTP` | only for a plaintext `http://` URL off loopback; refused by the app under `production` | `"true"` or `"false"` | not emitted |
+
+- **Single-tenant:** the client pair delivers the facts and registers the contract.
+- **Multi-tenant:** the pair is the **service credential** that registers the contract at boot, and the render fails without it. Each tenant delivers with its own M2M credential, read from `tenants/{env}/{tenantOrgID}/plugin-br-bank-transfer/m2m/system-facts/credentials` (the target segment is fixed in the app, so there is no target-service key to set). The tenant credential's `source` must equal the service pair's.
+- `PLUGIN_AUTH_ADDRESS` must be reachable: it is resolved by the existing `global.auth.host` mask and is required by the app when the producer is on.
+- A dev-only static bearer (`SYSTEM_FACTS_TOKEN`) reaches the pod through `bankTransfer.extraEnvVars` or an existing Secret. The app refuses it under `production`, beside the client pair and in multi-tenant it is ignored.
+- With `bankTransfer.useExistingSecret=true` the pair must be present in that Secret; the chart does not validate it there.
+
 ### PostgreSQL Dependency
 
 | Parameter | Description | Default |

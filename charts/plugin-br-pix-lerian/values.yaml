@@ -8,10 +8,10 @@
 #   adapter-provider-mock/api BTG provider mock (dev/staging only)
 #   dict/hub/api             DICT hub (key directory operations)
 #   dict/hub/vsync           DICT verification sync worker
-#   dict/proxy/api           DICT proxy to BCB
+#   dict/proxy/api           DICT proxy to BCB (structural only; ships disabled)
 #   dict/systemplane/api     Runtime config plane for DICT
 #   cob/hub/api              COB hub (BR Code / charge operations)
-#   cob/proxy/api            COB proxy to BCB
+#   cob/proxy/api            COB proxy to BCB (structural only; ships disabled)
 #   cob/systemplane/api      Runtime config plane for COB
 #   adapter-lerian/api       Lerian provider adapter (br-sfn)
 #   adapter-lerian/systemplane/api  Runtime config plane for adapter-lerian
@@ -706,7 +706,12 @@ dictHubVsync:
 # dict/proxy/api — DICT proxy to BCB (BaseConfig only)
 # -----------------------------------------------------------------------------
 dictProxy:
-  enabled: true
+  # -- Ships DISABLED. The proxy tier is structural only in this release: it serves
+  # health, readyz and an OpenAPI document with no operations, and answers 404 to
+  # every business request while its probes stay green. The supported topology is
+  # hub-only (README, "Production quickstart"). Enable it only if your provider
+  # topology requires the tier to exist, and never route client traffic to it.
+  enabled: false
   name: "dict-proxy"
   description: "DICT proxy to BCB"
   replicaCount: 1
@@ -1013,7 +1018,12 @@ cobHub:
 # -----------------------------------------------------------------------------
 
 cobProxy:
-  enabled: true
+  # -- Ships DISABLED. The proxy tier is structural only in this release: it serves
+  # health, readyz and an OpenAPI document with no operations, and answers 404 to
+  # every business request while its probes stay green. The supported topology is
+  # hub-only (README, "Production quickstart"). Enable it only if your provider
+  # topology requires the tier to exist, and never route client traffic to it.
+  enabled: false
   name: "cob-proxy"
   description: "COB proxy to BCB"
   replicaCount: 1
@@ -1299,6 +1309,8 @@ appsIngress:
       pathType: Prefix
       component: dictHub
       serviceName: dict-hub
+    # The two proxy routes below stay listed but render nothing while dictProxy /
+    # cobProxy are disabled (the chart skips routes whose component is disabled).
     - path: /dict-proxy
       pathType: Prefix
       component: dictProxy

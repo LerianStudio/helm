@@ -1786,7 +1786,7 @@
             },
             "grpcPort": {
               "default": 4021,
-              "description": "gRPC reservation seam port. Only exposed when"
+              "description": "gRPC reservation seam port, always published on the container and Service."
             }
           },
           "additionalProperties": true

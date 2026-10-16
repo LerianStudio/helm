@@ -39,5 +39,6 @@ jobs:
         charts/plugin-fees
         charts/product-console
         charts/reporter
+        charts/system-facts
       path_level: '2'
     secrets: inherit

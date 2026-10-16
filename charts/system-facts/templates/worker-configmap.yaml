@@ -1,0 +1,15 @@
+{{- if (.Values.worker).enabled }}
+{{- include "system-facts.worker.validate" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "system-facts.worker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "system-facts.worker.labels" . | nindent 4 }}
+data:
+  {{- $data := include "system-facts.worker.configData" . | fromJson }}
+  {{- range $k := keys $data | sortAlpha }}
+  {{ $k }}: {{ get $data $k | quote }}
+  {{- end }}
+{{- end }}

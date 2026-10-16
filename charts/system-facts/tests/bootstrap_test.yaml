@@ -1,0 +1,82 @@
+suite: postgres bootstrap Job
+templates:
+  - templates/bootstrap-postgres.yaml
+release:
+  name: system-facts
+  namespace: system-facts
+tests:
+  - it: renders nothing unless the bootstrap is enabled
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: refuses to render when the role password is empty and no Secret is named
+    set:
+      global.externalPostgresDefinitions.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "needs the role password"
+
+  - it: renders with an inline role password
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.password: s3cret
+    asserts:
+      - isKind:
+          of: Job
+
+  - it: renders with an existing Secret instead of an inline password
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.useExistingSecret.name: my-db-credentials
+    asserts:
+      - isKind:
+          of: Job
+
+  # The password reaches psql through \getenv and :'pw', never as SQL text and
+  # never as a command-line argument: a quote in it cannot end the string
+  # literal, and it does not show in the process list.
+  - it: reads the role password with \getenv, not from the SQL string or the argv
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.password: s3cret
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: "\\\\getenv pw DB_PASSWORD_BOILERPLATE"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: "-v pw="
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: "LOGIN PASSWORD :'pw'"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: "PASSWORD '\\$DB_PASSWORD_BOILERPLATE'"
+
+  - it: refuses to render when the application uses another database user
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.password: s3cret
+      global.datastores.postgres.user: sf_app
+    asserts:
+      - failedTemplate:
+          errorPattern: "only creates the database and role"
+
+  - it: refuses to render when the application uses another database name
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.password: s3cret
+      system-facts.database.name: facts
+    asserts:
+      - failedTemplate:
+          errorPattern: "only creates the database and role"
+
+  - it: refuses an empty role password from the Secret before any write
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.useExistingSecret.name: db-creds
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: 'if \[ -z "\$\{DB_PASSWORD_BOILERPLATE:-\}" \]; then'

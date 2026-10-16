@@ -254,6 +254,18 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 | `keda.enabled` | Enable or disable KEDA operator deployment | `true` |
 | `keda.external` | Use an externally installed KEDA operator | `false` |
 
+### Access Manager Permission Declaration (manager)
+
+The manager publishes its permission manifest to the Access Manager at boot (lib-auth
+`declaration.WireFromEnv`) when `IDP_DECLARATION_ENABLED="true"`; with the flag on it refuses
+to start without `IDP_HOST` and the client pair. The worker never declares.
+
+| Key | Where | Rendered |
+|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `manager.configmap` > `manager.extraEnvVars` (legacy) > `common.configmap` > `global.idp.declarationEnabled` | always, default `"false"` |
+| `IDP_HOST` | same precedence, with `global.idp.host` | only when set |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | top-level `secrets` | manager Secret only, each only when set |
+
 ## Secrets Management
 
 ### Dynamic Secrets

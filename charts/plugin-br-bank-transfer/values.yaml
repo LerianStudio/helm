@@ -651,6 +651,11 @@ bankTransfer:
   # COURIER_CLIENT_ID: ""
   # COURIER_CLIENT_SECRET: ""
 
+  # Access Manager permission declaration (RI) client pair, used only when
+  # IDP_DECLARATION_ENABLED="true" (set it and IDP_HOST in configmap or extraEnvVars)
+  # IDP_M2M_CLIENT_ID: ""
+  # IDP_M2M_CLIENT_SECRET: ""
+
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

@@ -6,6 +6,21 @@ Features:
 - Add Helm upgrade guide for `plugin-access-manager` `v9.8.0`. (@guimoreirar)
 
 Fixes:
+- Derive OTEL environment from `ENV_NAME`. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Merge main into the OTEL environment branch for `plugin-access-manager`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.0...plugin-access-manager-v9.8.1)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.0`. (@guimoreirar)
+
+Fixes:
 - Derive OTEL environment from `ENV_NAME` to ensure correct environment configuration. (@guimoreirar, @gandalf-at-lerian)
 
 Improvements:

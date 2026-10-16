@@ -235,7 +235,7 @@
 | `tracer.deploymentUpdate.maxUnavailable` | int | `0` | Maximum number of pods that can be unavailable during the update |
 | `tracer.service.type` | string | `ClusterIP` | Kubernetes service type |
 | `tracer.service.port` | int | `4020` | Service port (HTTP API) |
-| `tracer.service.grpcPort` | int | `4021` | gRPC reservation seam port. Only exposed when `tracer.configmap.TRACER_GRPC_PORT` is set; the seam is off in the app until then, so the port would otherwise route to a closed socket. |
+| `tracer.service.grpcPort` | int | `4021` | gRPC reservation seam port, always published on the container and Service. The tracer always listens on gRPC (":4021" when TRACER_GRPC_PORT is unset). When `tracer.configmap.TRACER_GRPC_PORT` is set, its numeric tail takes precedence over this value. |
 | `tracer.ingress.enabled` | bool | `false` | Enable or disable ingress |
 | `tracer.ingress.className` | string | `""` | Ingress class name |
 | `tracer.ingress.annotations` | object | `{}` | Additional ingress annotations |

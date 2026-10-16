@@ -110,7 +110,7 @@ system-facts:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0-beta.29" # defaults to appVersion when empty
+    tag: "1.0.0" # defaults to appVersion when empty
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # ----- Workload · pod security ---------------------------------------------

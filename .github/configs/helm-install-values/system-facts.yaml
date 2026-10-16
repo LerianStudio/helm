@@ -8,6 +8,15 @@
 # with the workload running as a development-class environment and the license gate
 # off. The production guards themselves are the application's contract, not the
 # chart's.
+#
+# The chart pins `namespaceOverride: system-facts` while this gate installs with
+# `-n it-system-facts`, which put the bundled Postgres and Valkey in one namespace
+# and the workload in the other. A Secret cannot be read across namespaces, so the
+# Deployment sat in CreateContainerConfigError (secret "system-facts-postgresql"
+# not found) and the migrations Job waited on a host that does not resolve. Pointing
+# the override at the gate's own namespace lands everything in one, which is the
+# topology the README install command produces.
+namespaceOverride: "it-system-facts"
 system-facts:
   env: "development"
   allowInsecureTls: "true"

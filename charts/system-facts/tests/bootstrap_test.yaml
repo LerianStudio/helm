@@ -53,3 +53,30 @@ tests:
       - notMatchRegex:
           path: spec.template.spec.containers[0].command[2]
           pattern: "PASSWORD '\\$DB_PASSWORD_BOILERPLATE'"
+
+  - it: refuses to render when the application uses another database user
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.password: s3cret
+      global.datastores.postgres.user: sf_app
+    asserts:
+      - failedTemplate:
+          errorPattern: "only creates the database and role"
+
+  - it: refuses to render when the application uses another database name
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.password: s3cret
+      system-facts.database.name: facts
+    asserts:
+      - failedTemplate:
+          errorPattern: "only creates the database and role"
+
+  - it: refuses an empty role password from the Secret before any write
+    set:
+      global.externalPostgresDefinitions.enabled: true
+      global.externalPostgresDefinitions.boilerplateCredentials.useExistingSecret.name: db-creds
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: 'if \[ -z "\$\{DB_PASSWORD_BOILERPLATE:-\}" \]; then'

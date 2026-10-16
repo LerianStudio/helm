@@ -138,7 +138,7 @@ and `/v1/reference-types` answer 500 (`relation "fact_contracts" does not exist`
 migrations:
   enabled: true
   image:
-    tag: 1.0.0-beta.15   # written by the app release to .migrations.image.tag
+    tag: ""   # empty tracks the chart appVersion; the app release writes it to .migrations.image.tag
 ```
 
 - **Two sequences, two owners.** This Job applies only the flat root sequence

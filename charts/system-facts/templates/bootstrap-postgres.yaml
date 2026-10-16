@@ -3,6 +3,15 @@
 {{- if and (not $cred.useExistingSecret.name) (not $cred.password) }}
 {{- fail "system-facts: global.externalPostgresDefinitions.enabled=true needs the role password. Set global.externalPostgresDefinitions.boilerplateCredentials.password or .useExistingSecret.name (key DB_PASSWORD_BOILERPLATE); an empty value would create a role nobody can log in to." }}
 {{- end }}
+{{- /* The Job creates the fixed "system-facts" database and role. Refuse to render when the
+       application resolves other names (same helpers as the ConfigMap), so the bootstrap can
+       never report success for a database or role the application does not use. */}}
+{{- $sf := index .Values "system-facts" }}
+{{- $appUser := include "lerian-common.datastore.value" (dict "context" $ "configmap" $sf.configmap "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "system-facts") }}
+{{- $appDB := include "lerian-common.cfgValue" (dict "configmap" $sf.configmap "nativeKey" "POSTGRES_NAME" "params" $sf.database "field" "name" "default" "system-facts") }}
+{{- if or (ne $appUser "system-facts") (ne $appDB "system-facts") }}
+{{- fail (printf "system-facts: the bootstrap Job only creates the database and role \"system-facts\", but the application uses database %q and user %q. Keep both as \"system-facts\" or create them yourself and leave global.externalPostgresDefinitions.enabled=false." $appDB $appUser) }}
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -90,6 +99,12 @@ spec:
         - -c
         - |
           set -euo pipefail
+          # The template only sees the Secret name; an empty DB_PASSWORD_BOILERPLATE in it would
+          # create a role with a NULL password, and later runs skip role creation.
+          if [ -z "${DB_PASSWORD_BOILERPLATE:-}" ]; then
+            echo "DB_PASSWORD_BOILERPLATE is empty: refusing to create the role 'system-facts' without a password." >&2
+            exit 1
+          fi
           echo "=== System Facts PostgreSQL Bootstrap ==="
           echo "Host: $DB_HOST:$DB_PORT"
           echo ""

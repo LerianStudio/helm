@@ -161,3 +161,23 @@ tests:
     asserts:
       - isKind:
           of: Job
+
+  - it: keeps an explicit backoffLimit of zero
+    set:
+      migrations.enabled: true
+      migrations.backoffLimit: 0
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - equal:
+          path: spec.backoffLimit
+          value: 0
+
+  - it: defaults backoffLimit to 3 when unset
+    set:
+      migrations.enabled: true
+      migrations.backoffLimit: null
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - equal:
+          path: spec.backoffLimit
+          value: 3

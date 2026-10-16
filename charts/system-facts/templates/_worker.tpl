@@ -216,8 +216,10 @@ leaving an operator to read a CrashLoopBackOff.
 {{- if and (not $insecure) (hasPrefix "http://" (lower (trim $v))) -}}
 {{- /* Mask userinfo so a password never reaches helm, ArgoCD or CI output. */ -}}
 {{- /* Print the origin only: userinfo masked, path/query/fragment dropped, so no token in a URL reaches helm, ArgoCD or CI output. */ -}}
-{{- $origin := regexReplaceAll "^([A-Za-z][A-Za-z0-9+.-]*://[^/?#]*).*$" (trim $v) "${1}" -}}
-{{- $shown := regexReplaceAll "^([A-Za-z][A-Za-z0-9+.-]*://)[^/?#]*@" $origin "${1}<redacted>@" -}}
+{{- /* Mask first, on the full value: a malformed password holding "/", "?" or "#" would
+       otherwise end the origin inside the userinfo and print part of it. */ -}}
+{{- $masked := regexReplaceAll "^([A-Za-z][A-Za-z0-9+.-]*://).*@" (trim $v) "${1}<redacted>@" -}}
+{{- $shown := regexReplaceAll "^([A-Za-z][A-Za-z0-9+.-]*://[^/?#]*).*$" $masked "${1}" -}}
 {{- fail (printf "system-facts: worker %s is %q: plain http is not allowed (this chart has no loopback exception: a pod never reaches the API on its own loopback). Use https, or set worker.systemFacts.allowInsecureHttp=true only inside a namespace whose pod-to-pod traffic is already encrypted (e.g. istio.io/dataplane-mode: ambient)." $k $shown) -}}
 {{- end -}}
 {{- end -}}

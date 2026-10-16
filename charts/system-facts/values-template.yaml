@@ -12,21 +12,21 @@ global:
   #   postgres: { host: "my-rds.example.com", user: "system-facts" }
   #   redis: { host: "my-elasticache.example.com:6379" }
   # Env-wide telemetry (enabled/endpoint/deployment-env only; per-service OTEL
-  # identity stays in boilerplate.otel).
+  # identity stays in system-facts.otel).
   observability: {}
   #   enabled: true
   #   otlpEndpoint: "otel-collector:4317"
   # Env-wide plugin-access-manager auth.
   auth: {}
   #   host: "http://plugin-access-manager-auth:4000"
-  # Env-wide multi-tenant infra (only used when boilerplate.multiTenant.enabled=true).
+  # Env-wide multi-tenant infra (only used when system-facts.multiTenant.enabled=true).
   multiTenant: {}
   #   url: "http://tenant-manager:8080"
   #   redisHost: "my-elasticache.example.com"
-  # Env-wide service discovery (only used when boilerplate.serviceDiscovery.enabled=true).
+  # Env-wide service discovery (only used when system-facts.serviceDiscovery.enabled=true).
   serviceDiscovery: {}
   #   address: "consul.internal:8500"
-  # Env-wide streaming backend (only used when boilerplate.streaming.enabled=true).
+  # Env-wide streaming backend (only used when system-facts.streaming.enabled=true).
   streaming: {}
   #   brokers: "redpanda:9092"
   externalPostgresDefinitions:
@@ -93,24 +93,21 @@ system-facts:
   otel:
     enabled: false
 
+  # Native keys override the global.* masks above, and an empty value counts as an
+  # override: a key listed here with "" renders "" instead of the global or bundled
+  # endpoint. Add a key only to diverge from global.* for this service.
   configmap:
-    ENV_NAME: ""
-    SERVER_ADDRESS: ":8080"
-    LOG_LEVEL: "info"
-    POSTGRES_HOST: ""
-    POSTGRES_PORT: "5432"
-    POSTGRES_USER: "system-facts"
-    POSTGRES_NAME: "system-facts"
-    POSTGRES_SSLMODE: "disable"
-    REDIS_HOST: ""
-    REDIS_DB: "0"
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
-    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    # Required while the license gate is on (the application default).
+    ORGANIZATION_IDS: ""
+  #   LICENSE_ENABLED: "false"              # turns the license gate off
+  #   POSTGRES_HOST: "my-rds.example.com"   # only to override global.datastores.postgres
+  #   REDIS_HOST: "my-elasticache.example.com:6379"
 
   secrets:
     POSTGRES_PASSWORD: ""
     REDIS_PASSWORD: ""
+    # Required while the license gate is on (the application default).
+    LICENSE_KEY: ""
 
   useExistingSecret: false
   existingSecretName: ""

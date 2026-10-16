@@ -90,7 +90,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  backoffLimit: {{ $m.backoffLimit | default 3 }}
+  backoffLimit: {{ if hasKey $m "backoffLimit" }}{{ $m.backoffLimit }}{{ else }}3{{ end }}
   activeDeadlineSeconds: {{ $m.activeDeadlineSeconds | default 600 }}
   ttlSecondsAfterFinished: {{ $m.ttlSecondsAfterFinished | default 600 }}
   template:

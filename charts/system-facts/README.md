@@ -51,6 +51,12 @@ global:
 
 The bootstrap Job only ever runs against an **external** database: it creates the database, the role and the grants. Leave it disabled when the role already exists.
 
+The Job sets the role password on creation only; it never rotates it. To rotate the password of an existing role:
+
+1. Change it in PostgreSQL as an administrator (`ALTER ROLE "system-facts" PASSWORD '...'`).
+2. Set `system-facts.secrets.POSTGRES_PASSWORD` and `DB_PASSWORD_BOILERPLATE` (`boilerplateCredentials`) to that same value.
+3. Keep the bootstrap Job disabled.
+
 ## Datastores
 
 PostgreSQL and Valkey are declared as subcharts but disabled by default. Enable them for a self-contained install (chaos/fuzzing environments, local clusters):

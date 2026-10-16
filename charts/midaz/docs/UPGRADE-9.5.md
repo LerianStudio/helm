@@ -9,6 +9,7 @@
   - [4. Tracer service enhancements](#4-tracer-service-enhancements)
   - [5. CRM service multi-tenant support](#5-crm-service-multi-tenant-support)
   - [6. RabbitMQ TLS support](#6-rabbitmq-tls-support)
+  - [7. Ledger to tracer transport is gRPC-only](#7-ledger-to-tracer-transport-is-grpc-only)
 - **[Configuration Reference](#configuration-reference)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
@@ -369,6 +370,37 @@ ledger:
     broker:
       tls: "false"
 ```
+
+### 7. Ledger to tracer transport is gRPC-only
+
+From ledger 4.2.0 (the image this chart line ships) the ledger reaches the tracer over gRPC only. With `TRACER_BASE_URL` set and `TRACER_TRANSPORT=rest`, it exits at boot with `TRACER_TRANSPORT=rest is no longer supported`. Charts from v9.5.0 through v9.7.1 still rendered `ledger.configmap.TRACER_TRANSPORT` with a default of `rest` (an empty value also rendered `rest`), so enabling the integration without an explicit `grpc` crash-looped the ledger. The bundled tracer Service also published its gRPC port only when `tracer.configmap.TRACER_GRPC_PORT` was set.
+
+From the chart release after v9.7.1:
+
+- `ledger.configmap.TRACER_TRANSPORT` defaults to `""`, which the ledger resolves to gRPC. An explicit empty value is honored.
+- The render fails when `TRACER_BASE_URL` is set and `TRACER_TRANSPORT` is `rest` (trimmed, case-insensitive). Leave it empty or set `grpc`. With `TRACER_BASE_URL` empty the value is ignored, as the ledger does.
+- The tracer container and Service always publish a `grpc` port: the numeric tail of `tracer.configmap.TRACER_GRPC_PORT` when set, else `tracer.service.grpcPort` (4021). The render no longer requires `TRACER_GRPC_PORT` for `TRACER_TRANSPORT=grpc`.
+- With `TRACER_BASE_URL` set, `PLUGIN_AUTH_ENABLED=true` and `MULTI_TENANT_ENABLED=false`, the render fails unless `ledger.configmap.TRACER_M2M_CLIENT_ID` and `ledger.secrets.TRACER_M2M_CLIENT_SECRET` are set. With `ledger.useExistingSecret=true` only the client id is checked.
+
+```yaml
+tracer:
+  enabled: true
+ledger:
+  configmap:
+    TRACER_BASE_URL: "midaz-tracer:4021"
+    TRACER_TRANSPORT: ""   # or "grpc"
+```
+
+#### One-time restart
+
+The rendered ledger ConfigMap changes from `TRACER_TRANSPORT: "rest"` to `TRACER_TRANSPORT: ""` for every release that did not set it, so the `checksum/config` annotation changes and the ledger pods roll once on upgrade, even with the integration off. With `tracer.enabled=true`, the tracer pods also roll once: the tracer ConfigMap comment and, when `TRACER_GRPC_PORT` was unset, the container ports change. No action is needed.
+
+#### Impact on ledger 4.1.x
+
+If you pin `ledger.image.tag` to 4.1.x with `TRACER_BASE_URL` set and relied on the implicit `rest` default:
+
+- With `TRACER_TRANSPORT` unset, the 4.1.x ledger now resolves to gRPC instead of REST. A tracer before 4.2.0 starts its gRPC seam only when `tracer.configmap.TRACER_GRPC_PORT` is set, so set it (for example `":4021"`) and point `TRACER_BASE_URL` at the gRPC port (`midaz-tracer:4021`), or upgrade the ledger and tracer to 4.2.x.
+- An explicit `TRACER_TRANSPORT: "rest"` now fails the render while `TRACER_BASE_URL` is set. Move to gRPC as above.
 
 ## Configuration Reference
 

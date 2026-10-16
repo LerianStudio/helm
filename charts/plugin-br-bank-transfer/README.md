@@ -338,6 +338,7 @@ Key secrets configured via `bankTransfer.secrets`:
 | `LICENSE_KEY` | Lerian licence key. **Required** by newer app images, in every environment. The chart does not check it. |
 | `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 | `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the app uses to publish its permission manifest (RI) at boot. Read only when `IDP_DECLARATION_ENABLED="true"`, set with `IDP_HOST` through `bankTransfer.configmap` or `bankTransfer.extraEnvVars`; with the flag on, the app refuses to boot without the pair. Each is rendered only when set. |
 
 ---
 

@@ -3,6 +3,14 @@
 > Como instalar, validar e diagnosticar o br-sisbajud a partir deste chart (dev bundle,
 > com o br-sta, standalone, produção). Para quem opera a instalação do chart.
 
+> **Desatualizado: este runbook descreve o monólito br-sisbajud (app 1.2.x).** O chart
+> agora implanta a Sisbajud Mensageria (br-sfn `services/sisbajud`, app 1.0.0-beta.x):
+> API principal na 4031, API de execução num listener TLS na 4032, streaming
+> obrigatório, verificação de JWT obrigatória (`brSisbajud.auth`), licença só em
+> ambientes production-like e o consumer do br-sta no próprio cluster `sta.stream`. O
+> README ("From the monolith ... to the Mensageria", "Execution API", "Fail-fast
+> gates") é a referência até este runbook ser reescrito.
+
 ---
 
 ## 0. Metadados

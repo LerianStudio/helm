@@ -34,6 +34,10 @@ plugin-br-pix-lerian:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-pix-lerian/**
 
+plugin-br-sisbajud:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-br-sisbajud/**
+
 plugin-br-payments:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-payments/**

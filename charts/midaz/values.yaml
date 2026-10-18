@@ -248,6 +248,9 @@ ledger:
   replicaCount: 2
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
+  # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
+  # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
+  terminationGracePeriodSeconds: 45
   image:
     # -- Repository for the ledger service container image
     repository: lerianstudio/midaz-ledger
@@ -744,6 +747,9 @@ tracer:
   replicaCount: 1
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
+  # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
+  # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
+  terminationGracePeriodSeconds: 45
   image:
     # -- Repository for the Tracer service container image. In midaz v4 tracer
     # ships from the monorepo (`components/tracer`) and the release pipeline

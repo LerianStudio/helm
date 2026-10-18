@@ -46,6 +46,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.tracer.terminationGracePeriodSeconds | default 45 }}
       {{- with .Values.tracer.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

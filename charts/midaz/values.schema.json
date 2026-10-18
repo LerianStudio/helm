@@ -172,6 +172,12 @@
           "default": 10,
           "description": "Number of old ReplicaSets to retain for deployment rollback"
         },
+        "terminationGracePeriodSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 60,
+          "description": "Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush."
+        },
         "image": {
           "type": "object",
           "properties": {
@@ -1544,6 +1550,12 @@
         "revisionHistoryLimit": {
           "default": 10,
           "description": "Number of old ReplicaSets to retain for deployment rollback"
+        },
+        "terminationGracePeriodSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 45,
+          "description": "Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush."
         },
         "image": {
           "type": "object",

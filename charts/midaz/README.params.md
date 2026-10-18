@@ -63,7 +63,7 @@
 | `ledger.enabled` | bool | `true` | NOTE: migration.allowAllServices is not in the public values.yaml - set it in your override values for internal testing |
 | `ledger.replicaCount` | int | `2` | Number of replicas for the ledger service |
 | `ledger.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
-| `ledger.terminationGracePeriodSeconds` | int | `45` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
+| `ledger.terminationGracePeriodSeconds` | int | `60` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `ledger.image.repository` | string | `lerianstudio/midaz-ledger` | Repository for the ledger service container image |
 | `ledger.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
 | `ledger.image.tag` | string | See `values.yaml` | Image tag used for deployment |

@@ -422,6 +422,8 @@ brSisbajud:
 # =============================================================================
 migrations:
   enabled: true
+  # -- MIGRATIONS_TIMEOUT_SEC for the runner; unset keeps the runner default.
+  # timeoutSec: 300
   image:
     repository: ghcr.io/lerianstudio/br-sisbajud-migrations
     # -- Defaults to Chart.appVersion.

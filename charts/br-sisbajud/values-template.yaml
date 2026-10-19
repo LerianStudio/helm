@@ -27,7 +27,8 @@ global:
     redis:    { host: "", tls: "true" }                                                          # <- REQUIRED: host:port
   objectStorage:
     # One S3 client serves BOTH buckets: this endpoint, region and the SEAWEEDFS_* keys
-    # must also reach br-sta's bucket (same region; path-style always; static keys, no IRSA).
+    # must also reach br-sta's bucket (same region; path-style always). Static keys by default; set
+    # brSisbajud.configmap.SEAWEEDFS_CREDENTIALS_SOURCE: "default-chain" for IRSA / Pod Identity.
     sisbajud: { endpoint: "", region: "us-east-1", bucket: "sisbajud" }
     # Same bucket as br-sta global.objectStorage.sta. Its endpoint is inherited from
     # sisbajud.endpoint above (the app refuses a mismatch) — do not set it empty.

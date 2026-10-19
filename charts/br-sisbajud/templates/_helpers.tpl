@@ -789,7 +789,7 @@ STA_OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "dedicated" $osDe
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "publishMaxAttempts" "k" "OUTBOX_PUBLISH_MAX_ATTEMPTS" "d" "3") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "publishBackoffMs" "k" "OUTBOX_PUBLISH_BACKOFF_MS" "d" "200") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "retryWindowSec" "k" "OUTBOX_RETRY_WINDOW_SEC" "d" "300") }}
-{{ include $kv (dict "cm" $cm "p" $b.outbox "f" "maxDispatchAttempts" "k" "OUTBOX_MAX_DISPATCH_ATTEMPTS" "d" "10") }}
+{{ include $kv (dict "cm" $cm "p" $b.outbox "f" "maxDispatchAttempts" "k" "OUTBOX_MAX_DISPATCH_ATTEMPTS" "d" "864") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "processingTimeoutSec" "k" "OUTBOX_PROCESSING_TIMEOUT_SEC" "d" "600") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "maxFailedPerBatch" "k" "OUTBOX_MAX_FAILED_PER_BATCH" "d" "25") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "includeTenantMetrics" "k" "OUTBOX_INCLUDE_TENANT_METRICS" "d" "false") }}
@@ -1136,6 +1136,11 @@ idempotent and lock-protected). Used by the Job and, with a bundled Postgres, as
 an app initContainer so the app never boots on an unmigrated schema.
 */}}
 {{- define "br-sisbajud.migrationsContainer" -}}
+{{- /* The runner refuses MULTI_TENANT_ENABLED=true (tenant schemas are migrated by the
+       service per tenant); rendering it would migrate the global POSTGRES_HOST instead. */ -}}
+{{- if eq (include "br-sisbajud.multiTenantEnabled" .) "true" -}}
+{{- fail "\n\nERROR: br-sisbajud: the migrations runner does not support MULTI_TENANT_ENABLED=true (tenant schemas are migrated by the service).\n  set: migrations.enabled=false with multi-tenancy on\n" -}}
+{{- end -}}
 {{- $c := include "br-sisbajud.migrationsConn" . | fromYaml -}}
 {{- $pgHost := $c.host -}}{{- $pgPort := $c.port -}}{{- $pgUser := $c.user -}}{{- $pgDb := $c.db -}}{{- $pgSslMode := $c.ssl -}}
 {{- $pgConnectTimeout := $c.connectTimeout -}}{{- $allowInsecureTLS := $c.allowInsecureTLS -}}{{- $secretName := $c.secretName -}}
@@ -1163,6 +1168,10 @@ an app initContainer so the app never boots on an unmigrated schema.
       value: {{ include "br-sisbajud.envName" . | quote }}
     - name: POSTGRES_CONNECT_TIMEOUT_SEC
       value: {{ $pgConnectTimeout | quote }}
+    {{- with .Values.migrations.timeoutSec }}
+    - name: MIGRATIONS_TIMEOUT_SEC
+      value: {{ . | toString | quote }}
+    {{- end }}
     - {{ $c.passwordEnv | fromJson | toYaml | nindent 6 | trim }}
   securityContext:
     runAsUser: 65532

@@ -158,7 +158,7 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `workers.processingLockReaper.{enabled,intervalSec}` | `PROCESSING_LOCK_REAPER_*` | `true` / `300` |
 | `outbox.enabled` / `tableName` | `OUTBOX_ENABLED` / `OUTBOX_TABLE_NAME` | `true` / `outbox_events` |
 | `outbox.dispatchIntervalSec` / `batchSize` / `publishMaxAttempts` / `publishBackoffMs` | `OUTBOX_DISPATCH_INTERVAL_SEC` / `OUTBOX_BATCH_SIZE` / `OUTBOX_PUBLISH_MAX_ATTEMPTS` / `OUTBOX_PUBLISH_BACKOFF_MS` | `2` / `50` / `3` / `200` |
-| `outbox.retryWindowSec` / `maxDispatchAttempts` / `processingTimeoutSec` / `maxFailedPerBatch` | `OUTBOX_RETRY_WINDOW_SEC` / `OUTBOX_MAX_DISPATCH_ATTEMPTS` / `OUTBOX_PROCESSING_TIMEOUT_SEC` / `OUTBOX_MAX_FAILED_PER_BATCH` | `300` / `10` / `600` / `25` |
+| `outbox.retryWindowSec` / `maxDispatchAttempts` / `processingTimeoutSec` / `maxFailedPerBatch` | `OUTBOX_RETRY_WINDOW_SEC` / `OUTBOX_MAX_DISPATCH_ATTEMPTS` / `OUTBOX_PROCESSING_TIMEOUT_SEC` / `OUTBOX_MAX_FAILED_PER_BATCH` | `300` / `864` (72h at the 300s retry window, the app default) / `600` / `25` |
 | `outbox.includeTenantMetrics` / `allowEmptyTenant` / `priorityEventTypes` | `OUTBOX_INCLUDE_TENANT_METRICS` / `OUTBOX_ALLOW_EMPTY_TENANT` / `OUTBOX_PRIORITY_EVENT_TYPES` | `false` / `true` / unset |
 | `streaming.cloudeventsSource` | `STREAMING_CLOUDEVENTS_SOURCE` | `br-sisbajud` (the app refuses any other value) |
 | `streaming.clientId` / `healthCheckTimeout` | `STREAMING_CLIENT_ID` / `STREAMING_HEALTH_CHECK_TIMEOUT` | unset / `2s` |

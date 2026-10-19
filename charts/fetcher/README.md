@@ -171,6 +171,17 @@ so there is nothing to migrate onto that mask.
 | `global.streaming.enabled` | Enables lib-streaming (CloudEvents) job notifications for the worker. When unset, the template defaults `STREAMING_ENABLED` to `"true"`. `worker.configmap.STREAMING_ENABLED` overrides it. With streaming on, the worker needs a reachable broker. | unset (template default `"true"`) |
 | `worker.configmap.STREAMING_BROKERS` | **REQUIRED when the worker is deployed** - Kafka/Redpanda bootstrap address(es), e.g. `redpanda.<namespace>:9092`. No working default; not bundled by this chart. | `""` |
 
+### Access Manager Permission Declaration (manager)
+
+The manager publishes its permission manifest to the Access Manager at boot (lib-auth
+`declaration.WireFromEnv`) when `IDP_DECLARATION_ENABLED="true"`; with the flag on it refuses
+to start without `IDP_HOST` and the `manager.secrets.IDP_M2M_*` pair.
+
+| Key | Source (highest first) | Rendered |
+|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `manager.configmap` > `manager.extraEnvVars` (legacy) > `global.idp.declarationEnabled` | always, default `"false"` |
+| `IDP_HOST` | same, with `global.idp.host` | only when set |
+
 ### Secrets
 
 "**REQUIRED**" below means the application needs the value at runtime. The chart does **not** enforce it at render time (the default render works with every one of them empty); the only render-time checks are the bundled-RabbitMQ ones (`rabbitmq.enabled=true`, see Full Installation). `LICENSE_KEY` is enforced by the application only outside local deployment mode, and the chart sets no `DEPLOYMENT_MODE`.
@@ -184,6 +195,7 @@ so there is nothing to migrate onto that mask.
 | `manager.secrets.RABBITMQ_DEFAULT_USER`, `worker.secrets.RABBITMQ_DEFAULT_USER` | **REQUIRED** - RabbitMQ username (`plugin` with the bundled broker) | unset |
 | `manager.secrets.RABBITMQ_DEFAULT_PASS`, `worker.secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | unset |
 | `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
+| `manager.secrets.IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the manager publishes its permission manifest with. Required by the app only when `IDP_DECLARATION_ENABLED="true"`. Each is rendered only when set. Keep it in `manager.secrets`: the top-level `secrets` Secret also reaches the worker | unset |
 
 The top-level `secrets.*` block renders a shared `<release>-common` Secret with its
 non-empty keys only. Both Deployments load it **before** their own Secret

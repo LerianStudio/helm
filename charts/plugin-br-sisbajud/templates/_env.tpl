@@ -168,9 +168,9 @@ AWS_REGION: {{ . | quote }}
 {{- include $kv (dict "cm" $cm "p" $s.crypto "f" "dekCacheTtl" "k" "SISBAJUD_DEK_CACHE_TTL" "d" "5m") }}
 {{- include $kv (dict "cm" $cm "p" $s.crypto "f" "hmacCoexistenceWindow" "k" "SISBAJUD_HMAC_COEXISTENCE_WINDOW" "d" "720h") }}
 # --- Streaming: OFF in executor mode ------------------------------------------------
-{{- /* The app defaults STREAMING_ENABLED to true and then refuses to boot without
-   brokers; executor mode starts no producer consumer (no outbox dispatcher, no
-   balance consumer, no Midaz translator), so the chart pins it off. */}}
+{{- /* Executor mode starts no producer or consumer (no outbox dispatcher, no balance
+   consumer, no Midaz translator), so the chart renders it off explicitly (same as the
+   app default) and an enabled value would only demand brokers the executor never uses. */}}
 STREAMING_ENABLED: {{ (hasKey $cm "STREAMING_ENABLED" | ternary (index $cm "STREAMING_ENABLED") "false") | quote }}
 # --- OpenTelemetry (lerian-common.otel.env) ------------------------------------------
 {{ include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "false" "endpointDefault" "localhost:4317" "deploymentEnvironmentDefault" $envName) }}

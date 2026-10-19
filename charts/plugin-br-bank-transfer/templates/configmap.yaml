@@ -215,6 +215,16 @@ data:
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
 
   # =====================================================================
+  # ACCESS MANAGER PERMISSION DECLARATION (RI) — lerian-common.idp.env.
+  # IDP_DECLARATION_ENABLED (always, default "false") and IDP_HOST (only when
+  # set), resolved as bankTransfer.configmap > bankTransfer.extraEnvVars
+  # (legacy) > global.idp.{declarationEnabled,host}. The client pair lives in
+  # the Secret (templates/secrets.yaml). With the flag on, the app refuses to
+  # boot without the host and the pair.
+  # =====================================================================
+  {{- include "lerian-common.idp.env" (dict "context" $ "configmap" $cm "extraEnvVars" .Values.bankTransfer.extraEnvVars) | nindent 2 }}
+
+  # =====================================================================
   # LICENSE GATEWAY — rendered in both modes. Newer app images refuse to
   # boot without LICENSE_KEY (Secret) and ORGANIZATION_IDS, in every environment.
   # IS_DEVELOPMENT is read by lib-license-go: exactly "true" selects the
@@ -404,7 +414,12 @@ data:
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for env vars not modeled above)
   # =====================================================================
+  {{- /* IDP_DECLARATION_ENABLED / IDP_HOST in extraEnvVars already fed
+     lerian-common.idp.env above; emitting them again would duplicate the key. */ -}}
+  {{- $idpEnvKeys := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
   {{- range $key, $value := .Values.bankTransfer.extraEnvVars }}
+  {{- if not (has $key $idpEnvKeys) }}
   {{ $key }}: {{ $value | quote }}
+  {{- end }}
   {{- end }}
 {{- end }}

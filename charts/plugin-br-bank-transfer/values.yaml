@@ -668,7 +668,8 @@ bankTransfer:
 
   # Access Manager permission declaration (RI) client pair, used only when
   # IDP_DECLARATION_ENABLED="true" (configmap.IDP_DECLARATION_ENABLED / IDP_HOST, or
-  # global.idp.{declarationEnabled,host})
+  # global.idp.{declarationEnabled,host}). With useExistingSecret=true the chart renders
+  # neither key: the existing Secret must carry both.
   # IDP_M2M_CLIENT_ID: ""
   # IDP_M2M_CLIENT_SECRET: ""
 

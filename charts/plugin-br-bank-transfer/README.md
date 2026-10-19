@@ -310,7 +310,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |
 | `REDIS_HOST` | Redis/Valkey host | Dynamic based on release |
 | `PLUGIN_AUTH_ENABLED` | Enable authentication | `true` |
-| `IDP_DECLARATION_ENABLED` | Publish the app's permission manifest to the Access Manager at boot (lib-auth `declaration.WireFromEnv`). Needs `IDP_HOST` and the `IDP_M2M_*` pair in `bankTransfer.secrets`. Resolved as `bankTransfer.configmap` > `bankTransfer.extraEnvVars` (legacy) > `global.idp.declarationEnabled` | `false` |
+| `IDP_DECLARATION_ENABLED` | Publish the app's permission manifest to the Access Manager at boot (lib-auth `declaration.WireFromEnv`). Needs `IDP_HOST` and the `IDP_M2M_*` pair in `bankTransfer.secrets` (with `bankTransfer.useExistingSecret=true`, in that existing Secret). Resolved as `bankTransfer.configmap` > `bankTransfer.extraEnvVars` (legacy) > `global.idp.declarationEnabled` | `false` |
 | `IDP_HOST` | Access Manager identity URL, e.g. `http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001`. Same precedence, with `global.idp.host`; rendered only when set | — |
 | `JD_SANDBOX_MODE` | Enable JD sandbox mode (fake adapter) | `false` |
 | `MIDAZ_BASE_URL` | Midaz API base URL | **Required** |
@@ -340,7 +340,7 @@ Key secrets configured via `bankTransfer.secrets`:
 | `LICENSE_KEY` | Lerian licence key. **Required** by newer app images, in every environment. The chart does not check it. |
 | `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 | `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
-| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the app uses to publish its permission manifest (RI) at boot. Read only when `IDP_DECLARATION_ENABLED="true"` (see the ConfigMap table); with the flag on, the app refuses to boot without the pair. Each is rendered only when set. |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the app uses to publish its permission manifest (RI) at boot. Read only when `IDP_DECLARATION_ENABLED="true"` (see the ConfigMap table); with the flag on, the app refuses to boot without the pair. Each is rendered only when set. With `bankTransfer.useExistingSecret=true` the chart renders neither key: the existing Secret must carry both. |
 
 ---
 

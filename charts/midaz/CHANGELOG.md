@@ -3,6 +3,17 @@
 ## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
 
 Fixes:
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
 
 - Keep an explicit zero grace period for termination and reject negative values. (@fredcamaral)
 - Raise the ledger termination grace period to `60s`. (@fredcamaral)

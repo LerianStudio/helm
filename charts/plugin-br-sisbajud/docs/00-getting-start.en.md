@@ -19,6 +19,7 @@
 | PostgreSQL (TLS) | `global.datastores.postgres` + `POSTGRES_PASSWORD` |
 | Redis/Valkey | `global.datastores.redis` + `REDIS_PASSWORD` (`/readyz` depends on it) |
 | Streaming Hub | webhook subscription: `EXECUTOR_HUB_WEBHOOK_SECRET` in the Secret; or `executor.transport: sqs` |
+| Streaming Hub tenant | `sisbajud.executor.streamingHubTenantId` (required; same value as the Streaming Hub's `STREAMING_HUB_TENANT_ID`) |
 
 Midaz routing and credentials are **per institution** (institution config API, sealed in the database), not chart values.
 
@@ -50,7 +51,7 @@ kubectl -n sisbajud port-forward svc/plugin-br-sisbajud 4029:4029
 curl -s localhost:4029/readyz | jq .
 ```
 
-`/readyz` lists every dependency. Known application limitation (≤ `1.0.0-beta.1`): the object-store (`seaweedfs`) probe is wired in every mode and defaults to `http://localhost:8333`; in executor mode the pod stays NotReady until `SEAWEEDFS_S3_ENDPOINT` (via `sisbajud.configmap`) points at a reachable S3. See the chart README.
+`/readyz` lists every dependency. Known application limitation (still in `1.0.0`): the object-store (`seaweedfs`) probe is wired in every mode and defaults to `http://localhost:8333`; in executor mode the pod stays NotReady until `SEAWEEDFS_S3_ENDPOINT` (via `sisbajud.configmap`) points at a reachable S3. See the chart README.
 
 ## 5. Development profile
 

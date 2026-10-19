@@ -2,7 +2,7 @@ apiVersion: v2
 name: plugin-br-sisbajud-helm
 description: >-
   plugin-br-sisbajud — the SISBAJUD executor. Pulls judicial orders from the
-  Sisbajud Mensageria (br-sfn) over the mTLS execution contract, executes them on
+  Sisbajud Mensageria (br-sfn) over the execution contract (one-way TLS by default, optional mTLS), executes them on
   Midaz (block / unblock / transfer / information) and posts the results back.
 type: application
 annotations:
@@ -22,7 +22,7 @@ version: 1.0.0
 
 # Default image tag for the service AND the migrations Job (override with
 # sisbajud.image.tag / migrations.image.tag).
-appVersion: "1.0.0-beta.2"
+appVersion: "1.0.0"
 
 keywords:
   - midaz

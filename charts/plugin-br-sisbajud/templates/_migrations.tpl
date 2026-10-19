@@ -17,8 +17,9 @@ does not exist yet when a pre-install hook runs).
 */}}
 
 {{/*
-Password env entry for the runner, or nothing when no source exists
-(non-production trust auth). Input: dict "context" $ "hook" bool.
+Password env entry for the runner, or nothing when no source exists (the
+runner container then fails the render: it requires POSTGRES_PASSWORD).
+Input: dict "context" $ "hook" bool.
 */}}
 {{- define "plugin-br-sisbajud.migrationsPasswordEnv" -}}
 {{- $ctx := .context -}}
@@ -79,9 +80,11 @@ The runner container. Input: dict "context" $ "name" <container name> "hook" boo
       value: {{ $m.timeoutSec | default "300" | toString | quote }}
     - name: LOG_LEVEL
       value: {{ include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "LOG_LEVEL" "p" $ctx.Values.sisbajud.app "f" "logLevel" "d" "info") | quote }}
-    {{- with (include "plugin-br-sisbajud.migrationsPasswordEnv" (dict "context" $ctx "hook" .hook) | trim) }}
-    {{- . | nindent 4 }}
+    {{- $pwEnv := include "plugin-br-sisbajud.migrationsPasswordEnv" (dict "context" $ctx "hook" .hook) | trim }}
+    {{- if not $pwEnv }}
+    {{- fail "plugin-br-sisbajud: migrations need a Postgres password (the runner refuses to start without POSTGRES_PASSWORD, in every environment). Set sisbajud.secrets.POSTGRES_PASSWORD, migrations.existingSecret, sisbajud.useExistingSecret, or enable the bundled postgresql." }}
     {{- end }}
+    {{- $pwEnv | nindent 4 }}
   securityContext:
     {{- toYaml $ctx.Values.sisbajud.securityContext | nindent 4 }}
   {{- with $m.resources }}

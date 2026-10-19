@@ -53,6 +53,8 @@ sisbajud:
 
   executor:
     m2mSubject: "<executor-m2m-token-sub>"
+    # SAME value as the Streaming Hub deployment's STREAMING_HUB_TENANT_ID.
+    streamingHubTenantId: "<streaming-hub-tenant-id>"
     heartbeatEvery: "1m"
     # SAME value as the Sisbajud Mensageria.
     responseDeadlineMargin: "2h"

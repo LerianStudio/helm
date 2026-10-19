@@ -45,6 +45,17 @@ global: {}
   #   redisPort: "6379"      # MULTI_TENANT_REDIS_PORT
   #   redisTls: "false"      # MULTI_TENANT_REDIS_TLS
   #
+  # -- Access Manager permission declaration (lib-auth declaration.WireFromEnv),
+  #    read by lerian-common.idp.env. A component's configmap.IDP_* (or, for
+  #    compatibility, extraEnvVars.IDP_*) overrides these.
+  # idp:
+  #   host: ""                 # IDP_HOST — Access Manager identity URL (e.g. http://plugin-access-manager-identity.<ns>.svc.cluster.local:4001); emitted only when set
+  #   declarationEnabled: false # IDP_DECLARATION_ENABLED (built-in "false"). Turns the gate on for EVERY
+  #                            # component of the release, and the app refuses to boot without its client
+  #                            # pair — prefer the component's configmap.IDP_DECLARATION_ENABLED.
+  #   # NOTE: IDP_M2M_CLIENT_ID / IDP_M2M_CLIENT_SECRET are per-component credentials —
+  #   # set them under the component's `.secrets` (rendered by lerian-common.idp.secret), never here.
+  #
   # -- Pod scheduling. `spread` is the topologySpreadConstraints preset read by
   #    lerian-common.topologySpreadConstraints (and lerian-common.scheduling in its
   #    dict form). A component's `spread` overrides it field by field; a component's

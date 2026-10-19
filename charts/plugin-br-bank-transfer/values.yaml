@@ -34,6 +34,13 @@ global:
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
   auth: {}
+  # -- Env-wide Access Manager permission declaration (RI). Consumed by
+  # lerian-common.idp.env (block "idp"). Fields: declarationEnabled, host.
+  # (bankTransfer.configmap.IDP_DECLARATION_ENABLED / IDP_HOST override.)
+  # declarationEnabled turns the gate on for every component of the release;
+  # prefer the component configmap for the gate and use global for the host.
+  # Example: idp: { host: "http://plugin-access-manager-identity.<ns>.svc.cluster.local:4001" }
+  idp: {}
   # -- Env-wide streaming (lib-streaming v3 / RedPanda) gate. `enabled` is
   # consumed by lerian-common.globalValue (block "streaming"), same pattern
   # as multiTenant/observability above (configmap.STREAMING_ENABLED
@@ -480,6 +487,14 @@ bankTransfer:
     # =================================================================
 
     # =================================================================
+    # Access Manager permission declaration (RI) — rendered by
+    # lerian-common.idp.env. IDP_DECLARATION_ENABLED defaults to "false";
+    # IDP_HOST is rendered only when set. Client pair: bankTransfer.secrets.
+    # IDP_DECLARATION_ENABLED: "false"
+    # IDP_HOST: ""
+    # =================================================================
+
+    # =================================================================
     # License gateway — newer app images refuse to boot without LICENSE_KEY
     # (bankTransfer.secrets) and ORGANIZATION_IDS (below), in every
     # environment. lib-license-go picks the gateway itself: IS_DEVELOPMENT
@@ -652,7 +667,9 @@ bankTransfer:
   # COURIER_CLIENT_SECRET: ""
 
   # Access Manager permission declaration (RI) client pair, used only when
-  # IDP_DECLARATION_ENABLED="true" (set it and IDP_HOST in configmap or extraEnvVars)
+  # IDP_DECLARATION_ENABLED="true" (configmap.IDP_DECLARATION_ENABLED / IDP_HOST, or
+  # global.idp.{declarationEnabled,host}). With useExistingSecret=true the chart renders
+  # neither key: the existing Secret must carry both.
   # IDP_M2M_CLIENT_ID: ""
   # IDP_M2M_CLIENT_SECRET: ""
 

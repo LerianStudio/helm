@@ -1,5 +1,53 @@
 # Midaz Changelog
 
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s`. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.2)
+
+Features:
+- Documented the gRPC-only ledger to tracer transport. (@Ygohr)
+
+Fixes:
+- Ensured that the tracer gRPC port is always published. (@Ygohr)
+- Stopped defaulting the ledger `TRACER_TRANSPORT` to REST. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.1...midaz-v9.7.2)
+
+---
+
 ## [9.7.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.2)
 
 Features:

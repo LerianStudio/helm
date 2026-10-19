@@ -1,0 +1,83 @@
+{{- if (.Values.worker).enabled }}
+{{- include "system-facts.worker.validate" . }}
+{{- $w := .Values.worker }}
+{{- $img := $w.image | default dict }}
+{{- $port := $w.port | default 8080 }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "system-facts.worker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "system-facts.worker.labels" . | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $w.revisionHistoryLimit | default 10 }}
+  {{- $du := $w.deploymentUpdate | default dict }}
+  {{- include "lerian-common.deploymentStrategy" (dict
+        "type" ($du.type | default "RollingUpdate")
+        "maxSurge" (dig "maxSurge" 1 $du)
+        "maxUnavailable" (dig "maxUnavailable" 0 $du)
+      ) | nindent 2 }}
+  # No HPA: parallelism is bounded by distinct tenants, so replicas above
+  # worker.partitionCeiling only idle (the chart refuses them).
+  replicas: {{ $w.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "system-facts.worker.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include "system-facts.worker.configData" . | sha256sum }}
+        {{- if not $w.useExistingSecret }}
+        checksum/secret: {{ include "system-facts.worker.secretData" . | sha256sum }}
+        {{- end }}
+        {{- with $w.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "system-facts.worker.labels" . | nindent 8 }}
+    spec:
+      {{- with $w.imagePullSecrets }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "system-facts.worker.serviceAccountName" . }}
+      # The worker never calls the Kubernetes API.
+      automountServiceAccountToken: false
+      # >= 60: consumer close (30s) + admin drain (10s) + telemetry flush.
+      terminationGracePeriodSeconds: {{ $w.terminationGracePeriodSeconds | default 60 }}
+      {{- with $w.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: internal-facts-worker
+          securityContext:
+            {{- toYaml $w.securityContext | nindent 12 }}
+          image: "{{ $img.repository | default "ghcr.io/lerianstudio/system-facts-worker" }}:{{ include "system-facts.worker.tag" . }}"
+          imagePullPolicy: {{ $img.pullPolicy | default "IfNotPresent" }}
+          # No args: the binary defaults to `run`.
+          envFrom:
+            - secretRef:
+                name: {{ include "system-facts.worker.secretName" . }}
+            - configMapRef:
+                name: {{ include "system-facts.worker.fullname" . }}
+          ports:
+            - name: http
+              containerPort: {{ $port }}
+              protocol: TCP
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" ($w.livenessProbe | default dict)
+                "port" $port
+                "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" ($w.readinessProbe | default dict)
+                "port" $port
+                "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          resources:
+            {{- toYaml $w.resources | nindent 12 }}
+      {{- if or $w.nodeSelector $w.affinity $w.tolerations }}
+      {{- include "lerian-common.scheduling" $w | nindent 6 }}
+      {{- end }}
+{{- end }}

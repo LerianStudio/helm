@@ -310,7 +310,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |
 | `REDIS_HOST` | Redis/Valkey host | Dynamic based on release |
 | `PLUGIN_AUTH_ENABLED` | Enable authentication | `true` |
-| `IDP_DECLARATION_ENABLED` | Publish the app's permission manifest to the Access Manager at boot (lib-auth `declaration.WireFromEnv`). Needs `IDP_HOST` and the `IDP_M2M_*` pair in `bankTransfer.secrets` (with `bankTransfer.useExistingSecret=true`, in that existing Secret). Resolved as `bankTransfer.configmap` > `bankTransfer.extraEnvVars` (legacy) > `global.idp.declarationEnabled` | `false` |
+| `IDP_DECLARATION_ENABLED` | Publish the app's permission manifest to the Access Manager at boot (lib-auth `declaration.WireFromEnv`). Needs `IDP_HOST` and the `IDP_M2M_*` pair in `bankTransfer.secrets` (with `bankTransfer.useExistingSecret=true`, in that existing Secret). Resolved as `bankTransfer.configmap` > `bankTransfer.extraEnvVars` (legacy) > `global.idp.declarationEnabled`. `global.idp` is shared by every chart in the release that reads it (umbrella installs), so each of them needs its own `IDP_M2M_*` pair | `false` |
 | `IDP_HOST` | Access Manager identity URL, e.g. `http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001`. Same precedence, with `global.idp.host`; rendered only when set | — |
 | `JD_SANDBOX_MODE` | Enable JD sandbox mode (fake adapter) | `false` |
 | `MIDAZ_BASE_URL` | Midaz API base URL | **Required** |

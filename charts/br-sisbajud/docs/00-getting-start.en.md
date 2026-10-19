@@ -33,7 +33,7 @@
 | Profile | Values | What runs | Use case |
 |---|---|---|---|
 | **Dev bundle (quickstart)** | `values-dev.yaml` | the app, plus bundled PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, dev mode) and Redpanda; `ENVIRONMENT_NAME=development`; inbound auth, the br-sta consumer/transfers client and multi-tenancy off | Evaluation, local development, chart testing |
-| **br-sisbajud + br-sta together** | `values-dev.yaml` + `values-dev-with-br-sta.yaml` | the app with its own PostgreSQL, Valkey and OpenBao, reusing a br-sta dev bundle's SeaweedFS and Redpanda in the same namespace; br-sta consumer and transfers client on | Integrated dev of the STA flow (remittance intake, return files) |
+| **br-sisbajud + br-sta together** | `values-dev.yaml` + `values-dev-with-br-sta.yaml` | the app with its own PostgreSQL, Valkey and OpenBao, reusing a br-sta dev bundle's SeaweedFS and Redpanda in the same namespace; br-sta transfers client on; the br-sta consumer stays off (it requires SASL, which the br-sta dev Redpanda does not offer) | Integrated dev of the STA flow (remittance intake, return files) |
 | **Standalone (no br-sta)** | `values-dev.yaml` (or your file) with `sta.consumerEnabled` / `sta.transfersEnabled` off (the default) | the app alone; remessas enter through the HTTP intake `POST /v1/remittance-files/notifications` after the raw file is dropped into `STA_INBOUND_BUCKET` | Running SISBAJUD without the br-sta rail (see section 3, "Standalone") |
 | **Production / external infra** | your file, started from `values-template.yaml` | the app + migrations + topics Jobs; every dependency external | Real tiers. Default environment `production` (fail-closed) |
 

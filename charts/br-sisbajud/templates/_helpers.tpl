@@ -627,6 +627,12 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 # --- Execution API listener (FC-3: always TLS, in-pod; files mounted from Secrets) --
 {{- $ex := include "br-sisbajud.execution" . | fromYaml }}
 {{- if $ex.enabled }}
+{{- /* The containerPort and Service always follow execution.port: an address on another
+       port would leave the app listening where nothing routes. */}}
+{{- $exAddr := trim (toString ((index $cm "SISBAJUD_EXECUTION_ADDRESS") | default (($b.execution | default dict).address) | default "")) }}
+{{- if and $exAddr (ne (regexReplaceAll "^.*:" $exAddr "") (toString $ex.port)) }}
+{{- fail (printf "\n\nERROR: br-sisbajud: SISBAJUD_EXECUTION_ADDRESS %q listens on another port than brSisbajud.execution.port (%v), which the containerPort and Service follow.\n  set: brSisbajud.execution.port only (leave the address unset)\n" $exAddr $ex.port) }}
+{{- end }}
 {{ include $kv (dict "cm" $cm "p" $b.execution "f" "address" "k" "SISBAJUD_EXECUTION_ADDRESS" "d" (printf ":%v" $ex.port)) }}
 {{ include $kv (dict "cm" $cm "p" (dict) "f" "-" "k" "SISBAJUD_EXECUTION_MTLS_ENABLED" "d" $ex.mtls) }}
 {{ include $kv (dict "cm" $cm "p" (dict) "f" "-" "k" "SISBAJUD_EXECUTION_TLS_CERT_FILE" "d" $ex.certFile) }}

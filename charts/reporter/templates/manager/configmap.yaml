@@ -15,9 +15,23 @@ data:
   # everything else an escape-hatch passthrough — see reporter.commonConfigmapData)
   {{- include "reporter.commonConfigmapData" . | nindent 2 }}
   # Service specific values
+  {{- $idpEnvKeys := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
   {{- range $key, $value := .Values.manager.configmap }}
+  {{- if not (has $key $idpEnvKeys) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  {{- end }}
+  # Access Manager permission declaration (RI) via lerian-common.idp.env — manager only.
+  # IDP_DECLARATION_ENABLED (always, default "false") and IDP_HOST (only when set), resolved as
+  # manager.configmap > manager.extraEnvVars (legacy) > common.configmap > global.idp.
+  # The client pair lives in the manager Secret (secrets.IDP_M2M_*).
+  {{- $idpSrc := deepCopy (.Values.manager.configmap | default dict) }}
+  {{- range $k := $idpEnvKeys }}
+  {{- range $src := list ($.Values.manager.extraEnvVars | default dict) ($.Values.common.configmap | default dict) }}
+  {{- if and (hasKey $src $k) (not (hasKey $idpSrc $k)) }}{{- $_ := set $idpSrc $k (index $src $k) }}{{- end }}
+  {{- end }}
+  {{- end }}
+  {{- include "lerian-common.idp.env" (dict "context" $ "configmap" $idpSrc) | nindent 2 }}
   # Rate Limiting - Three-tier system with Redis backend
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
   # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
@@ -25,7 +39,7 @@ data:
   # VERSION and OTEL_RESOURCE_SERVICE_VERSION both track the running image tag
   VERSION: {{ .Values.manager.image.tag | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.manager.image.tag | quote }}
-  # Extra Env Vars
-  {{- with .Values.manager.extraEnvVars }}
+  # Extra Env Vars (IDP_DECLARATION_ENABLED / IDP_HOST here already fed lerian-common.idp.env)
+  {{- with (omit (.Values.manager.extraEnvVars | default dict) "IDP_DECLARATION_ENABLED" "IDP_HOST") }}
   {{- toYaml . | nindent 2 }}
   {{- end }}

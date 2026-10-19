@@ -3,6 +3,18 @@
 ## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.3)
 
 Fixes:
+- Accept the `IDP_*` declaration keys in the configmap schema for reporter. (@qnen)
+
+Improvements:
+- Add a Helm upgrade guide for reporter `v4.4.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.2...reporter-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.3)
+
+Fixes:
 - Accept the `IDP_*` declaration keys in the configmap schema for improved compatibility. (@qnen)
 
 Improvements:

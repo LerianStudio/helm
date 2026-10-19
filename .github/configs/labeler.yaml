@@ -77,3 +77,7 @@ br-jd-courier:
 agent:
   - changed-files:
       - any-glob-to-any-file: charts/agent/**
+
+system-facts:
+  - changed-files:
+      - any-glob-to-any-file: charts/system-facts/**

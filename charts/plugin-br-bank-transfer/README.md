@@ -320,6 +320,10 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `JD_ORIGIN_ISPB` | Bank ISPB code for JD | **Required** (unless `JD_SANDBOX_MODE=true`) |
 | `ORGANIZATION_IDS` | Organizations the licence is validated for (or set it under `bankTransfer.secrets`) | **Required** by newer app images, in every environment |
 | `IS_DEVELOPMENT` | Exactly `"true"` points lib-license-go at the development licence gateway, which a development licence key needs | Not rendered |
+| `COURIER_ACCOUNT_CLAIMS_ENABLED` | App v3.2.0+: sweep that claims this engine's CRM accounts on the Courier. When `"true"`, single-tenant also needs `COURIER_BASE_URL`, the `COURIER_CLIENT_ID`/`COURIER_CLIENT_SECRET` pair and `ORGANIZATION_ID` (the render fails without the URL or the organization) | `false` |
+| `IDP_DECLARATION_ENABLED` | App v3.2.0+: publish the permission manifest (RI) to the Access Manager at boot. When `"true"`, the app refuses to boot without `IDP_HOST`, the `IDP_M2M_*` secret pair and `PLUGIN_AUTH_ENABLED="true"` (the render fails without `IDP_HOST` or with auth off) | Not rendered (off) |
+| `IDP_HOST` | Access Manager identity base URL the manifest is published to; a bare endpoint, its credential is the `IDP_M2M_*` secret pair | Not rendered |
+| `PLUGIN_AUTH_HOST` | Auth URL the declaration's token minter uses; unset, the app falls back to `PLUGIN_AUTH_ADDRESS` with one WARN, so set it only to that same URL | Not rendered |
 
 For a complete list, see `values.yaml`.
 
@@ -338,7 +342,7 @@ Key secrets configured via `bankTransfer.secrets`:
 | `LICENSE_KEY` | Lerian licence key. **Required** by newer app images, in every environment. The chart does not check it. |
 | `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 | `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
-| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the app uses to publish its permission manifest (RI) at boot. Read only when `IDP_DECLARATION_ENABLED="true"`, set with `IDP_HOST` through `bankTransfer.configmap` or `bankTransfer.extraEnvVars`; with the flag on, the app refuses to boot without the pair. Each is rendered only when set. |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the app uses to publish its permission manifest (RI) at boot. Read only when `IDP_DECLARATION_ENABLED="true"`, set with `IDP_HOST` through `bankTransfer.configmap`; with the flag on, the app refuses to boot without the pair. Each is rendered only when set. |
 
 ---
 

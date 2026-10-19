@@ -480,6 +480,19 @@ bankTransfer:
     # =================================================================
 
     # =================================================================
+    # Access Manager permission declaration (RI, app v3.2.0+), read by
+    # lib-auth. Each key renders only when set; unset keeps it OFF. With
+    # IDP_DECLARATION_ENABLED "true" the app refuses to boot unless IDP_HOST,
+    # bankTransfer.secrets.IDP_M2M_CLIENT_ID/IDP_M2M_CLIENT_SECRET and
+    # PLUGIN_AUTH_ENABLED "true" are set: set those first, the flag last.
+    # PLUGIN_AUTH_HOST is the minter's auth URL; unset, the app falls back to
+    # PLUGIN_AUTH_ADDRESS with one WARN, so set it only to that same URL.
+    # =================================================================
+    # IDP_DECLARATION_ENABLED: "true"
+    # IDP_HOST: ""            # Access Manager identity base URL (bare endpoint)
+    # PLUGIN_AUTH_HOST: ""
+
+    # =================================================================
     # License gateway — newer app images refuse to boot without LICENSE_KEY
     # (bankTransfer.secrets) and ORGANIZATION_IDS (below), in every
     # environment. lib-license-go picks the gateway itself: IS_DEVELOPMENT
@@ -536,6 +549,12 @@ bankTransfer:
     # Courier (optional outbound integration, added in app 2.2.0). Set the base
     # URL here; the CLIENT_ID/CLIENT_SECRET go under bankTransfer.secrets.
     # COURIER_BASE_URL: ""
+    # COURIER_ACCOUNT_CLAIMS_ENABLED (app v3.2.0+) turns on the sweep that
+    # claims this engine's CRM accounts on the Courier. Rendered with the app
+    # default "false". When "true", single-tenant also needs COURIER_BASE_URL,
+    # the COURIER_CLIENT_ID/COURIER_CLIENT_SECRET pair and ORGANIZATION_ID;
+    # multi-tenant reads the Courier from each tenant's JD bundle.
+    # COURIER_ACCOUNT_CLAIMS_ENABLED: "false"
 
     # TRUSTED_PROXIES (optional; complements SERVER_TRUSTED_PROXIES, added in app 2.2.0)
     # TRUSTED_PROXIES: ""
@@ -652,7 +671,7 @@ bankTransfer:
   # COURIER_CLIENT_SECRET: ""
 
   # Access Manager permission declaration (RI) client pair, used only when
-  # IDP_DECLARATION_ENABLED="true" (set it and IDP_HOST in configmap or extraEnvVars)
+  # IDP_DECLARATION_ENABLED="true" (set it and IDP_HOST under bankTransfer.configmap)
   # IDP_M2M_CLIENT_ID: ""
   # IDP_M2M_CLIENT_SECRET: ""
 

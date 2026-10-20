@@ -2,8 +2,9 @@ apiVersion: v2
 name: plugin-br-sisbajud-helm
 description: >-
   plugin-br-sisbajud — the SISBAJUD executor. Pulls judicial orders from the
-  Sisbajud Mensageria (br-sfn) over the execution contract (one-way TLS by default, optional mTLS), executes them on
-  Midaz (block / unblock / transfer / information) and posts the results back.
+  Sisbajud Mensageria (br-sfn) over the execution contract (one-way TLS by
+  default, optional mTLS), executes them on Midaz (block / unblock / transfer /
+  information) and posts the results back.
 type: application
 annotations:
   lerian.studio/chart-type: single-service

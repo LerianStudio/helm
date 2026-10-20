@@ -231,6 +231,34 @@ pix:
     SCHEDULE_MIN_FUTURE_SECONDS: "60"
     SCHEDULE_DEFAULT_EXECUTE_HOUR_BRT: "6"
     SCHEDULE_MAX_ATTEMPTS: "2"
+    # Recurring (Pix Automatico) stale authorization-request sweep
+    RECURRING_AR_EXPIRE_GRACE: "1h"
+    RECURRING_AR_EXPIRE_MIN_GRACE: "1m"
+    # Access Manager permission declaration. When "true" the app also requires
+    # PLUGIN_AUTH_ENABLED=true, PLUGIN_AUTH_ADDRESS and the M2M_CLIENT_* secrets, or boot fails.
+    DECLARATION_ENABLED: "false"
+    # Defaults to the identity service in the Helm release namespace when empty.
+    PLUGIN_IDENTITY_HOST: ""
+    # Anti-Fraud Decision Hook (cashin / refund-cashin)
+    # Master flag off by default; when false none of the other ANTIFRAUD_HOOK_* vars
+    # are read or validated by the app. When true: URL must be HTTPS (unless
+    # ALLOW_PRIVATE_NETWORK), HMAC secret >= 32 chars, and exactly one of
+    # FALLBACK_DECISION (APPROVE|REJECT) or FALLBACK_MAX_APPROVE_AMOUNT must be set.
+    ANTIFRAUD_HOOK_ENABLED: "false"
+    ANTIFRAUD_HOOK_URL: ""
+    ANTIFRAUD_HOOK_TIMEOUT_MS: "500"
+    ANTIFRAUD_HOOK_FALLBACK_DECISION: ""
+    ANTIFRAUD_HOOK_FALLBACK_MAX_APPROVE_AMOUNT: ""
+    # AUTH_HEADER_NAME and the AUTH_HEADER_VALUE secret must be set together or both left empty.
+    ANTIFRAUD_HOOK_AUTH_HEADER_NAME: ""
+    # Never "true" in production.
+    ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK: "false"
+    ANTIFRAUD_HOOK_CB_ENABLED: "true"
+    ANTIFRAUD_HOOK_CB_MAX_REQUESTS: "3"
+    ANTIFRAUD_HOOK_CB_INTERVAL: "60s"
+    ANTIFRAUD_HOOK_CB_TIMEOUT: "30s"
+    ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: "5"
+    ANTIFRAUD_HOOK_PREWARM_ENABLED: "true"
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
@@ -251,6 +279,12 @@ pix:
     FEE_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""
     BTG_WEBHOOK_SECRET: ""
+    # Access Manager declaration credentials (required when DECLARATION_ENABLED=true)
+    M2M_CLIENT_ID: ""
+    M2M_CLIENT_SECRET: ""
+    # Anti-Fraud hook (HMAC secret >= 32 chars when the hook is enabled)
+    ANTIFRAUD_HOOK_HMAC_SECRET: ""
+    ANTIFRAUD_HOOK_AUTH_HEADER_VALUE: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false

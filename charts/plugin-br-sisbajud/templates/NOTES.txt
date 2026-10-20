@@ -1,0 +1,23 @@
+plugin-br-sisbajud {{ .Values.sisbajud.image.tag | default .Chart.AppVersion }} (SISBAJUD executor) deployed to namespace {{ include "global.namespace" . }}.
+
+  Mensageria:  {{ .Values.sisbajud.mensageria.baseUrl }} {{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml }} ({{ ternary "mTLS" "one-way TLS" (eq $mt.mtls "true") }}; server CA: {{ $mt.caSecret | default "system trust store" }}{{ if eq $mt.mtls "true" }}; client pair: {{ $mt.tlsSecret | default "set via configmap" }}{{ end }})
+  Transport:   {{ include "plugin-br-sisbajud.transport" . }}{{ if eq (include "plugin-br-sisbajud.webhookEnabled" .) "true" }} (listener {{ include "plugin-br-sisbajud.webhookFullname" . }}:{{ .Values.sisbajud.executor.webhook.service.port }}{{ .Values.sisbajud.executor.webhook.path }}){{ end }}
+  KMS:         {{ include "plugin-br-sisbajud.kmsProvider" . }}
+
+Verify:
+  kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl -n {{ include "global.namespace" . }} port-forward svc/{{ include "plugin-br-sisbajud.fullname" . }} {{ .Values.sisbajud.service.port }}:{{ .Values.sisbajud.service.port }}
+  curl -s localhost:{{ .Values.sisbajud.service.port }}/readyz
+
+{{- if eq (include "plugin-br-sisbajud.migrationsOn" .) "true" }}
+{{- if eq (include "plugin-br-sisbajud.postgresBundled" .) "true" }}
+
+Migrations: applied by the app pod's `migrations` initContainer (bundled PostgreSQL, development only).
+{{- else }}
+
+Migrations: {{ include "plugin-br-sisbajud.migrationsFullname" . }} runs as a pre-install/pre-upgrade hook (ArgoCD PreSync).
+{{- end }}
+{{- end }}
+
+Ledger routing and credentials are per institution (institution config API), not chart values.
+/readyz also reports the object-store (SeaweedFS/S3) probe the app wires in every mode; see the chart README.

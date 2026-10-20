@@ -36,6 +36,7 @@ jobs:
         charts/plugin-br-pix-jd
         charts/plugin-br-pix-indirect-btg
         charts/plugin-br-pix-lerian
+        charts/plugin-br-sisbajud
         charts/plugin-crm
         charts/plugin-fees
         charts/product-console

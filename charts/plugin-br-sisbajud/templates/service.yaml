@@ -1,0 +1,8 @@
+{{- if .Values.sisbajud.enabled -}}
+{{- include "lerian-common.service" (dict
+      "service" .Values.sisbajud.service
+      "name" (include "plugin-br-sisbajud.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud"))
+      "selector" (include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud"))) }}
+{{- end -}}

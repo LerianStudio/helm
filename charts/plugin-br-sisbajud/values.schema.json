@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "sisbajud": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Escape hatch for native env keys. Only the executor's NON-credential keys are accepted; credentials (LICENSE_KEY, *_PASSWORD, *_SECRET*, *_TOKEN, *_CLIENT_ID, *_API_KEY) belong in sisbajud.secrets or an existing Secret.",
+          "propertyNames": {
+            "enum": [
+              "ACCESS_CONTROL_ALLOW_CREDENTIALS",
+              "ACCESS_CONTROL_ALLOW_HEADERS",
+              "ACCESS_CONTROL_ALLOW_METHODS",
+              "ACCESS_CONTROL_ALLOW_ORIGIN",
+              "ACCESS_CONTROL_EXPOSE_HEADERS",
+              "ADMIN_MAX_AUDIT_VERIFY_WINDOW",
+              "ADMIN_MAX_FILE_CONTENT_BYTES",
+              "AGGRESSIVE_RATE_LIMIT_MAX",
+              "AGGRESSIVE_RATE_LIMIT_WINDOW_SEC",
+              "ALLOW_CORS_WILDCARD",
+              "ALLOW_INSECURE_OTEL",
+              "ALLOW_INSECURE_TLS",
+              "ALLOW_RATELIMIT_DISABLED",
+              "ALLOW_RATELIMIT_FAIL_OPEN",
+              "ALLOW_WEBHOOK_PRIVATE_NETWORK",
+              "AUTH_PRODUCT_NAME",
+              "AWS_REGION",
+              "CIRCUIT_BREAKER_ENABLED",
+              "CORS_ALLOWED_HEADERS",
+              "CORS_ALLOWED_METHODS",
+              "CORS_ALLOWED_ORIGINS",
+              "CORS_ALLOW_CREDENTIALS",
+              "CORS_EXPOSE_HEADERS",
+              "DB_METRICS_INTERVAL_SEC",
+              "DEFAULT_TENANT_ID",
+              "DEPLOYMENT_MODE",
+              "ENABLE_TELEMETRY",
+              "ENVIRONMENT_NAME",
+              "ENV_NAME",
+              "EXECUTOR_HEARTBEAT_EVERY",
+              "EXECUTOR_HUB_WEBHOOK_ADDRESS",
+              "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS",
+              "EXECUTOR_HUB_WEBHOOK_MAX_SKEW_SEC",
+              "EXECUTOR_HUB_WEBHOOK_PATH",
+              "EXECUTOR_HUB_WEBHOOK_TLS_CERT_FILE",
+              "EXECUTOR_HUB_WEBHOOK_TLS_KEY_FILE",
+              "EXECUTOR_HUB_WEBHOOK_UPSTREAM_TLS_VALIDATED",
+              "EXECUTOR_HUMAN_DECISION_AFTER_BEATS",
+              "EXECUTOR_M2M_SUBJECT",
+              "EXECUTOR_ORPHAN_RECONCILE_WINDOW",
+              "EXECUTOR_SETTLE_WINDOW",
+              "EXECUTOR_SQS_MAX_MESSAGES",
+              "EXECUTOR_SQS_MAX_RECEIVE_COUNT",
+              "EXECUTOR_SQS_QUEUE_URL",
+              "EXECUTOR_SQS_REGION",
+              "EXECUTOR_SQS_VISIBILITY_TIMEOUT_SECONDS",
+              "EXECUTOR_SQS_WAIT_TIME_SECONDS",
+              "EXECUTOR_TICK_EVERY",
+              "EXECUTOR_TRANSPORT",
+              "HTTP_BODY_LIMIT_BYTES",
+              "IDEMPOTENCY_RETRY_WINDOW_SEC",
+              "IDP_DECLARATION_ENABLED",
+              "IDP_HOST",
+              "INFRA_CONNECT_TIMEOUT_SEC",
+              "IS_DEVELOPMENT",
+              "KMS_PROVIDER",
+              "LOG_LEVEL",
+              "MAX_PAGINATION_LIMIT",
+              "MAX_PAGINATION_MONTH_DATE_RANGE",
+              "MENSAGERIA_BASE_URL",
+              "MENSAGERIA_MTLS_ENABLED",
+              "MENSAGERIA_TLS_CA_FILE",
+              "MENSAGERIA_TLS_CLIENT_CERT_FILE",
+              "MENSAGERIA_TLS_CLIENT_KEY_FILE",
+              "MIDAZ_CRM_MODE",
+              "MULTI_TENANT_ALLOW_INSECURE_HTTP",
+              "MULTI_TENANT_CACHE_TTL_SEC",
+              "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD",
+              "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC",
+              "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC",
+              "MULTI_TENANT_ENABLED",
+              "MULTI_TENANT_IDLE_TIMEOUT_SEC",
+              "MULTI_TENANT_MAX_TENANT_POOLS",
+              "MULTI_TENANT_REDIS_HOST",
+              "MULTI_TENANT_REDIS_PORT",
+              "MULTI_TENANT_REDIS_TLS",
+              "MULTI_TENANT_TIMEOUT",
+              "MULTI_TENANT_URL",
+              "ORCHESTRATOR_LOCK_TTL",
+              "ORGANIZATION_IDS",
+              "OTEL_EXPORTER_OTLP_ENDPOINT",
+              "OTEL_LIBRARY_NAME",
+              "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT",
+              "OTEL_RESOURCE_SERVICE_NAME",
+              "PLUGIN_AUTH_ENABLED",
+              "PLUGIN_AUTH_HOST",
+              "POSTGRES_CONNECT_TIMEOUT_SEC",
+              "POSTGRES_CONN_MAX_IDLE_TIME_MINS",
+              "POSTGRES_CONN_MAX_LIFETIME_MINS",
+              "POSTGRES_HOST",
+              "POSTGRES_MAX_IDLE_CONNS",
+              "POSTGRES_MAX_OPEN_CONNS",
+              "POSTGRES_NAME",
+              "POSTGRES_PORT",
+              "POSTGRES_REPLICA_HOST",
+              "POSTGRES_REPLICA_NAME",
+              "POSTGRES_REPLICA_PORT",
+              "POSTGRES_REPLICA_SSLMODE",
+              "POSTGRES_REPLICA_USER",
+              "POSTGRES_SSLMODE",
+              "POSTGRES_USER",
+              "RATE_LIMIT_ENABLED",
+              "RATE_LIMIT_MAX",
+              "RATE_LIMIT_REDIS_TIMEOUT_MS",
+              "RATE_LIMIT_WINDOW_SEC",
+              "REDIS_CA_CERT",
+              "REDIS_DB",
+              "REDIS_DIAL_TIMEOUT",
+              "REDIS_HOST",
+              "REDIS_MASTER_NAME",
+              "REDIS_MAX_RETRIES",
+              "REDIS_MAX_RETRY_BACKOFF",
+              "REDIS_MIN_IDLE_CONNS",
+              "REDIS_MIN_RETRY_BACKOFF",
+              "REDIS_POOL_SIZE",
+              "REDIS_POOL_TIMEOUT",
+              "REDIS_PROTOCOL",
+              "REDIS_READ_TIMEOUT",
+              "REDIS_TLS",
+              "REDIS_WRITE_TIMEOUT",
+              "RELAXED_RATE_LIMIT_MAX",
+              "RELAXED_RATE_LIMIT_WINDOW_SEC",
+              "RESPONSE_DEADLINE_MARGIN",
+              "SEAWEEDFS_BUCKET",
+              "SEAWEEDFS_CREDENTIALS_SOURCE",
+              "SEAWEEDFS_REGION",
+              "SEAWEEDFS_S3_ENDPOINT",
+              "SERVER_ADDRESS",
+              "SERVER_TLS_CERT_FILE",
+              "SERVER_TLS_KEY_FILE",
+              "SISBAJUD_DEK_CACHE_TTL",
+              "SISBAJUD_HMAC_COEXISTENCE_WINDOW",
+              "STREAMING_ENABLED",
+              "STREAMING_HUB_TENANT_ID",
+              "SWAGGER_BASE_PATH",
+              "SWAGGER_DESCRIPTION",
+              "SWAGGER_ENABLED",
+              "SWAGGER_HOST",
+              "SWAGGER_SCHEMES",
+              "SWAGGER_TITLE",
+              "SWAGGER_VERSION",
+              "SYSTEMPLANE_ENABLED",
+              "TLS_TERMINATED_UPSTREAM",
+              "TRUSTED_PROXIES",
+              "VAULT_ADDR",
+              "VAULT_APPROLE_ROLE_ID",
+              "VAULT_AUTH_METHOD",
+              "VAULT_TIMEOUT_SEC",
+              "VAULT_TOKEN_RENEW_ENABLED",
+              "VAULT_TOKEN_RENEW_MIN_INTERVAL_SEC",
+              "VAULT_TRANSIT_MOUNT_PATH"
+            ]
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": "Credentials, emitted into the chart Secret only when non-empty."
+        },
+        "useExistingSecret": {
+          "type": "boolean"
+        },
+        "existingSecretName": {
+          "type": "string"
+        },
+        "extraEnvVars": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "migrations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "aws": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "lerian-common-helm": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

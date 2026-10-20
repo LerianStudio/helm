@@ -40,6 +40,7 @@ jobs:
             br-jd-courier
             plugin-br-pix-indirect-btg
             plugin-br-pix-lerian
+            plugin-br-sisbajud
             plugin-br-bank-transfer
             lerian-notification
             plugin-br-bank-transfer-jd

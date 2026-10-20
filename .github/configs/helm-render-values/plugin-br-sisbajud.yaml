@@ -1,0 +1,40 @@
+# CI-only render fixture for charts/plugin-br-sisbajud (render gate + install
+# test). NOT a production example — values-template.yaml is. It renders the
+# development bundle (bundled PostgreSQL + Valkey, so every secretKeyRef points
+# at a Secret of the same release and the release-name collapse is exercised)
+# with the executor fully configured. It runs the Mensageria client in one-way
+# TLS with the system trust store (mtlsEnabled false, no CA Secret), so no
+# out-of-band Secret is referenced.
+# No value here is a credential: placeholders a render needs and no cluster uses.
+global:
+  auth:
+    enabled: false
+    host: "http://plugin-access-manager-auth.example.invalid:4000"
+  kms:
+    vendor: "hashicorp-vault"
+    vaultAddr: "http://vault.example.invalid:8200"
+    vaultAuthMethod: "token"
+
+sisbajud:
+  app:
+    environmentName: "development"
+    deploymentMode: "local"
+  mensageria:
+    baseUrl: "https://mensageria.example.invalid"
+    mtlsEnabled: false
+  executor:
+    streamingHubTenantId: "default"
+    m2mSubject: "render-fixture-subject"
+    heartbeatEvery: "1m"
+    responseDeadlineMargin: "2h"
+  secrets:
+    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
+    MENSAGERIA_CLIENT_ID: "render-fixture-only"
+    MENSAGERIA_CLIENT_SECRET: "render-fixture-only"
+    EXECUTOR_HUB_WEBHOOK_SECRET: "render-fixture-only"
+    VAULT_TOKEN: "render-fixture-only"
+
+postgresql:
+  enabled: true
+valkey:
+  enabled: true

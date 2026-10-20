@@ -248,13 +248,16 @@ ledger:
   replicaCount: 2
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
+  # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
+  # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
+  terminationGracePeriodSeconds: 60
   image:
     # -- Repository for the ledger service container image
     repository: lerianstudio/midaz-ledger
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.2.1"
+    tag: "4.2.2"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -416,7 +419,9 @@ ledger:
   # @default -- templates/ledger/configmap.yaml
   # -- Dedicated datastore masks for this component (override global.datastores).
   # Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding /
-  # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/ssl/replicaHost).
+  # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/replicaHost).
+  # The Postgres `ssl` field is read from the generic `postgres` key (`postgres.ssl`),
+  # not from `postgresOnboarding`/`postgresTransaction`: those keys' `ssl` is ignored.
   datastores: {}
   # -- Escape hatch: native environment variables override template defaults.
   configmap:
@@ -432,6 +437,14 @@ ledger:
     IDP_DECLARATION_ENABLED: "false"
     IDP_HOST: ""
     IDP_M2M_CLIENT_ID: ""
+    # -- Ledger to tracer reservation seam. Empty keeps the integration off (the
+    # ledger then ignores TRACER_TRANSPORT). With the bundled tracer, point it at
+    # the tracer gRPC Service port, e.g. TRACER_BASE_URL: "midaz-tracer:4021".
+    TRACER_BASE_URL: ""
+    # -- Ledger to tracer transport. The 4.2+ ledger is gRPC-only: leave empty
+    # (resolves to gRPC) or set "grpc". "rest" is refused at boot, so the render
+    # fails when it is set together with TRACER_BASE_URL.
+    TRACER_TRANSPORT: ""
     # -- Tracer reservation seam token identity (PLUGIN_AUTH_ENABLED=true,
     # single-tenant): the ledger's Access Manager application client id. Pairs with
     # ledger.secrets.TRACER_M2M_CLIENT_SECRET; rendered only when set.
@@ -734,6 +747,9 @@ tracer:
   replicaCount: 1
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
+  # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
+  # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
+  terminationGracePeriodSeconds: 45
   image:
     # -- Repository for the Tracer service container image. In midaz v4 tracer
     # ships from the monorepo (`components/tracer`) and the release pipeline
@@ -743,7 +759,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.2.1"
+    tag: "4.2.2"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -846,9 +862,10 @@ tracer:
     type: ClusterIP
     # -- Service port (HTTP API)
     port: 4020
-    # -- gRPC reservation seam port. Only exposed when
-    # `tracer.configmap.TRACER_GRPC_PORT` is set; the seam is off in the app
-    # until then, so the port would otherwise route to a closed socket.
+    # -- gRPC reservation seam port, always published on the container and Service.
+    # The tracer always listens on gRPC (":4021" when TRACER_GRPC_PORT is unset).
+    # When `tracer.configmap.TRACER_GRPC_PORT` is set, its numeric tail takes
+    # precedence over this value.
     grpcPort: 4021
   ingress:
     # -- Enable or disable ingress

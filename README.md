@@ -316,3 +316,14 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: |
 | `2.1.0` |
 -----------------
+
+### System Facts
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/system-facts).
+
+#### Application Version Mapping
+
+| Chart Version | System-Facts Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.0 |
+-----------------

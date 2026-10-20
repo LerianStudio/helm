@@ -240,12 +240,33 @@ data:
   # TRACER_BASE_URL empty disables the integration (nil reserver).
   # =============================================================================
   TRACER_BASE_URL: {{ $cm.TRACER_BASE_URL | default "" | quote }}
-  {{- /* The seam accepts "grpc" or "rest". The bundled tracer only serves gRPC
-         when TRACER_GRPC_PORT is set, so selecting grpc against an in-chart
-         tracer that has it unset would dial a port nothing listens on. */ -}}
-  {{- $tracerTransport := $cm.TRACER_TRANSPORT | default "rest" }}
-  {{- if and $cm.TRACER_BASE_URL (eq (lower $tracerTransport) "grpc") .Values.tracer.enabled (not .Values.tracer.configmap.TRACER_GRPC_PORT) }}
-  {{- fail "ledger.configmap.TRACER_TRANSPORT=grpc requires tracer.configmap.TRACER_GRPC_PORT to be set: the bundled tracer keeps its gRPC seam off and its Service exposes only HTTP. Set the port, or use TRACER_TRANSPORT=rest" }}
+  {{- /* From ledger 4.2.0 the ledger reaches the tracer over gRPC only: empty
+         resolves to gRPC, "grpc" is accepted, and "rest" is refused at boot
+         (CrashLoopBackOff). The chart therefore defaults to "" and refuses to
+         render "rest" while the integration is on. With TRACER_BASE_URL empty
+         the ledger disables the integration and never reads TRACER_TRANSPORT,
+         so the check is gated on it. The bundled tracer always listens on gRPC
+         (TRACER_GRPC_PORT, ":4021" when unset) and its Service always publishes
+         that port (see README, Ledger to tracer transport). */ -}}
+  {{- $tracerBaseURL := trim (toString ($cm.TRACER_BASE_URL | default "")) }}
+  {{- $tracerTransport := $cm.TRACER_TRANSPORT | default "" | toString }}
+  {{- if and $tracerBaseURL (eq (lower (trim $tracerTransport)) "rest") }}
+  {{- fail "ledger.configmap.TRACER_TRANSPORT=rest is not supported: the 4.2+ ledger reaches the tracer over gRPC only and refuses to boot with rest. Leave ledger.configmap.TRACER_TRANSPORT empty or set it to grpc" }}
+  {{- end }}
+  {{- /* Render-time mirror of the ledger seam identity gate (buildTracerSeamCredentials):
+         with the integration on, PLUGIN_AUTH_ENABLED=true and single-tenant, the
+         ledger exits at boot unless both TRACER_M2M_CLIENT_ID and
+         TRACER_M2M_CLIENT_SECRET are set. The secret is only checked when the
+         chart renders the ledger Secret: with ledger.useExistingSecret the chart
+         cannot see it, so it is left to the ledger's own boot check. Multi-tenant
+         reads the identity per tenant (M2M_SECRETS_BACKEND) and is not checked. */ -}}
+  {{- if and $tracerBaseURL (not $mtEnabled) (include "midaz.isTrue" (($authEnv | fromYaml).PLUGIN_AUTH_ENABLED | default "false")) }}
+  {{- if not (trim (toString ($cm.TRACER_M2M_CLIENT_ID | default ""))) }}
+  {{- fail "ledger.configmap.TRACER_M2M_CLIENT_ID is required when TRACER_BASE_URL is set and PLUGIN_AUTH_ENABLED=true (single-tenant): the ledger refuses to boot without the reservation seam token identity" }}
+  {{- end }}
+  {{- if and (not .Values.ledger.useExistingSecret) (not (trim (toString (.Values.ledger.secrets.TRACER_M2M_CLIENT_SECRET | default "")))) }}
+  {{- fail "ledger.secrets.TRACER_M2M_CLIENT_SECRET is required when TRACER_BASE_URL is set and PLUGIN_AUTH_ENABLED=true (single-tenant): the ledger refuses to boot without the reservation seam token identity (or provide it through ledger.useExistingSecret)" }}
+  {{- end }}
   {{- end }}
   TRACER_TRANSPORT: {{ $tracerTransport | quote }}
   TRACER_TLS_MODE: {{ $cm.TRACER_TLS_MODE | default "" | quote }}

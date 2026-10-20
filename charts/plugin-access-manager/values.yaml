@@ -261,12 +261,20 @@ identity:
     # Environment name is resolved via the global mask (global.env.name) — same
     # rule as the datastore masks: do NOT pin ENV_NAME here, it WINS over the
     # mask and defeats it. The default ("development") lives in
-    # templates/identity/configmap.yaml.
+    # templates/identity/configmap.yaml. OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
+    # derives from the same resolved value unless explicitly overridden here.
     # AUTH_ENABLED/AUTH_PORT are NOT pinned here — the chart already defaults
     # them ("true"/"4000") in templates/identity/configmap.yaml; no mask reads
     # them, so duplicating the value here was pure noise.
     # AUTH_ADDRESS defaults to http://<auth component>:4000 (templates/identity/configmap.yaml).
     # Set it only to point identity at an auth outside this release.
+    # Google Workspace directory (identity 3.12.0+). Each key is omitted from the
+    # ConfigMap unless set. With GOOGLE_DIRECTORY_ENABLED "true", identity needs
+    # all four GOOGLE_DIRECTORY_* values (these two plus the two in secrets below)
+    # and the chart refuses to render without them.
+    # GOOGLE_DIRECTORY_ENABLED: ""       # "true" turns on the Google Workspace directory connection
+    # GOOGLE_DIRECTORY_CLIENT_ID: ""     # client id of Lerian's Google OAuth client
+    # GOOGLE_DIRECTORY_REDIRECT_URL: ""  # OAuth redirect URL registered on that client; https
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -278,6 +286,16 @@ identity:
     ORGANIZATION_IDS: ""
     # -- Consul ACL token for service discovery (empty = no ACL)
     SD_TOKEN: ""
+    # -- Client secret of Lerian's Google OAuth client (Google Workspace
+    # directory). Empty = key not rendered.
+    GOOGLE_DIRECTORY_CLIENT_SECRET: ""
+    # -- Key that encrypts each organization's stored Google refresh token; at
+    # least 32 bytes. Empty = key not rendered. Changing it makes the stored
+    # tokens unreadable and every connected organization must reconnect.
+    GOOGLE_DIRECTORY_ENCRYPTION_KEY: ""
+  # -- With useExistingSecret=true the chart renders no identity Secret: to turn
+  # on the Google Workspace directory, add GOOGLE_DIRECTORY_CLIENT_SECRET and
+  # GOOGLE_DIRECTORY_ENCRYPTION_KEY to your own Secret (existingSecretName).
   useExistingSecret: false
   existingSecretName: ""
 auth:
@@ -426,6 +444,8 @@ auth:
     # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
     # do NOT pin it here, it WINS over the mask and defeats it. The default
     # ("development") lives in templates/auth/configmap.yaml.
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT derives from the same resolved value
+    # unless explicitly overridden here.
     # -- Multi-factor authentication gate. Unset (the default) omits MFA_ENABLED
     # from the ConfigMap, leaving the application's own default in force.
     # MFA_ENABLED: "false"

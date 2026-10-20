@@ -2,6 +2,8 @@
 
 This guide covers the upgrade from `alloy-lerian` chart version **0.0.0** to **1.0.0**. This is the initial release of the chart, introducing a complete telemetry collection pipeline for client clusters based on Grafana Alloy.
 
+> **Examples were re-checked against the current chart (2.x), not only against 1.0.0.** Where 1.0.0 and the current chart differ, the current behaviour is shown. For a client install, `docs/INSTALACAO-CLIENTE.md` is the complete, up-to-date guide.
+
 ---
 
 ## Topics
@@ -67,22 +69,29 @@ The chart requires a pre-existing secret for destination authentication in `clie
 | Setting | v0.0.0 | v1.0.0 |
 |---------|--------|--------|
 | Secret creation | N/A | **Must be created manually before install** |
-| Secret name | N/A | `alloy-lerian` (configurable via `destination.credential.secretName`) |
-| Secret key | N/A | `telemetry-token` (configurable via `destination.credential.secretKey`) |
+| Secret name | N/A | `alloy-lerian` (set in the `secretKeyRef` of `node.alloy.extraEnv` and `singleton.alloy.extraEnv`; `destination.credential.secretName` is **not implemented** and has no effect) |
+| Secret key | N/A | `telemetry-token` (same place; `destination.credential.secretKey` is **not implemented** and has no effect) |
 
 **Migration Steps:**
 
 1. Create the secret before installing the chart:
 
 ```bash
-kubectl create secret generic alloy-lerian \
-  --from-literal=telemetry-token=<your-token-here> \
-  -n alloy-lerian
+read -rs TELEMETRY_TOKEN   # paste the telemetry token, no echo
+read -rs FLEET_TOKEN       # paste the Fleet token, no echo
+
+kubectl create secret generic alloy-lerian -n alloy-lerian \
+  --from-file=telemetry-token=<(printf '%s' "$TELEMETRY_TOKEN") \
+  --from-file=fleet-token=<(printf '%s' "$FLEET_TOKEN")
+
+unset TELEMETRY_TOKEN FLEET_TOKEN
 ```
+
+Do not pass a token with `--from-literal`: the value is visible in `ps -eo args` while the command runs and is saved in shell history. Keep the `fleet-token` line even if you set `fleetManagement.enabled` to `false`: the default `ALLOY_FLEET_TOKEN` entry in both roles' `extraEnv` references it with `optional: false`, so a Secret without that key leaves the pods in `CreateContainerConfigError`. With Fleet off the value is never used, so a placeholder is enough. To drop the key instead, change that `extraEnv` entry in both `node` and `singleton`.
 
 2. The chart will reference this secret but never create it. If the secret does not exist and `profile: client` is set, the deployment will fail.
 
-> **Note:** In `profile: own`, authentication is disabled by default as traffic goes through an internal load balancer within the VPC. The secret is not required in this case.
+> **Note:** In `profile: own`, authentication is disabled by default as traffic goes through an internal load balancer within the VPC. The telemetry secret is not required in this case. `profile: own` does **not** turn Fleet Management off: set `fleetManagement.enabled: false` explicitly if you run without Fleet.
 
 ---
 
@@ -331,17 +340,13 @@ The chart sends telemetry to a configurable endpoint with optional authenticatio
 ```yaml
 destination:
   endpoint: "https://telemetry.lerian.io"
-  
-  credential:
-    secretName: "alloy-lerian"
-    secretKey: "telemetry-token"
 ```
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `endpoint` | `https://telemetry.lerian.io` | Destination URL for telemetry |
-| `credential.secretName` | `alloy-lerian` | Name of the secret containing the auth token |
-| `credential.secretKey` | `telemetry-token` | Key within the secret |
+| `credential.secretName` | `alloy-lerian` | **Not implemented, no effect.** The Secret name is the `secretKeyRef` of `ALLOY_DESTINATION_CREDENTIAL` in `node.alloy.extraEnv` / `singleton.alloy.extraEnv` |
+| `credential.secretKey` | `telemetry-token` | **Not implemented, no effect.** Same place as above |
 
 **Authentication behavior:**
 
@@ -391,10 +396,17 @@ Deploy the chart in a client-managed cluster where you only operate specific nam
 1. Create the authentication secret:
 
 ```bash
-kubectl create secret generic alloy-lerian \
-  --from-literal=telemetry-token=<your-token-here> \
-  -n alloy-lerian
+read -rs TELEMETRY_TOKEN   # paste the telemetry token, no echo
+read -rs FLEET_TOKEN       # paste the Fleet token, no echo
+
+kubectl create secret generic alloy-lerian -n alloy-lerian \
+  --from-file=telemetry-token=<(printf '%s' "$TELEMETRY_TOKEN") \
+  --from-file=fleet-token=<(printf '%s' "$FLEET_TOKEN")
+
+unset TELEMETRY_TOKEN FLEET_TOKEN
 ```
+
+Do not pass a token with `--from-literal`: the value is visible in `ps -eo args` while the command runs and is saved in shell history. Keep the `fleet-token` line even if you set `fleetManagement.enabled` to `false`: the default `ALLOY_FLEET_TOKEN` entry in both roles' `extraEnv` references it with `optional: false`, so a Secret without that key leaves the pods in `CreateContainerConfigError`. With Fleet off the value is never used, so a placeholder is enough. To drop the key instead, change that `extraEnv` entry in both `node` and `singleton`.
 
 **values.yaml:**
 
@@ -422,10 +434,53 @@ node-exporter:
 
 destination:
   endpoint: "https://telemetry.lerian.io"
-  credential:
-    secretName: "alloy-lerian"
-    secretKey: "telemetry-token"
+
+# Required in `profile: client`: marks the Secret as mandatory. Without these
+# blocks the render fails (the chart default is `optional: true`). `extraEnv` is
+# a list, so declaring it replaces the chart default entirely: the Fleet entries
+# have to be repeated.
+node:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
+
+singleton:
+  alloy:
+    extraEnv:
+      - name: ALLOY_DESTINATION_CREDENTIAL
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: telemetry-token
+            optional: false
+      - name: ALLOY_FLEET_POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ALLOY_FLEET_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: alloy-lerian
+            key: fleet-token
+            optional: false
 ```
+
+> `destination.credential.secretName` / `secretKey` are not implemented, so they are not set here. To use a different Secret name or key, change the `secretKeyRef` entries above.
 
 ### Scenario 2: Own Environment
 
@@ -494,9 +549,9 @@ origin:
 destination:
   endpoint: "https://telemetry.lerian.io"
   
-  credential:
-    secretName: "alloy-lerian"
-    secretKey: "telemetry-token"
+  # credential.secretName / credential.secretKey: NOT IMPLEMENTED (no effect).
+  # The Secret is referenced by `ALLOY_DESTINATION_CREDENTIAL` in
+  # node.alloy.extraEnv and singleton.alloy.extraEnv.
   
   queue:
     size: 1000
@@ -596,7 +651,7 @@ These are set automatically by the chart and should not be overridden manually.
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade alloy-lerian oci://registry-1.docker.io/lerianstudio/alloy-lerian-helm --version 1.0.0 -n alloy-lerian
+helm diff upgrade alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm --version 1.0.0 -n alloy-lerian
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -606,5 +661,5 @@ helm diff upgrade alloy-lerian oci://registry-1.docker.io/lerianstudio/alloy-ler
 ## Command to upgrade
 
 ```bash
-helm upgrade alloy-lerian oci://registry-1.docker.io/lerianstudio/alloy-lerian-helm --version 1.0.0 -n alloy-lerian
+helm upgrade alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm --version 1.0.0 -n alloy-lerian
 ```

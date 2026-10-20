@@ -1,5 +1,260 @@
 # Reporter Changelog
 
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.3)
+
+Fixes:
+- Accept the `IDP_*` declaration keys in the configmap schema for reporter. (@qnen)
+
+Improvements:
+- Add a Helm upgrade guide for reporter `v4.4.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.2...reporter-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.3)
+
+Fixes:
+- Accept the `IDP_*` declaration keys in the configmap schema for improved compatibility. (@qnen)
+
+Improvements:
+- Add a Helm upgrade guide for `reporter` `v4.4.2` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.2...reporter-v4.4.3)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+
+- Add Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+
+- Align worker container port with health port and fix README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Updated documentation to require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Updated documentation to require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Add a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Align the worker container port with the health port and correct README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Fixes:
+- Align the worker container port with the health port and correct the README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+Features:
+- Add Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected the README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Required overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Add Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Align worker container port with health port and correct README inconsistencies. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Add Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Align worker container port with health port and fix README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected the README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Updated documentation to require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and excluded tests from the package to ensure a cleaner distribution. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` directories and ensured test files are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
 ## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
 
 Fixes:

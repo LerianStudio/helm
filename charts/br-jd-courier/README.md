@@ -12,6 +12,22 @@ Lerian rail engines.
 - Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production` (required in every environment), `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, and `PIX_VENDOR_SUBJECTS` (single-tenant) or `SYSTEMPLANE_ENABLED=true` (multi-tenant); `DEPLOYMENT_MODE=saas` on Lerian Cloud. The spb-sender needs one SOAP TLS shape under `roles.spbSender` (`ingress`, `soapTls.existingSecret` or `soapTls.terminatedUpstream`). On EKS, an IAM role for Secrets Manager through `serviceAccount`. Multi-tenant installs must set `migrations.enabled=false`.
 - Source/license: [LerianStudio/br-jd-courier](https://github.com/LerianStudio/br-jd-courier). The Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
+## Install
+
+The chart is published as an OCI artifact on GHCR. Anonymous `helm show chart`
+resolves it:
+
+```bash
+helm show chart oci://ghcr.io/lerianstudio/br-jd-courier-helm --version <chart version>
+helm upgrade --install <release> oci://ghcr.io/lerianstudio/br-jd-courier-helm \
+  --version <chart version> --namespace <namespace> --values values.yaml
+```
+
+Pin `--version`. From a checkout, use `charts/br-jd-courier` instead of the OCI
+reference. The `docs/UPGRADE-*.md` guides show a Docker Hub reference
+(`registry-1.docker.io/lerianstudio/...`); an anonymous pull of it is refused
+with `401`, so use the GHCR reference above unless you hold Docker Hub access.
+
 ## Release bump
 
 On a stable tag the Courier release dispatches `app-sync.yml` here, which writes the
@@ -45,7 +61,12 @@ multi-tenant JD bundle path (`tenants/{env}/...`). Unset, it would boot as
 The production checks run in the service at boot, not in the render: a
 production pod refuses to start on `POSTGRES_SSLMODE=disable` or with no TLS on
 the spb-sender's SOAP listener. The chart checks neither, nor
-`ALLOW_INSECURE_TLS`.
+`ALLOW_INSECURE_TLS`. In particular, `helm lint` and `helm template` succeed on
+`config.ENVIRONMENT_NAME=production` with no SOAP TLS shape (no `ingress`, no
+`soapTls.existingSecret`, no `soapTls.terminatedUpstream`); the failure shows up
+only when the spb-sender pod starts and crash-loops. Treat a clean render as
+no evidence that the SOAP TLS shape is present: check the values against the
+[SOAP TLS](#soap-tls-spb-sender) table before you install.
 
 `config.DEPLOYMENT_MODE` defaults to `byoc` (`local`, `byoc`, `saas`). Only
 `saas` makes the service refuse a datastore connection without TLS; set it on
@@ -99,7 +120,14 @@ JD's JDPI address, and the admin carries each call to JD on the Courier's own
 JDPI token. Off by default. `roles.admin.pixTransit.enabled=true` sets `PIX_TRANSIT_SERVER_ADDRESS` from `ports.pixTransit` (8082) and adds that
 port, named `pix-transit`, to the admin container and the admin Service. It
 needs Courier image 1.2.0 or later (`jd-courier.image.tag`): an older admin
-binds nothing there, and outbound Pix fails without an error.
+binds nothing there, and outbound Pix fails without an error. The Courier's
+1.1.0 source has no transit listener; it first appears in the 1.2.0 release
+line. The chart default tag (and `appVersion`) is still `1.1.0`, and
+the chart does not check the tag against the transit: `helm template` renders
+the transit with a `1.1.0` image without complaint. Set `jd-courier.image.tag`
+to a 1.2.0 or later image yourself whenever you enable it. The examples in
+`docs/UPGRADE-2.1.md` show `tag: "1.1.0"` next to
+`roles.admin.pixTransit.enabled: true`; replace that tag with 1.2.0 or later.
 
 In-cluster engines call `<release>-br-jd-courier-admin:8082`. An engine outside
 the cluster (the institution's legacy core) needs an exposure this chart does not
@@ -174,6 +202,13 @@ release fullname — which must exist before install and carry:
 | `DATABASE_URL` | the migration Job (`postgres://…?sslmode=…`) |
 | `JD_PASSWORD` | both SPB roles (`spb-consumer`, `spb-sender`), single-tenant only |
 | `JD_SPI_CLIENT_SECRET` | the admin with the [Pix transit](#pix-transit-admin), single-tenant only |
+| `IDP_M2M_CLIENT_SECRET` | every role, single-tenant, when the Courier declares its own Access Manager grants (`IDP_DECLARATION_ENABLED=true`; see the Courier README, "Access Manager permissions") |
+
+⚠️ **`IDP_M2M_CLIENT_SECRET` is not on the chart's refused-key list.** Set under
+`config`, it renders in clear text into the shared ConfigMap and the render still
+passes. Put it only in the Secret (`secrets.existingSecret`). Its non-secret
+companions (`IDP_DECLARATION_ENABLED`, `IDP_HOST`, `IDP_M2M_CLIENT_ID`) are not
+chart values and go under `config`.
 
 ```bash
 RELEASE_NAME=courier  # the name you pass to helm install
@@ -189,7 +224,10 @@ that lacks it stops the container at creation with `CreateContainerConfigError`,
 which names the missing key, rather than letting the pod boot and refuse its own
 licence.
 
-Putting any of these, or `COURIER_ROLES`, under `config` refuses the render.
+Putting any of these (except `IDP_M2M_CLIENT_SECRET`, above), or `COURIER_ROLES`,
+under `config` refuses the render, as do `REDIS_PASSWORD`,
+`MULTI_TENANT_REDIS_PASSWORD`, `MULTI_TENANT_SERVICE_API_KEY` and
+`POSTGRES_REPLICA_PASSWORD` (put those in the Secret too).
 Each engine's Pix credential is read from Secrets Manager at runtime. JD's
 credentials are per-tenant Secrets Manager bundles in multi-tenant; in
 single-tenant they come from this Secret (`JD_PASSWORD`, `JD_SPI_CLIENT_SECRET`).

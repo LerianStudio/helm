@@ -1,5 +1,317 @@
 # Midaz Changelog
 
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Set an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Increase the ledger termination grace period to `60s`. (@fredcamaral)
+- Assign a `45s` termination grace period to ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s`. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.2)
+
+Features:
+- Documented the gRPC-only ledger to tracer transport. (@Ygohr)
+
+Fixes:
+- Ensured that the tracer gRPC port is always published. (@Ygohr)
+- Stopped defaulting the ledger `TRACER_TRANSPORT` to REST. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.1...midaz-v9.7.2)
+
+---
+
+## [9.7.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.2)
+
+Features:
+
+- Documented the gRPC-only ledger to tracer transport. (@Ygohr)
+
+Fixes:
+
+- Ensured the tracer gRPC port is always published. (@Ygohr)
+- Stopped defaulting the ledger `TRACER_TRANSPORT` to REST. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.1...midaz-v9.7.2)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default based on ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Documented the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensured the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Defaulted the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevented rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allowed a fresh install to reach Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualified the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Covered an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Included custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Addressed the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- Stated the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
 ## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
 
 Features:

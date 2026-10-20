@@ -238,7 +238,7 @@ The Tracer exposes two ports:
 
 | Port | Default | Description |
 |------|---------|-------------|
-| `service.port` | `4021` | HTTP API port |
+| `service.port` | `4020` | HTTP API port |
 | `service.grpcPort` | `4021` | gRPC port |
 
 The gRPC port is automatically synchronized with `TRACER_GRPC_PORT` when set:

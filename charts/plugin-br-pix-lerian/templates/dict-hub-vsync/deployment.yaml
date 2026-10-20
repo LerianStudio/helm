@@ -106,7 +106,10 @@ spec:
           the literal "true".
           */}}
           {{- $telemetryOn := eq (include "plugin-br-pix-lerian.isTrue" (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true"))) "true" }}
-          {{- $hasOtelEndpoint := ne (toString (default "" $cm.OTEL_EXPORTER_OTLP_ENDPOINT)) "" }}
+          {{- /* Same resolution as the ConfigMap's OTEL_EXPORTER_OTLP_ENDPOINT: native
+               configmap key > global.observability.otlpEndpoint > "". Reading only the
+               native key let the injected node-local default clobber a global endpoint. */}}
+          {{- $hasOtelEndpoint := ne (toString (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" ""))) "" }}
           {{- $extraEnvVars := default (dict) $values.extraEnvVars }}
           {{- $hasExtras := gt (len $extraEnvVars) 0 }}
           {{- /*

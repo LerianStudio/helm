@@ -421,6 +421,13 @@ data:
   BALANCE_SYNC_POLL_INTERVAL_MS: {{ $cm.BALANCE_SYNC_POLL_INTERVAL_MS | default "50" | quote }}
   # How often the cache TTL of every synced balance is refreshed (ms).
   BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS: {{ $cm.BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS | default "300000" | quote }}
+  # Attempts before a balance fork (Postgres version regression or value
+  # mismatch at the same version) is moved to the quarantine table.
+  BALANCE_SYNC_FORK_MAX_ATTEMPTS: {{ $cm.BALANCE_SYNC_FORK_MAX_ATTEMPTS | default "6" | quote }}
+  # Base backoff before retrying a forked balance (ms).
+  BALANCE_SYNC_FORK_BACKOFF_BASE_MS: {{ $cm.BALANCE_SYNC_FORK_BACKOFF_BASE_MS | default "1000" | quote }}
+  # Backoff ceiling for a forked balance (ms).
+  BALANCE_SYNC_FORK_BACKOFF_MAX_MS: {{ $cm.BALANCE_SYNC_FORK_BACKOFF_MAX_MS | default "600000" | quote }}
 
   # =============================================================================
   # RATE LIMITING

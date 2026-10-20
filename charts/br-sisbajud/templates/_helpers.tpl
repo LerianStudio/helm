@@ -629,7 +629,11 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 {{- if $ex.enabled }}
 {{- /* The containerPort and Service always follow execution.port: an address on another
        port would leave the app listening where nothing routes. */}}
-{{- $exAddr := trim (toString ((index $cm "SISBAJUD_EXECUTION_ADDRESS") | default (($b.execution | default dict).address) | default "")) }}
+{{- /* Effective value: extraEnvVars (container env, wins over the ConfigMap) > configmap > execution.address.
+       A valueFrom entry cannot be resolved at render time and is not checked. */}}
+{{- $exX := include "br-sisbajud.extraEnv" $ | fromYaml }}
+{{- $exAddr := trim (toString ((index $exX "SISBAJUD_EXECUTION_ADDRESS") | default (index $cm "SISBAJUD_EXECUTION_ADDRESS") | default (($b.execution | default dict).address) | default "")) }}
+{{- if eq $exAddr "__valueFrom__" }}{{- $exAddr = "" }}{{- end }}
 {{- if and $exAddr (ne (regexReplaceAll "^.*:" $exAddr "") (toString $ex.port)) }}
 {{- fail (printf "\n\nERROR: br-sisbajud: SISBAJUD_EXECUTION_ADDRESS %q listens on another port than brSisbajud.execution.port (%v), which the containerPort and Service follow.\n  set: brSisbajud.execution.port only (leave the address unset)\n" $exAddr $ex.port) }}
 {{- end }}

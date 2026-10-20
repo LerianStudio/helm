@@ -26,6 +26,7 @@ jobs:
       filter_paths: |-
         charts/agent
         charts/br-jd-courier
+        charts/br-sisbajud
         charts/br-sta
         charts/fetcher
         charts/lerian-notification

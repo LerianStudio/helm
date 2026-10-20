@@ -3,6 +3,14 @@
 > How to install, validate and troubleshoot br-sisbajud from this chart (dev bundle,
 > pairing with br-sta, standalone, production). For operators installing the chart.
 
+> **Outdated: this runbook describes the br-sisbajud monolith (app 1.2.x).** The chart
+> now deploys the Sisbajud Mensageria (br-sfn `services/sisbajud`, app 1.0.0-beta.x):
+> main API on 4031, execution API on a TLS listener on 4032, mandatory streaming,
+> mandatory JWT verification (`brSisbajud.auth`), a license only in production-like
+> environments, and the br-sta consumer on its own `sta.stream` cluster. The README
+> ("From the monolith ... to the Mensageria", "Execution API", "Fail-fast gates") is
+> authoritative until this runbook is rewritten.
+
 ---
 
 ## 0. Metadata
@@ -25,7 +33,7 @@
 | Profile | Values | What runs | Use case |
 |---|---|---|---|
 | **Dev bundle (quickstart)** | `values-dev.yaml` | the app, plus bundled PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, dev mode) and Redpanda; `ENVIRONMENT_NAME=development`; inbound auth, the br-sta consumer/transfers client and multi-tenancy off | Evaluation, local development, chart testing |
-| **br-sisbajud + br-sta together** | `values-dev.yaml` + `values-dev-with-br-sta.yaml` | the app with its own PostgreSQL, Valkey and OpenBao, reusing a br-sta dev bundle's SeaweedFS and Redpanda in the same namespace; br-sta consumer and transfers client on | Integrated dev of the STA flow (remittance intake, return files) |
+| **br-sisbajud + br-sta together** | `values-dev.yaml` + `values-dev-with-br-sta.yaml` | the app with its own PostgreSQL, Valkey and OpenBao, reusing a br-sta dev bundle's SeaweedFS and Redpanda in the same namespace; br-sta transfers client on; the br-sta consumer stays off (it requires SASL, which the br-sta dev Redpanda does not offer) | Integrated dev of the STA flow (remittance intake, return files) |
 | **Standalone (no br-sta)** | `values-dev.yaml` (or your file) with `sta.consumerEnabled` / `sta.transfersEnabled` off (the default) | the app alone; remessas enter through the HTTP intake `POST /v1/remittance-files/notifications` after the raw file is dropped into `STA_INBOUND_BUCKET` | Running SISBAJUD without the br-sta rail (see section 3, "Standalone") |
 | **Production / external infra** | your file, started from `values-template.yaml` | the app + migrations + topics Jobs; every dependency external | Real tiers. Default environment `production` (fail-closed) |
 

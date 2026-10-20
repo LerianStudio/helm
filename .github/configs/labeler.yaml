@@ -70,6 +70,10 @@ br-slc:
   - changed-files:
       - any-glob-to-any-file: charts/br-slc/**
 
+br-sisbajud:
+  - changed-files:
+      - any-glob-to-any-file: charts/br-sisbajud/**
+
 br-jd-courier:
   - changed-files:
       - any-glob-to-any-file: charts/br-jd-courier/**

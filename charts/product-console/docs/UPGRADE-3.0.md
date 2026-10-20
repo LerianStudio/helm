@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v2.x to v3.x
 
 ## Topics
@@ -228,3 +229,4 @@ helm upgrade product-console oci://registry-1.docker.io/lerianstudio/product-con
   --set livenessProbe.failureThreshold=5 \
   -n product-console
 ```
+<!-- {% endraw %} -->

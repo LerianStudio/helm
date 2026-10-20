@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v8.4.0 to v8.5.0
 
 # Topics
@@ -110,3 +111,4 @@ helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/
 ```bash
 helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 8.5.0 -n plugin-access-manager
 ```
+<!-- {% endraw %} -->

@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v1.0.0 to v1.1.0
 
 ## Topics
@@ -480,3 +481,4 @@ helm upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plu
 ```
 
 > **Important:** Replace `values-override.yaml` with the path to your values file containing the required passwords and configuration changes from the migration steps above.
+<!-- {% endraw %} -->

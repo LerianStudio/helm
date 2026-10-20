@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v4.3.1 to v4.3.2
 
 ## Topics
@@ -233,3 +234,4 @@ helm diff upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm
 ```bash
 helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 4.3.2 -n reporter
 ```
+<!-- {% endraw %} -->

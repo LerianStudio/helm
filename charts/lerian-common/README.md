@@ -167,6 +167,7 @@ on for every component of the release.
 A chart that also ranges over its `configmap`, `extraEnvVars` or `secrets` must skip the
 keys the helpers own, or the key is emitted twice:
 
+<!-- {% raw %} -->
 ```yaml
 # configmap.yaml, under data:
 {{- $idpEnv := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
@@ -184,6 +185,7 @@ keys the helpers own, or the key is emitted twice:
 {{- . | nindent 2 }}
 {{- end }}
 ```
+<!-- {% endraw %} -->
 
 `kind` selects `"env"` (ConfigMap keys), `"secret"` (Secret keys) or, when omitted, all four.
 
@@ -197,6 +199,7 @@ dependencies:
     repository: "file://../lerian-common"
 ```
 
+<!-- {% raw %} -->
 ```yaml
 # consumer template (example)
 {{- with (include "lerian-common.serviceDiscovery.env" (dict
@@ -205,6 +208,7 @@ dependencies:
 {{ . | nindent 2 }}
 {{- end }}
 ```
+<!-- {% endraw %} -->
 
 ## Chart Contract
 

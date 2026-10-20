@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v1.x to v2.x
 
 ## Topics
@@ -792,3 +793,4 @@ migrations:
 jd-courier:
   image:
     tag: "1.1.0"
+<!-- {% endraw %} -->

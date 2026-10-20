@@ -4,6 +4,25 @@
 
 Features:
 
+- Align the README, notes, and values-template with the chart and app for improved documentation consistency. (@gandalf-at-lerian)
+
+Fixes:
+
+- Update `product-console` to `@2.13.0` to address existing issues. (@guimoreirar, @lerian-studio)
+
+Improvements:
+
+- Add a Helm upgrade guide for `product-console` `v4.4.1`. (@guimoreirar)
+- Add a Helm upgrade guide for `product-console` `v4.4.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+
 - Update `product-console` to `@2.13.0`. (@guimoreirar, @lerian-studio)
 
 Improvements:

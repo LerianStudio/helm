@@ -57,6 +57,7 @@ jobs:
             br-sta
             br-ccs
             br-slc
+            br-sisbajud
             agent
             new
             charts

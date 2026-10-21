@@ -8,7 +8,7 @@
 - Production overrides: Provide bank-transfer credentials through chart secrets or `bankTransfer.useExistingSecret`; override Midaz/CRM/Fees/JD endpoints, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
-This Helm chart installs **Plugin BR Bank Transfer** for Midaz, a high-performance and open-source ledger.
+This Helm chart installs **Plugin BR Bank Transfer** for Midaz, a high-performance ledger.
 
 ---
 

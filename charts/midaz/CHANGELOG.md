@@ -3,6 +3,22 @@
 ## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
 
 Features:
+- Add balance sync fork configuration to the ledger, allowing for enhanced synchronization capabilities. (@Ygohr)
+- Reflect balance sync fork configuration in the values template to ensure accurate configuration management. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables within the configmap-only setup to maintain consistency and prevent configuration drift. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`, providing users with detailed instructions for a smooth transition to the new version. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
 - Reflect balance sync fork configuration in the values template. (@Ygohr)
 - Add balance sync fork configuration to the ledger. (@Ygohr)
 

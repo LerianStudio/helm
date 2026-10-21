@@ -1,5 +1,77 @@
 # Reporter Changelog
 
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.3)
+
+Fixes:
+- Accept the `IDP_*` declaration keys in the configmap schema for reporter. (@qnen)
+
+Improvements:
+- Add a Helm upgrade guide for reporter `v4.4.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.2...reporter-v4.4.3)
+
+---
+
 ## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.3)
 
 Fixes:

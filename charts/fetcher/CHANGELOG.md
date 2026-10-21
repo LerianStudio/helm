@@ -1,5 +1,119 @@
 # Fetcher Changelog
 
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` to support the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of promising node provisioning. (@gandalf-at-lerian)
+- Use `minDomains 2` in the spread examples and list both RabbitMQ render checks. (@gandalf-at-lerian)
+- Align README, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add a Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the IDP_* declaration helper. (@qnen)
+- Render the IDP_* permission declaration from `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of promising node provisioning. (@gandalf-at-lerian)
+- Use `minDomains` 2 in the spread examples and list both RabbitMQ render checks. (@gandalf-at-lerian)
+- Align README, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of promising node provisioning. (@gandalf-at-lerian)
+- Use `minDomains` 2 in the spread examples and list both RabbitMQ render checks. (@gandalf-at-lerian)
+- Align README, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of promising node provisioning. (@gandalf-at-lerian)
+- Use `minDomains` 2 in the spread examples and list both RabbitMQ render checks. (@gandalf-at-lerian)
+- Align readme, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of promising node provisioning. (@gandalf-at-lerian)
+- Use `minDomains` 2 in the spread examples and list both RabbitMQ render checks in the documentation. (@gandalf-at-lerian)
+- Align README, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of promising node provisioning. (@gandalf-at-lerian)
+- Use `minDomains` 2 in the spread examples and list both RabbitMQ render checks in the documentation. (@gandalf-at-lerian)
+- Align README, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.3.0)
+
+Features:
+- Expose spread `minDomains` and `nodeTaintsPolicy` in `lerian-common` `2.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.2.0...fetcher-v3.3.0)
+
+---
+
+## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.3.0)
+
+Features:
+- Expose spread `minDomains` and `nodeTaintsPolicy` in `lerian-common` `2.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.2.0...fetcher-v3.3.0)
+
+---
+
 ## [3.3.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.3.0)
 
 Features:

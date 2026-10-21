@@ -211,50 +211,18 @@ data:
   # been "true" — calling globalValue directly keeps the historical default
   # render-equivalent while still picking up global.auth when set.
   # =====================================================================
-  {{- $authEnabled := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") }}
-  PLUGIN_AUTH_ENABLED: {{ $authEnabled | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "true") | quote }}
   PLUGIN_AUTH_ADDRESS: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_ADDRESS" "default" "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000") | quote }}
 
   # =====================================================================
-  # ACCESS MANAGER PERMISSION DECLARATION (RI, app v3.2.0+)
-  # Read by lib-auth's auth/declaration.WireFromEnv straight from the
-  # environment, so the app config has no field for them. Each key renders
-  # only when set (rendering nothing keeps the app default: declaration off).
-  # With IDP_DECLARATION_ENABLED="true" the app ABORTS the boot unless IDP_HOST,
-  # the IDP_M2M_CLIENT_ID/IDP_M2M_CLIENT_SECRET pair (bankTransfer.secrets),
-  # PLUGIN_AUTH_ENABLED="true" and an auth host are all set. The auth host is
-  # PLUGIN_AUTH_HOST, else its deprecated alias PLUGIN_AUTH_ADDRESS (always
-  # rendered above, with one WARN); set PLUGIN_AUTH_HOST to the same URL to
-  # silence that WARN. IDP_HOST is a bare endpoint whose credential travels
-  # in the IDP_M2M_* Secret pair, so it stays here like PLUGIN_AUTH_ADDRESS.
-  # A key already set under bankTransfer.extraEnvVars (the only way to reach
-  # it before) is left to that entry, so the ConfigMap never carries it twice.
+  # ACCESS MANAGER PERMISSION DECLARATION (RI) — lerian-common.idp.env.
+  # IDP_DECLARATION_ENABLED (always, default "false") and IDP_HOST (only when
+  # set), resolved as bankTransfer.configmap > bankTransfer.extraEnvVars
+  # (legacy) > global.idp.{declarationEnabled,host}. The client pair lives in
+  # the Secret (templates/secrets.yaml). With the flag on, the app refuses to
+  # boot without the host and the pair.
   # =====================================================================
-  {{- $extra := .Values.bankTransfer.extraEnvVars | default dict }}
-  {{- $idpFlag := toString (index $cm "IDP_DECLARATION_ENABLED" | default "") }}
-  {{- if and $idpFlag (not (hasKey $extra "IDP_DECLARATION_ENABLED")) }}
-  IDP_DECLARATION_ENABLED: {{ $idpFlag | quote }}
-  {{- end }}
-  {{- $idpHost := toString (index $cm "IDP_HOST" | default "") }}
-  {{- if and $idpHost (not (hasKey $extra "IDP_HOST")) }}
-  IDP_HOST: {{ $idpHost | quote }}
-  {{- end }}
-  {{- $pluginAuthHost := toString (index $cm "PLUGIN_AUTH_HOST" | default "") }}
-  {{- if and $pluginAuthHost (not (hasKey $extra "PLUGIN_AUTH_HOST")) }}
-  PLUGIN_AUTH_HOST: {{ $pluginAuthHost | quote }}
-  {{- end }}
-  {{- /* Render-time twin of the app's boot refusal for the two settings this
-     template can see. The M2M pair is not checked: it may come from an
-     existing Secret (useExistingSecret). */}}
-  {{- /* Exact "true", the only value lib-auth treats as on. */}}
-  {{- if eq (trim $idpFlag) "true" }}
-  {{- if not (or $idpHost (index $extra "IDP_HOST")) }}
-  {{- fail "\n\nERROR: bankTransfer.configmap.IDP_HOST is required when IDP_DECLARATION_ENABLED=true (the app refuses to boot without it).\n" }}
-  {{- end }}
-  {{- if ne (lower (toString $authEnabled)) "true" }}
-  {{- fail "\n\nERROR: IDP_DECLARATION_ENABLED=true requires PLUGIN_AUTH_ENABLED=true: the declaration endpoint is M2M-guarded and the app refuses to boot with auth off.\n" }}
-  {{- end }}
-  {{- end }}
+  {{- include "lerian-common.idp.env" (dict "context" $ "configmap" $cm "extraEnvVars" .Values.bankTransfer.extraEnvVars) | nindent 2 }}
 
   # =====================================================================
   # LICENSE GATEWAY — rendered in both modes. Newer app images refuse to
@@ -387,15 +355,16 @@ data:
   # COURIER_CLIENT_ID/COURIER_CLIENT_SECRET pair and ORGANIZATION_ID
   # (multi-tenant reads the Courier per tenant). Left to an existing
   # bankTransfer.extraEnvVars entry when one is set.
+  {{- $courierExtra := .Values.bankTransfer.extraEnvVars | default dict }}
   {{- $claims := toString (index $cm "COURIER_ACCOUNT_CLAIMS_ENABLED" | default "false") }}
-  {{- if not (hasKey $extra "COURIER_ACCOUNT_CLAIMS_ENABLED") }}
+  {{- if not (hasKey $courierExtra "COURIER_ACCOUNT_CLAIMS_ENABLED") }}
   COURIER_ACCOUNT_CLAIMS_ENABLED: {{ $claims | quote }}
   {{- end }}
   {{- if and (eq (lower $claims) "true") (not $multiTenantEnabled) }}
-  {{- if not (or .Values.bankTransfer.configmap.COURIER_BASE_URL (index $extra "COURIER_BASE_URL")) }}
+  {{- if not (or .Values.bankTransfer.configmap.COURIER_BASE_URL (index $courierExtra "COURIER_BASE_URL")) }}
   {{- fail "\n\nERROR: bankTransfer.configmap.COURIER_BASE_URL is required when COURIER_ACCOUNT_CLAIMS_ENABLED=true in single-tenant mode (the app refuses to boot without it).\n" }}
   {{- end }}
-  {{- if not (or .Values.bankTransfer.configmap.ORGANIZATION_ID (index $extra "ORGANIZATION_ID")) }}
+  {{- if not (or .Values.bankTransfer.configmap.ORGANIZATION_ID (index $courierExtra "ORGANIZATION_ID")) }}
   {{- fail "\n\nERROR: bankTransfer.configmap.ORGANIZATION_ID is required when COURIER_ACCOUNT_CLAIMS_ENABLED=true in single-tenant mode (the app refuses to boot without it).\n" }}
   {{- end }}
   {{- end }}
@@ -465,7 +434,12 @@ data:
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for env vars not modeled above)
   # =====================================================================
+  {{- /* IDP_DECLARATION_ENABLED / IDP_HOST in extraEnvVars already fed
+     lerian-common.idp.env above; emitting them again would duplicate the key. */ -}}
+  {{- $idpEnvKeys := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
   {{- range $key, $value := .Values.bankTransfer.extraEnvVars }}
+  {{- if not (has $key $idpEnvKeys) }}
   {{ $key }}: {{ $value | quote }}
+  {{- end }}
   {{- end }}
 {{- end }}

@@ -847,6 +847,9 @@
               "AWS_REGION",
               "M2M_VAULT_MOUNT",
               "BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS",
+              "BALANCE_SYNC_FORK_MAX_ATTEMPTS",
+              "BALANCE_SYNC_FORK_BACKOFF_BASE_MS",
+              "BALANCE_SYNC_FORK_BACKOFF_MAX_MS",
               "REDIS_PORT",
               "TRANSACTION_BATCH_MAX_SIZE"
             ]

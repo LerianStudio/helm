@@ -1,0 +1,9 @@
+{{- if and .Values.sisbajud.enabled .Values.sisbajud.ingress.enabled -}}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" .Values.sisbajud.ingress
+      "name" (include "plugin-br-sisbajud.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud"))
+      "svcPort" .Values.sisbajud.service.port) }}
+{{- end -}}

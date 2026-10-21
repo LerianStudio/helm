@@ -1,5 +1,104 @@
 # Midaz Changelog
 
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Add balance sync fork configuration to the ledger, allowing better management of balance synchronization processes. (@Ygohr)
+- Reflect balance sync fork configuration in the values template to ensure consistent configuration management. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the ConfigMap only, ensuring proper synchronization of balance-related configurations. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0` to assist users in transitioning to the new version smoothly. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for midaz `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only, ensuring balance synchronization. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s`. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Set an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Increase the ledger termination grace period to `60s`. (@fredcamaral)
+- Assign a `45s` termination grace period to ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
 ## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
 
 Fixes:

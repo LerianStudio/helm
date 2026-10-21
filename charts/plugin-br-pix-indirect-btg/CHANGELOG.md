@@ -1,5 +1,139 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete the values. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+Features:
+
+- Note the replicaset MongoDB strategy in the documentation. (@fredcamaral)
+
+Fixes:
+
+- Boot the workers with their values to ensure correct initialization. (@fredcamaral)
+- Drop unnecessary refusals from the workers to optimize performance. (@fredcamaral)
+- Assign the bundled valkey its port for proper configuration. (@fredcamaral)
+- Pin the bundled database majors to maintain version consistency. (@fredcamaral)
+- Recreate the MongoDB pod on upgrade to ensure seamless updates. (@fredcamaral)
+
+Improvements:
+
+- Set the reconciliation Redis password in the external valkey example for enhanced security. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+Features:
+- Upgrade documentation for `v4.0.0`. (@brunognovaes)
+
+Fixes:
+- Boot the workers with their values to ensure proper initialization. (@fredcamaral)
+- Drop unnecessary refusals from the workers to optimize performance. (@fredcamaral)
+- Assign the correct port to the bundled valkey and its address for proper connectivity. (@fredcamaral)
+- Pin the bundled database major versions to maintain compatibility. (@fredcamaral)
+- Recreate the MongoDB pod on upgrade to ensure a smooth transition. (@fredcamaral)
+
+Improvements:
+- Set the reconciliation Redis password in the external valkey example for enhanced security. (@fredcamaral)
+- Note the replicaset MongoDB strategy in the documentation for better clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+Features:
+
+- Upgrade documentation for `v4.0.0`. (@brunognovaes)
+
+Fixes:
+
+- Boot the workers with their values to ensure proper initialization. (@fredcamaral)
+- Drop unnecessary refusals from the workers to streamline operations. (@fredcamaral)
+- Assign the correct port to the bundled valkey and its address for proper connectivity. (@fredcamaral)
+- Pin the bundled database majors to maintain version consistency. (@fredcamaral)
+- Recreate the MongoDB pod during upgrades to ensure a smooth transition. (@fredcamaral)
+
+Improvements:
+
+- Set the reconciliation Redis password in the external valkey example for better security documentation. (@fredcamaral)
+- Note the replica set MongoDB strategy to provide clarity on database configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+Features:
+
+- Ensure the reconciliation Redis password is set in the external valkey example. (@fredcamaral)
+- Note the replicaset MongoDB strategy in the documentation. (@fredcamaral)
+
+Fixes:
+
+- Boot the workers with their values to ensure proper initialization. (@fredcamaral)
+- Drop unnecessary refusals from the workers to streamline operations. (@fredcamaral)
+- Assign the correct port to the bundled valkey and its address for proper connectivity. (@fredcamaral)
+- Pin the bundled database majors to maintain version consistency. (@fredcamaral)
+- Recreate the MongoDB pod during upgrades to ensure smooth transitions. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
+
+Features:
+- Release and upgrade documentation for `v4.0.0`. (@brunognovaes)
+
+Fixes:
+- Boot the workers with their values to ensure proper initialization. (@fredcamaral)
+- Drop unnecessary refusals from the workers to optimize performance. (@fredcamaral)
+- Assign the bundled valkey its correct port for proper communication. (@fredcamaral)
+- Pin the bundled database majors to maintain version consistency. (@fredcamaral)
+- Recreate the MongoDB pod during upgrades to ensure a fresh start. (@fredcamaral)
+
+Improvements:
+- Set the reconciliation Redis password in the external valkey example for better security documentation. (@fredcamaral)
+- Note the replica set MongoDB strategy to provide guidance on database setup. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.0...plugin-br-pix-indirect-btg-v4.0.1)
+
+---
+
 ## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
 
 Features:

@@ -16,7 +16,7 @@ Source code can be found here:
 * https://github.com/LerianStudio/helm/tree/main/charts/midaz
 * https://github.com/LerianStudio/midaz
 
-This helm chart installs [Midaz](https://lerian.studio/midaz#about), a high-performance and open-source ledger.
+This helm chart installs [Midaz](https://lerian.studio/midaz#about), a high-performance ledger.
 
 The default installation is similar to the one provided in the [Midaz repo](https://github.com/LerianStudio/midaz?tab=readme-ov-file#quick-installation-guide-localhost).
 

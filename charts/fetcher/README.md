@@ -528,4 +528,4 @@ kubectl logs -n midaz-plugins -l app.kubernetes.io/name=fetcher-worker
 
 ## License
 
-[Apache 2.0](../../LICENSE) (chart). The Fetcher application itself is proprietary to Lerian Studio Ltd. Versions released before 2026-10-21 remain under the Elastic License 2.0.
+[Apache 2.0](../../LICENSE) (chart). The Fetcher application itself is proprietary to Lerian Studio Ltd. Versions released under the Elastic License 2.0 keep that license.

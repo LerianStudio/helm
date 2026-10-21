@@ -2,6 +2,18 @@
 
 ## [3.4.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.1)
 
+Features:
+- Add a Helm upgrade guide for `fetcher` `v3.4.0`. (@guimoreirar)
+
+Improvements:
+- Drop the Apache 2.0 claim about the `fetcher` application. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.0...fetcher-v3.4.1)
+
+---
+
+## [3.4.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.1)
+
 Improvements:
 - Remove the Apache 2.0 license claim from the fetcher application documentation. (@fredcamaral)
 - Add a Helm upgrade guide for `fetcher` `v3.4.0`. (@guimoreirar)

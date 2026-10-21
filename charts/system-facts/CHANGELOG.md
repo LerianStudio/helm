@@ -6,6 +6,19 @@ Features:
 - Introduced the system-facts chart for app `1.0.0-beta.29`. (@gandalf-at-lerian)
 
 Fixes:
+- Implemented a guard for the Postgres bootstrap and corrected the migrations tag example. (@guimoreirar)
+- Addressed findings from the CodeRabbit review. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/system-facts-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.0)
+
+Features:
+- Introduced the system-facts chart for app `1.0.0-beta.29`. (@gandalf-at-lerian)
+
+Fixes:
 - Implemented a guard for the PostgreSQL bootstrap and corrected the migrations tag example. (@guimoreirar)
 - Addressed findings from the CodeRabbit review. (@guimoreirar)
 

@@ -309,6 +309,19 @@ helper so 3.x releases keep rendering exactly as before.
 {{- end -}}
 
 {{/*
+midaz.ledgerAuthGateByMode — reports "true" when the passed ledger image tag
+decides an unauthenticated boot by DEPLOYMENT_MODE (4.3.0-beta.54 onward, midaz#2675),
+"" otherwise. Earlier 4.x ledgers decide it by ENV_NAME=production. Non-semver
+tags resolve to "", like midaz.tagIsV4, so they keep the earlier rule.
+*/}}
+{{- define "midaz.ledgerAuthGateByMode" -}}
+{{- $tag := . | toString | trimPrefix "v" -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
+{{- if semverCompare ">=4.3.0-beta.54" $tag -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 midaz.ledgerMigrationsEnabled — resolves the tri-state ledger.migrations.enabled.
 Unset (null) means "auto": on for 4.x ledger tags, off for 3.x, which still runs
 its migrations in-process. An explicit true/false always wins, so operators who

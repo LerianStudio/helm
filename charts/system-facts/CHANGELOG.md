@@ -1,5 +1,19 @@
 # System-facts Changelog
 
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.1)
+
+Features:
+
+- Documented the Access Manager prerequisite for system-facts, providing necessary information for setup. (@gandalf-at-lerian)
+
+Improvements:
+
+- Added a Helm upgrade guide for `system-facts` `v1.0.0`, offering detailed instructions for users to transition smoothly to the new version. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.0...system-facts-v1.0.1)
+
+---
+
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.0)
 
 Features:

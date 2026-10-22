@@ -5,6 +5,7 @@
 - Chart type: `single-service`
 - Required secrets: `system-facts.secrets.POSTGRES_PASSWORD` (no default). `system-facts.secrets.LICENSE_KEY` (with `system-facts.configmap.ORGANIZATION_IDS`) unless the license gate is turned off with `LICENSE_ENABLED=false`: the application's license gate is on by default and refuses to boot without a key. `REDIS_PASSWORD` only when Redis/Valkey auth is on, `MULTI_TENANT_SERVICE_API_KEY` and `MULTI_TENANT_REDIS_PASSWORD` only when `system-facts.multiTenant.enabled=true`. When the bootstrap Job runs, `global.externalPostgresDefinitions.postgresAdminLogin.password` and `.boilerplateCredentials.password` are required too — or point both at an existing Secret.
 - Dependency notes: `lerian-common-helm` (library, no objects of its own) plus PostgreSQL and Valkey, both declared with exact pins, condition-gated and **disabled by default** — the target environments provide them externally. Archives are not vendored in git; `helm dependency update` resolves them from `Chart.lock`.
+- Access Manager prerequisite: `plugin-access-manager` app **3.11.2 or later** (it catalogs the `system-facts` and `internal-facts-worker` applications), plus `AUTH_M2M_INVERSION_ENABLED` and `AUTH_M2M_PRODUCT_FORWARD_ENABLED` set to `"true"` on the service when authorization is on. See [Access Manager](#access-manager).
 - Production overrides: image tag and pull secrets, ingress host/TLS, resources, autoscaling, `system-facts.configmap.POSTGRES_HOST` / `REDIS_HOST`, and every credential above. Never ship a published default as a production secret.
 - Source/license: Source is in `github.com/LerianStudio/helm/tree/main/charts/system-facts`. The application is distributed under the Lerian Studio General License; running it requires a Lerian license.
 
@@ -31,6 +32,35 @@ helm upgrade --install system-facts ./charts/system-facts \
 ```
 
 `values-template.yaml` is the starting point for an environment: it carries only the keys an install actually has to decide.
+
+## Access Manager
+
+With authorization on (`global.auth.enabled=true`, which renders `PLUGIN_AUTH_ENABLED=true`), System Facts authorizes every call through the Access Manager. The chart does not install it and does not declare it as a dependency. It must already be running at `global.auth.host`, at a version that knows both applications.
+
+| Access Manager app | What it adds |
+|--------------------|--------------|
+| `3.11.0` | Catalogs the `system-facts` application, the target of every producer credential. |
+| `3.11.2` | Catalogs the `internal-facts-worker` application, the source of the worker credential. **Minimum for this chart.** |
+
+Earlier versions do not catalog these applications. The Access Manager requires a credential's source to be catalogued, so a worker credential cannot declare `internal-facts-worker` as its source before `3.11.2`. At the time of writing the `plugin-access-manager` chart (`9.8.2`) still ships app `3.11.1`: until a chart release carries `3.11.2`, set the Access Manager image tags to `3.11.2` or later.
+
+System Facts also refuses to boot with authorization on unless both M2M flags are the exact string `true`. Set them on the System Facts service, not on the callers:
+
+```yaml
+global:
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth:4000"
+
+system-facts:
+  extraEnvVars:
+    - name: AUTH_M2M_INVERSION_ENABLED
+      value: "true"
+    - name: AUTH_M2M_PRODUCT_FORWARD_ENABLED
+      value: "true"
+```
+
+`1`, `TRUE` and a leading space all count as off. Without inversion, every M2M producer gets `401` `SF-0013` on a service that boots and reports healthy. Without the product forward, every M2M token is denied with a `403`.
 
 ## Database credentials
 

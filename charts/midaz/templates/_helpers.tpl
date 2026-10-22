@@ -346,6 +346,80 @@ true
 {{- end -}}
 
 {{/*
+midaz-ledger.partitionPodSpec — the pod spec shared by every ledger partition
+runner workload (the `ensure` CronJob and the `reconcile-indexes` hook Job):
+(dict "context" . "args" (list "<subcommand>")). The `/partition` binary ships
+in the ledger image next to `/app`. Connection settings come from the ledger's
+own ConfigMap and Secret (the same DB_TRANSACTION_* the app connects with,
+resolved by the same datastore masks) and the PostgreSQL password from the same
+Secret the migration Job reads.
+*/}}
+{{- define "midaz-ledger.partitionPodSpec" -}}
+{{- $ctx := .context -}}
+{{- $values := $ctx.Values -}}
+{{- $partition := $values.ledger.partition | default dict -}}
+{{- $pg := $values.postgresql | default dict -}}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ctx "subchart" "postgresql")) -}}
+{{- $secretName := ternary $values.ledger.existingSecretName (include "midaz-ledger.fullname" $ctx) $values.ledger.useExistingSecret -}}
+restartPolicy: Never
+automountServiceAccountToken: false
+{{- with $values.ledger.imagePullSecrets }}
+imagePullSecrets:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+securityContext:
+  {{- toYaml $values.ledger.podSecurityContext | nindent 2 }}
+containers:
+  - name: partition
+    image: "{{ $values.ledger.image.repository }}:{{ $values.ledger.image.tag | default $ctx.Chart.AppVersion }}"
+    imagePullPolicy: {{ $values.ledger.image.pullPolicy }}
+    command: ["/partition"]
+    args: {{ toJson .args }}
+    securityContext:
+      {{- toYaml $values.ledger.securityContext | nindent 6 }}
+    envFrom:
+      - secretRef:
+          name: {{ $secretName }}
+      - configMapRef:
+          name: {{ include "midaz-ledger.fullname" $ctx }}
+    env:
+      {{- /* Same single-source rule as the migration Job: the bundled
+         PostgreSQL Secret when internal, the ledger Secret when external.
+         The runner only reaches the transaction database. */}}
+      {{- if $pgInternal }}
+      {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 6 }}
+      {{- else if or $values.ledger.useExistingSecret $values.ledger.secrets.DB_TRANSACTION_PASSWORD }}
+      - name: DB_TRANSACTION_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: {{ $secretName }}
+            key: DB_TRANSACTION_PASSWORD
+      {{- end }}
+    resources:
+      {{- toYaml $partition.resources | nindent 6 }}
+{{- with $values.ledger.nodeSelector }}
+nodeSelector:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with $values.ledger.affinity }}
+affinity:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with $values.ledger.tolerations }}
+tolerations:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end -}}
+
+{{/*
+midaz-ledger.partitionReconcileJobName — "<fullname>-partition-reconcile-<ledger
+tag>", built by the same tag-carrying, length-safe helper as the migration Job.
+*/}}
+{{- define "midaz-ledger.partitionReconcileJobName" -}}
+{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-ledger.fullname" .) "tag" (.Values.ledger.image.tag | default .Chart.AppVersion | toString) "suffix" "partition-reconcile") -}}
+{{- end -}}
+
+{{/*
 midaz-tracer.migrationsFullname — one Job name per rendered Job spec
 (dict "context" . "spec" <rendered spec>). The tracer Job is a regular release
 resource, and a Job spec is immutable, so the name has to change whenever the
@@ -362,18 +436,22 @@ golang-migrate tracks progress in the schema_migrations table.
 {{- end -}}
 
 {{/*
-midaz.migrationsJobName — "<base>-migrations-<tag>" while it fits in the 63
-character limit. Beyond that, truncating the whole string would cut the tag off
-and make two releases collide on one immutable Job name, so the long form
-truncates the base and ends in a hash of the tag, which stays discriminating.
+midaz.migrationsJobName — "<base>-<suffix>-<tag>" while it fits in the 63
+character limit; suffix defaults to "migrations". Beyond that, truncating the
+whole string would cut the tag off and make two releases collide on one
+immutable Job name, so the long form truncates the base and ends in a hash of
+the tag, which stays discriminating.
 */}}
 {{- define "midaz.migrationsJobName" -}}
+{{- $suffix := .suffix | default "migrations" -}}
 {{- $tag := regexReplaceAll "[^a-z0-9.]+" (lower .tag) "-" -}}
-{{- $name := printf "%s-migrations-%s" .base $tag -}}
+{{- $name := printf "%s-%s-%s" .base $suffix $tag -}}
 {{- if le (len $name) 63 -}}
 {{- $name | trimSuffix "-" | trimSuffix "." -}}
 {{- else -}}
-{{- printf "%s-migrations-%s" (trunc 42 .base | trimSuffix "-" | trimSuffix ".") (sha256sum $tag | trunc 8) -}}
+{{- /* base + "-" + suffix + "-" + 8-char hash stays within 62 characters
+       (42 for the "migrations" suffix, as before). */ -}}
+{{- printf "%s-%s-%s" (trunc (int (sub 52 (len $suffix))) .base | trimSuffix "-" | trimSuffix ".") $suffix (sha256sum $tag | trunc 8) -}}
 {{- end -}}
 {{- end -}}
 

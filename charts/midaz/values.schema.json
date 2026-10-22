@@ -325,6 +325,31 @@
               "default": 1800,
               "description": "Hard timeout for one run, in seconds"
             },
+            "reconcile": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Run `partition reconcile-indexes` as a Sync/upgrade hook Job after"
+                },
+                "syncWave": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "default": "1",
+                  "description": "Argo CD sync wave of the reconcile Job (after the migration Job's"
+                },
+                "activeDeadlineSeconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 1800,
+                  "description": "Hard timeout for the reconcile Job, in seconds (a concurrent index"
+                }
+              },
+              "additionalProperties": true
+            },
             "resources": {
               "type": "object",
               "properties": {

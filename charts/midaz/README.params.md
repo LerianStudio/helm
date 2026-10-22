@@ -88,6 +88,9 @@
 | `ledger.partition.schedule` | string | `"0 3 * * *"` | Cron schedule of the `partition ensure` run |
 | `ledger.partition.timeZone` | string | `""` | IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses the time zone of the kube-controller-manager. |
 | `ledger.partition.activeDeadlineSeconds` | int | `1800` | Hard timeout for one run, in seconds |
+| `ledger.partition.reconcile.enabled` | bool | `true` | Run `partition reconcile-indexes` as a Sync/upgrade hook Job after the migration Job. It exits 0 on an empty registry, an unpartitioned table or a database without the partition support migration, so it never blocks a sync on an older schema. |
+| `ledger.partition.reconcile.syncWave` | string | `"1"` | Argo CD sync wave of the reconcile Job (after the migration Job's default wave 0). On plain Helm the hook weight "10" orders it instead. |
+| `ledger.partition.reconcile.activeDeadlineSeconds` | int | `1800` | Hard timeout for the reconcile Job, in seconds (a concurrent index build on a large partition can take a while) |
 | `ledger.partition.resources.limits` | object | `{}` | CPU and memory limits for the partition runner |
 | `ledger.partition.resources.requests` | object | `{}` | Minimum CPU and memory requests for the partition runner |
 | `ledger.imagePullSecrets` | list | `[]` | Secrets for pulling images from a private registry |

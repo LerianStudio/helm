@@ -326,6 +326,18 @@ ledger:
     timeZone: ""
     # -- Hard timeout for one run, in seconds
     activeDeadlineSeconds: 1800
+    reconcile:
+      # -- Run `partition reconcile-indexes` as a Sync/upgrade hook Job after
+      # the migration Job. It exits 0 on an empty registry, an unpartitioned
+      # table or a database without the partition support migration, so it
+      # never blocks a sync on an older schema.
+      enabled: true
+      # -- Argo CD sync wave of the reconcile Job (after the migration Job's
+      # default wave 0). On plain Helm the hook weight "10" orders it instead.
+      syncWave: "1"
+      # -- Hard timeout for the reconcile Job, in seconds (a concurrent index
+      # build on a large partition can take a while)
+      activeDeadlineSeconds: 1800
     resources:
       # -- CPU and memory limits for the partition runner
       limits:

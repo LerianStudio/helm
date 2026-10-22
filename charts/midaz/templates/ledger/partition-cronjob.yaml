@@ -1,0 +1,105 @@
+{{- if and .Values.ledger.enabled (include "midaz.ledgerPartitionEnabled" .) }}
+{{- /*
+Ledger partition runner: `partition ensure`, on a schedule.
+
+The `/partition` binary ships in the ledger image next to `/app`. `ensure`
+creates the time partitions of the partitioned `transaction` and `operation`
+tables ahead of the clock, refreshes their statistics and reports a health
+verdict per table. It never detaches or drops a partition and runs no DDL on an
+unpartitioned table, so on a database still in the unpartitioned layout (or
+without the partition support objects yet) it exits 0 without changes.
+
+One CronJob per deployment is enough: in multi-tenant mode the runner lists the
+active tenants of this service itself and visits each tenant's transaction
+database; a failing tenant never stops the pass. The exit code is the alert
+signal: 0 healthy / unpartitioned / support missing, 1 at least one database or
+table needs attention, 2 invalid configuration. backoffLimit is 0 on purpose: a
+failed run stays visible as a failed Job and the next schedule repeats the work.
+
+Connection settings come from the ledger's own ConfigMap and Secret (the same
+DB_TRANSACTION_* the app connects with, resolved by the same datastore masks)
+and the PostgreSQL password from the same Secret the migration Job reads.
+*/}}
+{{- $partition := .Values.ledger.partition | default dict }}
+{{- $pg := .Values.postgresql | default dict }}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
+{{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
+{{- $component := printf "%s-partition" .Values.ledger.name }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  {{- /* A CronJob name is capped at 52 characters (the controller appends an
+     11-character suffix to each Job it spawns). */}}
+  name: {{ printf "%s-partition" (include "midaz-ledger.fullname" . | trunc 42 | trimSuffix "-") }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 4 }}
+spec:
+  schedule: {{ $partition.schedule | default "0 3 * * *" | quote }}
+  {{- with $partition.timeZone }}
+  timeZone: {{ . | quote }}
+  {{- end }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 8 }}
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: {{ $partition.activeDeadlineSeconds | default 1800 }}
+      template:
+        metadata:
+          labels:
+            {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 12 }}
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          {{- with .Values.ledger.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.ledger.podSecurityContext | nindent 12 }}
+          containers:
+            - name: partition
+              image: "{{ .Values.ledger.image.repository }}:{{ .Values.ledger.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.ledger.image.pullPolicy }}
+              command: ["/partition"]
+              args: ["ensure"]
+              securityContext:
+                {{- toYaml .Values.ledger.securityContext | nindent 16 }}
+              envFrom:
+                - secretRef:
+                    name: {{ $secretName }}
+                - configMapRef:
+                    name: {{ include "midaz-ledger.fullname" . }}
+              env:
+                {{- /* Same single-source rule as the migration Job: the bundled
+                   PostgreSQL Secret when internal, the ledger Secret when external.
+                   The runner only reaches the transaction database. */}}
+                {{- if $pgInternal }}
+                {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 16 }}
+                {{- else if or .Values.ledger.useExistingSecret .Values.ledger.secrets.DB_TRANSACTION_PASSWORD }}
+                - name: DB_TRANSACTION_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $secretName }}
+                      key: DB_TRANSACTION_PASSWORD
+                {{- end }}
+              resources:
+                {{- toYaml $partition.resources | nindent 16 }}
+          {{- with .Values.ledger.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.ledger.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.ledger.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

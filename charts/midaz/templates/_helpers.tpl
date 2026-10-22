@@ -324,6 +324,28 @@ true
 {{- end -}}
 
 {{/*
+midaz.ledgerPartitionEnabled — resolves the tri-state ledger.partition.enabled.
+Unset (null) means "auto": on for ledger tags >= 4.4.0 (its pre-releases
+included), the first line whose image ships the `/partition` runner; off below
+that and for non-SemVer tags ("latest", digests, branch builds), which cannot be
+proven to carry the binary. An explicit true/false always wins, so an earlier
+pre-release that already ships the runner opts in with true.
+*/}}
+{{- define "midaz.ledgerPartitionEnabled" -}}
+{{- $enabled := dig "partition" "enabled" nil (.Values.ledger | default dict) -}}
+{{- if kindIs "invalid" $enabled -}}
+{{- $tag := .Values.ledger.image.tag | default .Chart.AppVersion | toString | trimPrefix "v" -}}
+{{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
+       render on a malformed version instead of resolving to "off". */ -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
+{{- if semverCompare ">=4.4.0-0" $tag -}}true{{- end -}}
+{{- end -}}
+{{- else if eq (toString $enabled) "true" -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
 midaz-tracer.migrationsFullname — one Job name per rendered Job spec
 (dict "context" . "spec" <rendered spec>). The tracer Job is a regular release
 resource, and a Job spec is immutable, so the name has to change whenever the

@@ -20,6 +20,7 @@ This chart manages 14 independently deployable Pix Lerian workloads. Each gets i
 
 | Chart version | App image tag |
 |---|---|
+| 1.1.0 | 1.1.0 |
 | 1.0.0 | 1.0.0 |
 
 The row above covers this chart only. There is no in-place upgrade path from any earlier chart — moving to this chart is a fresh install (cutover), not a `helm upgrade`, and a cutover does not migrate or copy data. See [Upgrade and rollback](#upgrade-and-rollback).
@@ -35,7 +36,7 @@ One supported path for this release: **single-tenant, hub-only, external depende
 | Tenancy | Single-tenant (`MULTI_TENANT_ENABLED: "false"`, the default) |
 | DICT / COB tier | Hub. `dictProxy` and `cobProxy` **disabled** |
 | Development-only pairs | `adapterProviderMock`, `adapterLerian`, `adapterLerianSystemplane` **disabled** |
-| Pix Automático | Optional. Enable `pixauto` + `pixautoSystemplane` only if needed |
+| Pix Automático | Enabled by default. `pixauto` + `pixautoSystemplane` ship on; set `enabled: false` to opt out |
 | PostgreSQL, Valkey, RabbitMQ | Externally managed. Local subcharts stay off |
 | Ingress | All three surfaces off until authentication, DNS, and TLS are in place |
 | Release layout | One release per namespace |
@@ -48,11 +49,11 @@ Why: only the hub tier carries business flows in this release, and the adapter a
 
 ```yaml
 # Enabled: spi, dictHub, cobHub, each with its *Systemplane workload,
-#          plus dictHubVsync for DICT reconciliation (needs Valkey + RabbitMQ).
+#          plus dictHubVsync for DICT reconciliation (needs Valkey + RabbitMQ),
+#          and the pixauto + pixautoSystemplane pair for Pix Automático.
 # Disabled: dictProxy, cobProxy, adapterProviderMock,
 #           adapterLerian + adapterLerianSystemplane,
-#           postgresql, valkey, rabbitmq subcharts,
-#           pixauto + pixautoSystemplane — enable the pair for Pix Automático.
+#           postgresql, valkey, rabbitmq subcharts.
 spi:       { enabled: true }
 dictProxy: { enabled: false }
 ```
@@ -152,7 +153,7 @@ The detail behind the shape in the [quickstart](#production-quickstart).
 | SPI | `spi` + `spiSystemplane` | Always |
 | DICT | `dictHub` + `dictSystemplane`, `dictHubVsync` optional | Hub tier only |
 | COB | `cobHub` + `cobSystemplane` | Hub tier only |
-| Pix Automático | `pixauto` + `pixautoSystemplane` | Optional |
+| Pix Automático | `pixauto` + `pixautoSystemplane` | Enabled by default |
 | Shared dependencies | PostgreSQL, Valkey, RabbitMQ | External to this chart |
 
 Critical contracts, each stated once here:
@@ -181,8 +182,8 @@ Critical contracts, each stated once here:
 | `cobSystemplane` | Runtime configuration plane for COB | Yes | 4110 | `/cob` |
 | `adapterLerian` | Lerian provider adapter | No | 4113 | `/lerian` |
 | `adapterLerianSystemplane` | Runtime configuration plane for the adapter | No | 4115 | `/lerian` |
-| `pixauto` | Pix Automático — payer side | No | 4116 | `/pixauto` |
-| `pixautoSystemplane` | Runtime configuration plane for Pix Automático | No | 4117 | `/pixauto` |
+| `pixauto` | Pix Automático — payer side | Yes | 4116 | `/pixauto` |
+| `pixautoSystemplane` | Runtime configuration plane for Pix Automático | Yes | 4117 | `/pixauto` |
 
 Ports 4111, 4112, and 4114 are intentionally unused. A Systemplane workload's prefix is its **domain** prefix, not its name: `dictSystemplane` answers under `/dict`, `dictHub` under `/dict-hub`.
 

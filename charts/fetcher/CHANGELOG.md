@@ -3,6 +3,15 @@
 ## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
 
 Fixes:
+- Update `fetcher-manager` to `3.1.1` and `fetcher-worker` to `3.1.1`, ensuring compatibility and stability improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
 - Update `fetcher-manager` to `3.1.1` and `fetcher-worker` to `3.1.1`. (@lerian-studio)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)

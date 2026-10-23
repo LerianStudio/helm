@@ -27,27 +27,40 @@ The chart adds two workloads for it:
 
 | Resource | Name | Runs | When |
 |----------|------|------|------|
-| `CronJob` | `<release>-ledger-partition` | `/partition ensure` | Daily, `0 3 * * *` by default |
-| `Job` (hook) | `<release>-ledger-partition-reconcile-<ledger tag>` | `/partition reconcile-indexes` | On every install, upgrade and Argo CD sync, after the ledger migration Job |
+| `CronJob` | `<release>-ledger-partition` | `/partition ensure --reconcile-indexes` | Daily, `0 3 * * *` by default |
+| `Job` (hook) | `<release>-ledger-partition-reconcile-<ledger tag>` | `/partition reconcile-indexes --tolerate-unavailable` | On every install, upgrade and Argo CD sync, after the ledger migration Job and alongside the app rollout |
 
 - **`ensure`** creates the missing partitions up to the configured horizon,
   refreshes the statistics of each partitioned table and reports a health verdict
   per table. It never detaches or drops a partition and runs no DDL on an
-  unpartitioned table.
+  unpartitioned table. `--reconcile-indexes` adds the index reconcile pass to the
+  same daily run, so an index the deploy hook skipped is retried every day.
 - **`reconcile-indexes`** brings every database in line with the partition-index
   registry. An empty registry, an unpartitioned table or a database without the
   partition support migration all exit `0` without changes, so the hook never
-  blocks a sync on an older schema.
-- **Ordering.** On plain Helm the reconcile Job is a `post-install,pre-upgrade`
-  hook with weight `10`, after the migration Job's weight `0`. On Argo CD it is a
-  `Sync` hook in wave `ledger.partition.reconcile.syncWave` (default `"1"`), after
-  the migration Job's wave `0`. Both hooks are deleted once they succeed.
+  blocks a sync on an older schema. `--tolerate-unavailable` also keeps an
+  unreachable tenant database or a pending index from failing the hook: **a deploy
+  never fails because of one**. Those failures still surface in the daily CronJob
+  run (exit `1`, a failed Job, `kube_job_status_failed`). The hook still fails
+  (exit `1`) on an invalid registry entry, a failed index build or a name
+  conflict, and (exit `2`) on a usage or startup error.
+- **Ordering.** The reconcile Job runs after the migration Job and alongside the
+  app rollout, not before the new ledger version starts serving. On plain Helm it
+  is a `post-install,pre-upgrade` hook with weight `10`, after the migration Job's
+  weight `0`. On Argo CD it is a `Sync` hook in wave
+  `ledger.partition.reconcile.syncWave` (default `"1"`, the Deployment's wave),
+  after the migration Job's wave `0`. Both hooks are deleted once they succeed;
+  a failed one is kept for `ledger.partition.reconcile.ttlSecondsAfterFinished`
+  (default 3 days), like the migration Jobs.
 - **One CronJob per release.** In multi-tenant mode the runner lists the active
   tenants of the ledger itself and visits each tenant's transaction database; a
   failing tenant never stops the pass.
-- **Connection settings.** Both workloads read the ledger's own ConfigMap and
-  Secret (`DB_TRANSACTION_*`, the same datastore masks the app uses) and the
-  PostgreSQL password from the same Secret the migration Job reads. Nothing new has
+- **Connection settings.** Both workloads set `DB_TRANSACTION_*` and the
+  `MULTI_TENANT_*` block inline from the release values (the same datastore masks
+  and defaults as the migration Job), so on a plain `helm upgrade` the
+  `pre-upgrade` hook uses this release's values rather than the previous
+  ConfigMap. Everything else comes from the ledger's own ConfigMap and Secret, and
+  the PostgreSQL password from the same Secret the migration Job reads. Nothing new has
   to be provisioned. The runner never logs a DSN, host, user or password.
 - **Scheduling.** The pods reuse `ledger.image`, `ledger.imagePullSecrets`,
   `ledger.podSecurityContext`, `ledger.securityContext`, `ledger.nodeSelector`,
@@ -82,6 +95,7 @@ ledger:
       enabled: true
       syncWave: "1"
       activeDeadlineSeconds: 1800
+      ttlSecondsAfterFinished: 259200
     resources:
       limits:
         cpu: 200m
@@ -102,6 +116,7 @@ ledger:
 | `ledger.partition.reconcile.enabled` | Not present | `true` |
 | `ledger.partition.reconcile.syncWave` | Not present | `"1"` |
 | `ledger.partition.reconcile.activeDeadlineSeconds` | Not present | `1800` |
+| `ledger.partition.reconcile.ttlSecondsAfterFinished` | Not present | `259200` |
 | `ledger.partition.resources` | Not present | `200m`/`128Mi` limits, `50m`/`64Mi` requests |
 
 **Template Changes:**
@@ -148,7 +163,7 @@ DEFAULT partition (see [Alert signals](#alert-signals)).
   Partition ensure pass finished   {"databases": 1, "databases_failed": 0}
   ```
 
-  The reconcile hook logs `Partition index registry empty` and exits `0`. A
+  The reconcile pass logs `Partition index registry empty` and exits `0`. A
   multi-tenant database that has not received the partition support migration
   yet is reported as `support_missing` and also exits `0`.
 - **`/readyz`.** In single-tenant mode the ledger exposes two informational
@@ -170,7 +185,11 @@ DEFAULT partition (see [Alert signals](#alert-signals)).
 - **Exit code of the runner Job.** `0` healthy, unpartitioned or support missing;
   `1` at least one database or table needs attention (unreachable database, rows
   in DEFAULT, buffer below the horizon, coverage gap, index still pending or
-  failed); `2` invalid configuration. The CronJob uses `backoffLimit: 0`, so a
+  failed, invalid registry entry); `2` usage or startup error. The reconcile hook
+  runs with `--tolerate-unavailable`, so an unreachable database or a pending
+  index does not fail it, while an invalid entry, a failed build, a name conflict
+  or a startup error still does; the daily CronJob runs both
+  passes without that flag and is where the other failures show. The CronJob uses `backoffLimit: 0`, so a
   failed run stays visible as a failed Job and the next schedule repeats the
   work. With kube-state-metrics:
 
@@ -194,11 +213,13 @@ If you deploy the ledger without this chart, run the same two steps yourself,
 from the ledger image with the ledger's own `DB_TRANSACTION_*` variables (or
 `MULTI_TENANT_*` and `APPLICATION_NAME` in multi-tenant mode):
 
-1. `/partition reconcile-indexes` after every migration run and before the new
-   ledger version starts serving.
-2. `/partition ensure` once a day, off-peak.
+1. `/partition reconcile-indexes --tolerate-unavailable` after every migration
+   run, alongside the rollout of the new ledger version.
+2. `/partition ensure --reconcile-indexes` once a day, off-peak.
 
-Treat a non-zero exit code as an alert in both cases.
+Treat a non-zero exit code of the daily run as an alert; the deploy-time step
+fails only on an invalid registry entry, a failed index build, a name conflict
+or a startup error.
 
 ## Preview changes before upgrading
 

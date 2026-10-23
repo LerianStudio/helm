@@ -13,9 +13,15 @@ weight "10" after the migration Job's weight 0.
 
 It never blocks a sync on a database that is not ready for it: an empty registry
 (the normal state today), an unpartitioned table or a database without the
-partition support migration (`support_missing`) all exit 0 without changes.
-Exit 1 means a database or table needs attention, 2 invalid configuration; the
-Job then fails after backoffLimit retries and the sync reports it.
+partition support migration (`support_missing`) all exit 0 without changes, and
+`--tolerate-unavailable` keeps an unreachable tenant or a pending index from
+failing the hook (the daily `ensure --reconcile-indexes` CronJob retries them
+and its failed Jobs are the alert signal). Exit 2 (invalid configuration) still
+fails the Job after backoffLimit retries and the sync reports it.
+
+Connection settings are resolved inline from this release's values (see
+midaz-ledger.partitionPodSpec): on plain Helm a pre-upgrade hook runs before the
+ledger ConfigMap is updated, so envFrom alone would read the previous release.
 
 The Job name carries the ledger image tag because a Job spec is immutable; the
 hook delete policies recreate it on every sync. The pod spec is shared with the
@@ -38,10 +44,11 @@ metadata:
 spec:
   backoffLimit: 2
   activeDeadlineSeconds: {{ dig "activeDeadlineSeconds" 1800 $reconcile }}
+  ttlSecondsAfterFinished: {{ dig "ttlSecondsAfterFinished" 259200 $reconcile }}
   template:
     metadata:
       labels:
         {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 8 }}
     spec:
-      {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "reconcile-indexes")) | nindent 6 }}
+      {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "reconcile-indexes" "--tolerate-unavailable")) | nindent 6 }}
 {{- end }}

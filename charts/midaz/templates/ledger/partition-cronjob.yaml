@@ -1,11 +1,13 @@
 {{- if and .Values.ledger.enabled (include "midaz.ledgerPartitionEnabled" .) }}
 {{- /*
-Ledger partition runner: `partition ensure`, on a schedule.
+Ledger partition runner: `partition ensure --reconcile-indexes`, on a schedule.
 
 The `/partition` binary ships in the ledger image next to `/app`. `ensure`
 creates the time partitions of the partitioned `transaction` and `operation`
 tables ahead of the clock, refreshes their statistics and reports a health
-verdict per table. It never detaches or drops a partition and runs no DDL on an
+verdict per table; `--reconcile-indexes` then runs the index reconcile pass
+in the same run, so an index the deploy hook tolerated (unreachable tenant,
+pending entry) is retried daily. It never detaches or drops a partition and runs no DDL on an
 unpartitioned table, so on a database still in the unpartitioned layout (or
 without the partition support objects yet) it exits 0 without changes.
 
@@ -51,5 +53,5 @@ spec:
           labels:
             {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 12 }}
         spec:
-          {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "ensure")) | nindent 10 }}
+          {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "ensure" "--reconcile-indexes")) | nindent 10 }}
 {{- end }}

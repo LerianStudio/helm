@@ -346,6 +346,12 @@
                   "minimum": 1,
                   "default": 1800,
                   "description": "Hard timeout for the reconcile Job, in seconds (a concurrent index"
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 259200,
+                  "description": "How long the finished reconcile Job is kept for inspection"
                 }
               },
               "additionalProperties": true

@@ -338,6 +338,8 @@ ledger:
       # -- Hard timeout for the reconcile Job, in seconds (a concurrent index
       # build on a large partition can take a while)
       activeDeadlineSeconds: 1800
+      # -- How long the finished reconcile Job is kept for inspection
+      ttlSecondsAfterFinished: 259200
     resources:
       # -- CPU and memory limits for the partition runner
       limits:

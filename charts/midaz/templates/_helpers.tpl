@@ -383,6 +383,16 @@ containers:
       - configMapRef:
           name: {{ include "midaz-ledger.fullname" $ctx }}
     env:
+      {{- /* Connection settings resolved inline from this release's values, the
+         same way the migration Job resolves them, so the runner reaches the
+         database the migration Job just migrated. Explicit env wins over
+         envFrom: on plain Helm the pre-upgrade hook runs before the ledger
+         ConfigMap is updated, so envFrom alone would hand it the previous
+         release's values. */}}
+      {{- range $name, $value := include "midaz-ledger.partitionInlineEnv" $ctx | fromYaml }}
+      - name: {{ $name }}
+        value: {{ $value | toString | quote }}
+      {{- end }}
       {{- /* Same single-source rule as the migration Job: the bundled
          PostgreSQL Secret when internal, the ledger Secret when external.
          The runner only reaches the transaction database. */}}
@@ -409,6 +419,28 @@ affinity:
 tolerations:
   {{- toYaml . | nindent 2 }}
 {{- end }}
+{{- end -}}
+
+{{/*
+midaz-ledger.partitionInlineEnv — the partition runner's connection settings as
+a YAML map, resolved from this release's values: DB_TRANSACTION_* through the
+same datastore masks and defaults as the ledger migration Job, and the
+multi-tenant block through the same lerian-common helper and arguments as the
+ledger ConfigMap. Secrets (passwords, API keys) still come from the Secret.
+*/}}
+{{- define "midaz-ledger.partitionInlineEnv" -}}
+{{- $cm := .Values.ledger.configmap | default dict -}}
+{{- $dsl := .Values.ledger.datastores -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $onbHost := include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresOnboarding" "field" "host" "nativeKey" "DB_ONBOARDING_HOST" "default" "midaz-postgresql-primary") -}}
+{{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+DB_TRANSACTION_HOST: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" $onbHost) | quote }}
+DB_TRANSACTION_PORT: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") | quote }}
+DB_TRANSACTION_NAME: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") | quote }}
+DB_TRANSACTION_USER: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") | quote }}
+DB_TRANSACTION_SSLMODE: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
+MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+{{ include "lerian-common.multiTenant.env" (dict "context" . "configmap" $cm "enabled" $mtEnabled "serviceName" "ledger" "emitRedis" true "requiredUrl" true "requiredRedisHost" true) }}
 {{- end -}}
 
 {{/*

@@ -1,0 +1,107 @@
+{{- if (index .Values "public-bedatty-application").enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "public-bedatty-application.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "public-bedatty-application.labels" (dict "context" . "component" (index .Values "public-bedatty-application").name "name" (index .Values "public-bedatty-application").name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ (index .Values "public-bedatty-application").revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ (index .Values "public-bedatty-application").deploymentUpdate.type }}
+    {{- if eq (index .Values "public-bedatty-application").deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ (index .Values "public-bedatty-application").deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ (index .Values "public-bedatty-application").deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not (index .Values "public-bedatty-application").autoscaling.enabled }}
+  replicas: {{ (index .Values "public-bedatty-application").replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "public-bedatty-application.selectorLabels" (dict "context" . "name" (index .Values "public-bedatty-application").name) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not (index .Values "public-bedatty-application").useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with (index .Values "public-bedatty-application").podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "public-bedatty-application.labels" (dict "context" . "component" (index .Values "public-bedatty-application").name "name" (index .Values "public-bedatty-application").name) | nindent 8 }}
+    spec:
+      {{- with (index .Values "public-bedatty-application").imagePullSecrets }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "public-bedatty-application.serviceAccountName" . }}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" (index .Values "public-bedatty-application").podSecurityContext) | nindent 6 }}
+      containers:
+        - name: {{ include "public-bedatty-application.fullname" . }}
+          securityContext:
+            {{- toYaml (index .Values "public-bedatty-application").securityContext | nindent 12 }}
+          image: "{{ (index .Values "public-bedatty-application").image.repository }}:{{ (index .Values "public-bedatty-application").image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ (index .Values "public-bedatty-application").image.pullPolicy }}
+          {{- $otelEnabled := eq (dig "otel" "enabled" false (index .Values "public-bedatty-application") | toString) "true" }}
+          {{- $rolesAnywhereEnabled := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+          {{- /*
+          Bundled-infra passwords come from the subchart's own Secret, never from
+          this chart's. Emitted as `env` (not `envFrom`) on purpose: `env` wins
+          for the same variable name, so the subchart's value takes precedence
+          over anything the app Secret might still carry.
+          */}}
+          {{- $pg := .Values.postgresql | default dict }}
+          {{- $pgAuth := $pg.auth | default dict }}
+          {{- $pgInternal := and (ne (toString $pg.enabled) "false") (not $pg.external) }}
+          {{- $vk := .Values.valkey | default dict }}
+          {{- $vkAuth := $vk.auth | default dict }}
+          {{- $vkInternal := and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled }}
+          envFrom:
+          - secretRef:
+              name: {{ if (index .Values "public-bedatty-application").useExistingSecret }}{{ (index .Values "public-bedatty-application").existingSecretName }}{{ else }}{{ include "public-bedatty-application.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "public-bedatty-application.fullname" . }}
+          {{- if or $otelEnabled $rolesAnywhereEnabled $pgInternal $vkInternal }}
+          env:
+          {{- if $pgInternal }}
+          {{- include "public-bedatty-application.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
+          {{- end }}
+          {{- if $vkInternal }}
+          {{- include "public-bedatty-application.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 10 }}
+          {{- end }}
+          {{- if $otelEnabled }}
+          {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "scheme" "http://") | nindent 10 }}
+          {{- end }}
+          {{- if $rolesAnywhereEnabled }}
+          {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}
+          {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ (index .Values "public-bedatty-application").service.port }}
+              protocol: TCP
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" (index .Values "public-bedatty-application").livenessProbe
+                "port" (index .Values "public-bedatty-application").service.port
+                "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" (index .Values "public-bedatty-application").readinessProbe
+                "port" (index .Values "public-bedatty-application").service.port
+                "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          resources:
+            {{- toYaml (index .Values "public-bedatty-application").resources | nindent 12 }}
+        {{- if $rolesAnywhereEnabled }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
+        {{- end }}
+      {{- if $rolesAnywhereEnabled }}
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "public-bedatty-application-iam-tls") | nindent 6 }}
+      {{- end }}
+      {{- if or (index .Values "public-bedatty-application").nodeSelector (index .Values "public-bedatty-application").affinity (index .Values "public-bedatty-application").tolerations }}
+      {{- include "lerian-common.scheduling" (index .Values "public-bedatty-application") | nindent 6 }}
+      {{- end }}
+{{- end }}

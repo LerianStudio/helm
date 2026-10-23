@@ -1,0 +1,12 @@
+{{- if and (index .Values "public-bedatty-application").enabled (index .Values "public-bedatty-application").ingress.enabled }}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" (index .Values "public-bedatty-application").ingress
+      "global" (.Values.global).ingress
+      "subdomain" "public-bedatty-application"
+      "name" (include "public-bedatty-application.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "public-bedatty-application.labels" (dict "context" . "component" (index .Values "public-bedatty-application").name "name" (index .Values "public-bedatty-application").name))
+      "svcPort" (index .Values "public-bedatty-application").service.port
+    ) }}
+{{- end }}

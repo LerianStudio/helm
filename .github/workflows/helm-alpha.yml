@@ -43,7 +43,9 @@ on:
       - 'fix-*/**'
       - 'chore-*/**'
     paths:
-      - 'charts/**'
+      # A chart's own files only. A file directly under charts/ belongs to no chart,
+      # and the cross-check below would otherwise count its name as one.
+      - 'charts/*/**'
 
 permissions:
   contents: read
@@ -62,8 +64,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          # The cross-check below diffs this push against its base, so the
-          # single commit a default checkout fetches is not enough.
+          # The cross-check below diffs the branch against its merge base with
+          # the default branch, so the single commit a default checkout
+          # fetches is not enough.
           fetch-depth: 0
 
       - name: Resolve chart name from branch
@@ -117,38 +120,37 @@ jobs:
         env:
           CHART: ${{ steps.resolve.outputs.chart }}
           BRANCH: ${{ github.ref_name }}
-          BEFORE: ${{ github.event.before }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
 
-          # On a branch's first push, "before" is the null SHA and there is no
-          # previous state to diff against — fall back to where the branch left
-          # the default branch.
-          if [ -z "${BEFORE}" ] || [ "${BEFORE}" = "0000000000000000000000000000000000000000" ] \
-             || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
-            base="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
-          else
-            base="${BEFORE}"
-          fi
+          # Always the merge base with the default branch, never the push's
+          # "before": after the default branch is merged into a chart branch,
+          # before..HEAD carries every chart main changed in the meantime, and
+          # a branch that only ever touched its own chart would be refused as
+          # changing several. The merge base moves with that merge, so the diff
+          # is what THIS branch changes and nothing upstream.
+          base="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
 
-          changed="$(git diff --name-only "${base}" HEAD -- charts/ | cut -d/ -f2 | sort -u)"
+          # 'charts/*/*' and not 'charts/': a file directly under charts/ is no
+          # chart, and `cut` would report its file name as one.
+          changed="$(git diff --name-only "${base}" HEAD -- 'charts/*/*' | cut -d/ -f2 | sort -u)"
 
           if [ -z "${changed}" ]; then
-            # The paths filter fired on the push as a whole, but this diff
-            # attributes nothing to charts/ — e.g. a merge commit bringing the
-            # default branch in. Nothing to contradict, so publish.
-            echo "::notice::No chart change attributable to this push — skipping the cross-check"
+            # The paths filter fired on the push, but the branch as a whole
+            # changes no chart against the default branch — e.g. a change that
+            # was reverted. Nothing to contradict, so publish.
+            echo "::notice::No chart change on this branch against ${DEFAULT_BRANCH} — skipping the cross-check"
             exit 0
           fi
 
           if [ "$(printf '%s\n' "${changed}" | wc -l | tr -d ' ')" -gt 1 ]; then
-            echo "::error::This push changes more than one chart ($(printf '%s' "${changed}" | tr '\n' ' ')). One chart per branch — split the work, or publish a specific chart with the manual dispatch."
+            echo "::error::This branch changes more than one chart ($(printf '%s' "${changed}" | tr '\n' ' ')). One chart per branch — split the work, or publish a specific chart with the manual dispatch."
             exit 1
           fi
 
           if [ "${changed}" != "${CHART}" ]; then
-            echo "::error::Branch \"${BRANCH}\" resolves to chart \"${CHART}\" but this push changes charts/${changed}. The alpha would be a copy of ${CHART} with none of your changes in it. Rename the branch to <feature|fix|chore>-${changed}/<objetivo>."
+            echo "::error::Branch \"${BRANCH}\" resolves to chart \"${CHART}\" but this branch changes charts/${changed}. The alpha would be a copy of ${CHART} with none of your changes in it. Rename the branch to <feature|fix|chore>-${changed}/<objetivo>."
             exit 1
           fi
 

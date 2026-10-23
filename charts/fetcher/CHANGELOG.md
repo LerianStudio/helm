@@ -3,6 +3,15 @@
 ## [3.4.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.2)
 
 Improvements:
+- Keep each fetcher release under the license it shipped with. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.1...fetcher-v3.4.2)
+
+---
+
+## [3.4.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.2)
+
+Improvements:
 
 - Keep each fetcher release under the license it shipped with. (@fredcamaral)
 

@@ -155,7 +155,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.5.0"
+    tag: "4.5.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -360,7 +360,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.5.0"
+    tag: "4.5.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -815,7 +815,8 @@ mongodb:
     rootPassword: ""
     # -- Secret with the root password. The default points the subchart at the one this chart keeps
     # across uninstall (templates/mongodb-secrets.yaml); reporter's own templates read it as empty. Name yours to replace it.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   persistence:
     size: 8Gi
     # -- The data volume outlives the release: helm uninstall keeps it.

@@ -4,6 +4,28 @@
 
 Features:
 
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensured the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
 - Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
 
 Fixes:

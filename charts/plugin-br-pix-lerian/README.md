@@ -36,7 +36,7 @@ One supported path for this release: **single-tenant, hub-only, external depende
 | Tenancy | Single-tenant (`MULTI_TENANT_ENABLED: "false"`, the default) |
 | DICT / COB tier | Hub. `dictProxy` and `cobProxy` **disabled** |
 | Development-only pairs | `adapterProviderMock`, `adapterLerian`, `adapterLerianSystemplane` **disabled** |
-| Pix Automático | Enabled by default. `pixauto` + `pixautoSystemplane` ship on; set `enabled: false` to opt out |
+| Pix Automático | Enabled by default. `pixauto` + `pixautoSystemplane` ship on; set both `pixauto.enabled: false` and `pixautoSystemplane.enabled: false` to opt out |
 | PostgreSQL, Valkey, RabbitMQ | Externally managed. Local subcharts stay off |
 | Ingress | All three surfaces off until authentication, DNS, and TLS are in place |
 | Release layout | One release per namespace |

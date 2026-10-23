@@ -1,5 +1,21 @@
 # Plugin-br-pix-lerian Changelog
 
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` and update the app version to `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environments, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
 ## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
 
 Features:

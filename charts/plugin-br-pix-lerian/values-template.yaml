@@ -4,12 +4,12 @@
 # release), so any number written here goes stale on the next merge.
 #
 # Override only the fields you need to change from values.yaml defaults.
-# 8 of the 14 components are enabled by default. Disabled by default:
-# adapter-provider-mock, dict-hub-vsync, the adapter-lerian pair
-# (adapterLerian / adapterLerianSystemplane) and the pixauto pair
-# (pixauto / pixautoSystemplane). Disable any component by setting
-# `enabled: false`; enabling one means supplying everything it requires --
-# see the chart README, "Required before installation".
+# 8 of the 14 components are enabled by default, now including the pixauto pair
+# (pixauto / pixautoSystemplane). Disabled by default: adapter-provider-mock,
+# dict-hub-vsync, the two proxies (dictProxy / cobProxy) and the adapter-lerian
+# pair (adapterLerian / adapterLerianSystemplane). Disable any component by
+# setting `enabled: false`; enabling one means supplying everything it requires
+# -- see the chart README, "Required before installation".
 
 # There is NO shared `global.image` key. Each of the 14 components publishes
 # and pulls its own image (ghcr.io/lerianstudio/plugin-br-pix-lerian-<component>),
@@ -409,7 +409,7 @@ adapterLerianSystemplane:
 # the br-sfn rail carries the recurrence message family.
 # ------------------------------------------------------------
 pixauto:
-  enabled: false
+  enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
@@ -438,7 +438,7 @@ pixauto:
 # pixauto/systemplane/api — runtime config plane for Pix Automático
 # ------------------------------------------------------------
 pixautoSystemplane:
-  enabled: false
+  enabled: true
   configmap: {}
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"

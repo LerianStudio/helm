@@ -19,6 +19,11 @@ global:
   # Env-wide plugin-access-manager auth.
   auth: {}
   #   host: "http://plugin-access-manager-auth:4000"
+  # Env-wide Access Manager permission declaration (RI). The gate is per
+  # component (system-facts.configmap.IDP_DECLARATION_ENABLED); the client pair
+  # goes in system-facts.secrets.IDP_M2M_CLIENT_ID / IDP_M2M_CLIENT_SECRET.
+  idp: {}
+  #   host: "http://plugin-access-manager-identity:4001"
   # Env-wide multi-tenant infra (only used when system-facts.multiTenant.enabled=true).
   multiTenant: {}
   #   url: "http://tenant-manager:8080"

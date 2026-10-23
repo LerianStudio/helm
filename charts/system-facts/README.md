@@ -118,6 +118,7 @@ global:
     redis: { host: "my-elasticache.example.com", port: "6379" }
   observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   auth: { host: "http://plugin-access-manager-auth:4000" }
+  idp: { host: "http://plugin-access-manager-identity:4001" }
   multiTenant: { url: "http://tenant-manager:8080", redisHost: "my-elasticache.example.com" }
   serviceDiscovery: { address: "consul.internal:8500" }
   streaming: { brokers: "redpanda:9092" }
@@ -226,6 +227,32 @@ The image tag tracks `appVersion` when `worker.image.tag` is empty; the app rele
 `worker.systemFacts.allowInsecureHttp` is for cluster-local URLs inside a namespace whose pod-to-pod traffic is already encrypted (for example `istio.io/dataplane-mode: ambient`) only. The worker logs it as a WARN at every boot, production included.
 
 Both values need a worker image that carries the matching binary change (system-facts #65 and #71). An older image ignores the unknown variables: it still refuses to boot on a plain `http://` URL and still consumes every product.
+
+## Permission declaration (RI)
+
+The API publishes its embedded `permissions.yaml` to the Access Manager at boot (lib-auth `declaration.WireFromEnv`). It is off by default; with the gate on, the app refuses to boot without the host and the client pair:
+
+```yaml
+global:
+  idp: { host: "http://plugin-access-manager-identity:4001" }
+
+system-facts:
+  configmap:
+    IDP_DECLARATION_ENABLED: "true"
+  secrets:
+    IDP_M2M_CLIENT_ID: "<client-id>"
+    IDP_M2M_CLIENT_SECRET: "<client-secret>"
+```
+
+| Key | Where | Rendered |
+|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `system-facts.configmap` > `system-facts.extraEnvVars` entry (legacy) > `global.idp.declarationEnabled` | ConfigMap, always, default `"false"` |
+| `IDP_HOST` | same precedence, with `global.idp.host` | ConfigMap, only when non-empty |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | `system-facts.secrets` | Secret, each only when non-empty |
+
+- All four keys are rendered by `lerian-common.idp.*` and come out once each: `IDP_*` entries in `system-facts.extraEnvVars` still work, but feed the helper instead of the raw passthrough.
+- With `useExistingSecret: true`, put the client pair in the existing Secret.
+- Prefer the gate in `system-facts.configmap`: `global.idp.declarationEnabled` turns it on for every component of the release, and each one then needs its own client pair. The worker never declares and renders none of these keys.
 
 ## Environment variables
 

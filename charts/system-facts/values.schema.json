@@ -26,10 +26,30 @@
       "type": "object",
       "properties": {
         "configmap": {
-          "type": "object"
+          "type": "object",
+          "properties": {
+            "IDP_DECLARATION_ENABLED": {
+              "type": ["string", "boolean"],
+              "description": "Publish the RI permission manifest to the Access Manager at boot. Overrides global.idp.declarationEnabled; default \"false\"."
+            },
+            "IDP_HOST": {
+              "type": "string",
+              "description": "Access Manager identity base URL for the RI declaration. Overrides global.idp.host; emitted only when non-empty."
+            }
+          }
         },
         "secrets": {
-          "type": "object"
+          "type": "object",
+          "properties": {
+            "IDP_M2M_CLIENT_ID": {
+              "type": "string",
+              "description": "RI declaration M2M client ID (required by the app when IDP_DECLARATION_ENABLED=true). Emitted only when non-empty."
+            },
+            "IDP_M2M_CLIENT_SECRET": {
+              "type": "string",
+              "description": "RI declaration M2M client secret (required by the app when IDP_DECLARATION_ENABLED=true). Emitted only when non-empty."
+            }
+          }
         }
       },
       "additionalProperties": true

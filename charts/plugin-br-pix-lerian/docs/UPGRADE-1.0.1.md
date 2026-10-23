@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v1.0.0 to v1.0.1
 
 ## Topics
@@ -228,3 +229,4 @@ helm diff upgrade plugin-br-pix-lerian oci://registry-1.docker.io/lerianstudio/p
 ```bash
 helm upgrade plugin-br-pix-lerian oci://registry-1.docker.io/lerianstudio/plugin-br-pix-lerian-helm --version 1.0.1 -n plugin-br-pix-lerian
 ```
+<!-- {% endraw %} -->

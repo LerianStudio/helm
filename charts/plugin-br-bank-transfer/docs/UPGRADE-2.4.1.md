@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v2.4.0 to v2.4.1
 
 ## Topics
@@ -350,3 +351,4 @@ helm diff upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudi
 ```bash
 helm upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version 2.4.1 -n plugin-br-bank-transfer
 ```
+<!-- {% endraw %} -->

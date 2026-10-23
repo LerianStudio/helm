@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v4.0.5 to v4.0.6
 
 ## Topics
@@ -212,3 +213,4 @@ helm diff upgrade product-console oci://registry-1.docker.io/lerianstudio/produc
 ```bash
 helm upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version 4.0.6 -n product-console
 ```
+<!-- {% endraw %} -->

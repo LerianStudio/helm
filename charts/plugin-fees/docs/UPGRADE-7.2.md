@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v7.1.0 to v7.2.0
 
 # Topics
@@ -148,3 +149,4 @@ helm diff upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fee
 ```bash
 helm upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version 7.2.0 -n plugin-fees
 ```
+<!-- {% endraw %} -->

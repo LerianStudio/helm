@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Deploying the latest stable v2 versus v1
 
 This is the operator how-to for the two current stable lanes:
@@ -818,3 +819,4 @@ required.
 - [ ] Streaming manifest, topic/ACL consumers, webhook fanout, and outbox drain
       are verified when streaming is enabled.
 - [ ] Rollback values and database backup are available before the window begins.
+<!-- {% endraw %} -->

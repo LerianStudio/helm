@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v2.1.1 to v2.1.2
 
 ## Topics
@@ -131,3 +132,4 @@ helm diff upgrade tracer oci://registry-1.docker.io/lerianstudio/tracer-helm --v
 ```bash
 helm upgrade tracer oci://registry-1.docker.io/lerianstudio/tracer-helm --version 2.1.2 -n tracer
 ```
+<!-- {% endraw %} -->

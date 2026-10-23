@@ -1,5 +1,215 @@
 # Product-console Changelog
 
+## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
+
+Fixes:
+- Update `product-console` to `@2.13.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.3...product-console-v4.4.4)
+
+---
+
+## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
+
+Fixes:
+- Update `product-console` to `@2.13.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.3...product-console-v4.4.4)
+
+---
+
+## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
+
+Fixes:
+- Update `product-console` to `@2.13.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.3...product-console-v4.4.4)
+
+---
+
+## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
+
+Fixes:
+- Update `product-console` to `@2.13.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.3...product-console-v4.4.4)
+
+---
+
+## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
+
+Fixes:
+- Update `product-console` to `@2.13.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.3...product-console-v4.4.4)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+- Align README, notes, and values-template with the chart and app for improved documentation consistency. (@gandalf-at-lerian)
+
+Fixes:
+- Update `product-console@2.13.0` to address specific issues. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `product-console` `v4.4.1`. (@guimoreirar)
+- Add a Helm upgrade guide for `product-console` `v4.4.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+
+- Align the README, notes, and values-template with the chart and app. (@gandalf-at-lerian)
+
+Fixes:
+
+- Update `product-console@2.13.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+
+- Add Helm upgrade guide for `product-console` `v4.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `product-console` `v4.4.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+
+- Align the README, notes, and values-template with the chart and app for better consistency. (@gandalf-at-lerian)
+
+Fixes:
+
+- Update `product-console` to `@2.13.0` to address existing issues. (@guimoreirar, @lerian-studio)
+
+Improvements:
+
+- Add a Helm upgrade guide for `product-console` `v4.4.1` to assist users with the upgrade process. (@guimoreirar)
+- Add a Helm upgrade guide for `product-console` `v4.4.2` to provide further guidance on upgrading. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+- Add Helm upgrade guide for `product-console` `v4.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `product-console` `v4.4.2`. (@guimoreirar)
+
+Fixes:
+- Update `product-console` to `@2.13.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Align README, notes, and values-template with chart and app for `product-console`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+- Add Helm upgrade guide for `product-console` `v4.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `product-console` `v4.4.2`. (@guimoreirar)
+
+Fixes:
+- Update `product-console` to `@2.13.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Align README, notes, and values-template with chart and app for `product-console`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+- Added a Helm upgrade guide for `product-console` `v4.4.1`. (@guimoreirar)
+- Added a Helm upgrade guide for `product-console` `v4.4.2`. (@guimoreirar)
+
+Fixes:
+- Updated `product-console` to `@2.13.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Aligned README, notes, and values-template with the chart and app for `product-console`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+- Align the README, notes, and values-template with the chart and app for `product-console`. (@gandalf-at-lerian)
+
+Fixes:
+- Update `product-console` to `@2.13.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `product-console` `v4.4.1`. (@guimoreirar)
+- Add a Helm upgrade guide for `product-console` `v4.4.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+- Add Helm upgrade guide for `product-console` `v4.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `product-console` `v4.4.2`. (@guimoreirar)
+
+Fixes:
+- Update `product-console` to `@2.13.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Align README, notes, and values-template with chart and app for `product-console`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
+
+Features:
+- Added Helm upgrade guide for `v4.4.1` of product-console. (@guimoreirar)
+- Added Helm upgrade guide for `v4.4.2` of product-console. (@guimoreirar)
+
+Fixes:
+- Updated product-console to `@2.13.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Aligned README, notes, and values-template with chart and app for product-console. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.2...product-console-v4.4.3)
+
+---
+
 ## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.3)
 
 Features:

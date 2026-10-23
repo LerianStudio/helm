@@ -1,5 +1,237 @@
 # Midaz Changelog
 
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users to prevent configuration issues. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.1)
+
+Fixes:
+- Update `midaz-ledger` to `4.3.0`, `midaz-tracer` to `4.3.0`, `midaz-ledger-migrations` to `4.3.0`, and `midaz-tracer-migrations` to `4.3.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `midaz` `v9.8.0`. (@guimoreirar)
+- Add Helm upgrade guide for `midaz` `v9.7.3`. (@guimoreirar)
+- Add Helm upgrade guide for `midaz` `v9.7.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.0...midaz-v9.8.1)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+
+Fixes:
+- Ensure balance sync fork variables are kept in the configmap-only setup. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Add balance sync fork configuration to the ledger, allowing for enhanced synchronization capabilities. (@Ygohr)
+- Reflect balance sync fork configuration in the values template to ensure accurate configuration management. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables within the configmap-only setup to maintain consistency and prevent configuration drift. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`, providing users with detailed instructions for a smooth transition to the new version. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only, ensuring proper synchronization. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Add balance sync fork configuration to the ledger, allowing better management of balance synchronization processes. (@Ygohr)
+- Reflect balance sync fork configuration in the values template to ensure consistent configuration management. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the ConfigMap only, ensuring proper synchronization of balance-related configurations. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0` to assist users in transitioning to the new version smoothly. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
 ## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
 
 Features:

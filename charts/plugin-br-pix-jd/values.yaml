@@ -16,7 +16,6 @@ nameOverride: "plugin-br-pix-jd"
 fullnameOverride: ""
 # -- Overrides the release namespace for multi-namespace layouts
 namespaceOverride: ""
-
 global:
   # -- Registry prefixed onto every component image (mirrors, air-gapped installs)
   imageRegistry: ""
@@ -49,7 +48,6 @@ global:
   observability: {}
   # -- Environment-wide streaming/broker defaults, read by lerian-common.streaming.env
   streaming: {}
-
 serviceAccount:
   # -- Create a ServiceAccount shared by api and worker
   create: true
@@ -57,7 +55,6 @@ serviceAccount:
   annotations: {}
   # -- Use an existing ServiceAccount by name instead of creating one
   name: ""
-
 # -- AWS credential source for the multi-tenant M2M path, which resolves each
 # tenant's Midaz / CRM / JD credentials from Secrets Manager at runtime.
 #
@@ -107,10 +104,8 @@ aws:
         requests:
           cpu: 10m
           memory: 64Mi
-
 podSecurityContext:
   fsGroup: 1000
-
 # -- Container security context. Compatible with the app image as built:
 # distroless/static-debian12:nonroot running USER nonroot, and the binary writes
 # nothing to disk, so readOnlyRootFilesystem holds.
@@ -125,7 +120,6 @@ securityContext:
       - ALL
   seccompProfile:
     type: RuntimeDefault
-
 api:
   # -- Enable the HTTP api component
   enabled: true
@@ -138,7 +132,7 @@ api:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd
     # -- Image tag. Empty falls back to .Chart.AppVersion. Pin this
     # explicitly in production rather than riding the chart's release train.
-    tag: ""
+    tag: "1.3.0"
     # -- Image pull policy
     pullPolicy: IfNotPresent
   # -- Pull secrets for this component (falls back to global.imagePullSecrets)
@@ -305,7 +299,6 @@ api:
   existingSecret:
     # -- Read all Secret keys from this pre-existing Secret instead of rendering one
     name: ""
-
 worker:
   # -- Disabled by default: the worker is opt-in, not every install runs jobs.
   #
@@ -372,7 +365,6 @@ worker:
   extraSecrets: {}
   existingSecret:
     name: ""
-
 # -- Schema migrations, as a SEGREGATED Job (templates/common/migrations-job.yaml) —
 # the repository convention, matching plugin-br-bank-transfer, notifications,
 # plugin-access-manager and plugin-br-pix-switch.
@@ -415,15 +407,16 @@ migrations:
   # extract-from-the-app-image approach could never run (see the Job template).
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-migrations
-    # -- Pinned explicitly: api, worker and migrations are all published at 1.2.4.
+    # -- Pinned explicitly: api, worker and migrations are all published at 1.3.0.
     # Migrations are independently versioned; a release that does not touch the SQL
-    # skips this image, so re-check the pin on every appVersion bump.
-    tag: "1.2.4"
+    # skips this image, so re-check the pin on every appVersion bump. 1.3.0 adds
+    # 000045-000055, and the 1.3.0 binary needs them (000054 above all: without it
+    # no Pix is created or settled), so this Job must run them before the app rolls.
+    tag: "1.3.0"
     pullPolicy: IfNotPresent
   # -- Optional x-migrations-table override, passed to the image as
   # POSTGRES_MIGRATIONS_TABLE; empty uses golang-migrate's default (schema_migrations)
   table: ""
-
 # -- Values block for the lerian-common library dependency. It is INERT — a library
 # chart renders nothing and reads no values — but it must be declared, and this is
 # not cosmetic: Helm injects a values key for EVERY declared dependency, library
@@ -433,7 +426,6 @@ migrations:
 # surfaces in the repository render gate, which materializes the local dependency
 # into an isolated workspace. Keep this key while the dependency exists.
 lerian-common-helm: {}
-
 postgresql:
   # -- Bundle the Bitnami postgresql subchart. DESLIGADO por default, igual ao
   # go-boilerplate-ddd-helm e igual ao valkey abaixo. Ligar exige external=false.
@@ -483,7 +475,6 @@ postgresql:
     persistence:
       enabled: true
       size: 8Gi
-
 # =============================================================================
 # Valkey EMBARCADO — desligado por default, como o postgresql acima.
 #

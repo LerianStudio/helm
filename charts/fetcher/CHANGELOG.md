@@ -1,5 +1,161 @@
 # Fetcher Changelog
 
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
+- Update `fetcher-manager` to `3.1.1` and `fetcher-worker` to `3.1.1`, ensuring compatibility and stability improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
+- Update `fetcher-manager` to `3.1.1` and `fetcher-worker` to `3.1.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
+- Update `fetcher-manager` to `3.1.1` and `fetcher-worker` to `3.1.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
+- Updated `fetcher-manager` to version `3.1.1` and `fetcher-worker` to version `3.1.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.2)
+
+Improvements:
+- Keep each fetcher release under the license it shipped with. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.1...fetcher-v3.4.2)
+
+---
+
+## [3.4.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.2)
+
+Improvements:
+
+- Keep each fetcher release under the license it shipped with. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.1...fetcher-v3.4.2)
+
+---
+
+## [3.4.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.2)
+
+Improvements:
+- Ensure each fetcher release is documented under the license it was originally shipped with. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.1...fetcher-v3.4.2)
+
+---
+
+## [3.4.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.1)
+
+Improvements:
+- Drop the Apache 2.0 license claim for the fetcher application. (@fredcamaral)
+- Add a Helm upgrade guide for fetcher `v3.4.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.0...fetcher-v3.4.1)
+
+---
+
+## [3.4.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.1)
+
+Features:
+- Add Helm upgrade guide for `fetcher` `v3.4.0`. (@guimoreirar)
+
+Improvements:
+- Remove the Apache 2.0 license claim from the `fetcher` application documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.0...fetcher-v3.4.1)
+
+---
+
+## [3.4.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.1)
+
+Features:
+- Add a Helm upgrade guide for `fetcher` `v3.4.0`. (@guimoreirar)
+
+Improvements:
+- Drop the Apache 2.0 claim about the `fetcher` application. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.0...fetcher-v3.4.1)
+
+---
+
+## [3.4.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.1)
+
+Improvements:
+- Remove the Apache 2.0 license claim from the fetcher application documentation. (@fredcamaral)
+- Add a Helm upgrade guide for `fetcher` `v3.4.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.0...fetcher-v3.4.1)
+
+---
+
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` to support the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of guaranteeing node provisioning. (@gandalf-at-lerian)
+- Use `minDomains 2` in the spread examples and include both RabbitMQ render checks in the documentation. (@gandalf-at-lerian)
+- Align the README, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add a Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` to support the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of promising node provisioning. (@gandalf-at-lerian)
+- Use `minDomains 2` in the spread examples and list both RabbitMQ render checks. (@gandalf-at-lerian)
+- Align README, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add a Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
+## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the IDP_* declaration helper. (@qnen)
+- Render the IDP_* permission declaration from `lerian-common`. (@qnen)
+
+Improvements:
+- Update documentation to indicate that `minDomains` can prompt an autoscaler instead of promising node provisioning. (@gandalf-at-lerian)
+- Use `minDomains` 2 in the spread examples and list both RabbitMQ render checks. (@gandalf-at-lerian)
+- Align README, values, and upgrade guides with the templates. (@gandalf-at-lerian)
+- Add Helm upgrade guide for fetcher `v3.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.3.0...fetcher-v3.4.0)
+
+---
+
 ## [3.4.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.0)
 
 Features:

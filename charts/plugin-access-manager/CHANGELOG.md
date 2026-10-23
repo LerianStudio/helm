@@ -1,5 +1,233 @@
 # Plugin-access-manager Changelog
 
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Correct the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Remove claims of source-available and open-source from documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Correct the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Remove claims regarding source-availability and open-source status from documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+
+- Correct the spelling of "plugin-access-manager" in documentation. (@fredcamaral)
+
+Improvements:
+
+- Remove claims of being source-available and open-source from documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Added a Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Corrected the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Removed claims of source-available and open-source from the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Correct the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Remove claims of source-available and open-source from documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Correct the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Remove claims of source-available and open-source from documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+
+- Correct the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+
+- Remove claims of source-available and open-source from documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Added a Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Corrected the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Removed claims regarding source-availability and open-source status from the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Correct the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Correct the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Remove claims about being source-available and open-source from documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.0`. (@guimoreirar)
+
+Fixes:
+- Derive OTEL environment from `ENV_NAME`. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Merge main into the OTEL environment branch for `plugin-access-manager`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.0...plugin-access-manager-v9.8.1)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.0`. (@guimoreirar)
+
+Fixes:
+- Derive OTEL environment from `ENV_NAME` for `plugin-access-manager`. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Merge main into the OTEL environment branch for `plugin-access-manager`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.0...plugin-access-manager-v9.8.1)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.0`. (@guimoreirar)
+
+Fixes:
+- Derive OTEL environment from `ENV_NAME` for `plugin-access-manager`. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Merge main into the OTEL environment branch for `plugin-access-manager`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.0...plugin-access-manager-v9.8.1)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.0`. (@guimoreirar)
+
+Fixes:
+- Derive OTEL environment from `ENV_NAME` for `plugin-access-manager`. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Merge main into the OTEL environment branch for `plugin-access-manager`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.0...plugin-access-manager-v9.8.1)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.8.0`. (@guimoreirar)
+
+Fixes:
+- Derive OTEL environment from `ENV_NAME`. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Merge main into the OTEL environment branch for `plugin-access-manager`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.0...plugin-access-manager-v9.8.1)
+
+---
+
 ## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.1)
 
 Features:

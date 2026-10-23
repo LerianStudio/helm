@@ -1,5 +1,215 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values for `plugin-br-pix-indirect-btg`. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update to `plugin-br-pix-indirect-btg@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete the values. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values for `plugin-br-pix-indirect-btg`. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete their values. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete the values. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete values. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
+
+Features:
+- Update `plugin-br-pix-indirect-btg` to `@1.11.0` with new environment variables. (@lerian-studio)
+
+Fixes:
+- Move new environment variables to the standard secrets template and complete the values. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.0.1...plugin-br-pix-indirect-btg-v4.1.0)
+
+---
+
 ## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.0.1)
 
 Features:

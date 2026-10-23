@@ -351,5 +351,28 @@ class StartupContract(unittest.TestCase):
                          'ghcr.io/lerianstudio/caradhras-user-init:3.11.1')
 
 
+    def migrate_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        init = next(c for c in deployment['spec']['template']['spec']['initContainers']
+                    if c['name'] == 'migrate')
+        return {e['name']: e.get('value') for e in init['env']}
+
+    def test_migrate_skip_rbac_chain_only_when_true(self):
+        default = self.migrate_env({})
+        self.assertEqual(set(default), {'POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB',
+                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE'})
+        self.assertEqual(self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': False}}}), default)
+        env = self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def test_migrate_extra_env_vars(self):
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'FOO': 'bar', 'RETRIES': 3}}}})
+        self.assertEqual((env['FOO'], env['RETRIES']), ('bar', '3'))
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'POSTGRES_HOST': 'x'}}}},
+                   'caradhras.migrations.extraEnvVars.POSTGRES_HOST duplicates a chart-owned env')
+
+
 if __name__ == '__main__':
     unittest.main()

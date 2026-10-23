@@ -511,6 +511,8 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
 | `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions | `1.5.1` |
+| `caradhras.migrations.skipRBACChain` | Render `MIGRATIONS_SKIP_RBAC_CHAIN=true` on the migrate init container: apply the schema chain and skip the `migrations-rbac` chain (Lerian product permissions/roles/groups under owner `lerian`). For installs whose permissions arrive only via RI manifests (e.g. cross). Needs a caradhras-migrations image that understands the variable; `false` renders nothing | `false` |
+| `caradhras.migrations.extraEnvVars` | Extra `NAME: value` env vars for the migrate init container only, rendered as name/value pairs. Chart-owned names (`POSTGRES_*`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused; not for secrets | `{}` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
 | `caradhras.ui.image.repository` | Repository for the caradhras-ui container image | `ghcr.io/lerianstudio/caradhras-ui` |
 | `caradhras.ui.image.tag` | Image tag used for deployment | `1.4.0` |

@@ -135,12 +135,60 @@ DEPENDENCY ENABLED HELPER
 ================================================================================
 */}}
 
+{{- /*
+"true" only when the bundled postgresql subchart is actually in play:
+postgresql.enabled is not explicitly "false" AND postgresql.external is not
+set. NOT `and (default true .Values.postgresql.enabled) ...` — Sprig's
+`default` substitutes its fallback for ANY "empty" input, and a Go bool
+`false` IS the zero value for its type, so `default true false` evaluates
+to `true`. That silently discarded an explicit postgresql.enabled=false
+override and made this helper report "bundled" even when a caller asked for
+external Postgres, which is exactly the exclusivity this helper exists to
+police (see templates/controlplane-migrations.yaml and
+templates/bootstrap-postgres.yaml, which gate on this helper resolving to
+"false" before ever running against a genuinely external Postgres).
+*/}}
 {{- define "postgresql.enabled" -}}
-{{- if and (default true .Values.postgresql.enabled) (not .Values.postgresql.external) -}}
+{{- if and (ne (.Values.postgresql.enabled | toString) "false") (not .Values.postgresql.external) -}}
 true
 {{- else -}}
 false
 {{- end -}}
+{{- end -}}
+
+{{- /*
+Exclusivity guard between the bundled postgresql subchart and
+global.externalPostgresDefinitions/postgresql.external, kept SEPARATE from
+the "postgresql.enabled" helper above on purpose: that helper is an OR of two
+flags (postgresql.enabled / postgresql.external) meant to answer "which host
+does this release talk to", but Chart.yaml's dependency condition
+(`condition: postgresql.enabled`) only ever reads the literal
+.Values.postgresql.enabled — it has no idea postgresql.external exists. So an
+operator who sets postgresql.external=true while leaving postgresql.enabled
+at its default true gets a "postgresql.enabled" helper that answers "false"
+(external) while Helm's own dependency condition still resolves true and
+renders the bundled StatefulSet/Service/Secret anyway. A gate built on the
+helper (templates/controlplane-migrations.yaml, templates/bootstrap-postgres.yaml)
+would then wrongly believe it is safe to render external-database Jobs while
+the bundled database is also present, producing the exact double-render/race
+this chart's exclusivity gates exist to prevent — with zero warning.
+
+This check is keyed on the SAME literal .Values.postgresql.enabled Chart.yaml
+itself uses, not the helper, and it fails closed on EITHER of the two ways an
+operator can signal "external": postgresql.external=true (README's documented
+path — postgresql.enabled left at its default true, only .external flipped)
+OR global.externalPostgresDefinitions.enabled=true. An earlier version of this
+guard checked only the externalPostgresDefinitions.enabled arm and let
+postgresql.enabled=true + postgresql.external=true through silently — the
+exact contradictory combination this guard exists to catch, since Chart.yaml
+would still render the bundled StatefulSet under it. Only actually turning off
+the literal postgresql.enabled (or turning off both external signals) avoids
+this fail().
+*/}}
+{{- define "plugin-br-payments.validatePostgresExclusivity" -}}
+{{- if and .Values.postgresql.enabled (or .Values.postgresql.external .Values.global.externalPostgresDefinitions.enabled) }}
+{{- fail "\n\nERROR: postgresql.enabled cannot be true at the same time as postgresql.external\n   or global.externalPostgresDefinitions.enabled.\n   Chart.yaml's postgresql dependency is gated on the literal postgresql.enabled\n   value alone (condition: postgresql.enabled), so leaving it at its default\n   true still renders the bundled PostgreSQL subchart even when\n   postgresql.external and/or global.externalPostgresDefinitions.enabled is\n   also set to true. Set postgresql.enabled: false to use an external Postgres\n   (postgresql.external / global.externalPostgresDefinitions), or leave both\n   postgresql.external and global.externalPostgresDefinitions.enabled false to\n   use the bundled one.\n" }}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -154,11 +202,8 @@ plugin-br-payments README.
 */}}
 
 {{- define "plugin-br-payments.validateRequired" -}}
-
-{{/* OUTBOX must be enabled for HTTP routes to register */}}
-{{- if ne (.Values.app.configmap.OUTBOX_ENABLED | toString) "true" }}
-{{- fail "\n\nERROR: app.configmap.OUTBOX_ENABLED must be \"true\".\n   plugin-br-payments only registers its routes when the outbox pattern is enabled.\n   See README -> 'Local Development Config'.\n" }}
-{{- end }}
+{{- include "plugin-br-payments.validateRetiredKeys" . -}}
+{{- $multiTenantEnabled := eq (include "plugin-br-payments.multiTenantEnabled" .) "true" }}
 
 {{/* BTG provider integration — required for any write operation */}}
 {{- if not .Values.app.configmap.BTG_API_BASE_URL }}
@@ -169,25 +214,35 @@ plugin-br-payments README.
 {{- fail "\n\nERROR: app.configmap.BTG_AUTH_URL is REQUIRED.\n   Set the BTG OAuth2 token endpoint URL.\n" }}
 {{- end }}
 
-{{- if not .Values.app.secrets.BTG_CLIENT_ID }}
-{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_ID is REQUIRED.\n   Set the BTG OAuth2 client ID in the secrets section.\n" }}
+{{/* Renamed keys (MULTI_TENANCY_ENABLED and the five MULTI_TENANT_* the app
+     deprecated with it, the BTG_CLIENT_* pair, the ONBOARDING/TRANSACTION URLs) are
+     refused by validateRetiredKeys above, with the replacement named in the error. */}}
+
+{{/* The provider OAuth2 pair — named for the ROLE, not the vendor (renamed from
+     BTG_CLIENT_ID / BTG_CLIENT_SECRET; the old names are refused above). Required
+     in SINGLE-TENANT only: in multi-tenant the pair is resolved per tenant from the
+     credential row, nothing reads these two, and the app WARNs at boot for each one
+     left set. Demanding them unconditionally made a valid multi-tenant deployment
+     fail to render. */}}
+{{- if not $multiTenantEnabled }}
+{{- if not .Values.app.secrets.PROVIDER_CLIENT_ID }}
+{{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_ID is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client ID in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
 {{- end }}
 
-{{- if not .Values.app.secrets.BTG_CLIENT_SECRET }}
-{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_SECRET is REQUIRED.\n   Set the BTG OAuth2 client secret in the secrets section.\n" }}
+{{- if not .Values.app.secrets.PROVIDER_CLIENT_SECRET }}
+{{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_SECRET is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client secret in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
+{{- end }}
 {{- end }}
 
-{{- if not .Values.app.secrets.BTG_WEBHOOK_SECRET }}
-{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_SECRET is REQUIRED.\n   Set the BTG webhook bearer token in the secrets section.\n" }}
-{{- end }}
-
-{{/* Midaz Ledger URLs — required for production */}}
-{{- if not .Values.app.configmap.MIDAZ_ONBOARDING_URL }}
-{{- fail "\n\nERROR: app.configmap.MIDAZ_ONBOARDING_URL is REQUIRED.\n   Set the Midaz onboarding service URL.\n" }}
-{{- end }}
-
-{{- if not .Values.app.configmap.MIDAZ_TRANSACTION_URL }}
-{{- fail "\n\nERROR: app.configmap.MIDAZ_TRANSACTION_URL is REQUIRED.\n   Set the Midaz transaction service URL.\n" }}
+{{/* Midaz Ledger URL — required for production.
+     Preferred: app.configmap.MIDAZ_LEDGER_URL (single Ledger plane URL; the
+     app now serves onboarding + transaction from one plane).
+     DEPRECATED fallback: MIDAZ_ONBOARDING_URL + MIDAZ_TRANSACTION_URL (the
+     former split pair). Still accepted for backward compatibility with
+     environments that have not migrated yet; remove once all overlays use
+     MIDAZ_LEDGER_URL. */}}
+{{- if not .Values.app.configmap.MIDAZ_LEDGER_URL }}
+{{- fail "\n\nERROR: app.configmap.MIDAZ_LEDGER_URL is REQUIRED.\n   Set the Midaz Ledger service URL (one URL serves onboarding and transaction).\n" }}
 {{- end }}
 
 {{/* PostgreSQL password is single-sourced from the postgresql subchart Secret
@@ -197,12 +252,28 @@ plugin-br-payments README.
      operator supplies postgresql.auth.existingSecret or app.secrets.POSTGRES_PASSWORD. */}}
 
 {{/* Multi-tenant required fields when enabled */}}
-{{- if eq (.Values.app.configmap.MULTI_TENANCY_ENABLED | toString) "true" }}
-{{- if not .Values.app.configmap.MULTI_TENANT_MANAGER_URL }}
-{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_MANAGER_URL is REQUIRED when MULTI_TENANCY_ENABLED=true.\n" }}
+{{- if $multiTenantEnabled }}
+{{- $mtCm := dict -}}
+{{- range $k, $v := (.Values.app.configmap | default dict) }}{{- if not (kindIs "invalid" $v) }}{{- $_ := set $mtCm $k $v -}}{{- end }}{{- end }}
+{{- if not (include "lerian-common.globalValue" (dict "context" . "configmap" $mtCm "block" "multiTenant" "field" "url" "nativeKey" "MULTI_TENANT_URL" "default" "")) }}
+{{- fail "\n\nERROR: MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Set global.multiTenant.url (env-wide) or app.configmap.MULTI_TENANT_URL.\n" }}
 {{- end }}
 {{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
-{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANCY_ENABLED=true.\n" }}
+{{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
+{{- end }}
+{{/* The app resolves this with strings.EqualFold(strings.TrimSpace(...), "vault")
+     (internal/bootstrap/config.go) — case-insensitive AND trimmed. Match that
+     trim-then-fold order here so a value like "Vault" or " vault " that boots
+     fine in the app doesn't fail this chart's render gate. */}}
+{{- if ne (trim (include "plugin-br-payments.cfg" (dict "root" . "key" "MULTI_TENANT_CREDENTIAL_SOURCE" "default" "vault")) | lower) "vault" }}
+{{- fail "\n\nERROR: app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE must be \"vault\" (case-insensitive, whitespace-trimmed) when MULTI_TENANT_ENABLED=true.\n   The application fails closed at boot for any other value (empty, a typo, or the retired \"tenant_manager\" spelling) — there is no fallback credential source.\n" }}
+{{- end }}
+{{/* Helm's `not` only catches empty-string/nil: an all-whitespace value like
+     "   " would pass a bare `not` check and let the AWS SDK load with an
+     empty effective region, failing later on the first Secrets Manager call
+     instead of failing closed at render time. Validate the trimmed value. */}}
+{{- if not (trim (.Values.app.configmap.AWS_REGION | toString)) }}
+{{- fail "\n\nERROR: app.configmap.AWS_REGION is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle.\n" }}
 {{- end }}
 {{- end }}
 
@@ -217,6 +288,26 @@ plugin-br-payments README.
 {{- end }}
 {{- if not .Values.app.secrets.CREDENTIAL_ENCRYPTION_KEY }}
 {{- fail "\n\nERROR: app.secrets.CREDENTIAL_ENCRYPTION_KEY is REQUIRED when SERVICE_TYPE includes worker (\"both\" or \"worker\").\n   The plugin uses this key to encrypt provider OAuth credentials at rest.\n   Must be a base64-encoded AES-256 key (32 random bytes).\n   Generate with: openssl rand -base64 32\n" }}
+{{- end }}
+{{- end }}
+
+{{/* Bill consult audit HMAC key — the app refuses to boot without it wherever the
+     consult route is served (SERVICE_TYPE "both" or "api"). Operator-provided with
+     no subchart to source it from, so it is gated at render (docs/helm-chart-standard.md
+     "Fail-loud credential gates"). Skipped with app.useExistingSecret: the key then
+     lives in the operator's Secret, which the chart cannot read. The app also refuses
+     the published example placeholders when ENV_NAME=production; that check stays
+     in the app. */}}
+{{- if and (or (eq $svcType "both") (eq $svcType "api")) (not .Values.app.useExistingSecret) }}
+{{- $consultKey := .Values.app.secrets.CONSULT_AUDIT_HMAC_KEY | default "" | toString }}
+{{- if not $consultKey }}
+{{- fail "\n\nERROR: app.secrets.CONSULT_AUDIT_HMAC_KEY is REQUIRED when SERVICE_TYPE serves the API (\"both\" or \"api\").\n   HMAC key of the bill consult audit's line fingerprint; the app refuses to boot without it.\n   Must be at least 32 characters, with no leading or trailing whitespace.\n   Generate with: openssl rand -hex 32 (outside local, source it from the platform secret manager)\n   or set app.useExistingSecret with a Secret that carries the key.\n" }}
+{{- end }}
+{{- if ne $consultKey (trim $consultKey) }}
+{{- fail "\n\nERROR: app.secrets.CONSULT_AUDIT_HMAC_KEY must not have leading or trailing whitespace.\n   The app refuses it at boot. Generate with: openssl rand -hex 32\n" }}
+{{- end }}
+{{- if lt (len $consultKey) 32 }}
+{{- fail "\n\nERROR: app.secrets.CONSULT_AUDIT_HMAC_KEY must be at least 32 characters.\n   Generate with: openssl rand -hex 32\n" }}
 {{- end }}
 {{- end }}
 

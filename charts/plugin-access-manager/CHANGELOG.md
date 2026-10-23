@@ -3,6 +3,21 @@
 ## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
 
 Features:
+- Added a Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Corrected the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Removed claims regarding source-available and open-source status from the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
 - Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
 
 Fixes:

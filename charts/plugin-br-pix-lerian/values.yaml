@@ -1664,8 +1664,16 @@ pixauto:
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
   #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    DATABASE_READ_REPLICA is an optional composed DSN for the read-replica
+  #    pool (app-runtime; blank keeps a single pool). ADAPTER_CLIENT_SECRET and
+  #    CRM_CLIENT_SECRET are the v1.1.0 M2M secrets -- ADAPTER_CLIENT_SECRET is
+  #    REQUIRED (with ADAPTER_CLIENT_ID) once REGULATORY_DISPATCH_ENABLED=true in
+  #    a non-local ENV_NAME, or the app refuses to boot.
   #    The cache is configured through the discrete REDIS_* keys.
   secrets:
+    ADAPTER_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    DATABASE_READ_REPLICA: ""
     DATABASE_URL: ""
     IDP_M2M_CLIENT_SECRET: ""
     LICENSE_KEY: ""

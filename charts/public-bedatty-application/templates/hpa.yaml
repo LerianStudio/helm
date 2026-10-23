@@ -1,0 +1,8 @@
+{{- if and (index .Values "public-bedatty-application").enabled (index .Values "public-bedatty-application").autoscaling.enabled }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" (index .Values "public-bedatty-application").autoscaling
+      "name" (include "public-bedatty-application.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "public-bedatty-application.labels" (dict "context" . "component" (index .Values "public-bedatty-application").name "name" (index .Values "public-bedatty-application").name))
+    ) }}
+{{- end }}

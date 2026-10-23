@@ -1,0 +1,10 @@
+{{- if and (index .Values "public-bedatty-application").enabled (index .Values "public-bedatty-application").pdb.enabled }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" (index .Values "public-bedatty-application").pdb
+      "name" (include "public-bedatty-application.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "public-bedatty-application.labels" (dict "context" . "component" (index .Values "public-bedatty-application").name "name" (index .Values "public-bedatty-application").name))
+      "selector" (include "public-bedatty-application.selectorLabels" (dict "context" . "name" (index .Values "public-bedatty-application").name))
+      "minAvailableDefault" 1
+    ) }}
+{{- end }}

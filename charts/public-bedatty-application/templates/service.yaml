@@ -1,0 +1,9 @@
+{{- if (index .Values "public-bedatty-application").enabled }}
+{{- include "lerian-common.service" (dict
+      "service" (index .Values "public-bedatty-application").service
+      "name" (include "public-bedatty-application.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "public-bedatty-application.labels" (dict "context" . "component" (index .Values "public-bedatty-application").name "name" (index .Values "public-bedatty-application").name))
+      "selector" (include "public-bedatty-application.selectorLabels" (dict "context" . "name" (index .Values "public-bedatty-application").name))
+    ) }}
+{{- end }}

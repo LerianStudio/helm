@@ -106,10 +106,9 @@ public-bedatty-application:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.0.0" # defaults to appVersion (1.2.2) when empty
+    tag: "1.0.0-beta.1"
   # -- Secrets for pulling images from a private registry
-  imagePullSecrets:
-    - name: ghcr-credential
+  imagePullSecrets: []
   # ----- Workload · pod security ---------------------------------------------
   # -- Pod annotations for additional metadata
   podAnnotations: {}

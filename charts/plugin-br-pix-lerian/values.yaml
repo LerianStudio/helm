@@ -1568,10 +1568,12 @@ adapterLerianSystemplane:
 # Job below is the app's only one and lives on this API component.
 # -----------------------------------------------------------------------------
 pixauto:
-  # Onboarding default, same as adapter-lerian: the component ships in the chart
-  # so the release pipeline's `.pixauto.image.tag` key resolves, and each
-  # environment opts in once its `pix-pixauto` database and DSN secret exist.
-  enabled: false
+  # Enabled by default: Pix Automático ships on in the cohort. An environment
+  # upgrading into this default gets the pixauto workloads, so its `pix-pixauto`
+  # database, the `DATABASE_URL` / `SYSTEMPLANE_POSTGRES_DSN` secret and the
+  # systemplane master key must exist BEFORE the upgrade. Set `enabled: false`
+  # to opt a lane out.
+  enabled: true
   name: "pixauto"
   description: "Pix Automático payer API"
   replicaCount: 1
@@ -1662,8 +1664,16 @@ pixauto:
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
   #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    DATABASE_READ_REPLICA is an optional composed DSN for the read-replica
+  #    pool (app-runtime; blank keeps a single pool). ADAPTER_CLIENT_SECRET and
+  #    CRM_CLIENT_SECRET are the v1.1.0 M2M secrets -- ADAPTER_CLIENT_SECRET is
+  #    REQUIRED (with ADAPTER_CLIENT_ID) once REGULATORY_DISPATCH_ENABLED=true in
+  #    a non-local ENV_NAME, or the app refuses to boot.
   #    The cache is configured through the discrete REDIS_* keys.
   secrets:
+    ADAPTER_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    DATABASE_READ_REPLICA: ""
     DATABASE_URL: ""
     IDP_M2M_CLIENT_SECRET: ""
     LICENSE_KEY: ""
@@ -1700,7 +1710,10 @@ pixauto:
 # against the SAME database. No migration Job — see pixauto.migrations above.
 # -----------------------------------------------------------------------------
 pixautoSystemplane:
-  enabled: false
+  # Enabled by default alongside pixauto: it is the sole writer of the pixauto
+  # systemplane store the API reads. Requires SYSTEMPLANE_SECRET_MASTER_KEY and
+  # the pix-pixauto DSN before upgrade. Set `enabled: false` to opt a lane out.
+  enabled: true
   name: "pixauto-systemplane"
   description: "Runtime config plane for Pix Automático"
   replicaCount: 1

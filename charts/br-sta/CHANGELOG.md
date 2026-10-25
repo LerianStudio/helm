@@ -3,6 +3,18 @@
 ## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.2)
 
 Features:
+- Add Helm upgrade guide for `br-sta` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+- Correct factual errors in the README and the `1.0` upgrade guides for `br-sta`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.1...br-sta-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.2)
+
+Features:
 - Add a Helm upgrade guide for `br-sta` `v1.0.0`. (@guimoreirar)
 
 Fixes:

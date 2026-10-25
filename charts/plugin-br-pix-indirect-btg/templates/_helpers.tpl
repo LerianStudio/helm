@@ -143,6 +143,14 @@ Create app version.
 {{- end }}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 ================================================================================
 LABEL HELPERS
 ================================================================================

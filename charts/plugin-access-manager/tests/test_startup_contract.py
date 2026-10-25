@@ -129,7 +129,7 @@ class StartupContract(unittest.TestCase):
         flags = {'auth': ['ALLOW_INSECURE_TLS', 'RUNNING_IN_DOCKER', 'RATE_LIMIT_ENABLED',
                           'CIRCUIT_BREAKER_ENABLED', 'SWAGGER_ENABLED'],
                  'identity': ['ALLOW_INSECURE_TLS', 'AUTH_ENABLED', 'RATE_LIMIT_ENABLED', 'CIRCUIT_BREAKER_ENABLED']}
-        for value, expected in [(False, 'false'), ('false', 'false'), (True, 'true'), (None, 'true')]:
+        for value, expected in [(False, 'false'), ('false', 'false'), (True, 'true'), (None, 'true'), ('', 'true')]:
             with self.subTest(value=value):
                 values = production()
                 for component, keys in flags.items():

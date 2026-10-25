@@ -179,12 +179,6 @@ jobs:
           chart_name="$(basename "$CHART_WORKING_DIR")"
           go run ./validate-helm-charts --root ../.. --render-gate --charts "$chart_name"
 
-      #- name: Run helm unittest
-      #  id: unittest
-      #  run: |
-      #    helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
-      #    helm unittest ${{ matrix.chart.working_dir }}
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:

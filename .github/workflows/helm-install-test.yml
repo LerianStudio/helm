@@ -147,6 +147,26 @@ jobs:
           username: lerianstudio
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # By convention: charts/<c>/tests/test_*.py run as scripts, charts/<c>/tests/*_test.yaml via helm-unittest.
+      - name: Run chart tests
+        if: steps.scope.outputs.has-charts == 'true'
+        shell: bash
+        env:
+          CHARTS: ${{ steps.scope.outputs.charts-list }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for c in $CHARTS; do
+            py=(charts/"$c"/tests/test_*.py); suites=(charts/"$c"/tests/*_test.yaml)
+            (( ${#py[@]} + ${#suites[@]} )) || continue
+            helm dependency update "charts/$c"
+            for t in "${py[@]}"; do python3 "$t"; done
+            (( ${#suites[@]} )) || continue
+            # helm-unittest v1.1.2, pinned by commit like the actions above.
+            helm plugin list | grep -q '^unittest' || helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 33c48cac798e465deda9a66c8e6c07c0973cf53d --verify=false
+            helm unittest "charts/$c"
+          done
+
       - name: Create kind cluster
         if: steps.scope.outputs.has-charts == 'true'
         uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.10.0

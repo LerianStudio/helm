@@ -12,7 +12,7 @@ metadata:
     {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 4 }}
 data:
   # -- Default Environment variables for the plugin-fees
-  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-fees.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
   ENV_NAME: {{ $envName | quote }}
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "plugin-fees" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "local" | quote }}
@@ -82,17 +82,17 @@ data:
   CORS_ALLOW_ORIGINS: {{ $cm.CORS_ALLOW_ORIGINS | default "http://localhost:3000" | quote }}
   RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "100" | quote }}
   RATE_LIMIT_WINDOW_SECONDS: {{ $cm.RATE_LIMIT_WINDOW_SECONDS | default "60" | quote }}
-  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "plugin-fees.flagDefaultTrue" $cm.RATE_LIMIT_ENABLED | quote }}
 
   # CURRENCY
   DEFAULT_CURRENCY: {{ $cm.DEFAULT_CURRENCY | default "BRL" | quote }}
 
   # CACHE
-  PACKAGE_CACHE_ENABLED: {{ $cm.PACKAGE_CACHE_ENABLED | default "true" | quote }}
+  PACKAGE_CACHE_ENABLED: {{ include "plugin-fees.flagDefaultTrue" $cm.PACKAGE_CACHE_ENABLED | quote }}
   PACKAGE_CACHE_TTL_SECONDS: {{ $cm.PACKAGE_CACHE_TTL_SECONDS | default "180" | quote }}
-  BILLING_PACKAGE_CACHE_ENABLED: {{ $cm.BILLING_PACKAGE_CACHE_ENABLED | default "true" | quote }}
+  BILLING_PACKAGE_CACHE_ENABLED: {{ include "plugin-fees.flagDefaultTrue" $cm.BILLING_PACKAGE_CACHE_ENABLED | quote }}
   BILLING_PACKAGE_CACHE_TTL_SECONDS: {{ $cm.BILLING_PACKAGE_CACHE_TTL_SECONDS | default "180" | quote }}
-  ACCOUNT_CACHE_ENABLED: {{ $cm.ACCOUNT_CACHE_ENABLED | default "true" | quote }}
+  ACCOUNT_CACHE_ENABLED: {{ include "plugin-fees.flagDefaultTrue" $cm.ACCOUNT_CACHE_ENABLED | quote }}
   ACCOUNT_CACHE_TTL_SECONDS: {{ $cm.ACCOUNT_CACHE_TTL_SECONDS | default "300" | quote }}
 
   # M2M (Machine-to-Machine)

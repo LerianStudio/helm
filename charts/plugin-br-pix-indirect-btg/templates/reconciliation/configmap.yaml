@@ -27,7 +27,7 @@ data:
   DB_REPLICA_PORT: {{ .Values.reconciliation.configmap.DB_REPLICA_PORT | default "" | quote }}
 
   # VSync Configuration
-  RECONCILIATION_VSYNC_ENABLED: {{ .Values.reconciliation.configmap.RECONCILIATION_VSYNC_ENABLED | default "true" | quote }}
+  RECONCILIATION_VSYNC_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.reconciliation.configmap.RECONCILIATION_VSYNC_ENABLED | quote }}
   RECONCILIATION_VSYNC_SCHEDULE: {{ .Values.reconciliation.configmap.RECONCILIATION_VSYNC_SCHEDULE | default "5m" | quote }}
 
   # Time Window Configuration
@@ -68,7 +68,7 @@ data:
   PLUGIN_PIX_BTG_TIMEOUT: {{ .Values.reconciliation.configmap.PLUGIN_PIX_BTG_TIMEOUT | default "30s" | quote }}
 
   # Circuit Breaker Configuration
-  CIRCUIT_BREAKER_ENABLED: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  CIRCUIT_BREAKER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.reconciliation.configmap.CIRCUIT_BREAKER_ENABLED | quote }}
   CIRCUIT_BREAKER_MAX_REQUESTS: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_MAX_REQUESTS | default "3" | quote }}
   CIRCUIT_BREAKER_INTERVAL: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_INTERVAL | default "60s" | quote }}
   CIRCUIT_BREAKER_FAILURE_THRESHOLD: {{ .Values.reconciliation.configmap.CIRCUIT_BREAKER_FAILURE_THRESHOLD | default "5" | quote }}
@@ -113,14 +113,14 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.reconciliation.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.reconciliation.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.reconciliation.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.reconciliation.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  ENABLE_TELEMETRY: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.reconciliation.configmap.ENABLE_TELEMETRY | quote }}
 
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.reconciliation.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.reconciliation.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
-  ALLOW_INSECURE_TLS: {{ .Values.reconciliation.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.reconciliation.configmap.ALLOW_INSECURE_TLS | quote }}
   ALLOW_CORS_WILDCARD: {{ .Values.reconciliation.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
-  RATE_LIMIT_ENABLED: {{ .Values.reconciliation.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.reconciliation.configmap.RATE_LIMIT_ENABLED | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.reconciliation.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
   {{- if .Values.mtls.enabled }}

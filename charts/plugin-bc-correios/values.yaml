@@ -205,7 +205,9 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    APP_ENV: "development"
+    # Deployment environment. A development install without Access Manager sets ENV_NAME
+    # "development" and PLUGIN_AUTH_ENABLED "false": the app refuses auth off in production.
+    ENV_NAME: "production"
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: "1.0.0"
     LOG_LEVEL: "info"
@@ -245,9 +247,9 @@ bc-correios:
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
     BC_CORREIO_RETRY_MAX_RETRIES: "3"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
-    # Plugin Auth
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
+    # Plugin Auth (Access Manager). PLUGIN_AUTH_ADDRESS is the auth service URL the app calls.
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
     # License
     LICENSE_KEY: ""

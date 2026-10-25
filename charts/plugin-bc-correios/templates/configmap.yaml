@@ -8,7 +8,7 @@ metadata:
 data:
   # Application Settings
   ALLOW_INSECURE_TLS: {{ include "bc-correios.flagDefaultTrue" $component.configmap.ALLOW_INSECURE_TLS | quote }}
-  APP_ENV: {{ $component.configmap.APP_ENV | default "development" | quote }}
+  ENV_NAME: {{ $component.configmap.ENV_NAME | default "production" | quote }}
   APP_NAME: {{ $component.configmap.APP_NAME | default "plugin-bc-correios" | quote }}
   APP_VERSION: {{ $component.configmap.APP_VERSION | default "1.0.0" | quote }}
   LOG_LEVEL: {{ $component.configmap.LOG_LEVEL | default "info" | quote }}
@@ -58,8 +58,8 @@ data:
   BC_CORREIO_TLS_MIN_VERSION: {{ $component.configmap.BC_CORREIO_TLS_MIN_VERSION | default "TLSv1.2" | quote }}
 
   # Plugin Auth
-  PLUGIN_AUTH_ENABLED: {{ $component.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ $component.configmap.PLUGIN_AUTH_HOST | default "" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.PLUGIN_AUTH_ENABLED | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ $component.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
   PLUGIN_AUTH_CLIENT_ID: {{ $component.configmap.PLUGIN_AUTH_CLIENT_ID | default "plugin-bc-correios" | quote }}
 
   # License

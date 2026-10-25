@@ -1,5 +1,20 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.2.0)
+
+Features:
+- Add a warning for using plaintext connections with external PostgreSQL databases. (@fredcamaral)
+
+Improvements:
+- Consolidate TLS warnings into a single list for better clarity. (@fredcamaral)
+
+Documentation:
+- Provide a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.1.0`. (@brunognovaes)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.1.0...plugin-br-pix-indirect-btg-v4.2.0)
+
+---
+
 ## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
 
 Features:

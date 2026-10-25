@@ -3,6 +3,20 @@
 ## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
 
 Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
 - Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
 
 Improvements:

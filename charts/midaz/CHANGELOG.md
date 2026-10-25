@@ -3,6 +3,19 @@
 ## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
 
 Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
 - Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
 - Address the resolution of placeholders in RabbitMQ users to prevent configuration issues. (@andreimatiazi)
 

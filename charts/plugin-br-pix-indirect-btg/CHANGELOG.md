@@ -3,6 +3,18 @@
 ## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
 
 Fixes:
+- Render boolean false on flags that default to true, ensuring consistent behavior. (@fredcamaral)
+
+Improvements:
+- Implement antifraud flags using a shared helper for better code reuse and maintainability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
 - Render boolean false on flags that default to true, ensuring correct behavior for default-true flags. (@fredcamaral)
 
 Improvements:

@@ -14,7 +14,7 @@ metadata:
     {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 4 }} 
 data:
   # -- Default Environment variables for the plugin-identity
-  ALLOW_INSECURE_TLS: {{ .Values.identity.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-access-manager.flagDefaultTrue" .Values.identity.configmap.ALLOW_INSECURE_TLS | quote }}
   {{- /* Environment name via the global mask (same shape as observability):
      a managed profile / the operator sets global.env.name ONCE for every
      component instead of the native ENV_NAME key on each. */}}
@@ -33,7 +33,7 @@ data:
   AUTHORIZER_APPLICATION_NAME: {{ .Values.identity.configmap.AUTHORIZER_APPLICATION_NAME | default "app-lerian" | quote }}
 
   # AUTH
-  PLUGIN_AUTH_ENABLED: {{ .Values.identity.configmap.AUTH_ENABLED | default "true" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "plugin-access-manager.flagDefaultTrue" .Values.identity.configmap.AUTH_ENABLED | quote }}
   PLUGIN_AUTH_PORT: {{ .Values.identity.configmap.AUTH_PORT | default "4000" | quote }}
   PLUGIN_AUTH_ADDRESS: {{ .Values.identity.configmap.AUTH_ADDRESS | default (printf "http://%s:4000" (include "plugin-auth.fullname" .)) | quote }}
 
@@ -90,7 +90,7 @@ data:
   ACCESS_CONTROL_ALLOW_CREDENTIALS: {{ .Values.identity.configmap.ACCESS_CONTROL_ALLOW_CREDENTIALS | default "false" | quote }}
 
   #RATE LIMIT
-  RATE_LIMIT_ENABLED: {{ .Values.identity.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "plugin-access-manager.flagDefaultTrue" .Values.identity.configmap.RATE_LIMIT_ENABLED | quote }}
   RATE_LIMIT_MAX: {{ .Values.identity.configmap.RATE_LIMIT_MAX | default "100" | quote }}
   RATE_LIMIT_WINDOW_SEC: {{ .Values.identity.configmap.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
   RATE_LIMIT_REDIS_TIMEOUT_MS: {{ .Values.identity.configmap.RATE_LIMIT_REDIS_TIMEOUT_MS | default "500" | quote }}
@@ -102,7 +102,7 @@ data:
   MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 
   # CIRCUIT BREAKER
-  CIRCUIT_BREAKER_ENABLED: {{ .Values.identity.configmap.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  CIRCUIT_BREAKER_ENABLED: {{ include "plugin-access-manager.flagDefaultTrue" .Values.identity.configmap.CIRCUIT_BREAKER_ENABLED | quote }}
   CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL_SEC: {{ .Values.identity.configmap.CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL_SEC | default "30" | quote }}
   CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT_SEC: {{ .Values.identity.configmap.CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT_SEC | default "10" | quote }}
   CIRCUIT_BREAKER_MAX_REQUESTS_HALF_OPEN: {{ .Values.identity.configmap.CIRCUIT_BREAKER_MAX_REQUESTS_HALF_OPEN | default "3" | quote }}

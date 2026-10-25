@@ -1,5 +1,15 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
 ## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
 
 Features:

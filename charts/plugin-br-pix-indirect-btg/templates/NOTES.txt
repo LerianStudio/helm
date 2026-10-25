@@ -111,5 +111,31 @@
   For more information, see:
   - Chart README: https://github.com/LerianStudio/helm
   - Lerian Docs: https://docs.lerian.studio/
+{{- /* Read DB_SSL_MODE from each rendered ConfigMap; only require and stricter encrypt. */}}
+{{- $plaintext := list }}
+{{- if ne (include "plugin-br-pix-indirect-btg.postgresInternal" .) "true" }}
+{{- range $c := list "pix" "inbound" "outbound" "reconciliation" }}
+{{- $cm := include (printf "%s/%s/configmap.yaml" $.Template.BasePath $c) $ | fromYaml }}
+{{- if not (has $cm.data.DB_SSL_MODE (list "require" "verify-ca" "verify-full")) }}
+{{- $plaintext = append $plaintext $c }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if $plaintext }}
+
+---
+
+⚠️  WARNING: external PostgreSQL connection is NOT encrypted
+
+  The components below connect to PostgreSQL without TLS, so the database
+  credentials and Pix data cross the network in plaintext. To require TLS, set:
+{{- range $plaintext }}
+    {{ . }}.configmap.DB_SSL_MODE: "require"
+    {{ . }}.configmap.ALLOW_INSECURE_TLS: "false"
+{{- end }}
+
+  ALLOW_INSECURE_TLS "false" makes the component refuse to start on any
+  plaintext datastore, MongoDB and Valkey included.
+{{- end }}
 
 

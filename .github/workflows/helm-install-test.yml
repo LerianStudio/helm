@@ -156,13 +156,15 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.1.2 --verify=false
           for c in $CHARTS; do
             py=(charts/"$c"/tests/test_*.py); suites=(charts/"$c"/tests/*_test.yaml)
             (( ${#py[@]} + ${#suites[@]} )) || continue
             helm dependency update "charts/$c"
             for t in "${py[@]}"; do python3 "$t"; done
-            (( ${#suites[@]} == 0 )) || helm unittest "charts/$c"
+            (( ${#suites[@]} )) || continue
+            # helm-unittest v1.1.2, pinned by commit like the actions above.
+            helm plugin list | grep -q '^unittest' || helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 33c48cac798e465deda9a66c8e6c07c0973cf53d --verify=false
+            helm unittest "charts/$c"
           done
 
       - name: Create kind cluster

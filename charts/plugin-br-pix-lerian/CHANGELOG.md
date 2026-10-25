@@ -4,6 +4,16 @@
 
 Fixes:
 
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
 - Render boolean false on flags that default to true. This change ensures that flags with a default value of true can explicitly be set to false when needed. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)

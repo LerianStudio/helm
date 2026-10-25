@@ -47,7 +47,7 @@ data:
   SERVER_ADDRESS: {{ .Values.bankTransfer.configmap.SERVER_ADDRESS | default ":4027" | quote }}
   {{- if not $multiTenantEnabled }}
   HTTP_BODY_LIMIT_BYTES: {{ .Values.bankTransfer.configmap.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
-  TLS_TERMINATED_UPSTREAM: {{ .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
+  TLS_TERMINATED_UPSTREAM: {{ include "bank-transfer.flagDefaultTrue" .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | quote }}
   {{- if .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE }}
   SERVER_TLS_CERT_FILE: {{ .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE | quote }}
   {{- end }}
@@ -187,7 +187,7 @@ data:
   # MONGODB (audit/event persistence) — single-tenant only.
   # MT mode resolves per-tenant Mongo via tenant-manager.
   # =====================================================================
-  MONGO_ENABLED: {{ .Values.bankTransfer.configmap.MONGO_ENABLED | default "true" | quote }}
+  MONGO_ENABLED: {{ include "bank-transfer.flagDefaultTrue" .Values.bankTransfer.configmap.MONGO_ENABLED | quote }}
   MONGO_DATABASE: {{ .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.bankTransfer.configmap.MONGO_MAX_POOL_SIZE | default "25" | quote }}
   MONGO_SERVER_SELECTION_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MONGO_SERVER_SELECTION_TIMEOUT_MS | default "3000" | quote }}
@@ -429,7 +429,7 @@ data:
   WEBHOOK_ENABLED: {{ .Values.bankTransfer.configmap.WEBHOOK_ENABLED | default "false" | quote }}
   BTF_FEE_ENABLED: {{ .Values.bankTransfer.configmap.BTF_FEE_ENABLED | default "false" | quote }}
   RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "false" | quote }}
-  ALLOW_INSECURE_TLS: {{ .Values.bankTransfer.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "bank-transfer.flagDefaultTrue" .Values.bankTransfer.configmap.ALLOW_INSECURE_TLS | quote }}
 
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for env vars not modeled above)

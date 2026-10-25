@@ -136,7 +136,7 @@ DEPENDENCY ENABLED HELPER
 */}}
 
 {{- define "postgresql.enabled" -}}
-{{- if and (default true .Values.postgresql.enabled) (not .Values.postgresql.external) -}}
+{{- if and (ne (.Values.postgresql.enabled | toString) "false") (not .Values.postgresql.external) -}}
 true
 {{- else -}}
 false

@@ -68,32 +68,32 @@
 ---
 
 💾 Database Information:
+{{- $pix := include (printf "%s/pix/configmap.yaml" .Template.BasePath) . | fromYaml }}
+{{- $pgBundled := eq (include "plugin-br-pix-indirect-btg.postgresInternal" .) "true" }}
+{{- $mongoBundled := eq (include "plugin-br-pix-indirect-btg.mongoInternal" .) "true" }}
 
-{{- if .Values.postgresql.enabled }}
-  PostgreSQL (bundled):
-  - Host: plugin-br-pix-indirect-btg-postgresql.{{ .Release.Namespace }}.svc.cluster.local
-  - Port: 5432
-  - Database: {{ .Values.postgresql.auth.database }}
-  - User: {{ .Values.postgresql.auth.username }}
-  
+  PostgreSQL ({{ ternary "bundled" "external" $pgBundled }}):
+  - Host: {{ $pix.data.DB_HOST }}
+  - Port: {{ $pix.data.DB_PORT }}
+  - Database: {{ $pix.data.DB_NAME }}
+  - User: {{ $pix.data.DB_USER }}
+{{- if $pgBundled }}
+
   ⚠️  NOTE: Bundled PostgreSQL is for development/testing only.
       For production, use external managed PostgreSQL.
 {{- end }}
 
-{{- if .Values.mongodb.enabled }}
-  MongoDB (bundled):
-  - Host: plugin-br-pix-indirect-btg-mongodb.{{ .Release.Namespace }}.svc.cluster.local
-  - Port: 27017
-  
+  MongoDB ({{ ternary "bundled" "external" $mongoBundled }}):
+  - Host: {{ $pix.data.MONGO_HOST }}
+  - Port: {{ $pix.data.MONGO_PORT }}
+{{- if $mongoBundled }}
+
   ⚠️  NOTE: Bundled MongoDB is for development/testing only.
       For production, use external managed MongoDB.
 {{- end }}
 
-{{- if .Values.valkey.enabled }}
-  Valkey/Redis (bundled):
-  - Host: plugin-br-pix-indirect-btg-valkey-master.{{ .Release.Namespace }}.svc.cluster.local
-  - Port: 6379
-{{- end }}
+  Valkey/Redis ({{ if .Values.valkey.enabled }}bundled{{ else }}external{{ end }}):
+  - Host: {{ $pix.data.REDIS_HOST }}
 
 ---
 

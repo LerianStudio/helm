@@ -127,19 +127,13 @@
 
 ⚠️  WARNING: external PostgreSQL connection is NOT encrypted
 
-  These components connect to PostgreSQL without TLS, so the database
-  credentials and Pix data cross the network in plaintext:
-{{- range $plaintext }}
-  - {{ . }}
-{{- end }}
-
-  To require TLS, set:
+  The components below connect to PostgreSQL without TLS, so the database
+  credentials and Pix data cross the network in plaintext. To require TLS, set:
 {{- range $plaintext }}
     {{ . }}.configmap.DB_SSL_MODE: "require"
     {{ . }}.configmap.ALLOW_INSECURE_TLS: "false"
 {{- end }}
 
-  "verify-full" instead of "require" also verifies the server certificate.
   ALLOW_INSECURE_TLS "false" makes the component refuse to start on any
   plaintext datastore, MongoDB and Valkey included.
 {{- end }}

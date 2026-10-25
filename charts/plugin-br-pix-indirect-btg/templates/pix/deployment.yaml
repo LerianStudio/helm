@@ -1,6 +1,4 @@
 {{- include "plugin-br-pix-indirect-btg.validateRequired" . }}
-{{- include "plugin-br-pix-indirect-btg.validatePostgreSQL" . }}
-{{- include "plugin-br-pix-indirect-btg.validateMongoDB" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -121,6 +121,14 @@ fetcher.isTrue — "true" when the value is a truthy token (case-insensitive).
 {{- end -}}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "fetcher.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 fetcher.commonConfigmapData — the SHARED (common) ConfigMap data block for both
 the manager and worker surfaces. Dependency CONNECTIONS are resolved through
 lerian-common typed masks/helpers (datastore.value / otel.env / multiTenant.env);
@@ -212,7 +220,7 @@ OTEL_INSECURE_EXPORTER: {{ $cm.OTEL_INSECURE_EXPORTER | default "false" | quote 
 {{- /* TLS - bundled dev-mode MongoDB/RabbitMQ/Redis have no TLS; the app
    refuses to connect unless this is set. Not cloud/global masked (every
    Lerian chart keeps this as a plain per-chart default). */}}
-ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+ALLOW_INSECURE_TLS: {{ include "fetcher.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
 MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
 {{- /* Multi-tenant (lib-commons/multitenancy) via lerian-common.multiTenant.env —
    gated on MULTI_TENANT_ENABLED. configmap.MULTI_TENANT_* overrides global.multiTenant. */}}

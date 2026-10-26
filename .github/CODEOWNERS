@@ -2,6 +2,7 @@
 *                    @LerianStudio/G_Github_Devops
 /charts/br-sisbajud/ @LerianStudio/G_Github_Devops
 /charts/plugin-br-sisbajud/ @LerianStudio/G_Github_Devops
+/charts/plugin-br-ted-lerian/ @LerianStudio/G_Github_Devops
 
 # Owners for specific directories and files
 .github/*            @LerianStudio/G_Github_Devops

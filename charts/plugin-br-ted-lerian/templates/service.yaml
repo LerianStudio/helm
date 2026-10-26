@@ -1,0 +1,9 @@
+{{- if (index .Values "plugin-br-ted-lerian").enabled }}
+{{- include "lerian-common.service" (dict
+      "service" (index .Values "plugin-br-ted-lerian").service
+      "name" (include "plugin-br-ted-lerian.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name))
+      "selector" (include "plugin-br-ted-lerian.selectorLabels" (dict "context" . "name" (index .Values "plugin-br-ted-lerian").name))
+    ) }}
+{{- end }}

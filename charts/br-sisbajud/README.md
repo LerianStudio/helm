@@ -94,7 +94,7 @@ Every application env key is resolved with this precedence (lerian-common):
 | `global.datastores.redis` | `host` (`host:port`), `tls`, `caCert` | `REDIS_HOST`, `REDIS_TLS`, `REDIS_CA_CERT` |
 | `global.objectStorage.sisbajud` | `endpoint`, `region`, `bucket` | `SEAWEEDFS_S3_ENDPOINT`, `SEAWEEDFS_REGION`, `SEAWEEDFS_BUCKET` |
 | `global.objectStorage.sta` | `bucket`, `endpoint` | `STA_INBOUND_BUCKET` (+ `TRANSFER_OBJECT_STORAGE_BUCKET`), `STA_OBJECT_STORAGE_ENDPOINT` |
-| `global.kms` | `vendor` (`hashicorp-vault` \| `aws`), `vaultAddr`, `vaultAuthMethod`, `vaultRoleId`, `vaultMount`, `awsRegion` | `KMS_PROVIDER`, `VAULT_ADDR`, `VAULT_AUTH_METHOD`, `VAULT_APPROLE_ROLE_ID`, `VAULT_TRANSIT_MOUNT_PATH`, `AWS_REGION` |
+| `global.kms` | `vendor` (`hashicorp-vault` \| `aws`), `vaultAddr`, `vaultAuthMethod`, `vaultRoleId`, `vaultMount`, `awsRegion`, `awsKeyMode`, `awsKeyArn` | `KMS_PROVIDER`, `VAULT_ADDR`, `VAULT_AUTH_METHOD`, `VAULT_APPROLE_ROLE_ID`, `VAULT_TRANSIT_MOUNT_PATH`, `AWS_REGION`, `KMS_AWS_KEY_MODE`, `KMS_AWS_KEY_ARN` |
 | `global.streaming` | `enabled`, `brokers`, `tlsEnabled`, `saslMechanism`, `saslUsername`, `saslAllowPlaintext`, `compression`, `requiredAcks`, `batchLingerMs`, `importantEmitTimeoutMs` | `STREAMING_*` transport keys |
 | `global.multiTenant` | `enabled`, `url`, `redisHost`, `redisPort`, `redisTls` | `MULTI_TENANT_*` |
 | `global.auth` | `enabled`, `host` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` |
@@ -141,6 +141,11 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `vault.timeoutSec` | `VAULT_TIMEOUT_SEC` | `15` |
 | `vault.tokenRenewEnabled` / `tokenRenewMinIntervalSec` | `VAULT_TOKEN_RENEW_ENABLED` / `VAULT_TOKEN_RENEW_MIN_INTERVAL_SEC` | `true` / `60` |
 | `vault.awsEndpointUrl` | `AWS_ENDPOINT_URL` | unset (LocalStack only) |
+| `vault.awsKmsTimeoutSec` | `KMS_AWS_TIMEOUT_SEC` | unset (`1`..`600`) |
+| `vault.awsKmsRotationCheckIntervalSec` | `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` | unset (`1`..`86400`, validated in `provided` mode) |
+| `kms.awsKeyMode` | `KMS_AWS_KEY_MODE` (only when `KMS_PROVIDER=aws`) | unset (`managed` \| `provided`; required with `aws`) |
+| `kms.awsKeyArn` | `KMS_AWS_KEY_ARN` (only when `KMS_PROVIDER=aws`) | unset (required with `provided`, must be empty with `managed`) |
+| `kms.allowNonSemverImageTag` | none (render-time acknowledgement) | unset (`true` confirms a non-SemVer `image.tag` is `>= 1.1.0-beta.13`) |
 | `crypto.dekCacheTtl` / `dekCacheMaxEntries` / `hmacCoexistenceWindow` | `SISBAJUD_DEK_CACHE_TTL` / `SISBAJUD_DEK_CACHE_MAX_ENTRIES` / `SISBAJUD_HMAC_COEXISTENCE_WINDOW` | `5m` / `50000` / `720h` |
 | `layout.responseLayout` / `remittanceLayouts` | `SISBAJUD_RESPONSE_LAYOUT` / `SISBAJUD_REMITTANCE_LAYOUTS` | `auto` / `v111,v2026` |
 | `sta.fileLockTtl` | `STA_FILE_LOCK_TTL` | `5` (minutes) |
@@ -186,6 +191,13 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 Chart-derived keys: `ENVIRONMENT_NAME`/`ENV_NAME` default to `production`; `POSTGRES_SSLMODE` defaults to `require` (`disable` with the bundled subchart); `VAULT_AUTH_METHOD` defaults to `token` and `VAULT_TRANSIT_MOUNT_PATH` to `transit`; `KMS_PROVIDER` defaults to `vault`; `MULTI_TENANT_ENABLED` and `PLUGIN_AUTH_ENABLED` default to `false`. `OTEL_EXPORTER_OTLP_ENDPOINT` is overridden on the pod by `http://$(HOST_IP):4317` (node-local collector) when telemetry is on and no endpoint is set.
 
 Keys that only matter for local development (`VAULT_PORT`, `VAULT_DEV_*`, `VAULT_APPROLE_ROLE_NAME`, `LOCALSTACK_DEBUG`, `APP_ENV`) and the deprecated lib-auth aliases (`DECLARATION_ENABLED`, `PLUGIN_IDENTITY_HOST`, `M2M_CLIENT_ID`, `M2M_CLIENT_SECRET`) are not rendered. Set them under `brSisbajud.configmap` / `brSisbajud.secrets` if you need them. The advanced lib-streaming knobs (`STREAMING_BATCH_MAX_BYTES`, `STREAMING_RECORD_RETRIES`, `STREAMING_CB_*`, ...) work the same way.
+
+**AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `brSisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` also needs `awsKeyArn`, `managed` rejects it. Precedence: `brSisbajud.configmap` > `brSisbajud.kms` > `global.kms`, so `KMS_AWS_*` keys set in the free-form `brSisbajud.configmap` win. Mode and ARN tolerate surrounding whitespace (the app trims).
+
+- Minimum image: `sisbajud-v1.1.0-beta.13` (chart value `brSisbajud.image.tag >= 1.1.0-beta.13`). Older images (including the `1.0.0` default appVersion) ignore the key mode and create their own KMS key, so the chart fails the render on them.
+- A non-SemVer tag (e.g. `latest`, mirror tags) fails closed unless `brSisbajud.kms.allowNonSemverImageTag: true`. This flag is per chart only: setting it under `global.kms` has no effect.
+- A digest-only tag (`image.tag: "@sha256:…"`) is not supported by this chart's image template: it renders `repo:@sha256:…`, which the kubelet rejects.
+- AWS credentials come via IRSA (`serviceAccount` annotations) or `secretRefs`; this chart has no `rolesAnywhere` block.
 
 ### Secrets
 

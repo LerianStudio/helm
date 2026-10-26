@@ -40,6 +40,11 @@ global:
     vaultRoleId: ""                    # <- REQUIRED for approle
     vaultMount: "transit"
     # awsRegion: "sa-east-1"           # <- REQUIRED for vendor: aws
+    # Example aws + provided (customer-owned key):
+    #   vendor: "aws"
+    #   awsRegion: "sa-east-1"
+    #   awsKeyMode: "provided"         # managed | provided (REQUIRED for vendor: aws)
+    #   awsKeyArn: "arn:aws:kms:sa-east-1:123456789012:key/<key-id>"  # REQUIRED for provided; empty for managed
   streaming:
     # REQUIRED on: the Mensageria refuses to boot with streaming off (R-03; the
     # release notice plugin-br-sisbajud consumes). Needs OUTBOX_ENABLED=true (the

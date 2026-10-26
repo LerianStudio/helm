@@ -350,6 +350,11 @@ sisbajud:
   #    empty with managed, where the app creates and owns the keys). aws is refused
   #    with multi-tenant (single-tenant/BYOC only). The KMS_AWS_* keys can NOT be set
   #    through sisbajud.configmap (its schema key enum rejects them); use this block.
+  #    With vendor=aws the image must be >= plugin-br-sisbajud-v1.1.0-beta.1
+  #    (sisbajud.image.tag >= 1.1.0-beta.1): older images ignore the key mode and
+  #    create their own KMS key, so the render fails on them. allowUnverifiableImageTag:
+  #    true acknowledges a tag the chart cannot verify (non-SemVer, or any tag
+  #    containing "@", labelled unverifiable); read ONLY here, global.kms ignores it.
   kms: {}
 
   # -- Escape hatch: native env keys. Only the executor's non-credential keys

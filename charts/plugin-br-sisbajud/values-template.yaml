@@ -34,6 +34,8 @@ global:
     # awsKeyMode: "provided"            # or "managed" (leave both ARNs empty)
     # awsKeyArn: "<kms-key-arn>"
     # awsCredentialsKeyArn: "<kms-credentials-key-arn>"   # distinct from awsKeyArn
+    # aws needs sisbajud.image.tag >= 1.1.0-beta.1; a non-SemVer tag or one with "@"
+    # needs sisbajud.kms.allowUnverifiableImageTag: true (not read from global.kms).
   observability:
     enabled: true
 

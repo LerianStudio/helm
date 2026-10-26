@@ -22,6 +22,14 @@ REL="$CHART"
 NS="it-${CHART}"          # release namespace (helm -n); also created
 TARGETS=""                # every distinct namespace the chart's manifests reference (created too)
 
+# Writes IT_LICENSE_KEY over the "IT_LICENSE_KEY" placeholder (helm-install-values/README.md).
+with_license() { # <values-file>: prints the file helm reads
+  local ph='"IT_LICENSE_KEY"' out v
+  if [[ -z "${IT_LICENSE_KEY:-}" ]] || ! grep -qF "$ph" "$1"; then echo "$1"; return; fi
+  out="$(mktemp)"; v="$(<"$1")"
+  printf '%s\n' "${v//"$ph"/"\"$IT_LICENSE_KEY\""}" > "$out"; echo "$out"
+}
+
 # Values: an explicit argument replaces everything. Otherwise the render gate's
 # vetted sample values go on first, and the install-specific file is layered on
 # top rather than replacing them, so neither file has to repeat the other. That
@@ -35,7 +43,7 @@ else
   for candidate in ".github/configs/helm-render-values/${CHART}.yaml" \
                    ".github/configs/helm-install-values/${CHART}.yaml"; do
     if [[ -f "$candidate" ]]; then
-      VARGS+=(-f "$candidate"); echo "  values: $candidate"
+      VARGS+=(-f "$(with_license "$candidate")"); echo "  values: $candidate"
     else
       echo "  values: $candidate (absent)"
     fi
@@ -277,7 +285,7 @@ if git cat-file -e "origin/main:charts/${CHART}/Chart.yaml" 2>/dev/null; then
     src=".github/configs/${cand}/${CHART}.yaml"
     if git cat-file -e "origin/main:${src}" 2>/dev/null; then
       git show "origin/main:${src}" > "${BASE_VALUES_DIR}/${cand}.yaml"
-      BASE_VARGS+=(-f "${BASE_VALUES_DIR}/${cand}.yaml")
+      BASE_VARGS+=(-f "$(with_license "${BASE_VALUES_DIR}/${cand}.yaml")")
     fi
   done
   # ${#BASE_VARGS[@]} counts array elements, and each file contributes two of them

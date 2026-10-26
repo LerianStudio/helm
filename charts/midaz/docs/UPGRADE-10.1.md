@@ -1,4 +1,4 @@
-# Helm Upgrade from v9.8.0 to v9.9.0
+# Helm Upgrade from v10.0.0 to v10.1.0
 
 ## Topics
 
@@ -107,7 +107,7 @@ ledger:
 
 ## Configuration Reference
 
-| Setting | v9.8.0 | v9.9.0 |
+| Setting | v10.0.0 | v10.1.0 |
 |---------|--------|--------|
 | `ledger.partition.enabled` | Not present | unset (auto: on for ledger `>= 4.4.0`) |
 | `ledger.partition.schedule` | Not present | `"0 3 * * *"` |
@@ -224,7 +224,7 @@ or a startup error.
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 9.9.0 -n midaz
+helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.1.0 -n midaz
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -232,5 +232,5 @@ helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --ver
 ## Command to upgrade
 
 ```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 9.9.0 -n midaz
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.1.0 -n midaz
 ```

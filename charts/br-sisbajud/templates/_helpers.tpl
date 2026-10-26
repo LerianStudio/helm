@@ -1021,7 +1021,8 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
    KMS_AWS_KEY_ARN and create their own KMS key, silently. Same effective tag as
    configmapData/deployment.yaml (DR-04, rule B'):
    - a tag is verifiable ONLY in the canonical form
-     ^v?MAJOR.MINOR.PATCH(-(alpha|beta|rc).N)?$ (no "@"). Such a tag is compared with
+     ^v?MAJOR.MINOR.PATCH(-(alpha|beta|rc).N)?$ (no "@", no leading zeros: SemVer
+     rejects 01, so it is unverifiable, not lower). Such a tag is compared with
      $min (the acknowledgement is NOT consulted): below it fails even with the flag.
    - everything else FAILS CLOSED (DR-03/DR-04) unless acknowledged, and with the
      acknowledgement no version check is made: "@" (tag@digest or digest-only; the
@@ -1033,7 +1034,7 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- $rawTag := $b.image.tag | default .Chart.AppVersion | toString -}}
 {{- $min := "1.1.0-beta.13" -}}
 {{- $ackTag := eq (toString (($b.kms | default dict).allowUnverifiableImageTag)) "true" -}}
-{{- if regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$" $rawTag -}}
+{{- if regexMatch "^v?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\\.(0|[1-9][0-9]*))?$" $rawTag -}}
 {{- if semverCompare (printf "<%s" $min) (trimPrefix "v" $rawTag) -}}
 {{- fail (printf "\n\nERROR: br-sisbajud: image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key.\n  set: brSisbajud.image.tag >= %s\n" $rawTag $min) -}}
 {{- end -}}

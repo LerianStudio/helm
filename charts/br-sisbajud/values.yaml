@@ -259,8 +259,8 @@ brSisbajud:
   # -- KMS mask (same fields as global.kms). br-sisbajud extras with vendor=aws:
   # awsKeyMode (managed | provided; required with aws), awsKeyArn (required with
   # provided, must be empty with managed), allowUnverifiableImageTag (acknowledgement
-  # only: set true when brSisbajud.image.tag is not SemVer or contains "@" (digest
-  # pin: the label cannot be verified) to confirm the image is >= 1.1.0-beta.13;
+  # only: set true when brSisbajud.image.tag is not in the canonical form
+  # vX.Y.Z[-(alpha|beta|rc).N], e.g. "@" digest pins, arch suffixes, build metadata) to confirm the image is >= 1.1.0-beta.13;
   # read only here, never from global.kms).
   kms: {}
   objectStorage: {}

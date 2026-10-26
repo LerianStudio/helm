@@ -353,8 +353,8 @@ sisbajud:
   #    With vendor=aws the image must be >= plugin-br-sisbajud-v1.1.0-beta.1
   #    (sisbajud.image.tag >= 1.1.0-beta.1): older images ignore the key mode and
   #    create their own KMS key, so the render fails on them. allowUnverifiableImageTag:
-  #    true acknowledges a tag the chart cannot verify (non-SemVer, or any tag
-  #    containing "@"); read ONLY here, global.kms ignores it.
+  #    true acknowledges a tag the chart cannot verify (any tag outside the
+  #    canonical form vX.Y.Z[-(alpha|beta|rc).N], e.g. "@", arch suffix, "+build"); read ONLY here, global.kms ignores it.
   kms: {}
 
   # -- Escape hatch: native env keys. Only the executor's non-credential keys

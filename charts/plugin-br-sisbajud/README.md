@@ -61,7 +61,7 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.kms.awsKeyMode` | `KMS_AWS_KEY_MODE` | `managed` or `provided`; required with `KMS_PROVIDER=aws` |
 | `sisbajud.kms.awsKeyArn` | `KMS_AWS_KEY_ARN` | `provided`: required; `managed`: must be empty |
 | `sisbajud.kms.awsCredentialsKeyArn` | `KMS_AWS_CREDENTIALS_KEY_ARN` | `provided`: required and distinct from `awsKeyArn`; `managed`: must be empty |
-| `sisbajud.kms.allowUnverifiableImageTag` | none (render-time acknowledgement) | unset (`true` confirms an `image.tag` the chart cannot verify, non-SemVer or containing `@`, is `>= 1.1.0-beta.1`) |
+| `sisbajud.kms.allowUnverifiableImageTag` | none (render-time acknowledgement) | unset (`true` confirms an `image.tag` the chart cannot verify (any tag outside the canonical form `vX.Y.Z[-(alpha|beta|rc).N]`) is `>= 1.1.0-beta.1`) |
 | `sisbajud.vault.awsKmsTimeoutSec` | `KMS_AWS_TIMEOUT_SEC` | optional; whole seconds, 1..600 |
 | `sisbajud.vault.awsKmsRotationCheckIntervalSec` | `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` | optional; whole seconds, 1..86400 |
 | `global.datastores.postgres/redis` | `POSTGRES_*`, `REDIS_*` | `REDIS_HOST` is rendered as `host:port` |
@@ -75,15 +75,15 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 
 `STREAMING_ENABLED` is pinned to `false`: executor mode starts no producer or consumer. `sisbajud.configmap` accepts only the executor's non-credential keys (`values.schema.json`); credentials go in `sisbajud.secrets` (emitted only when set) or the existing Secret.
 
-**AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `sisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` needs both `awsKeyArn` and `awsCredentialsKeyArn`, and they must differ; `managed` needs both empty (the app creates and owns the keys). `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated in every aws mode. Values tolerate surrounding whitespace (the chart trims).
+**AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `sisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` needs both `awsKeyArn` and `awsCredentialsKeyArn`, and they must differ; `managed` needs both empty (the app creates and owns the keys). `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated in every aws mode. Validation trims surrounding whitespace, but the ConfigMap carries the value as set (the app trims it at boot). `"+30"` is refused at render although the app accepts it (deliberately stricter).
 
 - `KMS_AWS_*` enter only via `sisbajud.kms.*` / `sisbajud.vault.*` (or `global.kms.*`); the `sisbajud.configmap` key enum (`values.schema.json`) rejects them.
 - `aws` is single-tenant (BYOC) only: the render fails with multi-tenant enabled (the app refuses it).
-- `sisbajud.extraEnvVars` entries are container env and override the ConfigMap, but they are not validated at render: a `MULTI_TENANT_ENABLED` or `KMS_AWS_*` set there bypasses the checks above, and the app refuses those combinations at boot.
+- `sisbajud.extraEnvVars` entries are container env and override the ConfigMap, but they are not validated at render: a `MULTI_TENANT_ENABLED` or `KMS_AWS_*` set there (including `KMS_PROVIDER=aws`, or an image whose tag the gate never sees) bypasses the checks above, and only the app's boot validation refuses an invalid combination.
 - The distinct-ARN check is a textual comparison: an alias and the ARN of the same key pass the render and are only caught by the app.
 - Minimum image: `plugin-br-sisbajud-v1.1.0-beta.1` (chart value `sisbajud.image.tag >= 1.1.0-beta.1`). Older images (including the `1.0.0` default appVersion) ignore the key mode and create their own KMS key, so the chart fails the render on them.
-- A non-SemVer tag (e.g. `latest`, mirror tags) fails closed unless `sisbajud.kms.allowUnverifiableImageTag: true`. This flag is per chart only: setting it under `global.kms` has no effect.
-- A tag containing `@` (`tag@digest` or digest-only) also requires `sisbajud.kms.allowUnverifiableImageTag: true`, even when the tag part is SemVer: the kubelet pulls by digest, so the label cannot be verified against the minimum. With the flag set no version check is made. A SemVer tag without `@` below the minimum fails even with the flag.
+- Only a tag in the canonical form `^v?X.Y.Z(-(alpha|beta|rc).N)?$` is verifiable (e.g. `1.1.0-beta.1`, `v1.2.0`, `1.2.0-rc.2`); it is compared with the minimum. Every other tag fails closed unless `sisbajud.kms.allowUnverifiableImageTag: true`: non-SemVer (`latest`, mirror tags), other suffixes such as arch tags (`1.1.0-beta.1-amd64`, `1.2.0-beta1`) and build metadata (`1.2.0+build.5`), even when the version part is above the minimum. This flag is per chart only: setting it under `global.kms` has no effect.
+- A tag containing `@` (`tag@digest` or digest-only) also requires `sisbajud.kms.allowUnverifiableImageTag: true`, even when the tag part is canonical: the kubelet pulls by digest, so the label cannot be verified against the minimum. With the flag set no version check is made. A canonical tag below the minimum fails even with the flag.
 - A digest-only tag (`image.tag: "@sha256:…"`) is not supported by this chart's image template: it renders `repo:@sha256:…`, which the kubelet rejects.
 - This is the first gate in this repo that treats `@` as a signal: other charts' minimum-version gates strip the digest or fail open on it. The deviation is deliberate (DR-04).
 - Residual: a mutable SemVer tag re-pushed in a mirror is still only a label; the chart cannot detect it.

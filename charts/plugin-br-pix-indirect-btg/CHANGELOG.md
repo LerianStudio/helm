@@ -1,5 +1,22 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.1.0)
+
+Features:
+- Add a warning for plaintext external MongoDB connections and valkey usage. (@fredcamaral)
+
+Fixes:
+- Set outbound durations with appropriate units. (@fredcamaral)
+- Display the actual database hosts in the installation notes. (@fredcamaral)
+
+Improvements:
+- Remove obsolete secret and database validators. (@fredcamaral)
+- Document the `DB_SSL_MODE` configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.0.0...plugin-br-pix-indirect-btg-v5.1.0)
+
+---
+
 ## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
 
 Fixes:

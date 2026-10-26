@@ -62,8 +62,8 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.kms.awsKeyArn` | `KMS_AWS_KEY_ARN` | `provided`: required; `managed`: must be empty |
 | `sisbajud.kms.awsCredentialsKeyArn` | `KMS_AWS_CREDENTIALS_KEY_ARN` | `provided`: required and distinct from `awsKeyArn`; `managed`: must be empty |
 | `sisbajud.kms.allowUnverifiableImageTag` | none (render-time acknowledgement) | unset (`true` confirms an `image.tag` the chart cannot verify (any tag outside the canonical form `vX.Y.Z[-(alpha|beta|rc).N]`) is `>= 1.1.0-beta.1`) |
-| `sisbajud.vault.awsKmsTimeoutSec` | `KMS_AWS_TIMEOUT_SEC` | optional; whole seconds, 1..600 |
-| `sisbajud.vault.awsKmsRotationCheckIntervalSec` | `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` | optional; whole seconds, 1..86400 |
+| `sisbajud.vault.awsKmsTimeoutSec` | `KMS_AWS_TIMEOUT_SEC` | optional; whole seconds, 1..600; emitted only with `KMS_PROVIDER=aws` |
+| `sisbajud.vault.awsKmsRotationCheckIntervalSec` | `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` | optional; whole seconds, 1..86400; emitted only with `KMS_PROVIDER=aws` |
 | `global.datastores.postgres/redis` | `POSTGRES_*`, `REDIS_*` | `REDIS_HOST` is rendered as `host:port` |
 | `sisbajud.app.defaultTenantId` | `DEFAULT_TENANT_ID` | must be a UUID |
 | `sisbajud.license.organizationIds` | `ORGANIZATION_IDS` | must be `global` |

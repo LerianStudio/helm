@@ -63,6 +63,16 @@ Features:
 ## [8.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.4)
 
 Features:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.3`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-fees` `v8.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.3...plugin-fees-v8.0.4)
+
+---
+
+## [8.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v8.0.4)
+
+Features:
 
 - Add Helm upgrade guide for `plugin-fees` `v8.0.3`. (@guimoreirar)
 - Add Helm upgrade guide for `plugin-fees` `v8.0.2`. (@guimoreirar)

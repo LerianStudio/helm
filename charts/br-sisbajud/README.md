@@ -145,7 +145,7 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `vault.awsKmsRotationCheckIntervalSec` | `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` | unset (`1`..`86400`, validated in `provided` mode) |
 | `kms.awsKeyMode` | `KMS_AWS_KEY_MODE` (only when `KMS_PROVIDER=aws`) | unset (`managed` \| `provided`; required with `aws`) |
 | `kms.awsKeyArn` | `KMS_AWS_KEY_ARN` (only when `KMS_PROVIDER=aws`) | unset (required with `provided`, must be empty with `managed`) |
-| `kms.allowNonSemverImageTag` | none (render-time acknowledgement) | unset (`true` confirms a non-SemVer `image.tag` is `>= 1.1.0-beta.13`) |
+| `kms.allowUnverifiableImageTag` | none (render-time acknowledgement) | unset (`true` confirms an `image.tag` the chart cannot verify, non-SemVer or containing `@`, is `>= 1.1.0-beta.13`) |
 | `crypto.dekCacheTtl` / `dekCacheMaxEntries` / `hmacCoexistenceWindow` | `SISBAJUD_DEK_CACHE_TTL` / `SISBAJUD_DEK_CACHE_MAX_ENTRIES` / `SISBAJUD_HMAC_COEXISTENCE_WINDOW` | `5m` / `50000` / `720h` |
 | `layout.responseLayout` / `remittanceLayouts` | `SISBAJUD_RESPONSE_LAYOUT` / `SISBAJUD_REMITTANCE_LAYOUTS` | `auto` / `v111,v2026` |
 | `sta.fileLockTtl` | `STA_FILE_LOCK_TTL` | `5` (minutes) |
@@ -195,7 +195,10 @@ Keys that only matter for local development (`VAULT_PORT`, `VAULT_DEV_*`, `VAULT
 **AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `brSisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` also needs `awsKeyArn`, `managed` rejects it. Precedence: `brSisbajud.configmap` > `brSisbajud.kms` > `global.kms`, so `KMS_AWS_*` keys set in the free-form `brSisbajud.configmap` win. Mode and ARN tolerate surrounding whitespace (the app trims).
 
 - Minimum image: `sisbajud-v1.1.0-beta.13` (chart value `brSisbajud.image.tag >= 1.1.0-beta.13`). Older images (including the `1.0.0` default appVersion) ignore the key mode and create their own KMS key, so the chart fails the render on them.
-- A non-SemVer tag (e.g. `latest`, mirror tags) fails closed unless `brSisbajud.kms.allowNonSemverImageTag: true`. This flag is per chart only: setting it under `global.kms` has no effect.
+- A non-SemVer tag (e.g. `latest`, mirror tags) fails closed unless `brSisbajud.kms.allowUnverifiableImageTag: true`. This flag is per chart only: setting it under `global.kms` has no effect.
+- A tag containing `@` (`tag@digest` or digest-only) also requires `brSisbajud.kms.allowUnverifiableImageTag: true`, even when the tag part is SemVer: the kubelet pulls by digest, so the label cannot be verified against the minimum. With the flag set no version check is made. A SemVer tag without `@` below the minimum fails even with the flag.
+- This is the first gate in this repo that treats `@` as a signal: other charts' minimum-version gates strip the digest or fail open on it. The deviation is deliberate (DR-04).
+- Residual: a mutable SemVer tag re-pushed in a mirror is still only a label; the chart cannot detect it.
 - A digest-only tag (`image.tag: "@sha256:…"`) is not supported by this chart's image template: it renders `repo:@sha256:…`, which the kubelet rejects.
 - AWS credentials come via IRSA (`serviceAccount` annotations) or `secretRefs`; this chart has no `rolesAnywhere` block.
 

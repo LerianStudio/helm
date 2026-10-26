@@ -92,7 +92,7 @@ global:
   # vaultRoleId | vaultMount. vendor: hashicorp-vault (default) | aws.
   # br-sisbajud also reads awsRegion, awsKeyMode and awsKeyArn here when vendor=aws
   # (precedence: brSisbajud.configmap > brSisbajud.kms > global.kms; see brSisbajud.kms).
-  # allowNonSemverImageTag is NOT read here (only brSisbajud.kms). The AppRole secret-id
+  # allowUnverifiableImageTag is NOT read here (only brSisbajud.kms). The AppRole secret-id
   # and the Vault token are secrets: brSisbajud.secrets.VAULT_APPROLE_SECRET_ID / VAULT_TOKEN.
   # Example:
   #   kms: { vendor: "hashicorp-vault", vaultAddr: "https://vault.internal:8200", vaultAuthMethod: "approle", vaultRoleId: "<role-id>", vaultMount: "transit" }
@@ -258,9 +258,10 @@ brSisbajud:
   datastores: {}
   # -- KMS mask (same fields as global.kms). br-sisbajud extras with vendor=aws:
   # awsKeyMode (managed | provided; required with aws), awsKeyArn (required with
-  # provided, must be empty with managed), allowNonSemverImageTag (acknowledgement
-  # only: set true when brSisbajud.image.tag is not SemVer to confirm the image is
-  # >= 1.1.0-beta.13; read only here, never from global.kms).
+  # provided, must be empty with managed), allowUnverifiableImageTag (acknowledgement
+  # only: set true when brSisbajud.image.tag is not SemVer or contains "@" (digest
+  # pin: the label cannot be verified) to confirm the image is >= 1.1.0-beta.13;
+  # read only here, never from global.kms).
   kms: {}
   objectStorage: {}
 

@@ -204,30 +204,25 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- /* Image-tag gate (CA-10): images before 1.1.0-beta.1 ignore KMS_AWS_KEY_MODE /
    KMS_AWS_KEY_ARN and create their own KMS key, silently. Same effective tag as
    plugin-br-sisbajud.image (DR-04, rule B'):
-   - a tag containing "@" (tag@digest or digest-only) cannot be verified: the kubelet
-     pulls by digest, so the label may lie. It FAILS CLOSED unless acknowledged;
-     with the acknowledgement no SemVer check is made.
-   - otherwise, after trimming a leading "v": SemVer tags are compared with
-     1.1.0-beta.1 (the acknowledgement is NOT consulted); non-SemVer tags (latest,
-     mirror tags) FAIL CLOSED (DR-03) unless acknowledged.
+   - a tag is verifiable ONLY in the canonical form
+     ^v?MAJOR.MINOR.PATCH(-(alpha|beta|rc).N)?$ (no "@"). Such a tag is compared with
+     $min (the acknowledgement is NOT consulted): below it fails even with the flag.
+   - everything else FAILS CLOSED (DR-03/DR-04) unless acknowledged, and with the
+     acknowledgement no version check is made: "@" (tag@digest or digest-only; the
+     kubelet pulls by digest, so the label may lie), other suffixes (-amd64, beta1,
+     -beta.13-amd64), build metadata (+x), non-SemVer (latest, mirror tags).
    The acknowledgement is sisbajud.kms.allowUnverifiableImageTag only:
    global.kms.allowUnverifiableImageTag is intentionally ignored because the minimum
    tag differs per chart. */ -}}
 {{- $rawTag := $.Values.sisbajud.image.tag | default $.Chart.AppVersion | toString -}}
+{{- $min := "1.1.0-beta.1" -}}
 {{- $ackTag := eq (toString (($s.kms | default dict).allowUnverifiableImageTag)) "true" -}}
-{{- if contains "@" $rawTag -}}
-{{- if not $ackTag -}}
-{{- include $f (dict "msg" (printf "image tag %q is pinned by digest, so the chart cannot verify it is >= 1.1.0-beta.1 (the kubelet pulls by digest and the tag label may not match; older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key)." $rawTag) "set" "sisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= 1.1.0-beta.1, or a sisbajud.image.tag >= 1.1.0-beta.1 without a digest") -}}
-{{- end -}}
-{{- else -}}
-{{- $tag := trimPrefix "v" $rawTag -}}
-{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $tag -}}
-{{- if semverCompare "<1.1.0-beta.1" $tag -}}
-{{- include $f (dict "msg" (printf "image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key." $rawTag) "set" "sisbajud.image.tag >= 1.1.0-beta.1") -}}
+{{- if regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$" $rawTag -}}
+{{- if semverCompare (printf "<%s" $min) (trimPrefix "v" $rawTag) -}}
+{{- include $f (dict "msg" (printf "image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key." $rawTag) "set" (printf "sisbajud.image.tag >= %s" $min)) -}}
 {{- end -}}
 {{- else if not $ackTag -}}
-{{- include $f (dict "msg" (printf "image tag %q is not SemVer, so the chart cannot verify it is >= 1.1.0-beta.1 (older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key)." $rawTag) "set" "sisbajud.image.tag >= 1.1.0-beta.1, or sisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= 1.1.0-beta.1") -}}
-{{- end -}}
+{{- include $f (dict "msg" (printf "image tag %q is not in the canonical form vX.Y.Z[-(alpha|beta|rc).N] (digest pins, arch suffixes, build metadata and non-SemVer tags are refused), so the chart cannot verify it is >= %s (older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key)." $rawTag $min) "set" (printf "a canonical sisbajud.image.tag >= %s, or sisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= %s" $min $min)) -}}
 {{- end -}}
 {{- else -}}
 {{- include $f (dict "msg" (printf "KMS_PROVIDER must be vault or aws (the app has no in-memory provider), got %q." $kms) "set" "global.kms.vendor=hashicorp-vault|aws") -}}

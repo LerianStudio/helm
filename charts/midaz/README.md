@@ -336,6 +336,16 @@ ledger:
   enabled: true
 ```
 
+#### Ledger kernel forward path and memory
+
+The chart carries what the ledger kernel needs to forward a request to the pod that owns its ledger, without turning the kernel on (`KERNEL_ENABLED` is not rendered and stays off).
+
+- **`POD_IP`.** Every ledger pod gets `POD_IP` from the downward API (`status.podIP`), whatever `otel-collector-lerian.enabled` says.
+- **`ledger.configmap.KERNEL_FORWARD_CIDRS`.** Comma-separated CIDRs of this cluster's ledger pods, empty by default; each cluster sets its own pod range. A kernel process refuses to start when it is empty or when `POD_IP` falls outside it.
+- **`TRUSTED_PROXIES`.** Covers the ingress range and the pod range, nothing wider, so it holds every `KERNEL_FORWARD_CIDRS` prefix; a kernel process refuses to start when it is set and misses one. Left unset, the ledger credits no client address to any request. The ledger ConfigMap has no named key for it: set it in `ledger.extraEnvVars`.
+- **Network.** Ledger pods must accept TCP from ledger pods on the server port (`SERVER_ADDRESS`, `:3002`). The chart ships no NetworkPolicy; if the cluster enforces one, allow this path.
+- **Memory.** `ledger.configmap.GOMEMLIMIT` defaults to `460MiB`, about 90% of the default 512Mi `ledger.resources.limits.memory`; keep it there when you change the limit. The ledger image sets no `GOMEMLIMIT`, and a 512Mi ledger pod without it was OOM-killed under load.
+
 ### CRM (Customer Relationship Management)
 
 The `crm` service provides APIs for managing holder data and their relationships with ledger accounts. Previously available as a separate chart (`plugin-crm`) deployed in the `midaz-plugins` namespace, the CRM is being migrated to become a core component of Midaz, now deployed in the `midaz` namespace.
@@ -720,7 +730,7 @@ ledger:
 
 ### OpenTelemetry Collector wiring
 
-Since `8.4.0` the `otel-collector-lerian` subchart is no longer installed as a dependency of this chart (the dependency was removed; see [`UPGRADE-8.4.md`](docs/UPGRADE-8.4.md) for the migration story). The `otel-collector-lerian.enabled` flag now only controls whether `HOST_IP`, `POD_IP`, `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` and `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)` are injected into the `ledger` and `crm` deployments.
+Since `8.4.0` the `otel-collector-lerian` subchart is no longer installed as a dependency of this chart (the dependency was removed; see [`UPGRADE-8.4.md`](docs/UPGRADE-8.4.md) for the migration story). The `otel-collector-lerian.enabled` flag now only controls whether `HOST_IP`, `POD_IP`, `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` and `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)` are injected into the `ledger` and `crm` deployments. The ledger gets `POD_IP` either way (see [Ledger kernel forward path and memory](#ledger-kernel-forward-path-and-memory)).
 
 By default `enabled: true` — Midaz expects a node-local OTel collector listening on `4317` (`hostPort` or `hostNetwork`). Install the [otel-collector-lerian chart](../otel-collector-lerian) separately or point your own collector at the same port.
 

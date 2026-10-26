@@ -851,7 +851,8 @@
               "BALANCE_SYNC_FORK_BACKOFF_BASE_MS",
               "BALANCE_SYNC_FORK_BACKOFF_MAX_MS",
               "REDIS_PORT",
-              "TRANSACTION_BATCH_MAX_SIZE"
+              "TRANSACTION_BATCH_MAX_SIZE",
+              "KERNEL_FORWARD_CIDRS"
             ]
           }
         },

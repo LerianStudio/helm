@@ -192,12 +192,13 @@ spec:
                   name: {{ $secretName }}
                   key: REDIS_PASSWORD
             {{- end }}
-            {{- $otel := index .Values "otel-collector-lerian" }}
-            {{- if $otel.enabled }}
+            {{- /* Unconditional: the ledger kernel forwards a request to its ledger's owner at the owner's POD_IP. */}}
             - name: "POD_IP"
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
+            {{- $otel := index .Values "otel-collector-lerian" }}
+            {{- if $otel.enabled }}
             - name: "HOST_IP"
               valueFrom:
                 fieldRef:

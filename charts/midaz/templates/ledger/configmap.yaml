@@ -57,6 +57,18 @@ data:
   SERVER_PORT: {{ $cm.SERVER_PORT | default "3002" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":3002" | quote }}
 
+  # GO RUNTIME
+  # GOMEMLIMIT must track resources.limits.memory (~90%); the ledger image sets
+  # none, and a 512Mi ledger pod without it was OOM-killed under load.
+  GOMEMLIMIT: {{ $cm.GOMEMLIMIT | default "460MiB" | quote }}
+
+  # =============================================================================
+  # LEDGER KERNEL FORWARD PATH (the kernel stays off; KERNEL_ENABLED is not rendered)
+  # Comma-separated CIDRs of this cluster's ledger pods. TRUSTED_PROXIES must hold
+  # every prefix, and ledger pods must accept TCP from ledger pods on SERVER_ADDRESS.
+  # =============================================================================
+  KERNEL_FORWARD_CIDRS: {{ $cm.KERNEL_FORWARD_CIDRS | default "" | quote }}
+
   # OpenAPI document/UI (off by default, as the app does).
   OPENAPI_DOCS_ENABLED: {{ $cm.OPENAPI_DOCS_ENABLED | default "false" | quote }}
 

@@ -454,6 +454,11 @@ ledger:
     # before the TRACER_TIMEOUT_MS budget of the call starts. Empty uses the ledger
     # default (3000).
     TRACER_M2M_WAIT_TIMEOUT_MS: ""
+    # -- Ledger kernel forward path: comma-separated CIDRs of this cluster's ledger
+    # pods (each cluster sets its own pod range). TRUSTED_PROXIES (set through
+    # ledger.extraEnvVars) must hold every prefix, and ledger pods must accept TCP
+    # from ledger pods on the server port; the chart ships no NetworkPolicy.
+    KERNEL_FORWARD_CIDRS: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

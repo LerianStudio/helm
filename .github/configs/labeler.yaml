@@ -38,6 +38,10 @@ plugin-br-sisbajud:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-sisbajud/**
 
+plugin-br-ted-lerian:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-br-ted-lerian/**
+
 plugin-br-payments:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-payments/**

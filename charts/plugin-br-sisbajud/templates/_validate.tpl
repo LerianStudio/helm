@@ -206,7 +206,7 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
    plugin-br-sisbajud.image (DR-04, rule B'):
    - a tag is verifiable ONLY in the canonical form
      ^v?MAJOR.MINOR.PATCH(-(alpha|beta|rc).N)?$ (no "@", no leading zeros: SemVer
-     rejects 01, so it is unverifiable, not lower). Such a tag is compared with
+     2.0.0 forbids leading zeros, so it is unverifiable, not lower). Such a tag is compared with
      $min (the acknowledgement is NOT consulted): below it fails even with the flag.
    - everything else FAILS CLOSED (DR-03/DR-04) unless acknowledged, and with the
      acknowledgement no version check is made: "@" (tag@digest or digest-only; the

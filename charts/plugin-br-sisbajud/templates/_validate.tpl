@@ -176,10 +176,10 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- $awsCredArn := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsCredentialsKeyArn" "nativeKey" "KMS_AWS_CREDENTIALS_KEY_ARN" "default" "") | trim -}}
 {{- if eq $awsMode "provided" -}}
 {{- if not $awsKeyArn -}}
-{{- include $f (dict "msg" "KMS_AWS_KEY_ARN is required when KMS_AWS_KEY_MODE=provided." "set" "sisbajud.kms.awsKeyArn") -}}
+{{- include $f (dict "msg" "KMS_AWS_KEY_ARN is required when KMS_AWS_KEY_MODE=provided." "set" "sisbajud.kms.awsKeyArn (or global.kms.awsKeyArn)") -}}
 {{- end -}}
 {{- if not $awsCredArn -}}
-{{- include $f (dict "msg" "KMS_AWS_CREDENTIALS_KEY_ARN is required when KMS_AWS_KEY_MODE=provided." "set" "sisbajud.kms.awsCredentialsKeyArn") -}}
+{{- include $f (dict "msg" "KMS_AWS_CREDENTIALS_KEY_ARN is required when KMS_AWS_KEY_MODE=provided." "set" "sisbajud.kms.awsCredentialsKeyArn (or global.kms.awsCredentialsKeyArn)") -}}
 {{- end -}}
 {{- if eq $awsKeyArn $awsCredArn -}}
 {{- include $f (dict "msg" "KMS_AWS_KEY_ARN and KMS_AWS_CREDENTIALS_KEY_ARN must name distinct keys." "set" "sisbajud.kms.awsKeyArn / sisbajud.kms.awsCredentialsKeyArn") -}}
@@ -201,7 +201,34 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- include $f (dict "msg" (printf "%s must be a whole number of seconds between 1 and %d, got %q." (index $row 0) (index $row 2) $raw) "set" (printf "sisbajud.vault.%s" (index $row 1))) -}}
 {{- end -}}
 {{- end -}}
-{{- /* Image-tag gate (CA-10): placeholder — not implemented in this task. */ -}}
+{{- /* Image-tag gate (CA-10): images before 1.1.0-beta.1 ignore KMS_AWS_KEY_MODE /
+   KMS_AWS_KEY_ARN and create their own KMS key, silently. Same effective tag as
+   plugin-br-sisbajud.image (DR-04, rule B'):
+   - a tag containing "@" (tag@digest or digest-only) cannot be verified: the kubelet
+     pulls by digest, so the label may lie. It FAILS CLOSED unless acknowledged;
+     with the acknowledgement no SemVer check is made.
+   - otherwise, after trimming a leading "v": SemVer tags are compared with
+     1.1.0-beta.1 (the acknowledgement is NOT consulted); non-SemVer tags (latest,
+     mirror tags) FAIL CLOSED (DR-03) unless acknowledged.
+   The acknowledgement is sisbajud.kms.allowUnverifiableImageTag only:
+   global.kms.allowUnverifiableImageTag is intentionally ignored because the minimum
+   tag differs per chart. */ -}}
+{{- $rawTag := $.Values.sisbajud.image.tag | default $.Chart.AppVersion | toString -}}
+{{- $ackTag := eq (toString (($s.kms | default dict).allowUnverifiableImageTag)) "true" -}}
+{{- if contains "@" $rawTag -}}
+{{- if not $ackTag -}}
+{{- include $f (dict "msg" (printf "image tag %q is pinned by digest, so the chart cannot verify it is >= 1.1.0-beta.1 (the kubelet pulls by digest and the tag label may not match; older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key)." $rawTag) "set" "sisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= 1.1.0-beta.1, or a sisbajud.image.tag >= 1.1.0-beta.1 without a digest") -}}
+{{- end -}}
+{{- else -}}
+{{- $tag := trimPrefix "v" $rawTag -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $tag -}}
+{{- if semverCompare "<1.1.0-beta.1" $tag -}}
+{{- include $f (dict "msg" (printf "image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key." $rawTag) "set" "sisbajud.image.tag >= 1.1.0-beta.1") -}}
+{{- end -}}
+{{- else if not $ackTag -}}
+{{- include $f (dict "msg" (printf "image tag %q is not SemVer, so the chart cannot verify it is >= 1.1.0-beta.1 (older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key)." $rawTag) "set" "sisbajud.image.tag >= 1.1.0-beta.1, or sisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= 1.1.0-beta.1") -}}
+{{- end -}}
+{{- end -}}
 {{- else -}}
 {{- include $f (dict "msg" (printf "KMS_PROVIDER must be vault or aws (the app has no in-memory provider), got %q." $kms) "set" "global.kms.vendor=hashicorp-vault|aws") -}}
 {{- end -}}

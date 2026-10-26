@@ -3,9 +3,14 @@
 #   Invalid configuration: at least one organization ID is required
 # The chart defaults ORGANIZATION_IDS to "" (operator-provided), so the gate
 # supplies the single-tenant value the internal environments use.
+# Both images then refuse to boot without a license the gateway accepts
+# (LCS-1007); both present the application "plugin-access-manager", so one CI
+# license placeholder (README) serves the two.
 auth:
   secrets:
     ORGANIZATION_IDS: "global"
+    LICENSE_KEY: "IT_LICENSE_KEY"
 identity:
   secrets:
     ORGANIZATION_IDS: "global"
+    LICENSE_KEY: "IT_LICENSE_KEY"

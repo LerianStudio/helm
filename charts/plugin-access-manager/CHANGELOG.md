@@ -1,5 +1,197 @@
 # Plugin-access-manager Changelog
 
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string scenario on default-true flags in tests to enhance test coverage. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string on default-true flags in tests to enhance test coverage and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure proper handling of these flags. (@fredcamaral)
+- Cover an empty string on default-true flags to improve test coverage and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string on default-true flags in tests to enhance test coverage. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string on default-true flags in tests to enhance test coverage and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string on default-true flags in tests to enhance test coverage and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string scenario on default-true flags in tests to enhance test coverage. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string scenario on default-true flags in tests to enhance test coverage. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string on default-true flags in tests to enhance test coverage. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.2`. (@guimoreirar)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+Improvements:
+
+- Cover an empty string on default-true flags in tests to enhance test coverage. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.2...plugin-access-manager-v10.0.0)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-access-manager` `v9.8.1`. (@guimoreirar)
+
+Fixes:
+- Correct the spelling of "plugin access manager" in documentation. (@fredcamaral)
+
+Improvements:
+- Remove claims of source-available and open-source from documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v9.8.1...plugin-access-manager-v9.8.2)
+
+---
+
 ## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v9.8.2)
 
 Features:

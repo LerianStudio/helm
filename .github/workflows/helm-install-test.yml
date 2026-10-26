@@ -147,6 +147,26 @@ jobs:
           username: lerianstudio
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # By convention: charts/<c>/tests/test_*.py run as scripts, charts/<c>/tests/*_test.yaml via helm-unittest.
+      - name: Run chart tests
+        if: steps.scope.outputs.has-charts == 'true'
+        shell: bash
+        env:
+          CHARTS: ${{ steps.scope.outputs.charts-list }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for c in $CHARTS; do
+            py=(charts/"$c"/tests/test_*.py); suites=(charts/"$c"/tests/*_test.yaml)
+            (( ${#py[@]} + ${#suites[@]} )) || continue
+            helm dependency update "charts/$c"
+            for t in "${py[@]}"; do python3 "$t"; done
+            (( ${#suites[@]} )) || continue
+            # helm-unittest v1.1.2, pinned by commit like the actions above.
+            helm plugin list | grep -q '^unittest' || helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 33c48cac798e465deda9a66c8e6c07c0973cf53d --verify=false
+            helm unittest "charts/$c"
+          done
+
       - name: Create kind cluster
         if: steps.scope.outputs.has-charts == 'true'
         uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.10.0
@@ -160,6 +180,13 @@ jobs:
           CHARTS: ${{ steps.scope.outputs.charts-list }}
           HAS_CHARTS: ${{ steps.scope.outputs.has-charts }}
           IT_PULL_SECRET: ${{ !github.event.pull_request.head.repo.fork && 'it-registry' || '' }}
+          # One CI license per license-gated chart (helm-install-values/README.md).
+          HELM_CI_LICENSE_KEY_BR_STA: ${{ secrets.HELM_CI_LICENSE_KEY_BR_STA }}
+          HELM_CI_LICENSE_KEY_PLUGIN_ACCESS_MANAGER: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_ACCESS_MANAGER }}
+          HELM_CI_LICENSE_KEY_PLUGIN_BC_CORREIOS: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_BC_CORREIOS }}
+          HELM_CI_LICENSE_KEY_PLUGIN_BR_BANK_TRANSFER: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_BR_BANK_TRANSFER }}
+          HELM_CI_LICENSE_KEY_PLUGIN_BR_PIX_JD: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_BR_PIX_JD }}
+          HELM_CI_LICENSE_KEY_PLUGIN_FEES: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_FEES }}
         run: |
           set -uo pipefail
           if [[ -z "${CHARTS// }" ]]; then
@@ -178,8 +205,14 @@ jobs:
           fails=""; allowed_fails=""
           for c in $CHARTS; do
             echo "::group::install-test $c"
-            if bash .github/scripts/install-test.sh "charts/$c"; then
+            kv="HELM_CI_LICENSE_KEY_${c//-/_}"; kv="${kv^^}"  # this chart's license, if any
+            [[ -v "$kv" ]] && echo "  license: $kv $([[ -n "${!kv}" ]] && echo set || echo 'not set')"
+            if IT_LICENSE_KEY="${!kv:-}" bash .github/scripts/install-test.sh "charts/$c"; then
               echo "::endgroup::"
+              # A chart that reached Ready no longer needs its exemption.
+              if [[ -n "$IT_PULL_SECRET" && -n "$(awk -v c="$c" '$1 == c' <<< "$ALLOW")" ]]; then
+                echo "::notice::[$c] installed and became Ready but is still allow-listed: remove its line from .github/configs/helm-install-test-allow-failure.txt"
+              fi
             elif rc=$?; cls="$(awk -v c="$c" '$1 == c {print $2}' <<< "$ALLOW")";
                  [[ "$cls" == any || ( "$cls" == readiness && "$rc" -eq 2 ) ]]; then
               echo "::endgroup::"; echo "::warning::[$c] install test failed (exit $rc) but is allow-listed as '$cls'"

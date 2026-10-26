@@ -103,7 +103,7 @@ data:
   # at WARN on every boot, and hand-emitting it shipped BOTH spellings at once. It
   # stays listed in the $enumerated suppression list below so the escape hatch
   # cannot leak it back either -- same treatment as the other superseded names.
-  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "true" | quote }}
+  SWAGGER_ENABLED: {{ include "plugin-br-pix-lerian.flagDefaultTrue" $cm.SWAGGER_ENABLED | quote }}
   SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4000/spi" | quote }}
   SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "" | quote }}
   # -- Regulatory-intent drain to the counterparty adapter (v1.1.0). OFF by

@@ -29,7 +29,7 @@ data:
   # identity.configmap.ALLOW_INSECURE_TLS (both default "true" -- bundled/
   # dev topologies are typically non-TLS). Override via
   # caradhras.allowInsecureTLS if this Postgres actually requires TLS.
-  ALLOW_INSECURE_TLS: {{ .Values.caradhras.allowInsecureTLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-access-manager.flagDefaultTrue" .Values.caradhras.allowInsecureTLS | quote }}
   # lib-streaming v3 fail-fast: caradhras >= 1.2.0-beta.31 refuses to boot
   # without its roster name as the CloudEvents source. This is the binary's
   # own service identity, not an environment-specific setting, so it is

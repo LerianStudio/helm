@@ -1,5 +1,119 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
+- Render boolean false on flags that default to true, ensuring accurate flag representation. (@fredcamaral)
+
+Improvements:
+- Implement antifraud flags using a shared helper for better code organization and maintainability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
+- Render boolean false on flags that default to true, ensuring correct behavior when these flags are not explicitly set. This change is reflected in two commits. (@fredcamaral)
+
+Improvements:
+- Refactor antifraud flags to utilize a shared helper, enhancing code maintainability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
+- Render boolean false on flags that default to true, ensuring correct behavior when the flags are not explicitly set. (@fredcamaral)
+
+Improvements:
+- Refactor antifraud flags to utilize a shared helper, enhancing code maintainability and readability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
+- Render boolean false on flags that default to true, ensuring consistent behavior. (@fredcamaral)
+
+Improvements:
+- Implement antifraud flags using a shared helper for better code reuse and maintainability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
+- Render boolean false on flags that default to true, ensuring correct behavior for default-true flags. (@fredcamaral)
+
+Improvements:
+- Refactor antifraud flags to use a shared helper, streamlining the codebase. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. This change was implemented twice to address related issues. (@fredcamaral)
+
+Improvements:
+- Refactor antifraud flags to utilize a shared helper, enhancing code maintainability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
+- Render boolean `false` on flags that are `true` by default to ensure correct behavior. (@fredcamaral)
+
+Improvements:
+- Implement antifraud flags using a shared helper to streamline the codebase. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.2.0)
+
+Features:
+- Add a warning for using plaintext connections with external PostgreSQL databases. (@fredcamaral)
+
+Improvements:
+- Consolidate TLS warnings into a single list for better clarity. (@fredcamaral)
+
+Fixes:
+- Provide a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.1.0`. (@brunognovaes)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.1.0...plugin-br-pix-indirect-btg-v4.2.0)
+
+---
+
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.2.0)
+
+Features:
+- Add a warning for using plaintext connections with external PostgreSQL databases. (@fredcamaral)
+
+Improvements:
+- Consolidate TLS warnings into a single list for better clarity. (@fredcamaral)
+
+Documentation:
+- Provide a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.1.0`. (@brunognovaes)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.1.0...plugin-br-pix-indirect-btg-v4.2.0)
+
+---
+
 ## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v4.1.0)
 
 Features:

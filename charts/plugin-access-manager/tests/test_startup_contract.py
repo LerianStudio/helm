@@ -120,14 +120,27 @@ class StartupContract(unittest.TestCase):
             self.crash_loops(values, 'identity')
 
     def test_identity_auth_disabled_does_not_require_jwks(self):
-        values = production()
-        values['identity']['configmap'] = {'AUTH_ENABLED': 'false'}
-        self.succeeds(values)
+        for disabled in ['false', False]:
+            values = production()
+            values['identity']['configmap'] = {'AUTH_ENABLED': disabled}
+            self.succeeds(values)
 
-    def test_boolean_false_matches_actual_template_default(self):
-        values = production()
-        values['identity']['configmap'] = {'AUTH_ENABLED': False}
-        self.crash_loops(values, 'identity')
+    def test_default_true_flags_honor_an_explicit_false(self):
+        flags = {'auth': ['ALLOW_INSECURE_TLS', 'RUNNING_IN_DOCKER', 'RATE_LIMIT_ENABLED',
+                          'CIRCUIT_BREAKER_ENABLED', 'SWAGGER_ENABLED'],
+                 'identity': ['ALLOW_INSECURE_TLS', 'AUTH_ENABLED', 'RATE_LIMIT_ENABLED', 'CIRCUIT_BREAKER_ENABLED']}
+        for value, expected in [(False, 'false'), ('false', 'false'), (True, 'true'), (None, 'true'), ('', 'true')]:
+            with self.subTest(value=value):
+                values = production()
+                for component, keys in flags.items():
+                    values[component]['configmap'].update(dict.fromkeys(keys, value))
+                values['caradhras'] = {'allowInsecureTLS': value}
+                config = {d['metadata']['name']: d['data'] for d in self.succeeds(values) if d['kind'] == 'ConfigMap'}
+                for component, keys in flags.items():
+                    for key in keys:
+                        rendered = 'PLUGIN_AUTH_ENABLED' if key == 'AUTH_ENABLED' else key
+                        self.assertEqual(config[f'startup-test-{component}'][rendered], expected, key)
+                self.assertEqual(config['startup-test-caradhras']['ALLOW_INSECURE_TLS'], expected)
 
     def test_identity_loopback_contract(self):
         for url in ['http://localhost/keys', 'http://127.0.0.1:8000/keys', 'http://[::1]:8000/keys',

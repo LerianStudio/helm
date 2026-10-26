@@ -3,6 +3,160 @@
 ## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
 
 Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add a Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add a Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add a Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1` to assist users with the upgrade process. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2` to provide detailed upgrade instructions. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3` to facilitate smooth transitions to the new version. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1` to assist users with the upgrade process. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2` to provide detailed upgrade instructions. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3` to facilitate seamless upgrades. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`, providing users with detailed steps for upgrading. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`, offering guidance on the upgrade process. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`, assisting users with the latest upgrade instructions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
 - Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
 
 Improvements:

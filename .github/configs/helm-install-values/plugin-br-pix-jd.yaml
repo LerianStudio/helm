@@ -21,16 +21,14 @@ api:
     # The bundled datastores are plaintext and the app refuses them otherwise:
     #   postgres-primary: TLS required (set ALLOW_INSECURE_TLS=true to bypass)
     ALLOW_INSECURE_TLS: "true"
-    # The license client still requires an organization ID under IS_DEVELOPMENT;
-    # "global" is the single-tenant value the internal environments use.
+    # The license client requires an organization ID; "global" is the
+    # single-tenant value the internal environments use.
     ORGANIZATION_IDS: "global"
-  # kind has no license the Lerian gateway accepts. IS_DEVELOPMENT points the
-  # license client at the DEV gateway, as the anacleto chaos lane runs; the chart
-  # refuses it only under ENVIRONMENT_NAME=production.
-  extraConfigmap:
-    IS_DEVELOPMENT: "true"
   secrets:
     POSTGRES_PASSWORD: null
+    # The image refuses to boot without a license the production gateway accepts;
+    # CI license placeholder (README).
+    LICENSE_KEY: "IT_LICENSE_KEY"
 postgresql:
   enabled: true
   external: false

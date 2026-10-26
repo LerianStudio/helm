@@ -732,6 +732,19 @@ VAULT_TRANSIT_MOUNT_PATH: {{ include "lerian-common.kms.value" (dict "context" $
 {{- if $awsRegion }}
 AWS_REGION: {{ $awsRegion | quote }}
 {{- end }}
+{{- /* aws key-mode keys (br-sfn#1156): rendered only when the effective provider is aws */}}
+{{- if eq $kmsProvider "aws" }}
+{{- $awsKeyMode := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsKeyMode" "nativeKey" "KMS_AWS_KEY_MODE" "default" "") | trim }}
+{{- if $awsKeyMode }}
+KMS_AWS_KEY_MODE: {{ $awsKeyMode | quote }}
+{{- end }}
+{{- $awsKeyArn := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsKeyArn" "nativeKey" "KMS_AWS_KEY_ARN" "default" "") | trim }}
+{{- if $awsKeyArn }}
+KMS_AWS_KEY_ARN: {{ $awsKeyArn | quote }}
+{{- end }}
+{{ include $kv (dict "cm" $cm "p" $b.vault "f" "awsKmsTimeoutSec" "k" "KMS_AWS_TIMEOUT_SEC" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $b.vault "f" "awsKmsRotationCheckIntervalSec" "k" "KMS_AWS_ROTATION_CHECK_INTERVAL_SEC" "opt" true) }}
+{{- end }}
 # --- Envelope encryption + blind index ---------------------------------------
 {{ include $kv (dict "cm" $cm "p" $b.crypto "f" "dekCacheTtl" "k" "SISBAJUD_DEK_CACHE_TTL" "d" "5m") }}
 {{ include $kv (dict "cm" $cm "p" $b.crypto "f" "dekCacheMaxEntries" "k" "SISBAJUD_DEK_CACHE_MAX_ENTRIES" "d" "50000") }}
@@ -976,6 +989,48 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- end -}}
 {{- else -}}
 {{- include $req (dict "context" $ "key" "AWS_REGION" "value" (index $data "AWS_REGION") "why" "when KMS_PROVIDER=aws" "set" "global.kms.awsRegion (or brSisbajud.kms.awsRegion)") -}}
+{{- /* AWS KMS key mode. The chart mirrors presence, exclusion and range only; ARN
+   format, alias and region consistency stay with the app boot
+   (config_validation.go). "^[0-9]+$" is deliberately stricter than Go Atoi
+   (it refuses "+30"). Case is not normalised: "Managed" fails, as in the app. */ -}}
+{{- $mode := toString (index $data "KMS_AWS_KEY_MODE" | default "") | trim -}}
+{{- if not (has $mode (list "managed" "provided")) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_PROVIDER=aws now requires KMS_AWS_KEY_MODE (managed | provided), got %q (the app refuses to boot without it).\n  set: brSisbajud.kms.awsKeyMode (or global.kms.awsKeyMode, or brSisbajud.configmap.KMS_AWS_KEY_MODE)\n" $mode) -}}
+{{- end -}}
+{{- $keyArn := toString (index $data "KMS_AWS_KEY_ARN" | default "") | trim -}}
+{{- if eq $mode "provided" -}}
+{{- include $req (dict "context" $ "key" "KMS_AWS_KEY_ARN" "value" $keyArn "why" "when KMS_AWS_KEY_MODE=provided" "set" "brSisbajud.kms.awsKeyArn (or global.kms.awsKeyArn)") -}}
+{{- else if $keyArn -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_AWS_KEY_ARN must be empty when KMS_AWS_KEY_MODE=managed (got %q; the app creates and owns the key).\n  set: unset brSisbajud.kms.awsKeyArn and global.kms.awsKeyArn, or brSisbajud.kms.awsKeyMode=provided\n" $keyArn) -}}
+{{- end -}}
+{{- if hasKey $data "KMS_AWS_TIMEOUT_SEC" -}}
+{{- $kt := toString (index $data "KMS_AWS_TIMEOUT_SEC") -}}
+{{- if or (not (regexMatch "^[0-9]+$" $kt)) (lt (atoi $kt) 1) (gt (atoi $kt) 600) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_AWS_TIMEOUT_SEC must be a whole number of seconds between 1 and 600 (got %q).\n  set: brSisbajud.vault.awsKmsTimeoutSec\n" $kt) -}}
+{{- end -}}
+{{- end -}}
+{{- /* Rotation interval: only read by the app in provided mode (ignored in managed). */ -}}
+{{- if and (eq $mode "provided") (hasKey $data "KMS_AWS_ROTATION_CHECK_INTERVAL_SEC") -}}
+{{- $ri := toString (index $data "KMS_AWS_ROTATION_CHECK_INTERVAL_SEC") -}}
+{{- if or (not (regexMatch "^[0-9]+$" $ri)) (lt (atoi $ri) 1) (gt (atoi $ri) 86400) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_AWS_ROTATION_CHECK_INTERVAL_SEC must be a whole number of seconds between 1 and 86400 when KMS_AWS_KEY_MODE=provided (got %q).\n  set: brSisbajud.vault.awsKmsRotationCheckIntervalSec\n" $ri) -}}
+{{- end -}}
+{{- end -}}
+{{- /* Image-tag gate (CA-10): images before 1.1.0-beta.13 ignore KMS_AWS_KEY_MODE /
+   KMS_AWS_KEY_ARN and create their own KMS key, silently. Same effective tag as
+   configmapData/deployment.yaml; digest and leading "v" stripped. Non-semver tags
+   (latest, mirror tags, digest-only) FAIL CLOSED (DR-03) unless acknowledged via
+   brSisbajud.kms.allowNonSemverImageTag only: global.kms.allowNonSemverImageTag is
+   intentionally ignored because the minimum tag differs per chart. */ -}}
+{{- $tag := $b.image.tag | default .Chart.AppVersion | toString -}}
+{{- $tag = regexReplaceAll "@.*$" $tag "" | trimPrefix "v" -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $tag -}}
+{{- if semverCompare "<1.1.0-beta.13" $tag -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key.\n  set: brSisbajud.image.tag >= 1.1.0-beta.13\n" $tag) -}}
+{{- end -}}
+{{- else if ne (toString (($b.kms | default dict).allowNonSemverImageTag)) "true" -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q is not SemVer, so the chart cannot verify it is >= 1.1.0-beta.13 (older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key).\n  set: brSisbajud.image.tag >= 1.1.0-beta.13, or brSisbajud.kms.allowNonSemverImageTag: true to acknowledge the image is >= 1.1.0-beta.13\n" $tag) -}}
+{{- end -}}
 {{- end -}}
 {{- /* Streaming (mandatory, see validateMensageria): the app fails at boot without
    brokers, and without TLS in a production-like environment

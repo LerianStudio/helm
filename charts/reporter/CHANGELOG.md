@@ -2,6 +2,21 @@
 
 ## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
 
+Features:
+
+- Update `reporter-manager` to `@4.5.1` and `reporter-worker` to `@4.5.1`. (@lerian-studio)
+
+Fixes:
+
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
 Fixes:
 - Render boolean `false` on default-true flags. (@fredcamaral)
 - Resolve vault placeholders in RabbitMQ definitions. (@prymax10)

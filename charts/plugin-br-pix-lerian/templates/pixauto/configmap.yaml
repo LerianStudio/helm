@@ -59,7 +59,7 @@ data:
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-pixauto" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4116" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
   REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-pixauto" | quote }}
@@ -103,7 +103,7 @@ data:
   # at WARN on every boot, and hand-emitting it shipped BOTH spellings at once. It
   # stays listed in the $enumerated suppression list below so the escape hatch
   # cannot leak it back either -- same treatment as the other superseded names.
-  SWAGGER_ENABLED: {{ include "plugin-br-pix-lerian.flagDefaultTrue" $cm.SWAGGER_ENABLED | quote }}
+  {{- /* SWAGGER_ENABLED is not emitted, so the app default applies (docs only in local/development); a set value passes through the escape hatch below. */}}
   SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4000/spi" | quote }}
   SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "" | quote }}
   # -- Regulatory-intent drain to the counterparty adapter (v1.1.0). OFF by
@@ -156,7 +156,7 @@ data:
       "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" "STREAMING_REQUIRED_ACKS"
       "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_SASL_MECHANISM" "STREAMING_SASL_PASSWORD"
       "STREAMING_SASL_USERNAME" "STREAMING_TLS_CA_CERT" "STREAMING_TLS_ENABLED"
-      "SWAGGER_ENABLED" "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED" "VALKEY_URL"
+      "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED" "VALKEY_URL"
     ) }}
   {{- $_ := set $enumerated $k 1 }}
   {{- end }}

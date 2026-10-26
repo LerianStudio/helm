@@ -210,7 +210,7 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
    - everything else FAILS CLOSED (DR-03/DR-04) unless acknowledged, and with the
      acknowledgement no version check is made: "@" (tag@digest or digest-only; the
      kubelet pulls by digest, so the label may lie), other suffixes (-amd64, beta1,
-     -beta.13-amd64), build metadata (+x), non-SemVer (latest, mirror tags).
+     -beta.1-amd64), build metadata (+x), non-SemVer (latest, mirror tags).
    The acknowledgement is sisbajud.kms.allowUnverifiableImageTag only:
    global.kms.allowUnverifiableImageTag is intentionally ignored because the minimum
    tag differs per chart. */ -}}

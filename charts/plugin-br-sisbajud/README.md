@@ -83,7 +83,8 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 - The distinct-ARN check is a textual comparison: an alias and the ARN of the same key pass the render and are only caught by the app.
 - Minimum image: `plugin-br-sisbajud-v1.1.0-beta.1` (chart value `sisbajud.image.tag >= 1.1.0-beta.1`). Older images (including the `1.0.0` default appVersion) ignore the key mode and create their own KMS key, so the chart fails the render on them.
 - A non-SemVer tag (e.g. `latest`, mirror tags) fails closed unless `sisbajud.kms.allowUnverifiableImageTag: true`. This flag is per chart only: setting it under `global.kms` has no effect.
-- A tag containing `@` (`tag@digest` or digest-only) is labelled unverifiable and also requires `sisbajud.kms.allowUnverifiableImageTag: true`, even when the tag part is SemVer: the kubelet pulls by digest, so the label cannot be verified against the minimum. With the flag set no version check is made. A SemVer tag without `@` below the minimum fails even with the flag.
+- A tag containing `@` (`tag@digest` or digest-only) also requires `sisbajud.kms.allowUnverifiableImageTag: true`, even when the tag part is SemVer: the kubelet pulls by digest, so the label cannot be verified against the minimum. With the flag set no version check is made. A SemVer tag without `@` below the minimum fails even with the flag.
+- A digest-only tag (`image.tag: "@sha256:…"`) is not supported by this chart's image template: it renders `repo:@sha256:…`, which the kubelet rejects.
 - This is the first gate in this repo that treats `@` as a signal: other charts' minimum-version gates strip the digest or fail open on it. The deviation is deliberate (DR-04).
 - Residual: a mutable SemVer tag re-pushed in a mirror is still only a label; the chart cannot detect it.
 - AWS credentials come via IRSA (`serviceAccount` annotations) or this chart's `aws.rolesAnywhere` block; this chart has no `secretRefs`.

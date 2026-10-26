@@ -64,6 +64,20 @@ data:
   WEBHOOK_WORKER_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_WORKER_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_ORCHESTRATOR_SHUTDOWN_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_ORCHESTRATOR_SHUTDOWN_TIMEOUT | default "30s" | quote }}
   WEBHOOK_ORCHESTRATOR_RECOVERY_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_ORCHESTRATOR_RECOVERY_TIMEOUT | default "2m" | quote }}
+  WEBHOOK_HEALTH_CHECK_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_HEALTH_CHECK_INTERVAL | default "30s" | quote }}
+  WEBHOOK_RECOVERY_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_RECOVERY_INTERVAL | default "5m" | quote }}
+  WEBHOOK_SLOW_REQUEST_THRESHOLD: {{ .Values.outbound.configmap.WEBHOOK_SLOW_REQUEST_THRESHOLD | default "3s" | quote }}
+
+  # ==============================================================================
+  # HTTP CLIENT (webhook delivery transport)
+  # ==============================================================================
+  HTTP_IDLE_CONN_TIMEOUT: {{ .Values.outbound.configmap.HTTP_IDLE_CONN_TIMEOUT | default "90s" | quote }}
+  HTTP_DIAL_TIMEOUT: {{ .Values.outbound.configmap.HTTP_DIAL_TIMEOUT | default "5s" | quote }}
+  HTTP_KEEP_ALIVE: {{ .Values.outbound.configmap.HTTP_KEEP_ALIVE | default "30s" | quote }}
+  HTTP_TLS_HANDSHAKE_TIMEOUT: {{ .Values.outbound.configmap.HTTP_TLS_HANDSHAKE_TIMEOUT | default "5s" | quote }}
+  # 0s: no separate header deadline; WEBHOOK_WORKER_TIMEOUT bounds the whole delivery.
+  HTTP_RESPONSE_HEADER_TIMEOUT: {{ .Values.outbound.configmap.HTTP_RESPONSE_HEADER_TIMEOUT | default "0s" | quote }}
+  HTTP_EXPECT_CONTINUE_TIMEOUT: {{ .Values.outbound.configmap.HTTP_EXPECT_CONTINUE_TIMEOUT | default "1s" | quote }}
 
   # Flow-level URL (optional) - all DICT entities inherit this if no specific URL
   WEBHOOK_DICT_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_URL | default "" | quote }}

@@ -8,3 +8,6 @@ bc-correios:
   configmap:
     ENV_NAME: "development"
     PLUGIN_AUTH_ENABLED: "false"
+    # The image refuses to boot without a license in every environment; the app
+    # defaults ORGANIZATION_IDS to "global". CI license placeholder (README).
+    LICENSE_KEY: "IT_LICENSE_KEY"

@@ -50,15 +50,17 @@ The new `midaz.flagDefaultTrue` helper is defined in `_helpers.tpl`:
 
 | Service | Flag | Default | Impact |
 |---------|------|---------|--------|
-| `ledger` | `ALLOW_INSECURE_TLS` | `true` | Controls TLS certificate validation |
+| `ledger` | `ALLOW_INSECURE_TLS` | `true` | Allows plaintext (non-TLS) connections to Postgres, MongoDB, Valkey and RabbitMQ |
 | `ledger` | `BULK_RECORDER_ENABLED` | `true` | Controls bulk transaction recording |
 | `ledger` | `RATE_LIMIT_ENABLED` | `true` | Controls API rate limiting |
-| `crm` | `ALLOW_INSECURE_TLS` | `true` | Controls TLS certificate validation |
-| `tracer` | `ALLOW_INSECURE_TLS` | `true` | Controls TLS certificate validation |
+| `crm` | `ALLOW_INSECURE_TLS` | `true` | Allows plaintext (non-TLS) connections to its datastores |
+| `tracer` | `ALLOW_INSECURE_TLS` | `true` | Allows plaintext (non-TLS) connections to its datastores |
 
 #### Why this is a breaking change
 
-If you previously attempted to disable any of these features by setting them to `false` in your `values.yaml`, the setting was silently ignored in v9.8.2 and the feature remained enabled. In v10.0.0, your explicit `false` value will now be respected, and the feature will actually be disabled.
+If you previously attempted to disable any of these features by setting them to an unquoted `false` in your `values.yaml`, the setting was silently ignored in v9.8.2 and rendered `"true"`. In v10.0.0, the unquoted `false` is respected and renders `"false"`.
+
+A quoted `"false"` is not affected: it rendered `"false"` in v9.8.2 and still does in v10.0.0.
 
 **Example scenario:**
 
@@ -81,12 +83,12 @@ ledger:
 
 2. **If you explicitly set any flag to `true`:** No action required. The behavior is unchanged.
 
-3. **If you explicitly set any flag to `false`:** The flag will now actually be disabled. Review your configuration to ensure this is the intended behavior:
-   - Disabling `ALLOW_INSECURE_TLS` will enforce strict TLS certificate validation
+3. **If you explicitly set any flag to an unquoted `false`:** The flag will now actually be disabled. Review your configuration to ensure this is the intended behavior:
+   - Setting `ALLOW_INSECURE_TLS` to `false` makes the service require TLS on its Postgres, MongoDB, Valkey and RabbitMQ connections. If any of them has no TLS, the service refuses to boot. It has nothing to do with HTTPS certificate validation
    - Disabling `BULK_RECORDER_ENABLED` will disable bulk transaction recording in the ledger
    - Disabling `RATE_LIMIT_ENABLED` will remove API rate limiting (requires `ALLOW_RATELIMIT_DISABLED` in strict tier)
 
-4. **If you set a flag to a string value** (e.g., `"false"` or `"true"`): The new helper will treat it as a string and apply the default logic. For correct behavior, always use boolean values without quotes in your `values.yaml`.
+4. **If you set a flag to a quoted string** (`"false"` or `"true"`): No action required. Quoted values render as written in both v9.8.2 and v10.0.0.
 
 ## Configuration Reference
 
@@ -97,8 +99,8 @@ The following configuration flags now use the `midaz.flagDefaultTrue` helper and
 ```yaml
 ledger:
   configmap:
-    # Controls TLS certificate validation for outbound connections
-    # Set to false to enforce strict certificate validation
+    # Allows plaintext (non-TLS) connections to Postgres, MongoDB, Valkey and RabbitMQ
+    # Set to false to require TLS (the service refuses to boot if a dependency has no TLS)
     ALLOW_INSECURE_TLS: true
     
     # Controls bulk transaction recording feature
@@ -115,8 +117,8 @@ ledger:
 ```yaml
 crm:
   configmap:
-    # Controls TLS certificate validation for outbound connections
-    # Set to false to enforce strict certificate validation
+    # Allows plaintext (non-TLS) connections to Postgres, MongoDB, Valkey and RabbitMQ
+    # Set to false to require TLS (the service refuses to boot if a dependency has no TLS)
     ALLOW_INSECURE_TLS: true
 ```
 
@@ -125,18 +127,18 @@ crm:
 ```yaml
 tracer:
   configmap:
-    # Controls TLS certificate validation for outbound connections
-    # Set to false to enforce strict certificate validation
+    # Allows plaintext (non-TLS) connections to Postgres, MongoDB, Valkey and RabbitMQ
+    # Set to false to require TLS (the service refuses to boot if a dependency has no TLS)
     ALLOW_INSECURE_TLS: true
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `ALLOW_INSECURE_TLS` | `true` | When `true`, allows insecure TLS connections (skips certificate validation). When `false`, enforces strict TLS certificate validation for all outbound HTTPS connections. |
+| `ALLOW_INSECURE_TLS` | `true` | When `true`, lets the service connect to Postgres, MongoDB, Valkey and RabbitMQ without TLS. When `false`, those connections must use TLS, and the service refuses to boot if a dependency has no TLS. It does not control HTTPS certificate validation. |
 | `BULK_RECORDER_ENABLED` | `true` | When `true`, enables bulk transaction recording for improved performance. When `false`, uses individual database inserts for each transaction. |
 | `RATE_LIMIT_ENABLED` | `true` | When `true`, enables API rate limiting with the configured limits. When `false`, disables rate limiting entirely (requires `ALLOW_RATELIMIT_DISABLED` environment variable in strict tier). |
 
-> **Important:** All flags accept boolean values (`true` or `false`). Do not use quoted string values (`"true"` or `"false"`) in your `values.yaml`, as this may cause unexpected behavior.
+> **Important:** Booleans (`true`, `false`) and quoted strings (`"true"`, `"false"`) both render correctly in v10.0.0. Only an unquoted `false` changes behavior from v9.8.2.
 
 ## Migration Steps
 
@@ -154,7 +156,7 @@ grep -E "(ALLOW_INSECURE_TLS|BULK_RECORDER_ENABLED|RATE_LIMIT_ENABLED)" values.y
 
 ### Option 2: Explicitly set boolean values
 
-If you have overridden any of the affected flags, review your configuration and ensure the values are set as booleans (not strings).
+If you have overridden any of the affected flags, look for unquoted `false` values: those are the only ones whose effect changes.
 
 **Step 1:** Review your current `values.yaml` for any of these flags:
 
@@ -162,24 +164,21 @@ If you have overridden any of the affected flags, review your configuration and 
 grep -A 5 "configmap:" values.yaml | grep -E "(ALLOW_INSECURE_TLS|BULK_RECORDER_ENABLED|RATE_LIMIT_ENABLED)"
 ```
 
-**Step 2:** Ensure all boolean values are unquoted. Update your `values.yaml`:
-
-**Incorrect (will be treated as string):**
+**Step 2:** Quoted values need no change. `"false"` and `"true"` render as written in both versions:
 
 ```yaml
 ledger:
   configmap:
-    RATE_LIMIT_ENABLED: "false"
-    ALLOW_INSECURE_TLS: "true"
+    RATE_LIMIT_ENABLED: "false"   # "false" in v9.8.2 and in v10.0.0
+    ALLOW_INSECURE_TLS: "true"    # "true" in v9.8.2 and in v10.0.0
 ```
 
-**Correct (boolean values):**
+An unquoted `false` is the one that changes:
 
 ```yaml
 ledger:
   configmap:
-    RATE_LIMIT_ENABLED: false
-    ALLOW_INSECURE_TLS: true
+    RATE_LIMIT_ENABLED: false     # "true" in v9.8.2, "false" in v10.0.0
 ```
 
 **Step 3:** If you previously set any flag to `false` expecting it to be disabled, verify this is still your intent:

@@ -57,7 +57,12 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.executor.transport` | `EXECUTOR_TRANSPORT` | `webhook` (default) or `sqs` |
 | `sisbajud.executor.webhook.*` | `EXECUTOR_HUB_WEBHOOK_*` | outside `DEPLOYMENT_MODE=local`: `tls.existingSecret` or `upstreamTlsValidated: true` |
 | `sisbajud.executor.sqs.*` | `EXECUTOR_SQS_*` | needs AWS credentials (IRSA annotation or `aws.rolesAnywhere`) |
-| `global.kms.*` | `KMS_PROVIDER`, `VAULT_*`, `AWS_REGION` | `vault` or `aws`; the app has no in-memory provider |
+| `global.kms.*` | `KMS_PROVIDER`, `VAULT_*`, `AWS_REGION`, `KMS_AWS_KEY_MODE`, `KMS_AWS_KEY_ARN`, `KMS_AWS_CREDENTIALS_KEY_ARN` | `vault` or `aws`; the app has no in-memory provider. With `aws`: `awsRegion`, `awsKeyMode`, `awsKeyArn`, `awsCredentialsKeyArn` |
+| `sisbajud.kms.awsKeyMode` | `KMS_AWS_KEY_MODE` | `managed` or `provided`; required with `KMS_PROVIDER=aws` |
+| `sisbajud.kms.awsKeyArn` | `KMS_AWS_KEY_ARN` | `provided`: required; `managed`: must be empty |
+| `sisbajud.kms.awsCredentialsKeyArn` | `KMS_AWS_CREDENTIALS_KEY_ARN` | `provided`: required and distinct from `awsKeyArn`; `managed`: must be empty |
+| `sisbajud.vault.awsKmsTimeoutSec` | `KMS_AWS_TIMEOUT_SEC` | optional; whole seconds, 1..600 |
+| `sisbajud.vault.awsKmsRotationCheckIntervalSec` | `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` | optional; whole seconds, 1..86400 |
 | `global.datastores.postgres/redis` | `POSTGRES_*`, `REDIS_*` | `REDIS_HOST` is rendered as `host:port` |
 | `sisbajud.app.defaultTenantId` | `DEFAULT_TENANT_ID` | must be a UUID |
 | `sisbajud.license.organizationIds` | `ORGANIZATION_IDS` | must be `global` |
@@ -68,6 +73,12 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 `VAULT_ADDR` and `MENSAGERIA_BASE_URL` must be https (`VAULT_ADDR` may be http only for a loopback host or `ENVIRONMENT_NAME` `local|development|test`); argocd-vault-plugin placeholders (`<path:...>`) are not checked at render.
 
 `STREAMING_ENABLED` is pinned to `false`: executor mode starts no producer or consumer. `sisbajud.configmap` accepts only the executor's non-credential keys (`values.schema.json`); credentials go in `sisbajud.secrets` (emitted only when set) or the existing Secret.
+
+**AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `sisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` needs both `awsKeyArn` and `awsCredentialsKeyArn`, and they must differ; `managed` needs both empty (the app creates and owns the keys). `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated in every aws mode. Values tolerate surrounding whitespace (the chart trims).
+
+- `KMS_AWS_*` enter only via `sisbajud.kms.*` / `sisbajud.vault.*` (or `global.kms.*`); the `sisbajud.configmap` key enum (`values.schema.json`) rejects them.
+- `aws` is single-tenant (BYOC) only: the render fails with multi-tenant enabled (the app refuses it).
+- AWS credentials come via IRSA (`serviceAccount` annotations) or this chart's `aws.rolesAnywhere` block; this chart has no `secretRefs`.
 
 ## Known limitation: object-store readiness probe (app, B1)
 

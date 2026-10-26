@@ -1,0 +1,10 @@
+{{- if and (index .Values "plugin-br-ted-lerian").enabled (index .Values "plugin-br-ted-lerian").pdb.enabled }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" (index .Values "plugin-br-ted-lerian").pdb
+      "name" (include "plugin-br-ted-lerian.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name))
+      "selector" (include "plugin-br-ted-lerian.selectorLabels" (dict "context" . "name" (index .Values "plugin-br-ted-lerian").name))
+      "minAvailableDefault" 1
+    ) }}
+{{- end }}

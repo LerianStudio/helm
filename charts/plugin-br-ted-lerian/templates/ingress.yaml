@@ -1,0 +1,12 @@
+{{- if and (index .Values "plugin-br-ted-lerian").enabled (index .Values "plugin-br-ted-lerian").ingress.enabled }}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" (index .Values "plugin-br-ted-lerian").ingress
+      "global" (.Values.global).ingress
+      "subdomain" "plugin-br-ted-lerian"
+      "name" (include "plugin-br-ted-lerian.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name))
+      "svcPort" (index .Values "plugin-br-ted-lerian").service.port
+    ) }}
+{{- end }}

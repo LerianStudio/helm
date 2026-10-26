@@ -1001,7 +1001,7 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- if eq $mode "provided" -}}
 {{- include $req (dict "context" $ "key" "KMS_AWS_KEY_ARN" "value" $keyArn "why" "when KMS_AWS_KEY_MODE=provided" "set" "brSisbajud.kms.awsKeyArn (or global.kms.awsKeyArn)") -}}
 {{- else if $keyArn -}}
-{{- fail (printf "\n\nERROR: br-sisbajud: KMS_AWS_KEY_ARN must be empty when KMS_AWS_KEY_MODE=managed (got %q; the app creates and owns the key).\n  set: unset brSisbajud.kms.awsKeyArn and global.kms.awsKeyArn, or brSisbajud.kms.awsKeyMode=provided\n" $keyArn) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_AWS_KEY_ARN must be empty when KMS_AWS_KEY_MODE=managed (got %q; the app creates and owns the key).\n  set: unset brSisbajud.kms.awsKeyArn, global.kms.awsKeyArn and brSisbajud.configmap.KMS_AWS_KEY_ARN, or brSisbajud.kms.awsKeyMode=provided\n" $keyArn) -}}
 {{- end -}}
 {{- if hasKey $data "KMS_AWS_TIMEOUT_SEC" -}}
 {{- $kt := toString (index $data "KMS_AWS_TIMEOUT_SEC") -}}
@@ -1018,18 +1018,31 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- end -}}
 {{- /* Image-tag gate (CA-10): images before 1.1.0-beta.13 ignore KMS_AWS_KEY_MODE /
    KMS_AWS_KEY_ARN and create their own KMS key, silently. Same effective tag as
-   configmapData/deployment.yaml; digest and leading "v" stripped. Non-semver tags
-   (latest, mirror tags, digest-only) FAIL CLOSED (DR-03) unless acknowledged via
-   brSisbajud.kms.allowNonSemverImageTag only: global.kms.allowNonSemverImageTag is
-   intentionally ignored because the minimum tag differs per chart. */ -}}
-{{- $tag := $b.image.tag | default .Chart.AppVersion | toString -}}
-{{- $tag = regexReplaceAll "@.*$" $tag "" | trimPrefix "v" -}}
+   configmapData/deployment.yaml (DR-04, rule B'):
+   - a tag containing "@" (tag@digest or digest-only) cannot be verified: the kubelet
+     pulls by digest, so the label may lie. It FAILS CLOSED unless acknowledged;
+     with the acknowledgement no SemVer check is made.
+   - otherwise, after trimming a leading "v": SemVer tags are compared with
+     1.1.0-beta.13 (the acknowledgement is NOT consulted); non-SemVer tags (latest,
+     mirror tags) FAIL CLOSED (DR-03) unless acknowledged.
+   The acknowledgement is brSisbajud.kms.allowUnverifiableImageTag only:
+   global.kms.allowUnverifiableImageTag is intentionally ignored because the minimum
+   tag differs per chart. */ -}}
+{{- $rawTag := $b.image.tag | default .Chart.AppVersion | toString -}}
+{{- $ackTag := eq (toString (($b.kms | default dict).allowUnverifiableImageTag)) "true" -}}
+{{- if contains "@" $rawTag -}}
+{{- if not $ackTag -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q is pinned by digest, so the chart cannot verify it is >= 1.1.0-beta.13 (the kubelet pulls by digest and the tag label may not match; older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key).\n  set: brSisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= 1.1.0-beta.13, or a brSisbajud.image.tag >= 1.1.0-beta.13 without a digest\n" $rawTag) -}}
+{{- end -}}
+{{- else -}}
+{{- $tag := trimPrefix "v" $rawTag -}}
 {{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $tag -}}
 {{- if semverCompare "<1.1.0-beta.13" $tag -}}
-{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key.\n  set: brSisbajud.image.tag >= 1.1.0-beta.13\n" $tag) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key.\n  set: brSisbajud.image.tag >= 1.1.0-beta.13\n" $rawTag) -}}
 {{- end -}}
-{{- else if ne (toString (($b.kms | default dict).allowNonSemverImageTag)) "true" -}}
-{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q is not SemVer, so the chart cannot verify it is >= 1.1.0-beta.13 (older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key).\n  set: brSisbajud.image.tag >= 1.1.0-beta.13, or brSisbajud.kms.allowNonSemverImageTag: true to acknowledge the image is >= 1.1.0-beta.13\n" $tag) -}}
+{{- else if not $ackTag -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q is not SemVer, so the chart cannot verify it is >= 1.1.0-beta.13 (older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key).\n  set: brSisbajud.image.tag >= 1.1.0-beta.13, or brSisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= 1.1.0-beta.13\n" $rawTag) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- /* Streaming (mandatory, see validateMensageria): the app fails at boot without

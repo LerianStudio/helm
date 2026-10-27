@@ -191,6 +191,10 @@ data:
   ANTIFRAUD_HOOK_PREWARM_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.ANTIFRAUD_HOOK_PREWARM_ENABLED | quote }}
 
   SWAGGER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.SWAGGER_ENABLED | quote }}
+  STREAMING_BROKERS: {{ .Values.pix.configmap.STREAMING_BROKERS | default "" | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.pix.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-indirect-btg" | quote }}
+  STREAMING_ENABLED: {{ .Values.pix.configmap.STREAMING_ENABLED | default "false" | quote }}
+  STREAMING_TENANT_ID: {{ .Values.pix.configmap.STREAMING_TENANT_ID | default "default" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

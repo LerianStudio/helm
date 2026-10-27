@@ -376,6 +376,15 @@ class StartupContract(unittest.TestCase):
         self.fails({'caradhras': {'migrations': {'extraEnvVars': {'POSTGRES_HOST': 'x'}}}},
                    'caradhras.migrations.extraEnvVars.POSTGRES_HOST duplicates a chart-owned env')
 
+    def test_migrate_extra_env_var_names_are_schema_checked(self):
+        # A name Kubernetes rejects must fail at values validation, not at apply.
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'BAD=NAME': 'x'}}}},
+                   'extraEnvVars')
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}},
+                   'extraEnvVars')
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
+        self.assertEqual(env['my.var-1_X'], 'ok')
+
 
 if __name__ == '__main__':
     unittest.main()

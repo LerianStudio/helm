@@ -638,8 +638,8 @@ caradhras:
     # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian'). For installs whose permissions arrive only via RI manifests (e.g. cross). Requires a caradhras-migrations image that understands MIGRATIONS_SKIP_RBAC_CHAIN.
     skipRBACChain: false
     # -- Extra env vars for the migrate init container only, as a NAME: value map
-    # -- (rendered as name/value pairs, values quoted). Chart-owned names (POSTGRES_*,
-    # -- MIGRATIONS_SKIP_RBAC_CHAIN) are refused. Not for secrets: values land in the pod spec.
+    # -- (rendered as name/value pairs, values quoted). Chart-owned names (POSTGRES_HOST/PORT/DB/
+    # -- USER/PASSWORD/SSLMODE, MIGRATIONS_SKIP_RBAC_CHAIN) are refused. Not for secrets: values land in the pod spec.
     extraEnvVars: {}
   # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
   # -- same-origin to the caradhras backend Service. Disabled by default.

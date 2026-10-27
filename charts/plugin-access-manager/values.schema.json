@@ -307,6 +307,9 @@
               "additionalProperties": {
                 "type": ["string", "number", "boolean"]
               },
+              "propertyNames": {
+                "pattern": "^[-._a-zA-Z][-._a-zA-Z0-9]*$"
+              },
               "description": "Extra NAME: value env vars for the migrate init container only"
             }
           }

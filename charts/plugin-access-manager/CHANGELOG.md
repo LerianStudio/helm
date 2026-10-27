@@ -36,6 +36,15 @@ Fixes:
 
 ---
 
+## [10.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.1)
+
+Fixes:
+- Resolved issues with the GitHub Pages build by switching from Helm templates to Liquid templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.0...plugin-access-manager-v10.0.1)
+
+---
+
 ## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.0)
 
 Features:

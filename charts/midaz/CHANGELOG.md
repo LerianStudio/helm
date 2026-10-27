@@ -4,6 +4,16 @@
 
 Fixes:
 
+- Render boolean false on default-true flags to ensure accurate flag representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
 - Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)

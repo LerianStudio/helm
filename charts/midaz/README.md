@@ -344,7 +344,7 @@ The chart carries what the ledger kernel needs to forward a request to the pod t
 - **`ledger.configmap.KERNEL_FORWARD_CIDRS`.** Comma-separated CIDRs of this cluster's ledger pods, empty by default; each cluster sets its own pod range. A kernel process refuses to start when it is empty or when `POD_IP` falls outside it.
 - **`TRUSTED_PROXIES`.** Covers the ingress range and the pod range, nothing wider, so it holds every `KERNEL_FORWARD_CIDRS` prefix; a kernel process refuses to start when it is set and misses one. Left unset, the ledger credits no client address to any request. The ledger ConfigMap has no named key for it: set it in `ledger.extraEnvVars`.
 - **Network.** Ledger pods must accept TCP from ledger pods on the server port (`SERVER_ADDRESS`, `:3002`). The chart ships no NetworkPolicy; if the cluster enforces one, allow this path.
-- **Memory.** `ledger.configmap.GOMEMLIMIT` defaults to `460MiB`, about 90% of the default 512Mi `ledger.resources.limits.memory`; keep it there when you change the limit. The ledger image sets no `GOMEMLIMIT`, and a 512Mi ledger pod without it was OOM-killed under load.
+- **Memory.** `ledger.configmap.GOMEMLIMIT` defaults to `460MiB`, about 90% of the default 512Mi `ledger.resources.limits.memory`; keep it there when you change the limit. The ledger image sets no `GOMEMLIMIT`, and a 512Mi ledger pod without it was OOM-killed under load. A ledger in kernel mode needs more: set `ledger.resources.limits.memory` to `768Mi` and `GOMEMLIMIT` to `690MiB`; `640Mi` with `576MiB` is the floor. At 512Mi, one maximal transaction beside a full load OOM-kills the pod that owns the ledger.
 
 ### CRM (Customer Relationship Management)
 

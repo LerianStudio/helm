@@ -75,40 +75,12 @@ Allows overriding it for multi-namespace deployments in combined charts.
 {{- end }}
 
 {{/*
-Enable internal dependencies
-These helpers check both .enabled and .external flags
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
 */}}
-{{- define "rabbitmq.enabled" -}}
-{{- if and (default true .Values.rabbitmq.enabled) (not .Values.rabbitmq.external) -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-
-{{- define "valkey.enabled" -}}
-{{- if and (default true .Values.valkey.enabled) (not .Values.valkey.external) -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-
-{{- define "postgresql.enabled" -}}
-{{- if and (default true .Values.postgresql.enabled) (not .Values.postgresql.external) -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
-
-{{- define "mongodb.enabled" -}}
-{{- if and (default true .Values.mongodb.enabled) (not .Values.mongodb.external) -}}
-true
-{{- else -}}
-false
-{{- end -}}
-{{- end -}}
+{{- define "bank-transfer.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
 
 {{/*
 bank-transfer.infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}`

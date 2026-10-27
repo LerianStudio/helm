@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v2.0.0 to v2.0.1
 
 This guide covers the upgrade from `alloy-lerian` chart version **2.0.0** to **2.0.1**. This patch release clarifies documentation for unimplemented configuration fields and fixes the node-exporter Service name derivation logic.
@@ -310,3 +311,4 @@ helm diff upgrade alloy-lerian oci://registry-1.docker.io/lerianstudio/alloy-ler
 ```bash
 helm upgrade alloy-lerian oci://registry-1.docker.io/lerianstudio/alloy-lerian-helm --version 2.0.1 -n alloy-lerian
 ```
+<!-- {% endraw %} -->

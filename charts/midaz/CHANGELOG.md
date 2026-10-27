@@ -1,5 +1,276 @@
 # Midaz Changelog
 
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior when flags are not explicitly set. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate flag representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on flags that are default-true, ensuring accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate flag representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address the resolution of placeholders in RabbitMQ users to prevent configuration issues. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address the issue of placeholders in RabbitMQ users to improve user management. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for improved functionality. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the upgrade process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users to improve system reliability. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@andreimatiazi)
+- Address issues with placeholders in RabbitMQ users to improve system reliability. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users to improve system reliability. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users to prevent configuration issues. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
 ## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.1)
 
 Fixes:

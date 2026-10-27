@@ -118,6 +118,7 @@ The Plugin BR PIX Indirect BTG system consists of three main components:
 | `pix.tolerations` | Tolerations for pod scheduling. | `{}` |
 | `pix.affinity` | Affinity rules for pod scheduling. | `{}` |
 | `pix.configmap.*` | Environment variables for the service. | See `values.yaml` |
+| `pix.configmap.DB_SSL_MODE` | TLS to PostgreSQL: `disable`, `allow`, `prefer`, `require`, `verify-ca` or `verify-full`. Only `require` and stricter encrypt; set one of them for an external database. | `"disable"` |
 | `pix.secrets.*` | Secrets for the service. | See `values.yaml` |
 | `pix.useExistingSecrets` | Use an existing secret instead of creating a new one. | `false` |
 | `pix.existingSecretName` | The name of the existing secret to use. | `""` |
@@ -187,6 +188,7 @@ pix:
 | `inbound.tolerations` | Tolerations for scheduling on tainted nodes. | `{}` |
 | `inbound.affinity` | Affinity rules for pod scheduling. | `{}` |
 | `inbound.configmap.*` | Environment variables for the service. | See `values.yaml` |
+| `inbound.configmap.DB_SSL_MODE` | TLS to PostgreSQL: `disable`, `allow`, `prefer`, `require`, `verify-ca` or `verify-full`. Only `require` and stricter encrypt; set one of them for an external database. | `"disable"` |
 | `inbound.secrets.*` | Secrets for the service. | See `values.yaml` |
 | `inbound.useExistingSecrets` | Use an existing secret instead of creating a new one. | `false` |
 | `inbound.existingSecretName` | The name of the existing secret to use. | `""` |
@@ -247,6 +249,7 @@ inbound:
 | `outbound.tolerations` | Tolerations for scheduling on tainted nodes. | `{}` |
 | `outbound.affinity` | Affinity rules for pod scheduling. | `{}` |
 | `outbound.configmap.*` | Environment variables for the service. | See `values.yaml` |
+| `outbound.configmap.DB_SSL_MODE` | TLS to PostgreSQL: `disable`, `allow`, `prefer`, `require`, `verify-ca` or `verify-full`. Only `require` and stricter encrypt; set one of them for an external database. | `"disable"` |
 | `outbound.secrets.*` | Secrets for the service. | See `values.yaml` |
 | `outbound.useExistingSecrets` | Use an existing secret instead of creating a new one. | `false` |
 | `outbound.existingSecretName` | The name of the existing secret to use. | `""` |

@@ -52,7 +52,7 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.outbound.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.outbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.outbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.outbound.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  ENABLE_TELEMETRY: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.ENABLE_TELEMETRY | quote }}
 
   # ==============================================================================
   # WEBHOOK GLOBAL SETTINGS
@@ -64,6 +64,20 @@ data:
   WEBHOOK_WORKER_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_WORKER_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_ORCHESTRATOR_SHUTDOWN_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_ORCHESTRATOR_SHUTDOWN_TIMEOUT | default "30s" | quote }}
   WEBHOOK_ORCHESTRATOR_RECOVERY_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_ORCHESTRATOR_RECOVERY_TIMEOUT | default "2m" | quote }}
+  WEBHOOK_HEALTH_CHECK_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_HEALTH_CHECK_INTERVAL | default "30s" | quote }}
+  WEBHOOK_RECOVERY_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_RECOVERY_INTERVAL | default "5m" | quote }}
+  WEBHOOK_SLOW_REQUEST_THRESHOLD: {{ .Values.outbound.configmap.WEBHOOK_SLOW_REQUEST_THRESHOLD | default "3s" | quote }}
+
+  # ==============================================================================
+  # HTTP CLIENT (webhook delivery transport)
+  # ==============================================================================
+  HTTP_IDLE_CONN_TIMEOUT: {{ .Values.outbound.configmap.HTTP_IDLE_CONN_TIMEOUT | default "90s" | quote }}
+  HTTP_DIAL_TIMEOUT: {{ .Values.outbound.configmap.HTTP_DIAL_TIMEOUT | default "5s" | quote }}
+  HTTP_KEEP_ALIVE: {{ .Values.outbound.configmap.HTTP_KEEP_ALIVE | default "30s" | quote }}
+  HTTP_TLS_HANDSHAKE_TIMEOUT: {{ .Values.outbound.configmap.HTTP_TLS_HANDSHAKE_TIMEOUT | default "5s" | quote }}
+  # 0s: no separate header deadline; WEBHOOK_WORKER_TIMEOUT bounds the whole delivery.
+  HTTP_RESPONSE_HEADER_TIMEOUT: {{ .Values.outbound.configmap.HTTP_RESPONSE_HEADER_TIMEOUT | default "0s" | quote }}
+  HTTP_EXPECT_CONTINUE_TIMEOUT: {{ .Values.outbound.configmap.HTTP_EXPECT_CONTINUE_TIMEOUT | default "1s" | quote }}
 
   # Flow-level URL (optional) - all DICT entities inherit this if no specific URL
   WEBHOOK_DICT_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_URL | default "" | quote }}
@@ -71,7 +85,7 @@ data:
   # ==============================================================================
   # CIRCUIT BREAKER CONFIGURATION
   # ==============================================================================
-  WEBHOOK_CIRCUIT_BREAKER_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  WEBHOOK_CIRCUIT_BREAKER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_ENABLED | quote }}
   WEBHOOK_CIRCUIT_BREAKER_FAILURE_THRESHOLD: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_FAILURE_THRESHOLD | default "5" | quote }}
   WEBHOOK_CIRCUIT_BREAKER_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_TIMEOUT | default "30s" | quote }}
   WEBHOOK_CIRCUIT_BREAKER_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_CIRCUIT_BREAKER_INTERVAL | default "60s" | quote }}
@@ -81,7 +95,7 @@ data:
   # ==============================================================================
   # DICT_CLAIM - High volume entity
   # ==============================================================================
-  WEBHOOK_DICT_CLAIM_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_ENABLED | default "true" | quote }}
+  WEBHOOK_DICT_CLAIM_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_DICT_CLAIM_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_CLAIM_URL | default "" | quote }}
@@ -96,7 +110,7 @@ data:
   # ==============================================================================
   # DICT_INFRACTION_REPORT - Medium volume entity
   # ==============================================================================
-  WEBHOOK_DICT_INFRACTION_REPORT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_ENABLED | default "true" | quote }}
+  WEBHOOK_DICT_INFRACTION_REPORT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_DICT_INFRACTION_REPORT_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_INFRACTION_REPORT_URL | default "" | quote }}
@@ -111,7 +125,7 @@ data:
   # ==============================================================================
   # DICT_REFUND - Medium volume entity
   # ==============================================================================
-  WEBHOOK_DICT_REFUND_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_ENABLED | default "true" | quote }}
+  WEBHOOK_DICT_REFUND_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_DICT_REFUND_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_DICT_REFUND_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_REFUND_URL | default "" | quote }}
@@ -126,7 +140,7 @@ data:
   # ==============================================================================
   # TRANSFER_CASHIN - HIGH VOLUME entity (Pix Cashin notifications)
   # ==============================================================================
-  WEBHOOK_TRANSFER_CASHIN_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_ENABLED | default "true" | quote }}
+  WEBHOOK_TRANSFER_CASHIN_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_TRANSFER_CASHIN_URL: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHIN_URL | default "" | quote }}
@@ -141,7 +155,7 @@ data:
   # ==============================================================================
   # TRANSFER_CASHOUT - HIGH VOLUME entity (Pix Cashout notifications)
   # ==============================================================================
-  WEBHOOK_TRANSFER_CASHOUT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_ENABLED | default "true" | quote }}
+  WEBHOOK_TRANSFER_CASHOUT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_TRANSFER_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_TRANSFER_CASHOUT_URL | default "" | quote }}
@@ -156,7 +170,7 @@ data:
   # ==============================================================================
   # REFUND_CASHIN - HIGH VOLUME entity (Pix Refund Cashin notifications)
   # ==============================================================================
-  WEBHOOK_REFUND_CASHIN_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_ENABLED | default "true" | quote }}
+  WEBHOOK_REFUND_CASHIN_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_REFUND_CASHIN_URL: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHIN_URL | default "" | quote }}
@@ -171,7 +185,7 @@ data:
   # ==============================================================================
   # REFUND_CASHOUT - HIGH VOLUME entity (Pix Refund Cashout notifications)
   # ==============================================================================
-  WEBHOOK_REFUND_CASHOUT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_ENABLED | default "true" | quote }}
+  WEBHOOK_REFUND_CASHOUT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_REFUND_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_REFUND_CASHOUT_URL | default "" | quote }}
@@ -186,7 +200,7 @@ data:
   # ==============================================================================
   # DICT_FUNDS_RECOVERY - Funds Recovery entity
   # ==============================================================================
-  WEBHOOK_DICT_FUNDS_RECOVERY_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_ENABLED | default "true" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_DICT_FUNDS_RECOVERY_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_URL | default "" | quote }}
@@ -201,7 +215,7 @@ data:
   # ==============================================================================
   # DICT_FUNDS_RECOVERY_EVENT - Funds Recovery Events entity
   # ==============================================================================
-  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_ENABLED | default "true" | quote }}
+  WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_FUNDS_RECOVERY_EVENTS_URL | default "" | quote }}
@@ -216,7 +230,7 @@ data:
   # ==============================================================================
   # DICT_RECONCILIATION_JOB - Medium volume entity
   # ==============================================================================
-  WEBHOOK_DICT_RECONCILIATION_JOB_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_ENABLED | default "true" | quote }}
+  WEBHOOK_DICT_RECONCILIATION_JOB_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_ENABLED | quote }}
   # WARNING: Webhook URL must be explicitly set in values.yaml or values-<env>.yaml
   # Leaving empty disables external webhook delivery for safety
   WEBHOOK_DICT_RECONCILIATION_JOB_URL: {{ .Values.outbound.configmap.WEBHOOK_DICT_RECONCILIATION_JOB_URL | default "" | quote }}
@@ -231,7 +245,7 @@ data:
   # ==============================================================================
   # RECURRING - Pix Automático (Low Throughput)
   # ==============================================================================
-  WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_ENABLED | default "true" | quote }}
+  WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_ENABLED | quote }}
   WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_URL: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_URL | default "" | quote }}
   WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_BATCH_SIZE | default "50" | quote }}
@@ -241,7 +255,7 @@ data:
   WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_REQUEST_MAX_CONCURRENT | default "2" | quote }}
 
-  WEBHOOK_RECURRING_AUTHORIZATION_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_ENABLED | default "true" | quote }}
+  WEBHOOK_RECURRING_AUTHORIZATION_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_ENABLED | quote }}
   WEBHOOK_RECURRING_AUTHORIZATION_URL: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_URL | default "" | quote }}
   WEBHOOK_RECURRING_AUTHORIZATION_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_RECURRING_AUTHORIZATION_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_BATCH_SIZE | default "50" | quote }}
@@ -251,7 +265,7 @@ data:
   WEBHOOK_RECURRING_AUTHORIZATION_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_RECURRING_AUTHORIZATION_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_AUTHORIZATION_MAX_CONCURRENT | default "2" | quote }}
 
-  WEBHOOK_RECURRING_CHARGE_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_CHARGE_ENABLED | default "true" | quote }}
+  WEBHOOK_RECURRING_CHARGE_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_RECURRING_CHARGE_ENABLED | quote }}
   WEBHOOK_RECURRING_CHARGE_URL: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_CHARGE_URL | default "" | quote }}
   WEBHOOK_RECURRING_CHARGE_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_CHARGE_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_RECURRING_CHARGE_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_CHARGE_BATCH_SIZE | default "50" | quote }}
@@ -261,7 +275,7 @@ data:
   WEBHOOK_RECURRING_CHARGE_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_CHARGE_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_RECURRING_CHARGE_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_CHARGE_MAX_CONCURRENT | default "2" | quote }}
 
-  WEBHOOK_RECURRING_RECURRENCE_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_ENABLED | default "true" | quote }}
+  WEBHOOK_RECURRING_RECURRENCE_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_ENABLED | quote }}
   WEBHOOK_RECURRING_RECURRENCE_URL: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_URL | default "" | quote }}
   WEBHOOK_RECURRING_RECURRENCE_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_RECURRING_RECURRENCE_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_BATCH_SIZE | default "50" | quote }}
@@ -271,7 +285,7 @@ data:
   WEBHOOK_RECURRING_RECURRENCE_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_RECURRING_RECURRENCE_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_RECURRING_RECURRENCE_MAX_CONCURRENT | default "2" | quote }}
 
-  WEBHOOK_SCHEDULE_CASHOUT_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_ENABLED | default "true" | quote }}
+  WEBHOOK_SCHEDULE_CASHOUT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_ENABLED | quote }}
   WEBHOOK_SCHEDULE_CASHOUT_URL: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_URL | default "" | quote }}
   WEBHOOK_SCHEDULE_CASHOUT_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_SCHEDULE_CASHOUT_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_SCHEDULE_CASHOUT_BATCH_SIZE | default "50" | quote }}
@@ -284,14 +298,14 @@ data:
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.outbound.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.outbound.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
-  ALLOW_INSECURE_TLS: {{ .Values.outbound.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.ALLOW_INSECURE_TLS | quote }}
   ALLOW_CORS_WILDCARD: {{ .Values.outbound.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
-  RATE_LIMIT_ENABLED: {{ .Values.outbound.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.RATE_LIMIT_ENABLED | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.outbound.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
   WEBHOOK_REPORT_TEMPOSTRANSACOES_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_BACKOFF_MULTIPLIER | default "2" | quote }}
   WEBHOOK_REPORT_TEMPOSTRANSACOES_BATCH_SIZE: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_BATCH_SIZE | default "50" | quote }}
-  WEBHOOK_REPORT_TEMPOSTRANSACOES_ENABLED: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_ENABLED | default "true" | quote }}
+  WEBHOOK_REPORT_TEMPOSTRANSACOES_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_ENABLED | quote }}
   WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_CONCURRENT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_CONCURRENT | default "2" | quote }}
   WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_RETRIES: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_MAX_RETRIES | default "10" | quote }}
   WEBHOOK_REPORT_TEMPOSTRANSACOES_POLLING_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_POLLING_INTERVAL | default "1s" | quote }}

@@ -20,6 +20,7 @@ This chart manages 14 independently deployable Pix Lerian workloads. Each gets i
 
 | Chart version | App image tag |
 |---|---|
+| 1.1.0 | 1.1.0 |
 | 1.0.0 | 1.0.0 |
 
 The row above covers this chart only. There is no in-place upgrade path from any earlier chart — moving to this chart is a fresh install (cutover), not a `helm upgrade`, and a cutover does not migrate or copy data. See [Upgrade and rollback](#upgrade-and-rollback).
@@ -35,7 +36,7 @@ One supported path for this release: **single-tenant, hub-only, external depende
 | Tenancy | Single-tenant (`MULTI_TENANT_ENABLED: "false"`, the default) |
 | DICT / COB tier | Hub. `dictProxy` and `cobProxy` **disabled** |
 | Development-only pairs | `adapterProviderMock`, `adapterLerian`, `adapterLerianSystemplane` **disabled** |
-| Pix Automático | Optional. Enable `pixauto` + `pixautoSystemplane` only if needed |
+| Pix Automático | Enabled by default. `pixauto` + `pixautoSystemplane` ship on; set both `pixauto.enabled: false` and `pixautoSystemplane.enabled: false` to opt out |
 | PostgreSQL, Valkey, RabbitMQ | Externally managed. Local subcharts stay off |
 | Ingress | All three surfaces off until authentication, DNS, and TLS are in place |
 | Release layout | One release per namespace |
@@ -48,11 +49,11 @@ Why: only the hub tier carries business flows in this release, and the adapter a
 
 ```yaml
 # Enabled: spi, dictHub, cobHub, each with its *Systemplane workload,
-#          plus dictHubVsync for DICT reconciliation (needs Valkey + RabbitMQ).
+#          plus dictHubVsync for DICT reconciliation (needs Valkey + RabbitMQ),
+#          and the pixauto + pixautoSystemplane pair for Pix Automático.
 # Disabled: dictProxy, cobProxy, adapterProviderMock,
 #           adapterLerian + adapterLerianSystemplane,
-#           postgresql, valkey, rabbitmq subcharts,
-#           pixauto + pixautoSystemplane — enable the pair for Pix Automático.
+#           postgresql, valkey, rabbitmq subcharts.
 spi:       { enabled: true }
 dictProxy: { enabled: false }
 ```
@@ -152,7 +153,7 @@ The detail behind the shape in the [quickstart](#production-quickstart).
 | SPI | `spi` + `spiSystemplane` | Always |
 | DICT | `dictHub` + `dictSystemplane`, `dictHubVsync` optional | Hub tier only |
 | COB | `cobHub` + `cobSystemplane` | Hub tier only |
-| Pix Automático | `pixauto` + `pixautoSystemplane` | Optional |
+| Pix Automático | `pixauto` + `pixautoSystemplane` | Enabled by default |
 | Shared dependencies | PostgreSQL, Valkey, RabbitMQ | External to this chart |
 
 Critical contracts, each stated once here:
@@ -181,8 +182,8 @@ Critical contracts, each stated once here:
 | `cobSystemplane` | Runtime configuration plane for COB | Yes | 4110 | `/cob` |
 | `adapterLerian` | Lerian provider adapter | No | 4113 | `/lerian` |
 | `adapterLerianSystemplane` | Runtime configuration plane for the adapter | No | 4115 | `/lerian` |
-| `pixauto` | Pix Automático — payer side | No | 4116 | `/pixauto` |
-| `pixautoSystemplane` | Runtime configuration plane for Pix Automático | No | 4117 | `/pixauto` |
+| `pixauto` | Pix Automático — payer side | Yes | 4116 | `/pixauto` |
+| `pixautoSystemplane` | Runtime configuration plane for Pix Automático | Yes | 4117 | `/pixauto` |
 
 Ports 4111, 4112, and 4114 are intentionally unused. A Systemplane workload's prefix is its **domain** prefix, not its name: `dictSystemplane` answers under `/dict`, `dictHub` under `/dict-hub`.
 
@@ -194,7 +195,7 @@ The application also ships an adapter consumer entrypoint that this chart does n
 
 Each domain picks a tier. A **hub** owns the domain's business logic and its local state — its own database, and Valkey on some components. A **proxy** fronts a provider that already owns that state, so it keeps no local business state. Which tier fits follows the provider's capability. **The domains are independent:** setting DICT to proxy does not affect COB, so DICT-on-proxy with COB-on-hub is valid in the model.
 
-In this release the proxy tier is structural only. `dictProxy` and `cobProxy` serve `health`, `readyz`, and an OpenAPI document that declares no operations, with no request-forwarding logic. **The proxy tier delivers no functional parity and does not fall back to the hub.**
+In this release the proxy tier is structural only. `dictProxy` and `cobProxy` serve `health`, `readyz` and, when API docs are on (see [Authentication](#authentication)), an OpenAPI document that declares no operations, with no request-forwarding logic. **The proxy tier delivers no functional parity and does not fall back to the hub.**
 
 | If you | Then |
 |---|---|
@@ -307,7 +308,6 @@ Setting a key a workload does not read has no effect. `configmap`, `secrets`, an
 - **No format and no length is validated by this release.** Do not infer a required encoding or size.
 - Supply it from an existing Secret; see [Production secret management](#production-secret-management).
 - It is checked at every boot, so keep the same value across upgrades — otherwise a rollout needs the new value supplied everywhere first.
-- The two gates are different: four Systemplane workloads key off `ENV_NAME`, `adapterLerianSystemplane` off `DEPLOYMENT_MODE`. With the chart defaults (`ENV_NAME: development`, `DEPLOYMENT_MODE: byoc`), `adapterLerianSystemplane` already requires the key while the other four do not.
 
 ## Production secret management
 
@@ -515,7 +515,7 @@ The chart reserves the pod annotation carrying the ConfigMap/Secret checksum, wh
 
 - **The default is `false`.** Configure nothing and you get an unauthenticated surface. Set it explicitly before exposing any route.
 - **Keep `systemplaneIngress.enabled: false`,** the default. Restrict the administrative API with NetworkPolicies or equivalent.
-- **`ENV_NAME` is matched exactly.** OpenAPI and docs routes stay mounted unless it is the literal string `production`; `prod`, `Production`, or a trailing space all leave them served. Set `SWAGGER_ENABLED` explicitly to turn them off.
+- **API docs are served only in `local` and `development`.** With `SWAGGER_ENABLED` unset, OpenAPI and docs routes are mounted only when `ENV_NAME` is `local` or `development` (case and surrounding spaces ignored); the `production` default and every other value leave them off. Set `SWAGGER_ENABLED` to override. App `1.1.0` predates this rule and serves them unless `ENV_NAME` is exactly `production`.
 - **An unreachable `PLUGIN_AUTH_HOST` denies requests rather than allowing them.** The URL format is not validated, so the symptom is a permissions failure at request time, not a boot failure.
 
 ## Ingress and service URLs
@@ -677,6 +677,8 @@ Before upgrading:
 4. **Review what the upgrade will do**, from a render or with `helm diff`. Optional.
 
 **`dictProxy` and `cobProxy` default to disabled.** An existing release that relied on the earlier `enabled: true` default loses the `dict-proxy` and `cob-proxy` workloads (Deployment, Service, ConfigMap, Secret, and any ServiceAccount, HPA and PodDisruptionBudget) on `helm upgrade`. To keep them, set `dictProxy.enabled=true` / `cobProxy.enabled=true`. See [Hub and proxy are not interchangeable](#hub-and-proxy-are-not-interchangeable).
+
+**`ENV_NAME` now defaults to `production`.** A release that never set it ran `development`, and so did `pixauto` and `pixautoSystemplane` in releases built from `values-template.yaml`, which set it on every other component. API docs turn off on every workload. Multi-tenant workloads also read `ENV_NAME` at every boot, so after `helm upgrade` `pixauto` refuses to boot with auth off, `cobHub` refuses an invalid DICT adapter configuration, `pixauto` regulatory dispatch (when enabled) refuses missing adapter credentials and logs switch to JSON. Single-tenant domain workloads keep the `app.env_name` their Systemplane stored at first boot, so on app `1.1.0` the upgrade alone does not change their posture: check it and set it to `production` through `/v1/system`. App releases after `1.1.0` read `ENV_NAME` from the deployment only and ignore the stored value. To keep a development lane, set `ENV_NAME` to `development` or `local` on every enabled component, Systemplanes included, before upgrading.
 
 Then run the same command as [step 4 of the quickstart](#production-quickstart) with the new `--version`. Migration hooks run **before** the new pods roll out, so a failing migration blocks the release rather than leaving a partial rollout.
 

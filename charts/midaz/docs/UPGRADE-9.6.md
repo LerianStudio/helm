@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v9.5.0 to v9.6.0
 
 ## Topics
@@ -333,3 +334,4 @@ helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --ver
 ```bash
 helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 9.6.0 -n midaz
 ```
+<!-- {% endraw %} -->

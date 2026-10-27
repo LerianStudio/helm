@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v2.5.0 to v2.6.0
 
 ## Topics
@@ -203,3 +204,4 @@ helm upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plu
 ```
 
 > **Note:** If you are enabling Access Manager integration, add `-f values-override.yaml` to the command above, where `values-override.yaml` contains the configuration from [Step 2](#step-2-configure-access-manager-credentials-optional).
+<!-- {% endraw %} -->

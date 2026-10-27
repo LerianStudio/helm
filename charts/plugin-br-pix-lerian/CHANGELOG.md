@@ -1,5 +1,321 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent behavior across environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent behavior across environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Set the Pix Lerian chart to default to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Defaulted the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent behavior in production environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on flags that default to true, ensuring consistent behavior in the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on flags that default to true. This change ensures that flags with a default value of true can explicitly be set to false when needed. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on flags that default to true, ensuring consistent behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` in app version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environment variables, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` feature in app version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environment variables, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` and update the app to version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environments, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` and update the app to version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environments, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` feature in app version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Update app version to `1.1.0` and enable `pixauto`. (@Leonardox7)
+- Wire `pixauto` `v1.1.0` environments (adapter, CRM, read-replica) into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README. (@Leonardox7)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` and update the app version to `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environments, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensured the deployment otel gate respects the `global.observability.otlpEndpoint` setting. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Updated the build process to use the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Clarified that a supplied routes list replaces the default routes in the documentation. (@gandalf-at-lerian)
+- Aligned the README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects the `global.observability.otlpEndpoint` configuration. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to clarify that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
 ## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
 
 Features:

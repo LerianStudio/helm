@@ -44,6 +44,14 @@ Input (dict): newVal, oldVal, default.
 {{- end }}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "plugin-access-manager.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 Expand the name of the chart and plugin caradhras. Same "new wins, old is a
 fallback alias" precedence as caradhras.value, applied to the component name
 so a legacy `auth.backend.name` override (release-name pin) still works.
@@ -836,7 +844,7 @@ Input (dict): context (root .), component ("auth" | "identity").
 {{- $check = false -}}
 {{- end -}}
 {{- else -}}
-{{- if not (has (toString ($cm.AUTH_ENABLED | default "true")) (list "1" "t" "T" "TRUE" "true" "True")) -}}
+{{- if not (has (include "plugin-access-manager.flagDefaultTrue" $cm.AUTH_ENABLED) (list "1" "t" "T" "TRUE" "true" "True")) -}}
 {{- $check = false -}}
 {{- end -}}
 {{- $extra := $values.extraEnvVars | default dict -}}

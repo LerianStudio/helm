@@ -42,6 +42,17 @@ reason written in the file.
 - the supported topology an operator installs, when the gate's `-n it-<chart>` would
   otherwise install a different one and the difference skips a code path
 
+## License-gated charts
+
+A product that refuses to boot without a Lerian license gets the placeholder
+`"IT_LICENSE_KEY"` (quoted, as a value) where its chart takes the license key, plus
+`ORGANIZATION_IDS: "global"` where the app needs one. The workflow reads the
+repository secret `HELM_CI_LICENSE_KEY_<CHART>` (chart name upper-cased, `-` as `_`;
+one key per app, production gateway), listed in the install step's env of
+`helm-install-test.yml`, and `install-test.sh` writes it over the placeholder. Without that secret, as on a fork pull request, the placeholder itself
+reaches the gateway and is refused, so the chart keeps its allow-list line until a
+run with its key reaches Ready.
+
 ## What does not
 
 Do not use these files to paper over a chart defect. If a chart cannot install

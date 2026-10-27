@@ -42,7 +42,7 @@ data:
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-dict-systemplane" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4107" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
   REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-dict-systemplane" | quote }}
@@ -57,8 +57,8 @@ data:
   SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "" | quote }}
   SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "" | quote }}
   KEY_CACHE_TTL_SEC: {{ $cm.KEY_CACHE_TTL_SEC | default "60" | quote }}
-  VSYNC_ENABLED: {{ $cm.VSYNC_ENABLED | default "true" | quote }}
-  VSYNC_FILE_RECON_ENABLED: {{ $cm.VSYNC_FILE_RECON_ENABLED | default "true" | quote }}
+  VSYNC_ENABLED: {{ include "plugin-br-pix-lerian.flagDefaultTrue" $cm.VSYNC_ENABLED | quote }}
+  VSYNC_FILE_RECON_ENABLED: {{ include "plugin-br-pix-lerian.flagDefaultTrue" $cm.VSYNC_FILE_RECON_ENABLED | quote }}
   VSYNC_CHUNK_CONSUMER_WORKERS: {{ $cm.VSYNC_CHUNK_CONSUMER_WORKERS | default "3" | quote }}
   VSYNC_JOBS_CONSUMER_WORKERS: {{ $cm.VSYNC_JOBS_CONSUMER_WORKERS | default "3" | quote }}
   VSYNC_STUCK_JOB_SWEEP_TICK_SEC: {{ $cm.VSYNC_STUCK_JOB_SWEEP_TICK_SEC | default "120" | quote }}

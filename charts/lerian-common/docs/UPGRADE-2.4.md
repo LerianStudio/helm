@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v2.3.0 to v2.4.0
 
 ## Topics ToC
@@ -322,3 +323,4 @@ helm upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-common
 ```
 
 > **Note:** Since `lerian-common` is a library chart, you typically do **not** install or upgrade it directly. Instead, update the dependency version in your umbrella or product chart's `Chart.yaml` to `2.4.0` and run `helm dependency update`.
+<!-- {% endraw %} -->

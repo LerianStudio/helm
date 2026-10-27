@@ -85,7 +85,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -195,6 +195,8 @@ pix:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    # PostgreSQL TLS: disable, allow, prefer, require, verify-ca or verify-full; only require and stricter encrypt.
+    DB_SSL_MODE: "disable"
     # MongoDB Configuration
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
@@ -285,6 +287,9 @@ pix:
     # Anti-Fraud hook (HMAC secret >= 32 chars when the hook is enabled)
     ANTIFRAUD_HOOK_HMAC_SECRET: ""
     ANTIFRAUD_HOOK_AUTH_HEADER_VALUE: ""
+    # Streaming broker credentials (required by the broker when SASL is on; CA is base64 PEM)
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false
@@ -306,7 +311,7 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -414,6 +419,8 @@ inbound:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    # PostgreSQL TLS: disable, allow, prefer, require, verify-ca or verify-full; only require and stricter encrypt.
+    DB_SSL_MODE: "disable"
     # MongoDB Configuration
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
@@ -448,7 +455,7 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -559,6 +566,8 @@ outbound:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    # PostgreSQL TLS: disable, allow, prefer, require, verify-ca or verify-full; only require and stricter encrypt.
+    DB_SSL_MODE: "disable"
     # MongoDB Configuration
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
@@ -603,7 +612,7 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -711,6 +720,8 @@ reconciliation:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    # PostgreSQL TLS: disable, allow, prefer, require, verify-ca or verify-full; only require and stricter encrypt.
+    DB_SSL_MODE: "disable"
     ALLOW_INSECURE_TLS: "true"
     # Redis Configuration
     REDIS_HOST: ""
@@ -756,7 +767,7 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

@@ -101,7 +101,7 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.pix.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.pix.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm:4317" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.pix.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  ENABLE_TELEMETRY: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.ENABLE_TELEMETRY | quote }}
 
   ## BTG
   BTG_BASE_URL: {{ .Values.pix.configmap.BTG_BASE_URL | default "https://developer.api.btgpactual.com" | quote }}
@@ -139,7 +139,7 @@ data:
   ENTRY_WRITE_BLOCK_END: {{ .Values.pix.configmap.ENTRY_WRITE_BLOCK_END | default "" | quote }}
 
   # HMAC INTERNAL VALIDATION
-  INTERNAL_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.INTERNAL_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
+  INTERNAL_WEBHOOK_VALIDATION_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.INTERNAL_WEBHOOK_VALIDATION_ENABLED | quote }}
   INTERNAL_WEBHOOK_TIMESTAMP_TOLERANCE: {{ .Values.pix.configmap.INTERNAL_WEBHOOK_TIMESTAMP_TOLERANCE | default "300" | quote }}
 
   # mTLS BTG CONFIGURATION
@@ -158,14 +158,14 @@ data:
   SCHEDULE_MAX_ATTEMPTS: {{ .Values.pix.configmap.SCHEDULE_MAX_ATTEMPTS | default "2" | quote }}
 
   # BTG Webhook Validation
-  BTG_WEBHOOK_VALIDATION_ENABLED: {{ .Values.pix.configmap.BTG_WEBHOOK_VALIDATION_ENABLED | default "true" | quote }}
+  BTG_WEBHOOK_VALIDATION_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.BTG_WEBHOOK_VALIDATION_ENABLED | quote }}
 
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.pix.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.pix.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
-  ALLOW_INSECURE_TLS: {{ .Values.pix.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.ALLOW_INSECURE_TLS | quote }}
   ALLOW_CORS_WILDCARD: {{ .Values.pix.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
-  RATE_LIMIT_ENABLED: {{ .Values.pix.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.RATE_LIMIT_ENABLED | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.pix.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
   {{- if .Values.mtls.enabled }}
@@ -176,8 +176,6 @@ data:
   # Anti-Fraud Decision Hook (cashin / refund-cashin)
   # Master flag off by default; when false none of the other ANTIFRAUD_HOOK_* vars are read or
   # validated by the app. HMAC secret and auth header value live in the Secret.
-  # CB_ENABLED and PREWARM_ENABLED default to "true" but must honor an explicit false (a bool
-  # false would be dropped by `default`), so they test for an unset, null or empty value instead.
   ANTIFRAUD_HOOK_ENABLED: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_ENABLED | default "false" | quote }}
   ANTIFRAUD_HOOK_URL: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_URL | default "" | quote }}
   ANTIFRAUD_HOOK_TIMEOUT_MS: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_TIMEOUT_MS | default "500" | quote }}
@@ -185,14 +183,18 @@ data:
   ANTIFRAUD_HOOK_FALLBACK_MAX_APPROVE_AMOUNT: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_FALLBACK_MAX_APPROVE_AMOUNT | default "" | quote }}
   ANTIFRAUD_HOOK_AUTH_HEADER_NAME: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_AUTH_HEADER_NAME | default "" | quote }}
   ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK | default "false" | quote }}
-  ANTIFRAUD_HOOK_CB_ENABLED: {{ if or (kindIs "invalid" .Values.pix.configmap.ANTIFRAUD_HOOK_CB_ENABLED) (eq (toString .Values.pix.configmap.ANTIFRAUD_HOOK_CB_ENABLED) "") }}"true"{{ else }}{{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_ENABLED | quote }}{{ end }}
+  ANTIFRAUD_HOOK_CB_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.ANTIFRAUD_HOOK_CB_ENABLED | quote }}
   ANTIFRAUD_HOOK_CB_MAX_REQUESTS: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_MAX_REQUESTS | default "3" | quote }}
   ANTIFRAUD_HOOK_CB_INTERVAL: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_INTERVAL | default "60s" | quote }}
   ANTIFRAUD_HOOK_CB_TIMEOUT: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_TIMEOUT | default "30s" | quote }}
   ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD | default "5" | quote }}
-  ANTIFRAUD_HOOK_PREWARM_ENABLED: {{ if or (kindIs "invalid" .Values.pix.configmap.ANTIFRAUD_HOOK_PREWARM_ENABLED) (eq (toString .Values.pix.configmap.ANTIFRAUD_HOOK_PREWARM_ENABLED) "") }}"true"{{ else }}{{ .Values.pix.configmap.ANTIFRAUD_HOOK_PREWARM_ENABLED | quote }}{{ end }}
+  ANTIFRAUD_HOOK_PREWARM_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.ANTIFRAUD_HOOK_PREWARM_ENABLED | quote }}
 
-  SWAGGER_ENABLED: {{ .Values.pix.configmap.SWAGGER_ENABLED | default "true" | quote }}
+  SWAGGER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.SWAGGER_ENABLED | quote }}
+  STREAMING_BROKERS: {{ .Values.pix.configmap.STREAMING_BROKERS | default "" | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.pix.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-indirect-btg" | quote }}
+  STREAMING_ENABLED: {{ .Values.pix.configmap.STREAMING_ENABLED | default "false" | quote }}
+  STREAMING_TENANT_ID: {{ .Values.pix.configmap.STREAMING_TENANT_ID | default "default" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

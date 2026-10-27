@@ -68,32 +68,32 @@
 ---
 
 💾 Database Information:
+{{- $pix := include (printf "%s/pix/configmap.yaml" .Template.BasePath) . | fromYaml }}
+{{- $pgBundled := eq (include "plugin-br-pix-indirect-btg.postgresInternal" .) "true" }}
+{{- $mongoBundled := eq (include "plugin-br-pix-indirect-btg.mongoInternal" .) "true" }}
 
-{{- if .Values.postgresql.enabled }}
-  PostgreSQL (bundled):
-  - Host: plugin-br-pix-indirect-btg-postgresql.{{ .Release.Namespace }}.svc.cluster.local
-  - Port: 5432
-  - Database: {{ .Values.postgresql.auth.database }}
-  - User: {{ .Values.postgresql.auth.username }}
-  
+  PostgreSQL ({{ ternary "bundled" "external" $pgBundled }}):
+  - Host: {{ $pix.data.DB_HOST }}
+  - Port: {{ $pix.data.DB_PORT }}
+  - Database: {{ $pix.data.DB_NAME }}
+  - User: {{ $pix.data.DB_USER }}
+{{- if $pgBundled }}
+
   ⚠️  NOTE: Bundled PostgreSQL is for development/testing only.
       For production, use external managed PostgreSQL.
 {{- end }}
 
-{{- if .Values.mongodb.enabled }}
-  MongoDB (bundled):
-  - Host: plugin-br-pix-indirect-btg-mongodb.{{ .Release.Namespace }}.svc.cluster.local
-  - Port: 27017
-  
+  MongoDB ({{ ternary "bundled" "external" $mongoBundled }}):
+  - Host: {{ $pix.data.MONGO_HOST }}
+  - Port: {{ $pix.data.MONGO_PORT }}
+{{- if $mongoBundled }}
+
   ⚠️  NOTE: Bundled MongoDB is for development/testing only.
       For production, use external managed MongoDB.
 {{- end }}
 
-{{- if .Values.valkey.enabled }}
-  Valkey/Redis (bundled):
-  - Host: plugin-br-pix-indirect-btg-valkey-master.{{ .Release.Namespace }}.svc.cluster.local
-  - Port: 6379
-{{- end }}
+  Valkey/Redis ({{ if .Values.valkey.enabled }}bundled{{ else }}external{{ end }}):
+  - Host: {{ $pix.data.REDIS_HOST }}
 
 ---
 
@@ -111,5 +111,46 @@
   For more information, see:
   - Chart README: https://github.com/LerianStudio/helm
   - Lerian Docs: https://docs.lerian.studio/
+{{- /* Read each rendered ConfigMap; only external datastores are checked. */}}
+{{- $fix := list }}
+{{- $pgExternal := not $pgBundled }}
+{{- $mongoExternal := not $mongoBundled }}
+{{- range $c := list "pix" "inbound" "outbound" "reconciliation" }}
+{{- $cm := include (printf "%s/%s/configmap.yaml" $.Template.BasePath $c) $ | fromYaml }}
+{{- $n := len $fix }}
+{{- if and $pgExternal (not (has $cm.data.DB_SSL_MODE (list "require" "verify-ca" "verify-full"))) }}
+{{- $fix = append $fix (printf "%s.configmap.DB_SSL_MODE: \"require\"" $c) }}
+{{- end }}
+{{- if and (not $.Values.valkey.enabled) (hasKey $cm.data "REDIS_TLS") (ne $cm.data.REDIS_TLS "true") }}
+{{- $fix = append $fix (printf "%s.configmap.REDIS_TLS: \"true\"" $c) }}
+{{- end }}
+{{- /* Refuse plaintext only where every datastore can be encrypted: pix reaches MongoDB in plaintext, reconciliation also reaches Valkey. */}}
+{{- if and (gt (len $fix) $n) (ne $c "pix") (or (ne $c "reconciliation") (and $pgExternal (not $.Values.valkey.enabled))) }}
+{{- $fix = append $fix (printf "%s.configmap.ALLOW_INSECURE_TLS: \"false\"" $c) }}
+{{- end }}
+{{- end }}
+{{- if or $fix $mongoExternal }}
+
+---
+
+⚠️  WARNING: external datastore connections are NOT encrypted
+{{- if $fix }}
+
+  The components below reach PostgreSQL or Valkey without TLS, so credentials
+  and Pix data cross the network in plaintext. To require TLS, set:
+{{- range $fix }}
+    {{ . }}
+{{- end }}
+
+  ALLOW_INSECURE_TLS "false" makes the component refuse to start on any
+  plaintext datastore, bundled ones included.
+{{- end }}
+{{- if $mongoExternal }}
+
+  pix reaches the external MongoDB without TLS. No value in this chart
+  encrypts that link; pix.configmap.MONGO_TLS only changes what /readyz
+  and the SaaS TLS check report.
+{{- end }}
+{{- end }}
 
 

@@ -73,7 +73,7 @@
     # The migrations runner refuses sslmode=disable unless this is set;
     # mirror the app-level toggle so non-TLS Postgres targets work.
     - name: ALLOW_INSECURE_TLS
-      value: {{ get $configmap "ALLOW_INSECURE_TLS" | default "true" | quote }}
+      value: {{ include "bank-transfer.flagDefaultTrue" (get $configmap "ALLOW_INSECURE_TLS") | quote }}
     - name: POSTGRES_HOST
       value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
     - name: POSTGRES_PORT

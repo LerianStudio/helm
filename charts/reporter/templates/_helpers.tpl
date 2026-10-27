@@ -370,6 +370,14 @@ reporter.isTrue — "true" when the value is a truthy token (case-insensitive).
 {{- end -}}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "reporter.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 reporter.commonConfigmapData — the SHARED (common) ConfigMap data block for both the
 manager and worker surfaces. Dependency CONNECTIONS are resolved through lerian-common
 typed masks/helpers (datastore.value / globalValue / streaming.env); everything else is
@@ -450,7 +458,7 @@ ENV_NAME: {{ $envName | quote }}
    default "false" meant a plain `helm install` with zero overrides always
    crashed. Same convention as plugin-access-manager: default "true" for the
    bundled path; a managed-cloud profile flips it explicitly. */ -}}
-ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+ALLOW_INSECURE_TLS: {{ include "reporter.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
 {{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
    topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker profile
    (e.g. AmazonMQ over TLS) sets global.datastores.broker.{scheme,amqpPort,port}

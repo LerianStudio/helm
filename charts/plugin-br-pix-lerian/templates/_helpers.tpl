@@ -381,6 +381,14 @@ lerian-common ships no boolean helper, so this stays local.
 {{- end -}}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "plugin-br-pix-lerian.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 plugin-br-pix-lerian.envGateState — the EFFECTIVE state of a boolean env var for
 one component, resolved across the three sources the container actually reads.
 

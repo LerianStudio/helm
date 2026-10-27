@@ -265,6 +265,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0` | `1.0.0-beta.1` | `1.0.0-beta.1` |
 -----------------
 
+### Plugin BR TED Lerian
+
+TED transfers plugin for Midaz.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-ted-lerian).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0` | `1.0.0-beta.33` |
+-----------------
+
 ### BR Consignado GW
 
 API gateway and same-origin operator console for the Dataprev consignado rail.

@@ -3,6 +3,15 @@
 ## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
 
 Fixes:
+- Set the Pix Lerian chart to default to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
 - Default the Pix Lerian chart to production posture. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)

@@ -85,7 +85,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -287,6 +287,9 @@ pix:
     # Anti-Fraud hook (HMAC secret >= 32 chars when the hook is enabled)
     ANTIFRAUD_HOOK_HMAC_SECRET: ""
     ANTIFRAUD_HOOK_AUTH_HEADER_VALUE: ""
+    # Streaming broker credentials (required by the broker when SASL is on; CA is base64 PEM)
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false
@@ -308,7 +311,7 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -452,7 +455,7 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -609,7 +612,7 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -764,7 +767,7 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.11.0"
+    tag: "1.12.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

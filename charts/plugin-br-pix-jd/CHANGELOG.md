@@ -4,6 +4,55 @@
 
 Features:
 
+- Update `plugin-br-pix-jd` to `1.3.0`. (@bedatty, @lerian-studio)
+
+Fixes:
+
+- Pin the `1.3.0` migrations image for `plugin-br-pix-jd`. (@HMiguelAnjos)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.4...plugin-br-pix-jd-v0.5.5)
+
+---
+
+## [0.5.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.5)
+
+Fixes:
+
+- Update `plugin-br-pix-jd` to `@1.3.0`. (@bedatty, @lerian-studio)
+- Pin the `1.3.0` migrations image. (@HMiguelAnjos)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.4...plugin-br-pix-jd-v0.5.5)
+
+---
+
+## [0.5.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.5)
+
+Fixes:
+- Update `plugin-br-pix-jd` to `@1.3.0`. (@bedatty, @lerian-studio)
+- Pin the `1.3.0` migrations image. (@HMiguelAnjos)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.4...plugin-br-pix-jd-v0.5.5)
+
+---
+
+## [0.5.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.5)
+
+Features:
+
+- Update `plugin-br-pix-jd` to `1.3.0`. (@bedatty, @lerian-studio)
+
+Fixes:
+
+- Pin the `1.3.0` migrations image for `plugin-br-pix-jd`. (@HMiguelAnjos)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.4...plugin-br-pix-jd-v0.5.5)
+
+---
+
+## [0.5.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.5)
+
+Features:
+
 - Update `plugin-br-pix-jd` to `@1.3.0`. (@bedatty, @lerian-studio)
 
 Fixes:

@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v1.0.0 to v1.0.1
 
 ## Topics
@@ -177,3 +178,4 @@ helm diff upgrade br-sisbajud oci://registry-1.docker.io/lerianstudio/br-sisbaju
 ```bash
 helm upgrade br-sisbajud oci://registry-1.docker.io/lerianstudio/br-sisbajud-helm --version 1.0.1 -n br-sisbajud
 ```
+<!-- {% endraw %} -->

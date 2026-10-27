@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # lerian-common
 
 Shared Helm **library chart** for the LerianStudio product charts. It renders
@@ -59,7 +60,6 @@ See `values.yaml` for the standard `global.{serviceDiscovery,streaming,multiTena
    `lerian-common.topologySpreadConstraints` (also callable on its own by charts
    that hand-write the other scheduling fields).
 
-{% raw %}
 ```yaml
 # consumer templates/<component>/deployment.yaml (pod spec, column 6)
       {{- with (include "lerian-common.scheduling" (dict
@@ -69,7 +69,6 @@ See `values.yaml` for the standard `global.{serviceDiscovery,streaming,multiTena
       {{- . | nindent 6 }}
       {{- end }}
 ```
-{% endraw %}
 
 `selectorLabels` must be exactly the Deployment's `spec.selector.matchLabels` (a
 dict, or the YAML string the chart's selectorLabels helper renders). The library
@@ -217,3 +216,4 @@ dependencies:
   `global.multiTenant` and `global.idp` once per environment (umbrella/GitOps). Helpers stay inert until set
   (`idp.env` always emits `IDP_DECLARATION_ENABLED: "false"` while unset).
 - **Source/License:** https://github.com/LerianStudio/helm — © Lerian Studio.
+<!-- {% endraw %} -->

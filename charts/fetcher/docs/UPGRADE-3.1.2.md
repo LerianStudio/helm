@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v3.1.1 to v3.1.2
 
 ## Topics
@@ -272,3 +273,4 @@ helm diff upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm -
 ```bash
 helm upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 3.1.2 -n fetcher
 ```
+<!-- {% endraw %} -->

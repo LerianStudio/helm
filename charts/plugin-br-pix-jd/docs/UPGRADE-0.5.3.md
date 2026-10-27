@@ -126,7 +126,7 @@ The chart rendered `MULTI_TENANT_ALLOW_INSECURE_HTTP` from the multi-tenant conf
       "configmap" $cm
       "keys" (list "MULTI_TENANT_URL" "MULTI_TENANT_ALLOW_INSECURE_HTTP"
                    "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
-                   ...)
+                   ...) }}
 ```
 
 **After (v0.5.3):**
@@ -139,7 +139,7 @@ The variable is removed from the template:
       "configmap" $cm
       "keys" (list "MULTI_TENANT_URL"
                    "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
-                   ...)
+                   ...) }}
 ```
 
 **Operational impact:**

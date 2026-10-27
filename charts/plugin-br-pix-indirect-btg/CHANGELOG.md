@@ -1,5 +1,135 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+- Add streaming SASL password and TLS CA secrets to the plugin. (@digocelos)
+- Update to `plugin-br-pix-indirect-btg@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+
+- Add streaming SASL password and TLS CA secrets to the plugin. (@digocelos)
+
+- Update to `plugin-br-pix-indirect-btg@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+
+- Add streaming SASL password and TLS CA secrets to the plugin. (@digocelos)
+
+- Update `plugin-br-pix-indirect-btg` to `@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+- Add streaming SASL password and TLS CA secrets to the PIX component. (@digocelos)
+- Update to `plugin-br-pix-indirect-btg@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+
+- Add streaming SASL password and TLS CA secrets to the PIX functionality. (@digocelos)
+
+- Update `plugin-br-pix-indirect-btg` to `@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+- Add streaming SASL password and TLS CA secrets to PIX. (@digocelos)
+- Update `plugin-br-pix-indirect-btg@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+
+- Add streaming SASL password and TLS CA secrets to the plugin. (@digocelos)
+
+- Update to `plugin-br-pix-indirect-btg@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+
+- Add streaming SASL password and TLS CA secrets to the plugin. (@digocelos)
+
+- Update to `plugin-br-pix-indirect-btg@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+
+- Add streaming SASL password and TLS CA secrets to the PIX functionality. (@digocelos)
+- Update `plugin-br-pix-indirect-btg` to `@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.1.0)
+
+Features:
+- Add a warning for plaintext external MongoDB connections and valkey usage. (@fredcamaral)
+
+Fixes:
+- Set outbound durations with appropriate units. (@fredcamaral)
+- Display the actual database hosts in the installation notes. (@fredcamaral)
+
+Improvements:
+- Remove obsolete secret and database validators. (@fredcamaral)
+- Document the `DB_SSL_MODE` configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.0.0...plugin-br-pix-indirect-btg-v5.1.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
+
+Fixes:
+- Render boolean `false` on flags that default to `true`, ensuring correct behavior for default-true flags. (@fredcamaral)
+
+Improvements:
+- Refactor antifraud flags to utilize a shared helper, enhancing code maintainability and readability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v4.2.0...plugin-br-pix-indirect-btg-v5.0.0)
+
+---
+
 ## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
 
 Fixes:

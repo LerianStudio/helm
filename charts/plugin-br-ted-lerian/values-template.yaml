@@ -1,0 +1,117 @@
+# Template values for plugin-br-ted-lerian deployment
+# Copy this file and customize for your environment
+
+namespaceOverride: "plugin-br-ted-lerian"
+
+global:
+  # Managed-cloud topology preset: aws | gcp | azure. Leave "" for the bundled
+  # in-cluster infra (plaintext).
+  cloud: ""
+  # Env-wide shared datastore endpoints (only postgres/redis are used here).
+  datastores: {}
+  #   postgres: { host: "my-rds.example.com", user: "plugin-br-ted-lerian" }
+  #   redis: { host: "my-elasticache.example.com:6379" }
+  # Env-wide telemetry (enabled/endpoint/deployment-env only; per-service OTEL
+  # identity stays in plugin-br-ted-lerian.otel).
+  observability: {}
+  #   enabled: true
+  #   otlpEndpoint: "otel-collector:4317"
+  # Env-wide plugin-access-manager auth.
+  auth: {}
+  #   host: "http://plugin-access-manager-auth:4000"
+  # Env-wide multi-tenant infra (only used when plugin-br-ted-lerian.multiTenant.enabled=true).
+  multiTenant: {}
+  #   url: "http://tenant-manager:8080"
+  #   redisHost: "my-elasticache.example.com"
+  # Env-wide service discovery (only used when plugin-br-ted-lerian.serviceDiscovery.enabled=true).
+  serviceDiscovery: {}
+  #   address: "consul.internal:8500"
+  # Env-wide streaming backend (only used when plugin-br-ted-lerian.streaming.enabled=true).
+  streaming: {}
+  #   brokers: "redpanda:9092"
+  externalPostgresDefinitions:
+    enabled: false
+    connection:
+      host: ""
+      port: "5432"
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""
+      username: ""
+      password: ""
+    boilerplateCredentials:
+      useExistingSecret:
+        name: ""
+      password: ""
+
+plugin-br-ted-lerian:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-ted-lerian
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  imagePullSecrets:
+    - name: ghcr-credential
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  multiTenant:
+    enabled: false
+
+  serviceDiscovery:
+    enabled: false
+
+  streaming:
+    enabled: false
+
+  otel:
+    enabled: false
+
+  configmap:
+    ENV_NAME: ""
+    SERVER_ADDRESS: ":8080"
+    LOG_LEVEL: "info"
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "plugin-br-ted-lerian"
+    POSTGRES_NAME: "plugin-br-ted-lerian"
+    POSTGRES_SSLMODE: "disable"
+    REDIS_HOST: ""
+    REDIS_DB: "0"
+    PLUGIN_AUTH_ENABLED: "false"
+    PLUGIN_AUTH_HOST: ""
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+  secrets:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+
+  useExistingSecret: false
+  existingSecretName: ""

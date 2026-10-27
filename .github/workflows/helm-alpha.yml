@@ -1,7 +1,7 @@
 name: Helm Alpha Release
 
 # Thin caller. The logic lives in the reusable helm-alpha-release.yml of
-# github-actions-shared-workflows. Publishes a disposable alpha release of a
+# shared-workflows-public. Publishes a disposable alpha release of a
 # chart to the isolated package ghcr.io/lerianstudio/alpha/<chart> (TTL ~3 days
 # via helm-alpha-cleanup.yml). Authenticates with the built-in GITHUB_TOKEN.
 # Does not touch release.yml, semantic-release, or main.
@@ -163,7 +163,7 @@ jobs:
       contents: read # checkout the chart (in the reusable)
       packages: write # push the alpha chart to GHCR
     # Testing: @develop. Once stable: @vX.Y.Z.
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-release.yml@develop
+    uses: LerianStudio/shared-workflows-public/.github/workflows/helm-alpha-release.yml@tier-1
     with:
       chart: ${{ github.event_name == 'workflow_dispatch' && inputs.chart || needs.resolve-chart.outputs.chart }}
       dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}

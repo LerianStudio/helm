@@ -101,6 +101,8 @@ pix:
     M2M_CLIENT_SECRET: ""
     ANTIFRAUD_HOOK_HMAC_SECRET: ""
     ANTIFRAUD_HOOK_AUTH_HEADER_VALUE: ""
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
 
   useExistingSecrets: false
   existingSecretName: ""

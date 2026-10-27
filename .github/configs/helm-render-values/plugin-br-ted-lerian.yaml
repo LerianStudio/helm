@@ -1,0 +1,41 @@
+# CI-only render fixture for charts/plugin-br-ted-lerian (render gate + install
+# test). NOT a production example — values-template.yaml is. It renders the
+# self-contained bundle (bundled PostgreSQL + Valkey, so every secretKeyRef
+# points at a Secret of the same release and the release-name collapse is
+# exercised), the same topology the anacleto chaos/fuzzing lanes run.
+# No value here is a credential.
+#
+# namespaceOverride is cleared because the chart default pins the workload to
+# "plugin-br-ted-lerian" while the bundled subcharts follow the release
+# namespace; every GitOps lane sets the override to its release namespace, which
+# is what an empty override reproduces here.
+namespaceOverride: ""
+
+global:
+  datastores:
+    postgres: { ssl: disable }
+  auth:
+    enabled: false
+    host: "http://plugin-access-manager-auth.example.invalid:4000"
+
+plugin-br-ted-lerian:
+  env: "development"
+  allowInsecureTls: "true"
+  ingress:
+    hosts:
+      - host: "plugin-br-ted-lerian.example.invalid"
+        paths:
+          - path: /
+            pathType: Prefix
+
+postgresql:
+  enabled: true
+  external: false
+# Standalone: in replication mode the Valkey subchart writes its own
+# VALKEY_PRIMARY_HOST as a pod FQDN (<release>-valkey-primary-0.<headless>),
+# which the collapse-host check reads as a Service that does not exist. One
+# node is also all a kind cluster needs.
+valkey:
+  enabled: true
+  external: false
+  architecture: standalone

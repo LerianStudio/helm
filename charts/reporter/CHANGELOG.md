@@ -1,5 +1,143 @@
 # Reporter Changelog
 
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Features:
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+Improvements:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags, ensuring accurate representation of flag states. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to prevent configuration issues. (@prymax10)
+
+Improvements:
+
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to enhance performance and stability. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to maintain proper configuration. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags in the reporter. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions within the reporter. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to improve configuration handling. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest changes and improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to enhance configuration handling. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest improvements and bug fixes. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to improve configuration handling. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest improvements and fixes. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
 ## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
 
 Features:

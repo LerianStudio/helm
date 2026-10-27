@@ -84,7 +84,7 @@
 | `ledger.migrations.resources.limits` | object | `{}` | CPU and memory limits for the migration Job |
 | `ledger.migrations.resources.requests` | object | `{}` | Minimum CPU and memory requests for the migration Job |
 | `ledger.partition` | object | `{}` | Partition runner (`/partition`, shipped in the ledger image). A CronJob runs `partition ensure` once per deployment: it creates the time partitions of the partitioned transaction tables ahead of the clock and reports their health through its exit code (0 healthy or unpartitioned, 1 needs attention, 2 invalid configuration). In multi-tenant mode it visits every active tenant. |
-| `ledger.partition.enabled` | object | `{}` | Run the `partition ensure` CronJob. Unset means auto: on for ledger tags >= 4.4.0 (pre-releases included), whose image ships the runner, off below that and for non-SemVer tags. Set true for an earlier build that already carries the runner; set false to keep it off. |
+| `ledger.partition.enabled` | object | `{}` | Run the `partition ensure` CronJob. Unset means auto: on for stable ledger tags >= 4.4.0, whose image ships the runner, off below that, for pre-releases and for non-SemVer tags. Set true for a pre-release that already carries the runner; set false to keep it off. |
 | `ledger.partition.schedule` | string | `"0 3 * * *"` | Cron schedule of the `partition ensure` run |
 | `ledger.partition.timeZone` | string | `""` | IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses the time zone of the kube-controller-manager. |
 | `ledger.partition.activeDeadlineSeconds` | int | `1800` | Hard timeout for one run, in seconds |

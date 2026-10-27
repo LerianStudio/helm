@@ -72,12 +72,12 @@ The chart adds two workloads for it:
 
 | Value | Result |
 |-------|--------|
-| unset (default) | On for ledger tags `>= 4.4.0`, pre-releases included; off for earlier tags and for non-SemVer tags |
+| unset (default) | On for stable ledger tags `>= 4.4.0`; off for earlier tags, for pre-releases (set `true` on a pre-release that ships `/partition`) and for non-SemVer tags |
 | `true` | On, for an earlier or custom build that already carries `/partition` |
 | `false` | Off |
 
 The chart default ledger tag in this release is below `4.4.0`, so **a default
-upgrade renders nothing new**. The runner appears when you move the ledger to a
+upgrade renders nothing new**. The runner appears when you move the ledger to a stable
 `4.4.0` or later image.
 
 #### Configuration Example

@@ -297,7 +297,7 @@ Midaz deploys the following core services:
 | `ledger.serviceAccount.annotations` | Annotations for the service account. | `{}` |
 | `ledger.serviceAccount.name` | Service account name. If not defined, it will be generated automatically. | `""` |
 | `ledger.aws.rolesAnywhere.enabled` | Enable the AWS IAM Roles Anywhere sidecar on the ledger, for clusters without IRSA. The multi-tenant ledger reads its per-tenant Tracer M2M credential from Secrets Manager. On EKS keep it `false` and set `ledger.serviceAccount.annotations["eks.amazonaws.com/role-arn"]`; never enable both. When enabled, `trustAnchorArn`, `profileArn` and `roleArn` are required, the client certificate Secret (`certificateSecretName`, default `<midaz-ledger.fullname>-iam-tls`) must be provisioned outside the chart, and `ledger.podSecurityContext` is replaced with `fsGroup: 65532`. Set `AWS_REGION` in `ledger.extraEnvVars`. | `false` |
-| `ledger.partition.enabled` | Run the partition runner (CronJob and reconcile hook Job). Unset means auto: on for ledger tags `>= 4.4.0` (pre-releases included), off below that and for non-SemVer tags; `true`/`false` pins it. | unset |
+| `ledger.partition.enabled` | Run the partition runner (CronJob and reconcile hook Job). Unset means auto: on for stable ledger tags `>= 4.4.0`, off below that, for pre-releases and for non-SemVer tags; `true`/`false` pins it. | unset |
 | `ledger.partition.schedule` | Cron schedule of the `partition ensure --reconcile-indexes` CronJob. | `"0 3 * * *"` |
 | `ledger.partition.timeZone` | IANA time zone for `schedule`; empty uses the kube-controller-manager's zone. | `""` |
 | `ledger.partition.activeDeadlineSeconds` | Hard timeout for one `ensure` run, in seconds. | `1800` |

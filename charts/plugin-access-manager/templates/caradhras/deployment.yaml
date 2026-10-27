@@ -102,7 +102,7 @@ spec:
             {{- if has $name (list "POSTGRES_HOST" "POSTGRES_PORT" "POSTGRES_DB" "POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_SSLMODE" "MIGRATIONS_SKIP_RBAC_CHAIN") }}
             {{- fail (printf "caradhras.migrations.extraEnvVars.%s duplicates a chart-owned env of the migrate init container; use the chart value instead" $name) }}
             {{- end }}
-            - name: {{ $name }}
+            - name: {{ $name | quote }}
               value: {{ $value | toString | quote }}
             {{- end }}
             {{- end }}

@@ -370,6 +370,9 @@ class StartupContract(unittest.TestCase):
     def test_migrate_extra_env_vars(self):
         env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'FOO': 'bar', 'RETRIES': 3}}}})
         self.assertEqual((env['FOO'], env['RETRIES']), ('bar', '3'))
+        # YAML 1.1 boolean-like names must still render as strings (env.name is a string).
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'TRUE': 'a', 'ON': 'b'}}}})
+        self.assertEqual((env.get('TRUE'), env.get('ON')), ('a', 'b'))
         self.fails({'caradhras': {'migrations': {'extraEnvVars': {'POSTGRES_HOST': 'x'}}}},
                    'caradhras.migrations.extraEnvVars.POSTGRES_HOST duplicates a chart-owned env')
 

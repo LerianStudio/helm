@@ -378,10 +378,11 @@ class StartupContract(unittest.TestCase):
 
     def test_migrate_extra_env_var_names_are_schema_checked(self):
         # A name Kubernetes rejects must fail at values validation, not at apply.
-        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'BAD=NAME': 'x'}}}},
-                   'extraEnvVars')
-        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}},
-                   'extraEnvVars')
+        # Helm versions word (and locate) the schema error differently; the
+        # pattern itself is in every one of them.
+        pattern = '^[-._a-zA-Z][-._a-zA-Z0-9]*$'
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'BAD=NAME': 'x'}}}}, pattern)
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}}, pattern)
         env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
         self.assertEqual(env['my.var-1_X'], 'ok')
 

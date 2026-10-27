@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v1.x to v2.x
 
 ## Topics
@@ -286,3 +287,4 @@ helm diff upgrade plugin-bc-correios oci://registry-1.docker.io/lerianstudio/plu
 ```bash
 helm upgrade plugin-bc-correios oci://registry-1.docker.io/lerianstudio/plugin-bc-correios-helm --version 2.0.0 -n plugin-bc-correios
 ```
+<!-- {% endraw %} -->

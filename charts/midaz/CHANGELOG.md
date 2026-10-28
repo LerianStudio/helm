@@ -1,5 +1,17 @@
 # Midaz Changelog
 
+## [10.0.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.1)
+
+Fixes:
+- Accept a list for ledger, CRM, and tracer tolerations. (@guimoreirar)
+
+Improvements:
+- Correct guidance for `ALLOW_INSECURE_TLS` and quoted-value in the `UPGRADE-10.0` documentation. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.0...midaz-v10.0.1)
+
+---
+
 ## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
 
 Fixes:

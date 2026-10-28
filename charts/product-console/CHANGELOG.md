@@ -27,6 +27,18 @@ Improvements:
 ## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
 
 Fixes:
+- Update `product-console` to `@2.13.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.3...product-console-v4.4.4)
+
+---
+
+## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
+
+Fixes:
 - Update `product-console` to `2.13.1`. (@lerian-studio)
 
 Improvements:

@@ -3,11 +3,40 @@
 
 ## Topics
 
+- **[Before you upgrade: Midaz v4.2.x to v4.3](#before-you-upgrade-midaz-v42x-to-v43)**
 - **[Features](#features)**
   - [1. Balance Sync Fork Handling Configuration](#1-balance-sync-fork-handling-configuration)
 - **[Configuration Reference](#configuration-reference)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
+
+## Before you upgrade: Midaz v4.2.x to v4.3
+
+This chart version moves the ledger from Midaz v4.2.x to v4.3.0. That step needs a drained
+cutover, never a rolling update, and it limits how far a later rollback can go.
+
+- **Why no rolling update.** v4.2.x cannot finish work that v4.3 records and refuses it, and
+  both versions take the same recovery lock. A fleet that mixes the two hands v4.3 records to
+  v4.2 pods.
+- **Drained cutover.**
+  1. Upgrade the Tracer first, then run the ledger migrations.
+  2. Multi-tenant only: raise `MULTI_TENANT_CACHE_TTL_SEC` on the v4.2 pods above the length of
+     the window. Without traffic, the pods forget every tenant about two minutes after the cut
+     and stop draining.
+  3. Cut traffic to the ledger outside the pods (ingress or Service). Keep the v4.2 pods running.
+  4. Wait until the v4.2 pods finish their own work: the write-behind queue
+     (`RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE`) shows 0 ready and 0 unacked, the Valkey
+     hashes `engine:{transactions}:recover` and `backup_queue:{transactions}` are empty, and the
+     sorted sets `schedule:{transactions}:balance-sync-v2` and
+     `schedule:{transactions}:balance-sync` are empty. Multi-tenant: check every tenant vhost and
+     the `tenant:<tenantId>:` copy of each key.
+  5. Then roll the ledger to v4.3.0 and restore traffic.
+
+  The ledger refuses writes from the cut until v4.3.0 serves.
+- **Rollback floor.** Roll a v4.3 ledger back only to v4.3.0-beta.39 or later (v4.3.0-rc.6, or
+  beta.79 and later, is recommended). v4.3.0-rc.1, rc.2, beta.1 to beta.38 and every v4.2.x are
+  not supported, even fully drained: an earlier build can apply the money of a v4.3 record in
+  Valkey and then fail to write the transaction's record and metadata.
 
 ## Features
 

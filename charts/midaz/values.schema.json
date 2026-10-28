@@ -569,8 +569,7 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
+          "type": "array",
           "description": "Tolerations for scheduling on tainted nodes"
         },
         "affinity": {
@@ -1209,8 +1208,7 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
+          "type": "array",
           "description": "Tolerations for scheduling on tainted nodes"
         },
         "affinity": {
@@ -1952,8 +1950,7 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
+          "type": "array",
           "description": "Tolerations for scheduling on tainted nodes"
         },
         "affinity": {

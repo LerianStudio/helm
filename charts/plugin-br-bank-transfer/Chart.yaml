@@ -11,7 +11,7 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 3.0.1
+version: 3.0.2
 appVersion: "3.3.0"
 keywords:
   - bank-transfer

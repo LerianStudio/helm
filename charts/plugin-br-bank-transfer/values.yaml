@@ -218,7 +218,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.2.0"
+    tag: "3.3.0"
   # -- PostgreSQL migrations. External Postgres: a Job (Helm hook pre-install,pre-upgrade;
   # ArgoCD PreSync). Bundled Postgres: an initContainer of each app pod, so no pod starts
   # on an unmigrated schema; the hook notes below apply to the external Job only.
@@ -855,3 +855,9 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
+plugin-br-bank-transfer-mock-jd:
+  image:
+    tag: 3.3.0
+plugin-br-bank-transfer-migrations:
+  image:
+    tag: 3.3.0

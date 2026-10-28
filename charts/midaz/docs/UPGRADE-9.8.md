@@ -17,26 +17,59 @@ cutover, never a rolling update, and it limits how far a later rollback can go.
 
 - **Why no rolling update.** v4.2.x cannot finish work that v4.3 records and refuses it, and
   both versions take the same recovery lock. A fleet that mixes the two hands v4.3 records to
-  v4.2 pods.
+  v4.2 pods. One upgrade to this chart runs the migration Jobs as pre-upgrade hooks and then
+  rolls the ledger with a surge, so the steps below stop every v4.2 pod before the upgrade runs.
+- **Before the window.**
+  - Pause autoscaling for the ledger, and GitOps auto-sync and self-heal for this release.
+    Autoscaling scales in pods that are draining; self-heal reverts the manual steps below.
+  - If the Tracer runs in another release, upgrade it to v4.3 first. When this release runs it
+    (`tracer.enabled: true`), the same upgrade migrates and rolls it, and traffic stays cut
+    until both rollouts finish.
+  - Multi-tenant only: raise `MULTI_TENANT_CACHE_TTL_SEC` (`ledger.extraEnvVars`) above the
+    length of the window, rolled on the same v4.2 image while traffic still reaches every
+    tenant. Without traffic, the pods forget every tenant about two minutes after the cut and
+    stop draining.
 - **Drained cutover.**
-  1. Upgrade the Tracer first, then run the ledger migrations.
-  2. Multi-tenant only: raise `MULTI_TENANT_CACHE_TTL_SEC` on the v4.2 pods above the length of
-     the window. Without traffic, the pods forget every tenant about two minutes after the cut
-     and stop draining.
-  3. Cut traffic to the ledger outside the pods (ingress or Service). Keep the v4.2 pods running.
-  4. Wait until the v4.2 pods finish their own work: the write-behind queue
+  1. Cut traffic to the ledger outside the pods: remove the ingress route, or point the Service
+     at no pod with
+     `kubectl -n <ns> patch svc <ledger-service> -p '{"spec":{"selector":{"cutover":"closed"}}}'`.
+     Keep the v4.2 pods running.
+  2. Wait until the v4.2 pods finish their own work: the write-behind queue
      (`RABBITMQ_TRANSACTION_BALANCE_OPERATION_QUEUE`) shows 0 ready and 0 unacked, the Valkey
      hashes `engine:{transactions}:recover` and `backup_queue:{transactions}` are empty, and the
      sorted sets `schedule:{transactions}:balance-sync-v2` and
      `schedule:{transactions}:balance-sync` are empty. Multi-tenant: check every tenant vhost and
      the `tenant:<tenantId>:` copy of each key.
-  5. Then roll the ledger to v4.3.0 and restore traffic.
+  3. Stop every v4.2 pod and wait until all are gone:
+
+     ```bash
+     kubectl -n <ns> scale deploy/<ledger-deployment> --replicas=0
+     kubectl -n <ns> wait --for=delete pod -l <ledger-pod-labels> --timeout=5m
+     ```
+
+     Check step 2 once more. If anything is back above 0, scale the v4.2 pods up on the same
+     image and repeat from step 2.
+  4. Upgrade to this chart version (`helm upgrade`, or an Argo CD sync). The hooks migrate the
+     databases, then the v4.3.0 pods start with no v4.2 pod beside them, so the window includes
+     the migrations. With `ledger.autoscaling.enabled`, the chart sets no replica count and the
+     HPA does not scale a Deployment at 0: scale the ledger back up by hand.
+  5. Wait for `kubectl -n <ns> rollout status deploy/<ledger-deployment>`, and for the Tracer's
+     rollout when this release runs it. Every ledger pod answers `/readyz` with 200 and reports
+     v4.3.0 on `/version`.
+  6. Restore traffic (remove the `cutover` selector or restore the ingress route), then
+     re-enable autoscaling and GitOps sync.
 
   The ledger refuses writes from the cut until v4.3.0 serves.
-- **Rollback floor.** Roll a v4.3 ledger back only to v4.3.0-beta.39 or later (v4.3.0-rc.6, or
-  beta.79 and later, is recommended). v4.3.0-rc.1, rc.2, beta.1 to beta.38 and every v4.2.x are
-  not supported, even fully drained: an earlier build can apply the money of a v4.3 record in
-  Valkey and then fail to write the transaction's record and metadata.
+- **Rollback floor.** A v4.3 ledger rolls back only to these builds:
+  - v4.3.0-rc.6, or v4.3.0-beta.79 and later (recommended);
+  - v4.3.0-beta.39 to beta.78, or v4.3.0-rc.3 to rc.5.
+
+  v4.3.0-rc.1, rc.2, beta.1 to beta.38 and every v4.2.x are not supported, even fully drained:
+  an earlier build can apply the money of a v4.3 record in Valkey and then fail to write the
+  transaction's record and metadata. So never `helm rollback` to the revision before this
+  upgrade, which restores v4.2.x. Roll back with steps 1 to 6 and the target's image, and set
+  `ledger.migrations.enabled: false`: the target's migration image refuses a database already
+  at v4.3.
 
 ## Features
 

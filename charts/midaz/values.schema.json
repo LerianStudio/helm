@@ -311,7 +311,7 @@
             },
             "schedule": {
               "type": "string",
-              "default": "0 3 * * *",
+              "default": "0 6 * * *",
               "description": "Cron schedule of the `partition ensure` run"
             },
             "timeZone": {

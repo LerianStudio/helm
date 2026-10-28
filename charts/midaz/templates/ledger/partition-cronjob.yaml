@@ -33,7 +33,7 @@ metadata:
   labels:
     {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 4 }}
 spec:
-  schedule: {{ $partition.schedule | default "0 3 * * *" | quote }}
+  schedule: {{ $partition.schedule | default "0 6 * * *" | quote }}
   {{- with $partition.timeZone }}
   timeZone: {{ . | quote }}
   {{- end }}

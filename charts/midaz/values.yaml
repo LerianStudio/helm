@@ -319,8 +319,11 @@ ledger:
     # pre-releases and for non-SemVer tags. Set true for a pre-release that
     # already carries the runner; set false to keep it off.
     enabled:
-    # -- Cron schedule of the `partition ensure` run
-    schedule: "0 3 * * *"
+    # -- Cron schedule of the `partition ensure` run. The default, 06:00 UTC,
+    # stays clear of the early-morning UTC backup and maintenance windows
+    # managed PostgreSQL services often default to; pick a time outside your
+    # database's own windows.
+    schedule: "0 6 * * *"
     # -- IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses
     # the time zone of the kube-controller-manager.
     timeZone: ""

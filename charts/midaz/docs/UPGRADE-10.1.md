@@ -27,7 +27,7 @@ The chart adds two workloads for it:
 
 | Resource | Name | Runs | When |
 |----------|------|------|------|
-| `CronJob` | `<release>-ledger-partition` | `/partition ensure --reconcile-indexes` | Daily, `0 3 * * *` by default |
+| `CronJob` | `<release>-ledger-partition` | `/partition ensure --reconcile-indexes` | Daily, `0 6 * * *` (06:00 UTC) by default |
 | `Job` (hook) | `<release>-ledger-partition-reconcile-<ledger tag>` | `/partition reconcile-indexes --tolerate-unavailable` | On every install, upgrade and Argo CD sync, after the ledger migration Job and alongside the app rollout |
 
 - **`ensure`** creates the missing partitions up to the configured horizon,
@@ -87,9 +87,10 @@ ledger:
   partition:
     # Unset = auto by ledger tag; true / false pins it
     enabled:
-    schedule: "0 3 * * *"
+    # Outside the database's backup and maintenance windows
+    schedule: "0 6 * * *"
     # IANA time zone; empty uses the kube-controller-manager's zone
-    timeZone: "America/Sao_Paulo"
+    timeZone: ""
     activeDeadlineSeconds: 1800
     reconcile:
       enabled: true
@@ -110,7 +111,7 @@ ledger:
 | Setting | v10.0.0 | v10.1.0 |
 |---------|--------|--------|
 | `ledger.partition.enabled` | Not present | unset (auto: on for ledger `>= 4.4.0`) |
-| `ledger.partition.schedule` | Not present | `"0 3 * * *"` |
+| `ledger.partition.schedule` | Not present | `"0 6 * * *"` |
 | `ledger.partition.timeZone` | Not present | `""` |
 | `ledger.partition.activeDeadlineSeconds` | Not present | `1800` |
 | `ledger.partition.reconcile.enabled` | Not present | `true` |

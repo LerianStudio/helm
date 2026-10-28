@@ -3,6 +3,15 @@
 ## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.2)
 
 Fixes:
+- Ensure that an empty map is accepted for component tolerations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.1...midaz-v10.0.2)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.2)
+
+Fixes:
 
 - Ensure that an empty map is still accepted for component tolerations. (@guimoreirar)
 

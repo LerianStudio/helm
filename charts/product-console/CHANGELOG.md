@@ -1,5 +1,15 @@
 # Product-console Changelog
 
+## [4.4.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.5)
+
+Fixes:
+
+- Update `product-console` to `2.16.2`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.4...product-console-v4.4.5)
+
+---
+
 ## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
 
 Fixes:

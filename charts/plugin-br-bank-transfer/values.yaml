@@ -855,9 +855,3 @@ rabbitmq:
       mountPath: /etc/rabbitmq/definitions
   customConfig: |
     management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
-plugin-br-bank-transfer-mock-jd:
-  image:
-    tag: 3.3.0
-plugin-br-bank-transfer-migrations:
-  image:
-    tag: 3.3.0

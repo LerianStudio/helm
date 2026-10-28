@@ -586,8 +586,8 @@ creates carries this key.
 - name: builtInAdminPassword
   valueFrom:
     secretKeyRef:
-      name: {{ required "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but caradhras.builtInAdminPassword.secretName is empty.\n   No Secret this chart creates carries the built-in/admin password.\n   Name the Secret holding it in caradhras.builtInAdminPassword.secretName (key: caradhras.builtInAdminPassword.secretKey).\n" $bp.secretName }}
-      key: {{ $bp.secretKey | default "builtInAdminPassword" }}
+      name: {{ required "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but caradhras.builtInAdminPassword.secretName is empty.\n   No Secret this chart creates carries the built-in/admin password.\n   Name the Secret holding it in caradhras.builtInAdminPassword.secretName (key: caradhras.builtInAdminPassword.secretKey).\n" $bp.secretName | quote }}
+      key: {{ $bp.secretKey | default "builtInAdminPassword" | quote }}
 {{- end }}
 
 {{/*

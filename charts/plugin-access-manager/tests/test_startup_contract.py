@@ -360,6 +360,8 @@ class StartupContract(unittest.TestCase):
         on['caradhras']['builtInAdminPassword']['secretName'] = 'operator-admin'
         self.assertEqual(env(self.succeeds(on)), [{'name': 'builtInAdminPassword', 'valueFrom': {
             'secretKeyRef': {'name': 'operator-admin', 'key': 'builtInAdminPassword'}}}])
+        on['caradhras']['builtInAdminPassword'].update(secretName='0123', secretKey='123')
+        self.assertEqual(env(self.succeeds(on))[0]['valueFrom']['secretKeyRef'], {'name': '0123', 'key': '123'})
 
     def test_auth_service_exposes_only_ports_the_container_serves(self):
         docs = self.succeeds({})

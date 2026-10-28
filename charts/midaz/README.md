@@ -286,7 +286,7 @@ Midaz deploys the following core services:
 | `ledger.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). | `{}` |
 | `ledger.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset. | `[]` |
 | `ledger.nodeSelector` | Node selectors for pod scheduling. | `{}` |
-| `ledger.tolerations` | Tolerations for pod scheduling. | `{}` |
+| `ledger.tolerations` | Tolerations for pod scheduling. | `[]` |
 | `ledger.affinity` | Affinity rules for pod scheduling. | `{}` |
 | `ledger.configmap.*` | Environment variables for the service. | See `values.yaml` |
 | `ledger.secrets.*` | Secrets for the service. | See `values.yaml` |
@@ -380,7 +380,7 @@ For more details, refer to the official documentation: [CRM Documentation](https
 | `crm.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). | `{}` |
 | `crm.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset. | `[]` |
 | `crm.nodeSelector` | Node selectors for pod scheduling. | `{}` |
-| `crm.tolerations` | Tolerations for pod scheduling. | `{}` |
+| `crm.tolerations` | Tolerations for pod scheduling. | `[]` |
 | `crm.affinity` | Affinity rules for pod scheduling. | `{}` |
 | `crm.configmap.*` | Environment variables for the service. | See `values.yaml` |
 | `crm.secrets.*` | Secrets for the service. | See `values.yaml` |

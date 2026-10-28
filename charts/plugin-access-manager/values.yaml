@@ -562,6 +562,20 @@ caradhras:
     secretName: ""
     # -- Key inside that Secret.
     secretKey: REDIS_PASSWORD
+  # -- Password for built-in/admin, injected as the beego config key
+  # `builtInAdminPassword` by secretKeyRef, like redisPassword above. Caradhras
+  # reads it only when it first creates the built-in organization (fresh
+  # database) and never changes an existing admin. Unset, a new built-in/admin
+  # gets the public default `123` and caradhras WARNs every hour until it is
+  # changed; a value over 72 bytes (bcrypt's limit) fails the boot before seeding.
+  builtInAdminPassword:
+    # -- Opt-in. Off by default.
+    enabled: false
+    # -- Secret holding the password. Required when enabled: no Secret this
+    # chart creates carries it.
+    secretName: ""
+    # -- Key inside that Secret.
+    secretKey: builtInAdminPassword
   service:
     # -- Kubernetes service type for the caradhras component
     type: ClusterIP

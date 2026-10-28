@@ -525,6 +525,9 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
+| `caradhras.builtInAdminPassword.enabled` | Inject the `built-in/admin` password as the `builtInAdminPassword` config key, by `secretKeyRef`. Read only when the built-in organization is first created (fresh database); it never changes an existing admin. Unset, a new admin gets the public default `123` and Caradhras warns every hour; over 72 bytes fails the boot before seeding | `false` |
+| `caradhras.builtInAdminPassword.secretName` | Secret holding that password. Required when enabled | `""` |
+| `caradhras.builtInAdminPassword.secretKey` | Key inside that Secret | `builtInAdminPassword` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
 
 #### Production: reach Caradhras over HTTPS

@@ -155,6 +155,9 @@ spec:
           {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
           {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}
           {{- end }}
+          {{- if include "plugin-caradhras.builtInAdminPasswordEnabled" . }}
+          {{- include "plugin-caradhras.builtInAdminPasswordEnv" . | nindent 10 }}
+          {{- end }}
           {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:

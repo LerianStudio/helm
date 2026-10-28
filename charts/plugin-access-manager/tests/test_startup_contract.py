@@ -348,6 +348,19 @@ class StartupContract(unittest.TestCase):
                         if 'secretRef' in e]
                 self.assertEqual(refs, ['operator-secret'])
 
+    def test_builtin_admin_password_opt_in(self):
+        def env(docs):
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-caradhras'))
+            return [e for e in deployment['spec']['template']['spec']['containers'][0]['env']
+                    if e['name'] == 'builtInAdminPassword']
+        self.assertEqual(env(self.succeeds({})), [])
+        on = {'caradhras': {'builtInAdminPassword': {'enabled': True}}}
+        self.fails(on, 'caradhras.builtInAdminPassword.secretName is empty')
+        on['caradhras']['builtInAdminPassword']['secretName'] = 'operator-admin'
+        self.assertEqual(env(self.succeeds(on)), [{'name': 'builtInAdminPassword', 'valueFrom': {
+            'secretKeyRef': {'name': 'operator-admin', 'key': 'builtInAdminPassword'}}}])
+
     def test_auth_service_exposes_only_ports_the_container_serves(self):
         docs = self.succeeds({})
         service = next(d for d in docs if d['kind'] == 'Service' and d['metadata']['name'].endswith('-auth'))

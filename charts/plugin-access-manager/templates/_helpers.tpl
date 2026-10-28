@@ -568,6 +568,29 @@ never has to be spliced into a connection string.
 {{- end }}
 
 {{/*
+plugin-caradhras.builtInAdminPasswordEnabled — "true" when the operator opted in
+to giving a new built-in/admin its password from a Secret.
+*/}}
+{{- define "plugin-caradhras.builtInAdminPasswordEnabled" -}}
+{{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
+{{- if $bp.enabled -}}true{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.builtInAdminPasswordEnv — the `builtInAdminPassword` container
+env, by secretKeyRef. secretName has no default: neither Secret this chart
+creates carries this key.
+*/}}
+{{- define "plugin-caradhras.builtInAdminPasswordEnv" -}}
+{{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
+- name: builtInAdminPassword
+  valueFrom:
+    secretKeyRef:
+      name: {{ required "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but caradhras.builtInAdminPassword.secretName is empty.\n   No Secret this chart creates carries the built-in/admin password.\n   Name the Secret holding it in caradhras.builtInAdminPassword.secretName (key: caradhras.builtInAdminPassword.secretKey).\n" $bp.secretName }}
+      key: {{ $bp.secretKey | default "builtInAdminPassword" }}
+{{- end }}
+
+{{/*
 plugin-access-manager.ssoCallbackPath — the console route the identity provider
 sends the browser back to. This path is OUR contract, not the operator's: it is
 the Next.js route src/app/(auth-routes)/signin/sso/callback in product-console.

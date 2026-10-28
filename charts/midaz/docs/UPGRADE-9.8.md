@@ -17,8 +17,8 @@ cutover, never a rolling update, and it limits how far a later rollback can go.
 
 - **Why no rolling update.** v4.2.x cannot finish work that v4.3 records and refuses it, and
   both versions take the same recovery lock. A fleet that mixes the two hands v4.3 records to
-  v4.2 pods. One upgrade to this chart runs the migration Jobs as pre-upgrade hooks and then
-  rolls the ledger with a surge, so the steps below stop every v4.2 pod before the upgrade runs.
+  v4.2 pods. One upgrade to this chart runs the migration Jobs first (Helm `pre-upgrade` hooks,
+  Argo CD `Sync` hooks) and then rolls the ledger with a surge, so the steps below stop every v4.2 pod before the upgrade runs.
 - **Before the window.**
   - Pause autoscaling for the ledger, and GitOps auto-sync and self-heal for this release.
     Autoscaling scales in pods that are draining; self-heal reverts the manual steps below.

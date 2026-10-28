@@ -300,7 +300,7 @@
           "properties": {
             "skipRBACChain": {
               "type": "boolean",
-              "description": "Render MIGRATIONS_SKIP_RBAC_CHAIN=true on the migrate init container (schema chain only, no migrations-rbac chain)"
+              "description": "Render MIGRATIONS_SKIP_RBAC_CHAIN=true on the migrate init container (schema chain only, no migrations-rbac chain) and on the caradhras container (boot schema check skips the same chain)"
             },
             "extraEnvVars": {
               "type": "object",

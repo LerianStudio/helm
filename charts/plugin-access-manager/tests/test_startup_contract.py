@@ -380,6 +380,23 @@ class StartupContract(unittest.TestCase):
         env = self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
         self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
 
+    def server_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        server = deployment['spec']['template']['spec']['containers'][0]
+        return {e['name']: e.get('value') for e in server['env']}
+
+    def test_server_skip_rbac_chain_follows_migrate(self):
+        # The boot schema check reads the same variable: a migrate that skips the
+        # rbac chain next to a server that asserts it is a crash-loop on the first
+        # image with a newer rbac head.
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN', self.server_env({}))
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN',
+                         self.server_env({'caradhras': {'migrations': {'skipRBACChain': False}}}))
+        env = self.server_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
     def test_migrate_extra_env_vars(self):
         env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'FOO': 'bar', 'RETRIES': 3}}}})
         self.assertEqual((env['FOO'], env['RETRIES']), ('bar', '3'))

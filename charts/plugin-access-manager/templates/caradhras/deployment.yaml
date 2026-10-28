@@ -157,6 +157,12 @@ spec:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
           {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
+          {{- if (.Values.caradhras.migrations).skipRBACChain }}
+          # The boot schema check must skip the chain the migrate init container skipped,
+          # or any image with a newer rbac head crash-loops. Needs an image that reads it.
+          - name: MIGRATIONS_SKIP_RBAC_CHAIN
+            value: "true"
+          {{- end }}
           {{- if include "plugin-caradhras.sessionFromSecret" . }}
           # Beego session store. Delivered by Secret, never by ConfigMap: the
           # connection string's third field is the Redis password.

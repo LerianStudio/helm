@@ -635,7 +635,7 @@ caradhras:
       # -- otherwise defaults to 1.5.1 in templates/_helpers.tpl.
       # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
-    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian'). For installs whose permissions arrive only via RI manifests (e.g. cross). Requires a caradhras-migrations image that understands MIGRATIONS_SKIP_RBAC_CHAIN.
+    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests (e.g. cross). Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
     skipRBACChain: false
     # -- Extra env vars for the migrate init container only, as a NAME: value map
     # -- (rendered as name/value pairs, values quoted). Chart-owned names (POSTGRES_HOST/PORT/DB/

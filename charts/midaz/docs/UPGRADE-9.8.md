@@ -17,10 +17,10 @@ cutover, never a rolling update, and it limits how far a later rollback can go.
 
 - **Why no rolling update.** v4.2.x cannot finish work that v4.3 records and refuses it, and
   both versions take the same recovery lock. A fleet that mixes the two hands v4.3 records to
-  v4.2 pods. With the default `migrations` settings, one upgrade to this chart runs the
-  migration Jobs first (Helm `pre-upgrade` hooks; Argo CD `Sync` hooks, with the Deployments one
-  wave later through `deploymentSyncWave`) and then rolls the ledger with a surge, so the steps
-  below stop every v4.2 pod before the upgrade runs.
+  v4.2 pods. With the default `ledger.migrations` and `tracer.migrations` settings, one upgrade
+  to this chart runs the migration Jobs first (Helm `pre-upgrade` hooks; Argo CD `Sync` hooks,
+  with the Deployments one wave later through `deploymentSyncWave`) and then rolls the ledger
+  with a surge, so the steps below stop every v4.2 pod before the upgrade runs.
 - **Before the window.**
   - Pause autoscaling for the ledger, and GitOps auto-sync and self-heal for this release.
     Autoscaling scales in pods that are draining; self-heal reverts the manual steps below.
@@ -52,10 +52,12 @@ cutover, never a rolling update, and it limits how far a later rollback can go.
      Check step 2 once more. If anything is back above 0, scale the v4.2 pods up on the same
      image and repeat from step 2.
   4. Upgrade to this chart version (`helm upgrade`, or an Argo CD sync). The hooks migrate the
-     databases and the v4.3.0 pods start with no v4.2 pod beside them, so the window includes
-     the migrations. With `migrations.enabled: false`, run the migrations yourself before this
-     step. With `ledger.autoscaling.enabled`, the chart sets no replica count and the
-     HPA does not scale a Deployment at 0: scale the ledger back up by hand.
+     databases and the v4.3.0 pods start with no v4.2 pod beside them, so the window includes the
+     migrations. With `ledger.migrations.enabled: false` or `tracer.migrations.enabled: false`,
+     that component's Job does not run: apply its migration set (the ledger's onboarding and
+     transaction sets, or the Tracer's) yourself before this step. With
+     `ledger.autoscaling.enabled`, the chart sets no replica count and the HPA does not scale a
+     Deployment at 0: scale the ledger back up by hand.
   5. Wait for `kubectl -n <ns> rollout status deploy/<ledger-deployment>`, and for the Tracer's
      rollout when this release runs it. Every ledger pod answers `/readyz` with 200 and reports
      v4.3.0 on `/version`.

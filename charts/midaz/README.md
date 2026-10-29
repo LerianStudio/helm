@@ -505,12 +505,12 @@ This chart includes the following dependencies for the default installation. All
   ```
 
 - **Important: Valkey is a datastore, not a cache.** The Ledger keeps state in Valkey that no other store holds: balances not yet synced to PostgreSQL, idempotency keys, engine receipts and the open fee debts of `deferrable` fees. An eviction or a lost write loses that state: a retried request can post twice, and an open fee debt is a receivable gone. The bundled Valkey therefore:
-  - writes an append-only file (`--appendonly yes`, `--appendfsync everysec`) to its own volume, the claim `valkey-data-midaz-valkey-primary` (8Gi, ReadWriteOnce; `valkey.primary.persistence.size` and `valkey.primary.persistence.storageClass` change it). The claim is kept on `helm uninstall`, like the PostgreSQL and MongoDB volumes. A restart reloads the file; a crash loses at most about one second of writes.
+  - keeps its append-only file (`appendonly yes` from the subchart configuration, fsync every second) on its own volume, the claim `valkey-data-midaz-valkey-primary` (8Gi, ReadWriteOnce; `valkey.primary.persistence.size` and `valkey.primary.persistence.storageClass` change it). The claim is kept on `helm uninstall`, like the PostgreSQL and MongoDB volumes. A restart reloads the file; a crash loses at most about one second of writes.
   - runs with `--maxmemory-policy noeviction`. A full Valkey refuses new writes and the Ledger answers those requests with an error; no key is ever evicted.
-  - uses the `Recreate` strategy, so an upgrade that changes the Valkey pod stops the old pod before the new one starts and two pods never write the same file. The Ledger answers errors until the new pod is ready.
+  - uses the `Recreate` strategy, so an upgrade that changes the Valkey pod stops the old pod before the new one starts and two pods never write the same file. The Ledger answers errors until the new pod is ready. With `valkey.primary.kind: StatefulSet`, set `valkey.primary.updateStrategy.type: RollingUpdate`: a StatefulSet refuses `Recreate`.
   - runs an image pinned by digest, so the Valkey version that opens the volume changes only on a chart upgrade.
 
-- **Sizing:** in the Lua engine (the default), each approval holds about 14 KB in Valkey for its 300-second retention, so `--maxmemory 640mb` sustains about 150 approvals per second. Size `--maxmemory` with the Valkey sizing rule in the Midaz engine guide (`docs/architecture/engine.md` in the Midaz repository), and raise the pod memory with it (`valkey.primary.resourcesPreset` or `valkey.primary.resources`), leaving room for the copy an AOF rewrite makes. `extraFlags` is a list: setting it replaces the chart default, so restate every flag you want to keep:
+- **Sizing:** in the Lua engine (the default), `--maxmemory` must be at least 14 KB × (approvals per second × `X-TTL` + open `PENDING` transactions) + 1 KB × balances used in the last 24 hours, plus room for the open fee-debt lists and the balance-sync schedule. The client sets `X-TTL` per request (300 seconds by default, at most 604800), so use the longest one your clients send. At the default `X-TTL` and with few balances, 640mb holds about 150 approvals per second; about 600,000 balances used in a day fill it alone. The 14 KB is a two-leg transaction with little metadata: more legs, fees and metadata hold more, so measure your own with `MEMORY USAGE`. The Midaz engine guide states the same rule. When you raise `--maxmemory`, raise the pod memory too (`valkey.primary.resourcesPreset` or `valkey.primary.resources`), leaving room for the copy an AOF rewrite makes. `extraFlags` is a list: setting it replaces the chart default, so restate every flag you want to keep:
 
   ```yaml
   valkey:
@@ -518,8 +518,6 @@ This chart includes the following dependencies for the default installation. All
       extraFlags:
         - "--maxmemory { your-size }"
         - "--maxmemory-policy noeviction"
-        - "--appendonly yes"
-        - "--appendfsync everysec"
         - "--hz 100"
         - "--maxclients 10000"
   ```

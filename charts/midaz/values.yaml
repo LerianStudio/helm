@@ -981,22 +981,22 @@ valkey:
   primary:
     kind: Deployment
     # Recreate, not a rolling update: two pods must never write the same append-only file.
+    # kind: StatefulSet needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
     updateStrategy:
       type: Recreate
     resourcesPreset: "medium"
     persistence:
+      # Keeps the append-only file the subchart configuration turns on (appendonly yes, fsync every second).
       enabled: true
       # The data volume outlives the release, like the PostgreSQL and MongoDB ones.
       annotations:
         helm.sh/resource-policy: keep
     extraFlags:
-      # Holds ~150 approvals/s in the Lua engine (~14 KB each for the 300 s retention). Size it with the
-      # Valkey sizing rule in Midaz docs/architecture/engine.md.
+      # About 150 approvals/s in the Lua engine at the default X-TTL (300 s), with few balances.
+      # Sizing rule: README, section Valkey (the same rule as Midaz docs/architecture/engine.md).
       - "--maxmemory 640mb"
       # Full means writes are refused and the ledger answers an error; never evict.
       - "--maxmemory-policy noeviction"
-      - "--appendonly yes"
-      - "--appendfsync everysec"
       - "--hz 100" # Improves responsiveness of internal events and increases the frequency of internal tasks such as memory cleanup, key expiration checks, etc.
       - "--maxclients 10000" # Supports a large number of simultaneous connections
 postgresql:

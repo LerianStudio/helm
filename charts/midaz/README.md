@@ -508,6 +508,7 @@ This chart includes the following dependencies for the default installation. All
   - writes an append-only file (`--appendonly yes`, `--appendfsync everysec`) to its own volume, the claim `valkey-data-midaz-valkey-primary` (8Gi, ReadWriteOnce; `valkey.primary.persistence.size` and `valkey.primary.persistence.storageClass` change it). The claim is kept on `helm uninstall`, like the PostgreSQL and MongoDB volumes. A restart reloads the file; a crash loses at most about one second of writes.
   - runs with `--maxmemory-policy noeviction`. A full Valkey refuses new writes and the Ledger answers those requests with an error; no key is ever evicted.
   - uses the `Recreate` strategy, so an upgrade that changes the Valkey pod stops the old pod before the new one starts and two pods never write the same file. The Ledger answers errors until the new pod is ready.
+  - runs an image pinned by digest, so the Valkey version that opens the volume changes only on a chart upgrade.
 
 - **Sizing:** in the Lua engine (the default), each approval holds about 14 KB in Valkey for its 300-second retention, so `--maxmemory 640mb` sustains about 150 approvals per second. Size `--maxmemory` with the Valkey sizing rule in the Midaz engine guide (`docs/architecture/engine.md` in the Midaz repository), and raise the pod memory with it (`valkey.primary.resourcesPreset` or `valkey.primary.resources`), leaving room for the copy an AOF rewrite makes. `extraFlags` is a list: setting it replaces the chart default, so restate every flag you want to keep:
 

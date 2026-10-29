@@ -21,6 +21,7 @@
 | `valkey.primary.updateStrategy.type` | `RollingUpdate` | `Recreate` |
 | `--maxmemory-policy` | `allkeys-lru` | `noeviction` |
 | `--appendonly` / `--appendfsync` | AOF on the `emptyDir` | `yes` / `everysec`, on the volume |
+| `valkey.image.digest` | none (`latest` floats) | Valkey 9.1.2, pinned |
 | `--maxmemory` | `640mb` | `640mb` |
 
 #### Why it matters

@@ -970,6 +970,8 @@ valkey:
   image:
     repository: bitnamisecure/valkey
     tag: "latest"
+    # latest (Valkey 9.1.2), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:4dc6511a8a9d4d4cbf3ccf1270ddcc6929819a1e0f4005462cf782cc96d1c3b6"
   external: false
   architecture: standalone
   auth:

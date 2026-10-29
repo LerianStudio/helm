@@ -450,7 +450,7 @@ bankTransfer:
     # WRITE_TIMEOUT_MS/DIAL_TIMEOUT_MS are NOT pinned — no mask reads them,
     # and the chart already defaults them in templates/configmap.yaml.
     # =================================================================
-    # REDIS_TLS/host/caCert resolved via the redis datastore mask
+    # REDIS_TLS/host resolved via the redis datastore mask
     # (global.datastores.redis / global.cloud) — do NOT pin them here.
 
     # =================================================================

@@ -92,6 +92,20 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_SSLMODE
+            {{- with .Values.caradhras.migrations }}
+            {{- if .skipRBACChain }}
+            # Schema chain only; RBAC arrives via RI manifests. Needs an image that reads it.
+            - name: MIGRATIONS_SKIP_RBAC_CHAIN
+              value: "true"
+            {{- end }}
+            {{- range $name, $value := .extraEnvVars }}
+            {{- if has $name (list "POSTGRES_HOST" "POSTGRES_PORT" "POSTGRES_DB" "POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_SSLMODE" "MIGRATIONS_SKIP_RBAC_CHAIN") }}
+            {{- fail (printf "caradhras.migrations.extraEnvVars.%s duplicates a chart-owned env of the migrate init container; use the chart value instead" $name) }}
+            {{- end }}
+            - name: {{ $name | quote }}
+              value: {{ $value | toString | quote }}
+            {{- end }}
+            {{- end }}
       containers:
         - name: {{ include "plugin-caradhras.fullname" . }}
           # Caradhras (beego) writes to its working dir at runtime — logs/caradhras.log and
@@ -143,6 +157,12 @@ spec:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
           {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
+          {{- if (.Values.caradhras.migrations).skipRBACChain }}
+          # The boot schema check must skip the chain the migrate init container skipped,
+          # or any image with a newer rbac head crash-loops. Needs an image that reads it.
+          - name: MIGRATIONS_SKIP_RBAC_CHAIN
+            value: "true"
+          {{- end }}
           {{- if include "plugin-caradhras.sessionFromSecret" . }}
           # Beego session store. Delivered by Secret, never by ConfigMap: the
           # connection string's third field is the Redis password.

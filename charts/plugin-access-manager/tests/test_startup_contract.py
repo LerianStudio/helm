@@ -368,5 +368,58 @@ class StartupContract(unittest.TestCase):
                          'ghcr.io/lerianstudio/caradhras-user-init:3.13.1')
 
 
+    def migrate_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        init = next(c for c in deployment['spec']['template']['spec']['initContainers']
+                    if c['name'] == 'migrate')
+        return {e['name']: e.get('value') for e in init['env']}
+
+    def test_migrate_skip_rbac_chain_only_when_true(self):
+        default = self.migrate_env({})
+        self.assertEqual(set(default), {'POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB',
+                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE'})
+        self.assertEqual(self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': False}}}), default)
+        env = self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def server_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        server = deployment['spec']['template']['spec']['containers'][0]
+        return {e['name']: e.get('value') for e in server['env']}
+
+    def test_server_skip_rbac_chain_follows_migrate(self):
+        # The boot schema check reads the same variable: a migrate that skips the
+        # rbac chain next to a server that asserts it is a crash-loop on the first
+        # image with a newer rbac head.
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN', self.server_env({}))
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN',
+                         self.server_env({'caradhras': {'migrations': {'skipRBACChain': False}}}))
+        env = self.server_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def test_migrate_extra_env_vars(self):
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'FOO': 'bar', 'RETRIES': 3}}}})
+        self.assertEqual((env['FOO'], env['RETRIES']), ('bar', '3'))
+        # YAML 1.1 boolean-like names must still render as strings (env.name is a string).
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'TRUE': 'a', 'ON': 'b'}}}})
+        self.assertEqual((env.get('TRUE'), env.get('ON')), ('a', 'b'))
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'POSTGRES_HOST': 'x'}}}},
+                   'caradhras.migrations.extraEnvVars.POSTGRES_HOST duplicates a chart-owned env')
+
+    def test_migrate_extra_env_var_names_are_schema_checked(self):
+        # A name Kubernetes rejects must fail at values validation, not at apply.
+        # Helm versions word (and locate) the schema error differently; the
+        # pattern itself is in every one of them.
+        pattern = '^[-._a-zA-Z][-._a-zA-Z0-9]*$'
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'BAD=NAME': 'x'}}}}, pattern)
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}}, pattern)
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
+        self.assertEqual(env['my.var-1_X'], 'ok')
+
+
 if __name__ == '__main__':
     unittest.main()

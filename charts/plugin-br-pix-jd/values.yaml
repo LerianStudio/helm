@@ -305,22 +305,14 @@ api:
     name: ""
 worker:
   # -- Disabled by default: the worker is opt-in, not every install runs jobs.
-  #
-  # TAGS MAY DIVERGE, and the chart does not police it. The release pipeline builds
-  # only the component that changed, so an api-only release legitimately leaves the
-  # worker a tag behind. An earlier version of this chart failed the render on any
-  # mismatch; that gate blocked the pipeline's normal output and was removed.
-  #
-  # What it was trying to protect — the two processes sharing one database and one
-  # schema — is owned by the release pipeline, not by this values file.
   enabled: false
   # -- Replicas. The jobs take cross-replica Postgres advisory locks, so >1 is safe,
   # but there is nothing to gain: each tick is single-flight per job.
   replicaCount: 1
   revisionHistoryLimit: 5
   image:
-    # -- The dedicated worker image (cmd/worker, ENTRYPOINT /worker). The release
-    # pipeline bumps the tag; empty falls back to .Chart.AppVersion.
+    # -- The dedicated worker image (cmd/worker, ENTRYPOINT /worker). Keep the tag
+    # equal to api.image.tag; empty falls back to .Chart.AppVersion.
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-worker
     tag: "1.3.0"
     pullPolicy: IfNotPresent

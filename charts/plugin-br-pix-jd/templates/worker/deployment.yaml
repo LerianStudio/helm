@@ -47,10 +47,9 @@ spec:
       {{- /* Above the lib-streaming close timeout, same coupling as the api: the worker
          publishes lifecycle events through the outbox relay too. */}}
       terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
-      {{- /* Wait for Postgres but do NOT migrate here. The api pod owns the migration
-         (one migrator is enough, and golang-migrate would serialize a second one on its
-         advisory lock for no benefit). Waiting still matters: without it a cold
-         StatefulSet makes the worker crashloop until Postgres accepts connections. */}}
+      {{- /* Wait for Postgres but do NOT migrate here: the migrations Job owns the schema.
+         Without the wait a cold StatefulSet makes the worker crashloop until Postgres
+         accepts connections. */}}
       initContainers:
         - name: wait-for-postgres
           image: {{ (.Values.migrations | default dict).waitImage | default "busybox:1.36" | quote }}

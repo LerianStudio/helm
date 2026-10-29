@@ -81,6 +81,17 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 
 Existing Mensageria installs are unchanged: with `executor.enabled` unset the `EXECUTOR_ENABLED` key is not emitted; the chart adds only the four direct-channel knobs above at the app defaults.
 
+## Midaz CRM mode
+
+`sisbajud.midaz.crmMode` (`MIDAZ_CRM_MODE`) must match the Midaz the institutions use; set it explicitly. The default stays `legacy` so an upgrade never changes an existing install.
+
+| Midaz | `crmMode` |
+|-------|-----------|
+| v4 (CRM embedded in the ledger, no legacy `/v1/holders`) | `embedded` |
+| v3 | `legacy` |
+
+With the wrong mode every holder read fails.
+
 ## Known limitation: object-store readiness probe (app, B1)
 
 The application (still in `1.0.0`) wires a SeaweedFS/S3 client in every mode and its `/readyz` gates on it; `SEAWEEDFS_S3_ENDPOINT` defaults to `http://localhost:8333` in code, so in executor mode the pod stays NotReady unless that endpoint answers. Executor mode never reads or writes objects. Until the app skips that probe in executor mode, point `sisbajud.configmap.SEAWEEDFS_S3_ENDPOINT` / `SEAWEEDFS_BUCKET` / `SEAWEEDFS_REGION` (and, if needed, `sisbajud.secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY`) at a reachable S3 endpoint.

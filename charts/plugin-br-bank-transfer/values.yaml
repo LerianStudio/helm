@@ -640,6 +640,8 @@ bankTransfer:
     # JD_PRIVATE_KEY_PEM: ""  # MUST BE SET in JD_SIGNING_MODE=local_pem (the default)
     # JD_PUBLIC_KEY_PEM: ""  # Required for external_provided mode with signature validation
     # JD_PRIVATE_KEY_KEYINFO: ""  # key metadata for external signing providers (credential-like → Secret)
+    # JD_EXTERNAL_SIGNER_AUTH_TOKEN: ""  # bearer for JD_EXTERNAL_SIGNER_URL; that URL, JD_EXTERNAL_SIGNER_TIMEOUT_MS
+    #                                    # and JD_ALLOW_PRIVATE_NETWORK go under bankTransfer.extraEnvVars
 
     # Encryption Keys (REQUIRED - hex-encoded 32-byte AES-256 keys, 64 hex characters)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""

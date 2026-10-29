@@ -67,7 +67,7 @@ global:
   cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
   datastores:
     postgres: { host: "my-rds.example.com", user: "bank_transfer" }
-    redis: { host: "my-elasticache.example.com:6379", user: "default" }
+    redis: { host: "my-elasticache.example.com:6379" }
   env:
     name: "production"
   auth:
@@ -91,8 +91,7 @@ mongodb:
 above; only the ENDPOINTS (host/port/user) still come from
 `global.datastores` — a cloud preset can't know your RDS host. A native
 `bankTransfer.configmap.<KEY>` always overrides any mask. `redis.host` is
-`host:port` (no separate `redis.port` field); set `redis.user` only for
-ACL-authenticated Redis/Valkey deployments.
+`host:port` (no separate `redis.port` field).
 
 Copy `values-template.yaml` as your starting point — it documents every
 `global.*` mask with a working example, including the required

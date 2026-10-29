@@ -77,7 +77,6 @@ bankTransfer:
     # Multi-tenancy — only when global.multiTenant.enabled=true above
     # =================================================================
     # MULTI_TENANT_URL: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
-    # MULTI_TENANT_ENVIRONMENT: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # AWS_REGION: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # MULTI_TENANT_REDIS_HOST: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # MULTI_TENANT_REDIS_TLS: "false"

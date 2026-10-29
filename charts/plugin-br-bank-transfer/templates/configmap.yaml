@@ -34,7 +34,6 @@ data:
   {{- $envName := $newEnvName | default $oldEnvName | default (trim (toString (dig "env" "name" "" .Values.global | default ""))) | default "production" }}
   ENVIRONMENT_NAME: {{ $envName | quote }}
   ENV_NAME: {{ $envName | quote }}
-  APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
 
   # =====================================================================
@@ -68,38 +67,16 @@ data:
   REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
 
   # =====================================================================
-  # CORS POLICY
-  # CORS_ALLOWED_ORIGINS is rendered in both modes. The plugin's
-  # production validator (internal/bootstrap/config/validate_production.go)
-  # rejects wildcard "*" and any origin containing localhost / 127.0.0.1 /
-  # [::1], so production deployments MUST set this to a concrete public
-  # hostname allowlist. When unset, the in-code dev safety net falls back
-  # to "http://localhost:3000" which trips that production validator.
-  # CORS_ALLOWED_METHODS and CORS_ALLOWED_HEADERS are optional: only
-  # rendered when explicitly set so operators can rely on the plugin's
-  # own sensible defaults until they need to override.
-  # =====================================================================
-  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_ORIGINS }}
-  CORS_ALLOWED_ORIGINS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_ORIGINS | quote }}
-  {{- end }}
-  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_METHODS }}
-  CORS_ALLOWED_METHODS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_METHODS | quote }}
-  {{- end }}
-  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS }}
-  CORS_ALLOWED_HEADERS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS | quote }}
-  {{- end }}
-
-  # =====================================================================
   # MULTI-TENANCY
   # Toggle is always rendered. Infrastructure endpoints only in MT mode.
   # All operational tuning (timeouts, pool sizes, circuit breaker) ships
   # via lib-commons defaults or is hot-reloadable via systemplane.
+  # The tenant environment and plaintext http:// to the Tenant Manager both
+  # follow ENVIRONMENT_NAME (plaintext only for development or test).
   # =====================================================================
   MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
   {{- if $multiTenantEnabled }}
   MULTI_TENANT_URL: {{ required "bankTransfer.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_URL | quote }}
-  MULTI_TENANT_ENVIRONMENT: {{ required "bankTransfer.configmap.MULTI_TENANT_ENVIRONMENT is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_ENVIRONMENT | quote }}
-  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
   MULTI_TENANT_REDIS_HOST: {{ required "bankTransfer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_HOST | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
@@ -136,7 +113,6 @@ data:
   POSTGRES_CONN_MAX_LIFETIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
   POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
   POSTGRES_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
-  MIGRATIONS_PATH: {{ .Values.bankTransfer.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
 
   # =====================================================================
   # POSTGRES (replica — optional, for CQRS read scaling)
@@ -153,16 +129,12 @@ data:
 
   # =====================================================================
   # VALKEY / REDIS (app-level)
-  # MT mode: only connection envs (HOST, DB, USER, TLS, CA_CERT) are rendered.
+  # MT mode: only connection envs (HOST, DB, TLS, CA_CERT) are rendered.
   # Pool/timeout tuning is single-tenant or systemplane-managed.
   # =====================================================================
   REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace)) | quote }}
   REDIS_DB: {{ .Values.bankTransfer.configmap.REDIS_DB | default "0" | quote }}
   REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
-  {{- $redisUser := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") }}
-  {{- if $redisUser }}
-  REDIS_USER: {{ $redisUser | quote }}
-  {{- end }}
   {{- if .Values.bankTransfer.configmap.REDIS_CA_CERT }}
   REDIS_CA_CERT: {{ .Values.bankTransfer.configmap.REDIS_CA_CERT | quote }}
   {{- end }}
@@ -244,21 +216,13 @@ data:
   {{- end }}
 
   # =====================================================================
-  # OPENTELEMETRY
-  # MT mode: only the toggle + endpoint + SDK-disabled flag are rendered.
-  # Library/service-name/version/deployment-env are systemplane-managed.
+  # OPENTELEMETRY — the app derives service name, version and environment
+  # itself; only the toggle and the endpoint are env.
   # =====================================================================
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
   {{- /* Same global.observability mask as ENABLE_TELEMETRY. Empty with telemetry on:
      deployment.yaml injects the node-local collector, $(HOST_IP):4317. */}}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
-  OTEL_SDK_DISABLED: {{ .Values.bankTransfer.configmap.OTEL_SDK_DISABLED | default "false" | quote }}
-  {{- if not $multiTenantEnabled }}
-  OTEL_LIBRARY_NAME: {{ .Values.bankTransfer.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-bank-transfer" | quote }}
-  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-bank-transfer" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
-  {{- end }}
 
   # =====================================================================
   # STREAMING (lib-streaming v3 — business event publication)
@@ -422,7 +386,6 @@ data:
   # =====================================================================
   WEBHOOK_ENABLED: {{ .Values.bankTransfer.configmap.WEBHOOK_ENABLED | default "false" | quote }}
   BTF_FEE_ENABLED: {{ .Values.bankTransfer.configmap.BTF_FEE_ENABLED | default "false" | quote }}
-  RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "false" | quote }}
   ALLOW_INSECURE_TLS: {{ include "bank-transfer.flagDefaultTrue" .Values.bankTransfer.configmap.ALLOW_INSECURE_TLS | quote }}
 
   # =====================================================================

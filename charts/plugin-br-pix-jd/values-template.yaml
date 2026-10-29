@@ -104,7 +104,7 @@ api:
     tls: []
 
 worker:
-  # Keep false until the app publishes an image that carries /worker. See README.
+  # The scheduled jobs, from the plugin-br-pix-jd-worker image. Off, they do not run.
   enabled: false
 
 postgresql:

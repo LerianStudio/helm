@@ -68,26 +68,6 @@ times by hand, one of them eventually loses a clause and nil-pointers the render
 on a values file that omits `aws` entirely.
 ------------------------------------------------------------------------------
 */}}
-{{/*
-------------------------------------------------------------------------------
-workerOwnImage — truthy when the worker runs its OWN image, not the api's.
-
-The app used to ship ONE image with two entry points, so the chart had to override
-the ENTRYPOINT with `command: ["/worker"]` to reach the second binary. It now
-publishes a dedicated plugin-br-pix-jd-worker image whose own ENTRYPOINT is
-already /worker.
-
-Both shapes stay supported, and the difference matters: overriding the command on
-a dedicated image asserts a binary path inside an image this chart does not build.
-It happens to be correct today; it is not the chart's to promise.
-------------------------------------------------------------------------------
-*/}}
-{{- define "plugin-br-pix-jd.workerOwnImage" -}}
-{{- $wi := (.Values.worker | default dict).image | default dict -}}
-{{- $repo := $wi.repository | default "" -}}
-{{- if and $repo (ne $repo .Values.api.image.repository) -}}true{{- end -}}
-{{- end }}
-
 {{- define "plugin-br-pix-jd.rolesAnywhereEnabled" -}}
 {{- $aws := .Values.aws | default dict -}}
 {{- $ra := $aws.rolesAnywhere | default dict -}}
@@ -188,7 +168,7 @@ Input dict: root, comp.
 {{- $registry := ((.root.Values.global | default dict).imageRegistry | default "") -}}
 {{- /* An empty repository printf'd to ":<tag>" — valid YAML, InvalidImageName at
    admission. Fail at render with the value to set. */ -}}
-{{- $repository := required "\n\nERROR: image.repository is empty for one of the components.\nAn empty repository renders as \":<tag>\", which the API server rejects with\nInvalidImageName. Set api.image.repository (the worker inherits it).\n" (.comp.image.repository | default "") -}}
+{{- $repository := required "\n\nERROR: image.repository is empty for one of the components.\nAn empty repository renders as \":<tag>\", which the API server rejects with\nInvalidImageName. Set api.image.repository or worker.image.repository.\n" (.comp.image.repository | default "") -}}
 {{- if $registry -}}
 {{- $repository = printf "%s/%s" (trimSuffix "/" $registry) $repository -}}
 {{- end -}}

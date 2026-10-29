@@ -4,7 +4,7 @@ description: >-
   Helm chart for plugin-br-pix-jd — the Lerian Bacen/JDPI Pix plugin (DICT keys
   and claims, SPI transactions, refunds and limits, QR codes, inbound JDPI
   webhooks, MED 2.0, Pix Automático, and indirect participants). Ships two
-  components built from ONE image: the HTTP api and the cron worker.
+  components, each from its own image: the HTTP api and the cron worker.
 type: application
 annotations:
   lerian.studio/chart-type: multi-component

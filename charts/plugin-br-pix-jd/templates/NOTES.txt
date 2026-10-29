@@ -32,14 +32,12 @@ API
 {{ end -}}
 
 {{ if .Values.worker.enabled -}}
-WORKER: enabled — {{ if include "plugin-br-pix-jd.workerOwnImage" . }}dedicated image {{ (.Values.worker.image).repository }}
-        (its own ENTRYPOINT /worker){{ else }}the api's image, entrypoint overridden to /worker{{ end }}.
+WORKER: enabled — image {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" .Values.worker) }}.
 {{ else -}}
 WORKER: DISABLED.
   Consequence while this stays off: transaction reconciliation (including the
   refund-park sweep, a money path), the MED pollers and the indirect-delivery
-  drainer DO NOT RUN. To enable, set worker.enabled=true and point
-  worker.image.repository at the published worker image.
+  drainer DO NOT RUN. To enable, set worker.enabled=true.
 {{ end -}}
 
 {{ if include "plugin-br-pix-jd.postgresRenders" . -}}

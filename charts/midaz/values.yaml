@@ -993,7 +993,7 @@ valkey:
         helm.sh/resource-policy: keep
     extraFlags:
       # About 150 approvals/s in the Lua engine at the default X-TTL (300 s), with few balances.
-      # Sizing rule: README, section Valkey (the same rule as Midaz docs/architecture/engine.md).
+      # Sizing rule: README, section Valkey (derived in Midaz docs/architecture/engine.md).
       - "--maxmemory 640mb"
       # Full means writes are refused and the ledger answers an error; never evict.
       - "--maxmemory-policy noeviction"

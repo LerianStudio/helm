@@ -11,7 +11,7 @@
 
 ### 1. The bundled Valkey keeps its data and refuses writes when full
 
-**Who is affected:** every release that runs the bundled Valkey (`valkey.enabled: true`, the default). Values that set `valkey.primary.extraFlags`, `valkey.primary.persistence` or `valkey.primary.kind` change what the upgrade does: see [Check your Valkey overrides](#check-your-valkey-overrides). A release on an external Valkey or Redis is unaffected, but should check that instance against [Why it matters](#why-it-matters).
+**Who is affected:** every release that runs the bundled Valkey (`valkey.enabled: true`, the default). Values that set `valkey.primary.extraFlags`, `valkey.primary.persistence`, `valkey.primary.kind`, `valkey.image` or `global.imageRegistry` change what the upgrade does: see [Check your Valkey overrides](#check-your-valkey-overrides). A release on an external Valkey or Redis is unaffected, but should check that instance against [Why it matters](#why-it-matters).
 
 #### What changed
 
@@ -30,16 +30,20 @@ From v10.0.3 a full Valkey refuses the write and the Ledger answers that request
 
 #### Check your Valkey overrides
 
-Run `helm get values midaz -n midaz` and look under `valkey.primary`. Helm replaces lists and keeps the values you set, so:
+Run `helm get values midaz -n midaz` and look under `valkey.primary`, `valkey.image` and `global`. Helm replaces lists and keeps the values you set, so:
 
 - **`extraFlags`:** yours replace the chart's, eviction policy included. Delete them to take the new defaults, or make sure they carry `--maxmemory-policy noeviction`.
 - **`persistence.enabled: false`:** Valkey stays in memory. Delete it.
-- **`persistence.enabled: true`** (the old README asked for it before `deferrable` fees): the release keeps its claim, and the new pod reloads its append-only file. Valkey still restarts once, but nothing is lost and the drain below is not needed.
-- **`kind: StatefulSet`:** a StatefulSet refuses `Recreate`, so set `valkey.primary.updateStrategy.type: RollingUpdate`. If it ran without persistence, the new volume template is a StatefulSet field Kubernetes does not let an upgrade change. Keep `persistence.enabled: false`, or delete the StatefulSet but not its pod right before upgrading, so the upgrade creates it again with the volume:
+- **`persistence.enabled: true`** (the old README asked for it before `deferrable` fees): the release keeps its claim, and the new pod reloads its append-only file. Valkey still restarts once, but nothing is lost and the drain below is not needed. With `kind: StatefulSet`, also see the next item.
+- **`kind: StatefulSet`:** a StatefulSet refuses `Recreate`, so set `valkey.primary.updateStrategy.type: RollingUpdate`. Kubernetes also does not let an upgrade change a StatefulSet's volume template, and this upgrade changes it:
+  - **With persistence**, the change is the chart's `helm.sh/resource-policy: keep` annotation. Set `valkey.primary.persistence.annotations: null` in a values file (`--set` leaves it in place). A StatefulSet keeps its claims on `helm uninstall` anyway.
+  - **Without persistence**, the change is the new volume. Keep `persistence.enabled: false`, or delete the StatefulSet but not its pod right before upgrading, so the upgrade creates it again with the volume:
 
-  ```bash
-  kubectl -n midaz delete statefulset midaz-valkey-primary --cascade=orphan
-  ```
+    ```bash
+    kubectl -n midaz delete statefulset midaz-valkey-primary --cascade=orphan
+    ```
+
+- **`valkey.image` or `global.imageRegistry`:** the chart's new digest takes precedence over your tag, repository and registry, and the subchart renders `<registry>/<repository>@sha256:4dc6…`. If your mirror does not hold that digest, the new pod cannot pull its image after `Recreate` has stopped the old one. Set `valkey.image.digest` to your image's digest, or to `""` so your tag applies again, as [UPGRADE-9.2.13](UPGRADE-9.2.13.md) describes for PostgreSQL and MongoDB.
 
 #### What happens at the upgrade
 
@@ -70,6 +74,8 @@ valkey:
 ```
 
 The volume stays on with this override; only the eviction policy goes back.
+
+Do not `helm rollback` to v10.0.2 to get eviction back. The rollback returns Valkey to an `emptyDir` and a rolling update: a new, empty pod serves next to the old one and then replaces it, which flushes Valkey under traffic. If you must roll back, drain first as above. Before upgrading again, drain once more and delete the claim `valkey-data-midaz-valkey-primary`, or the new pod reloads the state the volume held before the rollback.
 
 ## Preview changes before upgrading
 

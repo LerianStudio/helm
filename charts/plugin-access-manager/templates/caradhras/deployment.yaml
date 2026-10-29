@@ -111,7 +111,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} dbname=${DB_NAME}"
+              export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} connect_timeout=5 dbname=${DB_NAME}"
               exec /server --createDatabase={{- if hasKey .Values.caradhras "createDatabase" }}{{ .Values.caradhras.createDatabase }}{{- else }}false{{- end }}
           envFrom:
           - configMapRef:

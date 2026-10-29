@@ -114,7 +114,7 @@
 | `ledger.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one. |
 | `ledger.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `ledger.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
-| `ledger.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
+| `ledger.tolerations` | array | `[]` | Tolerations for scheduling on tainted nodes |
 | `ledger.affinity` | object | `{}` | Affinity rules for pod scheduling |
 | `ledger.datastores` | object | `templates/ledger/configmap.yaml` | Dedicated datastore masks for this component (override global.datastores). Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/replicaHost). The Postgres `ssl` field is read from the generic `postgres` key (`postgres.ssl`), not from `postgresOnboarding`/`postgresTransaction`: those keys' `ssl` is ignored. |
 | `ledger.configmap` | object | `{}` | Escape hatch: any native env var (e.g. DB_ONBOARDING_MAX_OPEN_CONNS) overrides the template default. |
@@ -182,7 +182,7 @@
 | `crm.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one. |
 | `crm.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `crm.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
-| `crm.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
+| `crm.tolerations` | array | `[]` | Tolerations for scheduling on tainted nodes |
 | `crm.affinity` | object | `{}` | Affinity rules for pod scheduling |
 | `crm.datastores` | object | `templates/crm/configmap.yaml` | Dedicated datastore mask (override global.datastores). Sub-key: mongo (host/port/user). |
 | `crm.configmap` | object | `{}` | Escape hatch: any native env var overrides the template default. |
@@ -251,7 +251,7 @@
 | `tracer.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one. |
 | `tracer.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `tracer.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
-| `tracer.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
+| `tracer.tolerations` | array | `[]` | Tolerations for scheduling on tainted nodes |
 | `tracer.affinity` | object | `{}` | Affinity rules for pod scheduling |
 | `tracer.datastores` | object | `templates/tracer/configmap.yaml` | Dedicated datastore mask (override global.datastores). Sub-key: postgres (host/port/user/ssl). |
 | `tracer.configmap` | object | `{}` | Escape hatch: any native env var overrides the template default. |

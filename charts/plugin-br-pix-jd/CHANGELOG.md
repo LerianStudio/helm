@@ -36,6 +36,78 @@ Fixes:
 
 ---
 
+## [0.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.6)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.5`. (@guimoreirar)
+
+Fixes:
+- Closed the truncated helper snippets in the `UPGRADE-0.5.3` documentation for `plugin-br-pix-jd`. (@guimoreirar, @bedatty)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.5...plugin-br-pix-jd-v0.5.6)
+
+---
+
+## [0.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.6)
+
+Features:
+- Add a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.5`. (@guimoreirar)
+
+Fixes:
+- Close the truncated helper snippets in `UPGRADE-0.5.3`. (@guimoreirar, @bedatty)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.5...plugin-br-pix-jd-v0.5.6)
+
+---
+
+## [0.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.6)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.5`. (@guimoreirar)
+
+Fixes:
+- Closed the truncated helper snippets in `UPGRADE-0.5.3`. (@guimoreirar, @bedatty)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.5...plugin-br-pix-jd-v0.5.6)
+
+---
+
+## [0.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.6)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.5`. (@guimoreirar)
+
+Fixes:
+- Closed the truncated helper snippets in the `UPGRADE-0.5.3` documentation for `plugin-br-pix-jd`. (@guimoreirar, @bedatty)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.5...plugin-br-pix-jd-v0.5.6)
+
+---
+
+## [0.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.6)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.5`. (@guimoreirar)
+
+Fixes:
+- Closed the truncated helper snippets in the `UPGRADE-0.5.3` documentation for `plugin-br-pix-jd`. (@guimoreirar, @bedatty)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.5...plugin-br-pix-jd-v0.5.6)
+
+---
+
+## [0.5.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.6)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.5`. (@guimoreirar)
+
+Fixes:
+- Closed the truncated helper snippets in the `UPGRADE-0.5.3` documentation for `plugin-br-pix-jd`. (@guimoreirar, @bedatty)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.5...plugin-br-pix-jd-v0.5.6)
+
+---
+
 ## [0.5.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.5)
 
 Fixes:

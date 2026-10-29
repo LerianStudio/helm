@@ -569,9 +569,16 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Tolerations for scheduling on tainted nodes"
+          "description": "Tolerations for scheduling on tainted nodes. A list; an empty map ({}) is still accepted so values written for <= 10.0.0 keep validating",
+          "anyOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object",
+              "maxProperties": 0
+            }
+          ]
         },
         "affinity": {
           "type": "object",
@@ -1209,9 +1216,16 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Tolerations for scheduling on tainted nodes"
+          "description": "Tolerations for scheduling on tainted nodes. A list; an empty map ({}) is still accepted so values written for <= 10.0.0 keep validating",
+          "anyOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object",
+              "maxProperties": 0
+            }
+          ]
         },
         "affinity": {
           "type": "object",
@@ -1952,9 +1966,16 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Tolerations for scheduling on tainted nodes"
+          "description": "Tolerations for scheduling on tainted nodes. A list; an empty map ({}) is still accepted so values written for <= 10.0.0 keep validating",
+          "anyOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object",
+              "maxProperties": 0
+            }
+          ]
         },
         "affinity": {
           "type": "object",

@@ -30,13 +30,19 @@ From v10.0.3 a full Valkey refuses the write and the Ledger answers that request
 
 #### Check your Valkey overrides
 
-Run `helm get values midaz -n midaz` and look under `valkey.primary`, `valkey.image` and `global`. Helm replaces lists and keeps the values you set, so:
+Export the values the release keeps, look under `valkey.primary`, `valkey.image` and `global`, and make the changes below in that file:
+
+```bash
+helm get values midaz -n midaz -o yaml > midaz-values.yaml
+```
+
+An upgrade without a values file reuses the values the release keeps, so an override you delete takes effect only when the upgrade passes this file with `--reset-values`, as in [Command to upgrade](#command-to-upgrade). Helm replaces lists and keeps the values you set, so:
 
 - **`extraFlags`:** yours replace the chart's, eviction policy included. Delete them to take the new defaults, or make sure they carry `--maxmemory-policy noeviction`.
 - **`persistence.enabled: false`:** Valkey stays in memory. Delete it.
 - **`persistence.enabled: true`** (the old README asked for it before `deferrable` fees): the release keeps its claim, and the new pod reloads its append-only file. Valkey still restarts once, but nothing is lost and the drain below is not needed. With `kind: StatefulSet`, also see the next item.
 - **`kind: StatefulSet`:** a StatefulSet refuses `Recreate`, so set `valkey.primary.updateStrategy.type: RollingUpdate`. Kubernetes also does not let an upgrade change a StatefulSet's volume template, and this upgrade changes it:
-  - **With persistence**, the change is the chart's `helm.sh/resource-policy: keep` annotation. Set `valkey.primary.persistence.annotations: null` in a values file (`--set` leaves it in place). A StatefulSet keeps its claims on `helm uninstall` anyway.
+  - **With persistence**, the change is the chart's `helm.sh/resource-policy: keep` annotation. Set `valkey.primary.persistence.annotations: null` in `midaz-values.yaml` (`--set` leaves it in place). A StatefulSet keeps its claims on `helm uninstall` anyway.
   - **Without persistence**, the change is the new volume. Keep `persistence.enabled: false`, or delete the StatefulSet but not its pod right before upgrading, so the upgrade creates it again with the volume:
 
     ```bash
@@ -80,7 +86,8 @@ Do not `helm rollback` to v10.0.2 to get eviction back. The rollback returns Val
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.0.3 -n midaz
+helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.0.3 -n midaz \
+  --reset-values -f midaz-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -88,5 +95,8 @@ helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --ver
 ## Command to upgrade
 
 ```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.0.3 -n midaz
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.0.3 -n midaz \
+  --reset-values -f midaz-values.yaml
 ```
+
+`midaz-values.yaml` is the export from [Check your Valkey overrides](#check-your-valkey-overrides): `--reset-values` applies only that file over the chart defaults, so it must hold every value you set.

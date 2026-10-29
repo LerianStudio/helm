@@ -125,7 +125,7 @@ bankTransfer:
     # PostgreSQL / Redis / MongoDB — REQUIRED (bundled subcharts read these too)
     POSTGRES_PASSWORD: ""  # REQUIRED
     REDIS_PASSWORD: ""  # REQUIRED
-    MONGO_PASSWORD: ""  # REQUIRED
+    MONGO_URI: ""  # REQUIRED for external MongoDB, e.g. mongodb://bank_transfer:<pw>@<host>:27017/plugin_br_bank_transfer?authSource=plugin_br_bank_transfer&tls=true
 
     # Encryption keys — REQUIRED (hex-encoded 32-byte AES-256 keys, 64 hex chars)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""  # REQUIRED

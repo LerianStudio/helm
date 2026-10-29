@@ -145,8 +145,8 @@ assembled here rather than embedding a plaintext password in the Secret.
   mongodb.auth.usernames[0], which the subchart creates in mongodb.auth.databases[0], the authSource).
 - existingSecret override: MONGO_PASSWORD <- <existingSecret> / mongodb-passwords.
 - External inline: MONGO_PASSWORD <- app Secret / MONGO_PASSWORD.
-If the operator sets bankTransfer.secrets.MONGO_URI explicitly, that wins and is emitted verbatim
-(no $(MONGO_PASSWORD) assembly). The host tracks the mongodb subchart's Bitnami fullname (Service and
+An explicit bankTransfer.secrets.MONGO_URI reaches the pod from the app Secret (envFrom), so no
+MONGO_URI env is emitted here for it. The host tracks the mongodb subchart's Bitnami fullname (Service and
 Secret names share it, honoring nameOverride/fullnameOverride and the name-collapse rule).
 Input (dict): context (root .), secretName (app Secret name for the external-inline fallback).
 */}}
@@ -172,10 +172,7 @@ Input (dict): context (root .), secretName (app Secret name for the external-inl
       name: {{ .secretName }}
       key: MONGO_PASSWORD
 {{- end }}
-{{- if $ctx.Values.bankTransfer.secrets.MONGO_URI }}
-- name: MONGO_URI
-  value: {{ $ctx.Values.bankTransfer.secrets.MONGO_URI | quote }}
-{{- else if $internal }}
+{{- if and $internal (not $ctx.Values.bankTransfer.secrets.MONGO_URI) }}
 - name: MONGO_URI
   value: {{ printf "mongodb://%s:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=%s" (first $mongoAuth.usernames) $mongoFullname $ns (first $mongoAuth.databases) | quote }}
 {{- end }}

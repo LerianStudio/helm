@@ -274,7 +274,7 @@ api:
   # credential lives in exactly one place. Set it here only for an external
   # Postgres that has no existingSecret of its own.
   secrets:
-    # Required. lib-license-go validates on boot and on every worker tick.
+    # Required, api and worker, every mode: the render fails without it.
     LICENSE_KEY: ""
     # Optional — a Redis with no auth is a legitimate in-cluster setup.
     REDIS_PASSWORD: ""

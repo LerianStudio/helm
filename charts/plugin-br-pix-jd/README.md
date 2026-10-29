@@ -29,13 +29,12 @@ The chart **refuses to render** without these:
 | `api.configmap.POSTGRES_HOST` | host of the external PostgreSQL | empty | the render fails |
 | `api.secrets.POSTGRES_PASSWORD` | password of the external PostgreSQL | empty | the render fails. Or supply it through `api.existingSecret.name` |
 | `api.configmap.REDIS_HOST` | `host:port` of the Valkey or Redis | empty | the render fails. The rate limiter is fail-closed: without Redis it refuses every request |
+| `api.secrets.LICENSE_KEY` | your license key | empty | the render fails. The API and the worker validate it at startup in every mode. Or supply it through `api.existingSecret.name` |
 
 The chart **renders** without the values below, but the service does not work without them:
 
 | Key | Format | Default | Without it |
 | :-- | :----- | :------ | :--------- |
-| `api.secrets.LICENSE_KEY` | your license key | empty | the service does not start. The worker reads the same key |
-| `api.configmap.ORGANIZATION_IDS` | `global` | empty | the service does not start: the license check needs it |
 | `api.configmap.SYSTEMPLANE_ENABLED` | `"true"` | `"false"` | the plugin does not mount its `/system` routes, and every configuration call of the setup answers `404` |
 | `api.configmap.QRCODE_PUBLIC_BASE_URL` | a host, without a scheme | empty | with `ENVIRONMENT_NAME=production`, the service does not start |
 | `api.configmap.POSTGRES_SSLMODE` | `require` or `verify-full` | `disable` | with `ENVIRONMENT_NAME=production`, the service does not start: production refuses `disable` |
@@ -61,6 +60,7 @@ Set these only when your institution needs them.
 
 | Key | When | Format | Default |
 | :-- | :--- | :----- | :------ |
+| `api.configmap.ORGANIZATION_IDS` | only for a per-organization license. Empty stops the service from starting | comma-separated organization IDs | `global` |
 | `api.secrets.REDIS_PASSWORD` | only if your Valkey or Redis requires a password | password | empty |
 | `api.cors.allowedOrigins` | only if a browser calls the API directly | list of origins | empty: every browser cross-origin call is refused |
 | `api.rateLimit.*` | only to change the rate-limit defaults | see `values.yaml` | chart defaults |
@@ -100,7 +100,6 @@ api:
     tag: "1.3.0"
   configmap:
     ENVIRONMENT_NAME: "production"
-    ORGANIZATION_IDS: "global"
     SYSTEMPLANE_ENABLED: "true"
     QRCODE_PUBLIC_BASE_URL: "pix.example.com"
     POSTGRES_HOST: "postgres.example.internal"
@@ -163,7 +162,7 @@ Per-version notes: [0.1](docs/UPGRADE-0.1.md) · [0.2](docs/UPGRADE-0.2.md) · [
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `api.secrets.POSTGRES_PASSWORD` (the render fails without it) and `api.secrets.LICENSE_KEY`; the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name`, all of them come from that Secret.
+- Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name`, all of them come from that Secret.
 - Dependency notes: `lerian-common-helm` (library chart, renders nothing); `postgresql` (Bitnami `16.3.5`) and `valkey` (Bitnami `2.4.7`), both disabled by default — the chart expects an external PostgreSQL and Valkey or Redis.
 - Production overrides: `api.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE`, `api.configmap.PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `api.configmap.REDIS_HOST`, `api.existingSecret.name`, and `api.ingress.*`.
 - Source/license: the plugin is closed source and requires an Enterprise license; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).

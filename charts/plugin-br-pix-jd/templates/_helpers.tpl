@@ -220,8 +220,7 @@ ela um campo de primeira classe faria parecer knob suportado. Quem precisa dela 
 `api.extraConfigmap.IS_DEVELOPMENT`.
 
 Mas os GATES têm de continuar enxergando-a, senão removê-la abriria um buraco: o
-gate de produção deixaria de barrar o bypass e o gate de licença do worker deixaria
-de saber que pode relaxar. Por isso todo gate resolve contra esta visão mesclada, e
+gate de produção deixaria de barrar o bypass. Por isso todo gate resolve contra esta visão mesclada, e
 não contra `.configmap` sozinho — a mesma precedência que o ConfigMap renderiza.
 
 Input: root context ($).
@@ -247,8 +246,8 @@ Input: root context ($).
    (internal/bootstrap/config_validation.go) and refuses to boot when any is truthy
    under production: ALLOW_CORS_WILDCARD, ALLOW_RATELIMIT_FAIL_OPEN and IS_DEVELOPMENT.
    Each disables a safe default — a wildcard CORS origin, a fail-OPEN money-path rate
-   limiter, and (IS_DEVELOPMENT) the worker per-tick license validation, which leaves
-   the settlement-reconcile poller running unlicensed. Catching them at render beats a
+   limiter, and (IS_DEVELOPMENT) the production licence gateway, which it swaps for
+   the development one. Catching them at render beats a
    CrashLoop. ALLOW_INSECURE_TLS is deliberately NOT here: the app treats it as the one
    sovereign switch for plaintext datastores and http upstreams in any environment. */ -}}
 {{- if $isProduction -}}
@@ -259,7 +258,7 @@ Input: root context ($).
       "IS_DEVELOPMENT" (index $cfg "IS_DEVELOPMENT" | default "") -}}
 {{- range $name, $value := $bypasses -}}
 {{- if and $value (ne ($value | toString) "false") -}}
-{{- fail (printf "\n\nERROR: %s must not be set under ENVIRONMENT_NAME=production.\nThe app lists it in productionForbiddenBypassEnvVars and refuses to boot with it truthy,\nso this deploy would CrashLoop. It also disables a safe default: a wildcard CORS origin,\na fail-OPEN money-path rate limiter, or the worker per-tick license validation.\n" $name) -}}
+{{- fail (printf "\n\nERROR: %s must not be set under ENVIRONMENT_NAME=production.\nThe app lists it in productionForbiddenBypassEnvVars and refuses to boot with it truthy,\nso this deploy would CrashLoop. It also disables a safe default: a wildcard CORS origin,\na fail-OPEN money-path rate limiter, or the production licence gateway.\n" $name) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -532,7 +531,7 @@ LOG_LEVEL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "LOG_LE
 INFRA_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "INFRA_CONNECT_TIMEOUT_SEC" "default" "30") | quote }}
 DB_METRICS_INTERVAL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "DB_METRICS_INTERVAL_SEC" "default" "15") | quote }}
 SYSTEMPLANE_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEMPLANE_ENABLED" "default" "false") | quote }}
-ORGANIZATION_IDS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ORGANIZATION_IDS" "default" "") | quote }}
+ORGANIZATION_IDS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ORGANIZATION_IDS" "default" "global") | quote }}
 {{- /* Postgres. Host is derived for the bundled subchart; the pool and timeout
    values are shared because both processes open their own pool to the same DB. */}}
 POSTGRES_HOST: {{ include "plugin-br-pix-jd.postgresHost" $root | quote }}

@@ -3,6 +3,18 @@
 ## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.2)
 
 Features:
+- Added a Helm upgrade guide for `system-facts` `v1.0.1`. (@guimoreirar)
+
+Fixes:
+- Updated `system-facts` to `@1.1.0`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.1...system-facts-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.2)
+
+Features:
 
 - Update `system-facts` to `1.1.0`. (@guimoreirar, @lerian-studio)
 

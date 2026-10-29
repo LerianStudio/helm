@@ -503,14 +503,16 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.replicaCount` | Number of replicas | `1` |
 | `caradhras.name` | Name of the caradhras component | `<release>-caradhras` |
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
-| `caradhras.image.tag` | Image tag used for deployment | `1.5.1` |
+| `caradhras.image.tag` | Image tag used for deployment | `1.8.5` |
 | `caradhras.service.port` | Service port | `8000` |
 | `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). `nodeSelector` / `affinity` / `tolerations` for caradhras still come from `auth.*` | `{}` |
 | `caradhras.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
-| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions | `1.5.1` |
+| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions | `1.8.5` |
+| `caradhras.migrations.skipRBACChain` | Render `MIGRATIONS_SKIP_RBAC_CHAIN=true` on the migrate init container and on the caradhras container: the migrate applies the schema chain and skips the `migrations-rbac` chain (Lerian product permissions/roles/groups under owner `lerian`), and the caradhras boot schema check skips the same chain. For installs whose permissions arrive only via RI manifests (e.g. cross). Needs caradhras and caradhras-migrations images that understand the variable; `false` renders nothing | `false` |
+| `caradhras.migrations.extraEnvVars` | Extra `NAME: value` env vars for the migrate init container only, rendered as name/value pairs. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused; names must be valid env var names (`[-._a-zA-Z][-._a-zA-Z0-9]*`); not for secrets | `{}` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
 | `caradhras.ui.image.repository` | Repository for the caradhras-ui container image | `ghcr.io/lerianstudio/caradhras-ui` |
 | `caradhras.ui.image.tag` | Image tag used for deployment | `1.4.0` |

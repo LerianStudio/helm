@@ -1186,7 +1186,7 @@ STREAMING_CLOSE_TIMEOUT_S: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $
 {{ include "lerian-common.streaming.env" (dict
       "context" $root "enabled" true "configmap" $cm
       "clientId" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "STREAMING_CLIENT_ID" "default" "plugin-br-pix-jd"))
-      "cloudeventsSource" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "STREAMING_CLOUDEVENTS_SOURCE" "default" "//lerian.midaz/plugin-br-pix-jd"))) }}
+      "cloudeventsSource" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "STREAMING_CLOUDEVENTS_SOURCE" "default" "plugin-br-pix-jd"))) }}
 {{- end }}
 {{- end }}
 

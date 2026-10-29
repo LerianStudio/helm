@@ -504,21 +504,26 @@ This chart includes the following dependencies for the default installation. All
       REDIS_PASSWORD: { your-host-pass }
   ```
 
-- **Important — fee debts:** the Ledger keeps open fee debts of `deferrable` fees in Valkey and cannot rebuild them from another store. A flush, an eviction, or a failover that loses writes loses open fee debts. By default, the bundled Valkey runs **without persistence** (`valkey.primary.persistence.enabled: false`) and with `--maxmemory-policy allkeys-lru`. Before you set `deferrable` on a fee, make Valkey persistent and set its `maxmemory-policy` to `noeviction` or to a `volatile-*` policy. With the bundled Valkey:
+- **Important: Valkey is a datastore, not a cache.** The Ledger keeps state in Valkey that no other store holds: balances not yet synced to PostgreSQL, idempotency keys, engine receipts and the open fee debts of `deferrable` fees. An eviction or a lost write loses that state: a retried request can post twice, and an open fee debt is a receivable gone. The bundled Valkey therefore:
+  - writes an append-only file (`--appendonly yes`, `--appendfsync everysec`) to its own volume, the claim `valkey-data-midaz-valkey-primary` (8Gi, ReadWriteOnce; `valkey.primary.persistence.size` and `valkey.primary.persistence.storageClass` change it). The claim is kept on `helm uninstall`, like the PostgreSQL and MongoDB volumes. A restart reloads the file; a crash loses at most about one second of writes.
+  - runs with `--maxmemory-policy noeviction`. A full Valkey refuses new writes and the Ledger answers those requests with an error; no key is ever evicted.
+  - uses the `Recreate` strategy, so an upgrade that changes the Valkey pod stops the old pod before the new one starts and two pods never write the same file. The Ledger answers errors until the new pod is ready.
+
+- **Sizing:** in the Lua engine (the default), each approval holds about 14 KB in Valkey for its 300-second retention, so `--maxmemory 640mb` sustains about 150 approvals per second. Size `--maxmemory` with the Valkey sizing rule in the Midaz engine guide (`docs/architecture/engine.md` in the Midaz repository), and raise the pod memory with it (`valkey.primary.resourcesPreset` or `valkey.primary.resources`), leaving room for the copy an AOF rewrite makes. `extraFlags` is a list: setting it replaces the chart default, so restate every flag you want to keep:
 
   ```yaml
   valkey:
     primary:
-      persistence:
-        enabled: true
       extraFlags:
-        - "--maxmemory 640mb"
+        - "--maxmemory { your-size }"
         - "--maxmemory-policy noeviction"
+        - "--appendonly yes"
+        - "--appendfsync everysec"
         - "--hz 100"
         - "--maxclients 10000"
   ```
 
-  `extraFlags` is a list: setting it replaces the chart default, so restate every flag you want to keep. With an external Valkey or Redis instance, configure the same persistence and `maxmemory-policy` on that instance.
+  With an external Valkey or Redis instance, configure the same persistence and `maxmemory-policy noeviction` on that instance. A `volatile-*` policy keeps fee debts, which carry no TTL, but still evicts idempotency keys.
 
 ### PostgreSQL
 

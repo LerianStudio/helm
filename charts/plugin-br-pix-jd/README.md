@@ -35,7 +35,6 @@ The chart **renders** without the values below, but the service does not work wi
 
 | Key | Format | Default | Without it |
 | :-- | :----- | :------ | :--------- |
-| `api.configmap.SYSTEMPLANE_ENABLED` | `"true"` | `"false"` | the plugin does not mount its `/system` routes, and every configuration call of the setup answers `404` |
 | `api.configmap.QRCODE_PUBLIC_BASE_URL` | a host, without a scheme | empty | with `ENVIRONMENT_NAME=production`, the service does not start |
 | `api.configmap.POSTGRES_SSLMODE` | `require` or `verify-full` | `disable` | with `ENVIRONMENT_NAME=production`, the service does not start: production refuses `disable` |
 | `api.configmap.PLUGIN_AUTH_ENABLED` and `api.configmap.PLUGIN_AUTH_HOST` | `"true"` and the Access Manager address | `"false"` and empty | with `ENVIRONMENT_NAME=production`, the service does not start: production refuses authentication off, and authentication on needs the host |
@@ -100,7 +99,6 @@ api:
     tag: "1.3.0"
   configmap:
     ENVIRONMENT_NAME: "production"
-    SYSTEMPLANE_ENABLED: "true"
     QRCODE_PUBLIC_BASE_URL: "pix.example.com"
     POSTGRES_HOST: "postgres.example.internal"
     POSTGRES_SSLMODE: "require"

@@ -530,7 +530,7 @@ DEPLOYMENT_MODE: {{ $deploymentMode | quote }}
 LOG_LEVEL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "LOG_LEVEL" "default" "info") | quote }}
 INFRA_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "INFRA_CONNECT_TIMEOUT_SEC" "default" "30") | quote }}
 DB_METRICS_INTERVAL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "DB_METRICS_INTERVAL_SEC" "default" "15") | quote }}
-SYSTEMPLANE_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEMPLANE_ENABLED" "default" "false") | quote }}
+SYSTEMPLANE_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEMPLANE_ENABLED" "default" "true") | quote }}
 ORGANIZATION_IDS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ORGANIZATION_IDS" "default" "global") | quote }}
 {{- /* Postgres. Host is derived for the bundled subchart; the pool and timeout
    values are shared because both processes open their own pool to the same DB. */}}
@@ -694,9 +694,11 @@ Input dict: root, configmap (the component's map).
 {{- $c := dict "configmap" $cm -}}
 {{- /* JD / JDPI. JD_ISPB IS NO LONGER READ BY THE APP, in either deployment mode.
    The plugin's own ISPB now comes from the systemplane key
-   tenancy/jd_integration_binding, field "ispb", and a missing or malformed value
-   FAILS THE BOOT with a named error instead of silently disabling the six MED
-   pollers. That boot gate is why the 8-character render guard that used to live
+   tenancy/jd_integration_binding, field "ispb", read per request: a missing or
+   malformed value fails each Pix flow that needs it with a coded error (PIX-0092,
+   PIX-0121) instead of silently disabling the six MED pollers, and with
+   SYSTEMPLANE_ENABLED=false every such flow answers 503 PIX-0051. That app-side
+   check is why the 8-character render guard that used to live
    here is gone: it existed only to compensate for a silent skip that no longer
    exists, and duplicating a check the app now makes for itself only gives an
    operator two places to be told the same thing — in one of which the message is

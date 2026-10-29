@@ -33,7 +33,7 @@ api:
     # RETIRED — do not set. The app's own institution ISPB is no longer read from
     # the environment in either deployment mode: it comes from the systemplane key
     # tenancy/jd_integration_binding, field "ispb", and a missing or malformed value
-    # fails the boot with a named error. A JD_ISPB left set here is passed through
+    # fails each Pix flow that needs it. A JD_ISPB left set here is passed through
     # and produces one startup WARN saying it was ignored.
 
     # RETIRED in app 1.0.0 — do not set: MIDAZ_ORGANIZATION_ID, MIDAZ_LEDGER_ID,

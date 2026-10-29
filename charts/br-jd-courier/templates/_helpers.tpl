@@ -90,7 +90,7 @@ what the chart cannot, and the chart catches what never reaches a boot.
 {{- if hasKey $.Values.config "ALLOW_AUTH_DISABLED_LOCAL_ONLY" -}}
 {{- fail "config.ALLOW_AUTH_DISABLED_LOCAL_ONLY is refused: authentication is off only on a developer's machine, never in a chart install" -}}
 {{- end -}}
-{{- $forbidden := list "COURIER_ROLES" "LICENSE_KEY" "DATABASE_URL" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "MULTI_TENANT_SERVICE_API_KEY" "JD_PASSWORD" "JD_SPI_CLIENT_SECRET" "JD_PRIVATE_KEY_PEM" -}}
+{{- $forbidden := list "COURIER_ROLES" "LICENSE_KEY" "DATABASE_URL" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "MULTI_TENANT_SERVICE_API_KEY" "JD_PASSWORD" "JD_SPI_CLIENT_SECRET" "JD_PRIVATE_KEY_PEM" "IDP_M2M_CLIENT_SECRET" "M2M_CLIENT_SECRET" -}}
 {{- range $key := $forbidden -}}
 {{- if hasKey $.Values.config $key -}}
 {{- if eq $key "COURIER_ROLES" -}}

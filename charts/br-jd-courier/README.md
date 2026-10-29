@@ -202,13 +202,7 @@ release fullname — which must exist before install and carry:
 | `DATABASE_URL` | the migration Job (`postgres://…?sslmode=…`) |
 | `JD_PASSWORD` | both SPB roles (`spb-consumer`, `spb-sender`), single-tenant only |
 | `JD_SPI_CLIENT_SECRET` | the admin with the [Pix transit](#pix-transit-admin), single-tenant only |
-| `IDP_M2M_CLIENT_SECRET` | every role, single-tenant, when the Courier declares its own Access Manager grants (`IDP_DECLARATION_ENABLED=true`; see the Courier README, "Access Manager permissions") |
-
-⚠️ **`IDP_M2M_CLIENT_SECRET` is not on the chart's refused-key list.** Set under
-`config`, it renders in clear text into the shared ConfigMap and the render still
-passes. Put it only in the Secret (`secrets.existingSecret`). Its non-secret
-companions (`IDP_DECLARATION_ENABLED`, `IDP_HOST`, `IDP_M2M_CLIENT_ID`) are not
-chart values and go under `config`.
+| `IDP_M2M_CLIENT_SECRET` | every role, single-tenant ([Access Manager](#access-manager)) |
 
 ```bash
 RELEASE_NAME=courier  # the name you pass to helm install
@@ -224,8 +218,8 @@ that lacks it stops the container at creation with `CreateContainerConfigError`,
 which names the missing key, rather than letting the pod boot and refuse its own
 licence.
 
-Putting any of these (except `IDP_M2M_CLIENT_SECRET`, above), or `COURIER_ROLES`,
-under `config` refuses the render, as do `REDIS_PASSWORD`,
+Putting any of these, or `COURIER_ROLES`, under `config` refuses the render, as
+do `M2M_CLIENT_SECRET` (lib-auth's deprecated alias), `REDIS_PASSWORD`,
 `MULTI_TENANT_REDIS_PASSWORD`, `MULTI_TENANT_SERVICE_API_KEY` and
 `POSTGRES_REPLICA_PASSWORD` (put those in the Secret too).
 Each engine's Pix credential is read from Secrets Manager at runtime. JD's

@@ -138,7 +138,7 @@ func TestCourierRefusesWhatTheContractForbids(t *testing.T) {
 	for _, key := range []string{"SOAP_TLS_CERT_FILE", "SOAP_TLS_KEY_FILE", "SOAP_TLS_TERMINATED_UPSTREAM", "PIX_TRANSIT_SERVER_ADDRESS", "PIX_TRANSIT_TLS_CERT_FILE", "PIX_TRANSIT_TLS_KEY_FILE", "PIX_TRANSIT_TLS_TERMINATED_UPSTREAM"} {
 		cases = append(cases, refusal{key + " as a value", "config." + key + " is refused", []string{"--set", "config." + key + "=x"}})
 	}
-	for _, key := range []string{"LICENSE_KEY", "DATABASE_URL", "POSTGRES_PASSWORD", "POSTGRES_REPLICA_PASSWORD", "REDIS_PASSWORD", "MULTI_TENANT_REDIS_PASSWORD", "MULTI_TENANT_SERVICE_API_KEY", "JD_PASSWORD", "JD_SPI_CLIENT_SECRET", "JD_PRIVATE_KEY_PEM"} {
+	for _, key := range []string{"LICENSE_KEY", "DATABASE_URL", "POSTGRES_PASSWORD", "POSTGRES_REPLICA_PASSWORD", "REDIS_PASSWORD", "MULTI_TENANT_REDIS_PASSWORD", "MULTI_TENANT_SERVICE_API_KEY", "JD_PASSWORD", "JD_SPI_CLIENT_SECRET", "JD_PRIVATE_KEY_PEM", "IDP_M2M_CLIENT_SECRET", "M2M_CLIENT_SECRET"} {
 		cases = append(cases, refusal{key + " as a value", "config." + key + " is refused", []string{"--set", "config." + key + "=sentinel"}})
 	}
 	// Every spelling strconv.ParseBool reads as true, and one it does not.

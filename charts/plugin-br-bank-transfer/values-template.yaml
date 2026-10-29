@@ -40,10 +40,11 @@ global:
   # at $(HOST_IP):4317.
   observability:
     enabled: false
-  # -- Env-wide auth (plugin-access-manager). Leave unset to keep the chart's
-  # own default endpoint; point it at your access-manager instance otherwise.
+  # -- Env-wide auth (plugin-access-manager). REQUIRED under production: an
+  # https:// endpoint (the app refuses http:// there); the chart's http://
+  # default works only outside production.
   auth:
-    host: ""   # <- e.g. "http://plugin-access-manager-auth:4000"
+    host: ""   # <- e.g. "https://plugin-access-manager-auth.example:4000"
 
 # --- Component config ------------------------------------------------------
 bankTransfer:
@@ -100,20 +101,20 @@ bankTransfer:
     # =================================================================
 
     # Midaz — REQUIRED
-    MIDAZ_BASE_URL: ""  # REQUIRED - Midaz API endpoint
-    MIDAZ_TRANSACTION_URL: ""  # REQUIRED - Midaz transaction endpoint
+    MIDAZ_BASE_URL: ""  # REQUIRED - Midaz API endpoint (https:// under production)
+    MIDAZ_TRANSACTION_URL: ""  # REQUIRED - Midaz transaction endpoint (https:// under production)
     # MIDAZ_FEE_MODE: "auto"  # Optional - auto | legacy | native (auto = native on Midaz >= 4.1)
     # MIDAZ_FEE_MODE_REFRESH: "5m"  # Optional - how often auto re-reads the ledger version
 
     # CRM — REQUIRED
-    CRM_BASE_URL: ""  # REQUIRED - CRM API endpoint
+    CRM_BASE_URL: ""  # REQUIRED - CRM API endpoint (https:// under production)
 
     # Fees — REQUIRED
-    FEES_BASE_URL: ""  # REQUIRED - Fees API endpoint
+    FEES_BASE_URL: ""  # REQUIRED - Fees API endpoint (https:// under production)
 
     # JD-SPB
     JD_SANDBOX_MODE: "false"
-    JD_BASE_URL: ""  # REQUIRED when JD_SANDBOX_MODE=false
+    JD_BASE_URL: ""  # REQUIRED when JD_SANDBOX_MODE=false (https:// under production)
     JD_LEGACY_CODE: ""  # REQUIRED when JD_SANDBOX_MODE=false (origin ISPB: systemplane tenancy.ispb_organization_bindings)
 
     # Licence

@@ -7,9 +7,9 @@ Lerian rail engines.
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD`, `DATABASE_URL` for the migration Job and, single-tenant, `IDP_M2M_CLIENT_SECRET`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
+- Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD`, `DATABASE_URL` for the migration Job and, single-tenant, `IDP_M2M_CLIENT_SECRET` and `JD_PASSWORD`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
 - Dependency notes: no subcharts. PostgreSQL, the Access Manager and the licence gateway are external services.
-- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production` (required in every environment), `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, `AWS_REGION` off EKS, and single-tenant `IDP_DECLARATION_ENABLED=true`, `IDP_HOST` and `IDP_M2M_CLIENT_ID` ([Access Manager](#access-manager)); `DEPLOYMENT_MODE=saas` on Lerian Cloud. JD needs a partner in the client's Access Manager and an HTTPS address for the pix-ingress ([Pix ingress (JD)](#pix-ingress-jd)). The spb-sender needs one SOAP TLS shape under `roles.spbSender` (`ingress`, `soapTls.existingSecret` or `soapTls.terminatedUpstream`). On EKS, an IAM role for Secrets Manager through `serviceAccount`. Multi-tenant installs must set `migrations.enabled=false`.
+- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`; under `config`: `ENVIRONMENT_NAME=production` ([Environment](#environment)), `ORGANIZATION_IDS`, `POSTGRES_*` (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, `AWS_REGION` ([AWS identity](#aws-identity)); single-tenant, `IDP_DECLARATION_ENABLED`, `IDP_HOST`, `IDP_M2M_CLIENT_ID` ([Access Manager](#access-manager)) and `JD_BASE_URL`, `JD_LEGACY_CODE`, `JD_USER_CODE` for the SPB roles; `roles.spbSender` TLS ([SOAP TLS](#soap-tls-spb-sender)); JD's partner and address ([Pix ingress (JD)](#pix-ingress-jd)); `serviceAccount` ([AWS identity](#aws-identity)). Multi-tenant installs must set `migrations.enabled=false`.
 - Source/license: [LerianStudio/br-jd-courier](https://github.com/LerianStudio/br-jd-courier). The Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
 ## Install
@@ -107,8 +107,9 @@ client admin creates the JD partner in the Console with one grant, `jd-courier`
 gets `401`. The partner's opt-in reaches the Access Manager with the keys above
 (with `IDP_DECLARATION_ENABLED` off, only when `IDP_HOST` and the M2M pair are
 set). It needs Access Manager 3.14.0 and Caradhras 1.9.0-beta.1 or later: below
-that the client admin cannot create the partner. Where the Access Manager chart
-pins an older Caradhras, override `caradhras.image.tag` and
+that the client admin cannot create the partner. Where
+`charts/plugin-access-manager` pins older ones, override `identity.image.tag` and
+`auth.image.tag` (3.14.0 or later), and `caradhras.image.tag` and
 `caradhras.migrations.image.tag` together. Courier 1.2.0 removed
 `PIX_VENDOR_SUBJECTS`; drop it from `config`, where nothing reads it.
 
@@ -201,8 +202,8 @@ must allow both.
 
 ## AWS identity
 
-The Courier reads AWS Secrets Manager: each Pix engine's `credentialRef`, and
-in multi-tenant each tenant's JD bundle. Give it an IAM role through
+The Courier reads AWS Secrets Manager: each engine's `credentialRef`, and in
+multi-tenant each tenant's JD bundles. Give it an IAM role through
 `serviceAccount` (off by default; every role then runs as the namespace's
 `default`):
 
@@ -221,10 +222,10 @@ Kubernetes API, and IRSA and Pod Identity project their own token regardless.
 
 The Courier reads the Secrets Manager region from `AWS_REGION` alone, defaults it
 to `us-east-1`, and pins its AWS client to it, ahead of `AWS_DEFAULT_REGION` and
-instance metadata. With the wrong region every Pix engine credential lookup fails,
-and with it every Pix delivery to the engines. On EKS, IRSA and Pod Identity inject
-the cluster's region into the container's `env`, which wins over `config`: keep the
-engine credentials in the cluster's region. Elsewhere, set `config.AWS_REGION`.
+instance metadata. With the wrong region every engine credential lookup fails (Pix
+deliveries and the cross-core relay) and, multi-tenant, every JD bundle. On EKS,
+IRSA and Pod Identity inject the cluster's region into the container's `env`, which
+wins over `config`: keep the engine credentials in the cluster's region. Elsewhere, set `config.AWS_REGION`.
 
 ## The single-writer guard
 
@@ -263,7 +264,9 @@ release fullname — which must exist before install and carry:
 
 ```bash
 RELEASE_NAME=courier  # the name you pass to helm install
-kubectl create secret generic "${RELEASE_NAME}-br-jd-courier" --from-literal=LICENSE_KEY=… --from-literal=POSTGRES_PASSWORD=… --from-literal=DATABASE_URL=…
+kubectl create secret generic "${RELEASE_NAME}-br-jd-courier" --from-literal=LICENSE_KEY=… \
+  --from-literal=POSTGRES_PASSWORD=… --from-literal=DATABASE_URL=… \
+  --from-literal=JD_PASSWORD=… --from-literal=IDP_M2M_CLIENT_SECRET=…   # single-tenant
 ```
 
 The name follows `secrets.existingSecret` when set; otherwise it is the release
@@ -311,8 +314,15 @@ column and the bypass table). Until the rollout replaces them, the old
 spb-sender, pix-ingress and admin pods fail every engine lookup: engine SOAP
 sends are refused and deliveries fail. The old spb-consumer stops reading from JD
 until it is replaced; messages wait in JD's queue. Upgrade an install with an
-active channel in a quiet window. With inbound Pix active, create JD's partner
-([Pix ingress (JD)](#pix-ingress-jd)) before upgrading.
+active channel in a quiet window.
+
+From 1.1.x, JD's current credential stops working at the rollout: 1.2.0 admits
+JD only under a partner ([Pix ingress (JD)](#pix-ingress-jd)), and the Access
+Manager accepts that partner only after a 1.2.0 pod publishes the opt-in. In
+order: upgrade with the [Access Manager](#access-manager) keys set; wait for
+`permission_declaration` to read `up`; the client admin creates JD's partner and
+issues JD's application; JD switches to it. Inbound Pix answers `401` to JD from
+the rollout until then, so schedule the switch with JD.
 
 ⚠️ **Multi-tenant installs are not covered.** Nothing on the platform applies
 per-tenant migrations on deploy. The chart refuses `migrations.enabled=true`

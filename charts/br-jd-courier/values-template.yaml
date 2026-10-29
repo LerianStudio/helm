@@ -20,7 +20,7 @@ secrets:
   # The Secret every role and the migration Job read. It must exist before
   # install; the chart never renders one. Empty = the release fullname.
   # Keys: LICENSE_KEY, POSTGRES_PASSWORD, DATABASE_URL for the migration Job and,
-  # single-tenant, IDP_M2M_CLIENT_SECRET.
+  # single-tenant, IDP_M2M_CLIENT_SECRET and JD_PASSWORD.
   existingSecret: ""
 
 # Non-secret environment, one ConfigMap shared by every role. Secret keys and
@@ -46,9 +46,13 @@ config:
   # The Access Manager identity address (port 4001), not PLUGIN_AUTH_HOST.
   IDP_HOST: ""
   IDP_M2M_CLIENT_ID: ""
-  # The Secrets Manager region of the Pix engine credentials (default us-east-1);
-  # on EKS, IRSA and Pod Identity inject the cluster's region, which wins.
+  # The Secrets Manager region of the engine credentials (default us-east-1).
   AWS_REGION: ""
+  # Single-tenant SPB roles: JD's SPB address (https in production) and codes;
+  # JD_PASSWORD goes in the Secret. JD_SOAP_PATH defaults to /soap.
+  JD_BASE_URL: ""
+  JD_LEGACY_CODE: ""
+  JD_USER_CODE: ""
 
 # The spb-sender's SOAP listener needs TLS in production (it refuses to boot
 # otherwise). Set at least one; Ingress plus existingSecret re-encrypts to the pod.

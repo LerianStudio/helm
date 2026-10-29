@@ -32,11 +32,8 @@ serviceAccount:
 # takes Pix deliveries is on its registry row, not here.
 # Authentication is on, and every role then needs PLUGIN_AUTH_HOST (the Access
 # Manager's address). ALLOW_AUTH_DISABLED_LOCAL_ONLY is refused: a chart install
-# is never a developer's machine. Single-tenant, the Courier publishes its grants
-# and JD's partner opt-in at boot with IDP_DECLARATION_ENABLED, IDP_HOST and
-# IDP_M2M_CLIENT_ID here and IDP_M2M_CLIENT_SECRET in the Secret; without them
-# every caller is refused while the pods read Ready (README "Access Manager").
-# AWS_REGION is the Secrets Manager region off EKS (README "AWS identity").
+# is never a developer's machine. Single-tenant also needs the IDP_* keys
+# (README "Access Manager"); AWS_REGION: README "AWS identity".
 # ENVIRONMENT_NAME is required; README "Environment".
 # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT follows ENVIRONMENT_NAME unless set here.
 config:
@@ -48,8 +45,8 @@ secrets:
   # Name of the Secret loaded into every role (envFrom, and LICENSE_KEY by name
   # through secretKeyRef); defaults to the release fullname. It must exist
   # before install and carries LICENSE_KEY, POSTGRES_PASSWORD, DATABASE_URL for
-  # the migration Job and, single-tenant, IDP_M2M_CLIENT_SECRET. The chart never
-  # renders a Secret or a secret value.
+  # the migration Job and, single-tenant, IDP_M2M_CLIENT_SECRET and JD_PASSWORD.
+  # The chart never renders a Secret or a secret value.
   existingSecret: ""
 telemetry:
   # Where every role sends OTLP (metrics and traces): by default the collector

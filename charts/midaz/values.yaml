@@ -986,7 +986,7 @@ valkey:
       type: Recreate
     resourcesPreset: "medium"
     persistence:
-      # Keeps the append-only file the subchart configuration turns on (appendonly yes, fsync every second).
+      # Keeps the append-only file the subchart configuration turns on (appendonly yes).
       enabled: true
       # The data volume outlives the release, like the PostgreSQL and MongoDB ones.
       annotations:
@@ -997,6 +997,8 @@ valkey:
       - "--maxmemory 640mb"
       # Full means writes are refused and the ledger answers an error; never evict.
       - "--maxmemory-policy noeviction"
+      # Each write reaches the disk before Valkey answers, so a host crash loses no acknowledged write.
+      - "--appendfsync always"
       - "--hz 100" # Improves responsiveness of internal events and increases the frequency of internal tasks such as memory cleanup, key expiration checks, etc.
       - "--maxclients 10000" # Supports a large number of simultaneous connections
 postgresql:

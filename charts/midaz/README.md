@@ -505,7 +505,8 @@ This chart includes the following dependencies for the default installation. All
   ```
 
 - **Important: Valkey is a datastore, not a cache.** The Ledger keeps state in Valkey that no other store holds: balances not yet synced to PostgreSQL, idempotency keys, engine receipts, account-block exceptions and the open fee debts of `deferrable` fees. An eviction or a lost write loses that state: a retried request can post twice, and an open fee debt is a receivable gone. The bundled Valkey therefore:
-  - keeps its append-only file (`appendonly yes` from the subchart configuration, fsync every second) on its own volume, the claim `valkey-data-midaz-valkey-primary` (8Gi, ReadWriteOnce; `valkey.primary.persistence.size` and `valkey.primary.persistence.storageClass` change it). The claim is kept on `helm uninstall`, like the PostgreSQL and MongoDB volumes. Under Argo CD it survives deleting the application, but a sync with pruning deletes it once it leaves the rendered manifests (Valkey or its persistence turned off, `kind` changed, a sync to an older chart). To keep it then too, add `argocd.argoproj.io/sync-options: Prune=false` to `valkey.primary.persistence.annotations` (default `kind: Deployment`; Helm merges maps, so the chart's `helm.sh/resource-policy: keep` stays). A restart reloads the file; a crash loses at most about one second of writes.
+  - keeps its append-only file (`appendonly yes` from the subchart configuration) on its own volume, the claim `valkey-data-midaz-valkey-primary` (8Gi, ReadWriteOnce; `valkey.primary.persistence.size` and `valkey.primary.persistence.storageClass` change it). The claim is kept on `helm uninstall`, like the PostgreSQL and MongoDB volumes. Under Argo CD it survives deleting the application, but a sync with pruning deletes it once it leaves the rendered manifests (Valkey or its persistence turned off, `kind` changed, a sync to an older chart). To keep it then too, add `argocd.argoproj.io/sync-options: Prune=false` to `valkey.primary.persistence.annotations` (default `kind: Deployment`; Helm merges maps, so the chart's `helm.sh/resource-policy: keep` stays). A restart reloads the file.
+  - runs with `--appendfsync always`: Valkey writes each change to disk before it answers, so a host crash loses no write the Ledger saw succeed. Under `everysec`, the Valkey default, a host crash loses the last second of writes, which can fork a balance from its operations, drop a fee debt or let a retry post twice. Every Ledger request that writes waits for the disk, so a slow volume shows in its latency.
   - runs with `--maxmemory-policy noeviction`. A full Valkey refuses new writes and the Ledger answers those requests with an error; no key is ever evicted.
   - uses the `Recreate` strategy, so an upgrade that changes the Valkey pod stops the old pod before the new one starts and two pods never write the same file. The Ledger answers errors until the new pod is ready. With `valkey.primary.kind: StatefulSet`, set `valkey.primary.updateStrategy.type: RollingUpdate`: a StatefulSet refuses `Recreate`.
   - runs an image pinned by digest, so the Valkey version that opens the volume changes only on a chart upgrade.
@@ -518,6 +519,7 @@ This chart includes the following dependencies for the default installation. All
       extraFlags:
         - "--maxmemory { your-size }"
         - "--maxmemory-policy noeviction"
+        - "--appendfsync always"
         - "--hz 100"
         - "--maxclients 10000"
   ```
@@ -530,7 +532,7 @@ This chart includes the following dependencies for the default installation. All
   kubectl -n midaz delete statefulset midaz-valkey-primary --cascade=orphan
   ```
 
-  With an external Valkey or Redis instance, configure the same persistence and `maxmemory-policy noeviction` on that instance. A `volatile-*` policy keeps fee debts, which carry no TTL, but still evicts idempotency keys.
+  With an external Valkey or Redis instance, configure the same persistence, `appendfsync always` included, and `maxmemory-policy noeviction` on that instance. A `volatile-*` policy keeps fee debts, which carry no TTL, but still evicts idempotency keys.
 
 ### PostgreSQL
 

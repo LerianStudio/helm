@@ -293,6 +293,15 @@ func TestCourierValuesMoveWhatTheyName(t *testing.T) {
 		}
 	}
 
+	// The migration hook schedules where the roles do, or a tainted-only cluster never runs it.
+	scheduled := courierManifests(t, "--set", "nodeSelector.pool=courier", "--set", "tolerations[0].key=dedicated", "--set", "affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[0].weight=1")
+	for _, p := range append(ofKind(scheduled, "Deployment"), ofKind(scheduled, "Job")...) {
+		spec := dig(p, "spec", "template", "spec")
+		if dig(spec, "nodeSelector", "pool") != "courier" || dig(spec, "tolerations") == nil || dig(spec, "affinity", "nodeAffinity") == nil {
+			t.Errorf("%s: nodeSelector, tolerations and affinity must reach every pod: %v", nestedString(p, "metadata", "name"), spec)
+		}
+	}
+
 	cm := ofKind(courierManifests(t, "--set", "config.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=prod-eu", "--set", "config.DEPLOYMENT_MODE=saas"), "ConfigMap")
 	if len(cm) != 1 || dig(cm[0], "data", "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT") != "prod-eu" || dig(cm[0], "data", "DEPLOYMENT_MODE") != "saas" {
 		t.Errorf("config must override the derived OTEL environment and DEPLOYMENT_MODE: %v", cm)

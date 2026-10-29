@@ -9,6 +9,15 @@ Fixes:
 
 ---
 
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.1)
+
+Fixes:
+- Bumped Caradhras to `1.8.5` to address compatibility issues. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.0...plugin-access-manager-v10.1.1)
+
+---
+
 ## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.0)
 
 Features:

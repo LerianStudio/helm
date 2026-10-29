@@ -3,9 +3,7 @@
 #
 # TWO COMPONENTS. The app publishes an image per entry point —
 # plugin-br-pix-jd (cmd/app, ENTRYPOINT /service) and plugin-br-pix-jd-worker
-# (cmd/worker, ENTRYPOINT /worker). The older single-image shape, where one image
-# carries both binaries and the chart overrides the command to reach /worker, is
-# still supported: leave worker.image.repository unset.
+# (cmd/worker, ENTRYPOINT /worker). The api image carries no /worker binary.
 #
 # The component key is `api` because the plugin's release pipeline writes the
 # promoted tag there: gitops_yaml_key_mappings '{"plugin-br-pix-jd.tag": ".api.image.tag"}'.
@@ -247,8 +245,10 @@ api:
   # Chart defaults when a key is absent everywhere: LOG_LEVEL=info,
   # SERVER_ADDRESS=:8080, TLS_TERMINATED_UPSTREAM=true, POSTGRES_SSLMODE=disable,
   # POSTGRES_USER/POSTGRES_NAME=plugin-br-pix-jd, MIGRATIONS_PATH=/migrations,
-  # SYSTEMPLANE_ENABLED=false, SWAGGER_ENABLED=false, ENVIRONMENT_NAME="",
-  # DEPLOYMENT_MODE="".
+  # SYSTEMPLANE_ENABLED=true (false with the bundled Postgres, see NOTES),
+  # SWAGGER_ENABLED=false, ENVIRONMENT_NAME="", DEPLOYMENT_MODE="".
+  # SYSTEMPLANE_ENABLED=false fails every Pix flow closed: the own
+  # ISPB, the Midaz scope and the transaction routes live only in systemplane.
   # REDIS_HOST has NO default and is required — the rate limiter is fail-closed.
   #
   # JD_PAYMENT_SIGNING_ALGORITHM picks the payment-order signature:
@@ -261,6 +261,10 @@ api:
   # ENVIRONMENT_NAME: "saas" arms TLS enforcement over Postgres, Redis and — in
   # multi-tenant — the MT Redis and MT URL, failing the boot when any of them is
   # plaintext. Empty is read by the app as "local" (enforcement off).
+  #
+  # MIDAZ_URL_TRACER (Tracer base URL; empty screens no inbound credit) and
+  # APPLICATION_NAME (license identity; empty is plugin-br-pix-jd) reach the api and
+  # the worker alike: set them once here, never per component.
   #
   # See README.md for the full table.
   configmap: {}
@@ -276,7 +280,7 @@ api:
   # credential lives in exactly one place. Set it here only for an external
   # Postgres that has no existingSecret of its own.
   secrets:
-    # Required. lib-license-go validates on boot and on every worker tick.
+    # Required, api and worker, every mode: the render fails without it.
     LICENSE_KEY: ""
     # Optional — a Redis with no auth is a legitimate in-cluster setup.
     REDIS_PASSWORD: ""
@@ -301,32 +305,16 @@ api:
     name: ""
 worker:
   # -- Disabled by default: the worker is opt-in, not every install runs jobs.
-  #
-  # The app publishes a DEDICATED worker image, ghcr.io/lerianstudio/plugin-br-pix-jd-worker,
-  # built from cmd/worker/Dockerfile with its own ENTRYPOINT ["/worker"]. Set
-  # worker.image.repository to it and the chart stops overriding the command.
-  #
-  # Leaving worker.image.repository unset keeps the older one-image shape, where the
-  # api image carries both binaries and the chart overrides the entrypoint. Both work.
-  #
-  # TAGS MAY DIVERGE, and the chart does not police it. The release pipeline builds
-  # only the component that changed, so an api-only release legitimately leaves the
-  # worker a tag behind. An earlier version of this chart failed the render on any
-  # mismatch; that gate blocked the pipeline's normal output and was removed.
-  #
-  # What it was trying to protect — the two processes sharing one database and one
-  # schema — is owned by the release pipeline, not by this values file.
   enabled: false
   # -- Replicas. The jobs take cross-replica Postgres advisory locks, so >1 is safe,
   # but there is nothing to gain: each tick is single-flight per job.
   replicaCount: 1
   revisionHistoryLimit: 5
   image:
-    # -- Leave repository/tag EMPTY to inherit the api's. Setting either to a
-    # different value fails the render: api and worker are two entry points of one
-    # build and must never come from different commits.
-    repository: ""
-    tag: ""
+    # -- The dedicated worker image (cmd/worker, ENTRYPOINT /worker). Keep the tag
+    # equal to api.image.tag; empty falls back to .Chart.AppVersion.
+    repository: ghcr.io/lerianstudio/plugin-br-pix-jd-worker
+    tag: "1.3.0"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   resources:

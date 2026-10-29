@@ -19,7 +19,8 @@ serviceAccount:
 secrets:
   # The Secret every role and the migration Job read. It must exist before
   # install; the chart never renders one. Empty = the release fullname.
-  # Keys: LICENSE_KEY, POSTGRES_PASSWORD, and DATABASE_URL for the migration Job.
+  # Keys: LICENSE_KEY, POSTGRES_PASSWORD, DATABASE_URL for the migration Job and,
+  # single-tenant, IDP_M2M_CLIENT_SECRET.
   existingSecret: ""
 
 # Non-secret environment, one ConfigMap shared by every role. Secret keys and
@@ -38,9 +39,15 @@ config:
   POSTGRES_SSLMODE: ""
   # The Access Manager's address; every role needs it with authentication on.
   PLUGIN_AUTH_HOST: ""
-  # Single-tenant pix-ingress only: the Pix vendor's credential subjects. In
-  # multi-tenant set SYSTEMPLANE_ENABLED=true instead.
-  PIX_VENDOR_SUBJECTS: ""
+  # Single-tenant: the Courier publishes its Access Manager grants and JD's
+  # partner opt-in at boot; IDP_M2M_CLIENT_SECRET goes in the Secret. README
+  # "Access Manager".
+  IDP_DECLARATION_ENABLED: "true"
+  # The Access Manager identity address (port 4001), not PLUGIN_AUTH_HOST.
+  IDP_HOST: ""
+  IDP_M2M_CLIENT_ID: ""
+  # The Secrets Manager region of the Pix engine credentials (default us-east-1).
+  AWS_REGION: ""
 
 # The spb-sender's SOAP listener needs TLS in production (it refuses to boot
 # otherwise). Set at least one; Ingress plus existingSecret re-encrypts to the pod.

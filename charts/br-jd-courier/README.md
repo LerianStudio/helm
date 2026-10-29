@@ -7,9 +7,9 @@ Lerian rail engines.
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD` and, for the migration Job, `DATABASE_URL`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
+- Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD`, `DATABASE_URL` for the migration Job and, single-tenant, `IDP_M2M_CLIENT_SECRET`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
 - Dependency notes: no subcharts. PostgreSQL, the Access Manager and the licence gateway are external services.
-- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production` (required in every environment), `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, and `PIX_VENDOR_SUBJECTS` (single-tenant) or `SYSTEMPLANE_ENABLED=true` (multi-tenant); `DEPLOYMENT_MODE=saas` on Lerian Cloud. The spb-sender needs one SOAP TLS shape under `roles.spbSender` (`ingress`, `soapTls.existingSecret` or `soapTls.terminatedUpstream`). On EKS, an IAM role for Secrets Manager through `serviceAccount`. Multi-tenant installs must set `migrations.enabled=false`.
+- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`, and under `config`: `ENVIRONMENT_NAME=production` (required in every environment), `ORGANIZATION_IDS`, the `POSTGRES_*` connection keys (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, `AWS_REGION`, and single-tenant `IDP_DECLARATION_ENABLED=true`, `IDP_HOST` and `IDP_M2M_CLIENT_ID` ([Access Manager](#access-manager)); `DEPLOYMENT_MODE=saas` on Lerian Cloud. JD needs a partner in the client's Access Manager and an HTTPS address for the pix-ingress ([Pix ingress (JD)](#pix-ingress-jd)). The spb-sender needs one SOAP TLS shape under `roles.spbSender` (`ingress`, `soapTls.existingSecret` or `soapTls.terminatedUpstream`). On EKS, an IAM role for Secrets Manager through `serviceAccount`. Multi-tenant installs must set `migrations.enabled=false`.
 - Source/license: [LerianStudio/br-jd-courier](https://github.com/LerianStudio/br-jd-courier). The Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
 ## Install
@@ -68,9 +68,56 @@ only when the spb-sender pod starts and crash-loops. Treat a clean render as
 no evidence that the SOAP TLS shape is present: check the values against the
 [SOAP TLS](#soap-tls-spb-sender) table before you install.
 
+Every Courier boolean under `config` is the exact word `true` or `false`: `1`,
+`t` or `TRUE` refuses the boot, and every role crash-loops.
+
 `config.DEPLOYMENT_MODE` defaults to `byoc` (`local`, `byoc`, `saas`). Only
 `saas` makes the service refuse a datastore connection without TLS; set it on
 Lerian Cloud.
+
+## Access Manager
+
+Single-tenant (BYOC), the Courier publishes its own grants to the client's Access
+Manager at boot, and nothing else does. Without them a first install refuses every
+operator (`403`) and every engine and JD (`401`) while every pod reads Ready:
+`/readyz` answers `200` with `permission_declaration` `degraded`. A green rollout
+proves nothing here; check that the entry reads `up`.
+
+| Key | Where | Value |
+|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `config` | `"true"` |
+| `IDP_HOST` | `config` | the Access Manager identity address, e.g. `http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001` |
+| `IDP_M2M_CLIENT_ID` | `config` | the Courier's M2M application |
+| `IDP_M2M_CLIENT_SECRET` | the Secret | that application's secret; refused under `config` |
+
+Nothing provisions that application: the install's admin issues it once, as a
+person, with `POST /v1/applications/service-credentials`, `source` `jd-courier` and
+`target` `plugin-identity` (Access Manager 3.13.0 or later). Only the create answer
+shows the `clientSecret`. With the flag on, a missing key refuses the boot. A
+refused credential or manifest logs an ERROR and leaves the entry `degraded`; after
+the fix, `kubectl rollout restart` the Deployments. Multi-tenant ignores all four
+keys: the RI catalog and the tenant manager's reconcile carry the grants.
+
+## Pix ingress (JD)
+
+JD reaches the pix-ingress only as the client's partner in the Access Manager. The
+client admin creates the JD partner in the Console with one grant, `jd-courier`
+`pix-ingress` `post`, and issues JD's application under it; any other credential
+gets `401`. The partner's opt-in reaches the Access Manager with the keys above
+(with `IDP_DECLARATION_ENABLED` off, only when `IDP_HOST` and the M2M pair are
+set). It needs Access Manager 3.14.0 and Caradhras 1.9.0-beta.1 or later: below
+that the client admin cannot create the partner. Where the Access Manager chart
+pins an older Caradhras, override `caradhras.image.tag` and
+`auth.backend.migrations.image.tag` together. Courier 1.2.0 removed
+`PIX_VENDOR_SUBJECTS`; drop it from `config`, where nothing reads it.
+
+The pix-ingress Service is ClusterIP on `ports.http`, and the chart renders no
+Ingress for it. JD calls an HTTPS address the client exposes (its own Ingress or
+load balancer). Route only JD's paths, `/v1/webhooks/` and `/v1/pix-automatico/`:
+the same port answers the probes and `/version`. Health-check `/health` on
+`ports.http`. Behind a proxy, set `config.TRUSTED_PROXIES` to its CIDRs, innermost
+last: lib-auth takes the caller's address from that list alone, a tenant with an
+IP allowlist refuses a caller without one, and a malformed list refuses the boot.
 
 ## SOAP TLS (spb-sender)
 
@@ -120,14 +167,8 @@ JD's JDPI address, and the admin carries each call to JD on the Courier's own
 JDPI token. Off by default. `roles.admin.pixTransit.enabled=true` sets `PIX_TRANSIT_SERVER_ADDRESS` from `ports.pixTransit` (8082) and adds that
 port, named `pix-transit`, to the admin container and the admin Service. It
 needs Courier image 1.2.0 or later (`jd-courier.image.tag`): an older admin
-binds nothing there, and outbound Pix fails without an error. The Courier's
-1.1.0 source has no transit listener; it first appears in the 1.2.0 release
-line. The chart default tag (and `appVersion`) is still `1.1.0`, and
-the chart does not check the tag against the transit: `helm template` renders
-the transit with a `1.1.0` image without complaint. Set `jd-courier.image.tag`
-to a 1.2.0 or later image yourself whenever you enable it. The examples in
-`docs/UPGRADE-2.1.md` show `tag: "1.1.0"` next to
-`roles.admin.pixTransit.enabled: true`; replace that tag with 1.2.0 or later.
+binds nothing there, and outbound Pix fails without an error. The chart does not
+check the tag against the transit.
 
 In-cluster engines call `<release>-br-jd-courier-admin:8082`. An engine outside
 the cluster (the institution's legacy core) needs an exposure this chart does not
@@ -177,6 +218,11 @@ the migration Job does not.
 Pods keep `automountServiceAccountToken: false`: the Courier never calls the
 Kubernetes API, and IRSA and Pod Identity project their own token regardless.
 
+Set `config.AWS_REGION` to the Secrets Manager region. The Courier defaults it to
+`us-east-1` and pins its AWS client to it, ahead of `AWS_DEFAULT_REGION` and
+instance metadata. With the wrong region every Pix engine credential lookup
+fails, and with it every Pix delivery to the engines.
+
 ## The single-writer guard
 
 `spb-consumer` drains the vendor queue with a **destructive** read. A second
@@ -188,6 +234,14 @@ The chart cannot read the rail registry, so its list of single-writer roles
 duplicates a fact the rail descriptor owns. The boot guard (layer 1) and the
 epoch fence (layer 2) are the other two layers; this one catches what never
 reaches a boot.
+
+All three cover the Courier's own replicas only. Any other reader of the same JD
+queue (same ISPB and legacy code) erases messages the Courier would have read:
+the legacy core's own receive, an engine, or another environment sharing the
+credentials. Installing is safe: the drain reads only tenants whose
+SPB channel is `ACTIVE`. Activate the SPB channel only after the client confirms
+in writing that every other reader of that queue has stopped (the Courier's
+`docs/runbooks/legacy-core-cutover.md`, "One reader").
 
 ## Secrets
 
@@ -245,13 +299,21 @@ the licence is fixed.
 ## Migrations
 
 A `pre-install` / `pre-upgrade` hook Job runs `migrate up` from the same image
-against **one** database.
+against **one** database. It schedules with the roles' `nodeSelector`,
+`tolerations` and `affinity`.
+
+**From Courier 1.1.x:** the Job migrates before the rollout, and the 1.2.0
+migrations drop schema the running 1.1.x pods still read (the engine credential
+column and the bypass table). Until the rollout replaces them, the old
+spb-sender, pix-ingress and admin pods fail every engine lookup: engine SOAP
+sends are refused and deliveries fail. The spb-consumer persists what it reads
+before routing, so nothing it read is lost. Upgrade an install with an active
+channel in a quiet window.
 
 ⚠️ **Multi-tenant installs are not covered.** Nothing on the platform applies
 per-tenant migrations on deploy. The chart refuses `migrations.enabled=true`
-together with `config.MULTI_TENANT_ENABLED` set to any spelling the service reads
-as true (`1`, `t`, `true`, in any case); per-tenant migrations are the tenant
-manager's own operation.
+together with `config.MULTI_TENANT_ENABLED=true`; per-tenant migrations are the
+tenant manager's own operation.
 
 The chart only sees `config`. A `MULTI_TENANT_ENABLED` placed in the Secret
 (`secrets.existingSecret`) is out of its sight: the render passes and the Job
@@ -279,7 +341,8 @@ indistinguishable from an idle one.
 - **Co-locating `admin` with `spb-sender`** (a BYOC knob to
   save a pod at the cost of one NetworkPolicy covering operator and engine
   traffic) is not a value yet. Disable `roles.admin` only once it exists.
-- No Ingress beyond the spb-sender's SOAP one, no NetworkPolicy, HPA or
+- No Ingress beyond the spb-sender's SOAP one ([Pix ingress (JD)](#pix-ingress-jd)
+  covers the pix-ingress's exposure), no NetworkPolicy, HPA or
   PodDisruptionBudget. `spb-consumer` must never get an HPA.
 
 ## Checks

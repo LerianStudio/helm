@@ -241,29 +241,27 @@ The Secret referenced by `secrets.existingSecret` may now contain:
 
 | Key | Required By | Description |
 |-----|-------------|-------------|
-| `JD_SPI_CLIENT_SECRET` | SPB roles, Pix transit (if used) | JD SPI client secret for authentication |
+| `JD_SPI_CLIENT_SECRET` | the admin with the Pix transit, single-tenant (required) | JD SPI client secret for authentication |
 
-> **Note:** This key is optional. Add it only if your deployment uses JD SPI authentication.
+> **Note:** A single-tenant admin serving the transit refuses to boot without `JD_SPI_BASE_URL`, `JD_SPI_CLIENT_ID` and this key. Multi-tenant reads each tenant's `jd-spi` bundle from Secrets Manager instead.
 
 ### Example values.yaml with Pix transit enabled
 
 **Option 1: TLS terminated by the pod**
 
 ```yaml
-jd-courier:
-  image:
-    # Pix transit needs Courier 1.2.0 or later (see the chart README): replace this tag
-    # with the 1.2.0+ release you run. 1.1.0 has no transit listener.
-    tag: "1.1.0"
-
+# The transit needs Courier 1.2.0 or later (jd-courier.image.tag).
 secrets:
+  # Carries JD_SPI_CLIENT_SECRET (single-tenant).
   existingSecret: "br-jd-courier-secrets"
 
 config:
   ENVIRONMENT_NAME: "production"
   PLUGIN_AUTH_ENABLED: "true"
   PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
-  JD_BASE_URL: "https://jd-consultores.example.com"
+  # The SPI cabin the transit dials (single-tenant).
+  JD_SPI_BASE_URL: "https://jd-spi.example.com"
+  JD_SPI_CLIENT_ID: "<client id>"
   JD_ALLOW_PRIVATE_NETWORK: "false"
 
 ports:
@@ -282,20 +280,18 @@ roles:
 **Option 2: TLS terminated upstream**
 
 ```yaml
-jd-courier:
-  image:
-    # Pix transit needs Courier 1.2.0 or later (see the chart README): replace this tag
-    # with the 1.2.0+ release you run. 1.1.0 has no transit listener.
-    tag: "1.1.0"
-
+# The transit needs Courier 1.2.0 or later (jd-courier.image.tag).
 secrets:
+  # Carries JD_SPI_CLIENT_SECRET (single-tenant).
   existingSecret: "br-jd-courier-secrets"
 
 config:
   ENVIRONMENT_NAME: "production"
   PLUGIN_AUTH_ENABLED: "true"
   PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
-  JD_BASE_URL: "https://jd-consultores.example.com"
+  # The SPI cabin the transit dials (single-tenant).
+  JD_SPI_BASE_URL: "https://jd-spi.example.com"
+  JD_SPI_CLIENT_ID: "<client id>"
   JD_ALLOW_PRIVATE_NETWORK: "false"
 
 ports:

@@ -337,8 +337,8 @@ spec:
 {{- end }}
 {{- end -}}
 
-{{- /* "true" when the service reads MULTI_TENANT_ENABLED as true (strconv.ParseBool spellings,
-     trimmed), else empty. Refusing too much is safe here, refusing too little is not. */}}
+{{- /* "true" when MULTI_TENANT_ENABLED may mean true, else empty. The service accepts only the
+     exact word "true"; refusing 1, t and any case too is safe here, refusing too little is not. */}}
 {{- define "br-jd-courier.multiTenant" -}}
 {{- if has (lower (trim (toString (get .Values.config "MULTI_TENANT_ENABLED" | default "false")))) (list "1" "t" "true") }}true{{ end }}
 {{- end }}

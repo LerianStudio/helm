@@ -51,9 +51,13 @@
               "DB_METRICS_INTERVAL_SEC",
               "DEFAULT_TENANT_ID",
               "DEPLOYMENT_MODE",
+              "DIRECT_PERMANENT_BLOCK_ENABLED",
               "ENABLE_TELEMETRY",
               "ENVIRONMENT_NAME",
               "ENV_NAME",
+              "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD",
+              "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER",
+              "EXECUTOR_ENABLED",
               "EXECUTOR_HEARTBEAT_EVERY",
               "EXECUTOR_HUB_WEBHOOK_ADDRESS",
               "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS",
@@ -65,6 +69,7 @@
               "EXECUTOR_HUMAN_DECISION_AFTER_BEATS",
               "EXECUTOR_M2M_SUBJECT",
               "EXECUTOR_ORPHAN_RECONCILE_WINDOW",
+              "EXECUTOR_RESULT_MAX_ATTEMPTS",
               "EXECUTOR_SETTLE_WINDOW",
               "EXECUTOR_SQS_MAX_MESSAGES",
               "EXECUTOR_SQS_MAX_RECEIVE_COUNT",
@@ -177,6 +182,36 @@
               "VAULT_TOKEN_RENEW_MIN_INTERVAL_SEC",
               "VAULT_TRANSIT_MOUNT_PATH"
             ]
+          },
+          "properties": {
+            "EXECUTOR_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "DIRECT_PERMANENT_BLOCK_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "EXECUTOR_RESULT_MAX_ATTEMPTS": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            }
           }
         },
         "secrets": {
@@ -197,6 +232,79 @@
         },
         "extraEnvVars": {
           "type": "object"
+        },
+        "executor": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "EXECUTOR_ENABLED: \"\" (unset) | true | false. true without mensageria.baseUrl = DIRECT-only executor."
+            },
+            "resultMaxAttempts": {
+              "type": [
+                "string",
+                "integer"
+              ],
+              "pattern": "^[0-9]+$",
+              "minimum": 0,
+              "description": "EXECUTOR_RESULT_MAX_ATTEMPTS (0 = app default 12)."
+            },
+            "direct": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "drainerInfraAlarmThreshold": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "pattern": "^[1-9][0-9]*$",
+                  "minimum": 1,
+                  "description": "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD (>= 1)."
+                },
+                "purgeEligibleAlarmAfter": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
+                  "description": "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER (Go duration > 0)."
+                }
+              }
+            }
+          }
+        },
+        "direct": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "permanentBlockEnabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "DIRECT_PERMANENT_BLOCK_ENABLED (default false; keep false unless permanent blocks are a decided product choice)."
+            }
+          }
         }
       },
       "additionalProperties": true

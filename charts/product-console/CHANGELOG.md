@@ -1,5 +1,107 @@
 # Product-console Changelog
 
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+
+- Update `product-console` to `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+
+- Update `product-console` to `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+
+- Update `product-console` to `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+- Update `product-console` to version `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+
+- Update `product-console` to `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+- Update `product-console` to `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+
+- Update `product-console` to `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
+## [4.4.5](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.5)
+
+Fixes:
+
+- Update `product-console` to `2.16.2`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.4...product-console-v4.4.5)
+
+---
+
+## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
+
+Fixes:
+- Update `product-console` to `@2.13.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.3...product-console-v4.4.4)
+
+---
+
+## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
+
+Fixes:
+- Update `product-console` to `@2.13.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.3...product-console-v4.4.4)
+
+---
+
 ## [4.4.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.4)
 
 Fixes:

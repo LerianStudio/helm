@@ -9,7 +9,7 @@ Lerian rail engines.
 - Chart type: `multi-component`
 - Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD`, `DATABASE_URL` for the migration Job and, single-tenant, `IDP_M2M_CLIENT_SECRET` and `JD_PASSWORD`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
 - Dependency notes: no subcharts. PostgreSQL, the Access Manager and the licence gateway are external services.
-- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`; under `config`: `ENVIRONMENT_NAME=production` ([Environment](#environment)), `ORGANIZATION_IDS`, `POSTGRES_*` (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, `AWS_REGION` ([AWS identity](#aws-identity)); single-tenant, `IDP_DECLARATION_ENABLED`, `IDP_HOST`, `IDP_M2M_CLIENT_ID` ([Access Manager](#access-manager)) and `JD_BASE_URL`, `JD_LEGACY_CODE`, `JD_USER_CODE` for the SPB roles; `roles.spbSender` TLS ([SOAP TLS](#soap-tls-spb-sender)); JD's partner and address ([Pix ingress (JD)](#pix-ingress-jd)); `serviceAccount` ([AWS identity](#aws-identity)). Multi-tenant installs must set `migrations.enabled=false`.
+- Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`; under `config`: `ENVIRONMENT_NAME=production` ([Environment](#environment)), `ORGANIZATION_IDS`, `POSTGRES_*` (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, `AWS_REGION` ([AWS identity](#aws-identity)); single-tenant, `IDP_HOST`, `IDP_M2M_CLIENT_ID` ([Access Manager](#access-manager)) and `JD_BASE_URL`, `JD_LEGACY_CODE`, `JD_USER_CODE` for the SPB roles; `roles.spbSender` TLS ([SOAP TLS](#soap-tls-spb-sender)); JD's partner and address ([Pix ingress (JD)](#pix-ingress-jd)); `serviceAccount` ([AWS identity](#aws-identity)). Multi-tenant installs must set `migrations.enabled=false`.
 - Source/license: [LerianStudio/br-jd-courier](https://github.com/LerianStudio/br-jd-courier). The Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
 ## Install
@@ -78,15 +78,17 @@ Lerian Cloud.
 ## Access Manager
 
 Single-tenant (BYOC), the Courier publishes its own grants to the client's Access
-Manager at boot, and nothing else does. Without them a first install refuses every
-operator (`403`) and every engine and JD (`401`) while every pod reads Ready:
+Manager at boot, and nothing else does. The chart turns that on
+(`config.IDP_DECLARATION_ENABLED: "true"`), so a missing key below refuses the boot
+and names it. Until the Access Manager accepts the grants, a first install refuses
+every operator (`403`) and every engine and JD (`401`) while every pod reads Ready:
 `/readyz` answers `200` with `permission_declaration` `degraded`. A green rollout
-proves nothing here; check that `IDP_DECLARATION_ENABLED` is `true` and the entry
-reads `up` (with the flag off it can read `up` on the partner opt-in alone).
+proves nothing here; wait for that entry to read `up`. Keep the flag on: off,
+nothing is declared, yet the entry can read `up` on JD's partner opt-in alone.
 
 | Key | Where | Value |
 |---|---|---|
-| `IDP_DECLARATION_ENABLED` | `config` | `"true"` |
+| `IDP_DECLARATION_ENABLED` | `config` | `"true"`, the chart default |
 | `IDP_HOST` | `config` | the Access Manager identity address, e.g. `http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001` |
 | `IDP_M2M_CLIENT_ID` | `config` | the Courier's M2M application |
 | `IDP_M2M_CLIENT_SECRET` | the Secret | that application's secret; refused under `config` |
@@ -94,10 +96,10 @@ reads `up` (with the flag off it can read `up` on the partner opt-in alone).
 Nothing provisions that application: the install's admin issues it once, as a
 person, with `POST /v1/applications/service-credentials`, `source` `jd-courier` and
 `target` `plugin-identity` (Access Manager 3.13.0 or later). Only the create answer
-shows the `clientSecret`. With the flag on, a missing key refuses the boot. A
-refused credential or manifest logs an ERROR and leaves the entry `degraded`; after
-the fix, `kubectl rollout restart` the Deployments. Multi-tenant ignores all four
-keys: the RI catalog and the tenant manager's reconcile carry the grants.
+shows the `clientSecret`. A refused credential or manifest logs an ERROR and
+leaves the entry `degraded`; after the fix, `kubectl rollout restart` the
+Deployments. Multi-tenant ignores all four keys: the RI catalog and the tenant
+manager's reconcile carry the grants.
 
 ## Pix ingress (JD)
 

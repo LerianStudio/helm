@@ -38,6 +38,8 @@ serviceAccount:
 # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT follows ENVIRONMENT_NAME unless set here.
 config:
   PLUGIN_AUTH_ENABLED: "true"
+  # Single-tenant publishes the Courier's grants at boot; multi-tenant ignores it.
+  IDP_DECLARATION_ENABLED: "true"
   # local, byoc or saas. saas refuses to boot unless every datastore connection
   # is TLS; byoc and local do not check. A cluster install is never local.
   DEPLOYMENT_MODE: "byoc"

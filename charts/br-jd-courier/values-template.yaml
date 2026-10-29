@@ -39,11 +39,9 @@ config:
   POSTGRES_SSLMODE: ""
   # The Access Manager's address; every role needs it with authentication on.
   PLUGIN_AUTH_HOST: ""
-  # Single-tenant: the Courier publishes its Access Manager grants and JD's
-  # partner opt-in at boot; IDP_M2M_CLIENT_SECRET goes in the Secret. README
-  # "Access Manager".
-  IDP_DECLARATION_ENABLED: "true"
-  # The Access Manager identity address (port 4001), not PLUGIN_AUTH_HOST.
+  # Single-tenant: the Access Manager identity address (port 4001, not
+  # PLUGIN_AUTH_HOST) and the Courier's M2M application; IDP_M2M_CLIENT_SECRET
+  # goes in the Secret. README "Access Manager".
   IDP_HOST: ""
   IDP_M2M_CLIENT_ID: ""
   # The Secrets Manager region of the engine credentials (default us-east-1).

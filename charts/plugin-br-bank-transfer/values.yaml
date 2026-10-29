@@ -471,12 +471,10 @@ bankTransfer:
     # =================================================================
 
     # =================================================================
-    # RabbitMQ (event bus, optional)
-    # RABBITMQ_URL is rendered from a chart default when empty, but that default
-    # embeds a $(RABBITMQ_PASSWORD) reference inside the ConfigMap, which
-    # Kubernetes does not expand for envFrom. When RABBITMQ_ENABLED=true set
-    # RABBITMQ_URL explicitly with the final URL.
-    # Retries / timeouts / routing-key prefix are systemplane-managed.
+    # RabbitMQ (event bus, optional; both modes)
+    # RABBITMQ_URL is a credential: set it under bankTransfer.secrets
+    # (amqps:// outside development/test/local). Retries / timeouts /
+    # routing-key prefix are systemplane-managed.
     # RABBITMQ_ENABLED/RABBITMQ_EXCHANGE are NOT pinned — the chart already
     # defaults them in templates/configmap.yaml.
     # =================================================================
@@ -657,8 +655,9 @@ bankTransfer:
   # and the cluster's CA isn't in the system trust pool)
   # MULTI_TENANT_REDIS_CA_CERT: ""
 
-  # RabbitMQ credentials (when RABBITMQ_ENABLED=true)
-  # RABBITMQ_PASSWORD: ""
+  # RabbitMQ credentials (when RABBITMQ_ENABLED=true; RABBITMQ_URL is required,
+  # amqps:// outside development/test/local)
+  # RABBITMQ_URL: ""
   # RABBITMQ_EVENT_SIGNING_SECRET: ""
 
   # Webhook secrets (when WEBHOOK_ENABLED=true)

@@ -192,15 +192,19 @@ data:
   MONGO_MAX_POOL_SIZE: {{ .Values.bankTransfer.configmap.MONGO_MAX_POOL_SIZE | default "25" | quote }}
   MONGO_SERVER_SELECTION_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MONGO_SERVER_SELECTION_TIMEOUT_MS | default "3000" | quote }}
   MONGO_HEARTBEAT_INTERVAL_MS: {{ .Values.bankTransfer.configmap.MONGO_HEARTBEAT_INTERVAL_MS | default "10000" | quote }}
+  {{- end }}
 
   # =====================================================================
-  # RABBITMQ — single-tenant only.
+  # RABBITMQ — both modes: multi-tenant builds its per-tenant vhost manager
+  # from it, and WEBHOOK_ENABLED=true needs it. RABBITMQ_URL lives in the
+  # Secret; a legacy configmap.RABBITMQ_URL still renders here.
   # =====================================================================
   RABBITMQ_ENABLED: {{ .Values.bankTransfer.configmap.RABBITMQ_ENABLED | default "false" | quote }}
   {{- if eq (toString .Values.bankTransfer.configmap.RABBITMQ_ENABLED) "true" }}
-  RABBITMQ_URL: {{ .Values.bankTransfer.configmap.RABBITMQ_URL | default (printf "amqp://bank_transfer:$(RABBITMQ_PASSWORD)@%s-rabbitmq.%s.svc.cluster.local:5672/" .Release.Name $namespace) | quote }}
-  RABBITMQ_EXCHANGE: {{ .Values.bankTransfer.configmap.RABBITMQ_EXCHANGE | default "bank_transfer.lifecycle" | quote }}
+  {{- with .Values.bankTransfer.configmap.RABBITMQ_URL }}
+  RABBITMQ_URL: {{ . | quote }}
   {{- end }}
+  RABBITMQ_EXCHANGE: {{ .Values.bankTransfer.configmap.RABBITMQ_EXCHANGE | default "bank_transfer.lifecycle" | quote }}
   {{- end }}
 
   # =====================================================================

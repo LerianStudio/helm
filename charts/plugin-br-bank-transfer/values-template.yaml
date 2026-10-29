@@ -85,8 +85,7 @@ bankTransfer:
     # =================================================================
     # RabbitMQ (event bus, optional)
     # =================================================================
-    RABBITMQ_ENABLED: "false"
-    # RABBITMQ_URL: ""  # Required if RABBITMQ_ENABLED=true
+    RABBITMQ_ENABLED: "false"  # RABBITMQ_URL goes under secrets below
 
     # =================================================================
     # Authentication (inbound). Set the endpoint via global.auth.host above —
@@ -141,8 +140,8 @@ bankTransfer:
     # JD_PRIVATE_KEY_PEM: ""
     # JD_PUBLIC_KEY_PEM: ""  # required for external_provided mode with signature validation
 
-    # RabbitMQ credentials (if RABBITMQ_ENABLED=true)
-    # RABBITMQ_PASSWORD: ""
+    # RabbitMQ (if RABBITMQ_ENABLED=true; amqps:// outside development/test/local)
+    # RABBITMQ_URL: ""
 
   useExistingSecret: false
   existingSecretName: ""

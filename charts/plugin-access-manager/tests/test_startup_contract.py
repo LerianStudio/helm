@@ -80,6 +80,10 @@ class StartupContract(unittest.TestCase):
                   for c in d['spec']['template']['spec']['containers']]
         self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.13.1', images)
         self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.13.1', images)
+        self.assertIn('ghcr.io/lerianstudio/caradhras:1.8.5', images)
+        init_images = [c['image'] for d in docs if d['kind'] == 'Deployment'
+                       for c in d['spec']['template']['spec'].get('initContainers', [])]
+        self.assertIn('ghcr.io/lerianstudio/caradhras-migrations:1.8.5', init_images)
         for d in docs:
             if d['kind'] == 'HorizontalPodAutoscaler':
                 self.assertGreaterEqual(d['spec']['minReplicas'], 1)

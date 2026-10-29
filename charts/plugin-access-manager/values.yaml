@@ -595,7 +595,7 @@ caradhras:
     # -- to override.
     repository: ghcr.io/lerianstudio/caradhras
     pullPolicy: Always
-    tag: "1.5.1"
+    tag: "1.8.5"
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -632,7 +632,7 @@ caradhras:
       # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
       pullPolicy: ""
       # -- Empty preserves auth.backend.migrations.image.tag overrides;
-      # -- otherwise defaults to 1.5.1 in templates/_helpers.tpl.
+      # -- otherwise defaults to 1.8.5 in templates/_helpers.tpl.
       # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
     # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests (e.g. cross). Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.

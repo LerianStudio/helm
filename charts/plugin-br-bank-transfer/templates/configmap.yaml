@@ -35,17 +35,13 @@ data:
   ENVIRONMENT_NAME: {{ $envName | quote }}
   ENV_NAME: {{ $envName | quote }}
   APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
-  {{- if not $multiTenantEnabled }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
-  {{- end }}
 
   # =====================================================================
   # HTTP SERVER
-  # Only SERVER_ADDRESS is rendered in MT mode. Tuning (body limit, TLS
-  # termination flags, proxy headers) is single-tenant or systemplane-managed.
+  # Rendered in both modes; none of these keys is systemplane-managed.
   # =====================================================================
   SERVER_ADDRESS: {{ .Values.bankTransfer.configmap.SERVER_ADDRESS | default ":4027" | quote }}
-  {{- if not $multiTenantEnabled }}
   HTTP_BODY_LIMIT_BYTES: {{ .Values.bankTransfer.configmap.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
   TLS_TERMINATED_UPSTREAM: {{ include "bank-transfer.flagDefaultTrue" .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | quote }}
   {{- if .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE }}
@@ -62,7 +58,6 @@ data:
   {{- end }}
   {{- if .Values.bankTransfer.configmap.TRUSTED_PROXIES }}
   TRUSTED_PROXIES: {{ .Values.bankTransfer.configmap.TRUSTED_PROXIES | quote }}
-  {{- end }}
   {{- end }}
   ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
   # -- REQUIRE_UPSTREAM_HTTPS: fleet-wide TLS gate on the PII-carrying

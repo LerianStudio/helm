@@ -339,7 +339,10 @@ data:
   JD_BASE_URL: {{ required "bankTransfer.configmap.JD_BASE_URL is required when JD_SANDBOX_MODE is not true and MULTI_TENANT_ENABLED is not true" .Values.bankTransfer.configmap.JD_BASE_URL | quote }}
   JD_SOAP_PATH: {{ .Values.bankTransfer.configmap.JD_SOAP_PATH | default "/soap" | quote }}
   JD_SIGNING_MODE: {{ .Values.bankTransfer.configmap.JD_SIGNING_MODE | default "local_pem" | quote }}
+  {{- /* An existing Secret or extraEnvVars may carry it instead; extraEnvVars render it below. */}}
+  {{- if and (not (hasKey (.Values.bankTransfer.extraEnvVars | default dict) "JD_LEGACY_CODE")) (or .Values.bankTransfer.configmap.JD_LEGACY_CODE (not .Values.bankTransfer.useExistingSecret)) }}
   JD_LEGACY_CODE: {{ required "bankTransfer.configmap.JD_LEGACY_CODE is required when JD_SANDBOX_MODE is not true and MULTI_TENANT_ENABLED is not true" .Values.bankTransfer.configmap.JD_LEGACY_CODE | quote }}
+  {{- end }}
   {{- end }}
 
   {{- if not $multiTenantEnabled }}

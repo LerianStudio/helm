@@ -1,5 +1,58 @@
 # Plugin-access-manager Changelog
 
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.3)
+
+Fixes:
+- Update to app version `3.13.1`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.2...plugin-access-manager-v10.0.3)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.2)
+
+Fixes:
+- Capped Caradhras database connections at 5 seconds to enhance performance. (@fredcamaral)
+
+Improvements:
+- Added a Helm upgrade guide for `plugin-access-manager` `v10.0.1`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-access-manager` `v10.0.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.1...plugin-access-manager-v10.0.2)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.2)
+
+Fixes:
+- Limit Caradhras database connections to a maximum of 5 seconds to prevent timeouts. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-access-manager` `v10.0.1`. (@guimoreirar)
+- Add a Helm upgrade guide for `plugin-access-manager` `v10.0.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.1...plugin-access-manager-v10.0.2)
+
+---
+
+## [10.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.1)
+
+Fixes:
+- Resolved issues with the GitHub Pages build by switching from Helm templates to Liquid templates to ensure compatibility. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.0...plugin-access-manager-v10.0.1)
+
+---
+
+## [10.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.1)
+
+Fixes:
+- Resolved issues with the GitHub Pages build by switching from Helm templates to Liquid templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.0...plugin-access-manager-v10.0.1)
+
+---
+
 ## [10.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.1)
 
 Fixes:

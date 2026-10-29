@@ -504,21 +504,35 @@ This chart includes the following dependencies for the default installation. All
       REDIS_PASSWORD: { your-host-pass }
   ```
 
-- **Important — fee debts:** the Ledger keeps open fee debts of `deferrable` fees in Valkey and cannot rebuild them from another store. A flush, an eviction, or a failover that loses writes loses open fee debts. By default, the bundled Valkey runs **without persistence** (`valkey.primary.persistence.enabled: false`) and with `--maxmemory-policy allkeys-lru`. Before you set `deferrable` on a fee, make Valkey persistent and set its `maxmemory-policy` to `noeviction` or to a `volatile-*` policy. With the bundled Valkey:
+- **Important: Valkey is a datastore, not a cache.** The Ledger keeps state in Valkey that no other store holds: balances not yet synced to PostgreSQL, idempotency keys, engine receipts, account-block exceptions and the open fee debts of `deferrable` fees. An eviction or a lost write loses that state: a retried request can post twice, and an open fee debt is a receivable gone. The bundled Valkey therefore:
+  - keeps its append-only file (`appendonly yes` from the subchart configuration) on its own volume, the claim `valkey-data-midaz-valkey-primary` (8Gi, ReadWriteOnce; `valkey.primary.persistence.size` and `valkey.primary.persistence.storageClass` change it). The claim is kept on `helm uninstall`, like the PostgreSQL and MongoDB volumes. Under Argo CD it survives deleting the application, but a sync with pruning deletes it once it leaves the rendered manifests (Valkey or its persistence turned off, `kind` changed, a sync to an older chart). To keep it then too, add `argocd.argoproj.io/sync-options: Prune=false` to `valkey.primary.persistence.annotations` (default `kind: Deployment`; Helm merges maps, so the chart's `helm.sh/resource-policy: keep` stays). A restart reloads the file.
+  - runs with `--appendfsync always`: Valkey writes each change to disk before it answers, so a host crash loses no write the Ledger saw succeed. Under `everysec`, the Valkey default, a host crash loses the last second of writes, which can fork a balance from its operations, drop a fee debt or let a retry post twice. Every Ledger request that writes waits for the disk, so a slow volume shows in its latency.
+  - runs with `--maxmemory-policy noeviction`. A full Valkey refuses new writes and the Ledger answers those requests with an error; no key is ever evicted.
+  - uses the `Recreate` strategy, so an upgrade that changes the Valkey pod stops the old pod before the new one starts and two pods never write the same file. The Ledger answers errors until the new pod is ready. With `valkey.primary.kind: StatefulSet`, set `valkey.primary.updateStrategy.type: RollingUpdate`: a StatefulSet refuses `Recreate`.
+  - runs an image pinned by digest, so the Valkey version that opens the volume changes only on a chart upgrade.
+
+- **Sizing:** in the Lua engine (the default), `--maxmemory` must be at least 14 KB × (approvals per second × `X-TTL` + open `PENDING` transactions) + 1 KB × balances used in the last 24 hours, plus room for the open fee-debt lists and the balance-sync schedule. The client sets `X-TTL` per request (300 seconds by default, at most 604800), so use the longest one your clients send. At the default `X-TTL` and with few balances, 640mb holds about 150 approvals per second; about 600,000 balances used in a day fill it alone. The 14 KB is a two-leg transaction with little metadata: more legs, fees and metadata hold more, so measure your own with `MEMORY USAGE`. When you raise `--maxmemory`, raise the pod memory too (`valkey.primary.resourcesPreset` or `valkey.primary.resources`), leaving room for the copy an AOF rewrite makes, and raise `valkey.primary.persistence.size` to about three times `--maxmemory`, which the append-only file can reach during a rewrite. Growing an existing claim needs a StorageClass with `allowVolumeExpansion`. `extraFlags` is a list: setting it replaces the chart default, so restate every flag you want to keep:
 
   ```yaml
   valkey:
     primary:
-      persistence:
-        enabled: true
       extraFlags:
-        - "--maxmemory 640mb"
+        - "--maxmemory { your-size }"
         - "--maxmemory-policy noeviction"
+        - "--appendfsync always"
         - "--hz 100"
         - "--maxclients 10000"
   ```
 
-  `extraFlags` is a list: setting it replaces the chart default, so restate every flag you want to keep. With an external Valkey or Redis instance, configure the same persistence and `maxmemory-policy` on that instance.
+  With `valkey.primary.kind: StatefulSet` (not the default), Kubernetes refuses a new `persistence.size`, because it changes the StatefulSet's claim template. Set the new size (16Gi here) in your values, grow the claim itself, and delete the StatefulSet but not its pod or claim, so the next upgrade or Argo CD sync creates it again with the new template:
+
+  ```bash
+  kubectl -n midaz patch pvc valkey-data-midaz-valkey-primary-0 \
+    -p '{"spec":{"resources":{"requests":{"storage":"16Gi"}}}}'
+  kubectl -n midaz delete statefulset midaz-valkey-primary --cascade=orphan
+  ```
+
+  With an external Valkey or Redis instance, configure the same persistence, `appendfsync always` included, and `maxmemory-policy noeviction` on that instance. A `volatile-*` policy keeps fee debts, which carry no TTL, but still evicts idempotency keys.
 
 ### PostgreSQL
 

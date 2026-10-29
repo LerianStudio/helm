@@ -18,6 +18,66 @@ Fixes:
 - Render boolean false on default-true flags in `plugin-fees`. (@fredcamaral)
 
 Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in plugin-fees. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for `plugin-fees`, ensuring correct behavior. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for updating. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in `plugin-fees`. (@fredcamaral)
+
+Improvements:
 - Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)

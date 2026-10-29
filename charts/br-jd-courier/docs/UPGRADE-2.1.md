@@ -106,8 +106,8 @@ No action required if you do not need the Pix transit. The feature is disabled b
 1. Choose a TLS termination strategy (Option 1 or Option 2 above)
 2. If using Option 1, create the TLS Secret before upgrading
 3. Add the `roles.admin.pixTransit` block to your `values.yaml`
-4. Run Courier image 1.2.0 or later (`jd-courier.image.tag`); 1.1.x has no transit listener
-5. Upgrade the chart
+4. Set `jd-courier.image.tag: "1.2.0"` (or later) in the same `values.yaml`: chart 2.1.0 still defaults to `1.1.0`, which has no transit listener
+5. Upgrade the chart with that `values.yaml` ([Command to upgrade](#command-to-upgrade))
 
 The transit's `config` and Secret keys are in the chart README, [Pix transit (admin)](../README.md#pix-transit-admin).
 
@@ -132,11 +132,14 @@ If you were setting `JD_SPI_CLIENT_SECRET` in `config` (which was not explicitly
 If you use `JD_SPI_CLIENT_SECRET`:
 
 1. Remove it from `config` in your `values.yaml`
-2. Add it to the Secret referenced by `secrets.existingSecret`:
+2. Add it to the Secret every role loads:
 
 ```bash
+# secrets.existingSecret, or the release fullname when it is empty
+# (br-jd-courier for the release name in these commands).
+SECRET_NAME=br-jd-courier
 # Adds the one key and leaves every other key of the Secret as it is.
-kubectl patch secret br-jd-courier-secrets -n br-jd-courier --type merge \
+kubectl patch secret "$SECRET_NAME" -n br-jd-courier --type merge \
   -p '{"stringData":{"JD_SPI_CLIENT_SECRET":"your-spi-client-secret"}}'
 ```
 
@@ -244,7 +247,7 @@ The Secret referenced by `secrets.existingSecret` may now contain:
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.1.0 -n br-jd-courier
+helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.1.0 -n br-jd-courier -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -254,6 +257,6 @@ helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-co
 ## Command to upgrade
 
 ```bash
-helm upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.1.0 -n br-jd-courier
+helm upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.1.0 -n br-jd-courier -f values.yaml
 ```
 <!-- {% endraw %} -->

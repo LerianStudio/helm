@@ -107,12 +107,16 @@ client admin creates the JD partner in the Console with one grant, `jd-courier`
 `pix-ingress` `post`, and issues JD's application under it; any other credential
 gets `401`. The partner's opt-in reaches the Access Manager with the keys above
 (with `IDP_DECLARATION_ENABLED` off, only when `IDP_HOST` and the M2M pair are
-set). It needs Access Manager 3.14.0 and Caradhras 1.9.0-beta.1 or later: below
-that the client admin cannot create the partner. Where
-`charts/plugin-access-manager` pins older ones, override `identity.image.tag` and
-`auth.image.tag` (3.14.0 or later), and `caradhras.image.tag` and
-`caradhras.migrations.image.tag` together. Courier 1.2.0 removed
-`PIX_VENDOR_SUBJECTS`; drop it from `config`, where nothing reads it.
+set). It needs Access Manager 3.14.0 or later and Caradhras 1.8.6 or later (or
+1.9.0-beta.1 or later on the 1.9 line): below that the client admin cannot create
+the partner. Where `charts/plugin-access-manager` pins older ones, override
+`identity.image.tag` and `auth.image.tag` (3.14.0 or later), and
+`caradhras.image.tag` and `caradhras.migrations.image.tag` together. Courier 1.2.0
+removed `PIX_VENDOR_SUBJECTS` (multi-tenant: `jd-courier.pix/vendor_subjects`).
+Before the upgrade, record the subjects it lists, JD's ordinary client
+applications, then drop it from `config`, where nothing reads it: 1.2.0 no longer
+refuses them and admits a client application as admin on every operator route, so
+the client admin deletes them in the change that creates JD's partner.
 
 The pix-ingress Service is ClusterIP on `ports.http`, and the chart renders no
 Ingress for it. JD calls an HTTPS address the client exposes (its own Ingress or
@@ -322,12 +326,14 @@ active channel in a quiet window.
 From 1.1.x, JD's current credential stops working at the rollout: 1.2.0 admits
 JD only under a partner ([Pix ingress (JD)](#pix-ingress-jd)), and the Access
 Manager accepts that partner only after a 1.2.0 pod publishes the opt-in. In
-order: bring the Access Manager to 3.14.0 and Caradhras to 1.9.0-beta.1 or later
-([Pix ingress (JD)](#pix-ingress-jd)); upgrade with the
-[Access Manager](#access-manager) keys set; wait for
-`permission_declaration` to read `up`; the client admin creates JD's partner and
-issues JD's application; JD switches to it. Inbound Pix answers `401` to JD from
-the rollout until then, so schedule the switch with JD.
+order: record the subjects `PIX_VENDOR_SUBJECTS` lists; bring the Access Manager
+to 3.14.0 and Caradhras to 1.8.6 or later (or 1.9.0-beta.1 or later on the 1.9
+line, [Pix ingress (JD)](#pix-ingress-jd)); upgrade with the
+[Access Manager](#access-manager) keys set; wait for `permission_declaration` to
+read `up`; in one change, the client admin creates JD's partner, issues JD's
+application under it and deletes every recorded application; JD switches to it.
+Inbound Pix answers `401` to JD from the rollout until then, so schedule the
+switch with JD.
 
 ⚠️ **Multi-tenant installs are not covered.** Nothing on the platform applies
 per-tenant migrations on deploy. The chart refuses `migrations.enabled=true`

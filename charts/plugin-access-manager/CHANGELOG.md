@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.3)
+
+Fixes:
+- Update to app version `3.13.1`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.2...plugin-access-manager-v10.0.3)
+
+---
+
 ## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.2)
 
 Fixes:

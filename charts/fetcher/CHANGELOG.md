@@ -3,6 +3,15 @@
 ## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
 
 Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
 - Render boolean `false` on default-`true` flags to ensure correct behavior. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)

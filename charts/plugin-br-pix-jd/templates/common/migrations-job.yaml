@@ -32,7 +32,8 @@ metadata:
        pre-hook would race a database that does not exist yet. Running post-Sync also
        means the chart's own Secrets already exist, so no migration-only hook Secret is
        needed on this path. The cost: the api rolls out before the schema lands and
-       returns errors on PIX routes until this Job finishes. */}}
+       returns errors on PIX routes until this Job finishes, and it can only boot with
+       SYSTEMPLANE_ENABLED off, the bundled default. */}}
     "helm.sh/hook": post-install,post-upgrade
     "argocd.argoproj.io/hook": PostSync
     {{- else }}

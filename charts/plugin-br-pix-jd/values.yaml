@@ -245,8 +245,9 @@ api:
   # Chart defaults when a key is absent everywhere: LOG_LEVEL=info,
   # SERVER_ADDRESS=:8080, TLS_TERMINATED_UPSTREAM=true, POSTGRES_SSLMODE=disable,
   # POSTGRES_USER/POSTGRES_NAME=plugin-br-pix-jd, MIGRATIONS_PATH=/migrations,
-  # SYSTEMPLANE_ENABLED=true, SWAGGER_ENABLED=false, ENVIRONMENT_NAME="",
-  # DEPLOYMENT_MODE="". SYSTEMPLANE_ENABLED=false fails every Pix flow closed: the own
+  # SYSTEMPLANE_ENABLED=true (false with the bundled Postgres, see NOTES),
+  # SWAGGER_ENABLED=false, ENVIRONMENT_NAME="", DEPLOYMENT_MODE="".
+  # SYSTEMPLANE_ENABLED=false fails every Pix flow closed: the own
   # ISPB, the Midaz scope and the transaction routes live only in systemplane.
   # REDIS_HOST has NO default and is required — the rate limiter is fail-closed.
   #

@@ -529,7 +529,9 @@ DEPLOYMENT_MODE: {{ $deploymentMode | quote }}
 LOG_LEVEL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "LOG_LEVEL" "default" "info") | quote }}
 INFRA_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "INFRA_CONNECT_TIMEOUT_SEC" "default" "30") | quote }}
 DB_METRICS_INTERVAL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "DB_METRICS_INTERVAL_SEC" "default" "15") | quote }}
-SYSTEMPLANE_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEMPLANE_ENABLED" "default" "true") | quote }}
+{{- /* Off with the bundled Postgres: its schema lands PostSync, and with the plane on the
+   api cannot boot before systemplane_entries exists, so the hook would never run. */}}
+SYSTEMPLANE_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEMPLANE_ENABLED" "default" (empty (include "plugin-br-pix-jd.postgresRenders" $root) | toString)) | quote }}
 ORGANIZATION_IDS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ORGANIZATION_IDS" "default" "global") | quote }}
 {{- /* Postgres. Host is derived for the bundled subchart; the pool and timeout
    values are shared because both processes open their own pool to the same DB. */}}

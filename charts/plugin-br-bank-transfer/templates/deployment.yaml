@@ -124,7 +124,7 @@ spec:
                 name: {{ $secretName }}
                 key: REDIS_PASSWORD
           {{- end }}
-          {{- include "bank-transfer.mongoEnv" (dict "context" $ "secretName" $secretName) | nindent 10 }}
+          {{- include "bank-transfer.mongoEnv" (dict "context" $) | nindent 10 }}
           {{- /* Same global.observability mask configmap.yaml resolves ENABLE_TELEMETRY and the endpoint through. */}}
           {{- $otelCm := .Values.bankTransfer.configmap | default dict }}
           {{- if eq (lower (include "lerian-common.globalValue" (dict "context" $ "configmap" $otelCm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" }}

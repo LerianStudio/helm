@@ -503,7 +503,6 @@ each component can still override any shared key), serviceName (OTel identity).
    shared value (one datastore set, one auth, one telemetry backend) while keeping the
    ability to override any single key. For the api itself the merge is idempotent. */ -}}
 {{- $cm := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) (.configmap | default dict) -}}
-{{- $api := $root.Values.api -}}
 {{- /* Runtime + server. ENVIRONMENT_NAME=production arms the app's security gates
    (auth forced on, Postgres password + SSL required, every ALLOW_* bypass and
    IS_DEVELOPMENT=true rejected at boot). */ -}}
@@ -607,11 +606,11 @@ REDIS_MASTER_NAME: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key"
 {{- $telemetryEnabled := include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") -}}
 {{- $otlpEndpoint := include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") -}}
 {{- $deployEnv := include "lerian-common.globalValue" (dict "context" $root "configmap" $cm "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" "") -}}
-{{- $otelKeys := list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT" -}}
+{{- $otelKeys := list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT" -}}
 {{- /* The closing `}}` here deliberately keeps its newline: every preceding
    assignment trims both sides, so this is what terminates the last emitted key
    line above. */ -}}
-{{- $otelDefaults := dict "OTEL_RESOURCE_SERVICE_NAME" .serviceName "OTEL_LIBRARY_NAME" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OTEL_LIBRARY_NAME" "default" "plugin-br-pix-jd")) "OTEL_RESOURCE_SERVICE_VERSION" ($api.image.tag | default $root.Chart.AppVersion) "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $deployEnv "OTEL_EXPORTER_OTLP_ENDPOINT" $otlpEndpoint }}
+{{- $otelDefaults := dict "OTEL_RESOURCE_SERVICE_NAME" .serviceName "OTEL_LIBRARY_NAME" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OTEL_LIBRARY_NAME" "default" "plugin-br-pix-jd")) "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $deployEnv "OTEL_EXPORTER_OTLP_ENDPOINT" $otlpEndpoint }}
 ENABLE_TELEMETRY: {{ $telemetryEnabled | quote }}
 {{ include "lerian-common.otel.envFlat" (dict "configmap" $cm "keys" $otelKeys "defaults" $otelDefaults) }}
 {{- end }}
@@ -721,8 +720,11 @@ JD_ISPB: {{ $ispb | quote }}
 {{- end }}
 JD_GRANT_TYPE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JD_GRANT_TYPE" "default" "client_credentials") | quote }}
 {{- /* DNS+Service+Path gateway mode: true inserts the fixed JDPI service segment for an
-   APISIX-fronted JDPI; false keeps the direct-JDPI/mock scheme. */}}
+   APISIX-fronted JDPI; false keeps the direct-JDPI/mock scheme. Single-tenant only:
+   multi-tenant reads it from the tenant's bundle and WARNs on a present variable. */}}
+{{- if ne (index $cm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" }}
 JD_USE_SERVICE_SEGMENTS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JD_USE_SERVICE_SEGMENTS" "default" "false") | quote }}
+{{- end }}
 {{- /* Idempotency-aware transport retry. A bare money POST that JDPI may already have
    processed is never re-fired; only GETs and idempotency-keyed POSTs retry. */}}
 JDPI_MAX_RETRIES: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_MAX_RETRIES" "default" "2") | quote }}
@@ -759,9 +761,6 @@ CRM_URL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "CRM_URL"
 {{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "COURIER_URL" "default" "")) }}
 COURIER_URL: {{ . | quote }}
 {{- end }}
-{{- /* Transaction limits: the clock bounds separating the daily and nightly buckets. */}}
-TRANSACTION_LIMIT_DAILY_PERIOD_INIT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "TRANSACTION_LIMIT_DAILY_PERIOD_INIT" "default" "06:00") | quote }}
-TRANSACTION_LIMIT_DAILY_PERIOD_END: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "TRANSACTION_LIMIT_DAILY_PERIOD_END" "default" "20:00") | quote }}
 {{- /* Notification providers. SENDGRID_BASE_URL / TWILIO_BASE_URL MUST default to
    empty: empty means "the real provider", and they exist only so a test rig can point
    the adapter at a local counterparty. A non-empty default here would silently divert

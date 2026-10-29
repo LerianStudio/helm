@@ -129,11 +129,13 @@ data:
   # POSTGRES (primary) — single-tenant only.
   # MT mode resolves per-tenant DBs via tenant-manager.
   # =====================================================================
+  {{- /* The bundled subchart serves no TLS; external Postgres keeps "require". */}}
+  {{- $pgSSLDefault := ternary "disable" "require" (eq (include "bank-transfer.postgresInternal" $) "true") }}
   POSTGRES_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
   POSTGRES_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
   POSTGRES_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "bank_transfer") | quote }}
   POSTGRES_DB: {{ .Values.bankTransfer.configmap.POSTGRES_DB | default "bank_transfer" | quote }}
-  POSTGRES_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+  POSTGRES_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" $pgSSLDefault) | quote }}
   POSTGRES_MAX_OPEN_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
   POSTGRES_MAX_IDLE_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
   POSTGRES_CONN_MAX_LIFETIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
@@ -150,7 +152,7 @@ data:
   POSTGRES_REPLICA_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_REPLICA_PORT" "default" "5432") | quote }}
   POSTGRES_REPLICA_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_REPLICA_USER" "default" "") | quote }}
   POSTGRES_REPLICA_DB: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_DB | quote }}
-  POSTGRES_REPLICA_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_REPLICA_SSLMODE" "default" "require") | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_REPLICA_SSLMODE" "default" $pgSSLDefault) | quote }}
   {{- end }}
   {{- end }}
 

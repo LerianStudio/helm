@@ -355,7 +355,6 @@ bankTransfer:
     ENVIRONMENT_NAME: "development"
     IS_DEVELOPMENT: "true"   # development licence gateway, for a development licence key
     PLUGIN_AUTH_ENABLED: "false"
-    POSTGRES_SSLMODE: "disable"
     JD_SANDBOX_MODE: "true"  # Uses fake JD adapter (no real bank calls)
 ```
 

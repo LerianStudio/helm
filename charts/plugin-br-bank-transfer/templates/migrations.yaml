@@ -83,7 +83,7 @@
     - name: POSTGRES_DB
       value: {{ get $configmap "POSTGRES_DB" | default "bank_transfer" | quote }}
     - name: POSTGRES_SSLMODE
-      value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+      value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" (ternary "disable" "require" $internalPg)) | quote }}
     - name: POSTGRES_CONNECT_TIMEOUT_SEC
       value: {{ get $configmap "POSTGRES_CONNECT_TIMEOUT_SEC" | default "10" | quote }}
     {{- if $existingSecretName }}

@@ -261,6 +261,10 @@ api:
   # multi-tenant — the MT Redis and MT URL, failing the boot when any of them is
   # plaintext. Empty is read by the app as "local" (enforcement off).
   #
+  # MIDAZ_URL_TRACER (Tracer base URL; empty screens no inbound credit) and
+  # APPLICATION_NAME (license identity; empty is plugin-br-pix-jd) reach the api and
+  # the worker alike: set them once here, never per component.
+  #
   # See README.md for the full table.
   configmap: {}
   # -- Extra environment variables appended to the container (list of name/value)

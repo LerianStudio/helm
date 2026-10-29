@@ -60,6 +60,8 @@ Set these only when your institution needs them.
 | Key | When | Format | Default |
 | :-- | :--- | :----- | :------ |
 | `api.configmap.ORGANIZATION_IDS` | only for a per-organization license. Empty stops the service from starting | comma-separated organization IDs | `global` |
+| `api.configmap.MIDAZ_URL_TRACER` | only if the Tracer screens inbound credits | Tracer base URL | empty: no credit is screened |
+| `api.configmap.APPLICATION_NAME` | only if your license names another application; the API and the worker must agree, so set it here only | application name | empty, read as `plugin-br-pix-jd` |
 | `api.secrets.REDIS_PASSWORD` | only if your Valkey or Redis requires a password | password | empty |
 | `api.cors.allowedOrigins` | only if a browser calls the API directly | list of origins | empty: every browser cross-origin call is refused |
 | `api.rateLimit.*` | only to change the rate-limit defaults | see `values.yaml` | chart defaults |

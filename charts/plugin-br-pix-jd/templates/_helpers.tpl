@@ -748,6 +748,8 @@ JDPI_TOTAL_TIMEOUT_MS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "
 MIDAZ_TIMEOUT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_TIMEOUT" "default" "30000") | quote }}
 MIDAZ_URL_ONBOARDING: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_ONBOARDING" "default" "") | quote }}
 MIDAZ_URL_TRANSACTION: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_TRANSACTION" "default" "") | quote }}
+MIDAZ_URL_TRACER: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_TRACER" "default" "") | quote }}
+APPLICATION_NAME: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "APPLICATION_NAME" "default" "") | quote }}
 {{- /* Fee mode: auto posts on /v2 when the ledger's /version reports 4.1.0+, else /v1.
    The app's envDefault is not applied by its loader, so an unset key reads as legacy;
    emitting the defaults is what makes "auto" real. */}}

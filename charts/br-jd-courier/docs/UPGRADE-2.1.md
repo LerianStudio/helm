@@ -109,12 +109,7 @@ No action required if you do not need the Pix transit. The feature is disabled b
 4. Run Courier image 1.2.0 or later (`jd-courier.image.tag`); 1.1.x has no transit listener
 5. Upgrade the chart
 
-**Additional configuration keys:**
-
-The transit reads several environment variables from `config` (see the updated `values.yaml` comments). These keys are documented in the application README under "Pix transit":
-
-- `JD_ALLOW_PRIVATE_NETWORK` (now governs both SPB roles and the Pix transit)
-- Transit-specific keys (refer to the application README for the full list)
+The transit's `config` and Secret keys are in the chart README, [Pix transit (admin)](../README.md#pix-transit-admin).
 
 > **Important:** The chart now refuses `config.PIX_TRANSIT_SERVER_ADDRESS`, `config.PIX_TRANSIT_TLS_CERT_FILE`, `config.PIX_TRANSIT_TLS_KEY_FILE`, and `config.PIX_TRANSIT_TLS_TERMINATED_UPSTREAM` — these are derived from `ports.pixTransit` and `roles.admin.pixTransit.tls`.
 
@@ -140,11 +135,9 @@ If you use `JD_SPI_CLIENT_SECRET`:
 2. Add it to the Secret referenced by `secrets.existingSecret`:
 
 ```bash
-kubectl create secret generic br-jd-courier-secrets \
-  --from-literal=LICENSE_KEY='your-license-key' \
-  --from-literal=JD_PASSWORD='your-jd-password' \
-  --from-literal=JD_SPI_CLIENT_SECRET='your-spi-client-secret' \
-  --dry-run=client -o yaml | kubectl apply -f - -n br-jd-courier
+# Adds the one key and leaves every other key of the Secret as it is.
+kubectl patch secret br-jd-courier-secrets -n br-jd-courier --type merge \
+  -p '{"stringData":{"JD_SPI_CLIENT_SECRET":"your-spi-client-secret"}}'
 ```
 
 > **Note:** If you do not use `JD_SPI_CLIENT_SECRET`, no action is required.

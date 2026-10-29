@@ -3,6 +3,30 @@
 ## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
 
 Features:
+- Keep the valkey claim through Argo CD pruning, ensuring stability during deployment processes. (@fredcamaral)
+- Grow a StatefulSet valkey claim without losing it, enhancing data persistence. (@fredcamaral)
+- Pass the edited valkey values during the `10.0.3` upgrade for seamless transitions. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`, ensuring a smooth upgrade path. (@fredcamaral)
+- Name the ledger and tracer migration switches for better clarity in migration processes. (@fredcamaral)
+- Scope the migrate-first order to the default settings, providing a clearer upgrade path. (@fredcamaral)
+- Name the hook type per deploy tool, improving deployment clarity. (@fredcamaral)
+- Provide the `v4.3` cutover steps at the chart level for comprehensive upgrade guidance. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt to prevent data loss and ensure financial accuracy. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to maintain data integrity. (@fredcamaral)
+- Cover StatefulSet, image, and rollback in the valkey upgrade to ensure comprehensive upgrade coverage. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to enhance system reliability. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume, ensuring consistent deployment. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data overflow and maintain system stability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
 - Provide documentation for keeping the valkey claim through Argo CD pruning. (@fredcamaral)
 - Explain how to grow a StatefulSet valkey claim without losing it. (@fredcamaral)
 - Detail the process of passing edited valkey values during the `10.0.3` upgrade. (@fredcamaral)

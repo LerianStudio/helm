@@ -27,13 +27,14 @@ The chart adds two workloads for it:
 
 | Resource | Name | Runs | When |
 |----------|------|------|------|
-| `CronJob` | `<release>-ledger-partition` | `/partition ensure --reconcile-indexes` | Daily, `0 6 * * *` (06:00 UTC) by default |
+| `CronJob` | `<release>-ledger-partition` | `/partition ensure --reconcile-indexes` | Daily, `0 6 * * *` by default, in `ledger.partition.timeZone` (empty: the kube-controller-manager's zone, UTC on most managed clusters) |
 | `Job` (hook) | `<release>-ledger-partition-reconcile-<ledger tag>` | `/partition reconcile-indexes --tolerate-unavailable` | On every install, upgrade and Argo CD sync, after the ledger migration Job and alongside the app rollout |
 
 - **`ensure`** creates the missing partitions up to the configured horizon,
   refreshes the statistics of each partitioned table and reports a health verdict
-  per table. It never detaches or drops a partition and runs no DDL on an
-  unpartitioned table. `--reconcile-indexes` adds the index reconcile pass to the
+  per table. The only partitions it detaches and drops are empty ones lying
+  wholly in the future, of another interval or past a lowered horizon; it runs
+  no DDL on an unpartitioned table. `--reconcile-indexes` adds the index reconcile pass to the
   same daily run, so an index the deploy hook skipped is retried every day.
 - **`reconcile-indexes`** brings every database in line with the partition-index
   registry. An empty registry, an unpartitioned table or a database without the
@@ -172,7 +173,7 @@ DEFAULT partition (see [Alert signals](#alert-signals)).
   `up` or `skipped`, never `down`, so they never turn `/readyz` into a `503`. On an
   unpartitioned database both stay `skipped` with
   `reason: transaction table is not partitioned` until the conversion. In
-  multi-tenant mode they are not registered; the tenant health prober reports a
+  multi-tenant mode they are not registered; the tenant health probe reports a
   `partition` dependency per tenant instead.
 - **Run it on demand** to check a database without waiting for the schedule:
 

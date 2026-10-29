@@ -299,12 +299,12 @@ Midaz deploys the following core services:
 | `ledger.aws.rolesAnywhere.enabled` | Enable the AWS IAM Roles Anywhere sidecar on the ledger, for clusters without IRSA. The multi-tenant ledger reads its per-tenant Tracer M2M credential from Secrets Manager. On EKS keep it `false` and set `ledger.serviceAccount.annotations["eks.amazonaws.com/role-arn"]`; never enable both. When enabled, `trustAnchorArn`, `profileArn` and `roleArn` are required, the client certificate Secret (`certificateSecretName`, default `<midaz-ledger.fullname>-iam-tls`) must be provisioned outside the chart, and `ledger.podSecurityContext` is replaced with `fsGroup: 65532`. Set `AWS_REGION` in `ledger.extraEnvVars`. | `false` |
 | `ledger.partition.enabled` | Run the partition runner (CronJob and reconcile hook Job). Unset means auto: on for stable ledger tags `>= 4.4.0`, off below that, for pre-releases and for non-SemVer tags; `true`/`false` pins it. | unset |
 | `ledger.partition.schedule` | Cron schedule of the `partition ensure --reconcile-indexes` CronJob. Keep it outside the database's backup and maintenance windows. | `"0 6 * * *"` |
-| `ledger.partition.timeZone` | IANA time zone for `schedule`; empty uses the kube-controller-manager's zone. | `""` |
+| `ledger.partition.timeZone` | IANA time zone for `schedule`; empty uses the kube-controller-manager's zone, UTC on most managed clusters. | `""` |
 | `ledger.partition.activeDeadlineSeconds` | Hard timeout for one `ensure` run, in seconds. | `1800` |
 | `ledger.partition.reconcile.enabled` | Run `partition reconcile-indexes --tolerate-unavailable` as a hook Job after the migration Job, alongside the app rollout. | `true` |
 | `ledger.partition.reconcile.syncWave` | Argo CD sync wave of the reconcile Job (plain Helm orders it with hook weight `10`). | `"1"` |
 | `ledger.partition.reconcile.activeDeadlineSeconds` | Hard timeout for the reconcile Job, in seconds. | `1800` |
-| `ledger.partition.reconcile.ttlSecondsAfterFinished` | How long the finished reconcile Job is kept for inspection. | `259200` |
+| `ledger.partition.reconcile.ttlSecondsAfterFinished` | How long a failed reconcile Job is kept for inspection; a successful hook Job is deleted at once. | `259200` |
 | `ledger.partition.resources.*` | CPU/Memory requests/limits of the partition runner pods. | See `values.yaml` |
 
 #### Ledger Partition Runner

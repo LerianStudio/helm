@@ -309,23 +309,25 @@ ledger:
         cpu: 50m
         memory: 64Mi
   # -- Partition runner (`/partition`, shipped in the ledger image). A CronJob
-  # runs `partition ensure` once per deployment: it creates the time partitions
-  # of the partitioned transaction tables ahead of the clock and reports their
-  # health through its exit code (0 healthy or unpartitioned, 1 needs attention,
-  # 2 invalid configuration). In multi-tenant mode it visits every active tenant.
+  # runs `partition ensure` on its schedule, daily by default: it creates the
+  # time partitions of the partitioned transaction tables ahead of the clock
+  # and reports their health through its exit code (0 healthy or
+  # unpartitioned, 1 needs attention, 2 invalid configuration). In
+  # multi-tenant mode it visits every active tenant.
   partition:
-    # -- Run the `partition ensure` CronJob. Unset means auto: on for stable
-    # ledger tags >= 4.4.0, whose image ships the runner, off below that, for
-    # pre-releases and for non-SemVer tags. Set true for a pre-release that
-    # already carries the runner; set false to keep it off.
+    # -- (bool) Run the `partition ensure` CronJob. Unset (the default) means
+    # auto: on for stable ledger tags >= 4.4.0, whose image ships the runner,
+    # off below that, for pre-releases and for non-SemVer tags. Set true for a
+    # pre-release that already carries the runner; set false to keep it off.
     enabled:
-    # -- Cron schedule of the `partition ensure` run. The default, 06:00 UTC,
-    # stays clear of the early-morning UTC backup and maintenance windows
-    # managed PostgreSQL services often default to; pick a time outside your
-    # database's own windows.
+    # -- Cron schedule of the `partition ensure` run, read in `timeZone`. The
+    # default, 06:00 in that zone, stays clear of the early-morning backup and
+    # maintenance windows managed PostgreSQL services often default to; pick a
+    # time outside your database's own windows.
     schedule: "0 6 * * *"
     # -- IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses
-    # the time zone of the kube-controller-manager.
+    # the time zone of the kube-controller-manager, UTC on most managed
+    # clusters; set it to pin the schedule to a zone.
     timeZone: ""
     # -- Hard timeout for one run, in seconds
     activeDeadlineSeconds: 1800
@@ -341,7 +343,8 @@ ledger:
       # -- Hard timeout for the reconcile Job, in seconds (a concurrent index
       # build on a large partition can take a while)
       activeDeadlineSeconds: 1800
-      # -- How long the finished reconcile Job is kept for inspection
+      # -- How long a reconcile Job that stays after finishing, a failed one,
+      # is kept for inspection; a successful hook Job is deleted at once
       ttlSecondsAfterFinished: 259200
     resources:
       # -- CPU and memory limits for the partition runner

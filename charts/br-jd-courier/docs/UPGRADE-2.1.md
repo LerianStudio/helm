@@ -106,7 +106,8 @@ No action required if you do not need the Pix transit. The feature is disabled b
 1. Choose a TLS termination strategy (Option 1 or Option 2 above)
 2. If using Option 1, create the TLS Secret before upgrading
 3. Add the `roles.admin.pixTransit` block to your `values.yaml`
-4. Upgrade the chart
+4. Run Courier image 1.2.0 or later (`jd-courier.image.tag`); 1.1.x has no transit listener
+5. Upgrade the chart
 
 **Additional configuration keys:**
 

@@ -119,8 +119,7 @@ load balancer). Route only JD's paths, `/v1/webhooks/` and `/v1/pix-automatico/`
 the same port answers the probes and `/version`. Health-check `/health` on
 `ports.http`. Behind a proxy, set `config.TRUSTED_PROXIES` to its CIDRs: lib-auth
 takes the caller's address from that list alone, and a tenant with an IP allowlist
-refuses a caller without one. An entry that is not an IP or CIDR refuses the boot;
-a bare address or a range wider than /8 is dropped with an ERROR.
+refuses a caller without one. An entry that is not an IP or CIDR refuses the boot.
 
 ## SOAP TLS (spb-sender)
 
@@ -319,7 +318,9 @@ active channel in a quiet window.
 From 1.1.x, JD's current credential stops working at the rollout: 1.2.0 admits
 JD only under a partner ([Pix ingress (JD)](#pix-ingress-jd)), and the Access
 Manager accepts that partner only after a 1.2.0 pod publishes the opt-in. In
-order: upgrade with the [Access Manager](#access-manager) keys set; wait for
+order: bring the Access Manager to 3.14.0 and Caradhras to 1.9.0-beta.1 or later
+([Pix ingress (JD)](#pix-ingress-jd)); upgrade with the
+[Access Manager](#access-manager) keys set; wait for
 `permission_declaration` to read `up`; the client admin creates JD's partner and
 issues JD's application; JD switches to it. Inbound Pix answers `401` to JD from
 the rollout until then, so schedule the switch with JD.

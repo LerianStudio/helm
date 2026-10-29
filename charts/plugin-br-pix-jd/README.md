@@ -91,7 +91,7 @@ If you use argocd-vault-plugin, a `<path:...>` placeholder skips the chart's for
 
 ## Install
 
-Pin the image in production with `api.image.tag`. Without it, the image follows the chart's `appVersion`, so a chart upgrade also changes the application version. Image tags have no leading `v`. The migrations image is pinned separately in `migrations.image.tag`.
+Pin the image in production with `api.image.tag`. Without it, the image follows the chart's `appVersion`, so a chart upgrade also changes the application version. Image tags have no leading `v`. The migrations image is pinned separately in `migrations.image.tag`. The worker image is pinned separately in `worker.image.tag`; it does not follow `api.image.tag`, so move it together with `api.image.tag`.
 
 A values file with the values above. Every value is a placeholder:
 
@@ -164,7 +164,7 @@ Per-version notes: [0.1](docs/UPGRADE-0.1.md) · [0.2](docs/UPGRADE-0.2.md) · [
 - Chart type: `multi-component`
 - Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name`, all of them come from that Secret.
 - Dependency notes: `lerian-common-helm` (library chart, renders nothing); `postgresql` (Bitnami `16.3.5`) and `valkey` (Bitnami `2.4.7`), both disabled by default — the chart expects an external PostgreSQL and Valkey or Redis.
-- Production overrides: `api.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE`, `api.configmap.PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `api.configmap.REDIS_HOST`, `api.existingSecret.name`, and `api.ingress.*`.
+- Production overrides: `api.image.tag`, `worker.image.tag`, `migrations.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE`, `api.configmap.PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `api.configmap.REDIS_HOST`, `api.existingSecret.name`, and `api.ingress.*`.
 - Source/license: the plugin is closed source and requires an Enterprise license; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
 ## Values

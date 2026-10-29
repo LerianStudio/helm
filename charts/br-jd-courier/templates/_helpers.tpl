@@ -267,6 +267,8 @@ spec:
               path: /readyz
               port: http
             periodSeconds: 10
+            # /readyz gives its database ping 2 s; the kubelet's default is 1 s.
+            timeoutSeconds: 3
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

@@ -36,8 +36,8 @@ global:
   multiTenant:
     enabled: false
   # -- Env-wide telemetry gate. Leave disabled to keep the bundled default off.
-  # Only "enabled" is supported on this chart (no otlpEndpoint/deploymentEnvironment
-  # fields — those exist on other charts' observability mask, not this one's).
+  # otlpEndpoint is optional: unset, telemetry exports to the node-local collector
+  # at $(HOST_IP):4317.
   observability:
     enabled: false
   # -- Env-wide auth (plugin-access-manager). Leave unset to keep the chart's

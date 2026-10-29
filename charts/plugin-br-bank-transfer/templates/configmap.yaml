@@ -248,13 +248,8 @@ data:
   # Library/service-name/version/deployment-env are systemplane-managed.
   # =====================================================================
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
-  {{- /* Same global.observability mask lerian-common.otel.env derives this from
-     (block "observability" field "otlpEndpoint") — was a flat passthrough
-     defaulting to "", so global.observability alone could never supply an
-     endpoint, only a native configmap override could (same class of bug as
-     STREAMING_ENABLED). Default stays "": the app crashes at boot with its
-     own explicit error when ENABLE_TELEMETRY=true and this is still empty,
-     so an empty default here is intentional, not an oversight. */}}
+  {{- /* Same global.observability mask as ENABLE_TELEMETRY. Empty with telemetry on:
+     deployment.yaml injects the node-local collector, $(HOST_IP):4317. */}}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
   OTEL_SDK_DISABLED: {{ .Values.bankTransfer.configmap.OTEL_SDK_DISABLED | default "false" | quote }}
   {{- if not $multiTenantEnabled }}

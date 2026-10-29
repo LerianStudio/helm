@@ -3,6 +3,19 @@
 ## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.2)
 
 Fixes:
+- Capped Caradhras database connections at 5 seconds to enhance performance. (@fredcamaral)
+
+Improvements:
+- Added a Helm upgrade guide for `plugin-access-manager` `v10.0.1`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-access-manager` `v10.0.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.1...plugin-access-manager-v10.0.2)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.2)
+
+Fixes:
 - Limit Caradhras database connections to a maximum of 5 seconds to prevent timeouts. (@fredcamaral)
 
 Improvements:

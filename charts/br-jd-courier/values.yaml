@@ -36,8 +36,7 @@ serviceAccount:
 # and JD's partner opt-in at boot with IDP_DECLARATION_ENABLED, IDP_HOST and
 # IDP_M2M_CLIENT_ID here and IDP_M2M_CLIENT_SECRET in the Secret; without them
 # every caller is refused while the pods read Ready (README "Access Manager").
-# AWS_REGION is the Secrets Manager region (the Courier defaults to us-east-1).
-# Every Courier boolean is exactly true or false; anything else refuses the boot.
+# AWS_REGION is the Secrets Manager region off EKS (README "AWS identity").
 # ENVIRONMENT_NAME is required; README "Environment".
 # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT follows ENVIRONMENT_NAME unless set here.
 config:

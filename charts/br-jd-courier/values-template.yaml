@@ -46,7 +46,8 @@ config:
   # The Access Manager identity address (port 4001), not PLUGIN_AUTH_HOST.
   IDP_HOST: ""
   IDP_M2M_CLIENT_ID: ""
-  # The Secrets Manager region of the Pix engine credentials (default us-east-1).
+  # The Secrets Manager region of the Pix engine credentials (default us-east-1);
+  # on EKS, IRSA and Pod Identity inject the cluster's region, which wins.
   AWS_REGION: ""
 
 # The spb-sender's SOAP listener needs TLS in production (it refuses to boot

@@ -88,7 +88,6 @@ nothing is declared, yet the entry can read `up` on JD's partner opt-in alone.
 
 | Key | Where | Value |
 |---|---|---|
-| `IDP_DECLARATION_ENABLED` | `config` | `"true"`, the chart default |
 | `IDP_HOST` | `config` | the Access Manager identity address, e.g. `http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001` |
 | `IDP_M2M_CLIENT_ID` | `config` | the Courier's M2M application |
 | `IDP_M2M_CLIENT_SECRET` | the Secret | that application's secret; refused under `config` |
@@ -98,8 +97,8 @@ person, with `POST /v1/applications/service-credentials`, `source` `jd-courier` 
 `target` `plugin-identity` (Access Manager 3.13.0 or later). Only the create answer
 shows the `clientSecret`. A refused credential or manifest logs an ERROR and
 leaves the entry `degraded`; after the fix, `kubectl rollout restart` the
-Deployments. Multi-tenant ignores all four keys: the RI catalog and the tenant
-manager's reconcile carry the grants.
+Deployments. Multi-tenant ignores the flag and these keys: the RI catalog and
+the tenant manager's reconcile carry the grants.
 
 ## Pix ingress (JD)
 
@@ -192,10 +191,13 @@ Courier's not-sent and release a hold JD may still settle.
 
 Single-tenant, the transit reaches JD with the institution's SPI credential:
 `config.JD_SPI_BASE_URL` (https in production), `config.JD_SPI_CLIENT_ID`, and
-`JD_SPI_CLIENT_SECRET` in the Secret (refused under `config`). Multi-tenant
-reads each tenant's `jd-spi` bundle from Secrets Manager instead. In both,
-`config.JD_ALLOW_PRIVATE_NETWORK` governs the transit's JD client as it does the
-SPB roles'.
+`JD_SPI_CLIENT_SECRET` in the Secret (refused under `config`). Where JD's gateway
+fronts the SPI cabin (token on `/auth/jdpi/connect/token`), also set
+`config.JD_SPI_USE_SERVICE_SEGMENTS: "true"`: it must equal the Pix engine's
+`JD_USE_SERVICE_SEGMENTS`, because the transit forwards the engine's path
+verbatim. Multi-tenant reads each tenant's `jd-spi` bundle from Secrets Manager
+instead. In both, `config.JD_ALLOW_PRIVATE_NETWORK` governs the transit's JD
+client as it does the SPB roles'.
 
 The admin calls the Pix engines (async validation delivery) and JD's SPI
 gateway. The chart renders no NetworkPolicy; a cluster that restricts egress

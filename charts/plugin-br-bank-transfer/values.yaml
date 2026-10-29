@@ -654,8 +654,10 @@ bankTransfer:
   # STREAMING_SASL_PASSWORD: ""
   # STREAMING_TLS_CA_CERT: ""
 
-  # Multi-tenant Redis CA (optional — only when MULTI_TENANT_REDIS_TLS=true
-  # and the cluster's CA isn't in the system trust pool)
+  # Multi-tenant (only when MULTI_TENANT_ENABLED=true). Redis CA: only when
+  # MULTI_TENANT_REDIS_TLS=true and the cluster's CA isn't in the system trust pool.
+  # MULTI_TENANT_SERVICE_API_KEY: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
+  # MULTI_TENANT_REDIS_PASSWORD: ""
   # MULTI_TENANT_REDIS_CA_CERT: ""
 
   # RabbitMQ credentials (when RABBITMQ_ENABLED=true; RABBITMQ_URL is required,

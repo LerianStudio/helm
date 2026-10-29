@@ -134,6 +134,8 @@ bankTransfer:
     # Licence
     LICENSE_KEY: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment; a development key also needs configmap.IS_DEVELOPMENT: "true"
 
+    # MULTI_TENANT_SERVICE_API_KEY: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
+
     # JD SPB credentials — REQUIRED single-tenant unless JD_SANDBOX_MODE=true
     # JD_USER_CODE: ""
     # JD_PASSWORD: ""

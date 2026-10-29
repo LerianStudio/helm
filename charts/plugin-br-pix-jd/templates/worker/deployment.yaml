@@ -58,9 +58,13 @@ spec:
             - /bin/sh
             - -c
             - >
-              until nc -z {{ include "plugin-br-pix-jd.postgresHost" . }} {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_PORT" "default" "5432") }}; do
+              until nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
                 echo "postgres not ready, waiting..."; sleep 3;
               done
+          {{- /* The worker's own ConfigMap: the same host and port the worker dials. */}}
+          envFrom:
+            - configMapRef:
+                name: {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "worker") }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
       containers:

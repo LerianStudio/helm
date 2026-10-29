@@ -319,7 +319,7 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `CRM_BASE_URL` | CRM adapter base URL | **Required** |
 | `FEES_BASE_URL` | Fees adapter base URL | **Required** |
 | `JD_BASE_URL` | JD SPB SOAP API URL | **Required** (unless `JD_SANDBOX_MODE=true`) |
-| `JD_ORIGIN_ISPB` | Bank ISPB code for JD | **Required** (unless `JD_SANDBOX_MODE=true`) |
+| `JD_LEGACY_CODE` | JD legacy code; `JD_USER_CODE`, `JD_PASSWORD`, `JD_PRIVATE_KEY_KEYINFO` and, in `local_pem` signing, `JD_PRIVATE_KEY_PEM` go in `bankTransfer.secrets`. The origin ISPB is the systemplane key `tenancy.ispb_organization_bindings`, not env | **Required** single-tenant (unless `JD_SANDBOX_MODE=true`) |
 | `ORGANIZATION_IDS` | Organizations the licence is validated for (or set it under `bankTransfer.secrets`) | **Required** by newer app images, in every environment |
 | `IS_DEVELOPMENT` | Exactly `"true"` points lib-license-go at the development licence gateway, which a development licence key needs | Not rendered |
 | `COURIER_ACCOUNT_CLAIMS_ENABLED` | App v3.2.0+: sweep that claims this engine's CRM accounts on the Courier. When `"true"`, single-tenant also needs `COURIER_BASE_URL`, the `COURIER_CLIENT_ID`/`COURIER_CLIENT_SECRET` pair and `ORGANIZATION_ID` (the render fails without the URL or the organization) | `false` |

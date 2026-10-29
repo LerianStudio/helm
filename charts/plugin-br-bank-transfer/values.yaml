@@ -564,8 +564,8 @@ bankTransfer:
     # pinned — no mask reads them, and the chart already defaults them
     # ("false"/"/soap"/"local_pem"/"false") in templates/configmap.yaml.
     JD_BASE_URL: "" # MUST BE SET — JD SOAP endpoint
-    JD_ORIGIN_ISPB: "" # MUST BE SET — Origin ISPB code
-    # JD_LEGACY_CODE: ""
+    # JD_LEGACY_CODE: ""  # MUST BE SET
+    # Origin ISPB is not env: seed the systemplane key tenancy.ispb_organization_bindings.
 
     # =================================================================
     # Single-tenant defaults
@@ -634,10 +634,10 @@ bankTransfer:
     # key for local runs; if your image needs it, supply it through
     # bankTransfer.useExistingSecret.
 
-    # JD SPB Credentials (REQUIRED for production)
+    # JD SPB Credentials (MUST BE SET single-tenant unless JD_SANDBOX_MODE=true)
     # JD_USER_CODE: ""
     # JD_PASSWORD: ""
-    # JD_PRIVATE_KEY_PEM: ""
+    # JD_PRIVATE_KEY_PEM: ""  # MUST BE SET in JD_SIGNING_MODE=local_pem (the default)
     # JD_PUBLIC_KEY_PEM: ""  # Required for external_provided mode with signature validation
     # JD_PRIVATE_KEY_KEYINFO: ""  # key metadata for external signing providers (credential-like → Secret)
 

@@ -115,7 +115,7 @@ bankTransfer:
     # JD-SPB
     JD_SANDBOX_MODE: "false"
     JD_BASE_URL: ""  # REQUIRED when JD_SANDBOX_MODE=false
-    JD_ORIGIN_ISPB: ""  # REQUIRED when JD_SANDBOX_MODE=false
+    JD_LEGACY_CODE: ""  # REQUIRED when JD_SANDBOX_MODE=false (origin ISPB: systemplane tenancy.ispb_organization_bindings)
 
     # Licence
     ORGANIZATION_IDS: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment
@@ -134,10 +134,11 @@ bankTransfer:
     # Licence
     LICENSE_KEY: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment; a development key also needs configmap.IS_DEVELOPMENT: "true"
 
-    # JD SPB credentials — required for production (unless JD_SANDBOX_MODE=true)
+    # JD SPB credentials — REQUIRED single-tenant unless JD_SANDBOX_MODE=true
     # JD_USER_CODE: ""
     # JD_PASSWORD: ""
-    # JD_PRIVATE_KEY_PEM: ""
+    # JD_PRIVATE_KEY_KEYINFO: ""
+    # JD_PRIVATE_KEY_PEM: ""  # REQUIRED in JD_SIGNING_MODE=local_pem (the default)
     # JD_PUBLIC_KEY_PEM: ""  # required for external_provided mode with signature validation
 
     # RabbitMQ (if RABBITMQ_ENABLED=true; amqps:// outside development/test/local)

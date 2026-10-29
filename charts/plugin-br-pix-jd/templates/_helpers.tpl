@@ -773,7 +773,9 @@ TWILIO_BASE_URL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "
 
 {{/*
 ------------------------------------------------------------------------------
-qrcodeEnv — dynamic-QR JWS hosting. API-ONLY: the worker serves no QR payloads.
+qrcodeEnv — dynamic-QR JWS hosting. Emitted for both components: the worker serves
+no QR payloads, but its config validation, shared with the api, requires
+QRCODE_PUBLIC_BASE_URL in production.
 
 QRCODE_PUBLIC_BASE_URL has no safe default and two constraints that are easy to
 violate and expensive to discover, so both are gates rather than comments:

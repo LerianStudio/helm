@@ -225,7 +225,7 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
 
   # =====================================================================
-  # STREAMING (lib-streaming v3 — business event publication)
+  # STREAMING (lib-streaming v4 — business event publication)
   # Rendered in both modes: STREAMING_CLOUDEVENTS_SOURCE is validated at
   # startup regardless of MULTI_TENANT_ENABLED/STREAMING_ENABLED, so it can't
   # sit behind either gate. STREAMING_ENABLED itself now goes through the

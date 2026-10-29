@@ -308,14 +308,15 @@ data:
   # systemplane-managed at runtime.
   # =====================================================================
 
-  # Midaz — defaults match the standard in-cluster Midaz ledger/auth service
-  # names (midaz-ledger.midaz / plugin-access-manager-auth.plugin-access-manager),
-  # same convention as the bundled-subchart datastore defaults elsewhere in
-  # this file. A non-standard install still overrides via the native key.
+  # Midaz — the URL defaults match the standard in-cluster Midaz ledger service
+  # (midaz-ledger.midaz). An unset MIDAZ_AUTH_ADDRESS falls back, in the app, to
+  # PLUGIN_AUTH_ADDRESS (global.auth.host). A non-standard install overrides via the native key.
   MIDAZ_BASE_URL: {{ .Values.bankTransfer.configmap.MIDAZ_BASE_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002" | quote }}
   MIDAZ_TRANSACTION_URL: {{ .Values.bankTransfer.configmap.MIDAZ_TRANSACTION_URL | default .Values.bankTransfer.configmap.MIDAZ_BASE_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002" | quote }}
   MIDAZ_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ENABLED | default "false" | quote }}
-  MIDAZ_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" | quote }}
+  {{- with .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS }}
+  MIDAZ_AUTH_ADDRESS: {{ . | quote }}
+  {{- end }}
   # Fee mode (app v3.1.0+): auto | legacy | native, case-sensitive. "auto" asks the
   # ledger GET /version and turns native (Midaz embedded fees on /v2) on by itself
   # against Midaz >= 4.1; "legacy" keeps plugin-fees on /v1. Defaults mirror the app.

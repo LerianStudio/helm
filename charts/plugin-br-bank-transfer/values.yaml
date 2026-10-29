@@ -518,15 +518,14 @@ bankTransfer:
     # path templates are systemplane-managed at runtime.
     # =================================================================
 
-    # Midaz — MIDAZ_BASE_URL/MIDAZ_TRANSACTION_URL/MIDAZ_AUTH_ADDRESS are NOT
-    # pinned — the chart already defaults them (standard in-cluster Midaz
-    # ledger/auth service names) in templates/configmap.yaml. Override here
-    # only for a non-standard install.
+    # Midaz — MIDAZ_BASE_URL/MIDAZ_TRANSACTION_URL are NOT pinned — the chart
+    # already defaults them (standard in-cluster Midaz ledger service name) in
+    # templates/configmap.yaml. Override here only for a non-standard install.
     # MIDAZ_BASE_URL: ""
     # MIDAZ_TRANSACTION_URL: ""
     # MIDAZ_AUTH_ENABLED is NOT pinned — the chart already defaults it
     # ("false") in templates/configmap.yaml.
-    # MIDAZ_AUTH_ADDRESS: ""
+    # MIDAZ_AUTH_ADDRESS: ""  # unset = PLUGIN_AUTH_ADDRESS (global.auth.host)
     # MIDAZ_TIMEOUT_MS: ""
     # Fee mode (app v3.1.0+) — defaulted in templates/configmap.yaml to the app's
     # own defaults. "auto" turns native fees on by itself against Midaz >= 4.1;

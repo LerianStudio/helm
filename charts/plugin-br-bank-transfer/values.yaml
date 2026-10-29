@@ -598,8 +598,11 @@ bankTransfer:
 
     # Redis/Valkey password
     REDIS_PASSWORD: ""
+    # MongoDB password for an external MongoDB without mongodb.auth.existingSecret, used only
+    # when MONGO_URI references $(MONGO_PASSWORD).
+    MONGO_PASSWORD: ""
     # MONGO_URI: ""  # REQUIRED for an external MongoDB in single-tenant mode, credential inline
-    #                # (the app reads only MONGO_URI). Bundled: the chart assembles it.
+    #                # or $(MONGO_PASSWORD) (the app reads only MONGO_URI). Bundled: the chart assembles it.
     # PLUGIN_AUTH_CLIENT_ID/PLUGIN_AUTH_CLIENT_SECRET are not read by the app
     # since v3.1.0 (inbound auth needs only PLUGIN_AUTH_ADDRESS); do not set them.
 

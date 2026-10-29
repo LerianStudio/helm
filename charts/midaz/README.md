@@ -522,6 +522,14 @@ This chart includes the following dependencies for the default installation. All
         - "--maxclients 10000"
   ```
 
+  With `valkey.primary.kind: StatefulSet` (not the default), Kubernetes refuses a new `persistence.size`, because it changes the StatefulSet's claim template. Set the new size (16Gi here) in your values, grow the claim itself, and delete the StatefulSet but not its pod or claim, so the next upgrade or Argo CD sync creates it again with the new template:
+
+  ```bash
+  kubectl -n midaz patch pvc valkey-data-midaz-valkey-primary-0 \
+    -p '{"spec":{"resources":{"requests":{"storage":"16Gi"}}}}'
+  kubectl -n midaz delete statefulset midaz-valkey-primary --cascade=orphan
+  ```
+
   With an external Valkey or Redis instance, configure the same persistence and `maxmemory-policy noeviction` on that instance. A `volatile-*` policy keeps fee debts, which carry no TTL, but still evicts idempotency keys.
 
 ### PostgreSQL

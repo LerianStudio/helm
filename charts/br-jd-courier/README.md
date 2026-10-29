@@ -116,7 +116,7 @@ removed `PIX_VENDOR_SUBJECTS` (multi-tenant: `jd-courier.pix/vendor_subjects`).
 Before the upgrade, record the subjects it lists, JD's ordinary client
 applications, then drop it from `config`, where nothing reads it: 1.2.0 no longer
 refuses them and admits a client application as admin on every operator route, so
-the client admin deletes them in the change that creates JD's partner.
+the client admin deletes them right before the upgrade.
 
 The pix-ingress Service is ClusterIP on `ports.http`, and the chart renders no
 Ingress for it. JD calls an HTTPS address the client exposes (its own Ingress or
@@ -328,12 +328,12 @@ JD only under a partner ([Pix ingress (JD)](#pix-ingress-jd)), and the Access
 Manager accepts that partner only after a 1.2.0 pod publishes the opt-in. In
 order: record the subjects `PIX_VENDOR_SUBJECTS` lists; bring the Access Manager
 to 3.14.0 and Caradhras to 1.8.6 or later (or 1.9.0-beta.1 or later on the 1.9
-line, [Pix ingress (JD)](#pix-ingress-jd)); upgrade with the
-[Access Manager](#access-manager) keys set; wait for `permission_declaration` to
-read `up`; in one change, the client admin creates JD's partner, issues JD's
-application under it and deletes every recorded application; JD switches to it.
-Inbound Pix answers `401` to JD from the rollout until then, so schedule the
-switch with JD.
+line, [Pix ingress (JD)](#pix-ingress-jd)); right before the upgrade, the client
+admin deletes every recorded application, so none holds admin once the 1.2.0
+grants are published; upgrade with the [Access Manager](#access-manager) keys
+set; wait for `permission_declaration` to read `up`; the client admin creates
+JD's partner and issues JD's application under it; JD switches to it. Inbound Pix
+answers `401` to JD from the deletion until then, so schedule the window with JD.
 
 ⚠️ **Multi-tenant installs are not covered.** Nothing on the platform applies
 per-tenant migrations on deploy. The chart refuses `migrations.enabled=true`

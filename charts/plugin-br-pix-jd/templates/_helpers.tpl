@@ -1199,7 +1199,55 @@ STREAMING_CLOSE_TIMEOUT_S: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $
 
 {{/*
 ------------------------------------------------------------------------------
-platformSecrets — MT, streaming and M2M credentials, shared by api and worker.
+systemFactsEnv — the System Facts producer's non-secret environment. API + worker
+both carry it: cmd/worker is record-only (it never delivers or registers, and the app
+skips the delivery checks for it), but it reads the same flag, and the render checks the
+worker's map the same way so a worker-only override cannot drift from the api.
+
+OFF by default. With SYSTEM_FACTS_ENABLED unset or false only the flag is emitted
+and the money path runs the SQL it ran before the producer existed.
+
+Gates, each one a boot refusal in the app moved to render time:
+  - SYSTEM_FACTS_URL is required once the producer is on.
+  - Multi-tenant: M2M_SYSTEM_FACTS_TARGET_SERVICE is required (each tenant's
+    credential is read from .../m2m/{target}/credentials), and OUTBOX_ENABLED=true
+    is refused beside it, because the outbox SchemaResolver would run inside every
+    fact transaction.
+  - The client pair is checked in platformSecrets: single-tenant both-or-neither;
+    multi-tenant it is REQUIRED on the api (the service credential that registers the
+    contract at boot).
+
+SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE stays false until every credential carries a
+declared source; SYSTEM_FACTS_INSECURE_HTTP is emitted only when set (the app
+refuses it under ENV_NAME=production).
+
+Input dict: root, configmap.
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.systemFactsEnv" -}}
+{{- $root := .root -}}
+{{- $cm := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) (.configmap | default dict) -}}
+{{- $enabled := eq (index $cm "SYSTEM_FACTS_ENABLED" | default "false" | toString) "true" -}}
+{{- $mt := eq (index $cm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+SYSTEM_FACTS_ENABLED: {{ $enabled | toString | quote }}
+{{- if $enabled }}
+SYSTEM_FACTS_URL: {{ required "\n\nERROR: api.configmap.SYSTEM_FACTS_URL is required when SYSTEM_FACTS_ENABLED=true.\nThe app refuses to boot an enabled producer with no address to deliver to.\n" (index $cm "SYSTEM_FACTS_URL" | default "") | quote }}
+SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE" "default" "false") | quote }}
+{{- if hasKey $cm "SYSTEM_FACTS_INSECURE_HTTP" }}
+SYSTEM_FACTS_INSECURE_HTTP: {{ index $cm "SYSTEM_FACTS_INSECURE_HTTP" | toString | quote }}
+{{- end }}
+{{- if $mt }}
+{{- if eq (index $cm "OUTBOX_ENABLED" | default "false" | toString) "true" }}
+{{- fail "\n\nERROR: SYSTEM_FACTS_ENABLED=true cannot be combined with OUTBOX_ENABLED=true in multi-tenant.\nThe app refuses to boot that pair: the outbox SchemaResolver would run inside every\nfact transaction. Turn one of them off.\n" -}}
+{{- end }}
+M2M_SYSTEM_FACTS_TARGET_SERVICE: {{ required "\n\nERROR: api.configmap.M2M_SYSTEM_FACTS_TARGET_SERVICE is required when SYSTEM_FACTS_ENABLED=true and MULTI_TENANT_ENABLED=true.\nEach tenant's System Facts credential is read from\n  tenants/{env}/{tenantOrgID}/plugin-br-pix-jd/m2m/{targetService}/credentials\nand the segment is NOT derivable from the service name: copy it from the provisioned secret path.\n" (index $cm "M2M_SYSTEM_FACTS_TARGET_SERVICE" | default "") | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+platformSecrets — MT, streaming, System Facts and M2M credentials, shared by api and worker.
 
 Emits `KEY: <b64>` lines; the caller nindents under `data:`. Gated on the feature
 being ON, because requiring a tenant-manager API key from a single-tenant install
@@ -1210,7 +1258,7 @@ clientId/clientSecret and has no plaintext mode. Empty disables L2 (L1 only, one
 WARN); set-but-malformed fails the boot. Validating the 64-hex shape here turns that
 boot failure into a render failure.
 
-Input dict: root, comp.
+Input dict: root, comp, component ("api" or "worker"; default "api").
 ------------------------------------------------------------------------------
 */}}
 {{- define "plugin-br-pix-jd.platformSecrets" -}}
@@ -1242,6 +1290,37 @@ Input dict: root, comp.
 {{- fail (printf "\n\nERROR: M2M_L2_ENCRYPTION_KEY must be 64 hex characters (hex-encoded AES-256); got %d.\nGenerate one with: openssl rand -hex 32\nIt encrypts the L2 cache holding every tenant clientId/clientSecret; a malformed value\nfails the boot. Leave it EMPTY to disable L2 deliberately (L1 only, one boot WARN).\n" (len $l2)) -}}
 {{- end -}}
 {{- $lines = append $lines (printf "M2M_L2_ENCRYPTION_KEY: %s" ($l2 | b64enc | quote)) -}}
+{{- end -}}
+{{- end -}}
+{{- /* System Facts credentials: the client pair, exchanged for a bearer at PLUGIN_AUTH_HOST.
+   Single-tenant: the pair is the producer's credential (it delivers and registers). Both or
+   neither: a partial pair counts as no pair in the app. The dev-only SYSTEM_FACTS_TOKEN is the
+   alternative and reaches the pod through extraSecrets.
+   Multi-tenant: deliveries use one bearer per tenant (M2M_SYSTEM_FACTS_TARGET_SERVICE), but the
+   api STILL requires the pair as the service credential that registers the contract at boot
+   (validateSystemFactsMultiTenantDelivery); only SYSTEM_FACTS_TOKEN is ignored there. The worker
+   is record-only: it delivers and registers nothing, so it is not forced to carry the pair. */ -}}
+{{- /* The gate reads the component's effective map, the same one systemFactsEnv sees
+   (api.configmap < comp.configmap < comp.extraConfigmap). Reading api.configmap alone
+   left a worker that turned the flag on by itself without its credential pair. */ -}}
+{{- $sfCm := mergeOverwrite (deepCopy $cm) (.comp.configmap | default dict) (.comp.extraConfigmap | default dict) -}}
+{{- $sfEnabled := eq (index $sfCm "SYSTEM_FACTS_ENABLED" | default "false" | toString) "true" -}}
+{{- $sfMt := eq (index $sfCm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+{{- if $sfEnabled -}}
+{{- $sfID := index $s "SYSTEM_FACTS_CLIENT_ID" | default "" -}}
+{{- $sfSecret := index $s "SYSTEM_FACTS_CLIENT_SECRET" | default "" -}}
+{{- $sfPair := and $sfID $sfSecret -}}
+{{- if and $sfMt (eq (.component | default "api") "api") (not $sfPair) -}}
+{{- fail "\n\nERROR: api.secrets.SYSTEM_FACTS_CLIENT_ID and api.secrets.SYSTEM_FACTS_CLIENT_SECRET are required when SYSTEM_FACTS_ENABLED=true and MULTI_TENANT_ENABLED=true.\nIn multi-tenant the pair is the service credential (an Application M2M of the plugin, without tenant)\nthat registers the System Facts contract at boot; the app refuses to boot without it.\nDeliveries still use the per-tenant M2M credential.\n" -}}
+{{- end -}}
+{{- if and (not $sfMt) (or $sfID $sfSecret) (not $sfPair) -}}
+{{- fail "\n\nERROR: api.secrets.SYSTEM_FACTS_CLIENT_ID and api.secrets.SYSTEM_FACTS_CLIENT_SECRET go together: set both or neither.\nA partial pair counts as no pair in the app, so the producer would refuse to boot.\n" -}}
+{{- end -}}
+{{- with $sfID -}}
+{{- $lines = append $lines (printf "SYSTEM_FACTS_CLIENT_ID: %s" (. | b64enc | quote)) -}}
+{{- end -}}
+{{- with $sfSecret -}}
+{{- $lines = append $lines (printf "SYSTEM_FACTS_CLIENT_SECRET: %s" (. | b64enc | quote)) -}}
 {{- end -}}
 {{- end -}}
 {{- if $streaming -}}

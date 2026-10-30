@@ -246,9 +246,13 @@ api:
   # SERVER_ADDRESS=:8080, TLS_TERMINATED_UPSTREAM=true, POSTGRES_SSLMODE=disable,
   # POSTGRES_USER/POSTGRES_NAME=plugin-br-pix-jd, MIGRATIONS_PATH=/migrations,
   # SYSTEMPLANE_ENABLED=true (false with the bundled Postgres, see NOTES),
-  # SWAGGER_ENABLED=false, ENVIRONMENT_NAME="", DEPLOYMENT_MODE="".
+  # SWAGGER_ENABLED=false, ENVIRONMENT_NAME="", DEPLOYMENT_MODE="",
+  # SYSTEM_FACTS_ENABLED=false.
   # SYSTEMPLANE_ENABLED=false fails every Pix flow closed: the own
   # ISPB, the Midaz scope and the transaction routes live only in systemplane.
+  # SYSTEM_FACTS_ENABLED=true (the System Facts producer) needs SYSTEM_FACTS_URL and
+  # api.secrets.SYSTEM_FACTS_CLIENT_ID/_SECRET (+ PLUGIN_AUTH_HOST); multi-tenant also
+  # needs M2M_SYSTEM_FACTS_TARGET_SERVICE — see README.
   # REDIS_HOST has NO default and is required — the rate limiter is fail-closed.
   #
   # JD_PAYMENT_SIGNING_ALGORITHM picks the payment-order signature:

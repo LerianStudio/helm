@@ -43,7 +43,7 @@ With the limit, a connection attempt that takes longer than 5 seconds fails and 
 
 **Pods restart during the upgrade:**
 
-The start command is part of the Caradhras pod template. `helm upgrade` therefore replaces the Caradhras pods even though the image and your values do not change. The `identity` and `auth` pods are not replaced.
+The start command is part of the Caradhras pod template. `helm upgrade` therefore replaces the Caradhras pods even though the image and your values do not change. The auth and identity pods are replaced too. The pod templates of the auth, identity and caradhras Deployments carry the label `helm.sh/chart: plugin-access-manager-<version>`, so any chart version bump replaces the pods of all three, even when nothing else in the pod changes. I checked this by rendering the previous and the new chart version with `helm template`. Auth and identity render `maxSurge: 1` and `maxUnavailable: 1` by default (auth runs 3 replicas, identity 1), so identity can be briefly unavailable during the rollout when it runs a single replica.
 
 The Caradhras Deployment uses a rolling update with `maxSurge: 1` and `maxUnavailable: 0`. These values are fixed in the template. A new pod must pass its readiness check before an old pod stops, so a healthy database means no downtime, including with `replicaCount: 1`.
 
@@ -63,7 +63,7 @@ In that case, investigate the database or network problem. Do not look for a way
 
 **What operators need to do:**
 
-No change to your values is required. The connection timeout is hardcoded in the deployment template and cannot be overridden through `values.yaml`. Expect the Caradhras pods to restart once during the upgrade.
+No change to your values is required. The connection timeout is hardcoded in the deployment template and cannot be overridden through `values.yaml`. Expect the caradhras, auth and identity pods to restart once during the upgrade.
 
 > **Important:** If you see connection timeout errors after the upgrade, the database connectivity or performance issue was already there. Before this release, nothing bounded the wait, so the problem stayed hidden. Check database health, network latency, and connection pool settings.
 

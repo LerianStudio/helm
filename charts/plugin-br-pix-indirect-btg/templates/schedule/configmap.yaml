@@ -13,7 +13,7 @@ data:
   # Schedule Worker Loop Configuration
   # Chart declares explicit defaults: worker runs active with a 15m polling loop.
   # Overlays per environment may override these via values, but the chart owns the default.
-  SCHEDULE_WORKER_ENABLED: {{ .Values.schedule.configmap.SCHEDULE_WORKER_ENABLED | default "true" | quote }}
+  SCHEDULE_WORKER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.schedule.configmap.SCHEDULE_WORKER_ENABLED | quote }}
   SCHEDULE_WORKER_INTERVAL: {{ .Values.schedule.configmap.SCHEDULE_WORKER_INTERVAL | default "15m" | quote }}
   SCHEDULE_WORKER_BATCH_SIZE: {{ .Values.schedule.configmap.SCHEDULE_WORKER_BATCH_SIZE | default "50" | quote }}
   SCHEDULE_WORKER_STALE_THRESHOLD: {{ .Values.schedule.configmap.SCHEDULE_WORKER_STALE_THRESHOLD | default "5m" | quote }}

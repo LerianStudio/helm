@@ -164,6 +164,23 @@ VAULT_TRANSIT_MOUNT_PATH: {{ include "lerian-common.kms.value" (dict "context" $
 {{- with include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsRegion" "nativeKey" "AWS_REGION" "default" "") }}
 AWS_REGION: {{ . | quote }}
 {{- end }}
+{{- /* aws key modes (plugin-br-sisbajud#324): rendered only when the effective provider is aws */}}
+{{- if eq $kmsProvider "aws" }}
+{{- $awsKeyMode := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsKeyMode" "nativeKey" "KMS_AWS_KEY_MODE" "default" "") | trim }}
+{{- if $awsKeyMode }}
+KMS_AWS_KEY_MODE: {{ $awsKeyMode | quote }}
+{{- end }}
+{{- $awsKeyArn := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsKeyArn" "nativeKey" "KMS_AWS_KEY_ARN" "default" "") | trim }}
+{{- if $awsKeyArn }}
+KMS_AWS_KEY_ARN: {{ $awsKeyArn | quote }}
+{{- end }}
+{{- $awsCredArn := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsCredentialsKeyArn" "nativeKey" "KMS_AWS_CREDENTIALS_KEY_ARN" "default" "") | trim }}
+{{- if $awsCredArn }}
+KMS_AWS_CREDENTIALS_KEY_ARN: {{ $awsCredArn | quote }}
+{{- end }}
+{{- include $kv (dict "cm" $cm "p" $s.vault "f" "awsKmsTimeoutSec" "k" "KMS_AWS_TIMEOUT_SEC" "opt" true) }}
+{{- include $kv (dict "cm" $cm "p" $s.vault "f" "awsKmsRotationCheckIntervalSec" "k" "KMS_AWS_ROTATION_CHECK_INTERVAL_SEC" "opt" true) }}
+{{- end }}
 # --- Envelope encryption + blind index ---------------------------------------------
 {{- include $kv (dict "cm" $cm "p" $s.crypto "f" "dekCacheTtl" "k" "SISBAJUD_DEK_CACHE_TTL" "d" "5m") }}
 {{- include $kv (dict "cm" $cm "p" $s.crypto "f" "hmacCoexistenceWindow" "k" "SISBAJUD_HMAC_COEXISTENCE_WINDOW" "d" "720h") }}

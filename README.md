@@ -110,7 +110,7 @@ The release bumps `jd-courier.image.tag`, which is the column below.
 
 | Chart Version | Br-Jd-Courier Version |
 | :---: | :---: |
-| `1.0.0` | 1.1.0 |
+| `1.0.0` | 1.2.0 |
 -----------------
 
 ### Plugin BR Pix Lerian
@@ -265,6 +265,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0` | `1.0.0-beta.1` | `1.0.0-beta.1` |
 -----------------
 
+### Plugin BR TED Lerian
+
+TED transfers plugin for Midaz.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-ted-lerian).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0` | `1.0.0-beta.33` |
+-----------------
+
 ### BR Consignado GW
 
 API gateway and same-origin operator console for the Dataprev consignado rail.
@@ -304,6 +317,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0` | 1.0.2 |
 -----------------
 
+### Streaming Hub
+
+Event delivery edge: consumes lib-streaming CloudEvents from Redpanda and fans them out per tenant to webhooks and queues.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/streaming-hub).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `2.0.0` | `3.0.0` |
+-----------------
+
 ### Lerian Common (Library)
 
 Library chart consumed by other Lerian charts — renders nothing on its own.
@@ -325,5 +351,5 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | System-Facts Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0 |
+| `1.0.0` | 1.1.0 |
 -----------------

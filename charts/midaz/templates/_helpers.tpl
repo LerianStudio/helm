@@ -415,6 +415,14 @@ Matching is exact (no trimming), like ParseBool: " true" is false at runtime.
 {{- end -}}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "midaz.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 midaz.postgresqlPrimaryHost — in-cluster hostname of the bundled PostgreSQL
 primary for THIS release, so a release named something other than `midaz` still
 resolves its database. Bitnami names the Service `<fullname>-primary` in the

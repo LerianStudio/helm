@@ -1,0 +1,39 @@
+apiVersion: v2
+name: plugin-br-ted-lerian-helm
+description: A Helm chart for Plugin BR TED Lerian - TED transfers plugin for Midaz
+type: application
+annotations:
+  lerian.studio/chart-type: single-service
+home: https://github.com/LerianStudio/helm
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-ted-lerian
+  - https://github.com/LerianStudio/plugin-br-ted-lerian
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+version: 1.0.0
+appVersion: "1.0.0-beta.33"
+keywords:
+  - midaz
+  - lerian
+  - plugins
+  - ted
+  - spb
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+# Bitnami subcharts are DECLARED (exact pins, condition-gated) so the chart can
+# optionally bundle its own datastores, but they default to DISABLED: on
+# benedita, Postgres and Valkey are EXTERNAL and pre-provisioned. Enable them
+# for a self-contained install — e.g. the anacleto chaos/fuzzing environments,
+# where each app brings its own infra instead of sharing cluster-wide services.
+dependencies:
+  - name: lerian-common-helm
+    version: "2.0.0"
+    repository: "oci://ghcr.io/lerianstudio"
+  - name: postgresql
+    version: "16.3.5"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: valkey
+    version: "2.4.7"
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    condition: valkey.enabled

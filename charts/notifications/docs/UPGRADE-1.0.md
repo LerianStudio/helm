@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v0.x to v1.x
 
 ## Topics
@@ -142,3 +143,4 @@ helm diff upgrade notifications oci://registry-1.docker.io/lerianstudio/notifica
 ```bash
 helm upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.0.0-beta.4 -n notifications
 ```
+<!-- {% endraw %} -->

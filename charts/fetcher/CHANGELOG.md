@@ -1,5 +1,539 @@
 # Fetcher Changelog
 
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate flag representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags, ensuring correct behavior for these flags. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure correct behavior in configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean false on default-true flags, ensuring correct behavior for these flags. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-`true` flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean `false` on default-`true` flags to ensure correct flag behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [4.0.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate flag representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.4...fetcher-v4.0.0)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add a Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add a Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add a Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1` to assist users with the upgrade process. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2` to provide detailed upgrade instructions. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3` to facilitate smooth transitions to the new version. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1` to assist users with the upgrade process. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2` to provide detailed upgrade instructions. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3` to facilitate seamless upgrades. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`, providing users with detailed steps for upgrading. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`, offering guidance on the upgrade process. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`, assisting users with the latest upgrade instructions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration handling. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1` to assist users in updating their deployments. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2` to provide detailed instructions for seamless upgrades. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3` to enhance user experience during version transitions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.4](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.4)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@prymax10)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v3.4.1`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.2`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.3`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.3...fetcher-v3.4.4)
+
+---
+
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
+- Update `fetcher-manager` to `3.1.1` and `fetcher-worker` to `3.1.1`, ensuring compatibility and stability improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
+- Update `fetcher-manager` to `3.1.1` and `fetcher-worker` to `3.1.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
+- Update `fetcher-manager` to `3.1.1` and `fetcher-worker` to `3.1.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.3)
+
+Fixes:
+- Updated `fetcher-manager` to version `3.1.1` and `fetcher-worker` to version `3.1.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.2...fetcher-v3.4.3)
+
+---
+
+## [3.4.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.2)
+
+Improvements:
+- Keep each fetcher release under the license it shipped with. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v3.4.1...fetcher-v3.4.2)
+
+---
+
 ## [3.4.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v3.4.2)
 
 Improvements:

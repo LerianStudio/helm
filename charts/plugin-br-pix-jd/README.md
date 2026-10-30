@@ -7,9 +7,9 @@ This README is the reference for installing and configuring the chart. The Pix p
 ## What the chart installs
 
 - **API**: the payment service — a Deployment, a Service, a ConfigMap, a Secret and a PodDisruptionBudget, plus an optional HorizontalPodAutoscaler (`api.autoscaling.enabled`) and an optional Ingress (`api.ingress.enabled`). It listens on port `8080`. `/health`, `/readyz`, `/metrics` and `/version` answer without authentication.
-- **Worker**: a Deployment that runs the scheduled jobs — transaction reconciliation, the MED pollers and the delivery to indirect participants. It has no Service and no Ingress. **Disabled by default**; without it, those jobs do not run. To run it, set `worker.enabled: true` and `worker.image.repository: ghcr.io/lerianstudio/plugin-br-pix-jd-worker`. The worker and API image tags may differ: a release that changes only one of them publishes only that image.
+- **Worker**: a Deployment that runs the scheduled jobs — transaction reconciliation, the MED pollers and the delivery to indirect participants. It has no Service and no Ingress. **Disabled by default**; without it, those jobs do not run. To run it, set `worker.enabled: true`; it runs the `ghcr.io/lerianstudio/plugin-br-pix-jd-worker` image.
 - **Migrations Job**: applies the database schema with the `ghcr.io/lerianstudio/plugin-br-pix-jd-migrations` image, before the API rolls out (`pre-install` / `pre-upgrade`). The service does not migrate the database on its own.
-- **PostgreSQL and Valkey subcharts**: bundled, and **both disabled by default**. The chart expects an external PostgreSQL and an external Valkey or Redis.
+- **PostgreSQL and Valkey subcharts**: bundled, and **both disabled by default**. The chart expects an external PostgreSQL and an external Valkey or Redis. With the bundled PostgreSQL the migrations run after the release syncs, so `api.configmap.SYSTEMPLANE_ENABLED` defaults to `"false"` there and every Pix flow answers `503` until you set it to `"true"` after the first sync.
 
 ## Prerequisites
 
@@ -29,14 +29,12 @@ The chart **refuses to render** without these:
 | `api.configmap.POSTGRES_HOST` | host of the external PostgreSQL | empty | the render fails |
 | `api.secrets.POSTGRES_PASSWORD` | password of the external PostgreSQL | empty | the render fails. Or supply it through `api.existingSecret.name` |
 | `api.configmap.REDIS_HOST` | `host:port` of the Valkey or Redis | empty | the render fails. The rate limiter is fail-closed: without Redis it refuses every request |
+| `api.secrets.LICENSE_KEY` | your license key | empty | the render fails. The API and the worker validate it at startup in every mode. Or supply it through `api.existingSecret.name` |
 
 The chart **renders** without the values below, but the service does not work without them:
 
 | Key | Format | Default | Without it |
 | :-- | :----- | :------ | :--------- |
-| `api.secrets.LICENSE_KEY` | your license key | empty | the service does not start. The worker reads the same key |
-| `api.configmap.ORGANIZATION_IDS` | `global` | empty | the service does not start: the license check needs it |
-| `api.configmap.SYSTEMPLANE_ENABLED` | `"true"` | `"false"` | the plugin does not mount its `/system` routes, and every configuration call of the setup answers `404` |
 | `api.configmap.QRCODE_PUBLIC_BASE_URL` | a host, without a scheme | empty | with `ENVIRONMENT_NAME=production`, the service does not start |
 | `api.configmap.POSTGRES_SSLMODE` | `require` or `verify-full` | `disable` | with `ENVIRONMENT_NAME=production`, the service does not start: production refuses `disable` |
 | `api.configmap.PLUGIN_AUTH_ENABLED` and `api.configmap.PLUGIN_AUTH_HOST` | `"true"` and the Access Manager address | `"false"` and empty | with `ENVIRONMENT_NAME=production`, the service does not start: production refuses authentication off, and authentication on needs the host |
@@ -61,6 +59,9 @@ Set these only when your institution needs them.
 
 | Key | When | Format | Default |
 | :-- | :--- | :----- | :------ |
+| `api.configmap.ORGANIZATION_IDS` | only for a per-organization license. Empty stops the service from starting | comma-separated organization IDs | `global` |
+| `api.configmap.MIDAZ_URL_TRACER` | only if the Tracer screens inbound credits | Tracer base URL | empty: no credit is screened |
+| `api.configmap.APPLICATION_NAME` | only if your license names another application; the API and the worker must agree, so set it here only | application name | empty, read as `plugin-br-pix-jd` |
 | `api.secrets.REDIS_PASSWORD` | only if your Valkey or Redis requires a password | password | empty |
 | `api.cors.allowedOrigins` | only if a browser calls the API directly | list of origins | empty: every browser cross-origin call is refused |
 | `api.rateLimit.*` | only to change the rate-limit defaults | see `values.yaml` | chart defaults |
@@ -90,18 +91,16 @@ If you use argocd-vault-plugin, a `<path:...>` placeholder skips the chart's for
 
 ## Install
 
-Pin the image in production with `api.image.tag`. Without it, the image follows the chart's `appVersion`, so a chart upgrade also changes the application version. Image tags have no leading `v`. The migrations image is pinned separately in `migrations.image.tag`.
+Pin the image in production with `api.image.tag`. Without it, the image follows the chart's `appVersion`, so a chart upgrade also changes the application version. Image tags have no leading `v`. The migrations image is pinned separately in `migrations.image.tag`. The worker image is pinned separately in `worker.image.tag`; it does not follow `api.image.tag`, so move it together with `api.image.tag`.
 
 A values file with the values above. Every value is a placeholder:
 
 ```yaml
 api:
   image:
-    tag: "1.2.4"
+    tag: "1.3.0"
   configmap:
     ENVIRONMENT_NAME: "production"
-    ORGANIZATION_IDS: "global"
-    SYSTEMPLANE_ENABLED: "true"
     QRCODE_PUBLIC_BASE_URL: "pix.example.com"
     POSTGRES_HOST: "postgres.example.internal"
     POSTGRES_SSLMODE: "require"
@@ -163,9 +162,9 @@ Per-version notes: [0.1](docs/UPGRADE-0.1.md) · [0.2](docs/UPGRADE-0.2.md) · [
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `api.secrets.POSTGRES_PASSWORD` (the render fails without it) and `api.secrets.LICENSE_KEY`; the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name`, all of them come from that Secret.
+- Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name`, all of them come from that Secret.
 - Dependency notes: `lerian-common-helm` (library chart, renders nothing); `postgresql` (Bitnami `16.3.5`) and `valkey` (Bitnami `2.4.7`), both disabled by default — the chart expects an external PostgreSQL and Valkey or Redis.
-- Production overrides: `api.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE`, `api.configmap.PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `api.configmap.REDIS_HOST`, `api.existingSecret.name`, and `api.ingress.*`.
+- Production overrides: `api.image.tag`, `worker.image.tag`, `migrations.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE`, `api.configmap.PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `api.configmap.REDIS_HOST`, `api.existingSecret.name`, and `api.ingress.*`.
 - Source/license: the plugin is closed source and requires an Enterprise license; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
 ## Values

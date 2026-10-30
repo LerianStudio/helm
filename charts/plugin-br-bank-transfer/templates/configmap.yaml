@@ -34,20 +34,15 @@ data:
   {{- $envName := $newEnvName | default $oldEnvName | default (trim (toString (dig "env" "name" "" .Values.global | default ""))) | default "production" }}
   ENVIRONMENT_NAME: {{ $envName | quote }}
   ENV_NAME: {{ $envName | quote }}
-  APPLICATION_NAME: {{ .Values.bankTransfer.configmap.APPLICATION_NAME | default "plugin-br-bank-transfer" | quote }}
-  {{- if not $multiTenantEnabled }}
   DEPLOYMENT_MODE: {{ .Values.bankTransfer.configmap.DEPLOYMENT_MODE | default "byoc" | quote }}
-  {{- end }}
 
   # =====================================================================
   # HTTP SERVER
-  # Only SERVER_ADDRESS is rendered in MT mode. Tuning (body limit, TLS
-  # termination flags, proxy headers) is single-tenant or systemplane-managed.
+  # Rendered in both modes; none of these keys is systemplane-managed.
   # =====================================================================
   SERVER_ADDRESS: {{ .Values.bankTransfer.configmap.SERVER_ADDRESS | default ":4027" | quote }}
-  {{- if not $multiTenantEnabled }}
   HTTP_BODY_LIMIT_BYTES: {{ .Values.bankTransfer.configmap.HTTP_BODY_LIMIT_BYTES | default "1048576" | quote }}
-  TLS_TERMINATED_UPSTREAM: {{ .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | default "true" | quote }}
+  TLS_TERMINATED_UPSTREAM: {{ include "bank-transfer.flagDefaultTrue" .Values.bankTransfer.configmap.TLS_TERMINATED_UPSTREAM | quote }}
   {{- if .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE }}
   SERVER_TLS_CERT_FILE: {{ .Values.bankTransfer.configmap.SERVER_TLS_CERT_FILE | quote }}
   {{- end }}
@@ -63,7 +58,6 @@ data:
   {{- if .Values.bankTransfer.configmap.TRUSTED_PROXIES }}
   TRUSTED_PROXIES: {{ .Values.bankTransfer.configmap.TRUSTED_PROXIES | quote }}
   {{- end }}
-  {{- end }}
   ALLOW_PRIVATE_UPSTREAMS: {{ .Values.bankTransfer.configmap.ALLOW_PRIVATE_UPSTREAMS | default "false" | quote }}
   # -- REQUIRE_UPSTREAM_HTTPS: fleet-wide TLS gate on the PII-carrying
   # CRM_BASE_URL/FEES_BASE_URL hops (v2.0.0). Default "false" keeps the
@@ -73,38 +67,16 @@ data:
   REQUIRE_UPSTREAM_HTTPS: {{ .Values.bankTransfer.configmap.REQUIRE_UPSTREAM_HTTPS | default "false" | quote }}
 
   # =====================================================================
-  # CORS POLICY
-  # CORS_ALLOWED_ORIGINS is rendered in both modes. The plugin's
-  # production validator (internal/bootstrap/config/validate_production.go)
-  # rejects wildcard "*" and any origin containing localhost / 127.0.0.1 /
-  # [::1], so production deployments MUST set this to a concrete public
-  # hostname allowlist. When unset, the in-code dev safety net falls back
-  # to "http://localhost:3000" which trips that production validator.
-  # CORS_ALLOWED_METHODS and CORS_ALLOWED_HEADERS are optional: only
-  # rendered when explicitly set so operators can rely on the plugin's
-  # own sensible defaults until they need to override.
-  # =====================================================================
-  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_ORIGINS }}
-  CORS_ALLOWED_ORIGINS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_ORIGINS | quote }}
-  {{- end }}
-  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_METHODS }}
-  CORS_ALLOWED_METHODS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_METHODS | quote }}
-  {{- end }}
-  {{- if .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS }}
-  CORS_ALLOWED_HEADERS: {{ .Values.bankTransfer.configmap.CORS_ALLOWED_HEADERS | quote }}
-  {{- end }}
-
-  # =====================================================================
   # MULTI-TENANCY
   # Toggle is always rendered. Infrastructure endpoints only in MT mode.
   # All operational tuning (timeouts, pool sizes, circuit breaker) ships
   # via lib-commons defaults or is hot-reloadable via systemplane.
+  # The tenant environment and plaintext http:// to the Tenant Manager both
+  # follow ENVIRONMENT_NAME (plaintext only for development or test).
   # =====================================================================
   MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
   {{- if $multiTenantEnabled }}
   MULTI_TENANT_URL: {{ required "bankTransfer.configmap.MULTI_TENANT_URL is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_URL | quote }}
-  MULTI_TENANT_ENVIRONMENT: {{ required "bankTransfer.configmap.MULTI_TENANT_ENVIRONMENT is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_ENVIRONMENT | quote }}
-  MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.bankTransfer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
   MULTI_TENANT_REDIS_HOST: {{ required "bankTransfer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_HOST | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
   MULTI_TENANT_REDIS_TLS: {{ .Values.bankTransfer.configmap.MULTI_TENANT_REDIS_TLS | default "false" | quote }}
@@ -129,43 +101,41 @@ data:
   # POSTGRES (primary) — single-tenant only.
   # MT mode resolves per-tenant DBs via tenant-manager.
   # =====================================================================
+  {{- /* The bundled subchart serves no TLS; external Postgres keeps "require". */}}
+  {{- $pgSSLDefault := ternary "disable" "require" (eq (include "bank-transfer.postgresInternal" $) "true") }}
   POSTGRES_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
   POSTGRES_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
   POSTGRES_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "bank_transfer") | quote }}
   POSTGRES_DB: {{ .Values.bankTransfer.configmap.POSTGRES_DB | default "bank_transfer" | quote }}
-  POSTGRES_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+  POSTGRES_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" $pgSSLDefault) | quote }}
   POSTGRES_MAX_OPEN_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_OPEN_CONNS | default "25" | quote }}
   POSTGRES_MAX_IDLE_CONNS: {{ .Values.bankTransfer.configmap.POSTGRES_MAX_IDLE_CONNS | default "5" | quote }}
   POSTGRES_CONN_MAX_LIFETIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_LIFETIME_MINS | default "30" | quote }}
   POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ .Values.bankTransfer.configmap.POSTGRES_CONN_MAX_IDLE_TIME_MINS | default "5" | quote }}
   POSTGRES_CONNECT_TIMEOUT_SEC: {{ .Values.bankTransfer.configmap.POSTGRES_CONNECT_TIMEOUT_SEC | default "10" | quote }}
-  MIGRATIONS_PATH: {{ .Values.bankTransfer.configmap.MIGRATIONS_PATH | default "migrations" | quote }}
 
   # =====================================================================
   # POSTGRES (replica — optional, for CQRS read scaling)
   # =====================================================================
   {{- $replicaHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "replicaHost" "nativeKey" "POSTGRES_REPLICA_HOST" "default" "") }}
   {{- if $replicaHost }}
+  {{- $replicaSSLDefault := ternary "disable" "require" (and (eq (include "bank-transfer.postgresInternal" $) "true") (hasPrefix (printf "%s-postgresql" .Release.Name) $replicaHost)) }}
   POSTGRES_REPLICA_HOST: {{ $replicaHost | quote }}
   POSTGRES_REPLICA_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_REPLICA_PORT" "default" "5432") | quote }}
   POSTGRES_REPLICA_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_REPLICA_USER" "default" "") | quote }}
   POSTGRES_REPLICA_DB: {{ .Values.bankTransfer.configmap.POSTGRES_REPLICA_DB | quote }}
-  POSTGRES_REPLICA_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_REPLICA_SSLMODE" "default" "require") | quote }}
+  POSTGRES_REPLICA_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_REPLICA_SSLMODE" "default" $replicaSSLDefault) | quote }}
   {{- end }}
   {{- end }}
 
   # =====================================================================
   # VALKEY / REDIS (app-level)
-  # MT mode: only connection envs (HOST, DB, USER, TLS, CA_CERT) are rendered.
+  # MT mode: only connection envs (HOST, DB, TLS, CA_CERT) are rendered.
   # Pool/timeout tuning is single-tenant or systemplane-managed.
   # =====================================================================
   REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace)) | quote }}
   REDIS_DB: {{ .Values.bankTransfer.configmap.REDIS_DB | default "0" | quote }}
   REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
-  {{- $redisUser := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") }}
-  {{- if $redisUser }}
-  REDIS_USER: {{ $redisUser | quote }}
-  {{- end }}
   {{- if .Values.bankTransfer.configmap.REDIS_CA_CERT }}
   REDIS_CA_CERT: {{ .Values.bankTransfer.configmap.REDIS_CA_CERT | quote }}
   {{- end }}
@@ -187,20 +157,24 @@ data:
   # MONGODB (audit/event persistence) — single-tenant only.
   # MT mode resolves per-tenant Mongo via tenant-manager.
   # =====================================================================
-  MONGO_ENABLED: {{ .Values.bankTransfer.configmap.MONGO_ENABLED | default "true" | quote }}
+  MONGO_ENABLED: {{ include "bank-transfer.flagDefaultTrue" .Values.bankTransfer.configmap.MONGO_ENABLED | quote }}
   MONGO_DATABASE: {{ .Values.bankTransfer.configmap.MONGO_DATABASE | default "plugin_br_bank_transfer" | quote }}
   MONGO_MAX_POOL_SIZE: {{ .Values.bankTransfer.configmap.MONGO_MAX_POOL_SIZE | default "25" | quote }}
   MONGO_SERVER_SELECTION_TIMEOUT_MS: {{ .Values.bankTransfer.configmap.MONGO_SERVER_SELECTION_TIMEOUT_MS | default "3000" | quote }}
   MONGO_HEARTBEAT_INTERVAL_MS: {{ .Values.bankTransfer.configmap.MONGO_HEARTBEAT_INTERVAL_MS | default "10000" | quote }}
+  {{- end }}
 
   # =====================================================================
-  # RABBITMQ — single-tenant only.
+  # RABBITMQ — both modes: multi-tenant builds its per-tenant vhost manager
+  # from it, and WEBHOOK_ENABLED=true needs it. RABBITMQ_URL lives in the
+  # Secret; a legacy configmap.RABBITMQ_URL still renders here.
   # =====================================================================
   RABBITMQ_ENABLED: {{ .Values.bankTransfer.configmap.RABBITMQ_ENABLED | default "false" | quote }}
   {{- if eq (toString .Values.bankTransfer.configmap.RABBITMQ_ENABLED) "true" }}
-  RABBITMQ_URL: {{ .Values.bankTransfer.configmap.RABBITMQ_URL | default (printf "amqp://bank_transfer:$(RABBITMQ_PASSWORD)@%s-rabbitmq.%s.svc.cluster.local:5672/" .Release.Name $namespace) | quote }}
-  RABBITMQ_EXCHANGE: {{ .Values.bankTransfer.configmap.RABBITMQ_EXCHANGE | default "bank_transfer.lifecycle" | quote }}
+  {{- with .Values.bankTransfer.configmap.RABBITMQ_URL }}
+  RABBITMQ_URL: {{ . | quote }}
   {{- end }}
+  RABBITMQ_EXCHANGE: {{ .Values.bankTransfer.configmap.RABBITMQ_EXCHANGE | default "bank_transfer.lifecycle" | quote }}
   {{- end }}
 
   # =====================================================================
@@ -243,29 +217,16 @@ data:
   {{- end }}
 
   # =====================================================================
-  # OPENTELEMETRY
-  # MT mode: only the toggle + endpoint + SDK-disabled flag are rendered.
-  # Library/service-name/version/deployment-env are systemplane-managed.
+  # OPENTELEMETRY — the app derives service name, version and environment
+  # itself; only the toggle and the endpoint are env.
   # =====================================================================
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false") | quote }}
-  {{- /* Same global.observability mask lerian-common.otel.env derives this from
-     (block "observability" field "otlpEndpoint") — was a flat passthrough
-     defaulting to "", so global.observability alone could never supply an
-     endpoint, only a native configmap override could (same class of bug as
-     STREAMING_ENABLED). Default stays "": the app crashes at boot with its
-     own explicit error when ENABLE_TELEMETRY=true and this is still empty,
-     so an empty default here is intentional, not an oversight. */}}
+  {{- /* Same global.observability mask as ENABLE_TELEMETRY. Empty with telemetry on:
+     deployment.yaml injects the node-local collector, $(HOST_IP):4317. */}}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "") | quote }}
-  OTEL_SDK_DISABLED: {{ .Values.bankTransfer.configmap.OTEL_SDK_DISABLED | default "false" | quote }}
-  {{- if not $multiTenantEnabled }}
-  OTEL_LIBRARY_NAME: {{ .Values.bankTransfer.configmap.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/plugin-br-bank-transfer" | quote }}
-  OTEL_RESOURCE_SERVICE_NAME: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_SERVICE_NAME | default "plugin-br-bank-transfer" | quote }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.bankTransfer.image.tag | default .Chart.AppVersion | quote }}
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.bankTransfer.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "production" | quote }}
-  {{- end }}
 
   # =====================================================================
-  # STREAMING (lib-streaming v3 — business event publication)
+  # STREAMING (lib-streaming v4 — business event publication)
   # Rendered in both modes: STREAMING_CLOUDEVENTS_SOURCE is validated at
   # startup regardless of MULTI_TENANT_ENABLED/STREAMING_ENABLED, so it can't
   # sit behind either gate. STREAMING_ENABLED itself now goes through the
@@ -309,14 +270,15 @@ data:
   # systemplane-managed at runtime.
   # =====================================================================
 
-  # Midaz — defaults match the standard in-cluster Midaz ledger/auth service
-  # names (midaz-ledger.midaz / plugin-access-manager-auth.plugin-access-manager),
-  # same convention as the bundled-subchart datastore defaults elsewhere in
-  # this file. A non-standard install still overrides via the native key.
+  # Midaz — the URL defaults match the standard in-cluster Midaz ledger service
+  # (midaz-ledger.midaz). An unset MIDAZ_AUTH_ADDRESS falls back, in the app, to
+  # PLUGIN_AUTH_ADDRESS (global.auth.host). A non-standard install overrides via the native key.
   MIDAZ_BASE_URL: {{ .Values.bankTransfer.configmap.MIDAZ_BASE_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002" | quote }}
   MIDAZ_TRANSACTION_URL: {{ .Values.bankTransfer.configmap.MIDAZ_TRANSACTION_URL | default .Values.bankTransfer.configmap.MIDAZ_BASE_URL | default "http://midaz-ledger.midaz.svc.cluster.local:3002" | quote }}
   MIDAZ_AUTH_ENABLED: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ENABLED | default "false" | quote }}
-  MIDAZ_AUTH_ADDRESS: {{ .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS | default "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" | quote }}
+  {{- with .Values.bankTransfer.configmap.MIDAZ_AUTH_ADDRESS }}
+  MIDAZ_AUTH_ADDRESS: {{ . | quote }}
+  {{- end }}
   # Fee mode (app v3.1.0+): auto | legacy | native, case-sensitive. "auto" asks the
   # ledger GET /version and turns native (Midaz embedded fees on /v2) on by itself
   # against Midaz >= 4.1; "legacy" keeps plugin-fees on /v1. Defaults mirror the app.
@@ -376,11 +338,11 @@ data:
   JD_POLLING_ENABLED: {{ .Values.bankTransfer.configmap.JD_POLLING_ENABLED | default "false" | quote }}
   {{- if and (not $multiTenantEnabled) (ne (toString .Values.bankTransfer.configmap.JD_SANDBOX_MODE) "true") }}
   JD_BASE_URL: {{ required "bankTransfer.configmap.JD_BASE_URL is required when JD_SANDBOX_MODE is not true and MULTI_TENANT_ENABLED is not true" .Values.bankTransfer.configmap.JD_BASE_URL | quote }}
-  JD_ORIGIN_ISPB: {{ required "bankTransfer.configmap.JD_ORIGIN_ISPB is required when JD_SANDBOX_MODE is not true and MULTI_TENANT_ENABLED is not true" .Values.bankTransfer.configmap.JD_ORIGIN_ISPB | quote }}
   JD_SOAP_PATH: {{ .Values.bankTransfer.configmap.JD_SOAP_PATH | default "/soap" | quote }}
   JD_SIGNING_MODE: {{ .Values.bankTransfer.configmap.JD_SIGNING_MODE | default "local_pem" | quote }}
-  {{- if .Values.bankTransfer.configmap.JD_LEGACY_CODE }}
-  JD_LEGACY_CODE: {{ .Values.bankTransfer.configmap.JD_LEGACY_CODE | quote }}
+  {{- /* An existing Secret or extraEnvVars may carry it instead; extraEnvVars render it below. */}}
+  {{- if and (not (get (.Values.bankTransfer.extraEnvVars | default dict) "JD_LEGACY_CODE")) (or .Values.bankTransfer.configmap.JD_LEGACY_CODE (not .Values.bankTransfer.useExistingSecret)) }}
+  JD_LEGACY_CODE: {{ required "bankTransfer.configmap.JD_LEGACY_CODE is required when JD_SANDBOX_MODE is not true and MULTI_TENANT_ENABLED is not true" .Values.bankTransfer.configmap.JD_LEGACY_CODE | quote }}
   {{- end }}
   {{- end }}
 
@@ -428,8 +390,7 @@ data:
   # =====================================================================
   WEBHOOK_ENABLED: {{ .Values.bankTransfer.configmap.WEBHOOK_ENABLED | default "false" | quote }}
   BTF_FEE_ENABLED: {{ .Values.bankTransfer.configmap.BTF_FEE_ENABLED | default "false" | quote }}
-  RATE_LIMIT_ENABLED: {{ .Values.bankTransfer.configmap.RATE_LIMIT_ENABLED | default "false" | quote }}
-  ALLOW_INSECURE_TLS: {{ .Values.bankTransfer.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "bank-transfer.flagDefaultTrue" .Values.bankTransfer.configmap.ALLOW_INSECURE_TLS | quote }}
 
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for env vars not modeled above)

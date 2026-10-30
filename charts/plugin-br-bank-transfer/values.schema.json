@@ -225,10 +225,6 @@
     "rabbitmq": {
       "type": "object",
       "additionalProperties": true
-    },
-    "br-bank-transfer": {
-      "type": "object",
-      "additionalProperties": true
     }
   }
 }

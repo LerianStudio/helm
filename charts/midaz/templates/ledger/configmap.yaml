@@ -44,7 +44,7 @@ data:
   # =============================================================================
   # APP CONFIGURATION
   # =============================================================================
-  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "midaz.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
   ENV_NAME: {{ $envName | quote }}
   # Service name the ledger registers with the tenant manager; REQUIRED when
   # MULTI_TENANT_ENABLED=true (the app refuses to boot without it) and part of the
@@ -388,7 +388,7 @@ data:
   # =============================================================================
   # BULK RECORDER
   # =============================================================================
-  BULK_RECORDER_ENABLED: {{ $cm.BULK_RECORDER_ENABLED | default "true" | quote }}
+  BULK_RECORDER_ENABLED: {{ include "midaz.flagDefaultTrue" $cm.BULK_RECORDER_ENABLED | quote }}
   BULK_RECORDER_SIZE: {{ $cm.BULK_RECORDER_SIZE | default "0" | quote }}
   BULK_RECORDER_FLUSH_TIMEOUT_MS: {{ $cm.BULK_RECORDER_FLUSH_TIMEOUT_MS | default "100" | quote }}
   BULK_RECORDER_MAX_ROWS_PER_INSERT: {{ $cm.BULK_RECORDER_MAX_ROWS_PER_INSERT | default "1000" | quote }}
@@ -436,7 +436,7 @@ data:
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
   # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
   # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "midaz.flagDefaultTrue" $cm.RATE_LIMIT_ENABLED | quote }}
   RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "500" | quote }}
   RATE_LIMIT_WINDOW_SEC: {{ $cm.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
   AGGRESSIVE_RATE_LIMIT_MAX: {{ $cm.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}

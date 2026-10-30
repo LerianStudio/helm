@@ -1,7 +1,7 @@
 name: Helm Alpha Cleanup
 
 # Thin caller. The logic lives in the reusable helm-alpha-cleanup.yml of
-# github-actions-shared-workflows. Enforces the TTL (~3 days) of alpha releases:
+# shared-workflows-public. Enforces the TTL (~3 days) of alpha releases:
 # deletes GHCR packages under alpha/* with tag *-alpha* older than 3 days.
 # Real releases (lerianstudio/*-helm) are out of scope via the alpha/ guard.
 #
@@ -37,7 +37,7 @@ jobs:
     permissions:
       contents: read # the reusable workflow asks for it; job-level replaces, so it must be repeated
       packages: write # delete alpha version packages from GHCR
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-cleanup.yml@tier-2
+    uses: LerianStudio/shared-workflows-public/.github/workflows/helm-alpha-cleanup.yml@tier-1
     with:
       # schedule deletes for real; manual dispatch previews unless you turn dry_run off
       dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}

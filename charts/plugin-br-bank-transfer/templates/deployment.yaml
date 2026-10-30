@@ -124,8 +124,10 @@ spec:
                 name: {{ $secretName }}
                 key: REDIS_PASSWORD
           {{- end }}
-          {{- include "bank-transfer.mongoEnv" (dict "context" $ "secretName" $secretName) | nindent 10 }}
-          {{- if eq (toString .Values.bankTransfer.configmap.ENABLE_TELEMETRY) "true" }}
+          {{- include "bank-transfer.mongoEnv" (dict "context" $) | nindent 10 }}
+          {{- /* Same global.observability mask configmap.yaml resolves ENABLE_TELEMETRY and the endpoint through. */}}
+          {{- $otelCm := .Values.bankTransfer.configmap | default dict }}
+          {{- if eq (lower (include "lerian-common.globalValue" (dict "context" $ "configmap" $otelCm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
@@ -134,8 +136,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
+          {{- if not (include "lerian-common.globalValue" (dict "context" $ "configmap" $otelCm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "")) }}
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
+          {{- end }}
           - name: "OTEL_RESOURCE_ATTRIBUTES"
             value: "k8s.pod.ip=$(POD_IP)"
           {{- end }}

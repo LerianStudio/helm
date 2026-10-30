@@ -41,6 +41,7 @@ jobs:
             plugin-br-pix-indirect-btg
             plugin-br-pix-lerian
             plugin-br-sisbajud
+            plugin-br-ted-lerian
             plugin-br-bank-transfer
             lerian-notification
             plugin-br-bank-transfer-jd
@@ -60,6 +61,7 @@ jobs:
             br-slc
             br-sisbajud
             agent
+            streaming-hub
             new
             charts
             common

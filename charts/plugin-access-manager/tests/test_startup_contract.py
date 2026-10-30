@@ -78,8 +78,12 @@ class StartupContract(unittest.TestCase):
         docs = self.succeeds({})
         images = [c['image'] for d in docs if d['kind'] == 'Deployment'
                   for c in d['spec']['template']['spec']['containers']]
-        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.11.1', images)
-        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.11.1', images)
+        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.14.0', images)
+        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.14.0', images)
+        self.assertIn('ghcr.io/lerianstudio/caradhras:1.8.6', images)
+        init_images = [c['image'] for d in docs if d['kind'] == 'Deployment'
+                       for c in d['spec']['template']['spec'].get('initContainers', [])]
+        self.assertIn('ghcr.io/lerianstudio/caradhras-migrations:1.8.6', init_images)
         for d in docs:
             if d['kind'] == 'HorizontalPodAutoscaler':
                 self.assertGreaterEqual(d['spec']['minReplicas'], 1)
@@ -120,14 +124,27 @@ class StartupContract(unittest.TestCase):
             self.crash_loops(values, 'identity')
 
     def test_identity_auth_disabled_does_not_require_jwks(self):
-        values = production()
-        values['identity']['configmap'] = {'AUTH_ENABLED': 'false'}
-        self.succeeds(values)
+        for disabled in ['false', False]:
+            values = production()
+            values['identity']['configmap'] = {'AUTH_ENABLED': disabled}
+            self.succeeds(values)
 
-    def test_boolean_false_matches_actual_template_default(self):
-        values = production()
-        values['identity']['configmap'] = {'AUTH_ENABLED': False}
-        self.crash_loops(values, 'identity')
+    def test_default_true_flags_honor_an_explicit_false(self):
+        flags = {'auth': ['ALLOW_INSECURE_TLS', 'RUNNING_IN_DOCKER', 'RATE_LIMIT_ENABLED',
+                          'CIRCUIT_BREAKER_ENABLED', 'SWAGGER_ENABLED'],
+                 'identity': ['ALLOW_INSECURE_TLS', 'AUTH_ENABLED', 'RATE_LIMIT_ENABLED', 'CIRCUIT_BREAKER_ENABLED']}
+        for value, expected in [(False, 'false'), ('false', 'false'), (True, 'true'), (None, 'true'), ('', 'true')]:
+            with self.subTest(value=value):
+                values = production()
+                for component, keys in flags.items():
+                    values[component]['configmap'].update(dict.fromkeys(keys, value))
+                values['caradhras'] = {'allowInsecureTLS': value}
+                config = {d['metadata']['name']: d['data'] for d in self.succeeds(values) if d['kind'] == 'ConfigMap'}
+                for component, keys in flags.items():
+                    for key in keys:
+                        rendered = 'PLUGIN_AUTH_ENABLED' if key == 'AUTH_ENABLED' else key
+                        self.assertEqual(config[f'startup-test-{component}'][rendered], expected, key)
+                self.assertEqual(config['startup-test-caradhras']['ALLOW_INSECURE_TLS'], expected)
 
     def test_identity_loopback_contract(self):
         for url in ['http://localhost/keys', 'http://127.0.0.1:8000/keys', 'http://[::1]:8000/keys',
@@ -348,7 +365,60 @@ class StartupContract(unittest.TestCase):
         job = next(d for d in jobs if d['metadata']['name'].endswith('init-user'))
         self.assertEqual(job['metadata']['annotations']['helm.sh/hook'], 'post-install')
         self.assertEqual(job['spec']['template']['spec']['containers'][0]['image'],
-                         'ghcr.io/lerianstudio/caradhras-user-init:3.11.1')
+                         'ghcr.io/lerianstudio/caradhras-user-init:3.14.0')
+
+
+    def migrate_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        init = next(c for c in deployment['spec']['template']['spec']['initContainers']
+                    if c['name'] == 'migrate')
+        return {e['name']: e.get('value') for e in init['env']}
+
+    def test_migrate_skip_rbac_chain_only_when_true(self):
+        default = self.migrate_env({})
+        self.assertEqual(set(default), {'POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB',
+                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE'})
+        self.assertEqual(self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': False}}}), default)
+        env = self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def server_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        server = deployment['spec']['template']['spec']['containers'][0]
+        return {e['name']: e.get('value') for e in server['env']}
+
+    def test_server_skip_rbac_chain_follows_migrate(self):
+        # The boot schema check reads the same variable: a migrate that skips the
+        # rbac chain next to a server that asserts it is a crash-loop on the first
+        # image with a newer rbac head.
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN', self.server_env({}))
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN',
+                         self.server_env({'caradhras': {'migrations': {'skipRBACChain': False}}}))
+        env = self.server_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def test_migrate_extra_env_vars(self):
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'FOO': 'bar', 'RETRIES': 3}}}})
+        self.assertEqual((env['FOO'], env['RETRIES']), ('bar', '3'))
+        # YAML 1.1 boolean-like names must still render as strings (env.name is a string).
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'TRUE': 'a', 'ON': 'b'}}}})
+        self.assertEqual((env.get('TRUE'), env.get('ON')), ('a', 'b'))
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'POSTGRES_HOST': 'x'}}}},
+                   'caradhras.migrations.extraEnvVars.POSTGRES_HOST duplicates a chart-owned env')
+
+    def test_migrate_extra_env_var_names_are_schema_checked(self):
+        # A name Kubernetes rejects must fail at values validation, not at apply.
+        # Helm versions word (and locate) the schema error differently; the
+        # pattern itself is in every one of them.
+        pattern = '^[-._a-zA-Z][-._a-zA-Z0-9]*$'
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'BAD=NAME': 'x'}}}}, pattern)
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}}, pattern)
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
+        self.assertEqual(env['my.var-1_X'], 'ok')
 
 
 if __name__ == '__main__':

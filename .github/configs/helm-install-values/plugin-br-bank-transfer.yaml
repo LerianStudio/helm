@@ -1,10 +1,6 @@
-# Since app 3.0.2 the service refuses to boot with ENV_NAME=production (the
-# chart default) unless LICENSE_KEY is set:
-#   ASSERTION FAILED: LICENSE_KEY is required in production
-# kind has no license, so the gate runs the workload as a non-production
-# environment. ENV_NAME goes through the global mask (global.env.name), the
-# same path an operator uses; the production license guard itself is the
-# application's contract, not the chart's.
+# The gate runs the workload as a non-production environment, because the app
+# accepts plugin auth off (below) only outside production. ENV_NAME goes through
+# the global mask (global.env.name), the same path an operator uses.
 global:
   env:
     name: "development"
@@ -22,6 +18,10 @@ bankTransfer:
   configmap:
     POSTGRES_SSLMODE: "disable"
     ALLOW_PRIVATE_UPSTREAMS: "true"
+    # Since app 3.2.0 the license is required in every environment:
+    #   config validation: assertion failed: LICENSE_KEY is required
+    ORGANIZATION_IDS: "global"
   secrets:
+    LICENSE_KEY: "IT_LICENSE_KEY" # CI license placeholder (README)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     RECIPIENT_DETAILS_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"

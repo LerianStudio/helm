@@ -22,7 +22,7 @@
      (secrets.yaml) is a NORMAL resource (not a hook), so it is pruned correctly on
      uninstall and never lingers. Preference order:
        1. migration-specific existing Secret (bankTransfer.migrations.existingSecretName)
-       2. app-level existing Secret          (bankTransfer.existingSecretName)
+       2. app-level existing Secret          (bankTransfer.existingSecretName), external Postgres only
        3. chart-managed:
           - internal Postgres → the bundled subchart Secret, as the app reads it.
           - external Postgres → migration is a PRE hook that runs before the normal app
@@ -33,7 +33,7 @@
 {{- $existingSecretName := "" }}
 {{- if $migUseExisting }}
 {{- $existingSecretName = required "bankTransfer.migrations.existingSecretName is required when bankTransfer.migrations.useExistingSecret=true" (get $migrations "existingSecretName") }}
-{{- else if $appUseExisting }}
+{{- else if and $appUseExisting (not $internalPg) }}
 {{- $existingSecretName = required "bankTransfer.existingSecretName is required when bankTransfer.useExistingSecret=true" (get $bankTransfer "existingSecretName") }}
 {{- else if not $internalPg }}
 {{- $existingSecretName = printf "%s-migrations" (include "bank-transfer.fullname" .) | trunc 63 | trimSuffix "-" }}
@@ -73,7 +73,7 @@
     # The migrations runner refuses sslmode=disable unless this is set;
     # mirror the app-level toggle so non-TLS Postgres targets work.
     - name: ALLOW_INSECURE_TLS
-      value: {{ get $configmap "ALLOW_INSECURE_TLS" | default "true" | quote }}
+      value: {{ include "bank-transfer.flagDefaultTrue" (get $configmap "ALLOW_INSECURE_TLS") | quote }}
     - name: POSTGRES_HOST
       value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
     - name: POSTGRES_PORT
@@ -83,7 +83,7 @@
     - name: POSTGRES_DB
       value: {{ get $configmap "POSTGRES_DB" | default "bank_transfer" | quote }}
     - name: POSTGRES_SSLMODE
-      value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "require") | quote }}
+      value: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $configmap "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" (ternary "disable" "require" $internalPg)) | quote }}
     - name: POSTGRES_CONNECT_TIMEOUT_SEC
       value: {{ get $configmap "POSTGRES_CONNECT_TIMEOUT_SEC" | default "10" | quote }}
     {{- if $existingSecretName }}

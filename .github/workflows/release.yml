@@ -37,7 +37,7 @@ jobs:
 
       - name: Get changed paths
         id: changed-paths
-        uses: LerianStudio/github-actions-shared-workflows/src/config/changed-paths@tier-2
+        uses: LerianStudio/shared-workflows-public/src/config/changed-paths@tier-1
         with:
           # No trailing slash. This composite matches "<filter>" or "<filter>/*",
           # where the archived action did a plain prefix match, so "charts/"
@@ -179,12 +179,6 @@ jobs:
           chart_name="$(basename "$CHART_WORKING_DIR")"
           go run ./validate-helm-charts --root ../.. --render-gate --charts "$chart_name"
 
-      #- name: Run helm unittest
-      #  id: unittest
-      #  run: |
-      #    helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
-      #    helm unittest ${{ matrix.chart.working_dir }}
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -212,7 +206,7 @@ jobs:
       # the changelog and the `helm push` all happen inside the semantic-release step
       # further down.
       - name: Verify referenced images exist
-        uses: LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs@develop
+        uses: LerianStudio/shared-workflows-public/src/validate/helm-image-refs@tier-1
         with:
           chart-path: ${{ matrix.chart.working_dir }}
           values-file: .github/configs/helm-render-values/${{ matrix.chart.name }}.yaml
@@ -447,7 +441,7 @@ jobs:
       fail-fast: false
       matrix:
         chart: ${{ fromJson(needs.collect-published-charts.outputs.matrix) }}
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/gitops-chart-update.yml@tier-2
+    uses: LerianStudio/shared-workflows-public/.github/workflows/gitops-chart-update.yml@tier-1
     with:
       chart_name: ${{ matrix.chart.name }}
       chart_version: ${{ matrix.chart.version }}

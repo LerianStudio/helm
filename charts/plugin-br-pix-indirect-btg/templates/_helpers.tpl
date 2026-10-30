@@ -143,6 +143,14 @@ Create app version.
 {{- end }}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 ================================================================================
 LABEL HELPERS
 ================================================================================
@@ -560,7 +568,6 @@ VALIDATION HELPERS
 ================================================================================
 These validations run before deployment to ensure critical fields are set.
 - ERRORS (fail): Block deployment - used for truly required fields
-- WARNINGS (print): Show message but allow deployment - used for recommended fields
 ================================================================================
 */}}
 
@@ -624,55 +631,6 @@ Validate required configuration fields
 
 
 {{- end }}
-
-{{/*
-Validate PostgreSQL configuration (warnings only)
-*/}}
-{{- define "plugin-br-pix-indirect-btg.validatePostgreSQL" -}}
-{{/* Warnings are logged but do not block deployment */}}
-{{- end }}
-
-{{/*
-Validate MongoDB configuration (warnings only)
-*/}}
-{{- define "plugin-br-pix-indirect-btg.validateMongoDB" -}}
-{{/* Warnings are logged but do not block deployment */}}
-{{- end }}
-
-{{/*
-================================================================================
-WARNING ANNOTATIONS
-================================================================================
-These are informational annotations added to resources when using default values.
-They serve as reminders without blocking deployment.
-================================================================================
-*/}}
-
-{{/*
-Generate warning annotations for secrets using default values
-*/}}
-{{- define "plugin-br-pix-indirect-btg.secretWarnings" -}}
-{{- $warnings := list -}}
-{{- if eq .Values.pix.secrets.DB_PASSWORD "lerian" -}}
-{{- $warnings = append $warnings "DB_PASSWORD is using default value 'lerian'" -}}
-{{- end -}}
-{{- if eq .Values.pix.secrets.MONGO_PASSWORD "lerian" -}}
-{{- $warnings = append $warnings "MONGO_PASSWORD is using default value 'lerian'" -}}
-{{- end -}}
-{{- if .Values.postgresql.enabled -}}
-{{- if eq .Values.postgresql.auth.password "lerian" -}}
-{{- $warnings = append $warnings "postgresql.auth.password is using default value 'lerian'" -}}
-{{- end -}}
-{{- end -}}
-{{- if .Values.mongodb.enabled -}}
-{{- if eq .Values.mongodb.auth.rootPassword "lerian" -}}
-{{- $warnings = append $warnings "mongodb.auth.rootPassword is using default value 'lerian'" -}}
-{{- end -}}
-{{- end -}}
-{{- if gt (len $warnings) 0 -}}
-lerian.studio/security-warnings: {{ $warnings | join "; " | quote }}
-{{- end -}}
-{{- end -}}
 
 {{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra

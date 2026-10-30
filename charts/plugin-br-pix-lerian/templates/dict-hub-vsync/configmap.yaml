@@ -49,7 +49,7 @@ data:
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-dict-hub-vsync" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4105" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
   REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-dict-hub-vsync" | quote }}
@@ -73,7 +73,7 @@ data:
   # API key here, no CB tunables — the resolver shares the dict-hub
   # tenant-manager client config).
   # VSync tunables
-  VSYNC_ENABLED: {{ $cm.VSYNC_ENABLED | default "true" | quote }}
+  VSYNC_ENABLED: {{ include "plugin-br-pix-lerian.flagDefaultTrue" $cm.VSYNC_ENABLED | quote }}
   VSYNC_CHUNK_PROCESSING_DEADLINE_MIN: {{ $cm.VSYNC_CHUNK_PROCESSING_DEADLINE_MIN | default "30" | quote }}
   VSYNC_EVENTSYNC_MAX_PAGES: {{ $cm.VSYNC_EVENTSYNC_MAX_PAGES | default "100" | quote }}
   VSYNC_FILE_RECON_ENABLED: {{ $cm.VSYNC_FILE_RECON_ENABLED | default "false" | quote }}
@@ -85,8 +85,8 @@ data:
   VSYNC_STUCK_JOB_SWEEP_TICK_SEC: {{ $cm.VSYNC_STUCK_JOB_SWEEP_TICK_SEC | default "30" | quote }}
   ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
   ISPB: {{ $cm.ISPB | default "00000000" | quote }}
-  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ $cm.RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK | default "true" | quote }}
-  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: {{ include "plugin-br-pix-lerian.flagDefaultTrue" $cm.RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-br-pix-lerian.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
   {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
      Chart.AppVersion); override via dictHubVsync.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}
   {{- /* OTEL_RESOURCE_SERVICE_VERSION: always emitted (like OTEL_RESOURCE_SERVICE_NAME/

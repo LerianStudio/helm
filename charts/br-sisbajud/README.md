@@ -83,7 +83,7 @@ Every application env key is resolved with this precedence (lerian-common):
 
 `brSisbajud.configmap` and `brSisbajud.secrets` are empty by default. Pinning a native key there shadows the grouped/global parameter for that key.
 
-`brSisbajud.secretRefs` (`{ENV_KEY: {name, key[, optional]}}`) references a key of a Secret the chart does not manage (e.g. synced by External Secrets) as an explicit `secretKeyRef` pod env entry. Credentials never need raw `extraEnvVars`, and the fail-fast gates and the migrations/topics Jobs honor them. `brSisbajud.extraEnvVars` (a list of `{name, value|valueFrom}`) is still rendered as explicit pod `env:`, after `secretRefs` and winning on a name clash, and wins over the ConfigMap and the Secret. The fail-fast gates and the topics Job also read it.
+`brSisbajud.secretRefs` (`{ENV_KEY: {name, key[, optional]}}`) references a key of a Secret the chart does not manage (e.g. synced by External Secrets) as an explicit `secretKeyRef` pod env entry. Credentials never need raw `extraEnvVars`, and the fail-fast gates and the migrations/topics Jobs honor them. `brSisbajud.extraEnvVars` (a list of `{name, value|valueFrom}`) is still rendered as explicit pod `env:`, after `secretRefs` and winning on a name clash, and wins over the ConfigMap and the Secret. The fail-fast gates and the topics Job also read it for credentials and streaming TLS, but the KMS gates (key mode, ARN, timeouts, minimum image tag) read only the ConfigMap: an `extraEnvVars` entry such as `KMS_PROVIDER=aws` or `KMS_AWS_*` bypasses them at render, and only the app's boot validation refuses an invalid combination.
 
 ### Global contract
 
@@ -94,7 +94,7 @@ Every application env key is resolved with this precedence (lerian-common):
 | `global.datastores.redis` | `host` (`host:port`), `tls`, `caCert` | `REDIS_HOST`, `REDIS_TLS`, `REDIS_CA_CERT` |
 | `global.objectStorage.sisbajud` | `endpoint`, `region`, `bucket` | `SEAWEEDFS_S3_ENDPOINT`, `SEAWEEDFS_REGION`, `SEAWEEDFS_BUCKET` |
 | `global.objectStorage.sta` | `bucket`, `endpoint` | `STA_INBOUND_BUCKET` (+ `TRANSFER_OBJECT_STORAGE_BUCKET`), `STA_OBJECT_STORAGE_ENDPOINT` |
-| `global.kms` | `vendor` (`hashicorp-vault` \| `aws`), `vaultAddr`, `vaultAuthMethod`, `vaultRoleId`, `vaultMount`, `awsRegion` | `KMS_PROVIDER`, `VAULT_ADDR`, `VAULT_AUTH_METHOD`, `VAULT_APPROLE_ROLE_ID`, `VAULT_TRANSIT_MOUNT_PATH`, `AWS_REGION` |
+| `global.kms` | `vendor` (`hashicorp-vault` \| `aws`), `vaultAddr`, `vaultAuthMethod`, `vaultRoleId`, `vaultMount`, `awsRegion`, `awsKeyMode`, `awsKeyArn` | `KMS_PROVIDER`, `VAULT_ADDR`, `VAULT_AUTH_METHOD`, `VAULT_APPROLE_ROLE_ID`, `VAULT_TRANSIT_MOUNT_PATH`, `AWS_REGION`, `KMS_AWS_KEY_MODE`, `KMS_AWS_KEY_ARN` |
 | `global.streaming` | `enabled`, `brokers`, `tlsEnabled`, `saslMechanism`, `saslUsername`, `saslAllowPlaintext`, `compression`, `requiredAcks`, `batchLingerMs`, `importantEmitTimeoutMs` | `STREAMING_*` transport keys |
 | `global.multiTenant` | `enabled`, `url`, `redisHost`, `redisPort`, `redisTls` | `MULTI_TENANT_*` |
 | `global.auth` | `enabled`, `host` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` |
@@ -141,6 +141,11 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `vault.timeoutSec` | `VAULT_TIMEOUT_SEC` | `15` |
 | `vault.tokenRenewEnabled` / `tokenRenewMinIntervalSec` | `VAULT_TOKEN_RENEW_ENABLED` / `VAULT_TOKEN_RENEW_MIN_INTERVAL_SEC` | `true` / `60` |
 | `vault.awsEndpointUrl` | `AWS_ENDPOINT_URL` | unset (LocalStack only) |
+| `vault.awsKmsTimeoutSec` | `KMS_AWS_TIMEOUT_SEC` | unset (`1`..`600`); emitted only with `KMS_PROVIDER=aws` |
+| `vault.awsKmsRotationCheckIntervalSec` | `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` | unset (`1`..`86400`, validated in `provided` mode); emitted only with `KMS_PROVIDER=aws` |
+| `kms.awsKeyMode` | `KMS_AWS_KEY_MODE` (only when `KMS_PROVIDER=aws`) | unset (`managed` \| `provided`; required with `aws`) |
+| `kms.awsKeyArn` | `KMS_AWS_KEY_ARN` (only when `KMS_PROVIDER=aws`) | unset (required with `provided`, must be empty with `managed`) |
+| `kms.allowUnverifiableImageTag` | none (render-time acknowledgement) | unset (`true` confirms an `image.tag` the chart cannot verify (any tag outside the canonical form `vX.Y.Z[-(alpha|beta|rc).N]`) is `>= 1.1.0-beta.13`) |
 | `crypto.dekCacheTtl` / `dekCacheMaxEntries` / `hmacCoexistenceWindow` | `SISBAJUD_DEK_CACHE_TTL` / `SISBAJUD_DEK_CACHE_MAX_ENTRIES` / `SISBAJUD_HMAC_COEXISTENCE_WINDOW` | `5m` / `50000` / `720h` |
 | `layout.responseLayout` / `remittanceLayouts` | `SISBAJUD_RESPONSE_LAYOUT` / `SISBAJUD_REMITTANCE_LAYOUTS` | `auto` / `v111,v2026` |
 | `sta.fileLockTtl` | `STA_FILE_LOCK_TTL` | `5` (minutes) |
@@ -186,6 +191,16 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 Chart-derived keys: `ENVIRONMENT_NAME`/`ENV_NAME` default to `production`; `POSTGRES_SSLMODE` defaults to `require` (`disable` with the bundled subchart); `VAULT_AUTH_METHOD` defaults to `token` and `VAULT_TRANSIT_MOUNT_PATH` to `transit`; `KMS_PROVIDER` defaults to `vault`; `MULTI_TENANT_ENABLED` and `PLUGIN_AUTH_ENABLED` default to `false`. `OTEL_EXPORTER_OTLP_ENDPOINT` is overridden on the pod by `http://$(HOST_IP):4317` (node-local collector) when telemetry is on and no endpoint is set.
 
 Keys that only matter for local development (`VAULT_PORT`, `VAULT_DEV_*`, `VAULT_APPROLE_ROLE_NAME`, `LOCALSTACK_DEBUG`, `APP_ENV`) and the deprecated lib-auth aliases (`DECLARATION_ENABLED`, `PLUGIN_IDENTITY_HOST`, `M2M_CLIENT_ID`, `M2M_CLIENT_SECRET`) are not rendered. Set them under `brSisbajud.configmap` / `brSisbajud.secrets` if you need them. The advanced lib-streaming knobs (`STREAMING_BATCH_MAX_BYTES`, `STREAMING_RECORD_RETRIES`, `STREAMING_CB_*`, ...) work the same way.
+
+**AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `brSisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` also needs `awsKeyArn`, `managed` rejects it. Key mode and ARN follow `brSisbajud.configmap` > `brSisbajud.kms` > `global.kms`. The timeout and rotation interval are set under `brSisbajud.vault` (`awsKmsTimeoutSec`, `awsKmsRotationCheckIntervalSec`); `KMS_AWS_*` keys in the free-form `brSisbajud.configmap` still win as the native override. Mode and ARN are trimmed both for validation and in the ConfigMap; `KMS_AWS_TIMEOUT_SEC` (in every aws mode) and `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` (only in `provided` mode) are validated after trimming but rendered as set (the app trims them at boot). `"+30"` is refused at render although the app accepts it (deliberately stricter).
+
+- Minimum image: `sisbajud-v1.1.0-beta.13` (chart value `brSisbajud.image.tag >= 1.1.0-beta.13`). Older images (such as `1.0.0`) ignore the key mode and create their own KMS key, so the chart fails the render on them.
+- Only a tag in the canonical form `^v?X.Y.Z(-(alpha|beta|rc).N)?$` is verifiable (e.g. `1.1.0-beta.13`, `v1.2.0`, `1.2.0-rc.2`); it is compared with the minimum. Every other tag fails closed unless `brSisbajud.kms.allowUnverifiableImageTag: true`: non-SemVer (`latest`, mirror tags), other suffixes such as arch tags (`1.1.0-beta.13-amd64`, `1.2.0-beta1`) and build metadata (`1.2.0+build.5`), even when the version part is above the minimum. With the flag set such a tag passes without any version check, even one whose label is below the minimum (e.g. `1.1.0-beta.12-amd64`): the chart does not read the label of a non-canonical tag, so the acknowledgement is the operator's word that the image has key modes. This flag is per chart only: setting it under `global.kms` has no effect.
+- A tag containing `@` (`tag@digest` or digest-only) also requires `brSisbajud.kms.allowUnverifiableImageTag: true`, even when the tag part is canonical: the kubelet pulls by digest, so the label cannot be verified against the minimum. With the flag set no version check is made. A canonical tag below the minimum fails even with the flag.
+- This is the first gate in this repo that treats `@` as a signal: other charts' minimum-version gates strip the digest or fail open on it. The deviation is deliberate (DR-04).
+- Residual: a mutable SemVer tag re-pushed in a mirror is still only a label; the chart cannot detect it.
+- A digest-only tag (`image.tag: "@sha256:…"`) is not supported by this chart's image template: it renders `repo:@sha256:…`, which the kubelet rejects.
+- AWS credentials come via IRSA (`serviceAccount` annotations) or `secretRefs`; this chart has no `rolesAnywhere` block.
 
 ### Secrets
 

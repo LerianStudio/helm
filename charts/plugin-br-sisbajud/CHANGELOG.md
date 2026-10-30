@@ -1,5 +1,186 @@
 # Plugin-br-sisbajud Changelog
 
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.0)
+
+Features:
+- Released app `1.1.0`. (@brunobls)
+- Implemented refusal of images without key modes. (@brunobls)
+- Added rendering and validation for AWS KMS key modes. (@brunobls)
+
+Fixes:
+- Corrected behavior to refuse leading zeros in canonical tags. (@brunobls)
+- Ensured verification is only performed on canonical image tags. (@brunobls)
+
+Improvements:
+- Added AWS KMS key modes to the getting started documentation. (@brunobls)
+- Noted that AWS KMS knobs render only with AWS. (@brunobls)
+- Clarified KMS trim behavior in the documentation. (@brunobls)
+- Aligned tag gate notes with canonical rule. (@brunobls)
+- Documented canonical tags and their limits. (@brunobls)
+- Noted the digest-only tag limit in the documentation. (@brunobls)
+- Documented the image tag gate and its limits. (@brunobls)
+- Documented AWS KMS key mode values. (@brunobls)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.0.0...plugin-br-sisbajud-v1.1.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
+
+Features:
+- Released `1.0.0-beta.1` on `lerian-common` `2.3.0`. (@guimoreirar)
+- Added the SISBAJUD executor chart on `lerian-common`. (@guimoreirar)
+
+Fixes:
+- Fixed the `STREAMING_ENABLED` comment to reflect the default application setting as false. (@guimoreirar)
+- Pinned the application to version `1.0.0` and addressed review findings. (@guimoreirar)
+- Required the streaming hub tenant in executor mode. (@guimoreirar)
+- Updated the telemetry library name to point at the plugin repository. (@guimoreirar)
+- Defaulted the telemetry identity to `plugin-br-sisbajud` and shipped `1.0.0-beta.2`. (@guimoreirar)
+- Allowed an explicit `POSTGRES_PASSWORD` to take precedence for the migrations hook. (@guimoreirar)
+- Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
+
+Features:
+- Shipped `1.0.0-beta.1` on lerian-common `2.3.0`. (@guimoreirar)
+- Added the SISBAJUD executor chart on lerian-common. (@guimoreirar)
+
+Fixes:
+- Fixed the STREAMING_ENABLED comment to reflect that the app default is `false`. (@guimoreirar)
+- Pinned app to `1.0.0` and addressed review findings. (@guimoreirar)
+- Required the streaming hub tenant in executor mode. (@guimoreirar)
+- Pointed the telemetry library name at the plugin repository. (@guimoreirar)
+- Defaulted the telemetry identity to `plugin-br-sisbajud` and shipped app `1.0.0-beta.2`. (@guimoreirar)
+- Allowed an explicit `POSTGRES_PASSWORD` to take precedence for the migrations hook. (@guimoreirar)
+- Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
+
+Features:
+- Shipped `1.0.0-beta.1` on `lerian-common` `2.3.0`. (@guimoreirar)
+- Added the SISBAJUD executor chart on `lerian-common`. (@guimoreirar)
+
+Fixes:
+- Fixed the `STREAMING_ENABLED` comment to reflect the app default as `false`. (@guimoreirar)
+- Pinned app to `1.0.0` and addressed review findings. (@guimoreirar)
+- Required the streaming hub tenant in executor mode. (@guimoreirar)
+- Pointed the telemetry library name to the plugin repository. (@guimoreirar)
+- Defaulted the telemetry identity to `plugin-br-sisbajud` and shipped app `1.0.0-beta.2`. (@guimoreirar)
+- Allowed an explicit `POSTGRES_PASSWORD` to take precedence for the migrations hook. (@guimoreirar)
+- Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
+
+Features:
+- Shipped `1.0.0-beta.1` on `lerian-common` `2.3.0`. (@guimoreirar)
+- Added the SISBAJUD executor chart on `lerian-common`. (@guimoreirar)
+
+Fixes:
+- Fixed the `STREAMING_ENABLED` comment to reflect the app default as `false`. (@guimoreirar)
+- Pinned app to `1.0.0` and addressed review findings. (@guimoreirar)
+- Required the streaming hub tenant in executor mode. (@guimoreirar)
+- Pointed the telemetry library name at the plugin repository. (@guimoreirar)
+- Defaulted the telemetry identity to `plugin-br-sisbajud` and shipped app `1.0.0-beta.2`. (@guimoreirar)
+- Allowed an explicit `POSTGRES_PASSWORD` to take precedence for the migrations hook. (@guimoreirar)
+- Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
+
+Features:
+- Shipped `1.0.0-beta.1` on `lerian-common` `2.3.0`. (@guimoreirar)
+- Added the SISBAJUD executor chart on `lerian-common`. (@guimoreirar)
+
+Fixes:
+- Fixed the `STREAMING_ENABLED` comment to reflect the application default as `false`. (@guimoreirar)
+- Pinned the application to `1.0.0` and addressed review findings. (@guimoreirar)
+- Required the streaming hub tenant in executor mode. (@guimoreirar)
+- Pointed the telemetry library name at the plugin repository. (@guimoreirar)
+- Defaulted the telemetry identity to `plugin-br-sisbajud` and shipped `1.0.0-beta.2`. (@guimoreirar)
+- Allowed an explicit `POSTGRES_PASSWORD` to take precedence for the migrations hook. (@guimoreirar)
+- Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
+
+Features:
+- Shipped `1.0.0-beta.1` on `lerian-common` `2.3.0`. (@guimoreirar)
+- Added the SISBAJUD executor chart on `lerian-common`. (@guimoreirar)
+
+Fixes:
+- Pinned app to `1.0.0` and addressed review findings. (@guimoreirar)
+- Required the streaming hub tenant in executor mode. (@guimoreirar)
+- Pointed the telemetry library name at the plugin repository. (@guimoreirar)
+- Defaulted the telemetry identity to `plugin-br-sisbajud` and shipped app `1.0.0-beta.2`. (@guimoreirar)
+- Allowed an explicit `POSTGRES_PASSWORD` to take precedence for the migrations hook. (@guimoreirar)
+- Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
+
+Improvements:
+- Fixed the `STREAMING_ENABLED` comment to reflect that the app default is `false`. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
+
+Features:
+- Shipped `1.0.0-beta.1` on `lerian-common` `2.3.0`. (@guimoreirar)
+- Added the SISBAJUD executor chart on `lerian-common`. (@guimoreirar)
+
+Fixes:
+- Fixed the `STREAMING_ENABLED` comment to reflect that the app default is `false`. (@guimoreirar)
+- Pinned app to `1.0.0` and addressed review findings. (@guimoreirar)
+- Required the streaming hub tenant in executor mode. (@guimoreirar)
+- Pointed the telemetry library name at the plugin repository. (@guimoreirar)
+- Defaulted the telemetry identity to `plugin-br-sisbajud` and shipped app `1.0.0-beta.2`. (@guimoreirar)
+- Allowed an explicit `POSTGRES_PASSWORD` to take precedence for the migrations hook. (@guimoreirar)
+- Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
+
+Features:
+- Shipped `1.0.0-beta.1` on `lerian-common` `2.3.0`. (@guimoreirar)
+- Added the SISBAJUD executor chart on `lerian-common`. (@guimoreirar)
+
+Fixes:
+- Pinned app `1.0.0` and addressed review findings. (@guimoreirar)
+- Required the streaming hub tenant in executor mode. (@guimoreirar)
+- Pointed the telemetry library name at the plugin repository. (@guimoreirar)
+- Defaulted the telemetry identity to `plugin-br-sisbajud` and shipped app `1.0.0-beta.2`. (@guimoreirar)
+- Allowed an explicit `POSTGRES_PASSWORD` to take precedence for the migrations hook. (@guimoreirar)
+- Made mensageria mutual TLS optional and fixed render gates. (@guimoreirar)
+
+Improvements:
+- Fixed the `STREAMING_ENABLED` comment to reflect that the app default is `false`. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+
+---
+
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.0.0)
 
 Features:

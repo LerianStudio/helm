@@ -136,48 +136,37 @@ bank-transfer.mongoInternal — true when the bundled Bitnami mongodb subchart p
 {{- end }}
 
 {{/*
-bank-transfer.mongoEnv — single-source the MongoDB connection.
-Emits a MONGO_PASSWORD env (secretKeyRef) followed by a MONGO_URI env that references it via
-$(MONGO_PASSWORD) shell-style expansion (Kubernetes expands against earlier env entries in the
-same list, so MONGO_PASSWORD MUST precede MONGO_URI). The app is URI-only, so the URI is
-assembled here rather than embedding a plaintext password in the Secret.
-- Bundled subchart: MONGO_PASSWORD <- the mongodb subchart Secret / mongodb-passwords (user
-  mongodb.auth.usernames[0], which the subchart creates in mongodb.auth.databases[0], the authSource).
-- existingSecret override: MONGO_PASSWORD <- <existingSecret> / mongodb-passwords.
-- External inline: MONGO_PASSWORD <- app Secret / MONGO_PASSWORD.
-If the operator sets bankTransfer.secrets.MONGO_URI explicitly, that wins and is emitted verbatim
-(no $(MONGO_PASSWORD) assembly). The host tracks the mongodb subchart's Bitnami fullname (Service and
-Secret names share it, honoring nameOverride/fullnameOverride and the name-collapse rule).
-Input (dict): context (root .), secretName (app Secret name for the external-inline fallback).
+bank-transfer.mongoEnv — the MongoDB connection env. The app reads only MONGO_URI. Bundled, the
+deployment assembles it from a MONGO_PASSWORD env (secretKeyRef on the subchart Secret, or
+mongodb.auth.existingSecret, key mongodb-passwords) via $(MONGO_PASSWORD) expansion. kubelet
+expands $(VAR) only in literal env values, from envFrom and earlier env entries, so an explicit
+bankTransfer.secrets.MONGO_URI that holds $(VAR) (no credential) is emitted here, after
+MONGO_PASSWORD; an inline-credential one reaches the pod from the app Secret instead.
+User and authSource are mongodb.auth.usernames[0] / databases[0]; the host tracks the subchart's
+Bitnami fullname. Input (dict): context (root .).
 */}}
 {{- define "bank-transfer.mongoEnv" -}}
 {{- $ctx := .context -}}
-{{- $ns := include "global.namespace" $ctx -}}
 {{- $mongo := default dict $ctx.Values.mongodb -}}
 {{- $mongoAuth := default dict $mongo.auth -}}
-{{- $internal := eq (include "bank-transfer.mongoInternal" $ctx) "true" -}}
 {{- $mongoFullname := include "common.names.dependency.fullname" (dict "chartName" "mongodb" "chartValues" $mongo "context" $ctx) -}}
+{{- $internal := eq (include "bank-transfer.mongoInternal" $ctx) "true" -}}
+{{- $uri := $ctx.Values.bankTransfer.secrets.MONGO_URI | default "" -}}
+{{- $ref := contains "$(" $uri -}}
 {{- if not $ctx.Values.bankTransfer.useExistingSecret }}
-{{- if or $internal $mongoAuth.existingSecret }}
-{{- $secretName := $mongoAuth.existingSecret | default $mongoFullname }}
+{{- if or (and $internal (not $uri)) (and $ref (or $internal $mongoAuth.existingSecret)) }}
 - name: MONGO_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ $secretName }}
+      name: {{ $mongoAuth.existingSecret | default $mongoFullname }}
       key: mongodb-passwords
-{{- else if $ctx.Values.bankTransfer.secrets.MONGO_PASSWORD }}
-- name: MONGO_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: {{ .secretName }}
-      key: MONGO_PASSWORD
 {{- end }}
-{{- if $ctx.Values.bankTransfer.secrets.MONGO_URI }}
+{{- if $ref }}
 - name: MONGO_URI
-  value: {{ $ctx.Values.bankTransfer.secrets.MONGO_URI | quote }}
-{{- else if $internal }}
+  value: {{ $uri | quote }}
+{{- else if and $internal (not $uri) }}
 - name: MONGO_URI
-  value: {{ printf "mongodb://%s:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=%s" (first $mongoAuth.usernames) $mongoFullname $ns (first $mongoAuth.databases) | quote }}
+  value: {{ printf "mongodb://%s:$(MONGO_PASSWORD)@%s.%s.svc.cluster.local:27017/?authSource=%s" (first $mongoAuth.usernames) $mongoFullname (include "global.namespace" $ctx) (first $mongoAuth.databases) | quote }}
 {{- end }}
 {{- end }}
 {{- end }}

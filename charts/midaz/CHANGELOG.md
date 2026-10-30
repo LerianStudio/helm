@@ -2,6 +2,21 @@
 
 ## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
 
+Fixes:
+- Update `midaz-ledger` to `4.4.0`, `midaz-tracer` to `4.4.0`, `midaz-ledger-migrations` to `4.4.0`, and `midaz-tracer-migrations` to `4.4.0`. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Add a Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+- Rewrite the `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+- Fix the `v10.0.2` upgrade guide to describe the schema fix. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
 Features:
 - Add Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
 - Add Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)

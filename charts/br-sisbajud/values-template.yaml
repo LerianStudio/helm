@@ -40,6 +40,15 @@ global:
     vaultRoleId: ""                    # <- REQUIRED for approle
     vaultMount: "transit"
     # awsRegion: "sa-east-1"           # <- REQUIRED for vendor: aws
+    # Example aws + provided (customer-owned key):
+    #   vendor: "aws"
+    #   awsRegion: "sa-east-1"
+    #   awsKeyMode: "provided"         # managed | provided (REQUIRED for vendor: aws)
+    #   awsKeyArn: "arn:aws:kms:sa-east-1:123456789012:key/<key-id>"  # REQUIRED for provided; empty for managed
+    # Tag gate with aws: only a canonical tag (X.Y.Z or X.Y.Z-(alpha|beta|rc).N) is
+    # compared with the minimum 1.1.0-beta.13. Any other tag (arch suffix, build
+    # metadata, non-SemVer, or "@" digest pin) cannot be verified and needs
+    # brSisbajud.kms.allowUnverifiableImageTag: true (NOT read from global.kms).
   streaming:
     # REQUIRED on: the Mensageria refuses to boot with streaming off (R-03; the
     # release notice plugin-br-sisbajud consumes). Needs OUTBOX_ENABLED=true (the

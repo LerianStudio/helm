@@ -90,7 +90,9 @@ global:
   multiTenant: {}
   # -- Env-wide KMS (lerian-common.kms.value): vendor | vaultAddr | vaultAuthMethod |
   # vaultRoleId | vaultMount. vendor: hashicorp-vault (default) | aws.
-  # br-sisbajud also reads awsRegion here when vendor=aws. The AppRole secret-id
+  # br-sisbajud also reads awsRegion, awsKeyMode and awsKeyArn here when vendor=aws
+  # (precedence: brSisbajud.configmap > brSisbajud.kms > global.kms; see brSisbajud.kms).
+  # allowUnverifiableImageTag is NOT read here (only brSisbajud.kms). The AppRole secret-id
   # and the Vault token are secrets: brSisbajud.secrets.VAULT_APPROLE_SECRET_ID / VAULT_TOKEN.
   # Example:
   #   kms: { vendor: "hashicorp-vault", vaultAddr: "https://vault.internal:8200", vaultAuthMethod: "approle", vaultRoleId: "<role-id>", vaultMount: "transit" }
@@ -254,6 +256,12 @@ brSisbajud:
   # Keep empty unless this release talks to its own instance.
   # ---------------------------------------------------------------------------
   datastores: {}
+  # -- KMS mask (same fields as global.kms). br-sisbajud extras with vendor=aws:
+  # awsKeyMode (managed | provided; required with aws), awsKeyArn (required with
+  # provided, must be empty with managed), allowUnverifiableImageTag (acknowledgement
+  # only: set true when brSisbajud.image.tag is not in the canonical form
+  # vX.Y.Z[-(alpha|beta|rc).N], e.g. "@" digest pins, arch suffixes, build metadata) to confirm the image is >= 1.1.0-beta.13;
+  # read only here, never from global.kms).
   kms: {}
   objectStorage: {}
 
@@ -290,7 +298,8 @@ brSisbajud:
   # maxRetryBackoff, masterName. Connection identity lives in datastores.
   redis: {}
   # -- KMS knobs not covered by the kms mask: timeoutSec, tokenRenewEnabled,
-  # tokenRenewMinIntervalSec, awsEndpointUrl (LocalStack only).
+  # tokenRenewMinIntervalSec, awsEndpointUrl (LocalStack only), awsKmsTimeoutSec
+  # (1..600), awsKmsRotationCheckIntervalSec (1..86400, provided mode only).
   vault: {}
   # -- Envelope-encryption layer: dekCacheTtl, dekCacheMaxEntries, hmacCoexistenceWindow.
   crypto: {}

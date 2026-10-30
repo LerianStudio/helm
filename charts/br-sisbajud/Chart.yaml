@@ -24,7 +24,7 @@ version: 1.3.0
 # (br-sfn release sisbajud-v<appVersion>: ghcr.io/lerianstudio/br-sisbajud and
 # br-sisbajud-migrations). The optional topics Job pins its own tag. Override
 # via brSisbajud.image.tag / migrations.image.tag when needed.
-appVersion: "1.0.0"
+appVersion: "1.1.0"
 
 keywords:
   - br-sisbajud

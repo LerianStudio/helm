@@ -156,8 +156,8 @@ bankTransfer:
 # Redis/Valkey: rate limiting, idempotency keys, caching — no pre-config needed
 # MongoDB (MANDATORY): database "plugin_br_bank_transfer", user "bank_transfer"
 #   — audit logs, event persistence, transfer tracking
-# RabbitMQ (OPTIONAL — webhook delivery): exchange "bank_transfer.lifecycle" +
-#   ".dlx", queue "transfer.webhook.delivery" + ".dlq"
+# RabbitMQ (OPTIONAL — webhook delivery): user "bank_transfer" with configure/
+#   write/read on its vhost; the app declares its own exchanges and queues
 # ==============================================================================
 
 # Bundled dependencies. On a managed-cloud install (global.cloud set, or any

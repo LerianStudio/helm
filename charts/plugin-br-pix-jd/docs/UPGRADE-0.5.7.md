@@ -29,14 +29,17 @@
 
 ## Overview
 
-This is a **patch release** of the `plugin-br-pix-jd` chart (v0.5.7), introducing breaking changes to the worker image configuration and license key requirements. The chart now ships two components from **separate images**: the HTTP API (`plugin-br-pix-jd`) and the cron worker (`plugin-br-pix-jd-worker`), replacing the previous single-image architecture where both binaries lived in one image.
+This is a **patch release** of the `plugin-br-pix-jd` chart (v0.5.7). It changes how the worker image is resolved, requires `LICENSE_KEY` for the API, and flips the `SYSTEMPLANE_ENABLED` default for external PostgreSQL. The chart now ships two components from **separate images**: the HTTP API (`plugin-br-pix-jd`) and the cron worker (`plugin-br-pix-jd-worker`). The previous single-image shape, where the worker ran the API image with the entrypoint overridden to `/worker`, is gone.
+
+The API Deployment rolls on this upgrade: the ConfigMap and Secret checksums and the `helm.sh/chart` pod label change. If the worker is enabled, its Deployment (strategy `Recreate`) is replaced as well, now running the dedicated worker image.
 
 | Setting | v0.5.6 | v0.5.7 |
 |---------|---------|---------|
 | Chart version | 0.5.6 | 0.5.7 |
 | App version | 1.3.0 | 1.3.0 |
-| Worker image required | No (inherited from API) | Yes (dedicated image) |
-| LICENSE_KEY required for API | No (worker only) | Yes (both components) |
+| Worker image | Inherited from the API image, entrypoint overridden to `/worker` | Dedicated image by default, no entrypoint override |
+| Worker image tag | Empty, inherits `api.image.tag` | `1.3.0` in `values.yaml`, no longer follows `api.image.tag` |
+| LICENSE_KEY required for API | No (worker only, and optional with `IS_DEVELOPMENT`) | Yes (both components, every mode) |
 | SYSTEMPLANE_ENABLED default (bundled Postgres) | `false` | `false` |
 | SYSTEMPLANE_ENABLED default (external Postgres) | `false` | `true` |
 
@@ -46,7 +49,7 @@ This is a **patch release** of the `plugin-br-pix-jd` chart (v0.5.7), introducin
 
 **What changed:**
 
-The chart no longer supports the single-image architecture where `worker.image.repository` could be left empty to inherit the API image. The worker now **requires** its own dedicated image.
+The chart no longer supports the single-image architecture where `worker.image.repository` could be left empty to inherit the API image. The worker now runs its own dedicated image, and `values.yaml` sets it by default. You only need to act if your values file overrides `worker.image.repository` or `worker.image.tag`.
 
 **Before (v0.5.6):**
 
@@ -60,36 +63,40 @@ worker:
 
 The chart would override the entrypoint to `/worker` when `worker.image.repository` was empty.
 
-**After (v0.5.7):**
+**After (v0.5.7), chart defaults:**
 
 ```yaml
 worker:
-  enabled: true
+  enabled: false   # still opt-in
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-worker
     tag: "1.3.0"
 ```
 
-The worker image has its own `ENTRYPOINT ["/worker"]` and the chart no longer overrides the command.
+The worker image has its own `ENTRYPOINT ["/worker"]` and the chart no longer sets `command` on the worker container.
 
-> **Warning:** If you leave `worker.image.repository` empty in v0.5.7, the render will fail with:
+> **Warning:** If your values file sets `worker.image.repository` to an empty string and `worker.enabled` is `true`, the render fails with:
 > ```
 > ERROR: image.repository is empty for one of the components.
 > An empty repository renders as ":<tag>", which the API server rejects with
 > InvalidImageName. Set api.image.repository or worker.image.repository.
 > ```
 
+> **Warning:** If your values file sets `worker.image.repository` to the API image (`ghcr.io/lerianstudio/plugin-br-pix-jd`), the render succeeds but the chart no longer adds `command: ["/worker"]`. The worker container then starts the API image's own entrypoint instead of the worker. Do not point the worker at the API image.
+
+**Worker tag no longer follows the API tag.** In v0.5.6 an empty `worker.image.tag` inherited `api.image.tag`. In v0.5.7 `worker.image.tag` defaults to `1.3.0`, and an empty value falls back to the chart `appVersion`, not to `api.image.tag`. If you pin `api.image.tag`, pin `worker.image.tag` to the same value.
+
 **Why this matters:**
 
-The API image (`plugin-br-pix-jd`) **no longer carries the `/worker` binary**. Attempting to run the worker from the API image will fail with a binary-not-found error. The two components are now built from separate Dockerfiles (`cmd/app/Dockerfile` and `cmd/worker/Dockerfile`) and published as separate images.
+According to the chart's `values.yaml`, the app publishes one image per entry point: `plugin-br-pix-jd` (`cmd/app`, `ENTRYPOINT /service`) and `plugin-br-pix-jd-worker` (`cmd/worker`, `ENTRYPOINT /worker`), and the API image carries no `/worker` binary.
 
-**Migration required:** Yes — see [Step 1](#step-1-update-worker-image-configuration).
+x [Step 1](#step-1-update-worker-image-configuration).
 
 ### 2. LICENSE_KEY Now Required for API
 
 **What changed:**
 
-The API now validates the license key at boot in all modes. Previously, only the worker performed license validation.
+The chart now requires the license key for both the API and the worker, in every mode. In v0.5.6 the chart required it only for the worker, and the worker requirement was waived when `IS_DEVELOPMENT` was true.
 
 **Before (v0.5.6):**
 
@@ -109,7 +116,7 @@ api:
     LICENSE_KEY: "your-license-key-here"  # Required
 ```
 
-The render will fail if `api.secrets.LICENSE_KEY` is empty:
+When the chart renders the API Secret itself (no `api.existingSecret.name`), the render fails if `api.secrets.LICENSE_KEY` is empty:
 
 ```
 ERROR: api.secrets.LICENSE_KEY is required.
@@ -119,9 +126,9 @@ without it; IS_DEVELOPMENT only selects the development license gateway.
 
 **Why this matters:**
 
-The application now imports `lib-license-go` in `cmd/app/main.go` and validates the license before starting the HTTP server. Without a valid `LICENSE_KEY`, the API pod will crash with a license validation error, not just the worker.
+Per the chart's error message, the API and the worker validate the license at boot and do not start without it. `IS_DEVELOPMENT` no longer makes the key optional: it only selects the development license gateway. A development stack that set `IS_DEVELOPMENT=true` with no key and the worker enabled rendered in v0.5.6 and fails to render in v0.5.7.
 
-**Migration required:** Yes — see [Step 2](#step-2-set-license_key-in-api-secrets).
+**Migration required:** Yes, see [Step 2](#step-2-set-license_key-in-api-secrets).
 
 ### 3. SYSTEMPLANE_ENABLED Default Changed
 
@@ -136,11 +143,11 @@ The default value for `SYSTEMPLANE_ENABLED` now depends on the database topology
 
 **Why this matters:**
 
-With the bundled PostgreSQL, the schema lands **after** the API rolls out (PostSync hook), so the API cannot boot with `SYSTEMPLANE_ENABLED=true` because the `systemplane_entries` table does not exist yet. The chart now defaults to `false` on this path to prevent a CrashLoop on first install.
+With the bundled PostgreSQL, the migrations Job runs **after** the release syncs (Helm `post-install`/`post-upgrade` hook, ArgoCD PostSync). With systemplane on, the API cannot boot before the schema exists, and a first install never reaches the Job. The chart therefore defaults to `false` on this path.
 
-With an external PostgreSQL, the schema is applied **before** the API rolls out (PreSync hook), so the table exists and the plane can be enabled by default.
+With an external PostgreSQL (the chart default, since `postgresql.enabled` is `false`), the migrations Job runs **before** the API rolls out (Helm `pre-install`/`pre-upgrade` hook, ArgoCD PreSync), so the plane can be enabled by default.
 
-> **Important:** With `SYSTEMPLANE_ENABLED=false`, every Pix flow that requires the own ISPB, the Midaz scope, or transaction routes will fail with **503 PIX-0051**. The NOTES.txt now warns:
+> **Important:** According to the chart, with `SYSTEMPLANE_ENABLED=false` every Pix flow that requires the own ISPB, the Midaz scope, or transaction routes fails closed with **503 PIX-0051**. The NOTES.txt (bundled PostgreSQL path) now warns:
 > ```
 > With systemplane on, the api cannot boot before the schema exists and a first install
 > never reaches this Job, so on this path api.configmap.SYSTEMPLANE_ENABLED defaults to
@@ -149,15 +156,15 @@ With an external PostgreSQL, the schema is applied **before** the API rolls out 
 
 **Migration impact:**
 
-If you are upgrading an existing install with the bundled PostgreSQL and have not explicitly set `SYSTEMPLANE_ENABLED`, the default remains `false` and no change occurs. If you are using an external PostgreSQL, the default changes to `true`, which may enable systemplane lookups that were previously disabled.
+If you use the bundled PostgreSQL and have not set `SYSTEMPLANE_ENABLED`, the default remains `false` and nothing changes. With an external PostgreSQL and `SYSTEMPLANE_ENABLED` unset in `api.configmap`, the rendered ConfigMap changes from `"false"` to `"true"` (confirmed with the CI render fixture). If you already set it explicitly, nothing changes. The external-PostgreSQL migrations Job runs as a pre-upgrade hook, so the schema is applied before the API pods roll.
 
-**Migration required:** Conditional — see [Step 3](#step-3-review-systemplane_enabled-setting).
+**Migration required:** Conditional, see [Step 3](#step-3-review-systemplane_enabled-setting).
 
 ## Features
 
 ### 1. Dedicated Worker Image
 
-The chart now references the dedicated worker image by default in `values.yaml`:
+The chart references the dedicated worker image by default in `values.yaml`:
 
 ```yaml
 worker:
@@ -166,24 +173,7 @@ worker:
     tag: "1.3.0"
 ```
 
-The `workerOwnImage` helper template has been removed from `_helpers.tpl` because the chart no longer supports the single-image shape. The NOTES.txt output now shows:
-
-```
-WORKER: enabled — image ghcr.io/lerianstudio/plugin-br-pix-jd-worker:1.3.0.
-```
-
-Instead of:
-
-```
-WORKER: enabled — dedicated image ghcr.io/lerianstudio/plugin-br-pix-jd-worker
-        (its own ENTRYPOINT /worker).
-```
-
-Or:
-
-```
-WORKER: enabled — the api's image, entrypoint overridden to /worker.
-```
+The `workerOwnImage` helper template has been removed from `_helpers.tpl` because the chart no longer supports the single-image shape. The NOTES.txt line for an enabled worker now names the full worker image reference (for example `ghcr.io/lerianstudio/plugin-br-pix-jd-worker:1.3.0`). In v0.5.6 it named either the dedicated image or the API image with the entrypoint overridden to `/worker`.
 
 ### 2. New Environment Variables
 
@@ -215,17 +205,19 @@ The default value for `ORGANIZATION_IDS` has changed from empty string to `"glob
 
 **Why this matters:**
 
-An empty `ORGANIZATION_IDS` previously caused the application to skip organization-scoped operations. The new default of `"global"` enables global organization scope by default, matching the typical single-tenant deployment pattern.
+`ORGANIZATION_IDS` is the license organization scope: `"global"` for a global-plugin license, or the comma-separated organization IDs of a per-organization license. According to the chart (`values-template.yaml` and README), an empty value stops the service from starting, because the license check needs it. The v0.5.6 default of `""` therefore required every install to set it; the new default `"global"` covers the global-license case.
 
 **Migration impact:**
 
-If you have not explicitly set `ORGANIZATION_IDS`, the application will now use `"global"` instead of an empty string. If you need the previous behavior (no organization scope), explicitly set:
+If you have not set `ORGANIZATION_IDS`, the rendered value changes from `""` to `"global"`. If you use a per-organization license, set the organization IDs explicitly:
 
 ```yaml
 api:
   configmap:
-    ORGANIZATION_IDS: ""
+    ORGANIZATION_IDS: "<org-id-1>,<org-id-2>"
 ```
+
+Do not set `ORGANIZATION_IDS: ""`: the chart renders it as an empty string, and the chart documents that an empty value fails the boot.
 
 ### 4. Streaming CloudEvents Source Format
 
@@ -237,11 +229,11 @@ The default CloudEvents source format has changed from a URI-style path to a sim
 
 **Why this matters:**
 
-The CloudEvents specification recommends URI-reference format for the `source` attribute, but the application now uses a simpler identifier that matches the service name. This change aligns with the CloudEvents 1.0 spec's guidance that the source should be "a URI-reference" but does not require a scheme or authority.
+The chart now defaults the streaming source to the app name.
 
 **Migration impact:**
 
-If you have not explicitly set `STREAMING_CLOUDEVENTS_SOURCE`, the emitted events will now have `source: plugin-br-pix-jd` instead of `source: //lerian.midaz/plugin-br-pix-jd`. If you have downstream consumers that filter on the old format, you must either:
+The variable is only rendered when `api.configmap.STREAMING_ENABLED` is `"true"`. If streaming is on and you have not set `STREAMING_CLOUDEVENTS_SOURCE`, the ConfigMap changes from `//lerian.midaz/plugin-br-pix-jd` to `plugin-br-pix-jd`, so events carry the new `source`. If you have downstream consumers that filter on the old format, you must either:
 
 #### Option 1: Keep existing format
 
@@ -268,15 +260,15 @@ TRANSACTION_LIMIT_DAILY_PERIOD_END: "20:00"
 
 **After (v0.5.7):**
 
-These variables are removed from the template. The application no longer reads them.
+These variables are removed from the template. The v0.5.7 changelog lists this as "Stopped emitting environment variables that the app no longer reads".
 
 **Why this matters:**
 
-The transaction limit clock bounds are now hardcoded in the application or sourced from a different configuration mechanism. If you were overriding these values, they will no longer have any effect.
+Values you set under `api.configmap` for these two keys are now silently dropped: in v0.5.6 a `TRANSACTION_LIMIT_DAILY_PERIOD_INIT: "07:00"` in `api.configmap` was rendered, in v0.5.7 it is not (confirmed by rendering both tags).
 
 **Migration impact:**
 
-If you have explicitly set these variables in `api.configmap` or `api.extraConfigmap`, they will still be emitted (via the escape hatch), but the application will ignore them. Remove them from your values file to avoid confusion.
+If you overrode these in `api.configmap`, the override no longer reaches the pods. Keys set under `api.extraConfigmap` are still rendered as-is. The chart does not document where the transaction-limit clock bounds come from now, so confirm with the plugin team before relying on a custom value.
 
 ### 6. JD_USE_SERVICE_SEGMENTS Multi-Tenant Suppression
 
@@ -302,27 +294,27 @@ The variable is only emitted when `MULTI_TENANT_ENABLED` is not `"true"`.
 
 **Why this matters:**
 
-In multi-tenant mode, the application reads `JD_USE_SERVICE_SEGMENTS` from the tenant's bundle, not from the environment. Emitting it as an environment variable would cause a conflict, and the application now logs a warning if both are present.
+According to the chart, in multi-tenant mode the application reads `JD_USE_SERVICE_SEGMENTS` from the tenant's bundle and logs a warning when the variable is present in the environment.
 
 **Migration impact:**
 
-If you are running in multi-tenant mode and have set `JD_USE_SERVICE_SEGMENTS` in `api.configmap`, it will no longer appear in the rendered ConfigMap. The application will read it from the tenant bundle instead. If you are in single-tenant mode, no change occurs.
+The check reads `MULTI_TENANT_ENABLED` from `api.configmap`. If it is `"true"` and you set `JD_USE_SERVICE_SEGMENTS` in `api.configmap`, the key no longer appears in the rendered ConfigMap (confirmed by rendering). In single-tenant mode, no change occurs.
 
 ### 7. QR Code Configuration for Worker
 
-The `qrcodeEnv` helper now emits QR code configuration for both the API and the worker.
+The worker ConfigMap now includes the QR code configuration (`QRCODE_PUBLIC_BASE_URL`, `QRCODE_PAYLOAD_PATH`, `QRCODE_JWK_PATH`, `QRCODE_JWS_CONTENT_TYPE`, `QRCODE_JWKS_CONTENT_TYPE`), built by the same `qrcodeEnv` helper as the API.
 
 **Why this matters:**
 
-The worker does not serve QR payloads, but its config validation (shared with the API) requires `QRCODE_PUBLIC_BASE_URL` in production. Previously, the QR code block was only emitted for the API, which caused the worker to fail validation in production mode.
+The worker does not serve QR payloads, but according to the chart its config validation (shared with the API) requires `QRCODE_PUBLIC_BASE_URL` in production. Previously the QR block was only rendered for the API.
 
 **Migration impact:**
 
-If you have set `QRCODE_PUBLIC_BASE_URL` in `api.configmap`, it will now also appear in the worker's ConfigMap. No action required unless you were relying on the worker not having this variable.
+If you have set `QRCODE_PUBLIC_BASE_URL` in `api.configmap`, it now also appears in the worker's ConfigMap. No action required.
 
 ### 8. Migrations Job Connection Resolution
 
-The migrations Job now resolves the Postgres connection from the same merged ConfigMap that the API uses, instead of calling the individual helper functions directly.
+The migrations Job now resolves the Postgres connection the way the API ConfigMap does, instead of calling the individual helper functions directly. The worker's `wait-for-postgres` init container changed too: it now reads `POSTGRES_HOST` and `POSTGRES_PORT` from the worker's own ConfigMap (`envFrom`) instead of values rendered into the command line.
 
 **Before (v0.5.6):**
 
@@ -347,7 +339,7 @@ env:
 
 **Why this matters:**
 
-The Job now sees the same connection parameters as the API, including any overrides from `global.datastores`, `global.cloud`, or `api.extraConfigmap`. This ensures consistency and eliminates a class of bugs where the Job and the API connect to different databases.
+The Job now sees the same connection parameters as the API, including overrides from `global.datastores`, `global.cloud`, or `api.extraConfigmap`, and uses them for `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_NAME` and `POSTGRES_SSLMODE`.
 
 **Migration impact:**
 
@@ -371,17 +363,17 @@ The variable is removed from the `$otelKeys` list and `$otelDefaults` map in the
 
 **Why this matters:**
 
-The OpenTelemetry semantic conventions recommend using `service.version` as a resource attribute, but the application does not use this variable. Removing it reduces ConfigMap noise and eliminates a potential source of confusion (the version in the ConfigMap may not match the actual running image if the tag is overridden).
+The v0.5.7 changelog lists this under "Stopped emitting environment variables that the app no longer reads".
 
 **Migration impact:**
 
-If you were relying on `OTEL_RESOURCE_SERVICE_VERSION` in your observability backend, you will need to derive the service version from another source (e.g., pod labels, image tag, or a custom resource attribute).
+A value set in `api.configmap.OTEL_RESOURCE_SERVICE_VERSION` is no longer rendered (confirmed by rendering); use `api.extraConfigmap` if you still need it. If you relied on the variable in your observability backend, derive the version from another source such as the `app.kubernetes.io/version` label or the image tag.
 
 ## Migration Steps
 
 ### Step 1: Update Worker Image Configuration
 
-If you have the worker enabled, you **must** set `worker.image.repository` to the dedicated worker image.
+If you have the worker enabled and your values file does not set `worker.image.repository` or `worker.image.tag`, no change is needed: the chart default is the dedicated worker image. Remove any `worker.image.repository: ""` override, and do not point it at the API image.
 
 **Before (v0.5.6):**
 
@@ -393,17 +385,17 @@ worker:
     tag: ""
 ```
 
-**After (v0.5.7):**
+**After (v0.5.7), only if you pin the image yourself:**
 
 ```yaml
 worker:
   enabled: true
   image:
     repository: ghcr.io/lerianstudio/plugin-br-pix-jd-worker
-    tag: "1.3.0"
+    tag: "1.3.0"   # same value as api.image.tag
 ```
 
-> **Important:** Keep `worker.image.tag` equal to `api.image.tag`. The two components share one database and one schema, and tag divergence (while not policed by the chart) can cause runtime errors if the schema version does not match the application version.
+> **Important:** `worker.image.tag` does not follow `api.image.tag`. When you change `api.image.tag`, change `worker.image.tag` to the same value. The chart does not check that the two match.
 
 ### Step 2: Set LICENSE_KEY in API Secrets
 
@@ -425,19 +417,21 @@ api:
     name: plugin-pix-credentials
 ```
 
-The existing Secret must contain a `LICENSE_KEY` key.
+The existing Secret must contain a `LICENSE_KEY` key. With `api.existingSecret.name` set, the chart does not render the API Secret, so the render gate does not apply to the API.
 
-> **Note:** If you were previously setting `LICENSE_KEY` only in `worker.secrets`, you must now also set it in `api.secrets`. The two components do not share a Secret by default.
+> **Note:** If you were previously setting `LICENSE_KEY` only in `worker.secrets`, you must now also set it in `api.secrets` (or in the Secret named by `api.existingSecret.name`). The two components do not share a Secret by default.
+
+> **Note:** With the worker enabled, the worker renders its own Secret unless `worker.existingSecret.name` is set. That Secret takes `worker.secrets.LICENSE_KEY`, falling back to `api.secrets.LICENSE_KEY`. Setting only `api.existingSecret.name` with the worker enabled still fails the render with "a license key is required for the worker". Set `worker.existingSecret.name`, or set the key inline.
 
 ### Step 3: Review SYSTEMPLANE_ENABLED Setting
 
 If you are using the **bundled PostgreSQL** and have not explicitly set `SYSTEMPLANE_ENABLED`, the default remains `false` and no action is required.
 
-If you are using an **external PostgreSQL**, the default changes to `true`. Review whether this is correct for your deployment:
+If you are using an **external PostgreSQL** (the chart default) and have not set `SYSTEMPLANE_ENABLED`, the default changes to `true`. Review whether this is correct for your deployment:
 
 #### Option 1: Keep systemplane enabled (new default)
 
-No action required. The API will read the own ISPB, Midaz scope, and transaction routes from the `systemplane_entries` table.
+No action required. According to the chart, the own ISPB, the Midaz scope and the transaction routes live only in systemplane.
 
 #### Option 2: Disable systemplane
 
@@ -447,11 +441,7 @@ api:
     SYSTEMPLANE_ENABLED: "false"
 ```
 
-> **Warning:** With `SYSTEMPLANE_ENABLED=false`, every Pix flow that requires systemplane data will fail with **503 PIX-0051**. The application will log:
-> ```
-> SYSTEMPLANE_ENABLED=false fails every Pix flow closed: the own ISPB, the Midaz scope
-> and the transaction routes live only in systemplane.
-> ```
+> **Warning:** According to the chart, with `SYSTEMPLANE_ENABLED=false` every Pix flow that requires systemplane data fails closed with **503 PIX-0051**.
 
 ### Step 4: Add New Environment Variables (Optional)
 
@@ -464,11 +454,11 @@ api:
     APPLICATION_NAME: "my-pix-plugin"
 ```
 
-These variables are optional and default to empty (Tracer) or `plugin-br-pix-jd` (application name).
+These variables are optional. `MIDAZ_URL_TRACER` defaults to empty, in which case no inbound credit is screened. `APPLICATION_NAME` defaults to empty, which the app reads as `plugin-br-pix-jd`; set it only if your license names another application. The API and the worker must agree, so set it in `api.configmap` only.
 
 ### Step 5: Update Streaming CloudEvents Source (If Used)
 
-If you have downstream consumers that filter on the CloudEvents `source` attribute, verify they recognize the new format.
+If streaming is enabled (`api.configmap.STREAMING_ENABLED: "true"`) and you have downstream consumers that filter on the CloudEvents `source` attribute, verify they recognize the new format.
 
 **Old format:**
 

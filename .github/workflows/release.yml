@@ -346,11 +346,12 @@ jobs:
 
           # A chart without a section in the README has no row to move (the updater
           # exits 3); the release already shipped, so that is a warning, not a failed
-          # leg. Any other failure (README unreadable or unwritable) fails the step.
+          # leg. Any other failure (README unreadable or unwritable, or a section
+          # whose matrix no longer parses) fails the step.
           rc=0
           ./.github/scripts/update-chart-version-readme-bin --chart "$CHART_NAME" --version "$NEW_VERSION" || rc=$?
           if [ "$rc" -eq 3 ]; then
-            echo "::warning::README.md has no version matrix for ${CHART_NAME}; not synced"
+            echo "::warning::README.md has no section for ${CHART_NAME}; not synced"
             exit 0
           elif [ "$rc" -ne 0 ]; then
             echo "::error::README version matrix updater failed for ${CHART_NAME} (exit ${rc})"

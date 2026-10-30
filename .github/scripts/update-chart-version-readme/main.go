@@ -10,9 +10,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// exitNoMatrix is the exit status for a README without a version matrix for the
-// chart, so callers can tell it apart from a read or write failure (status 1).
-const exitNoMatrix = 3
+// exitNoSection is the exit status for a README with no section for the chart,
+// so callers can tell it apart from any other failure (status 1), including a
+// section that exists but whose version matrix cannot be parsed.
+const exitNoSection = 3
 
 func main() {
 	version := flag.String("version", "", "New chart version from semantic-release")
@@ -46,8 +47,12 @@ func main() {
 	}
 
 	if tableStart == -1 {
+		if *chart != "" && !hasChartSection(lines, *chart) {
+			fmt.Printf("ERROR: README.md has no section for chart '%s'\n", *chart)
+			os.Exit(exitNoSection)
+		}
 		fmt.Println("ERROR: Could not find version matrix table in README.md")
-		os.Exit(exitNoMatrix)
+		os.Exit(1)
 	}
 
 	fmt.Printf("Found table at lines %d-%d\n", tableStart, tableEnd)
@@ -96,6 +101,19 @@ func updateChartVersion(rows []map[string]string, version string) []map[string]s
 	fmt.Printf("Updated first row: Chart Version = %s\n", formattedVersion)
 
 	return rows
+}
+
+// hasChartSection reports whether README has a "### " heading for the chart,
+// matched the way tableutil.ParseTableForChart matches it.
+func hasChartSection(lines []string, chartName string) bool {
+	normalized := strings.ReplaceAll(strings.ToLower(strings.TrimSuffix(chartName, "-helm")), "-", " ")
+	for _, line := range lines {
+		lower := strings.ToLower(line)
+		if strings.HasPrefix(lower, "### ") && strings.Contains(lower, normalized) {
+			return true
+		}
+	}
+	return false
 }
 
 // getChartDirectory derives the chart directory from the chart name

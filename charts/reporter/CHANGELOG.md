@@ -6,6 +6,18 @@ Features:
 - Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
 
 Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
 - Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)

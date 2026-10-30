@@ -186,7 +186,9 @@ The Caradhras Deployment uses a rolling update with `maxSurge: 1` and `maxUnavai
 2. The new pod runs the `migrate` init container with the `1.8.5` image, and then starts Caradhras `1.8.5`.
 3. Kubernetes stops an old pod only after the new pod passes its readiness check.
 
-A new pod must migrate before an old pod leaves. With `replicaCount: 1` this still holds, and a healthy upgrade does not interrupt the service. If the `migrate` init container fails, the old pod stays in service.
+Auth and identity roll too. The pod templates of the auth, identity and caradhras Deployments carry the label `helm.sh/chart: plugin-access-manager-<version>`, so any chart version bump replaces the pods of all three, even when nothing else in the pod changes. I checked this by rendering the previous and the new chart version with `helm template`. Auth and identity render `maxSurge: 1` and `maxUnavailable: 1` by default (auth runs 3 replicas, identity 1), so identity can be briefly unavailable during the rollout when it runs a single replica.
+
+For Caradhras, a new pod must migrate before an old pod leaves. With `replicaCount: 1` this still holds, and a healthy upgrade does not interrupt the service. If the `migrate` init container fails, the old pod stays in service.
 
 While the rollout runs, the old `1.5.1` pods keep serving on the migrated database. An old pod that restarts in this window fails its boot check, because the database is ahead of its image. Let the rollout finish, and watch it:
 

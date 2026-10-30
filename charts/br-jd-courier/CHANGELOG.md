@@ -3,6 +3,34 @@
 ## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.1)
 
 Features:
+- Added documentation for what a BYOC install of courier `1.2.0` requires. (@fredcamaral)
+- Added a Helm upgrade guide for `br-jd-courier` `v2.1.0`. (@guimoreirar)
+
+Fixes:
+- Adjusted the chart to fit a BYOC install of courier `1.2.0`. (@fredcamaral)
+- Updated `br-jd-courier` to `1.2.0`. (@lerian-studio)
+- Enabled the access manager declaration by default. (@fredcamaral)
+- Adjusted the readiness probe to account for the time `readyz` takes. (@fredcamaral)
+- Scheduled the migration job with the appropriate roles. (@fredcamaral)
+- Refused the access manager M2M secret under config. (@fredcamaral)
+
+Improvements:
+- Deleted JD's old applications before upgrading to `1.2.0`. (@fredcamaral)
+- Removed JD's old client applications during partner changes. (@fredcamaral)
+- Named the transit's service segments key. (@fredcamaral)
+- Added the transit secret key without removing others. (@fredcamaral)
+- Prioritized the access manager floor in the `1.1.x` upgrade. (@fredcamaral)
+- Corrected the BYOC access manager, region, and upgrade notes. (@fredcamaral)
+- Flagged the stale `1.1.0` tag inside the Pix transit examples. (@gandalf-at-lerian)
+- Aligned README and upgrade notes with chart behavior. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.0...br-jd-courier-v2.1.1)
+
+---
+
+## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.1)
+
+Features:
 - Updated `br-jd-courier` to `1.2.0`. (@lerian-studio)
 
 Fixes:

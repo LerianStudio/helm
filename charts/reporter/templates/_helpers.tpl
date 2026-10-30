@@ -318,6 +318,31 @@ secret-manager inputs must not be blocked at render time.
 {{- end }}
 
 {{/*
+reporter.licenseKeyRequired — refuse to render a reporter >= 4.6.0 without a license.
+
+Reporter 4.6.0 requires LICENSE_KEY in every run mode: the manager AND the worker refuse
+to boot without it ("LICENSE_KEY is empty; reporter does not run without a license"). A
+chart that renders without the key ships pods that never become ready, and the reason is
+only in their logs. This fails the render instead, naming the key.
+
+Like reporter.datasourceCredEncKeyRequired, presence is enforced only when the
+COMPONENT'S OWN resolved image tag parses as semver and is >= 4.6.0-0, so a release that
+still runs 4.5.x keeps rendering, and a floating tag ("latest", a digest) is left alone.
+An argocd-vault-plugin reference (`<path:...>`) counts as set: it is resolved after the
+render, and the plugin fails closed when it cannot resolve it. Called only when the
+component does not use an existing Secret, whose contents the chart cannot see.
+
+Input (dict): context (root .), component ("manager"|"worker"), tag (resolved image tag).
+*/}}
+{{- define "reporter.licenseKeyRequired" -}}
+{{- $key := default "" .context.Values.secrets.LICENSE_KEY | toString -}}
+{{- $tag := .tag | toString | trimPrefix "v" -}}
+{{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+([-+].*)?$" $tag) (semverCompare ">=4.6.0-0" $tag) -}}
+{{- fail (printf "\n\nERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (%s.image.tag is %q).\n   The manager AND the worker refuse to boot without a license.\n   Set secrets.LICENSE_KEY (and secrets.ORGANIZATION_IDS for a per-organization license),\n   or point %s.useExistingSecret at a Secret that carries them.\n   See charts/reporter/docs/UPGRADE-5.1.md.\n" .component .tag .component) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 reporter.datasourceCredEncKeyRequired — gate secrets.DATASOURCE_CRED_ENC_KEY.
 
 The reporter app >= 3.0.0 stores registered data-source credentials ENCRYPTED at rest and

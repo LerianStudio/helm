@@ -47,6 +47,8 @@ global:
   multiTenant: {}
   # -- KMS: vendor (hashicorp-vault | aws) | vaultAddr | vaultAuthMethod |
   #    vaultRoleId | vaultMount | awsRegion.
+  #    plugin-br-sisbajud also reads awsKeyMode, awsKeyArn and awsCredentialsKeyArn
+  #    here when vendor=aws (precedence: sisbajud.kms > global.kms; see sisbajud.kms).
   kms: {}
 
 # =============================================================================
@@ -358,6 +360,8 @@ sisbajud:
     protocol: "3"
     masterName: ""
 
+  # -- Vault/KMS knobs. Optional with vendor=aws: awsKmsTimeoutSec (1..600) and
+  #    awsKmsRotationCheckIntervalSec (1..86400), validated in every aws key mode.
   vault:
     timeoutSec: "15"
     renewEnabled: "true"
@@ -379,7 +383,17 @@ sisbajud:
 
   # -- Dedicated datastore masks (override global.datastores).
   datastores: {}
-  # -- Dedicated KMS mask (override global.kms).
+  # -- Dedicated KMS mask (override global.kms). Extras with vendor=aws:
+  #    awsKeyMode (managed | provided; required with aws), awsKeyArn and
+  #    awsCredentialsKeyArn (both required and distinct with provided; both must be
+  #    empty with managed, where the app creates and owns the keys). aws is refused
+  #    with multi-tenant (single-tenant/BYOC only). The KMS_AWS_* keys can NOT be set
+  #    through sisbajud.configmap (its schema key enum rejects them); use this block.
+  #    With vendor=aws the image must be >= plugin-br-sisbajud-v1.1.0-beta.1
+  #    (sisbajud.image.tag >= 1.1.0-beta.1): older images ignore the key mode and
+  #    create their own KMS key, so the render fails on them. allowUnverifiableImageTag:
+  #    true acknowledges a tag the chart cannot verify (any tag outside the
+  #    canonical form vX.Y.Z[-(alpha|beta|rc).N], e.g. "@", arch suffix, "+build"); read ONLY here, global.kms ignores it.
   kms: {}
 
   # -- Escape hatch: native env keys. Only the executor's non-credential keys

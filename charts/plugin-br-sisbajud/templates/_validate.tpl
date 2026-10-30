@@ -194,6 +194,69 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not (include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsRegion" "nativeKey" "AWS_REGION" "default" "")) -}}
 {{- include $f (dict "msg" "AWS_REGION is required with KMS_PROVIDER=aws." "set" "global.kms.awsRegion (or sisbajud.kms.awsRegion)") -}}
 {{- end -}}
+{{- /* The app refuses aws with multi-tenant (validateAWSKMSDeployment). Checked
+   right after AWS_REGION so the key-mode gates below never pre-empt it; the
+   resolved flag covers global.multiTenant.enabled and sisbajud.configmap.MULTI_TENANT_ENABLED. */ -}}
+{{- if eq (include "plugin-br-sisbajud.multiTenantEnabled" .) "true" -}}
+{{- include $f (dict "msg" "KMS_PROVIDER=aws is single-tenant (BYOC) only; the app refuses it with MULTI_TENANT_ENABLED=true." "set" "global.multiTenant.enabled=false (or KMS_PROVIDER=vault)") -}}
+{{- end -}}
+{{- $awsMode := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsKeyMode" "nativeKey" "KMS_AWS_KEY_MODE" "default" "") | trim -}}
+{{- if not (has $awsMode (list "managed" "provided")) -}}
+{{- include $f (dict "msg" (printf "KMS_PROVIDER=aws now requires KMS_AWS_KEY_MODE (managed | provided), got %q." $awsMode) "set" "sisbajud.kms.awsKeyMode (or global.kms.awsKeyMode)") -}}
+{{- end -}}
+{{- $awsKeyArn := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsKeyArn" "nativeKey" "KMS_AWS_KEY_ARN" "default" "") | trim -}}
+{{- $awsCredArn := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsCredentialsKeyArn" "nativeKey" "KMS_AWS_CREDENTIALS_KEY_ARN" "default" "") | trim -}}
+{{- if eq $awsMode "provided" -}}
+{{- if not $awsKeyArn -}}
+{{- include $f (dict "msg" "KMS_AWS_KEY_ARN is required when KMS_AWS_KEY_MODE=provided." "set" "sisbajud.kms.awsKeyArn (or global.kms.awsKeyArn)") -}}
+{{- end -}}
+{{- if not $awsCredArn -}}
+{{- include $f (dict "msg" "KMS_AWS_CREDENTIALS_KEY_ARN is required when KMS_AWS_KEY_MODE=provided." "set" "sisbajud.kms.awsCredentialsKeyArn (or global.kms.awsCredentialsKeyArn)") -}}
+{{- end -}}
+{{- if eq $awsKeyArn $awsCredArn -}}
+{{- include $f (dict "msg" "KMS_AWS_KEY_ARN and KMS_AWS_CREDENTIALS_KEY_ARN must name distinct keys." "set" "sisbajud.kms.awsKeyArn / sisbajud.kms.awsCredentialsKeyArn") -}}
+{{- end -}}
+{{- else -}}
+{{- if $awsKeyArn -}}
+{{- include $f (dict "msg" "KMS_AWS_KEY_ARN must be empty when KMS_AWS_KEY_MODE=managed (the app creates and owns the key)." "set" "unset sisbajud.kms.awsKeyArn and global.kms.awsKeyArn, or sisbajud.kms.awsKeyMode=provided") -}}
+{{- end -}}
+{{- if $awsCredArn -}}
+{{- include $f (dict "msg" "KMS_AWS_CREDENTIALS_KEY_ARN must be empty when KMS_AWS_KEY_MODE=managed (the app creates and owns the key)." "set" "unset sisbajud.kms.awsCredentialsKeyArn and global.kms.awsCredentialsKeyArn, or sisbajud.kms.awsKeyMode=provided") -}}
+{{- end -}}
+{{- end -}}
+{{- /* Timeout and rotation interval are validated in EVERY aws mode: the plugin app
+   parses both always (applyAWSTimeout / applyAWSRotationCheckInterval) — the
+   opposite of br-sisbajud, which reads the interval only in provided mode. */ -}}
+{{- range $row := list (list "KMS_AWS_TIMEOUT_SEC" "awsKmsTimeoutSec" 600) (list "KMS_AWS_ROTATION_CHECK_INTERVAL_SEC" "awsKmsRotationCheckIntervalSec" 86400) -}}
+{{- $raw := include $val (dict "cm" $cm "k" (index $row 0) "p" ($s.vault | default dict) "f" (index $row 1) "d" "") | trim -}}
+{{- if and $raw (or (not (regexMatch "^[0-9]+$" $raw)) (lt (atoi $raw) 1) (gt (atoi $raw) (index $row 2))) -}}
+{{- include $f (dict "msg" (printf "%s must be a whole number of seconds between 1 and %d, got %q." (index $row 0) (index $row 2) $raw) "set" (printf "sisbajud.vault.%s" (index $row 1))) -}}
+{{- end -}}
+{{- end -}}
+{{- /* Image-tag gate (CA-10): images before 1.1.0-beta.1 ignore KMS_AWS_KEY_MODE /
+   KMS_AWS_KEY_ARN and create their own KMS key, silently. Same effective tag as
+   plugin-br-sisbajud.image (DR-04, rule B'):
+   - a tag is verifiable ONLY in the canonical form
+     ^v?MAJOR.MINOR.PATCH(-(alpha|beta|rc).N)?$ (no "@", no leading zeros: SemVer
+     2.0.0 forbids leading zeros, so it is unverifiable, not lower). Such a tag is compared with
+     $min (the acknowledgement is NOT consulted): below it fails even with the flag.
+   - everything else FAILS CLOSED (DR-03/DR-04) unless acknowledged, and with the
+     acknowledgement no version check is made: "@" (tag@digest or digest-only; the
+     kubelet pulls by digest, so the label may lie), other suffixes (-amd64, beta1,
+     -beta.1-amd64), build metadata (+x), non-SemVer (latest, mirror tags).
+   The acknowledgement is sisbajud.kms.allowUnverifiableImageTag only:
+   global.kms.allowUnverifiableImageTag is intentionally ignored because the minimum
+   tag differs per chart. */ -}}
+{{- $rawTag := $.Values.sisbajud.image.tag | default $.Chart.AppVersion | toString -}}
+{{- $min := "1.1.0-beta.1" -}}
+{{- $ackTag := eq (toString (($s.kms | default dict).allowUnverifiableImageTag)) "true" -}}
+{{- if regexMatch "^v?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\\.(0|[1-9][0-9]*))?$" $rawTag -}}
+{{- if semverCompare (printf "<%s" $min) (trimPrefix "v" $rawTag) -}}
+{{- include $f (dict "msg" (printf "image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key." $rawTag) "set" (printf "sisbajud.image.tag >= %s" $min)) -}}
+{{- end -}}
+{{- else if not $ackTag -}}
+{{- include $f (dict "msg" (printf "image tag %q is not in the canonical form vX.Y.Z[-(alpha|beta|rc).N] (digest pins, arch suffixes, build metadata and non-SemVer tags are refused), so the chart cannot verify it is >= %s (older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key)." $rawTag $min) "set" (printf "a canonical sisbajud.image.tag >= %s, or sisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= %s" $min $min)) -}}
+{{- end -}}
 {{- else -}}
 {{- include $f (dict "msg" (printf "KMS_PROVIDER must be vault or aws (the app has no in-memory provider), got %q." $kms) "set" "global.kms.vendor=hashicorp-vault|aws") -}}
 {{- end -}}

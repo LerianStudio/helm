@@ -28,6 +28,16 @@ global:
     vaultAuthMethod: "approle"
     vaultRoleId: "<approle-role-id>"
     vaultMount: "transit"
+    # aws + provided example (single-tenant/BYOC only; replaces the vault* keys):
+    # vendor: "aws"
+    # awsRegion: "<aws-region>"
+    # awsKeyMode: "provided"            # or "managed" (leave both ARNs empty)
+    # awsKeyArn: "<kms-key-arn>"
+    # awsCredentialsKeyArn: "<kms-credentials-key-arn>"   # distinct from awsKeyArn
+    # aws: only a canonical tag (X.Y.Z or X.Y.Z-(alpha|beta|rc).N) is compared with
+    # the minimum 1.1.0-beta.1; any other tag (arch suffix, build metadata,
+    # non-SemVer, or "@") needs sisbajud.kms.allowUnverifiableImageTag: true
+    # (not read from global.kms).
   observability:
     enabled: true
 

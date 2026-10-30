@@ -3,34 +3,93 @@
 
 # Topics
 
-- **[Fixes](#fixes)**
-  - [1. Caradhras Image Version Update](#1-caradhras-image-version-update)
+- **[Overview](#overview)**
+- **[Before you upgrade](#before-you-upgrade)**
+  - [Back up the database](#back-up-the-database)
+  - [This upgrade goes one way](#this-upgrade-goes-one-way)
+  - [Check for pinned image tags](#check-for-pinned-image-tags)
+- **[Caradhras Image Update](#caradhras-image-update)**
+  - [Database migrations](#database-migrations)
+  - [Behavior changes between 1.5.1 and 1.8.5](#behavior-changes-between-151-and-185)
+  - [Rollout behavior](#rollout-behavior)
+- **[After the upgrade: mask old audit records](#after-the-upgrade-mask-old-audit-records)**
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
-# Fixes
+# Overview
 
-### 1. Caradhras Image Version Update
+This release updates the Caradhras (auth backend) container images from `1.5.1` to `1.8.5`.
 
-This release updates the Caradhras (auth backend) container images from version `1.5.1` to `1.8.5`. This is a patch-level maintenance update that includes bug fixes and improvements to the Caradhras service.
+> **Important:** This is not a patch update. The chart version moves by a patch number, but Caradhras moves by three minor versions (1.6, 1.7 and 1.8). The `migrate` init container applies 3 schema migrations (`000019` to `000021`) and 10 RBAC migrations (`85` to `94`) to your database. You cannot undo them with a rollback. Read [Before you upgrade](#before-you-upgrade) first.
+
+| Component | v10.1.0 | v10.1.1 |
+|-----------|---------|---------|
+| Chart version | 10.1.0 | 10.1.1 |
+| App version | 3.13.1 | 3.13.1 |
+| `caradhras.image.tag` (default) | `1.5.1` | `1.8.5` |
+| `caradhras.migrations.image.tag` (default) | `1.5.1` | `1.8.5` |
+
+# Before you upgrade
+
+### Back up the database
+
+Take a backup or a snapshot of the Caradhras database before you upgrade. The backup is the only way back, as the next section explains.
+
+### This upgrade goes one way
+
+The migration applier only moves forward. It has no down migration. Caradhras `1.5.1` refuses a database that a newer image already migrated. After this upgrade you cannot return to `1.5.1` with `helm rollback`, or with an image pin:
+
+- The `migrate` init container of the old image stops with `migration chain is ahead of this binary` and exit code 1.
+- The new pod stays in `Init:Error` or `Init:CrashLoopBackOff`, and the rollout does not finish.
+- The old image does not embed the newer migrations, so it has nothing to run and nothing to revert.
+
+To go back to `1.5.1`, restore the database from the backup you took before the upgrade. Forcing the migration chain back with `cmd/migration` rewrites only the version bookkeeping. It does not undo migrations `000019` to `000021` or the RBAC data changes. Contact Lerian support before you try it.
+
+### Check for pinned image tags
+
+A tag that you set in your own values overrides the new default, and the upgrade does not change it. The chart resolves each tag in this order:
+
+1. `caradhras.image.tag` and `caradhras.migrations.image.tag`
+2. The legacy `auth.backend.image.tag` and `auth.backend.migrations.image.tag`
+3. The chart default (`1.8.5`)
+
+Check both the new and the legacy keys:
+
+```bash
+helm get values plugin-access-manager -n plugin-access-manager -o yaml
+```
+
+```yaml
+caradhras:
+  image:
+    tag: "..."
+  migrations:
+    image:
+      tag: "..."
+auth:
+  backend:
+    image:
+      tag: "..."
+    migrations:
+      image:
+        tag: "..."
+```
+
+An old `auth.backend.*` override is easy to miss. If it is set and the `caradhras.*` tag is empty, the legacy tag wins, and the upgrade leaves Caradhras on the old version.
+
+The main image tag and the migrations image tag must be the same version. If you override one, override the other to the same value.
+
+# Caradhras Image Update
 
 **What changed:**
 
-The default image tags for both the main Caradhras service and the migrations init container have been updated across the chart:
+The default image tags for the main Caradhras service and for the migrations init container changed across the chart:
 
 | Setting | v10.1.0 | v10.1.1 |
 |---------|---------|---------|
 | `caradhras.image.tag` | `1.5.1` | `1.8.5` |
 | `caradhras.migrations.image.tag` (default) | `1.5.1` | `1.8.5` |
-
-**Why this matters:**
-
-The `1.8.5` release of Caradhras includes accumulated bug fixes and stability improvements since `1.5.1`. Upgrading ensures your auth backend benefits from these fixes. The migration image update ensures that database schema migrations run with the same version as the runtime service, maintaining consistency between schema and application code.
-
-**Default behavior:**
-
-If you have not explicitly overridden the image tags in your `values.yaml`, the upgrade will automatically pull and deploy Caradhras `1.8.5`. The chart's default values and template helpers now reference `1.8.5` as the baseline version.
 
 **Before (v10.1.0):**
 
@@ -88,54 +147,101 @@ caradhras:
 {{- end }}
 ```
 
-**Operational impact:**
+### Database migrations
 
-When you upgrade to v10.1.1, Kubernetes will perform a rolling update of the Caradhras deployment:
+The `migrate` init container runs first and applies these migrations to your database:
 
-1. The migrations init container runs first with the `1.8.5` image, applying any schema changes
-2. The Caradhras pods are then replaced with new pods running `1.8.5`
-3. Old pods are terminated only after new pods pass readiness checks
+| Chain | Version at `1.5.1` | Version at `1.8.5` | What it does |
+|-------|--------------------|--------------------|--------------|
+| Schema | `000018` | `000021` | `000019` adds `scope_catalog.integrations`. `000020` adds the SSO directory tables `directory_connection` and `directory_disable`. `000021` adds the index `idx_token_organization_user` on `token`. |
+| RBAC | `84` | `94` | Ten data migrations (`85` to `94`) that add or change permissions, roles and grants for Lerian products. |
 
-This is a standard rolling update with no expected downtime if your `replicaCount` is greater than 1.
-
-> **Note:** If you have explicitly pinned `caradhras.image.tag` or `caradhras.migrations.image.tag` in your `values.yaml` to `1.5.1` (or any other version), those overrides will continue to take precedence. Review your values file to determine whether you want to adopt the new default or maintain your pin.
-
-> **Important:** The main Caradhras image tag and the migrations image tag should always match. If you override one, override both to the same version to avoid schema/application version skew.
-
-# Migration Steps
-
-This upgrade requires no manual migration steps for most operators. Follow these steps to safely upgrade from v10.1.0 to v10.1.1:
-
-**Step 1: Review your current image configuration**
-
-Check whether you have explicitly overridden the Caradhras image tags:
-
-```bash
-helm get values plugin-access-manager -n plugin-access-manager
-```
-
-Look for any of these keys in the output:
+`000021` runs `CREATE INDEX CONCURRENTLY`. Reads and writes on `token` continue while the index builds, but the build takes longer on a larger table. The applier stops a run that exceeds its work budget, which is `300` seconds by default. For a very large `token` table, raise the budget before you upgrade, with the `caradhras.migrations.extraEnvVars` option (available since chart v10.1.0):
 
 ```yaml
 caradhras:
-  image:
-    tag: "..."
   migrations:
-    image:
-      tag: "..."
+    extraEnvVars:
+      MIGRATIONS_TIMEOUT_SEC: "900"
 ```
 
-**Step 2: Decide on your image version**
+If the index build fails, PostgreSQL leaves an invalid index behind and the schema chain is marked dirty at version 21. Do not run the applier again before you repair it. Follow the "Dirty at 21" section of the Caradhras `migrations/README.md`, or contact Lerian support.
 
-Choose one of the following options based on your deployment strategy:
+### Behavior changes between 1.5.1 and 1.8.5
+
+These changes come from the Caradhras release notes. The list covers what operators and users can notice.
+
+- **Turned-off users (1.7.0).** Caradhras refuses a disabled user before the MFA prompt, refuses the access keys of turned-off users, and revokes access when an administrator forbids a user. It also refuses to rebind an SSO account that is already linked, and it reports the token of a deleted application as inactive.
+- **SSO directory (1.7.0).** New tables and routes store a Google directory connection per organization and record the accounts that a directory sync turns off.
+- **Google One Tap removed (1.8.1).** Caradhras removes the Google One Tap login path.
+- **Passkeys for server-to-server callers (1.8.0).** Caradhras adds a passkey ceremony for server-to-server callers.
+- **Shared applications (1.8.4 and 1.8.5).** Caradhras unmasks a shared application only for administrators of both of its organizations.
+- **Audit records (1.8.2 and 1.8.3).** Caradhras masks secrets in new audit records. See [After the upgrade](#after-the-upgrade-mask-old-audit-records).
+
+### Rollout behavior
+
+The Caradhras Deployment uses a rolling update with `maxSurge: 1` and `maxUnavailable: 0`. These values are fixed in the template, and `auth.deploymentStrategy` does not apply to this Deployment. The sequence is:
+
+1. Kubernetes creates one new pod.
+2. The new pod runs the `migrate` init container with the `1.8.5` image, and then starts Caradhras `1.8.5`.
+3. Kubernetes stops an old pod only after the new pod passes its readiness check.
+
+A new pod must migrate before an old pod leaves. With `replicaCount: 1` this still holds, and a healthy upgrade does not interrupt the service. If the `migrate` init container fails, the old pod stays in service.
+
+While the rollout runs, the old `1.5.1` pods keep serving on the migrated database. An old pod that restarts in this window fails its boot check, because the database is ahead of its image. Let the rollout finish, and watch it:
+
+```bash
+kubectl -n plugin-access-manager rollout status deploy/plugin-access-manager-caradhras
+kubectl -n plugin-access-manager logs deploy/plugin-access-manager-caradhras -c migrate
+```
+
+The deployment name is `<release>-caradhras`. Use `kubectl -n plugin-access-manager get deploy` to confirm it.
+
+# After the upgrade: mask old audit records
+
+Before Caradhras `1.8.2`, the audit path masked JSON bodies only. Every form or multipart request that it recorded kept its secrets in clear text in `record.object`. This covers the Access Manager login (`client_secret`, `password`), set-password (`oldPassword`, `newPassword`) and the other token endpoints. A copy of each record also lives in `webhook_event.payload`.
+
+Caradhras `1.8.2` and later mask new records. They do not change the rows that are already in the database. After this upgrade, those old rows still hold the clear text.
+
+The Caradhras image includes `/redact-audit-records` (from `1.8.3`). It masks the old rows with the same redactor, and it keeps every row. It replaces secret values with `***` and drops secret query parameters from `request_uri`. A body that the redactor cannot read (raw text, XML, malformed JSON) becomes `***`. A form or multipart body over 64 KiB is cut at 64 KiB.
+
+Lerian runs this tool on Lerian Cloud. In a BYOC deployment, you decide whether to run it. Run it after the environment is on `1.8.2` or later, so that no new row leaks while it runs. A second run finds nothing to change.
+
+1. Dry run. This counts the rows that it would change and writes nothing:
+
+   ```bash
+   kubectl -n plugin-access-manager exec deploy/plugin-access-manager-caradhras -- sh -c \
+     'POSTGRES_HOST=$DB_HOST POSTGRES_PORT=$DB_PORT POSTGRES_DB=$DB_NAME POSTGRES_USER=$DB_USER \
+      POSTGRES_PASSWORD=$DB_PASSWORD POSTGRES_SSLMODE=$DB_SSLMODE /redact-audit-records'
+   ```
+
+2. Apply. Run the same command with `/redact-audit-records -apply`.
+
+The tool logs the target (host, port, database) and, per table, the counts `scanned=<n> changed=<n> applied=<bool>`. It never logs a value. It works through `record` and `webhook_event` in batches of 500, with one transaction per batch. On an error it stops, logs the counts so far, and exits with code 1.
+
+> **Note:** The tool does not reach copies outside the database. Backups, dumps and the webhook events that receivers already got keep their values. This includes the backup you take before this upgrade.
+
+# Migration Steps
+
+Follow these steps to upgrade from v10.1.0 to v10.1.1:
+
+**Step 1: Back up the database**
+
+Take a backup or snapshot of the Caradhras database. See [Back up the database](#back-up-the-database).
+
+**Step 2: Review your current image configuration**
+
+Check the new and the legacy image tag keys, as described in [Check for pinned image tags](#check-for-pinned-image-tags).
+
+**Step 3: Decide on your image version**
 
 #### Option 1: Adopt the new default (recommended)
 
-If you have **not** overridden the image tags, or if you want to adopt the `1.8.5` update, no action is required. The upgrade will automatically deploy Caradhras `1.8.5`.
+If you do not override the image tags, no change is required. The upgrade deploys Caradhras `1.8.5`.
 
-#### Option 2: Maintain an explicit pin
+#### Option 2: Stay on 1.5.1 for now
 
-If you have explicitly pinned the Caradhras version and want to stay on `1.5.1` (or another version) for now, ensure both the main image and migrations image are pinned to the same version in your `values.yaml`:
+If you must stay on `1.5.1`, pin both images to the same version in your `values.yaml`, **before** you upgrade:
 
 ```yaml
 caradhras:
@@ -146,11 +252,9 @@ caradhras:
       tag: "1.5.1"
 ```
 
-> **Warning:** Keeping an older version means you will not receive the bug fixes and improvements included in `1.8.5`. Only pin to an older version if you have a specific compatibility requirement.
+> **Warning:** This option works only while your database is still at the `1.5.1` schema. After any `1.6` or later image has run the `migrate` init container, `1.5.1` refuses to start. A pin on `1.5.1` is then no way back.
 
-**Step 3: Validate your configuration locally**
-
-Test your configuration with a dry-run to ensure the upgrade will succeed:
+**Step 4: Validate your configuration**
 
 ```bash
 helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
@@ -160,13 +264,15 @@ helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugi
   --debug
 ```
 
-Review the output to confirm the expected image tags are rendered in the Deployment and Job manifests.
+Confirm that the Deployment renders the expected image tags for the `caradhras` container and the `migrate` init container.
 
-**Step 4: Proceed with the upgrade**
+**Step 5: Upgrade and watch the rollout**
 
-Once you have confirmed your configuration, proceed with the upgrade using the command in the [Command to upgrade](#command-to-upgrade) section.
+Run the command in [Command to upgrade](#command-to-upgrade). Watch the rollout and the `migrate` log, as described in [Rollout behavior](#rollout-behavior).
 
-> **Note:** The upgrade performs a rolling update of the Caradhras deployment. If you have `replicaCount: 1`, expect a brief service interruption during pod replacement. For zero-downtime upgrades, ensure `replicaCount` is set to 2 or higher.
+**Step 6: Mask old audit records**
+
+Follow [After the upgrade](#after-the-upgrade-mask-old-audit-records).
 
 # Preview changes before upgrading
 

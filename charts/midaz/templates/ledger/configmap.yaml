@@ -86,9 +86,17 @@ data:
   {{- $ledgerTag := .Values.ledger.image.tag | default .Chart.AppVersion }}
   {{- if include "midaz.tagIsV4" $ledgerTag }}
   {{- $authRaw := (($authEnv | fromYaml).PLUGIN_AUTH_ENABLED | default "") | toString }}
-  {{- $authOn := include "midaz.isTrue" $authRaw }}
+  {{- /* From 4.4.0-beta.14 the ledger loads booleans through lib-commons, which reads only the exact
+     words true and false (trimmed; blank is unset) and refuses to boot on 1, t, TRUE, True... */}}
+  {{- $validBools := list "1" "t" "T" "TRUE" "true" "True" "0" "f" "F" "FALSE" "false" "False" }}
+  {{- $authOn := eq (include "midaz.isTrue" $authRaw) "true" }}
+  {{- if include "midaz.ledgerStrictBool" $ledgerTag }}
+  {{- $authRaw = trim $authRaw }}
+  {{- $validBools = list "true" "false" }}
+  {{- $authOn = eq $authRaw "true" }}
+  {{- end }}
   {{- $byMode := include "midaz.ledgerAuthGateByMode" $ledgerTag }}
-  {{- if and $byMode (ne $authRaw "") (not (has $authRaw (list "1" "t" "T" "TRUE" "true" "True" "0" "f" "F" "FALSE" "false" "False"))) }}
+  {{- if and $byMode (ne $authRaw "") (not (has $authRaw $validBools)) }}
   {{- fail (printf "ledger: PLUGIN_AUTH_ENABLED=%q is not a valid boolean (the ledger refuses to boot on it). Set global.auth.enabled / ledger.configmap.PLUGIN_AUTH_ENABLED to \"true\" or \"false\"" $authRaw) }}
   {{- end }}
   {{- if not $authOn }}

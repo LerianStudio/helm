@@ -322,6 +322,21 @@ tags resolve to "", like midaz.tagIsV4, so they keep the earlier rule.
 {{- end -}}
 
 {{/*
+midaz.ledgerStrictBool — reports "true" when the passed ledger image tag loads
+its boolean env vars through lib-commons >= 7.17.0-beta.34 (ledger 4.4.0-beta.14
+onward), "" otherwise. That loader reads only the exact words "true" and "false"
+(surrounding whitespace trimmed; blank means unset) and refuses to boot on any
+other value, `1`, `t`, `TRUE` and `True` included. Earlier ledgers read the
+strconv.ParseBool set. Non-semver tags resolve to "", like midaz.tagIsV4.
+*/}}
+{{- define "midaz.ledgerStrictBool" -}}
+{{- $tag := . | toString | trimPrefix "v" -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
+{{- if semverCompare ">=4.4.0-beta.14" $tag -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 midaz.ledgerMigrationsEnabled — resolves the tri-state ledger.migrations.enabled.
 Unset (null) means "auto": on for 4.x ledger tags, off for 3.x, which still runs
 its migrations in-process. An explicit true/false always wins, so operators who

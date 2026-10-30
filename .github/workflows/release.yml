@@ -330,8 +330,14 @@ jobs:
       # moving after the per-chart release scoping. Only on main: a maintenance
       # line must not rewrite the "latest" row. The commit touches README.md alone,
       # which the trigger's paths-ignore skips, so it starts no other release.
+      #
+      # continue-on-error: the chart is already published when this runs, and a failed
+      # leg skips the jobs that need this one: no GitOps pin and no release notice for
+      # ANY chart of the run. A broken matrix sync must show up as a red step with an
+      # error annotation, not hold the release back.
       - name: Sync README version matrix
         if: steps.semantic_changelog.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           BRANCH: ${{ github.ref_name }}
@@ -344,11 +350,18 @@ jobs:
         run: |
           set -euo pipefail
 
-          # A chart without a section in the README has no row to move; the release
-          # already shipped, so that is a warning, not a failed leg.
-          if ! ./.github/scripts/update-chart-version-readme-bin --chart "$CHART_NAME" --version "$NEW_VERSION"; then
+          # A chart without a section in the README has no row to move, and the updater
+          # says so with its own exit status (3): that is a warning. Any other failure
+          # (unreadable or unwritable README.md, bad arguments) is a real error and
+          # fails the step, so a stale matrix is never reported as a clean sync.
+          rc=0
+          ./.github/scripts/update-chart-version-readme-bin --chart "$CHART_NAME" --version "$NEW_VERSION" || rc=$?
+          if [ "$rc" -eq 3 ]; then
             echo "::warning::README.md has no version matrix for ${CHART_NAME}; not synced"
             exit 0
+          elif [ "$rc" -ne 0 ]; then
+            echo "::error::the README version matrix updater failed for ${CHART_NAME} ${NEW_VERSION} (exit ${rc})"
+            exit "$rc"
           fi
 
           if git diff --quiet -- README.md; then

@@ -10,6 +10,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// exitNoVersionMatrix is the status the updater exits with when README.md has no
+// version matrix for the requested chart. It is the one outcome a caller may treat
+// as "nothing to update": every other non-zero status (a missing --version, an
+// unreadable or unwritable README.md) is a real failure and must stay one.
+const exitNoVersionMatrix = 3
+
 func main() {
 	version := flag.String("version", "", "New chart version from semantic-release")
 	chart := flag.String("chart", "", "Chart name to update (e.g., midaz-helm, plugin-fees-helm)")
@@ -43,7 +49,7 @@ func main() {
 
 	if tableStart == -1 {
 		fmt.Println("ERROR: Could not find version matrix table in README.md")
-		os.Exit(1)
+		os.Exit(exitNoVersionMatrix)
 	}
 
 	fmt.Printf("Found table at lines %d-%d\n", tableStart, tableEnd)

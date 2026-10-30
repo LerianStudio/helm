@@ -133,6 +133,12 @@ This chart has no top-level `ingress:` block: a top-level `ingress.*` value is i
 
 Ingresses are off by default. To set `className`, `annotations`, `tls` and the host domain once for all of them, use `global.ingress` (`className`, `annotations`, `tls`, `domain`); a per-component value always wins. With `global.ingress.domain` set and no explicit `hosts`, the host is `<subdomain>.<domain>` as in the last column. The caradhras UI Ingress derives the same `caradhras.<domain>` host as `caradhras.ingress`, so give one of them explicit `hosts` when you enable both.
 
+**Keep Caradhras internal.** `caradhras.ingress` and `caradhras.ui.ingress` must be internal only, on an internal
+load balancer or a private network, never internet-facing. On AWS ALB that means `alb.ingress.kubernetes.io/scheme: internal`.
+Only the Access Manager (auth and identity) and operators call Caradhras; organization admins and end users go through
+the Access Manager and never reach Caradhras directly. The [https rule](#production-reach-caradhras-over-https) still
+holds: a public-CA certificate does not need an internet-facing load balancer.
+
 - **Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. The Ingress Controller is responsible for managing external access to the services. Examples of popular Ingress Controllers include NGINX, AWS ALB, and Traefik.
 
 The examples below configure `auth.ingress`; use the same keys under `identity.ingress`, `caradhras.ingress` or `caradhras.ui.ingress`.

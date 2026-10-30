@@ -134,8 +134,14 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "")) -}}
 {{- include $f (dict "msg" "PLUGIN_AUTH_HOST is required: the executor mints its Mensageria token there (even with PLUGIN_AUTH_ENABLED=false)." "set" "global.auth.host (or sisbajud.configmap.PLUGIN_AUTH_HOST)") -}}
 {{- end -}}
-{{- else if not (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "")) -}}
+{{- else -}}
+{{- if not (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "")) -}}
 {{- include $f (dict "msg" "PLUGIN_AUTH_HOST is required: the direct channel is served only with inbound auth on (config_validation.go requires the host with PLUGIN_AUTH_ENABLED=true)." "set" "global.auth.host (or sisbajud.configmap.PLUGIN_AUTH_HOST)") -}}
+{{- end -}}
+{{- $authOn := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") -}}
+{{- if ne (include "plugin-br-sisbajud.isTrue" $authOn) "true" -}}
+{{- include $f (dict "msg" (printf "PLUGIN_AUTH_ENABLED must be true in a DIRECT-only executor, got %q: the direct channel is served only with inbound auth on (with auth off every direct route answers 501)." (toString $authOn)) "set" "global.auth.enabled=true (or sisbajud.configmap.PLUGIN_AUTH_ENABLED=\"true\")") -}}
+{{- end -}}
 {{- end -}}
 
 {{- /* --- notice transport --------------------------------------------------- */ -}}

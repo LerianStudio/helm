@@ -3,6 +3,32 @@
 ## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
 
 Features:
+- Keep the valkey claim through Argo CD pruning, ensuring it is not lost during the process. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it, allowing for seamless scaling. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade to maintain configuration consistency. (@fredcamaral)
+- Name the ledger and tracer migration switches to clarify their purpose during transitions. (@fredcamaral)
+- Scope the migrate-first order to the default settings, ensuring proper sequence during migrations. (@fredcamaral)
+- Name the hook type per deploy tool to enhance clarity in deployment processes. (@fredcamaral)
+- Provide the `v4.3` cutover steps at chart level for better guidance during upgrades. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt to prevent data loss and ensure financial integrity. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to accurately reflect upgrade impacts. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade to ensure comprehensive upgrade handling. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to improve system robustness during operations. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume, ensuring consistency in image usage. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data overflow and maintain stability. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` to ensure a smooth transition and reduce downtime. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
 - Keep the valkey claim through Argo CD pruning. (@fredcamaral)
 - Grow a StatefulSet valkey claim without losing it. (@fredcamaral)
 - Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)

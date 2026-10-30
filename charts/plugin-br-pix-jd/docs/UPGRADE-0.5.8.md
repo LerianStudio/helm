@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a patch release that upgrades the application from version 1.3.0 to 1.5.0. The chart updates all container image tags (API, worker, and migrations) to align with the new application version.
+This is a patch release that moves the application from version 1.3.0 to 1.5.0. The chart changes `appVersion` and the default image tags of the API, the worker, and the migrations Job. No template, value key, or secret changes: rendering v0.5.7 and v0.5.8 with the same values differs only in image tags, the `app.kubernetes.io/version` and `helm.sh/chart` labels, and the `checksum/config` and `checksum/secret` pod annotations.
 
 | Setting | v0.5.7 | v0.5.8 |
 |---------|--------|--------|
@@ -38,25 +38,33 @@ migrations:
     tag: "1.5.0"  # was "1.3.0"
 ```
 
-> **Note:** If you have explicitly pinned image tags in your values file, you must update them to `1.5.0` for this upgrade to take effect. Explicit tags in your values override the chart defaults.
+The worker only runs if `worker.enabled` is `true`, which is not the default. An empty tag falls back to `appVersion`, but in this chart the three tags are set explicitly in `values.yaml`.
+
+> **Note:** If your values file sets any of these tags, your value wins over the chart default and that image stays at the old version. Update the pinned tags to `1.5.0` to get the new application. The chart does not check that the three tags match, so move `api.image.tag`, `worker.image.tag`, and `migrations.image.tag` together.
 
 ## Migration Impact
 
 ### Database Migrations
 
-The migrations image has been updated to version 1.5.0. This upgrade will trigger the pre-upgrade migration Job if `migrations.enabled` is `true` (the default).
+The migrations image has been updated to version 1.5.0. The chart renders the migrations Job when `migrations.enabled` is `true` (the default). The chart does not describe what changed in the 1.5.0 schema.
 
-> **Important:** The migration Job must complete successfully before the API and worker pods roll out. If the Job fails, the upgrade will be blocked. Review migration Job logs if the upgrade hangs.
+With the default external PostgreSQL, the Job is a `pre-install`/`pre-upgrade` Helm hook (ArgoCD PreSync) and runs before the app rolls out. A failed Job fails the upgrade. The Job allows 3 retries (`backoffLimit`) and 600 seconds (`activeDeadlineSeconds`) by default. Review the Job logs if the upgrade hangs.
+
+With the bundled PostgreSQL (`postgresql.enabled: true`), the Job is a `post-install`/`post-upgrade` hook (ArgoCD PostSync) and runs after the API rolls out, so the API pods run the new image against the old schema until the Job finishes.
+
+With `MULTI_TENANT_ENABLED: "true"` in `api.configmap`, the chart does not render the Job at all, because the Tenant Manager migrates the tenant databases.
 
 ### Configuration Changes
 
-No new configuration values, environment variables, or secrets are required for this upgrade. All existing configuration remains compatible with version 1.5.0.
+The chart adds no values, environment variables, or secrets in this release, and the rendered ConfigMaps and Secrets keep the same keys. Whether application 1.5.0 itself needs new configuration is not stated in the chart; check the application release notes.
+
+The API Deployment rolls (`RollingUpdate`, `maxUnavailable: 0`) because the image tag changes. If the worker is enabled, its `Recreate` Deployment is replaced.
 
 ## Operator Actions
 
 ### 1. Update Image Tags (if pinned)
 
-If your values file explicitly sets image tags, update them to 1.5.0:
+If your values file explicitly sets image tags, update them to 1.5.0 (the worker tag only matters if `worker.enabled` is `true`):
 
 ```yaml
 api:
@@ -81,7 +89,7 @@ migrations:
   enabled: true  # Must be true to run database migrations
 ```
 
-> **Warning:** Setting `migrations.enabled: false` will skip database migrations. Only disable this if you are certain no schema changes are required or if you manage migrations externally.
+> **Warning:** Setting `migrations.enabled: false` skips database migrations. Only disable this if you apply the schema changes yourself.
 
 ## Preview changes before upgrading
 

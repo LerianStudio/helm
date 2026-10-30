@@ -317,6 +317,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0` | 1.0.2 |
 -----------------
 
+### Streaming Hub
+
+Event delivery edge: consumes lib-streaming CloudEvents from Redpanda and fans them out per tenant to webhooks and queues.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/streaming-hub).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `2.0.0` | `3.0.0` |
+-----------------
+
 ### Lerian Common (Library)
 
 Library chart consumed by other Lerian charts — renders nothing on its own.

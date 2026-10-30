@@ -40,6 +40,13 @@ global:
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
   auth: {}
+  # -- Env-wide Access Manager permission declaration (RI). Consumed by
+  # lerian-common.idp.env (block "idp"). Fields: host, declarationEnabled.
+  # (system-facts.configmap.IDP_HOST / IDP_DECLARATION_ENABLED override.) Prefer
+  # the gate in system-facts.configmap: global.idp.declarationEnabled turns it on
+  # for every component of the release. The client pair goes in system-facts.secrets.
+  # Example: idp: { host: "http://plugin-access-manager-identity:4001" }
+  idp: {}
   # -- Env-wide multi-tenant infra (lib-commons/multitenancy). Consumed by
   # lerian-common.multiTenant.env when boilerplate.multiTenant.enabled=true.
   # Fields: url, redisHost, redisPort, redisTls. (configmap.MULTI_TENANT_*
@@ -295,6 +302,12 @@ system-facts:
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Multi-tenant Redis password (empty if auth disabled)
     MULTI_TENANT_REDIS_PASSWORD: ""
+    # -- Permission declaration (RI) M2M client ID, read by lib-auth
+    # declaration.WireFromEnv when IDP_DECLARATION_ENABLED="true". Rendered by
+    # lerian-common.idp.secret only when non-empty.
+    IDP_M2M_CLIENT_ID: ""
+    # -- Permission declaration (RI) M2M client secret (same rules as the ID)
+    IDP_M2M_CLIENT_SECRET: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

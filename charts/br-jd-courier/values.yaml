@@ -8,7 +8,7 @@ jd-courier:
   image:
     repository: ghcr.io/lerianstudio/br-jd-courier
     # Registry tags have no leading `v`. Empty falls back to the chart's appVersion.
-    tag: "1.2.0"
+    tag: "1.2.1"
     pullPolicy: IfNotPresent
 imagePullSecrets: []
 # The ServiceAccount every role runs as; README "AWS identity" (IRSA, Pod Identity).

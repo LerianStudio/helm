@@ -9,7 +9,7 @@
 
 ## Overview
 
-This is a patch release that updates the application version from `2.16.2` to `2.16.4`. No configuration changes, breaking changes, or new features are introduced at the chart level.
+This release moves the default product-console application version from `2.16.2` to `2.16.4`. The chart changes only `appVersion` and the default `image.tag`. No chart values or templates change.
 
 | Field | v4.4.5 | v4.4.6 |
 |-------|--------|--------|
@@ -19,7 +19,7 @@ This is a patch release that updates the application version from `2.16.2` to `2
 
 ## Application Version Update
 
-The chart now deploys application version `2.16.4` instead of `2.16.2`. This is a patch-level application update that includes bug fixes or minor improvements in the product-console application itself.
+The chart now deploys application version `2.16.4` by default instead of `2.16.2`. The image repository stays `lerianstudio/product-console`.
 
 | Setting | v4.4.5 | v4.4.6 |
 |---------|--------|--------|
@@ -28,11 +28,11 @@ The chart now deploys application version `2.16.4` instead of `2.16.2`. This is 
 
 **Impact:**
 
-- The upgrade will trigger a rolling restart of the `product-console` deployment with the new image tag
-- No changes to Helm values, environment variables, or Kubernetes resources are required
-- Existing configuration and customizations remain compatible
+- The upgrade triggers a rolling restart of the `product-console` deployment with the new image tag
+- If you pinned `image.tag` in your values, the pin takes precedence and the image does not change. The pods still roll once, because the chart version is part of the `helm.sh/chart` label in the pod template
+- No changes to Helm values or environment variables are required
 
-> **Note:** Review the product-console application release notes for version `2.16.4` to understand what application-level fixes or improvements are included in this update.
+> **Note:** The chart does not describe application-level changes. Read the product-console application release notes for versions `2.16.3` and `2.16.4`.
 
 ## Preview changes before upgrading
 

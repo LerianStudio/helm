@@ -22,7 +22,7 @@ The chart now defaults to application version `1.2.1` instead of `1.2.0`. Both t
 
 **Why it matters:**
 
-If you are using the default image tag (not overriding `jd-courier.image.tag` in your values), upgrading to v2.1.2 will deploy the `1.2.1` application image. This is a patch release of the br-jd-courier application that includes bug fixes and minor improvements.
+If you are using the default image tag (not overriding `jd-courier.image.tag` in your values), upgrading to v2.1.2 will deploy the `1.2.1` application image. The `1.2.1` release stops requiring a token tenant in single-tenant environments and logs the tenant projection only when it occurs. See the [br-jd-courier v1.2.1 release notes](https://github.com/LerianStudio/br-jd-courier/releases/tag/v1.2.1).
 
 **Migration action:**
 
@@ -59,6 +59,8 @@ helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-co
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+
+> **Note:** An anonymous pull from `registry-1.docker.io` is refused with `401`. Without Docker Hub access, use the GHCR reference `oci://ghcr.io/lerianstudio/br-jd-courier-helm` in both commands.
 
 ---
 

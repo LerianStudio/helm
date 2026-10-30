@@ -3,40 +3,46 @@
 ## Topics
 
 - **[Fixes](#fixes)**
-  - [1. Chart version metadata update](#1-chart-version-metadata-update)
+  - [1. Empty map accepted again for tolerations](#1-empty-map-accepted-again-for-tolerations)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
 ## Fixes
 
-### 1. Chart version metadata update
+### 1. Empty map accepted again for tolerations
 
-This is a patch release that updates only the chart version metadata in `Chart.yaml`. No functional changes, configuration updates, or template modifications are included in this release.
+This release changes `values.schema.json` only (plus the chart version in `Chart.yaml`). The templates, `values.yaml` defaults and `appVersion` (`4.3.0`) do not change.
 
 #### What changed
 
-The chart version has been incremented from `10.0.1` to `10.0.2` to maintain proper semantic versioning. The application version (`appVersion: "4.3.0"`) remains unchanged.
+v10.0.1 made the schema for `ledger.tolerations`, `crm.tolerations` and `tracer.tolerations` accept only an array. Values files written for v10.0.0 that set `tolerations: {}` then failed validation:
 
-| Setting | v10.0.1 | v10.0.2 |
-|---------|---------|---------|
-| Chart version | `10.0.1` | `10.0.2` |
-| App version | `4.3.0` | `4.3.0` |
+```text
+Error: values don't meet the specifications of the schema(s) in the following chart(s):
+- at '/ledger/tolerations': got object, want array
+```
 
-#### Why this matters
+v10.0.2 accepts either form for these three fields:
 
-This release ensures the chart version is properly tracked in Helm's release history. While no configuration or deployment changes occur, upgrading to `10.0.2` keeps your installation aligned with the latest chart metadata.
+| Value | v10.0.1 | v10.0.2 |
+|-------|---------|---------|
+| `[]` or a list of tolerations | accepted | accepted |
+| `{}` (empty map) | rejected | accepted |
+| a map with keys, such as `{foo: bar}` | rejected | rejected |
 
-#### Migration impact
+The default in `values.yaml` stays `[]`.
 
-**No action required.** This upgrade:
-- Does not modify any deployed resources
-- Does not change any default values or configuration
-- Does not require any values.yaml updates
-- Does not trigger pod restarts or service disruptions
+#### Operational impact
 
-The upgrade will complete immediately with no observable changes to running workloads.
+- The rendered resources change only in the chart version label. The templates only emit a `tolerations` block when the value is not empty, so tolerations stay as they were.
+- Pods roll once. The chart version is part of the `helm.sh/chart` label in the pod templates, so any chart version bump, including this one, triggers a rolling restart of the Midaz pods.
+- The ledger migrations Job runs as a `pre-upgrade` hook on every upgrade, including this one.
+- Helm may print a warning such as `destination for midaz-helm.ledger.tolerations is a table. Ignoring non-table value ([])` when your values set `{}`. The warning does not stop the upgrade and the result renders without tolerations.
 
-> **Note:** You can safely upgrade from `10.0.1` to `10.0.2` without reviewing your current configuration or planning downtime.
+#### Action required
+
+- If you stayed on v10.0.0 because v10.0.1 rejected `tolerations: {}`, you can upgrade to v10.0.2 without editing your values.
+- Optional: change `tolerations: {}` to `tolerations: []` in your values file to remove the warning.
 
 ## Preview changes before upgrading
 

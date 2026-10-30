@@ -86,17 +86,15 @@ EXECUTOR_ENABLED: {{ $exOn | quote }}
 {{- include $kv (dict "cm" $cm "p" $exDirect "f" "drainerInfraAlarmThreshold" "k" "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD" "d" "3") }}
 {{- include $kv (dict "cm" $cm "p" $exDirect "f" "purgeEligibleAlarmAfter" "k" "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER" "d" "168h") }}
 {{- include $kv (dict "cm" $cm "p" $direct "f" "permanentBlockEnabled" "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "d" "false") }}
-{{- if eq $mode "direct" }}
-# --- DIRECT-only: no Mensageria intake; this key is the direct drainer's attempt cap
+# --- Direct drainer attempt cap (every executor mode; also the webhook's) ----------
 {{- include $kv (dict "cm" $cm "p" $wh "f" "maxHandleAttempts" "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "d" "5") }}
-{{- else }}
+{{- if ne $mode "direct" }}
 EXECUTOR_TRANSPORT: {{ $transport | quote }}
 {{- if eq $transport "webhook" }}
 # --- Executor: Streaming Hub webhook listener ------------------------------------
 EXECUTOR_HUB_WEBHOOK_ADDRESS: {{ (hasKey $cm "EXECUTOR_HUB_WEBHOOK_ADDRESS" | ternary (index $cm "EXECUTOR_HUB_WEBHOOK_ADDRESS") (printf ":%v" ($wh.port | default 9082))) | quote }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "path" "k" "EXECUTOR_HUB_WEBHOOK_PATH" "d" "/v1/webhooks/hub") }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "maxSkewSec" "k" "EXECUTOR_HUB_WEBHOOK_MAX_SKEW_SEC" "d" "300") }}
-{{- include $kv (dict "cm" $cm "p" $wh "f" "maxHandleAttempts" "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "d" "5") }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "upstreamTlsValidated" "k" "EXECUTOR_HUB_WEBHOOK_UPSTREAM_TLS_VALIDATED" "d" "false") }}
 {{- if $whTls.existingSecret }}
 EXECUTOR_HUB_WEBHOOK_TLS_CERT_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.mountPath) $whTls.certKey | quote }}

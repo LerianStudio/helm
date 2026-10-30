@@ -31,7 +31,7 @@ This release introduces two new optional configuration fields under `caradhras.m
 
 Both fields are **opt-in**. If you do not set them, the rendered manifests differ from v10.0.3 only in the `helm.sh/chart` label, and no environment variable or image changes. The upgrade needs no configuration change. The pod templates of the auth, identity and caradhras Deployments carry the label `helm.sh/chart: plugin-access-manager-<version>`, so any chart version bump replaces the pods of all three, even when nothing else in the pod changes. I checked this by rendering the previous and the new chart version with `helm template`. Auth and identity render `maxSurge: 1` and `maxUnavailable: 1` by default (auth runs 3 replicas, identity 1), so identity can be briefly unavailable during the rollout when it runs a single replica.
 
-> **Important:** `skipRBACChain` works only with Caradhras `1.9.0-rc.1` or later. The default Caradhras image of this chart version is `1.5.1`, and no Caradhras `1.8.x` image reads the option. See [Step 3](#step-3-check-the-image-versions) before you enable it.
+> **Important:** `skipRBACChain` works only with `caradhras` and `caradhras-migrations` images that read `MIGRATIONS_SKIP_RBAC_CHAIN`. The default Caradhras image of this chart version is `1.5.1`. The chart does not state which Caradhras version first reads the variable, and it does not check the image. Confirm this with the Caradhras release notes before you enable the option. See [Step 3](#step-3-check-the-image-versions).
 
 | Component | v10.0.3 | v10.1.0 |
 |-----------|---------|---------|
@@ -226,7 +226,7 @@ caradhras:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `skipRBACChain` | boolean | `false` | Skip the RBAC migration chain (Lerian product permissions, roles and groups under organization `lerian`) in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only through RI manifests, such as the internal `cross` install. Needs Caradhras and caradhras-migrations `1.9.0-rc.1` or later. |
+| `skipRBACChain` | boolean | `false` | Skip the RBAC migration chain (Lerian product permissions, roles and groups under organization `lerian`) in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only through RI manifests, such as the internal `cross` install. Needs caradhras and caradhras-migrations images that read `MIGRATIONS_SKIP_RBAC_CHAIN` (see [Step 3](#step-3-check-the-image-versions)). |
 | `extraEnvVars` | map | `{}` | Extra environment variables for the migrate init container only, as `NAME: value` pairs. Values are rendered as quoted strings. Names must match `^[-._a-zA-Z][-._a-zA-Z0-9]*$`. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused. Not for secrets: values are visible in the pod spec. |
 
 **Environment variable set by skipRBACChain:**
@@ -256,11 +256,11 @@ If your Caradhras install takes no RBAC migrations and its permissions arrive th
 ```yaml
 caradhras:
   image:
-    tag: "1.9.0-rc.1"
+    tag: "<caradhras tag that reads MIGRATIONS_SKIP_RBAC_CHAIN>"
   migrations:
     skipRBACChain: true
     image:
-      tag: "1.9.0-rc.1"
+      tag: "<same tag for caradhras-migrations>"
 ```
 
 > **Warning:** On a standard install, enabling `skipRBACChain` stops the RBAC migrations. Permissions are then missing or stale, and users get authorization failures.
@@ -290,24 +290,24 @@ To change a chart-owned setting, use the chart's own values instead of `extraEnv
 
 ### Step 3: Check the Image Versions
 
-`skipRBACChain` needs both images at `1.9.0-rc.1` or later. `1.9.0-rc.1` is the first non-beta release that reads the variable.
+`skipRBACChain` needs both images to read `MIGRATIONS_SKIP_RBAC_CHAIN`:
 
-| Image | Reads `MIGRATIONS_SKIP_RBAC_CHAIN` from |
-|-------|------------------------------------------|
-| `ghcr.io/lerianstudio/caradhras` | `1.9.0-rc.1` |
-| `ghcr.io/lerianstudio/caradhras-migrations` | `1.9.0-rc.1` |
+| Image | Must read `MIGRATIONS_SKIP_RBAC_CHAIN` |
+|-------|-----------------------------------------|
+| `ghcr.io/lerianstudio/caradhras` | yes |
+| `ghcr.io/lerianstudio/caradhras-migrations` | yes |
 
-Caradhras `1.8.6` and earlier ignore the variable. This includes the chart defaults: `1.5.1` in this chart version, `1.8.5` in v10.1.1 and `1.8.6` in v10.1.2. The chart does not warn you when the image ignores the option.
-
-Moving from `1.8.x` to `1.9.0-rc.1` is an image upgrade in its own right. Read the Caradhras release notes before you do it.
+The chart default tag is `1.5.1` in this chart version. The chart does not say which Caradhras version first reads the variable, so it cannot tell you whether a given tag supports the option. An image that does not read the variable ignores it, and the chart does not warn you. Check the Caradhras release notes for the first version that reads `MIGRATIONS_SKIP_RBAC_CHAIN`, and use only a version that already exists as a published image.
 
 **Check your current image tags:**
 
+`helm get values` shows only the values you set, not the chart defaults. To see the images the release really runs, read the rendered manifest:
+
 ```bash
-helm get values plugin-access-manager -n plugin-access-manager -o yaml
+helm get manifest plugin-access-manager -n plugin-access-manager | grep -E 'image: .*caradhras'
 ```
 
-Look for these keys:
+To see which tag keys you set yourself, check these keys in `helm get values plugin-access-manager -n plugin-access-manager -o yaml`:
 
 ```yaml
 caradhras:

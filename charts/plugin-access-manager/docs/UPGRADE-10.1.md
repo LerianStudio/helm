@@ -12,7 +12,7 @@
 - **[Migration Steps](#migration-steps)**
   - [Step 1: Determine if You Need skipRBACChain](#step-1-determine-if-you-need-skiprbacchain)
   - [Step 2: Review Any Custom Migration Environment Variables](#step-2-review-any-custom-migration-environment-variables)
-  - [Step 3: Verify Image Compatibility](#step-3-verify-image-compatibility)
+  - [Step 3: Check the Image Versions](#step-3-check-the-image-versions)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
@@ -22,25 +22,27 @@ This is a minor release that increments the chart version from 10.0.3 to 10.1.0.
 
 **What changed:**
 
-This release introduces two new optional configuration fields under `caradhras.migrations` that provide more control over the database migration process:
+This release introduces two new optional configuration fields under `caradhras.migrations`:
 
-1. **`skipRBACChain`**: Allows operators to skip the RBAC (permissions/roles/groups) migration chain when permissions are delivered via external RI manifests
-2. **`extraEnvVars`**: Enables passing custom environment variables to the migrate init container
+1. **`skipRBACChain`**: skips the RBAC migration chain (Lerian product permissions, roles and groups) for an install whose permissions arrive through RI manifests
+2. **`extraEnvVars`**: passes extra environment variables to the migrate init container
 
 **What this means for operators:**
 
-These changes are **opt-in** and **backward compatible**. If you do not set the new fields, the chart behaves identically to v10.0.3. The upgrade requires no configuration changes unless you have a specific use case for these new features (e.g., cross-environment deployments where RBAC is managed externally).
+Both fields are **opt-in**. If you do not set them, the chart renders the same manifests as v10.0.3. The upgrade needs no configuration change.
+
+> **Important:** `skipRBACChain` works only with Caradhras `1.9.0-rc.1` or later. The default Caradhras image of this chart version is `1.5.1`, and no Caradhras `1.8.x` image reads the option. See [Step 3](#step-3-check-the-image-versions) before you enable it.
 
 | Component | v10.0.3 | v10.1.0 |
 |-----------|---------|---------|
 | Chart version | 10.0.3 | 10.1.0 |
 | App version | 3.13.1 | 3.13.1 |
-| Caradhras image | *(unchanged)* | *(unchanged)* |
-| Caradhras migrations image | *(unchanged)* | *(unchanged)* |
+| Caradhras image (default) | `1.5.1` | `1.5.1` (unchanged) |
+| Caradhras migrations image (default) | `1.5.1` | `1.5.1` (unchanged) |
 
 **Action required:**
 
-None for standard deployments. Review the [Migration Steps](#migration-steps) section if you manage RBAC permissions externally or need to pass custom environment variables to the migration process.
+None for standard deployments. Read the [Migration Steps](#migration-steps) if you run an install whose permissions arrive through RI manifests, or if you need to pass settings to the migration process.
 
 # Features
 
@@ -48,26 +50,45 @@ None for standard deployments. Review the [Migration Steps](#migration-steps) se
 
 **What changed:**
 
-A new boolean flag `caradhras.migrations.skipRBACChain` allows operators to skip the RBAC migration chain (Lerian product permissions, roles, and groups under owner 'lerian') during both the migrate init container execution and the caradhras boot schema check.
+A new boolean value, `caradhras.migrations.skipRBACChain`, skips the RBAC migration chain (`migrations-rbac/`: Lerian product permissions, roles and groups under organization `lerian`) in two places: the `migrate` init container, and the boot schema check of the `caradhras` container. The schema chain runs as usual.
 
 **Why this matters:**
 
-In some deployment scenarios (e.g., cross-environment installations), RBAC permissions are delivered exclusively through external RI (Resource Inventory) manifests rather than through database migrations. In these cases:
+An install that takes its permissions through RI manifests does not need the RBAC chain. RI stands for Responsibility Inversion: each Lerian product declares its own permissions to Identity. The internal `cross` Caradhras install works this way, and it boots from an RBAC-free seed (`/cross/init_data.json`). On such an install:
 
-- Running the RBAC migration chain is unnecessary and may cause conflicts
-- The caradhras boot schema check would fail if it expects RBAC migrations that were never applied
-- Skipping the chain allows the application to start correctly when RBAC is managed externally
+- The RBAC chain adds the permissions, roles and groups of Lerian products under organization `lerian`, which this install does not take
+- The boot schema check expects the RBAC chain at its head, and fails if the chain was never applied
+
+Client installs that get their permissions from the RBAC migrations must keep the default (`false`).
 
 **How it works:**
 
-When enabled, the chart sets the `MIGRATIONS_SKIP_RBAC_CHAIN` environment variable to `"true"` in:
+When enabled, the chart sets the environment variable `MIGRATIONS_SKIP_RBAC_CHAIN` to `"true"` on two containers:
 
-1. The `migrate` init container (which runs database migrations before caradhras starts)
-2. The main `caradhras` container (which performs a boot-time schema check)
+1. The `migrate` init container, which applies the database migrations before Caradhras starts
+2. The `caradhras` container, whose boot check then skips the same chain
+
+Both containers must use a Caradhras image that reads the variable (see [Step 3](#step-3-check-the-image-versions)). With the skip on:
+
+- The migrate init container applies the schema chain only. The control table `schema_migrations` is neither created nor written.
+- Rows that an earlier run of the RBAC chain inserted stay where they are. On an install that already ran the chain, the chain stops at its current version, and RBAC migrations in later images never apply.
+- A value that is not a boolean makes both containers fail to start.
+
+The migrate init container logs the skip:
+
+```
+postgres-migrations: MIGRATIONS_SKIP_RBAC_CHAIN=true: skipping the rbac chain (migrations-rbac/, control table schema_migrations) by operator choice; it was not applied, and its RBAC-only safety checks stood down with it
+```
+
+The `caradhras` container logs it once at boot:
+
+```
+bootstrap: rbac chain check skipped by MIGRATIONS_SKIP_RBAC_CHAIN=true; only a dirty control table still fails boot
+```
 
 **Before (v10.0.3):**
 
-The migrate init container and caradhras container had no mechanism to skip the RBAC migration chain. All migrations, including RBAC, were always executed and checked.
+The migrate init container and the caradhras container had no way to skip the RBAC migration chain. Both always applied and checked it.
 
 **After (v10.1.0):**
 
@@ -83,14 +104,8 @@ The migrate init container and caradhras container had no mechanism to skip the 
 
 **Template changes:**
 
-**Before (v10.0.3):**
-
-The migrate init container and caradhras container had no conditional logic for RBAC chain handling.
-
-**After (v10.1.0):**
-
 ```yaml
-# In migrate init container
+# In the migrate init container
 {{- with .Values.caradhras.migrations }}
 {{- if .skipRBACChain }}
 # Schema chain only; RBAC arrives via RI manifests. Needs an image that reads it.
@@ -99,7 +114,7 @@ The migrate init container and caradhras container had no conditional logic for 
 {{- end }}
 {{- end }}
 
-# In caradhras container
+# In the caradhras container
 {{- if (.Values.caradhras.migrations).skipRBACChain }}
 # The boot schema check must skip the chain the migrate init container skipped,
 # or any image with a newer rbac head crash-loops. Needs an image that reads it.
@@ -108,48 +123,50 @@ The migrate init container and caradhras container had no conditional logic for 
 {{- end }}
 ```
 
-> **Important:** This feature requires caradhras and caradhras-migrations container images that understand and respect the `MIGRATIONS_SKIP_RBAC_CHAIN` environment variable. Using this flag with older images that do not support it will have no effect.
+> **Important:** Use the same Caradhras version for `caradhras.image.tag` and `caradhras.migrations.image.tag`. If the migrate init container skips the chain but the `caradhras` image does not read the variable, the server still expects the RBAC chain at its head. It then crash-loops at boot with `schema compatibility check failed`.
 
-> **Warning:** Only enable `skipRBACChain` if you are certain that RBAC permissions are being delivered through external RI manifests. Enabling this flag in a standard deployment where RBAC is managed through migrations will result in missing permissions and authorization failures.
+> **Warning:** Enable `skipRBACChain` only on an install whose permissions arrive through RI manifests. On a standard install, the permissions stop coming from migrations, and users get authorization failures.
 
 ### 2. Extra Environment Variables for Migrate Init Container
 
 **What changed:**
 
-A new map field `caradhras.migrations.extraEnvVars` allows operators to pass custom environment variables to the migrate init container. Variables are specified as `NAME: value` pairs and are rendered as standard Kubernetes environment variable entries.
+A new map, `caradhras.migrations.extraEnvVars`, passes extra environment variables to the migrate init container. You write them as `NAME: value` pairs. The chart renders each pair as a Kubernetes environment variable entry.
 
 **Why this matters:**
 
-Operators may need to customize the migration process with additional configuration that is not exposed through standard chart values. This field provides a flexible escape hatch for:
+The migration applier reads its settings from environment variables. This field lets you set them without a custom template. The applier variables that you are most likely to set are:
 
-- Passing migration-specific feature flags
-- Configuring migration behavior for specific environments
-- Enabling debug or verbose logging during migrations
-- Setting custom timeouts or retry logic
+| Variable | Default | What it does |
+|----------|---------|--------------|
+| `MIGRATIONS_TIMEOUT_SEC` | `300` | Work budget in seconds. It starts once the applier holds the adoption lock. |
+| `MIGRATIONS_LOCK_WAIT_SEC` | `900` | How long this applier queues behind another one before it stands down. |
+
+Both are positive integers. The Caradhras runbook `docs/runbooks/db-adoption.md` documents them. Use `extraEnvVars` for a variable that your caradhras-migrations image reads. A variable that the image does not read has no effect.
 
 **How it works:**
 
-Each key-value pair in `extraEnvVars` is rendered as a separate environment variable in the migrate init container. Values are automatically converted to strings and quoted in the pod spec.
+The chart renders each pair as a separate entry in the migrate init container. Values are converted to strings and quoted.
 
-**Protected variable names:**
+**Validation:**
 
-The chart refuses to render the following variable names in `extraEnvVars` because they are managed by the chart itself:
+- A name must match `^[-._a-zA-Z][-._a-zA-Z0-9]*$`, and a value must be a string, number or boolean. The chart schema rejects anything else when Helm validates your values.
+- The chart refuses these names, because it sets them itself:
+  - `POSTGRES_HOST`
+  - `POSTGRES_PORT`
+  - `POSTGRES_DB`
+  - `POSTGRES_USER`
+  - `POSTGRES_PASSWORD`
+  - `POSTGRES_SSLMODE`
+  - `MIGRATIONS_SKIP_RBAC_CHAIN`
 
-- `POSTGRES_HOST`
-- `POSTGRES_PORT`
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_SSLMODE`
-- `MIGRATIONS_SKIP_RBAC_CHAIN`
-
-Attempting to set any of these will cause the Helm upgrade to fail with an error message.
+A refused name fails the render with `caradhras.migrations.extraEnvVars.<NAME> duplicates a chart-owned env of the migrate init container; use the chart value instead`.
 
 **Template changes:**
 
 **Before (v10.0.3):**
 
-The migrate init container only received chart-managed environment variables for database connection and SSL mode.
+The migrate init container received only the chart-managed variables for the database connection and the SSL mode.
 
 **After (v10.1.0):**
 
@@ -169,31 +186,30 @@ The migrate init container only received chart-managed environment variables for
 caradhras:
   migrations:
     extraEnvVars:
-      MIGRATION_TIMEOUT: "300"
-      MIGRATION_VERBOSE: "true"
-      CUSTOM_FEATURE_FLAG: "enabled"
+      MIGRATIONS_TIMEOUT_SEC: "600"
+      MIGRATIONS_LOCK_WAIT_SEC: "1200"
 ```
 
-This would render as:
+This renders as:
 
 ```yaml
-- name: "MIGRATION_TIMEOUT"
-  value: "300"
-- name: "MIGRATION_VERBOSE"
-  value: "true"
-- name: "CUSTOM_FEATURE_FLAG"
-  value: "enabled"
+- name: "MIGRATIONS_TIMEOUT_SEC"
+  value: "600"
+- name: "MIGRATIONS_LOCK_WAIT_SEC"
+  value: "1200"
 ```
 
-> **Note:** Values in `extraEnvVars` are rendered directly into the pod spec and are visible in Kubernetes resource definitions. Do not use this field for secrets or sensitive data. Use Kubernetes Secrets and reference them through standard chart secret mechanisms instead.
+> **Note:** Values in `extraEnvVars` are written in plain text into the pod spec. Do not put secrets in this field.
 
-> **Warning:** The `extraEnvVars` field is not validated beyond checking for reserved names. Ensure that any custom variables you add are actually read and understood by your caradhras-migrations image, or they will have no effect.
+> **Note:** `extraEnvVars` reaches the migrate init container only. It does not reach the `caradhras` container.
+
+> **Warning:** Leave `MIGRATIONS_ALLOW_RBAC_BASELINE_ON_POPULATED_DB` unset. It is a decision for one specific database, taken once. It is not a deployment setting. A chart value that carries it permanently disarms a safety gate for every later adoption.
 
 # Configuration Reference
 
 ### New Caradhras Migration Settings
 
-The following new configuration fields are available under `caradhras.migrations`:
+The following new fields are available under `caradhras.migrations`:
 
 ```yaml
 caradhras:
@@ -202,7 +218,7 @@ caradhras:
     image:
       repository: ""
       tag: ""
-    
+
     # New in v10.1.0
     skipRBACChain: false
     extraEnvVars: {}
@@ -210,139 +226,110 @@ caradhras:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `skipRBACChain` | boolean | `false` | Skip the RBAC migration chain (permissions/roles/groups under owner 'lerian') in both the migrate init container and the caradhras boot schema check. Use this when RBAC permissions arrive exclusively via RI manifests (e.g., cross-environment deployments). Requires caradhras and caradhras-migrations images that understand `MIGRATIONS_SKIP_RBAC_CHAIN`. |
-| `extraEnvVars` | map | `{}` | Additional environment variables for the migrate init container, specified as `NAME: value` pairs. Values are rendered as quoted strings in the pod spec. Chart-owned variable names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused. Not suitable for secrets—values are visible in the pod spec. |
+| `skipRBACChain` | boolean | `false` | Skip the RBAC migration chain (Lerian product permissions, roles and groups under organization `lerian`) in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only through RI manifests, such as the internal `cross` install. Needs Caradhras and caradhras-migrations `1.9.0-rc.1` or later. |
+| `extraEnvVars` | map | `{}` | Extra environment variables for the migrate init container only, as `NAME: value` pairs. Values are rendered as quoted strings. Names must match `^[-._a-zA-Z][-._a-zA-Z0-9]*$`. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused. Not for secrets: values are visible in the pod spec. |
 
-**Environment variables set by skipRBACChain:**
+**Environment variable set by skipRBACChain:**
 
-When `skipRBACChain: true`, the following environment variable is added to both the migrate init container and the caradhras container:
+When `skipRBACChain: true`, the chart adds this variable to both the migrate init container and the caradhras container:
 
 | Variable | Value | Description |
 |----------|-------|-------------|
-| `MIGRATIONS_SKIP_RBAC_CHAIN` | `"true"` | Instructs the migration tooling and caradhras boot check to skip the RBAC migration chain. Only the schema migrations are executed and validated. |
+| `MIGRATIONS_SKIP_RBAC_CHAIN` | `"true"` | The migration applier and the caradhras boot check skip the RBAC chain. Only the schema chain is applied and checked. |
 
 # Migration Steps
 
 ### Step 1: Determine if You Need skipRBACChain
 
-Review your deployment architecture to determine if you manage RBAC permissions externally:
-
 #### Option 1: Standard Deployment (No Action Required)
 
-If your deployment relies on database migrations to create and manage RBAC permissions, roles, and groups, **do not enable `skipRBACChain`**. The default behavior (`skipRBACChain: false`) is correct for your environment.
+If your permissions, roles and groups come from the Caradhras RBAC migrations, **do not enable `skipRBACChain`**. The default (`skipRBACChain: false`) is correct.
 
-**Indicators you should keep the default:**
+**Action:** Upgrade with your existing values. No change is required.
 
-- You have never heard of "RI manifests" for RBAC
-- Your permissions are created during the initial caradhras deployment
-- You do not have external tooling that applies RBAC configuration
+#### Option 2: Permissions Through RI Manifests (Enable skipRBACChain)
 
-**Action:** Proceed with the upgrade using your existing values. No changes required.
+If your Caradhras install takes no RBAC migrations and its permissions arrive through RI manifests, enable `skipRBACChain`. The internal `cross` Caradhras install is the case this option was built for.
 
-#### Option 2: External RBAC Management (Enable skipRBACChain)
-
-If your deployment uses external RI manifests to deliver RBAC permissions (common in cross-environment or multi-tenant architectures), you should enable `skipRBACChain`.
-
-**Indicators you should enable skipRBACChain:**
-
-- You have external tooling or processes that apply RI manifests for permissions
-- Your RBAC configuration is managed separately from the caradhras deployment
-- You have been instructed by Lerian support to skip the RBAC migration chain
-- You are deploying in a "cross" environment where RBAC is centrally managed
-
-**Action:** Add the following to your `values.yaml`:
+**Action:** Set the option and use image tags that read it (see [Step 3](#step-3-check-the-image-versions)):
 
 ```yaml
 caradhras:
+  image:
+    tag: "1.9.0-rc.1"
   migrations:
     skipRBACChain: true
+    image:
+      tag: "1.9.0-rc.1"
 ```
 
-> **Important:** Before enabling `skipRBACChain`, verify that your caradhras and caradhras-migrations images support the `MIGRATIONS_SKIP_RBAC_CHAIN` environment variable. Check your image documentation or contact Lerian support if unsure.
-
-> **Warning:** Enabling `skipRBACChain` in a standard deployment where RBAC is managed through migrations will result in missing permissions. Users will experience authorization failures when attempting to access resources.
+> **Warning:** On a standard install, enabling `skipRBACChain` stops the RBAC migrations. Permissions are then missing or stale, and users get authorization failures.
 
 ### Step 2: Review Any Custom Migration Environment Variables
 
-If you need to pass custom environment variables to the migrate init container, use the new `extraEnvVars` field.
-
 #### Option 1: No Custom Variables Needed (No Action Required)
 
-If you do not have specific migration configuration requirements beyond what the chart already provides, **do not set `extraEnvVars`**. The default empty map (`{}`) is correct.
+If you do not need to change a migration applier setting, **do not set `extraEnvVars`**. The default empty map (`{}`) is correct.
 
-**Action:** Proceed with the upgrade using your existing values. No changes required.
+**Action:** Upgrade with your existing values. No change is required.
 
 #### Option 2: Add Custom Migration Variables
 
-If you need to pass additional configuration to the migration process (e.g., timeouts, feature flags, debug settings), add them to `extraEnvVars`.
-
-**Example:**
+To change a migration applier setting, add it to `extraEnvVars`. For example, to give the migration a larger work budget:
 
 ```yaml
 caradhras:
   migrations:
     extraEnvVars:
-      MIGRATION_TIMEOUT: "600"
-      MIGRATION_LOG_LEVEL: "debug"
-      CUSTOM_MIGRATION_FLAG: "enabled"
+      MIGRATIONS_TIMEOUT_SEC: "600"
 ```
 
-**Validation:**
+To change a chart-owned setting, use the chart's own values instead of `extraEnvVars`. The database connection comes from the `auth` database settings, for example `auth.configmap.DB_HOST` and `auth.configmap.DB_SSLMODE`. They feed both the migrate init container and the `caradhras` container. The RBAC chain flag has its own value, `caradhras.migrations.skipRBACChain`.
 
-The chart will fail the upgrade if you attempt to set any of the following reserved variable names:
+> **Warning:** Do not use `extraEnvVars` for secrets. The values are written in plain text into the pod spec, and anyone who can read the Kubernetes resources can see them.
 
-- `POSTGRES_HOST`
-- `POSTGRES_PORT`
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_SSLMODE`
-- `MIGRATIONS_SKIP_RBAC_CHAIN`
+### Step 3: Check the Image Versions
 
-If you need to customize these values, use the appropriate chart fields instead:
+`skipRBACChain` needs both images at `1.9.0-rc.1` or later. `1.9.0-rc.1` is the first non-beta release that reads the variable.
 
-```yaml
-# Use chart fields for database configuration
-caradhras:
-  database:
-    host: "my-postgres.example.com"
-    port: 5432
-    name: "caradhras_db"
-    sslMode: "require"
-  
-  # Use skipRBACChain for the RBAC chain flag
-  migrations:
-    skipRBACChain: true
-```
+| Image | Reads `MIGRATIONS_SKIP_RBAC_CHAIN` from |
+|-------|------------------------------------------|
+| `ghcr.io/lerianstudio/caradhras` | `1.9.0-rc.1` |
+| `ghcr.io/lerianstudio/caradhras-migrations` | `1.9.0-rc.1` |
 
-> **Note:** Variables set in `extraEnvVars` are only passed to the migrate init container, not to the main caradhras container. If you need to set environment variables for the caradhras application itself, use the appropriate caradhras configuration fields.
+Caradhras `1.8.6` and earlier ignore the variable. This includes the chart defaults: `1.5.1` in this chart version, `1.8.5` in v10.1.1 and `1.8.6` in v10.1.2. The chart does not warn you when the image ignores the option.
 
-> **Warning:** Do not use `extraEnvVars` for sensitive data like passwords or API keys. Values are rendered in plain text in the pod spec and are visible to anyone with access to the Kubernetes resources. Use Kubernetes Secrets and the chart's secret reference mechanisms instead.
+Moving from `1.8.x` to `1.9.0-rc.1` is an image upgrade in its own right. Read the Caradhras release notes before you do it.
 
-### Step 3: Verify Image Compatibility
-
-If you are enabling `skipRBACChain`, verify that your container images support this feature.
-
-**Check your current image versions:**
+**Check your current image tags:**
 
 ```bash
-helm get values plugin-access-manager -n plugin-access-manager -o yaml | grep -A 5 "caradhras:"
+helm get values plugin-access-manager -n plugin-access-manager -o yaml
 ```
 
-Look for the `image.tag` and `migrations.image.tag` values.
+Look for these keys:
 
-**Verify support:**
+```yaml
+caradhras:
+  image:
+    tag: "..."
+  migrations:
+    image:
+      tag: "..."
+auth:
+  backend:
+    image:
+      tag: "..."
+    migrations:
+      image:
+        tag: "..."
+```
 
-The `MIGRATIONS_SKIP_RBAC_CHAIN` environment variable is supported in:
+The chart resolves each tag in this order: the `caradhras.*` value, then the legacy `auth.backend.*` value, then the chart default. A legacy `auth.backend.*` tag therefore still counts when the `caradhras.*` tag is empty.
 
-- Caradhras images: *(check with Lerian support for minimum version)*
-- Caradhras-migrations images: *(check with Lerian support for minimum version)*
+**Set both tags to the same version.** If the two images differ, and the migrate init container skips the chain while the server image does not read the variable, the server crash-loops at boot.
 
-If you are using custom image tags, ensure they are recent enough to support this feature. If unsure, contact Lerian support before enabling `skipRBACChain`.
-
-**Test in non-production:**
-
-Before upgrading production, test the new configuration in a non-production environment:
+**Test in a non-production environment:**
 
 ```bash
 helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
@@ -353,10 +340,9 @@ helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugi
 
 Verify that:
 
-- The migrate init container completes successfully
-- The caradhras pod starts without crash-looping
-- The boot schema check passes
-- RBAC permissions are correctly available (either from migrations or RI manifests)
+- The migrate init container completes successfully, and its log shows the skip line from [How it works](#1-skip-rbac-chain-in-caradhras-migrations)
+- The caradhras pod starts without crash-looping, and its log shows the boot skip line
+- Permissions are available from your RI manifests
 
 # Preview changes before upgrading
 

@@ -316,7 +316,7 @@ ledger:
   # multi-tenant mode it visits every active tenant.
   partition:
     # -- (bool) Run the `partition ensure` CronJob. Unset (the default) means
-    # auto: on for stable ledger tags >= 4.4.0, whose image ships the runner,
+    # auto: on for stable ledger tags >= 4.5.0, whose image ships the runner,
     # off below that, for pre-releases and for non-SemVer tags. Set true for a
     # pre-release that already carries the runner; set false to keep it off.
     enabled:

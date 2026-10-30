@@ -325,11 +325,11 @@ true
 
 {{/*
 midaz.ledgerPartitionEnabled — resolves the tri-state ledger.partition.enabled.
-Unset (null) means "auto": on for stable ledger tags >= 4.4.0, the first
-release whose image ships the `/partition` runner; off below that, for every
-pre-release (4.4.0 betas and release candidates exist both with and without the
-binary) and for non-SemVer tags ("latest", digests, branch builds), which cannot
-be proven to carry it. An explicit true/false always wins, so a pre-release that
+Unset (null) means "auto": on for stable ledger tags >= 4.5.0, the first
+stable release whose image ships the `/partition` runner (4.4.0 shipped
+without it); off below that, for every pre-release (betas and release
+candidates exist both with and without the binary) and for non-SemVer tags
+("latest", digests, branch builds), which cannot be proven to carry it. An explicit true/false always wins, so a pre-release that
 already ships the runner opts in with true.
 */}}
 {{- define "midaz.ledgerPartitionEnabled" -}}
@@ -339,7 +339,7 @@ already ships the runner opts in with true.
 {{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
        render on a malformed version instead of resolving to "off". */ -}}
 {{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
-{{- if semverCompare ">=4.4.0" $tag -}}true{{- end -}}
+{{- if semverCompare ">=4.5.0" $tag -}}true{{- end -}}
 {{- end -}}
 {{- else if eq (toString $enabled) "true" -}}
 true

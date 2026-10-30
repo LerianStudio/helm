@@ -15,7 +15,7 @@ jobs:
     # main) instead of overwriting the mainline chart. release.yml releases from those
     # branches, so this closes the loop. Contract is additive between the two versions:
     # only the four legacy_* inputs appear, none removed or renamed, secrets unchanged.
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@v1.55.0
+    uses: LerianStudio/shared-workflows-public/.github/workflows/helm-update-chart.yml@tier-1
     with:
       payload: ${{ inputs.payload }}
       # develop is retired for this repo (see the PR template): mainline updates belong on main.

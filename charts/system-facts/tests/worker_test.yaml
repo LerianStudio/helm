@@ -4,6 +4,11 @@ templates:
   - templates/worker-configmap.yaml
   - templates/worker-secret.yaml
   - templates/worker-serviceaccount.yaml
+chart:
+  # Pinned so the "defaults the image tag to the chart appVersion" case does not
+  # break on every appVersion bump in Chart.yaml (values.yaml pins worker.image.tag
+  # itself, so that case clears it to exercise the fallback).
+  appVersion: 1.0.0
 release:
   name: system-facts
   namespace: system-facts
@@ -78,6 +83,8 @@ tests:
 
   - it: defaults the image tag to the chart appVersion
     template: templates/worker-deployment.yaml
+    set:
+      worker.image.tag: ""
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image

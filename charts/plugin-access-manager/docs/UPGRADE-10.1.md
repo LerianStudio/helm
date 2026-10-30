@@ -29,7 +29,7 @@ This release introduces two new optional configuration fields under `caradhras.m
 
 **What this means for operators:**
 
-Both fields are **opt-in**. If you do not set them, the chart renders the same manifests as v10.0.3. The upgrade needs no configuration change.
+Both fields are **opt-in**. If you do not set them, the rendered manifests differ from v10.0.3 only in the `helm.sh/chart` label, and no environment variable or image changes. The upgrade needs no configuration change. The pod templates of the auth, identity and caradhras Deployments carry the label `helm.sh/chart: plugin-access-manager-<version>`, so any chart version bump replaces the pods of all three, even when nothing else in the pod changes. I checked this by rendering the previous and the new chart version with `helm template`. Auth and identity render `maxSurge: 1` and `maxUnavailable: 1` by default (auth runs 3 replicas, identity 1), so identity can be briefly unavailable during the rollout when it runs a single replica.
 
 > **Important:** `skipRBACChain` works only with Caradhras `1.9.0-rc.1` or later. The default Caradhras image of this chart version is `1.5.1`, and no Caradhras `1.8.x` image reads the option. See [Step 3](#step-3-check-the-image-versions) before you enable it.
 

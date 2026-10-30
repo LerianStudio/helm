@@ -62,6 +62,7 @@ Set these only when your institution needs them.
 | `api.configmap.ORGANIZATION_IDS` | only for a per-organization license. Empty stops the service from starting | comma-separated organization IDs | `global` |
 | `api.configmap.MIDAZ_URL_TRACER` | only if the Tracer screens inbound credits | Tracer base URL | empty: no credit is screened |
 | `api.configmap.APPLICATION_NAME` | only if your license names another application; the API and the worker must agree, so set it here only | application name | empty, read as `plugin-br-pix-jd` |
+| `api.configmap.ENABLE_TELEMETRY` | only to export traces and metrics. With `"true"` and no endpoint set anywhere, the chart wires the pod to the node-local Lerian collector: it adds `HOST_IP`, `OTEL_EXPORTER_OTLP_ENDPOINT=http://$(HOST_IP):4317` and `ALLOW_INSECURE_OTEL` to the API and worker pods. Leave `OTEL_EXPORTER_OTLP_ENDPOINT` empty for that | `"true"` or `"false"` | empty, telemetry off |
 | `api.secrets.REDIS_PASSWORD` | only if your Valkey or Redis requires a password | password | empty |
 | `api.cors.allowedOrigins` | only if a browser calls the API directly | list of origins | empty: every browser cross-origin call is refused |
 | `api.rateLimit.*` | only to change the rate-limit defaults | see `values.yaml` | chart defaults |
@@ -74,6 +75,7 @@ Set these only when your institution needs them.
 | `api.configmap.IDP_M2M_CLIENT_ID` | only with `IDP_DECLARATION_ENABLED="true"`; may be set in `api.secrets` instead | client ID of the plugin's M2M application in the Access Manager | empty |
 | `api.secrets.IDP_M2M_CLIENT_SECRET` | only with `IDP_DECLARATION_ENABLED="true"` | client secret of that application | empty |
 
+- **Telemetry.** The node-local wiring is skipped when an endpoint is already set (`api.configmap`, `api.extraConfigmap` or `global.observability.otlpEndpoint`), and an entry named `HOST_IP`, `OTEL_EXPORTER_OTLP_ENDPOINT` or `ALLOW_INSECURE_OTEL` in `extraEnvVars` replaces the chart's own of that name. Without any endpoint the service falls back to `localhost:4317` and drops every span and metric without an error. With `ENVIRONMENT_NAME=production`, `deployment.environment` follows it on the node-local path. For a collector that is not node-local, set `OTEL_EXPORTER_OTLP_ENDPOINT`; a plaintext endpoint under `production` also needs `ALLOW_INSECURE_OTEL` in `extraEnvVars` or an `https://` endpoint.
 - **The encryption key** protects the delivery secret of each indirect participant. Create it with `openssl rand -hex 32`. The render fails on a value that is not 64 hex characters. See [Hosting indirect participants](https://docs.lerian.studio/en/interfaces/pix-jd/hosting-indirect-participants).
 - **The signing key and the certificate go together: set both or neither.** With only one, the render fails, because the plugin would refuse every payment order. With neither, the plugin sends unsigned orders, which a JD that does not require the signature accepts.
   - Register at JD **only the certificate**. The private key never leaves your environment: it goes only into `api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY`.

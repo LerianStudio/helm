@@ -19,6 +19,9 @@ This release moves the chart to Reporter **4.6.0** and teaches it what that vers
 | Field | v5.0.x | v5.1.0 |
 |-------|--------|--------|
 | App version | `4.5.x` | `4.6.0` |
+| Default `manager.image.tag` / `worker.image.tag` | `4.5.x` | `4.6.0` |
+
+If your values pin `manager.image.tag` or `worker.image.tag`, the pin wins over the chart default: set both to `4.6.0`, as the commands below do.
 
 Chart changes:
 
@@ -42,7 +45,7 @@ Reporter 4.6.0 reads boolean environment variables strictly. `TRUE`, `True`, `1`
 
 ### 3. Roll the worker before the manager
 
-A 4.6.0 manager publishes generation messages in `schemaVersion` 3 (regulatory filings) and 4 (institution scope). A 4.5.x worker refuses them permanently (`RPT-0136`). Upgrade the worker first, or accept that generations requested while only the manager is on 4.6.0 fail and must be requested again.
+A 4.6.0 manager publishes generation messages in `schemaVersion` 3 (regulatory filings) and 4 (institution scope). A 4.5.x worker refuses them permanently (`RPT-0136`). One `helm upgrade` rolls both Deployments together, and nothing in the chart orders them, so upgrade in two steps — see [Command to upgrade](#command-to-upgrade). If you upgrade in one step, generations requested while only the manager is on 4.6.0 fail and must be requested again.
 
 ## New: regulatory catalog
 
@@ -75,14 +78,39 @@ A tenant that registers its first institution to start filing should either cove
 
 ## Preview changes before upgrading
 
+Pass the same values you deploy with, so the license reaches the render:
+
 ```bash
-helm diff upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter
+helm diff upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter \
+  -f values.yaml \
+  --set manager.image.tag=4.6.0 --set worker.image.tag=4.6.0
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
+`values.yaml` is the values file you deploy with: it must carry `secrets.LICENSE_KEY` (or point both components at an existing Secret that does). Without it the render fails for 4.6.0, by design.
+
+**Step 1 — the worker first.** The manager stays on its current tag (`4.5.1` here; use yours):
+
 ```bash
-helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter
+helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter \
+  -f values.yaml \
+  --set worker.image.tag=4.6.0 --set manager.image.tag=4.5.1 \
+  --wait --timeout 10m
+kubectl -n reporter rollout status deployment -l app.kubernetes.io/name=reporter-worker --timeout=10m
 ```
+
+With KEDA (`keda.enabled` or `keda.external`) the worker runs as a ScaledJob and has no Deployment to wait on; `--wait` covers the rest.
+
+**Step 2 — the manager:**
+
+```bash
+helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter \
+  -f values.yaml \
+  --set worker.image.tag=4.6.0 --set manager.image.tag=4.6.0 \
+  --wait --timeout 10m
+```
+
+GitOps (helmfile + Argo CD): bump `worker.image.tag` in one commit, let it sync healthy, then bump `manager.image.tag`.

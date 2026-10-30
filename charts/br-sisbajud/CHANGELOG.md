@@ -3,6 +3,31 @@
 ## [1.4.0](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.0)
 
 Features:
+- Ship app `1.1.0`. (@brunobls)
+- Render and validate AWS KMS key modes. (@brunobls)
+
+Fixes:
+- Refuse leading zeros in canonical tags. (@brunobls)
+- Verify only canonical image tags. (@brunobls)
+- Refuse digest-pinned tags without acknowledgment. (@brunobls)
+
+Improvements:
+- Refine KMS notes in getting started documentation. (@brunobls)
+- Add AWS KMS key modes to getting started documentation. (@brunobls)
+- Note that AWS KMS knobs render only with AWS in the documentation. (@brunobls)
+- Clarify KMS knob precedence and trim in the documentation. (@brunobls)
+- Align tag gate notes with canonical rule in the documentation. (@brunobls)
+- Document canonical tags and gate limits in the documentation. (@brunobls)
+- Document the unverifiable image tag acknowledgment in the documentation. (@brunobls)
+- Document AWS KMS key mode values in the documentation. (@brunobls)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.3.0...br-sisbajud-v1.4.0)
+
+---
+
+## [1.4.0](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.0)
+
+Features:
 - Release of app `1.1.0`. (@brunobls)
 - Render and validate AWS KMS key modes. (@brunobls)
 

@@ -32,14 +32,12 @@ API
 {{ end -}}
 
 {{ if .Values.worker.enabled -}}
-WORKER: enabled — {{ if include "plugin-br-pix-jd.workerOwnImage" . }}dedicated image {{ (.Values.worker.image).repository }}
-        (its own ENTRYPOINT /worker){{ else }}the api's image, entrypoint overridden to /worker{{ end }}.
+WORKER: enabled — image {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" .Values.worker) }}.
 {{ else -}}
 WORKER: DISABLED.
   Consequence while this stays off: transaction reconciliation (including the
   refund-park sweep, a money path), the MED pollers and the indirect-delivery
-  drainer DO NOT RUN. To enable, set worker.enabled=true and point
-  worker.image.repository at the published worker image.
+  drainer DO NOT RUN. To enable, set worker.enabled=true.
 {{ end -}}
 
 {{ if include "plugin-br-pix-jd.postgresRenders" . -}}
@@ -59,7 +57,10 @@ MIGRATIONS: SKIPPED — multi-tenant mode is on.
 MIGRATIONS: applied by a segregated Job, {{ if include "plugin-br-pix-jd.postgresRenders" . }}AFTER this release syncs (PostSync).
   The bundled Postgres is provisioned during Sync, so the Job waits for it and then
   migrates. NOTE THE WINDOW: the api rolls out before the schema lands and will error
-  on PIX routes until the Job completes. Watch it with
+  on PIX routes until the Job completes. With systemplane on, the api cannot boot
+  before the schema exists and a first install never reaches this Job, so on this path
+  api.configmap.SYSTEMPLANE_ENABLED defaults to "false" and every Pix flow answers 503
+  until you set it to "true" after the first sync. Watch the Job with
     kubectl -n {{ include "plugin-br-pix-jd.namespace" . }} logs job/{{ printf "%s-migrations" (include "plugin-br-pix-jd.fullname" .) | trunc 63 | trimSuffix "-" }}{{ else }}BEFORE the app rolls out (PreSync).
   External Postgres already exists, so the schema is applied first and there is no
   window where the api serves against an old schema.{{ end }}

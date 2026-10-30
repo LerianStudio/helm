@@ -1,5 +1,83 @@
 # Plugin-access-manager Changelog
 
+## [10.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.2)
+
+Fixes:
+- Updated `plugin-access-manager` to version `3.14.0` to ensure compatibility with `caradhras` `1.8.6`. (@fredcamaral)
+- Bumped `caradhras` dependency to `1.8.6` for `plugin-access-manager`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.1...plugin-access-manager-v10.1.2)
+
+---
+
+## [10.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.2)
+
+Features:
+- Update `plugin-access-manager` to version `3.14.0`. (@fredcamaral)
+
+Fixes:
+- Ensure compatibility of `plugin-access-manager` with `caradhras` version `1.8.6`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.1...plugin-access-manager-v10.1.2)
+
+---
+
+## [10.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.2)
+
+Features:
+- Updated `plugin-access-manager` to version `3.14.0`. (@fredcamaral)
+
+Fixes:
+- Ensured compatibility of `plugin-access-manager` with `caradhras` version `1.8.6`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.1...plugin-access-manager-v10.1.2)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.1)
+
+Fixes:
+- Bumped Caradhras to `1.8.5` to address compatibility issues. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.0...plugin-access-manager-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.1)
+
+Fixes:
+- Bumped Caradhras to `1.8.5` to address compatibility issues. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.0...plugin-access-manager-v10.1.1)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.0)
+
+Features:
+- Allow the Caradhras migrate init container to skip the RBAC chain. (@qnen)
+
+Fixes:
+- Pass `MIGRATIONS_SKIP_RBAC_CHAIN` to the Caradhras container to ensure proper functionality. (@qnen)
+- Validate migrate extra environment variable names in the schema to prevent errors. (@qnen)
+- Quote migrate init container extra environment variable names to maintain consistency and avoid parsing issues. (@qnen)
+
+Improvements:
+- Match the environment name schema error across different Helm versions to ensure compatibility. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.3...plugin-access-manager-v10.1.0)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.3)
+
+Fixes:
+- Update to app version `3.13.1`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.0.2...plugin-access-manager-v10.0.3)
+
+---
+
 ## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.0.2)
 
 Fixes:

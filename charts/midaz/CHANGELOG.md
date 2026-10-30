@@ -3,6 +3,186 @@
 ## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
 
 Features:
+- Provide documentation on maintaining the valkey claim during Argo CD pruning. (@fredcamaral)
+- Explain how to expand a statefulset valkey claim without data loss. (@fredcamaral)
+- Outline the process for passing edited valkey values during the `10.0.3` upgrade. (@fredcamaral)
+- Detail the requirement for a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to default settings. (@fredcamaral)
+- Specify the hook type per deployment tool. (@fredcamaral)
+- Provide `v4.3` cutover steps at the chart level. (@fredcamaral)
+
+Fixes:
+- Implement fsync for every valkey write and halt upgrades when there is an open fee debt. (@fredcamaral)
+- Account for account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback scenarios in the valkey upgrade process. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image due to its volume opening capability. (@fredcamaral)
+- Retain the bundled valkey's data and prevent writes when full. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` as part of the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Document the requirement for a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Provide the `v4.3` cutover steps at the chart level. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+Improvements:
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning, ensuring data persistence during deployment changes. (@fredcamaral)
+- Grow a statefulset valkey claim without data loss, enhancing scalability. (@fredcamaral)
+- Pass the edited valkey values during the `10.0.3` upgrade to maintain configuration integrity. (@fredcamaral)
+- Name the ledger and tracer migration switches to clarify migration processes. (@fredcamaral)
+- Scope the migrate-first order to the default settings for improved clarity in migration procedures. (@fredcamaral)
+- Name the hook type per deploy tool to standardize deployment processes. (@fredcamaral)
+- Provide `v4.3` cutover steps at the chart level for streamlined upgrades. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and halt upgrades on open fee debt to ensure data consistency and prevent upgrade issues. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to improve error handling. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade to ensure comprehensive upgrade support. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to enhance system robustness. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume to maintain version control. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data overflow and maintain system stability. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` to ensure a smooth transition. (@fredcamaral)
+- Ensure a drained cutover from `midaz v4.2.x` for consistent upgrade procedures. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a StatefulSet valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Provide the `v4.3` cutover steps at chart level. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover StatefulSet, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning, ensuring stability during deployment processes. (@fredcamaral)
+- Grow a StatefulSet valkey claim without losing it, enhancing data persistence. (@fredcamaral)
+- Pass the edited valkey values during the `10.0.3` upgrade for seamless transitions. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`, ensuring a smooth upgrade path. (@fredcamaral)
+- Name the ledger and tracer migration switches for better clarity in migration processes. (@fredcamaral)
+- Scope the migrate-first order to the default settings, providing a clearer upgrade path. (@fredcamaral)
+- Name the hook type per deploy tool, improving deployment clarity. (@fredcamaral)
+- Provide the `v4.3` cutover steps at the chart level for comprehensive upgrade guidance. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt to prevent data loss and ensure financial accuracy. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to maintain data integrity. (@fredcamaral)
+- Cover StatefulSet, image, and rollback in the valkey upgrade to ensure comprehensive upgrade coverage. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to enhance system reliability. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume, ensuring consistent deployment. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data overflow and maintain system stability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Provide documentation for keeping the valkey claim through Argo CD pruning. (@fredcamaral)
+- Explain how to grow a StatefulSet valkey claim without losing it. (@fredcamaral)
+- Detail the process of passing edited valkey values during the `10.0.3` upgrade. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x` and provide the cutover steps at the chart level for `v4.3`. (@fredcamaral)
+- Name the ledger and tracer migration switches, and scope the migrate-first order to the default settings. (@fredcamaral)
+- Specify the hook type per deploy tool. (@fredcamaral)
+
+Fixes:
+- Ensure fsync is performed on every valkey write and stop upgrades when there is an open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover StatefulSet, image, and rollback scenarios in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Maintain the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` as part of the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Give the `v4.3` cutover steps at chart level. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+
+Fixes:
+
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
 - Keep the valkey claim through Argo CD pruning, ensuring persistent storage. (@fredcamaral)
 - Grow a StatefulSet valkey claim without losing data, enhancing scalability. (@fredcamaral)
 - Pass the edited valkey values during the `10.0.3` upgrade, maintaining configuration integrity. (@fredcamaral)

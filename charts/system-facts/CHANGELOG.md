@@ -1,5 +1,92 @@
 # System-facts Changelog
 
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.2)
+
+Fixes:
+- Update `system-facts@1.1.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `system-facts` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.1...system-facts-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.2)
+
+Features:
+- Added a Helm upgrade guide for `system-facts` `v1.0.1`. (@guimoreirar)
+
+Fixes:
+- Updated `system-facts` to `@1.1.0`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.1...system-facts-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.2)
+
+Features:
+
+- Update `system-facts` to `1.1.0`. (@guimoreirar, @lerian-studio)
+
+Fixes:
+
+- Update `system-facts` to `1.1.0` to address various issues. (@guimoreirar, @lerian-studio)
+
+Improvements:
+
+- Add Helm upgrade guide for `system-facts` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.1...system-facts-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.2)
+
+Fixes:
+- Update `system-facts` to `1.1.0`. (@guimoreirar, @lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `system-facts` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.1...system-facts-v1.0.2)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.1)
+
+Features:
+
+- Documented the Access Manager prerequisite for system-facts. (@gandalf-at-lerian)
+- Added a Helm upgrade guide for `system-facts` `v1.0.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.0...system-facts-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.1)
+
+Features:
+- Added a Helm upgrade guide for `system-facts` `v1.0.0`. (@guimoreirar)
+
+Improvements:
+- Documented the Access Manager prerequisite for `system-facts`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.0...system-facts-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.1)
+
+Features:
+- Documented the Access Manager prerequisite for system-facts. (@gandalf-at-lerian)
+- Added a Helm upgrade guide for `system-facts` `v1.0.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.0...system-facts-v1.0.1)
+
+---
+
 ## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.0.1)
 
 Features:

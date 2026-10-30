@@ -131,7 +131,7 @@ helm uninstall streaming-hub -n streaming-hub
 ### > **DOUBLE-CONSUME HAZARD — the load-bearing rule**
 
 > **NEVER run a `mode: all` release AND a `mode: split` release against the same
-> Kafka/Redpanda cluster.** All three roles (`all`, `ingest`) join the **one**
+> Kafka/Redpanda cluster.** Both consuming roles (`all` and `ingest`) join the **one**
 > ingest consumer group. An `all` pod and an `ingest` pod consuming together
 > means **every event is double-consumed and double-delivered.** The `mode`
 > switch enforces either/or within a single release — do not defeat it by

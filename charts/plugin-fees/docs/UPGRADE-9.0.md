@@ -13,15 +13,9 @@
 
 ### 1. Boolean Flag Handling for Default True Values
 
-The chart now uses a new template helper function `plugin-fees.flagDefaultTrue` to handle boolean flags that default to `true`. This change affects how explicit `false` values are processed in the ConfigMap.
+The chart now uses a new template helper function `plugin-fees.flagDefaultTrue` to handle boolean flags that default to `true`. This change affects how explicit `false` values are processed in the ConfigMap. The chart has no other change in this release; `appVersion` stays `3.4.0`.
 
-**Affected configuration variables:**
-
-- `ALLOW_INSECURE_TLS`
-- `RATE_LIMIT_ENABLED`
-- `PACKAGE_CACHE_ENABLED`
-- `BILLING_PACKAGE_CACHE_ENABLED`
-- `ACCOUNT_CACHE_ENABLED`
+The change affects five `fees.configmap` variables. The table under "Configuration variables affected" lists them with their defaults.
 
 | Setting | v8.0.4 Behavior | v9.0.0 Behavior |
 |---------|-----------------|-----------------|
@@ -31,7 +25,7 @@ The chart now uses a new template helper function `plugin-fees.flagDefaultTrue` 
 
 **Why this matters:**
 
-In v8.0.4, if you explicitly set any of these flags to `false` in your values.yaml, the Sprig `default` function would treat the boolean `false` as an empty value and fall back to `"true"`. This made it impossible to disable these features.
+In v8.0.4, if you explicitly set any of these flags to `false` in your values.yaml, the Sprig `default` function would treat the boolean `false` as an empty value and fall back to `"true"`. This made it impossible to disable these features with a YAML boolean. A quoted string `"false"` already worked, because a non-empty string is not empty for `default`.
 
 **Before (v8.0.4):**
 
@@ -72,9 +66,12 @@ data:
 - If you previously set any of these flags to `false` and expected them to be disabled, they were actually running as `true` in v8.0.4
 - After upgrading to v9.0.0, your explicit `false` values will now be honored
 - **Review your current configuration** for these five flags before upgrading
+- The pods restart on this upgrade in any case: the ConfigMap checksum annotation and the `helm.sh/chart` label in the pod template both change with the chart version
 - If you have workarounds in place (e.g., setting values to empty strings or using string `"false"`), remove them and use boolean `false` directly
 
 **Configuration variables affected:**
+
+All five default to `"true"` in `values.yaml` and in the helper.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -104,6 +101,8 @@ fees:
 > **Important:** If you have any of these flags explicitly set to `false` in your values.yaml, verify that disabling these features is your intended behavior. After upgrading to v9.0.0, these settings will take effect for the first time.
 
 > **Warning:** If you rely on rate limiting, caching, or insecure TLS being enabled despite setting them to `false`, you must remove those `false` values from your configuration or change them to `true` before upgrading.
+
+> **Warning:** `ALLOW_INSECURE_TLS: false` is the one flag where a change in behavior can break connectivity. A plugin that ran with this flag effectively `true` can fail to connect after the upgrade if any datastore connection does not use TLS. Check this in a non-production environment first.
 
 **Template implementation details:**
 

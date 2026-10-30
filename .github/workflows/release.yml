@@ -330,8 +330,15 @@ jobs:
       # moving after the per-chart release scoping. Only on main: a maintenance
       # line must not rewrite the "latest" row. The commit touches README.md alone,
       # which the trigger's paths-ignore skips, so it starts no other release.
+      #
+      # continue-on-error: the chart is already published when this runs. A failed
+      # step would skip the record/upload steps below and fail the leg, and
+      # collect-published-charts and notify-release need every leg: no GitOps pin
+      # and no release notice for ANY chart of the run. A failed sync stays visible
+      # as a red step with its ::error:: annotation without holding the release back.
       - name: Sync README version matrix
         if: steps.semantic_changelog.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           BRANCH: ${{ github.ref_name }}

@@ -415,6 +415,14 @@ Matching is exact (no trimming), like ParseBool: " true" is false at runtime.
 {{- end -}}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "midaz.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 midaz.postgresqlPrimaryHost — in-cluster hostname of the bundled PostgreSQL
 primary for THIS release, so a release named something other than `midaz` still
 resolves its database. Bitnami names the Service `<fullname>-primary` in the
@@ -441,9 +449,11 @@ Deployment and the migration Job at a host that does not exist.
 */}}
 {{/*
 midaz-tracer.grpcPort — the numeric gRPC container/Service port, kept in sync with the app's
-listen address. When tracer.configmap.TRACER_GRPC_PORT is set (e.g. ":5000") the port is its
-numeric tail; otherwise tracer.service.grpcPort (default 4021). Prevents the container/Service
-from exposing 4021 while the app listens on a custom TRACER_GRPC_PORT.
+listen address. The tracer always serves the reservation seam over gRPC (":4021" when
+TRACER_GRPC_PORT is unset), so the port is always published. When
+tracer.configmap.TRACER_GRPC_PORT is set (e.g. ":5000") the port is its numeric tail; otherwise
+tracer.service.grpcPort (default 4021). Prevents the container/Service from exposing 4021 while
+the app listens on a custom TRACER_GRPC_PORT.
 */}}
 {{- define "midaz-tracer.grpcPort" -}}
 {{- $listen := (.Values.tracer.configmap | default dict).TRACER_GRPC_PORT -}}

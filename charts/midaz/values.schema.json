@@ -172,6 +172,12 @@
           "default": 10,
           "description": "Number of old ReplicaSets to retain for deployment rollback"
         },
+        "terminationGracePeriodSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 60,
+          "description": "Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush."
+        },
         "image": {
           "type": "object",
           "properties": {
@@ -563,9 +569,16 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Tolerations for scheduling on tainted nodes"
+          "description": "Tolerations for scheduling on tainted nodes. A list; an empty map ({}) is still accepted so values written for <= 10.0.0 keep validating",
+          "anyOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object",
+              "maxProperties": 0
+            }
+          ]
         },
         "affinity": {
           "type": "object",
@@ -841,6 +854,9 @@
               "AWS_REGION",
               "M2M_VAULT_MOUNT",
               "BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS",
+              "BALANCE_SYNC_FORK_MAX_ATTEMPTS",
+              "BALANCE_SYNC_FORK_BACKOFF_BASE_MS",
+              "BALANCE_SYNC_FORK_BACKOFF_MAX_MS",
               "REDIS_PORT",
               "TRANSACTION_BATCH_MAX_SIZE"
             ]
@@ -1200,9 +1216,16 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Tolerations for scheduling on tainted nodes"
+          "description": "Tolerations for scheduling on tainted nodes. A list; an empty map ({}) is still accepted so values written for <= 10.0.0 keep validating",
+          "anyOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object",
+              "maxProperties": 0
+            }
+          ]
         },
         "affinity": {
           "type": "object",
@@ -1545,6 +1568,12 @@
           "default": 10,
           "description": "Number of old ReplicaSets to retain for deployment rollback"
         },
+        "terminationGracePeriodSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 45,
+          "description": "Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush."
+        },
         "image": {
           "type": "object",
           "properties": {
@@ -1786,7 +1815,7 @@
             },
             "grpcPort": {
               "default": 4021,
-              "description": "gRPC reservation seam port. Only exposed when"
+              "description": "gRPC reservation seam port, always published on the container and Service."
             }
           },
           "additionalProperties": true
@@ -1937,9 +1966,16 @@
           "description": "Node selector for scheduling pods on specific nodes"
         },
         "tolerations": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Tolerations for scheduling on tainted nodes"
+          "description": "Tolerations for scheduling on tainted nodes. A list; an empty map ({}) is still accepted so values written for <= 10.0.0 keep validating",
+          "anyOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object",
+              "maxProperties": 0
+            }
+          ]
         },
         "affinity": {
           "type": "object",

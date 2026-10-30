@@ -1,0 +1,118 @@
+# Template values for system-facts deployment
+# Copy this file and customize for your environment
+
+namespaceOverride: "system-facts"
+
+global:
+  # Managed-cloud topology preset: aws | gcp | azure. Leave "" for the bundled
+  # in-cluster infra (plaintext).
+  cloud: ""
+  # Env-wide shared datastore endpoints (only postgres/redis are used here).
+  datastores: {}
+  #   postgres: { host: "my-rds.example.com", user: "system-facts" }
+  #   redis: { host: "my-elasticache.example.com:6379" }
+  # Env-wide telemetry (enabled/endpoint/deployment-env only; per-service OTEL
+  # identity stays in system-facts.otel).
+  observability: {}
+  #   enabled: true
+  #   otlpEndpoint: "otel-collector:4317"
+  # Env-wide plugin-access-manager auth.
+  auth: {}
+  #   host: "http://plugin-access-manager-auth:4000"
+  # Env-wide Access Manager permission declaration (RI). The gate is per
+  # component (system-facts.configmap.IDP_DECLARATION_ENABLED); the client pair
+  # goes in system-facts.secrets.IDP_M2M_CLIENT_ID / IDP_M2M_CLIENT_SECRET.
+  idp: {}
+  #   host: "http://plugin-access-manager-identity:4001"
+  # Env-wide multi-tenant infra (only used when system-facts.multiTenant.enabled=true).
+  multiTenant: {}
+  #   url: "http://tenant-manager:8080"
+  #   redisHost: "my-elasticache.example.com"
+  # Env-wide service discovery (only used when system-facts.serviceDiscovery.enabled=true).
+  serviceDiscovery: {}
+  #   address: "consul.internal:8500"
+  # Env-wide streaming backend (only used when system-facts.streaming.enabled=true).
+  streaming: {}
+  #   brokers: "redpanda:9092"
+  externalPostgresDefinitions:
+    enabled: false
+    connection:
+      host: ""
+      port: "5432"
+    postgresAdminLogin:
+      useExistingSecret:
+        name: ""
+      username: ""
+      password: ""
+    boilerplateCredentials:
+      useExistingSecret:
+        name: ""
+      password: ""
+
+system-facts:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/lerianstudio/system-facts
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  imagePullSecrets: []
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: ""
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  multiTenant:
+    enabled: false
+
+  serviceDiscovery:
+    enabled: false
+
+  streaming:
+    enabled: false
+
+  otel:
+    enabled: false
+
+  # Native keys override the global.* masks above, and an empty value counts as an
+  # override: a key listed here with "" renders "" instead of the global or bundled
+  # endpoint. Add a key only to diverge from global.* for this service.
+  configmap:
+    # Required while the license gate is on (the application default).
+    ORGANIZATION_IDS: ""
+  #   LICENSE_ENABLED: "false"              # turns the license gate off
+  #   POSTGRES_HOST: "my-rds.example.com"   # only to override global.datastores.postgres
+  #   REDIS_HOST: "my-elasticache.example.com:6379"
+
+  secrets:
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    # Required while the license gate is on (the application default).
+    LICENSE_KEY: ""
+
+  useExistingSecret: false
+  existingSecretName: ""

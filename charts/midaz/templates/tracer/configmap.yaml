@@ -12,7 +12,7 @@ metadata:
     {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
 data:
   # -- Default Environment variables for Tracer
-  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "midaz.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
   ENV_NAME: {{ $envName | quote }}
 
   # APP
@@ -57,7 +57,7 @@ data:
   IDP_HOST: {{ $cm.IDP_HOST | default "" | quote }}
   IDP_M2M_CLIENT_ID: {{ $cm.IDP_M2M_CLIENT_ID | default "" | quote }}
 
-  # RESERVATION gRPC SEAM (opt-in; empty keeps the seam off, as the app does)
+  # RESERVATION gRPC SEAM (always served; TRACER_GRPC_PORT empty listens on ":4021", as the app does)
   # TRACER_TLS_MODE: "" (plain gRPC), "server" or "mtls".
   TRACER_TLS_MODE: {{ $cm.TRACER_TLS_MODE | default "" | quote }}
   # Server certificate/key (required for "server" and "mtls"), the client CA and

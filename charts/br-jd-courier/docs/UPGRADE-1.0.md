@@ -40,7 +40,7 @@ The chart is now published and manages four role-based Deployments from a single
 - `spb-consumer` (single replica, destructive queue reader)
 - `spb-sender` (multi-replica, SOAP surface)
 - `pix-ingress` (multi-replica, Pix delivery receiver)
-- `admin` (single replica, administrative surface)
+- `admin` (administrative surface; one replica by default, `roles.admin.replicas` may be raised)
 
 > **Important:** If you were deploying br-jd-courier manually, you must migrate to this Helm chart. The chart enforces critical operational constraints (e.g., single-writer protection) that manual deployments may not respect.
 

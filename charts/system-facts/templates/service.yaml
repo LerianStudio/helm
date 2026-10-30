@@ -1,0 +1,9 @@
+{{- if (index .Values "system-facts").enabled }}
+{{- include "lerian-common.service" (dict
+      "service" (index .Values "system-facts").service
+      "name" (include "system-facts.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "system-facts.labels" (dict "context" . "component" (index .Values "system-facts").name "name" (index .Values "system-facts").name))
+      "selector" (include "system-facts.selectorLabels" (dict "context" . "name" (index .Values "system-facts").name))
+    ) }}
+{{- end }}

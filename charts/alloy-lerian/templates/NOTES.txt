@@ -33,6 +33,8 @@ Fleet Management: inativo (fleetManagement.enabled: false)
 {{- end }}
 
 Sanitização de dado regulado: SEMPRE ativa, não configurável.
-  8 classes cobertas, verificadas contra o agente real na porta de entrega.
-  7 reconhecem por FORMA (robustas a nome de campo novo); 4 regras dependem de
-  NOME DE CAMPO — ver a seção de limites no README antes de tratar como garantia.
+  7 classes cobertas (10 regras), verificadas contra o agente real na porta de entrega.
+  Telefone, e-mail e os esquemas `Bearer`, `Basic` e `Digest` são reconhecidos pelo
+  formato (robustos a nome de campo novo); nome, conta e agência, chave Pix, endereço e as formas de chave e
+  atribuição de credencial dependem de NOME DE CAMPO — ver a seção de limites no
+  README antes de tratar como garantia.

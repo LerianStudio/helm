@@ -34,6 +34,9 @@ via `include` by the product charts that declare it as a dependency.
   `configmap.<KEY>` > `defaults.<KEY>` > `""`, presence-based). Each chart opts into
   its own SUBSET + ORDER via `keys` and its per-key defaults via `defaults`; adoption
   is a zero-diff refactor, before optionally migrating to the derivation helpers above.
+- **Access Manager permission declaration:** `lerian-common.idp.env`,
+  `lerian-common.idp.secret`, `lerian-common.idp.keys` — the four env keys lib-auth's
+  `declaration.WireFromEnv` reads. See [Permission declaration](#permission-declaration-idp).
 - **In-cluster host primitives:** `lerian-common.internalHost`, `lerian-common.internalURL`.
 - **Resource helpers:** `lerian-common.hpa`, `.service`, `.serviceAccount`, `.pdb`, `.ingress`.
 - **Deployment pod-spec fragments:** `lerian-common.scheduling`, `.topologySpreadConstraints`,
@@ -42,7 +45,7 @@ via `include` by the product charts that declare it as a dependency.
 - **Dependency helpers:** `lerian-common.dependency.fullname`, `.infraSecretRef`.
 - **`lerian-common.deploymentStrategy`.**
 
-See `values.yaml` for the standard `global.{serviceDiscovery,streaming,multiTenant}` template.
+See `values.yaml` for the standard `global.{serviceDiscovery,streaming,multiTenant,idp}` template.
 
 ## Pod spreading (topologySpreadConstraints)
 
@@ -143,6 +146,49 @@ global:
 `tolerations` in charts that support them); this helper reads only
 `global.scheduling.spread`.
 
+## Permission declaration (IDP_*)
+
+lib-auth's `declaration.WireFromEnv` publishes the app's permission manifest to the
+Access Manager at boot. The helpers split its four keys between the ConfigMap and the
+Secret:
+
+| Key | Helper | Source (highest first) | Rendered |
+|---|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `idp.env` | `configmap` > `extraEnvVars` (legacy) > `global.idp.declarationEnabled` > `"false"` | always |
+| `IDP_HOST` | `idp.env` | `configmap` > `extraEnvVars` (legacy) > `global.idp.host` > `""` | only when non-empty |
+| `IDP_M2M_CLIENT_ID` | `idp.secret` | the component's secrets map | only when set; nothing with `useExistingSecret` |
+| `IDP_M2M_CLIENT_SECRET` | `idp.secret` | the component's secrets map | only when set; nothing with `useExistingSecret` |
+
+With the gate on, the app refuses to boot without the host and the client pair. The
+credentials are per component, so keep the gate per component too (`configmap`) and use
+`global.idp.host` for the env-wide host; `global.idp.declarationEnabled` turns the gate
+on for every component of the release.
+
+A chart that also ranges over its `configmap`, `extraEnvVars` or `secrets` must skip the
+keys the helpers own, or the key is emitted twice:
+
+<!-- {% raw %} -->
+```yaml
+# configmap.yaml, under data:
+{{- $idpEnv := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
+{{- range $k, $v := .Values.app.configmap }}
+{{- if not (has $k $idpEnv) }}
+{{ $k }}: {{ $v | quote }}
+{{- end }}
+{{- end }}
+{{- include "lerian-common.idp.env" (dict "context" $
+      "configmap" .Values.app.configmap "extraEnvVars" .Values.app.extraEnvVars) | nindent 2 }}
+
+# secrets.yaml, under data: (mode "data") or stringData: (mode "stringData")
+{{- with (include "lerian-common.idp.secret" (dict "secrets" .Values.app.secrets
+      "mode" "data" "useExistingSecret" .Values.app.useExistingSecret)) }}
+{{- . | nindent 2 }}
+{{- end }}
+```
+<!-- {% endraw %} -->
+
+`kind` selects `"env"` (ConfigMap keys), `"secret"` (Secret keys) or, when omitted, all four.
+
 ## Usage
 
 ```yaml
@@ -153,6 +199,7 @@ dependencies:
     repository: "file://../lerian-common"
 ```
 
+<!-- {% raw %} -->
 ```yaml
 # consumer template (example)
 {{- with (include "lerian-common.serviceDiscovery.env" (dict
@@ -161,6 +208,7 @@ dependencies:
 {{ . | nindent 2 }}
 {{- end }}
 ```
+<!-- {% endraw %} -->
 
 ## Chart Contract
 
@@ -169,6 +217,7 @@ dependencies:
 - **Dependency notes:** no subchart dependencies of its own. Consumers reference it via
   `repository: "file://../lerian-common"` (monorepo) and vendor it at
   `helm dependency build`; packaged consumer charts embed it in their `.tgz`.
-- **Production overrides:** set `global.serviceDiscovery`, `global.streaming` and
-  `global.multiTenant` once per environment (umbrella/GitOps). Helpers stay inert until set.
+- **Production overrides:** set `global.serviceDiscovery`, `global.streaming`,
+  `global.multiTenant` and `global.idp` once per environment (umbrella/GitOps). Helpers stay inert until set
+  (`idp.env` always emits `IDP_DECLARATION_ENABLED: "false"` while unset).
 - **Source/License:** https://github.com/LerianStudio/helm — © Lerian Studio.

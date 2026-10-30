@@ -3,6 +3,9 @@
 
 nameOverride: ""
 fullnameOverride: ""
+# Namespace of the MongoDB bootstrap Job ONLY (global.externalMongoDefinitions). Every other
+# object, including the RabbitMQ bootstrap Job, is created in the release namespace.
+# Set it to the release namespace when that is not "fetcher".
 namespaceOverride: "fetcher"
 global:
   # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
@@ -70,6 +73,11 @@ global:
   # (manager.configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { enabled: true, host: "http://plugin-access-manager-auth:4000" }
   auth: {}
+  # -- Env-wide Access Manager permission declaration (RI), manager only. Consumed by
+  # lerian-common.idp.env (block "idp"). Fields: declarationEnabled, host.
+  # (manager.configmap.IDP_DECLARATION_ENABLED / IDP_HOST override.)
+  # Example: idp: { host: "http://plugin-access-manager-identity.<ns>.svc.cluster.local:4001" }
+  idp: {}
   # -- Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env.
   # Fields: enabled, brokers, saslUsername, tlsEnabled, compression, requiredAcks, ...
   # (brokers gates emission). The fetcher worker HARD-REQUIRES streaming at startup
@@ -121,7 +129,7 @@ manager:
   image:
     repository: lerianstudio/fetcher-manager
     pullPolicy: IfNotPresent
-    tag: "3.1.0"
+    tag: "3.1.1"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -218,6 +226,11 @@ manager:
     # AUTH — PLUGIN_AUTH_ENABLED/_ADDRESS now emitted by lerian-common.auth.env
     # (global.auth); default disabled, host "". Override via global.auth.{enabled,host}
     # or set manager.configmap.PLUGIN_AUTH_ENABLED/_ADDRESS here to win outright.
+    # ACCESS MANAGER PERMISSION DECLARATION (RI) — emitted by lerian-common.idp.env:
+    # IDP_DECLARATION_ENABLED (default "false") and IDP_HOST (only when set). With the
+    # flag on the manager refuses to boot without the host and manager.secrets.IDP_M2M_*.
+    # IDP_DECLARATION_ENABLED: "false"
+    # IDP_HOST: ""   # e.g. http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001
     # Rate Limiting - Three-tier system with Redis backend
     # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
     # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled
@@ -236,6 +249,10 @@ manager:
   secrets:
     APP_ENC_KEY: ""
     APP_ENC_KEY_VERSION: "1"
+    # Access Manager permission declaration (RI) client pair, used only when
+    # IDP_DECLARATION_ENABLED="true"; each key rendered only when set.
+    # IDP_M2M_CLIENT_ID: ""
+    # IDP_M2M_CLIENT_SECRET: ""
   extraEnvVars: {}
   useExistingSecret: false
   existingSecretName: ""
@@ -247,7 +264,7 @@ worker:
   image:
     repository: lerianstudio/fetcher-worker
     pullPolicy: IfNotPresent
-    tag: "3.1.0"
+    tag: "3.1.1"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -351,6 +368,8 @@ worker:
 # global.datastores.
 datastores: {}
 common:
+  # NOTE: REDIS_TLS and RABBITMQ_TLS (read by the app) are not emitted by any datastore mask
+  # (global.datastores.*.tls/scheme, global.cloud); set them here when the endpoint needs TLS.
   # -- Shared (common) application config for BOTH the manager and worker
   # surfaces. Defaults for every shared key live in the templates
   # (fetcher.commonConfigmapData): dependency CONNECTIONS resolve through
@@ -517,6 +536,9 @@ valkey:
   auth:
     enabled: false
 # KEDA - Kubernetes Event-driven Autoscaling
+# NOTE: enabling this installs the KEDA operator only. The chart has no ScaledObject
+# template, so it does not autoscale the manager or worker; use manager.autoscaling (HPA)
+# or create your own ScaledObject.
 keda:
   enabled: false
   crds:

@@ -79,7 +79,7 @@ spec:
               mountPath: /tmp
           ports:
             - name: http
-              containerPort: {{ .Values.worker.service.port }}
+              containerPort: {{ .Values.worker.configmap.HEALTH_PORT | default 4006 }}
               protocol: TCP
           envFrom:
             - configMapRef:

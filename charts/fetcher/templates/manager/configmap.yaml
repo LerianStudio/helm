@@ -12,14 +12,21 @@ data:
   {{- range $k := list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS" }}
   {{- if and (hasKey $mExtra $k) (not (hasKey $mc $k)) }}{{- $_ := set $mc $k (index $mExtra $k) }}{{- end }}
   {{- end }}
+  {{- /* IDP_DECLARATION_ENABLED / IDP_HOST are emitted by lerian-common.idp.env below. */ -}}
+  {{- $idpEnvKeys := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
   {{- range $key, $value := $mc }}
-  {{- if not (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS")) }}
+  {{- if not (or (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS")) (has $key $idpEnvKeys)) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}
   # AUTH (plugin-access-manager) via lerian-common.auth.env — global.auth.
   # {enabled,host}; manager.configmap.PLUGIN_AUTH_* still overrides.
   {{- include "lerian-common.auth.env" (dict "context" $ "configmap" $mc "hostKey" "PLUGIN_AUTH_ADDRESS" "hostDefault" "") | nindent 2 }}
+  # ACCESS MANAGER PERMISSION DECLARATION (RI) via lerian-common.idp.env —
+  # IDP_DECLARATION_ENABLED (always, default "false") and IDP_HOST (only when set),
+  # resolved as manager.configmap > manager.extraEnvVars (legacy) > global.idp.
+  # The client pair lives in the manager Secret (manager.secrets.IDP_M2M_*).
+  {{- include "lerian-common.idp.env" (dict "context" $ "configmap" $mc "extraEnvVars" $mExtra) | nindent 2 }}
   # Rate Limiting - Three-tier system with Redis backend
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
   # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
@@ -27,10 +34,10 @@ data:
   # Always set VERSION and OTEL_RESOURCE_SERVICE_VERSION from image tag
   VERSION: {{ .Values.manager.image.tag | default .Chart.AppVersion | quote }}
   OTEL_RESOURCE_SERVICE_VERSION: {{ .Values.manager.image.tag | default .Chart.AppVersion | quote }}
-  {{- /* Skip keys already emitted above (manager.configmap, the auth mask, VERSION/
+  {{- /* Skip keys already emitted above (manager.configmap, the auth and IDP masks, VERSION/
      OTEL_RESOURCE_SERVICE_VERSION): a duplicate ConfigMap key is rejected server-side. */ -}}
   {{- range $key, $value := $mExtra }}
-  {{- if not (or (hasKey $mc $key) (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS" "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"))) }}
+  {{- if not (or (hasKey $mc $key) (has $key $idpEnvKeys) (has $key (list "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS" "VERSION" "OTEL_RESOURCE_SERVICE_VERSION"))) }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}

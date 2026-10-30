@@ -8,7 +8,8 @@
 - Dependency notes: wraps the upstream `consul` chart and intentionally carries only `templates/NOTES.txt`. All Kubernetes resources (StatefulSet, Services, ACL/gossip/TLS jobs) come from the subchart, so application-chart artifacts such as `_helpers.tpl` and a component `Deployment` do not apply.
 - Required secrets: none to supply manually. With `consul.global.acls.manageSystemACLs=true` (default) the chart generates the bootstrap-ACL-token Secret; gossip encryption is OFF by default (single-node has no server-to-server gossip) and is REQUIRED before scaling past one server.
 - Production overrides: for HA set `consul.server.replicas`/`consul.server.bootstrapExpect` to an odd number (3/5) and `consul.server.disruptionBudget.enabled=true`; set `consul.global.tls.enabled=true` for cross-trust-boundary access; tune `consul.server.storage`, `consul.server.storageClass`, `consul.global.image` and `consul.server.resources` per cluster.
-- Reproducibility: `values.schema.json` keeps the `consul:` override block validated and `Chart.lock` pins the resolved dependency.
+- Reproducibility: `values.schema.json` keeps the `consul:` override block validated and `Chart.lock` pins the resolved dependency. Note that the schema is strict only at the top level and under `networkPolicy`; `consul:` and `consul.global` are open, so a typo under `consul:` is silently ignored. Check the effect with `helm template`.
+- Prerequisite: the HashiCorp repository must be known to Helm before `helm dependency build` (see [Building the chart locally](#building-the-chart-locally)).
 - Source/license: chart source in `github.com/LerianStudio/helm` under Apache-2.0. **The deployed Consul is third-party software under the Business Source License 1.1 — see [License](#license) below.**
 
 ---
@@ -66,8 +67,8 @@ $ helm install lerian-consul charts/lerian-consul \
 
 ### TLS
 
-Default OFF. The server is reachable only in-cluster via ClusterIP, so the HTTP
-API stays inside the pod network. Enabling TLS pulls in the `tls-init` Job (CA +
+Default OFF. The server is reachable only in-cluster (headless Service, no
+external exposure), so the HTTP API stays inside the pod network. Enabling TLS pulls in the `tls-init` Job (CA +
 server cert generation), moves the API to port `8501`, and requires distributing
 the CA to consumers.
 
@@ -75,8 +76,13 @@ the CA to consumers.
 $ helm install lerian-consul charts/lerian-consul --set consul.global.tls.enabled=true
 ```
 
-With TLS on, point `lib-service-discovery` at `...-consul-server:8501` (HTTPS)
-and supply the generated CA.
+With TLS on, point `lib-service-discovery` at `<consul-fullname>-server.<namespace>.svc:8501`
+and set `SD_TLS=true`. `SD_ADDRESS` is `host:port` without a scheme (do not
+write `https://...`); `SD_TLS=true` is what selects HTTPS. The generated CA must
+be trusted by the consumer. `lib-service-discovery` has no `SD_*` variable for a
+CA file (only `SD_TLS_SKIP_VERIFY`); its client starts from the Consul SDK
+default config, which reads `CONSUL_CACERT`. That path is not verified end to
+end by this chart.
 
 ### Security posture (deliberately lightweight)
 
@@ -84,9 +90,9 @@ This chart ships a **minimal secure baseline** that is on by default and stays
 light — the BYOC "facilitator, not blocker" stance — because the client owns the
 cluster and its trust boundary:
 
-- ACL system **on** (scoped SD token, not the bootstrap token — see below).
-- Non-root server, ClusterIP-only Services (no LoadBalancer/NodePort/Ingress).
-- DNS listener **off**, gossip/RPC host ports **off**, unused components disabled.
+- ACL system **on**. The chart creates only the admin-only bootstrap token; workloads must get a scoped SD token that the operator mints (never the bootstrap token) — see below.
+- Non-root server, in-cluster Services only: the server Service is headless (`clusterIP: None`) and the `-dns` Service is `ClusterIP`. No LoadBalancer/NodePort/Ingress.
+- DNS listener **off**, gossip/RPC host ports **off**, unused components disabled. See [Known limitations](#known-limitations) for the DNS ports that are still declared.
 
 TLS and a NetworkPolicy are **client-owned opt-ins**, NOT forced defaults — a
 single-node, in-cluster-only SD backend does not need them, and forcing them
@@ -114,8 +120,7 @@ disabled (`consul.server.extraConfig`).
 
 ## After install
 
-- `SD_ADDRESS`: `<consul-fullname>-server.<namespace>.svc:8500` (or `:8501` with TLS), where `<consul-fullname>` resolves to `consul.fullnameOverride`, else `consul.global.name`, else `<release>-consul`. The post-install `NOTES` print the exact address resolved for your release.
-See the post-install `NOTES` for the values resolved for your release.
+- `SD_ADDRESS`: `<consul-fullname>-server.<namespace>.svc:8500` (or `:8501` with TLS plus `SD_TLS=true`; always `host:port`, no scheme), where `<consul-fullname>` resolves to `consul.fullnameOverride`, else `consul.global.name`, else `<release>-consul`. The post-install `NOTES` print the exact address resolved for your release.
 
 ### ACL tokens — bootstrap is admin-only
 
@@ -141,6 +146,41 @@ $ consul acl token create  -description sd-<svc> \
 ```
 
 Store each SecretID in that workload's own Secret and pass it as `SD_TOKEN` — one token per service, rotatable/revocable independently of the bootstrap token. This follows HashiCorp's [service-token guidance](https://developer.hashicorp.com/consul/docs/secure/acl/token/service). (If you register through the **catalog** API instead of the agent API, grant `node_prefix "" { policy = "write" }` as well.) Automating this as an in-chart post-bootstrap Job is a deliberate non-goal for the minimal wrapper — do it in your platform bootstrap.
+
+---
+
+## Building the chart locally
+
+The only dependency is served from the HashiCorp repository declared in
+`Chart.yaml` (`https://helm.releases.hashicorp.com`). Without it,
+`helm dependency build` fails with `no repository definition for
+https://helm.releases.hashicorp.com`. Add it first:
+
+```console
+$ helm repo add hashicorp https://helm.releases.hashicorp.com
+$ helm dependency build charts/lerian-consul
+```
+
+---
+
+## Known limitations
+
+- **`helm test` is unreliable with this wrapper.** The upstream test Pod
+  (`<consul-fullname>-test`) runs `consul members` against
+  `CONSUL_HTTP_ADDR=http://$(HOST_IP):8500`, i.e. the node IP, not a Service. This
+  chart opens no hostPorts (`consul.server.exposeGossipAndRPCPorts=false`, no
+  client DaemonSet), and the Pod carries no ACL token while ACLs are on, so the
+  test can fail on a healthy cluster. Judge health by the server pod being
+  Ready and by a register/resolve from a consumer using its scoped SD token; the
+  upstream `consul.tests.enabled` flag controls whether the Pod is rendered.
+- **DNS ports are still declared although the DNS listener is off.**
+  `consul.server.extraConfig` sets `ports.dns` to `-1`, so the agent does not
+  listen on DNS. The upstream chart still declares port `8600` (`dns-tcp` /
+  `dns-udp`) on the server Service and the container, and renders a separate
+  `<consul-fullname>-dns` Service on port `53`. Nothing answers on them; consumers
+  use the HTTP API. This is documented here rather than changed.
+- **The server Service is headless** (`clusterIP: None`). Consumers resolve
+  `<consul-fullname>-server.<namespace>.svc` to the server pod IPs.
 
 ---
 

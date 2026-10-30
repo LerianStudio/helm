@@ -39,10 +39,26 @@ The Reporter plugin provides a flexible document templating system that enables 
 
 ## Prerequisites
 
-- Kubernetes 1.19+
+- Kubernetes 1.19+ (1.27+ with the default pod-spread preset, see [Pod Spreading](#pod-spreading-globalschedulingspread); the chart does not set `kubeVersion`, so Helm does not enforce this)
 - Helm 3.2.0+
 - KEDA 2.0+ (can be installed by the chart or externally)
 - PV provisioner support in the underlying infrastructure (for MongoDB, SeaweedFS, and RabbitMQ persistence)
+
+## Release Name and Namespace
+
+The in-cluster defaults for the bundled dependencies are fixed strings in
+`<svc>.reporter.svc.cluster.local` form: `MONGO_HOST`, `RABBITMQ_HOST`,
+`RABBITMQ_HEALTH_CHECK_URL`, `REDIS_HOST` and `OBJECT_STORAGE_ENDPOINT` in the
+ConfigMaps, and the RabbitMQ host the KEDA `ScaledJob` trigger uses. The bundled
+MongoDB, RabbitMQ and Valkey Services are named after the release
+(`<release>-mongodb`, `<release>-rabbitmq`, `<release>-valkey`), while the
+SeaweedFS Service keeps the fixed name `seaweedfs-s3`. The defaults therefore match
+only when the release is named `reporter` and installed in the `reporter`
+namespace (as in the commands below). With another release name, override the
+MongoDB, RabbitMQ and Valkey hosts through `global.datastores.*` (or the matching
+`common.configmap` keys); with another namespace, override those same three hosts
+(they also hardcode the `reporter` namespace) and `global.objectStorage.s3.endpoint`. Otherwise the manager and worker will not reach
+the bundled dependencies.
 
 ## Installing the Chart
 
@@ -203,7 +219,7 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 |-----------|-------------|---------|
 | `manager.replicaCount` | Number of manager replicas | `1` |
 | `manager.image.repository` | Manager image repository | `ghcr.io/lerianstudio/reporter-manager` |
-| `manager.image.tag` | Manager image tag | `1.2.0` |
+| `manager.image.tag` | Manager image tag | `4.5.0` |
 | `manager.image.pullPolicy` | Manager image pull policy | `IfNotPresent` |
 | `manager.service.type` | Kubernetes Service type | `ClusterIP` |
 | `manager.service.port` | Service HTTP port | `4005` |
@@ -218,8 +234,10 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `worker.image.repository` | Worker image repository | `ghcr.io/lerianstudio/reporter-worker` |
-| `worker.image.tag` | Worker image tag | `1.2.0` |
+| `worker.image.tag` | Worker image tag | `4.5.0` |
 | `worker.image.pullPolicy` | Worker image pull policy | `IfNotPresent` |
+| `worker.service.port` | Service port. It forwards to the worker health server (`worker.configmap.HEALTH_PORT`). The Service has endpoints only when the worker runs as a Deployment (`keda.enabled=false` and `keda.external=false`); the default KEDA `ScaledJob` has no Service endpoints | `80` |
+| `worker.configmap.HEALTH_PORT` | Worker health server port: container port, Service target and probe port | `4006` |
 | `worker.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `worker.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `worker.existingSecretName` | Name of the existing secret to use | `""` |
@@ -235,6 +253,18 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 | `valkey.enabled` | Enable or disable Valkey (Redis) deployment | `true` |
 | `keda.enabled` | Enable or disable KEDA operator deployment | `true` |
 | `keda.external` | Use an externally installed KEDA operator | `false` |
+
+### Access Manager Permission Declaration (manager)
+
+The manager publishes its permission manifest to the Access Manager at boot (lib-auth
+`declaration.WireFromEnv`) when `IDP_DECLARATION_ENABLED="true"`; with the flag on it refuses
+to start without `IDP_HOST` and the client pair. The worker never declares.
+
+| Key | Where | Rendered |
+|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `manager.configmap` > `manager.extraEnvVars` (legacy) > `common.configmap` > `global.idp.declarationEnabled` | always, default `"false"` |
+| `IDP_HOST` | same precedence, with `global.idp.host` | only when set |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | top-level `secrets` | manager Secret only, each only when set |
 
 ## Secrets Management
 
@@ -429,6 +459,13 @@ secrets:
   CRYPTO_ENCRYPT_SECRET_KEY_CRM: "<crm-encryption-key>"
 ```
 
+> **Production worker:** the worker app (4.5.0) refuses to start with
+> `ENV_NAME=production` unless `CRYPTO_HASH_SECRET_KEY_CRM` and
+> `CRYPTO_ENCRYPT_SECRET_KEY_CRM` are non-empty, even when no CRM datasource is
+> declared. The chart requires these two keys only when CRM is declared, so a
+> production install without CRM must still set both under `secrets:` (or in the
+> external worker Secret); the render does not check this.
+
 Do not replace or rotate `DATASOURCE_CRED_ENC_KEY` as part of this setup. With
 `manager.useExistingSecret` or `worker.useExistingSecret`, Helm cannot inspect
 the external Secret; provide the same CRM keys in each selected external Secret.
@@ -540,6 +577,18 @@ kubectl port-forward svc/reporter-manager 4005:4005 -n reporter
 ```
 
 Then access: http://localhost:4005
+
+### Health Endpoints
+
+| Component | Port | Liveness probe | Readiness probe | Also |
+|-----------|------|----------------|-----------------|------|
+| Manager | `manager.service.port` (`4005`) | `/health` | `/readyz` | `/version` |
+| Worker | `worker.configmap.HEALTH_PORT` (`4006`) | `/health` | `/readyz` | `/version` |
+
+`/readyz` reports non-200 while a dependency is down. The probe paths are set with
+`<component>.livenessProbe.path` and `<component>.readinessProbe.path`. The
+default worker is a KEDA `ScaledJob`, which defines no probes; the probes above
+apply to the worker Deployment (`keda.enabled=false` and `keda.external=false`).
 
 ## API Documentation
 

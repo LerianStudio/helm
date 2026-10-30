@@ -44,7 +44,7 @@ data:
   # =============================================================================
   # APP CONFIGURATION
   # =============================================================================
-  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "midaz.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
   ENV_NAME: {{ $envName | quote }}
   # Service name the ledger registers with the tenant manager; REQUIRED when
   # MULTI_TENANT_ENABLED=true (the app refuses to boot without it) and part of the
@@ -240,12 +240,33 @@ data:
   # TRACER_BASE_URL empty disables the integration (nil reserver).
   # =============================================================================
   TRACER_BASE_URL: {{ $cm.TRACER_BASE_URL | default "" | quote }}
-  {{- /* The seam accepts "grpc" or "rest". The bundled tracer only serves gRPC
-         when TRACER_GRPC_PORT is set, so selecting grpc against an in-chart
-         tracer that has it unset would dial a port nothing listens on. */ -}}
-  {{- $tracerTransport := $cm.TRACER_TRANSPORT | default "rest" }}
-  {{- if and $cm.TRACER_BASE_URL (eq (lower $tracerTransport) "grpc") .Values.tracer.enabled (not .Values.tracer.configmap.TRACER_GRPC_PORT) }}
-  {{- fail "ledger.configmap.TRACER_TRANSPORT=grpc requires tracer.configmap.TRACER_GRPC_PORT to be set: the bundled tracer keeps its gRPC seam off and its Service exposes only HTTP. Set the port, or use TRACER_TRANSPORT=rest" }}
+  {{- /* From ledger 4.2.0 the ledger reaches the tracer over gRPC only: empty
+         resolves to gRPC, "grpc" is accepted, and "rest" is refused at boot
+         (CrashLoopBackOff). The chart therefore defaults to "" and refuses to
+         render "rest" while the integration is on. With TRACER_BASE_URL empty
+         the ledger disables the integration and never reads TRACER_TRANSPORT,
+         so the check is gated on it. The bundled tracer always listens on gRPC
+         (TRACER_GRPC_PORT, ":4021" when unset) and its Service always publishes
+         that port (see README, Ledger to tracer transport). */ -}}
+  {{- $tracerBaseURL := trim (toString ($cm.TRACER_BASE_URL | default "")) }}
+  {{- $tracerTransport := $cm.TRACER_TRANSPORT | default "" | toString }}
+  {{- if and $tracerBaseURL (eq (lower (trim $tracerTransport)) "rest") }}
+  {{- fail "ledger.configmap.TRACER_TRANSPORT=rest is not supported: the 4.2+ ledger reaches the tracer over gRPC only and refuses to boot with rest. Leave ledger.configmap.TRACER_TRANSPORT empty or set it to grpc" }}
+  {{- end }}
+  {{- /* Render-time mirror of the ledger seam identity gate (buildTracerSeamCredentials):
+         with the integration on, PLUGIN_AUTH_ENABLED=true and single-tenant, the
+         ledger exits at boot unless both TRACER_M2M_CLIENT_ID and
+         TRACER_M2M_CLIENT_SECRET are set. The secret is only checked when the
+         chart renders the ledger Secret: with ledger.useExistingSecret the chart
+         cannot see it, so it is left to the ledger's own boot check. Multi-tenant
+         reads the identity per tenant (M2M_SECRETS_BACKEND) and is not checked. */ -}}
+  {{- if and $tracerBaseURL (not $mtEnabled) (include "midaz.isTrue" (($authEnv | fromYaml).PLUGIN_AUTH_ENABLED | default "false")) }}
+  {{- if not (trim (toString ($cm.TRACER_M2M_CLIENT_ID | default ""))) }}
+  {{- fail "ledger.configmap.TRACER_M2M_CLIENT_ID is required when TRACER_BASE_URL is set and PLUGIN_AUTH_ENABLED=true (single-tenant): the ledger refuses to boot without the reservation seam token identity" }}
+  {{- end }}
+  {{- if and (not .Values.ledger.useExistingSecret) (not (trim (toString (.Values.ledger.secrets.TRACER_M2M_CLIENT_SECRET | default "")))) }}
+  {{- fail "ledger.secrets.TRACER_M2M_CLIENT_SECRET is required when TRACER_BASE_URL is set and PLUGIN_AUTH_ENABLED=true (single-tenant): the ledger refuses to boot without the reservation seam token identity (or provide it through ledger.useExistingSecret)" }}
+  {{- end }}
   {{- end }}
   TRACER_TRANSPORT: {{ $tracerTransport | quote }}
   TRACER_TLS_MODE: {{ $cm.TRACER_TLS_MODE | default "" | quote }}
@@ -367,7 +388,7 @@ data:
   # =============================================================================
   # BULK RECORDER
   # =============================================================================
-  BULK_RECORDER_ENABLED: {{ $cm.BULK_RECORDER_ENABLED | default "true" | quote }}
+  BULK_RECORDER_ENABLED: {{ include "midaz.flagDefaultTrue" $cm.BULK_RECORDER_ENABLED | quote }}
   BULK_RECORDER_SIZE: {{ $cm.BULK_RECORDER_SIZE | default "0" | quote }}
   BULK_RECORDER_FLUSH_TIMEOUT_MS: {{ $cm.BULK_RECORDER_FLUSH_TIMEOUT_MS | default "100" | quote }}
   BULK_RECORDER_MAX_ROWS_PER_INSERT: {{ $cm.BULK_RECORDER_MAX_ROWS_PER_INSERT | default "1000" | quote }}
@@ -400,6 +421,13 @@ data:
   BALANCE_SYNC_POLL_INTERVAL_MS: {{ $cm.BALANCE_SYNC_POLL_INTERVAL_MS | default "50" | quote }}
   # How often the cache TTL of every synced balance is refreshed (ms).
   BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS: {{ $cm.BALANCE_SYNC_TTL_KEEPALIVE_INTERVAL_MS | default "300000" | quote }}
+  # Attempts before a balance fork (Postgres version regression or value
+  # mismatch at the same version) is moved to the quarantine table.
+  BALANCE_SYNC_FORK_MAX_ATTEMPTS: {{ $cm.BALANCE_SYNC_FORK_MAX_ATTEMPTS | default "6" | quote }}
+  # Base backoff before retrying a forked balance (ms).
+  BALANCE_SYNC_FORK_BACKOFF_BASE_MS: {{ $cm.BALANCE_SYNC_FORK_BACKOFF_BASE_MS | default "1000" | quote }}
+  # Backoff ceiling for a forked balance (ms).
+  BALANCE_SYNC_FORK_BACKOFF_MAX_MS: {{ $cm.BALANCE_SYNC_FORK_BACKOFF_MAX_MS | default "600000" | quote }}
 
   # =============================================================================
   # RATE LIMITING
@@ -408,7 +436,7 @@ data:
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
   # ALLOW_RATELIMIT_DISABLED: Set a detailed reason message explaining why rate limiting is disabled (e.g., "Service processes batch jobs only, no user-facing API endpoints")
   # ALLOW_RATELIMIT_FAIL_OPEN: Set a detailed reason message to allow fail-open mode in production
-  RATE_LIMIT_ENABLED: {{ $cm.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "midaz.flagDefaultTrue" $cm.RATE_LIMIT_ENABLED | quote }}
   RATE_LIMIT_MAX: {{ $cm.RATE_LIMIT_MAX | default "500" | quote }}
   RATE_LIMIT_WINDOW_SEC: {{ $cm.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
   AGGRESSIVE_RATE_LIMIT_MAX: {{ $cm.AGGRESSIVE_RATE_LIMIT_MAX | default "100" | quote }}

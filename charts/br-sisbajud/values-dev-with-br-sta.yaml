@@ -12,9 +12,13 @@
 # Service is br-sta-manager) and the default SeaweedFS / Redpanda names. The
 # "sisbajud" bucket is created by br-sta's bucket Job (extraBuckets above).
 #
-# Wired: the STA transfer bucket and S3 endpoint (bucket parity), the br-sta
-# business-fact consumer (lerian.streaming.br-sta) and the transfers client
-# (POST /v1/transfers). Dev-only, public dummy credentials. There is no
+# Wired: the STA transfer bucket and S3 endpoint (bucket parity) and the
+# transfers client (POST /v1/transfers). The br-sta business-fact consumer
+# (lerian.streaming.br-sta) stays OFF: the Mensageria dials br-sta's cluster
+# through its own STA_STREAM_* set and requires SASL there (and TLS outside
+# development), which the br-sta dev Redpanda (no SASL) does not offer. Against a
+# real br-sta cluster set brSisbajud.sta.consumerEnabled + brSisbajud.sta.stream
+# + secrets.STA_STREAM_SASL_PASSWORD / STA_STREAM_TLS_CA_CERT. Dev-only, public dummy credentials. There is no
 # plugin-access-manager in this bundle, so the transfers client cannot mint its
 # m2m bearer: transfer submission fails until global.auth.host points at a real
 # access manager.
@@ -35,21 +39,16 @@ global:
 
 brSisbajud:
   sta:
-    consumerEnabled: true
+    consumerEnabled: false
     # = br-sta's DEFAULT_TENANT_ID (single tenant).
     expectedTenantSt: "11111111-1111-1111-1111-111111111111"
     transfersEnabled: true
     transfersBaseUrl: "http://br-sta-manager:4028"
     clientId: "br-sisbajud"
-  # GLOBAL license mode: the only value the app accepts (required everywhere).
+  # GLOBAL license mode: the only value the app accepts.
   license:
     organizationIds: "global"
   secrets:
-    # PLACEHOLDER, not a license (same as values-dev.yaml). App 1.2.0+ requires a
-    # license in every environment, with no dev bypass: the pod will not boot until
-    # a real LICENSE_KEY is set (or a dev-gateway key with
-    # brSisbajud.license.isDevelopment: "true"). Never commit a real key.
-    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
     STA_CLIENT_SECRET: "dev-only-sta-client-secret"
     # br-sta's SeaweedFS runs with S3 auth off; the SDK still signs requests.
     SEAWEEDFS_ACCESS_KEY: "any"

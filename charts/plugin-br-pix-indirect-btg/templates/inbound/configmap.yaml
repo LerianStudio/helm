@@ -48,7 +48,7 @@ data:
   OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ .Values.inbound.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT | default "development" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT_PORT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT_PORT | default "4317" | quote }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.inbound.configmap.OTEL_EXPORTER_OTLP_ENDPOINT | default "http://midaz-otel-lgtm" | quote }}
-  ENABLE_TELEMETRY: {{ .Values.inbound.configmap.ENABLE_TELEMETRY | default "true" | quote }}
+  ENABLE_TELEMETRY: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.ENABLE_TELEMETRY | quote }}
 
   # Routing Configuration
   WEBHOOK_INBOUND_BASE_URL: {{ .Values.inbound.configmap.WEBHOOK_INBOUND_BASE_URL | default (include "plugin-br-pix-indirect-btg.apiURL" .) | quote }}
@@ -80,7 +80,7 @@ data:
   # ========================================
 
   # DICT_CLAIM - PIX key claims (Medium Throughput)
-  WEBHOOK_ENTITY_DICT_CLAIM_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_DICT_CLAIM_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_ENABLED | quote }}
   WEBHOOK_ENTITY_DICT_CLAIM_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_WORKER_COUNT | default "3" | quote }}
   WEBHOOK_ENTITY_DICT_CLAIM_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_BATCH_SIZE | default "100" | quote }}
   WEBHOOK_ENTITY_DICT_CLAIM_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_POLLING_INTERVAL | default "1s" | quote }}
@@ -90,7 +90,7 @@ data:
   WEBHOOK_ENTITY_DICT_CLAIM_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CLAIM_MAX_CONCURRENT | default "4" | quote }}
 
   # INFRACTION_REPORT_V2 - Infraction reports (Medium Throughput)
-  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_INFRACTION_REPORT_V2_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_ENABLED | quote }}
   WEBHOOK_ENTITY_INFRACTION_REPORT_V2_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_WORKER_COUNT | default "2" | quote }}
   WEBHOOK_ENTITY_INFRACTION_REPORT_V2_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_BATCH_SIZE | default "50" | quote }}
   WEBHOOK_ENTITY_INFRACTION_REPORT_V2_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_POLLING_INTERVAL | default "5s" | quote }}
@@ -100,7 +100,7 @@ data:
   WEBHOOK_ENTITY_INFRACTION_REPORT_V2_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_INFRACTION_REPORT_V2_MAX_CONCURRENT | default "4" | quote }}
 
   # DICT_REFUND - PIX refunds (Medium Throughput)
-  WEBHOOK_ENTITY_DICT_REFUND_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_DICT_REFUND_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_ENABLED | quote }}
   WEBHOOK_ENTITY_DICT_REFUND_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_WORKER_COUNT | default "2" | quote }}
   WEBHOOK_ENTITY_DICT_REFUND_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_BATCH_SIZE | default "50" | quote }}
   WEBHOOK_ENTITY_DICT_REFUND_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_POLLING_INTERVAL | default "2s" | quote }}
@@ -110,7 +110,7 @@ data:
   WEBHOOK_ENTITY_DICT_REFUND_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_REFUND_MAX_CONCURRENT | default "4" | quote }}
 
   # DICT_CID_FILE - CID file processing (Low Throughput)
-  WEBHOOK_ENTITY_DICT_CID_FILE_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_DICT_CID_FILE_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_ENABLED | quote }}
   WEBHOOK_ENTITY_DICT_CID_FILE_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_DICT_CID_FILE_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_BATCH_SIZE | default "20" | quote }}
   WEBHOOK_ENTITY_DICT_CID_FILE_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_POLLING_INTERVAL | default "5s" | quote }}
@@ -120,7 +120,7 @@ data:
   WEBHOOK_ENTITY_DICT_CID_FILE_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_DICT_CID_FILE_MAX_CONCURRENT | default "2" | quote }}
 
   # PIX_DOWNLOAD - PIX downloads (High Throughput)
-  WEBHOOK_ENTITY_PIX_DOWNLOAD_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_DOWNLOAD_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_ENABLED | quote }}
   WEBHOOK_ENTITY_PIX_DOWNLOAD_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_WORKER_COUNT | default "5" | quote }}
   WEBHOOK_ENTITY_PIX_DOWNLOAD_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_BATCH_SIZE | default "200" | quote }}
   WEBHOOK_ENTITY_PIX_DOWNLOAD_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_POLLING_INTERVAL | default "500ms" | quote }}
@@ -130,7 +130,7 @@ data:
   WEBHOOK_ENTITY_PIX_DOWNLOAD_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_DOWNLOAD_MAX_CONCURRENT | default "8" | quote }}
 
   # PIX_PAYMENT - PIX payments (High Throughput)
-  WEBHOOK_ENTITY_PIX_PAYMENT_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_ENABLED | quote }}
   WEBHOOK_ENTITY_PIX_PAYMENT_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_WORKER_COUNT | default "5" | quote }}
   WEBHOOK_ENTITY_PIX_PAYMENT_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_BATCH_SIZE | default "200" | quote }}
   WEBHOOK_ENTITY_PIX_PAYMENT_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_POLLING_INTERVAL | default "500ms" | quote }}
@@ -140,7 +140,7 @@ data:
   WEBHOOK_ENTITY_PIX_PAYMENT_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_MAX_CONCURRENT | default "8" | quote }}
 
   # PIX_PAYMENT_INBOUND - PIX inbound payments (High Throughput)
-  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_ENABLED | quote }}
   WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_WORKER_COUNT | default "5" | quote }}
   WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_BATCH_SIZE | default "200" | quote }}
   WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_POLLING_INTERVAL | default "500ms" | quote }}
@@ -150,7 +150,7 @@ data:
   WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_PAYMENT_INBOUND_MAX_CONCURRENT | default "8" | quote }}
 
   # PIX_REVERSAL - PIX reversals (Medium Throughput)
-  WEBHOOK_ENTITY_PIX_REVERSAL_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_ENABLED | quote }}
   WEBHOOK_ENTITY_PIX_REVERSAL_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_WORKER_COUNT | default "2" | quote }}
   WEBHOOK_ENTITY_PIX_REVERSAL_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_BATCH_SIZE | default "50" | quote }}
   WEBHOOK_ENTITY_PIX_REVERSAL_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_POLLING_INTERVAL | default "2s" | quote }}
@@ -160,7 +160,7 @@ data:
   WEBHOOK_ENTITY_PIX_REVERSAL_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_MAX_CONCURRENT | default "4" | quote }}
 
   # PIX_REVERSAL_INBOUND - PIX inbound reversals (Medium Throughput)
-  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_ENABLED | quote }}
   WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_WORKER_COUNT | default "2" | quote }}
   WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_BATCH_SIZE | default "50" | quote }}
   WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_POLLING_INTERVAL | default "2s" | quote }}
@@ -170,7 +170,7 @@ data:
   WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_REVERSAL_INBOUND_MAX_CONCURRENT | default "4" | quote }}
 
   # FUNDS_RECOVERY - Funds Recovery (Low Throughput)
-  WEBHOOK_ENTITY_FUNDS_RECOVERY_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_FUNDS_RECOVERY_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_ENABLED | quote }}
   WEBHOOK_ENTITY_FUNDS_RECOVERY_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_FUNDS_RECOVERY_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_BATCH_SIZE | default "20" | quote }}
   WEBHOOK_ENTITY_FUNDS_RECOVERY_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_POLLING_INTERVAL | default "5s" | quote }}
@@ -180,7 +180,7 @@ data:
   WEBHOOK_ENTITY_FUNDS_RECOVERY_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_MAX_CONCURRENT | default "2" | quote }}
 
   # FUNDS_RECOVERY_EVENTS - Funds Recovery Events (Low Throughput)
-  WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_ENABLED | quote }}
   WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_BATCH_SIZE | default "20" | quote }}
   WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_POLLING_INTERVAL | default "5s" | quote }}
@@ -190,7 +190,7 @@ data:
   WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_FUNDS_RECOVERY_EVENTS_MAX_CONCURRENT | default "2" | quote }}
 
   # PAYMENT_INTRA_PSP_REFUND - Intra-PSP refunds (High Throughput)
-  WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_ENABLED | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_WORKER_COUNT | default "5" | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_BATCH_SIZE | default "200" | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_POLLING_INTERVAL | default "500ms" | quote }}
@@ -200,7 +200,7 @@ data:
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REFUND_MAX_CONCURRENT | default "8" | quote }}
 
   # PAYMENT_INTRA_PSP_REPORT - Intra-PSP reports (Low Throughput)
-  WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_ENABLED | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_BATCH_SIZE | default "20" | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_POLLING_INTERVAL | default "5s" | quote }}
@@ -210,7 +210,7 @@ data:
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_REPORT_MAX_CONCURRENT | default "2" | quote }}
 
   # PAYMENT_INTRA_PSP_TRANSFER - Intra-PSP transfers (High Throughput)
-  WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_ENABLED | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_WORKER_COUNT | default "5" | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_BATCH_SIZE | default "200" | quote }}
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_POLLING_INTERVAL | default "500ms" | quote }}
@@ -220,7 +220,7 @@ data:
   WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PAYMENT_INTRA_PSP_TRANSFER_MAX_CONCURRENT | default "8" | quote }}
 
   # PIX_INTERNAL_TRANSACTIONS_REPORT - Internal transactions report (Low Throughput)
-  WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_ENABLED | quote }}
   WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_BATCH_SIZE | default "20" | quote }}
   WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_POLLING_INTERVAL | default "5s" | quote }}
@@ -230,7 +230,7 @@ data:
   WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_INTERNAL_TRANSACTIONS_REPORT_MAX_CONCURRENT | default "2" | quote }}
 
   # PIX_RECURRENCE_PAYER - Pix recurrence payer webhooks (Low Throughput)
-  WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_ENABLED | quote }}
   WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_BATCH_SIZE | default "50" | quote }}
   WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_POLLING_INTERVAL | default "5s" | quote }}
@@ -240,7 +240,7 @@ data:
   WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_PAYER_MAX_CONCURRENT | default "2" | quote }}
 
   # PIX_RECURRENCE_COLLECTION - Pix recurrence collection webhooks (Low Throughput)
-  WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_ENABLED | quote }}
   WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_BATCH_SIZE | default "50" | quote }}
   WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_POLLING_INTERVAL | default "5s" | quote }}
@@ -250,7 +250,7 @@ data:
   WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_PIX_RECURRENCE_COLLECTION_MAX_CONCURRENT | default "2" | quote }}
 
   # SCHEDULE_TERMINAL_EVENT - Schedule terminal events intra-PSP (Low Throughput)
-  WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_ENABLED | quote }}
   WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_BATCH_SIZE | default "50" | quote }}
   WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_POLLING_INTERVAL | default "5s" | quote }}
@@ -260,7 +260,7 @@ data:
   WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_MAX_CONCURRENT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_SCHEDULE_TERMINAL_EVENT_MAX_CONCURRENT | default "2" | quote }}
 
   # CASHOUT_TERMINAL_EVENT - Cashout terminal events intra-PSP (Low Throughput)
-  WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_ENABLED: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_ENABLED | default "true" | quote }}
+  WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_ENABLED | quote }}
   WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_WORKER_COUNT: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_WORKER_COUNT | default "1" | quote }}
   WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_BATCH_SIZE: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_BATCH_SIZE | default "50" | quote }}
   WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_POLLING_INTERVAL: {{ .Values.inbound.configmap.WEBHOOK_ENTITY_CASHOUT_TERMINAL_EVENT_POLLING_INTERVAL | default "5s" | quote }}
@@ -272,9 +272,9 @@ data:
   # Security Tier Configuration (lib-commons v4.4.0)
   SECURITY_TIER: {{ .Values.inbound.configmap.SECURITY_TIER | default "" | quote }}
   SECURITY_ENFORCEMENT: {{ .Values.inbound.configmap.SECURITY_ENFORCEMENT | default "false" | quote }}
-  ALLOW_INSECURE_TLS: {{ .Values.inbound.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.ALLOW_INSECURE_TLS | quote }}
   ALLOW_CORS_WILDCARD: {{ .Values.inbound.configmap.ALLOW_CORS_WILDCARD | default "" | quote }}
-  RATE_LIMIT_ENABLED: {{ .Values.inbound.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.RATE_LIMIT_ENABLED | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.inbound.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
   # Extra Env Vars

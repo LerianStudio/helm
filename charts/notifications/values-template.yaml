@@ -57,6 +57,8 @@ secretRef:
   name: ""
 
 config:
+  # Only `production` enables the application's production checks (Swagger off,
+  # rate limiting forced on, dev encryption keys and sslmode=disable refused).
   ENV_NAME: "firmino"
   LOG_LEVEL: "info"
   POSTGRES_HOST: ""
@@ -69,7 +71,13 @@ config:
   RABBITMQ_HOST: ""
   RABBITMQ_PORT_AMQP: "5672"
 
+# Required: the application will not boot without the two encryption keys, and
+# the migrations Job needs DATABASE_URL while `migrations.enabled` is true.
+# Generate keys with `openssl rand -base64 32`.
 secrets:
+  DATABASE_URL: ""                          # postgres://USER:PASSWORD@HOST:PORT/DB?sslmode=require (URL-escaped)
+  NOTIFICATION_ENCRYPTION_KEY: ""           # base64, 32 bytes
+  NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY: ""  # base64, 32 bytes
   POSTGRES_PASSWORD: ""
   REDIS_PASSWORD: ""
   RABBITMQ_URL: ""

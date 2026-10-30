@@ -404,7 +404,8 @@ decisoes SEPARADAS. Um ambiente que ja rode node-exporter mantem
 `node-exporter.enabled: false` e aponta aqui para o existente — foi o caso medido
 na benedita, que roda `prometheus-prometheus-node-exporter` ha 40 dias.
 
-Vazio + subchart habilitado => deriva o Service do subchart.
+Vazio + subchart habilitado => deriva o Service do subchart (`<release>-node-exporter`;
+o subchart roda sob o alias `node-exporter`, entao o nome nao leva `prometheus-`).
 Vazio + subchart desabilitado => nao ha o que raspar, e o chart avisa.
 */}}
 {{- define "alloy-lerian.nodeExporterTarget" -}}
@@ -414,7 +415,21 @@ Vazio + subchart desabilitado => nao ha o que raspar, e o chart avisa.
 {{- else -}}
 {{- $ne := index .Values "node-exporter" | default dict -}}
 {{- if $ne.enabled -}}
-{{- printf "%s-prometheus-node-exporter.%s.svc.cluster.local:9100" .Release.Name .Release.Namespace -}}
+{{- /* Nome do Service como o subchart o renderiza: o ALIAS `node-exporter` vira
+       `.Chart.Name` la dentro, entao nao ha `prometheus-` no nome. Espelha o
+       helper `prometheus-node-exporter.fullname` (fullnameOverride, nameOverride
+       e "release ja contem o nome") e `namespaceOverride`. */ -}}
+{{- $nome := default "node-exporter" $ne.nameOverride -}}
+{{- $svc := "" -}}
+{{- if $ne.fullnameOverride -}}
+{{- $svc = $ne.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else if contains $nome .Release.Name -}}
+{{- $svc = .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $svc = printf "%s-%s" .Release.Name $nome | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- $ns := default .Release.Namespace $ne.namespaceOverride -}}
+{{- printf "%s.%s.svc.cluster.local:9100" $svc $ns -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

@@ -65,6 +65,7 @@ empty — set a key there only to override its shipped default).
 | `configmap.MIDAZ_CONSOLE_PORT` | Console port | `8081` |
 | `configmap.MIDAZ_BASE_PATH` | Midaz API base path | `http://midaz-ledger.midaz.svc.cluster.local:3002/v1` |
 | `configmap.NEXTAUTH_URL` | Public URL NextAuth uses for OAuth callbacks | `ingress.hosts[0].host` (as `https://<host>`) when ingress is enabled with a host, else `http://localhost:8081` |
+| `configmap.ALLOWED_ORIGINS` | Comma list of origins the console's CSRF guard accepts on mutating requests; empty blocks every write. Defaults to the ingress origin, not to `NEXTAUTH_URL` | `https://<first ingress host>` when ingress is enabled with a host, else empty (set it explicitly) |
 | `configmap.TRUSTED_PROXIES` | Comma list of CIDRs the console trusts as its own hops, see [Client IP resolution](#client-ip-resolution) | unset (no client IP is resolved) |
 | `configmap.PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address used for the SSO redirect, see [Keys with no default](#keys-with-no-default) | unset (falls back to the cluster-internal `PLUGIN_AUTH_BASE_PATH`) |
 | `configmap.MIDAZ_V2_BASE_PATH` | Address of the midaz ledger's `/v2` contract, where fees live, see [Keys with no default](#keys-with-no-default) | unset (the fees screens have no address) |
@@ -74,7 +75,7 @@ empty — set a key there only to override its shipped default).
 | `spread` | Field-level override of `global.scheduling.spread` for the console Deployment | `{}` |
 | `topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
-| `secrets.NEXTAUTH_SECRET` | NextAuth secret (must be supplied for production) | `""` |
+| `secrets.NEXTAUTH_SECRET` | NextAuth secret. Required: the published console image exits at startup when it is empty | `""` |
 | `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the password this chart keeps for it, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
 | `secrets.PLUGIN_AUTH_CLIENT_ID` | Alternative to `configmap.PLUGIN_AUTH_CLIENT_ID` when the client_id shouldn't sit in a ConfigMap; when set, the ConfigMap key is omitted | `""` |
 
@@ -199,8 +200,8 @@ wrong:
 stamps `X-Client-Ip-Resolution: unresolved; reason=trusted-proxies-not-configured`
 on its calls to Lerian backends. That header is always `unresolved; reason=<cause>`
 and never the bare word `unresolved`, so a detection rule written as an exact
-match on `unresolved` never fires. At app image `1.12.0`, the version this chart
-deploys, there are SEVEN causes. Five report the trust boundary itself:
+match on `unresolved` never fires. In the app image this chart deploys (`image.tag`
+in `values.yaml`), there are SEVEN causes. Five report the trust boundary itself:
 `trusted-proxies-not-configured`, `forwarded-for-absent`,
 `forwarded-for-malformed`, `all-hops-trusted` and `unresolved-upstream`. Two
 more report that the resolver never got to run: `request-headers-unavailable`
@@ -208,11 +209,10 @@ and `client-ip-extraction-failed`. A rule enumerating only the first five misses
 exactly the two cases that mean the console is broken rather than
 under-configured.
 
-**The header does not reach every backend, on purpose.** At app image `1.12.0`,
-12 of the console's 14 outbound services stamp it. The two that do not are the
-Slack webhook and the Pix indirect rail, and both omissions are a deliberate
-privacy boundary the console holds under test: at that tag,
-`forward-client-ip-exclusions.test.ts` asserts that neither service sends the
+**The header does not reach every backend, on purpose.** Every outbound
+service stamps it except two: the Slack webhook and the Pix indirect rail. Both
+omissions are a deliberate privacy boundary the console holds under test: its
+own suite, in `forward-client-ip-exclusions.test.ts`, asserts that neither service sends the
 header "even when a real client IP IS resolvable", because the client IP is
 personal data and the Pix indirect rail terminates at BTG, an external bank. Do
 not read those two as missing hops to be closed: traffic on them is out of scope
@@ -305,13 +305,17 @@ or `mongodb.enabled: false` if the bundled database was never wanted.
 
 **Readiness does not gate on MongoDB by default.** `readinessProbe.path`
 defaults to `/api/admin/health/alive`. The MongoDB-aware endpoint,
-`/api/admin/health/readyz`, returns 200 only once the app has connected, and
-app image `1.12.0` connects on the first request that needs the database rather
-than at startup. Readiness on `readyz` therefore deadlocks a fresh pod: not
-Ready, so no traffic, so no connection, so never Ready. Measured on image
-`1.12.0`: `readyz` stays 503 (`readyState=0`) for as long as the pod is left
-alone, and turns 200 within three seconds of the first request to a
-MongoDB-backed route.
+`/api/admin/health/readyz`, returns 200 only while the app holds a MongoDB
+connection. Console images before 2.0 opened that connection on the first
+request that needed the database rather than at startup, so readiness on
+`readyz` deadlocked a fresh pod: not Ready, so no traffic, so no connection, so
+never Ready (`readyz` stayed 503 with `readyState=0` until the first request to
+a MongoDB-backed route). That is why the chart defaults to `alive`. From 2.0 on
+the console connects at startup, before it serves anything: it retries, and
+exits non-zero if every attempt fails (`src/instrumentation.ts` in the console
+repository). The deadlock therefore does not apply to the image this chart pins
+(`image.tag` in `values.yaml`); the chart keeps `alive` as the default anyway,
+because changing it would change behavior on existing installs.
 
 **What that default costs you, plainly.** Readiness no longer detects the
 database. A MongoDB outage does not withdraw a pod from the Service: every
@@ -320,9 +324,10 @@ answer 500 rather than being routed away, and an install whose database is
 unusable still reports `STATUS: deployed`. Scrape `/api/admin/health/readyz` and
 alert on it, because it remains the honest report of whether a pod can serve a
 MongoDB-backed page; it is only no longer wired to anything that acts on it. Set
-`readinessProbe.path: /api/admin/health/readyz` to get that detection back, and
-only on an app image whose `readyz` opens the connection it reports on: on image
-`1.12.0` it never does, and the pod deadlocks as above. Keep liveness on a
+`readinessProbe.path: /api/admin/health/readyz` to get that detection back. Per
+the app source that is safe on the pinned image, which connects at startup (not
+exercised on a cluster here); never set it on a console image older than 2.0,
+where the pod deadlocks as above. Keep liveness on a
 MongoDB-independent path, or a database outage becomes a crash-loop.
 
 ### Managed Cloud (`global.cloud`)
@@ -356,9 +361,14 @@ browser key is rendered as given and is never compared with the server value,
 so `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: "TRUE"` next to an enabled server yields
 server ON and browser OFF. Leave the browser key unset, or set both to the same
 word. A staging or production release MUST set `global.auth.enabled: true` (or
-the native key) on purpose; the console does not fail closed on a missing
-switch (product decision, 2026-09-12, recorded in the console repository's
-[`SECURITY.md`](https://github.com/LerianStudio/product-console/blob/develop/SECURITY.md)).
+the native key) on purpose. The published console image is a production build
+and refuses to start when `PLUGIN_AUTH_ENABLED` and `OAUTH_ENABLED` are both
+not the word `true`: it logs one `[startup] FATAL` line and exits 1, so a
+release left on the chart default `false` crash-loops instead of serving an
+open console. `OAUTH_ENABLED=true` alone starts the pod, with sessions required
+and no permission checks or bearer forwarding; the chart declares no key for
+it, so it can only be set through `extraEnvVars`. See the console repository's
+[`SECURITY.md`](https://github.com/LerianStudio/product-console/blob/develop/SECURITY.md).
 
 `global.cloud: aws` also applies automatically (no chart change needed): it
 sets `MONGO_PARAMETERS` to the real DocumentDB connection-string shape

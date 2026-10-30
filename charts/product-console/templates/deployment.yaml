@@ -127,23 +127,25 @@ spec:
             timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds | default 5 }}
             successThreshold: {{ .Values.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.livenessProbe.failureThreshold | default 3 }}
-          {{- /* Readiness defaults to the Mongo-INDEPENDENT endpoint because the
-             image this chart pins connects to MongoDB on the first request that
-             needs it, not at startup. With readiness on /api/admin/health/readyz
-             a fresh pod deadlocks: it is not Ready, so the Service sends it no
-             traffic, so it never opens the connection, so readyz never returns
-             200 and the pod is never Ready. Measured on lerianstudio/product-
-             console:1.12.0: readyz answers 503 (readyState=0) for as long as the
-             pod is left alone, and 200 within three seconds of the first request
-             to a Mongo-backed route. 4.0.1 is the release that made readyz the
+          {{- /* Readiness defaults to the Mongo-INDEPENDENT endpoint because
+             console images before 2.0 connected to MongoDB on the first request
+             that needed it, not at startup. With readiness on
+             /api/admin/health/readyz a fresh pod deadlocked: it is not Ready, so
+             the Service sends it no traffic, so it never opens the connection,
+             so readyz never returns 200 and the pod is never Ready (measured on
+             lerianstudio/product-console:1.12.0: 503 with readyState=0 until the
+             first Mongo-backed request). From 2.0 on the console connects at
+             startup (src/instrumentation.ts), so this no longer applies to the
+             image pinned in image.tag; the default stays on alive so existing
+             installs are unchanged. 4.0.1 is the release that made readyz the
              readiness default; 4.0.3 is the release that first described the
              deadlock, written into docs/UPGRADE-4.0.1.md and NOTES.txt by one
              commit, and both prescribe this arm. 4.0.1 shipped that default
              with nothing written down; 4.0.2 documented it at length in
              docs/UPGRADE-4.0.1.md, as an improvement, and mentions the deadlock
              nowhere. Point readinessProbe.path back at
-             "/api/admin/health/readyz" once the image connects eagerly, to have
-             readiness gate on the database again. */}}
+             "/api/admin/health/readyz" (only on a console image from 2.0 on) to
+             have readiness gate on the database again. */}}
           readinessProbe:
             httpGet:
               path: {{ .Values.readinessProbe.path | default "/api/admin/health/alive" }}

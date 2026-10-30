@@ -38,7 +38,7 @@
           "properties": {
             "name": {}
           },
-          "description": "Env-wide environment name. Consumed by lerian-common.globalValue (block \"env\")."
+          "description": "Env-wide environment name, read by templates/configmap.yaml."
         },
         "multiTenant": {
           "type": "object",
@@ -223,10 +223,6 @@
       "additionalProperties": true
     },
     "rabbitmq": {
-      "type": "object",
-      "additionalProperties": true
-    },
-    "br-bank-transfer": {
       "type": "object",
       "additionalProperties": true
     }

@@ -20,9 +20,15 @@ global:
   # -- Env-wide Access Manager gate/host (global.auth). Do NOT also pin
   # configmap.PLUGIN_AUTH_ENABLED/PLUGIN_AUTH_HOST — a native key wins over
   # this mask and defeats it.
+  # The chart default for enabled is "false" (authorization OFF), and this
+  # template keeps it so the file renders as-is. The published console image
+  # refuses to start in production with authorization off (exit 1), so set
+  # "true" for any real install, and then fill the PLUGIN_AUTH_CLIENT_* values
+  # below. Leave host COMMENTED OUT unless you point at a different Access
+  # Manager: an empty string here wins over the chart's own default host.
   auth:
     enabled: "false"
-    host: ""
+    # host: "plugin-access-manager-auth.plugin-access-manager.svc.cluster.local"
   # -- Env-wide telemetry gate (global.observability). Do NOT also pin
   # configmap.ENABLE_TELEMETRY — a native key wins over this mask.
   observability:
@@ -33,9 +39,11 @@ replicaCount: 1
 image:
   # -- Repository for the product-console container image
   repository: lerianstudio/product-console
-  # -- Image pull policy
+  # -- Image pull policy (chart default in values.yaml is IfNotPresent;
+  # Always here is a template choice, not the chart default)
   pullPolicy: Always
-  # -- Image tag used for deployment
+  # -- Image tag used for deployment. Empty means Chart.AppVersion; the chart's
+  # own pin is image.tag in values.yaml.
   tag: ""
 
 imagePullSecrets: []
@@ -62,21 +70,22 @@ configmap:
 
   # OpenTelemetry Configuration
   # ENABLE_TELEMETRY is set via global.observability.enabled above — do not pin it here.
-  OTEL_HOST: ""
+  # OTEL_HOST and OTEL_URL_METRICS/TRACES/LOGS are NOT configmap keys: the
+  # ConfigMap template drops them silently. The Deployment injects them when
+  # otel.enabled or otel.external is true, built from the top-level otel.host
+  # and otel.port values (see values.yaml). Telemetry on without one of those
+  # two switches fails the render.
   OTEL_RECEIVER_HTTP_PORT: "4318"
-  OTEL_URL_METRICS: ""
-  OTEL_URL_TRACES: ""
-  OTEL_URL_LOGS: ""
 
   # NextAuth Configuration
   NEXTAUTH_URL: ""
 
   # Midaz API Configuration
   MIDAZ_API_HOST: ""
-  MIDAZ_API_PORT: "3000"
+  MIDAZ_API_PORT: "3002"
   MIDAZ_BASE_PATH: ""
   MIDAZ_TRANSACTION_BASE_HOST: ""
-  MIDAZ_TRANSACTION_BASE_PORT: "3001"
+  MIDAZ_TRANSACTION_BASE_PORT: "3002"
   MIDAZ_TRANSACTION_BASE_PATH: ""
 
   # Plugin Auth Configuration
@@ -143,7 +152,9 @@ configmap:
 
   # NextJS Public Configuration
   NEXT_PUBLIC_MIDAZ_CONSOLE_AVATAR_ALLOWED_FORMAT: "jpeg,jpg,png,svg"
-  NEXT_PUBLIC_PLUGIN_AUTH_ENABLED: "false"
+  # NEXT_PUBLIC_PLUGIN_AUTH_ENABLED is left unset on purpose: the chart then
+  # copies the server value (global.auth.enabled above). Pinning it here would
+  # be used verbatim and could split the browser from the server.
   NEXT_PUBLIC_MIDAZ_VERSION: ""
 
 # -- Extra environment variables

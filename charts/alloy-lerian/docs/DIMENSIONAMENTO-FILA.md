@@ -106,9 +106,10 @@ destination:
   queue:
     size: 105000        # calculado pela tabela
 node:
-  resources:
-    limits:
-      memory: 512Mi     # só mude se a tabela pedir
+  alloy:
+    resources:
+      limits:
+        memory: 512Mi   # só mude se a tabela pedir
 ```
 
 ⚠️ **É DaemonSet: o limite se multiplica por nó.** Subir de 512 Mi para 1 Gi num

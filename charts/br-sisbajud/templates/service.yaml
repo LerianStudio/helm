@@ -13,10 +13,19 @@ metadata:
 spec:
   type: {{ .Values.brSisbajud.service.type | default "ClusterIP" }}
   ports:
-    - port: {{ .Values.brSisbajud.service.port | default 4029 }}
+    - port: {{ .Values.brSisbajud.service.port | default 4031 }}
       targetPort: http
       protocol: TCP
       name: http
+    {{- $ex := include "br-sisbajud.execution" . | fromYaml }}
+    {{- if $ex.enabled }}
+    # Execution API for plugin-br-sisbajud: https://<this Service>:<port> (TLS
+    # terminated in the pod; the server cert SANs must match the name dialed).
+    - port: {{ $ex.port }}
+      targetPort: execution
+      protocol: TCP
+      name: execution
+    {{- end }}
   selector:
     {{- include "br-sisbajud.selectorLabels" . | nindent 4 }}
 {{- end -}}

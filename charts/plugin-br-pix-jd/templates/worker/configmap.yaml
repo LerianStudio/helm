@@ -9,6 +9,7 @@
    different Postgres than the api would reconcile money against the wrong ledger. */ -}}
 {{- $platform := fromYaml (include "plugin-br-pix-jd.platformEnv" (dict "root" $ "configmap" .Values.worker.configmap "serviceName" "plugin-br-pix-jd-worker")) -}}
 {{- $domain := fromYaml (include "plugin-br-pix-jd.domainEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
+{{- $qrcode := fromYaml (include "plugin-br-pix-jd.qrcodeEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
 {{- $cron := fromYaml (include "plugin-br-pix-jd.workerCronEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
 {{- $mt := fromYaml (include "plugin-br-pix-jd.multiTenantEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
 {{- $streaming := fromYaml (include "plugin-br-pix-jd.streamingEnv" (dict "root" $ "configmap" .Values.worker.configmap "graceSeconds" .Values.worker.terminationGracePeriodSeconds)) -}}
@@ -19,7 +20,7 @@
 {{- /* NO rate-limit, CORS, Swagger or SERVER_ADDRESS block here: cmd/worker has no HTTP
    listener at all, so those keys would be inert noise the operator has to reason about.
    The worker's own surface is the cron cadence. */ -}}
-{{- $data := mergeOverwrite $platform $domain $cron $mt $streaming $systemFacts (.Values.worker.extraConfigmap | default dict) -}}
+{{- $data := mergeOverwrite $platform $domain $qrcode $cron $mt $streaming $systemFacts (.Values.worker.extraConfigmap | default dict) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

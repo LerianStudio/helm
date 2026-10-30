@@ -42,6 +42,11 @@ global:
   # Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
   auth: {}
+  # -- Env-wide Access Manager permission declaration (RI), manager only. Consumed by
+  # lerian-common.idp.env (block "idp"). Fields: declarationEnabled, host.
+  # (manager.configmap.IDP_DECLARATION_ENABLED / IDP_HOST override.)
+  # Example: idp: { host: "http://plugin-access-manager-identity.<ns>.svc.cluster.local:4001" }
+  idp: {}
   # -- Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when
   # streaming is enabled. Fields: enabled, brokers, saslUsername, tlsEnabled, compression,
   # requiredAcks, ... (brokers gates emission). Per-app identity (client-id / cloudevents-source)
@@ -150,7 +155,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.5.0"
+    tag: "4.5.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -307,6 +312,13 @@ manager:
     # request. Set it to the ingress / load-balancer addresses actually in front of this
     # service.
     TRUSTED_PROXIES: ""
+    # -- Access Manager permission declaration (lib-auth declaration.WireFromEnv). With
+    # IDP_DECLARATION_ENABLED="true" the manager publishes its permission manifest at boot and
+    # refuses to start without IDP_HOST and the client pair (top-level `secrets.IDP_M2M_CLIENT_ID`
+    # / `secrets.IDP_M2M_CLIENT_SECRET`, rendered into the manager Secret only). Rendered by
+    # lerian-common.idp.env: manager.configmap > manager.extraEnvVars > common.configmap > global.idp.
+    # IDP_DECLARATION_ENABLED: "false"
+    # IDP_HOST: ""   # e.g. http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001
   # Extra Env Vars
   extraEnvVars: {}
   # -- HPA configuration (used when KEDA is disabled)
@@ -348,7 +360,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.5.0"
+    tag: "4.5.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -803,7 +815,8 @@ mongodb:
     rootPassword: ""
     # -- Secret with the root password. The default points the subchart at the one this chart keeps
     # across uninstall (templates/mongodb-secrets.yaml); reporter's own templates read it as empty. Name yours to replace it.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   persistence:
     size: 8Gi
     # -- The data volume outlives the release: helm uninstall keeps it.

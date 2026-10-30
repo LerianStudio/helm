@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v0.x to v1.x
 
 ## Topics
@@ -18,7 +19,7 @@
 
 ## Overview
 
-This guide covers the `lerian-notification` chart upgrade from `0.1.0` to `1.0.0-beta.3`. The application image (`appVersion: 0.1.0`) is unchanged, but the chart is now production-shaped: the migrations Job is rewritten for distroless, the security context defaults align with the Kubernetes Pod Security Standards restricted profile, and several rendering bugs (HPA, PDB, Redis defaults) are fixed.
+This guide covers the `notifications` chart (published as `notifications-helm`; formerly `lerian-notification` / `lerian-notification-helm`) upgrade from `0.1.0` to `1.0.0-beta.4`. The changes described below were introduced up to `1.0.0-beta.3`. The application image (`appVersion: 0.1.0`) is unchanged, but the chart is now production-shaped: the migrations Job is rewritten for distroless, the security context defaults align with the Kubernetes Pod Security Standards restricted profile, and several rendering bugs (HPA, PDB, Redis defaults) are fixed.
 
 This is a **breaking** chart upgrade. A new value, `secrets.DATABASE_URL`, is required when `migrations.enabled` is true. Read [Migration Steps](#migration-steps) before upgrading.
 
@@ -26,7 +27,7 @@ This is a **breaking** chart upgrade. A new value, `secrets.DATABASE_URL`, is re
 
 ### 1. Migrations Job rewritten to invoke `/migrate` directly
 
-Previously the migrations Job ran a `/bin/sh -ec` script that assembled a DSN at runtime from `POSTGRES_*` env vars (URL-encoding the password with `od | sed`). Starting at `lerian-notification` v1.0.0-beta.2 the API image is distroless and bundles a static `/migrate` binary; there is no shell to run the old script.
+Previously the migrations Job ran a `/bin/sh -ec` script that assembled a DSN at runtime from `POSTGRES_*` env vars (URL-encoding the password with `od | sed`). Starting at chart v1.0.0-beta.2 the API image is distroless and bundles a static `/migrate` binary; there is no shell to run the old script.
 
 The Job now:
 
@@ -62,7 +63,7 @@ These are added on top of the existing `runAsNonRoot`, `runAsUser: 65532`, `runA
 
 ### 4. Deterministic ConfigMap / Secret key ordering
 
-`templates/configmap.yaml` and `templates/secret.yaml` now iterate keys via `keys ... | sortAlpha` instead of ranging over the map directly. Rendered output is stable, so identical values no longer produce a diff because of Go map iteration order. `extraConfig` also now applies the same version-key exclusion (`VERSION`, `OTEL_RESOURCE_SERVICE_VERSION`, `SWAGGER_VERSION`) that `config` already had.
+`templates/configmap.yaml` and `templates/secrets.yaml` now iterate keys via `keys ... | sortAlpha` instead of ranging over the map directly. Rendered output is stable, so identical values no longer produce a diff because of Go map iteration order. `extraConfig` also now applies the same version-key exclusion (`VERSION`, `OTEL_RESOURCE_SERVICE_VERSION`, `SWAGGER_VERSION`) that `config` already had.
 
 ### 5. HPA fails fast when autoscaling is enabled without a target metric
 
@@ -97,17 +98,19 @@ Summary of `values.yaml` impact:
 | Changed | `config.REDIS_MAX_RETRY_BACKOFF` `"1"` -> `"8"` |
 | Removed | none |
 
-Chart files modified between `0.1.0` and `1.0.0-beta.3`:
+Chart files modified between `0.1.0` and `1.0.0-beta.3` (paths as they are now; the chart directory was `charts/lerian-notification/` at the time):
 
-- `charts/lerian-notification/Chart.yaml`
-- `charts/lerian-notification/values.yaml`
-- `charts/lerian-notification/templates/configmap.yaml`
-- `charts/lerian-notification/templates/secret.yaml`
-- `charts/lerian-notification/templates/migrations-job.yaml`
-- `charts/lerian-notification/templates/api/hpa.yaml`
-- `charts/lerian-notification/templates/api/pdb.yaml`
+- `charts/notifications/Chart.yaml`
+- `charts/notifications/values.yaml`
+- `charts/notifications/templates/configmap.yaml`
+- `charts/notifications/templates/secrets.yaml`
+- `charts/notifications/templates/migrations-job.yaml`
+- `charts/notifications/templates/api/hpa.yaml`
+- `charts/notifications/templates/api/pdb.yaml`
 
 ## Migration Steps
+
+> **Assumed identity.** The commands in this guide use release `notifications` in namespace `notifications`. The previous guide used release `lerian-notification` in namespace `lerian-notification`. If your installation still has that identity, substitute your own release name and namespace in every `helm` and `kubectl` command.
 
 1. **Build `DATABASE_URL` before upgrading.** Choose one:
    - Inline via values: set `secrets.DATABASE_URL` to a URL-escaped Postgres DSN.
@@ -120,17 +123,17 @@ Chart files modified between `0.1.0` and `1.0.0-beta.3`:
 6. Run the upgrade. The migrations Job runs as a `pre-install` / `pre-upgrade` hook; verify it completed before checking app pods:
 
 ```bash
-kubectl get jobs -n lerian-notification
-kubectl logs -n lerian-notification job/<migrations-job-name>
-kubectl rollout status -n lerian-notification deploy/<api-deployment-name>
+kubectl get jobs -n notifications
+kubectl logs -n notifications job/<migrations-job-name>
+kubectl rollout status -n notifications deploy/<api-deployment-name>
 ```
 
-> **Note:** Hook Jobs are removed on success. If the upgrade aborts mid-flight, you can inspect the last failed hook with `helm history -n lerian-notification lerian-notification` and `kubectl get events -n lerian-notification`.
+> **Note:** Hook Jobs are removed on success. If the upgrade aborts mid-flight, you can inspect the last failed hook with `helm history -n notifications notifications` and `kubectl get events -n notifications`.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade lerian-notification oci://registry-1.docker.io/lerianstudio/lerian-notification-helm --version 1.0.0-beta.3 -n lerian-notification
+helm diff upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.0.0-beta.4 -n notifications
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -138,5 +141,6 @@ helm diff upgrade lerian-notification oci://registry-1.docker.io/lerianstudio/le
 ## Command to upgrade
 
 ```bash
-helm upgrade lerian-notification oci://registry-1.docker.io/lerianstudio/lerian-notification-helm --version 1.0.0-beta.3 -n lerian-notification
+helm upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.0.0-beta.4 -n notifications
 ```
+<!-- {% endraw %} -->

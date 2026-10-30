@@ -1,6 +1,8 @@
-# Default values for the br-sisbajud (SISBAJUD plugin) chart.
-# Single-service chart: one Go binary (HTTP API + background workers in one
-# process).
+# Default values for the br-sisbajud chart: the Sisbajud Mensageria (the
+# regulatory side of SISBAJUD: STA intake, return files, BACEN) built from
+# LerianStudio/br-sfn services/sisbajud. Single-service chart: one Go binary
+# serving the main HTTP API, the execution API (its own TLS listener, called by
+# plugin-br-sisbajud) and the background workers in one process.
 #
 # Configuration precedence for every application env key (lerian-common):
 #
@@ -61,16 +63,23 @@ global:
   # Example: observability: { enabled: true }
   observability: {}
   # -- Env-wide auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
+  # PLUGIN_AUTH_ENABLED=false is accepted by the app ONLY with a development-class
+  # ENV_NAME (development|develop|dev|local|test) and DEPLOYMENT_MODE != saas; the
+  # render refuses it anywhere else. Either way the bearer is verified locally:
+  # see brSisbajud.auth.jwtIssuer / jwtVerifyCert*.
   # Example: auth: { enabled: true, host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000" }
   auth: {}
   # -- Env-wide streaming (lib-streaming / Redpanda / Kafka): enabled | brokers |
   # tlsEnabled | saslMechanism | saslUsername | saslAllowPlaintext | compression |
   # requiredAcks | batchLingerMs | importantEmitTimeoutMs. SASL password and CA
   # cert are secrets: brSisbajud.secrets.STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT.
-  # On by default (needs OUTBOX_ENABLED=true, also the default). With it on the
-  # render requires brokers; in a production-like environment tlsEnabled: true;
-  # with TLS, secrets.STREAMING_TLS_CA_CERT; with a saslMechanism, saslUsername +
-  # secrets.STREAMING_SASL_PASSWORD. Set enabled: false to run without a broker.
+  # On by default and REQUIRED: the Mensageria refuses to boot with
+  # STREAMING_ENABLED=false (R-03: the execution releaser needs a real emitter,
+  # or the plugin never learns of a released order), and it needs
+  # OUTBOX_ENABLED=true (the default). The render requires brokers; in a
+  # production-like environment tlsEnabled: true; with TLS,
+  # secrets.STREAMING_TLS_CA_CERT; with a saslMechanism, saslUsername +
+  # secrets.STREAMING_SASL_PASSWORD.
   # Example:
   #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sisbajud" }
   streaming:
@@ -81,7 +90,9 @@ global:
   multiTenant: {}
   # -- Env-wide KMS (lerian-common.kms.value): vendor | vaultAddr | vaultAuthMethod |
   # vaultRoleId | vaultMount. vendor: hashicorp-vault (default) | aws.
-  # br-sisbajud also reads awsRegion here when vendor=aws. The AppRole secret-id
+  # br-sisbajud also reads awsRegion, awsKeyMode and awsKeyArn here when vendor=aws
+  # (precedence: brSisbajud.configmap > brSisbajud.kms > global.kms; see brSisbajud.kms).
+  # allowUnverifiableImageTag is NOT read here (only brSisbajud.kms). The AppRole secret-id
   # and the Vault token are secrets: brSisbajud.secrets.VAULT_APPROLE_SECRET_ID / VAULT_TOKEN.
   # Example:
   #   kms: { vendor: "hashicorp-vault", vaultAddr: "https://vault.internal:8200", vaultAuthMethod: "approle", vaultRoleId: "<role-id>", vaultMount: "transit" }
@@ -114,7 +125,7 @@ securityContext:
     type: RuntimeDefault
 
 # =============================================================================
-# brSisbajud — the single SISBAJUD service component.
+# brSisbajud — the Sisbajud Mensageria service component.
 # =============================================================================
 brSisbajud:
   enabled: true
@@ -134,9 +145,63 @@ brSisbajud:
     maxUnavailable: 1
   service:
     type: ClusterIP
-    # Matches the Dockerfile EXPOSE 4029; SERVER_ADDRESS defaults to 0.0.0.0:<port>.
-    port: 4029
+    # The main HTTP API (admin, institutions, /health, /readyz). Matches the
+    # Mensageria default SERVER_ADDRESS :4031 (Dockerfile EXPOSE 4031);
+    # SERVER_ADDRESS defaults to 0.0.0.0:<port>. The execution API listens on its
+    # own port (brSisbajud.execution.port), exposed on this same Service as the
+    # `execution` port.
+    port: 4031
     annotations: {}
+
+  # ---------------------------------------------------------------------------
+  # Execution API (FC-3): the dedicated TLS listener plugin-br-sisbajud calls
+  # (/v1/sisbajud/execution/*). TLS is ALWAYS on and terminated IN the pod (the
+  # app has no plain-HTTP or upstream-TLS mode for it, and refuses to boot
+  # without the server certificate and key); a bearer token is always required.
+  # The Service exposes it as port `execution` (default 4032), so the plugin
+  # reaches it at https://<fullname>.<namespace>.svc.cluster.local:4032 — the
+  # server certificate must carry that DNS name (or whichever one the plugin
+  # dials) in its SANs.
+  # ---------------------------------------------------------------------------
+  execution:
+    # -- false renders no listener port, env or mount. The app still refuses to
+    # boot without SISBAJUD_EXECUTION_TLS_CERT_FILE/_KEY_FILE, so then supply them
+    # yourself (configmap + extraVolumes/extraVolumeMounts).
+    enabled: true
+    # -- Container + Service port -> SISBAJUD_EXECUTION_ADDRESS=:<port>.
+    port: 4032
+    # -- SISBAJUD_EXECUTION_MTLS_ENABLED. true = the listener requires and
+    # verifies a client certificate signed by clientCa; false (the app default)
+    # = one-way TLS. true here with the plugin's own mTLS switch false fails the
+    # TLS handshake on the plugin's first fetch.
+    mtlsEnabled: false
+    tls:
+      # -- A Secret holding the server certificate and key (e.g. a
+      # kubernetes.io/tls Secret issued by cert-manager). Mounted read-only at
+      # mountPath; SISBAJUD_EXECUTION_TLS_CERT_FILE/_KEY_FILE point at
+      # <mountPath>/tls.crt and <mountPath>/tls.key. Read when the listener
+      # starts: rotating it needs a rollout restart.
+      existingSecret: ""
+      certKey: tls.crt
+      keyKey: tls.key
+      mountPath: /etc/sisbajud/execution-tls
+      # -- DEV ONLY: the chart generates a CA + server certificate (SANs: the
+      # Service DNS names + extraDnsNames) into the Secret
+      # <fullname>-execution-tls (keys tls.crt, tls.key, ca.crt), reused on
+      # upgrade via lookup. Refused outside a development-class environment.
+      # Under ArgoCD (no lookup) it regenerates on every sync: use
+      # existingSecret there. Give the plugin ca.crt as its server CA.
+      generate: false
+      extraDnsNames: []
+      validityDays: 365
+    clientCa:
+      # -- mTLS only: the Secret holding the CA bundle that signs the plugin's
+      # client certificates. Empty = tls.existingSecret (cert-manager writes
+      # ca.crt into the issued Secret). Mounted at mountPath;
+      # SISBAJUD_EXECUTION_CLIENT_CA_FILE points at <mountPath>/ca.crt.
+      existingSecret: ""
+      key: ca.crt
+      mountPath: /etc/sisbajud/execution-client-ca
   ingress:
     enabled: false
     className: ""
@@ -191,6 +256,12 @@ brSisbajud:
   # Keep empty unless this release talks to its own instance.
   # ---------------------------------------------------------------------------
   datastores: {}
+  # -- KMS mask (same fields as global.kms). br-sisbajud extras with vendor=aws:
+  # awsKeyMode (managed | provided; required with aws), awsKeyArn (required with
+  # provided, must be empty with managed), allowUnverifiableImageTag (acknowledgement
+  # only: set true when brSisbajud.image.tag is not in the canonical form
+  # vX.Y.Z[-(alpha|beta|rc).N], e.g. "@" digest pins, arch suffixes, build metadata) to confirm the image is >= 1.1.0-beta.13;
+  # read only here, never from global.kms).
   kms: {}
   objectStorage: {}
 
@@ -204,7 +275,8 @@ brSisbajud:
   # infraConnectTimeoutSec, dbMetricsIntervalSec, idempotencyRetryWindowSec,
   # circuitBreakerEnabled.
   app: {}
-  # -- address, bodyLimitBytes, tlsTerminatedUpstream, tlsCertFile, tlsKeyFile.
+  # -- address, bodyLimitBytes, tlsTerminatedUpstream, tlsCertFile, tlsKeyFile
+  # (main listener only; the execution listener is brSisbajud.execution).
   server: {}
   # -- allowedOrigins, allowedMethods, allowedHeaders, exposeHeaders, allowCredentials.
   # Production MUST set allowedOrigins to the real UI origins.
@@ -214,8 +286,9 @@ brSisbajud:
   # allowWebhookPrivateNetwork.
   security: {}
   # -- organizationIds (must be "global"), isDevelopment (routes the license SDK
-  # to the dev gateway). LICENSE_KEY is a secret and, since app 1.2.0, required in
-  # EVERY environment (no dev bypass): the render fails without it.
+  # to the dev gateway). LICENSE_KEY is a secret, required in a production-like
+  # environment (anything but local|development|staging|e2e|test); in those five
+  # an empty LICENSE_KEY is the app's dev bypass.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
   # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
@@ -225,35 +298,45 @@ brSisbajud:
   # maxRetryBackoff, masterName. Connection identity lives in datastores.
   redis: {}
   # -- KMS knobs not covered by the kms mask: timeoutSec, tokenRenewEnabled,
-  # tokenRenewMinIntervalSec, awsEndpointUrl (LocalStack only).
+  # tokenRenewMinIntervalSec, awsEndpointUrl (LocalStack only), awsKmsTimeoutSec
+  # (1..600), awsKmsRotationCheckIntervalSec (1..86400, provided mode only).
   vault: {}
   # -- Envelope-encryption layer: dekCacheTtl, dekCacheMaxEntries, hmacCoexistenceWindow.
   crypto: {}
   # -- Remittance layout: responseLayout (auto|v111|v2026), remittanceLayouts (CSV of v111,v2026).
   layout: {}
-  # -- STA integration (br-sta): fileLockTtl, consumerEnabled, consumerGroup,
+  # -- STA integration (br-sta): fileLockTtl, consumerEnabled,
   # consumerRetryBudget, sourceProduct, bacenSystemCode, expectedTenantSt,
   # maxInboundSizeBytes, transfersEnabled, transfersBaseUrl, documentTypeAjud302,
-  # documentTypeAjud309, clientId. STA_CLIENT_SECRET is a secret. The buckets and
-  # endpoint come from objectStorage.sta. consumerEnabled and transfersEnabled go
-  # together (both off, the default, or both on): app 1.2.x leaves its readiness
-  # down with the consumer alone, and the render refuses that combination.
+  # documentTypeAjud309, clientId, and `stream` (below). STA_CLIENT_SECRET is a
+  # secret. The buckets and endpoint come from objectStorage.sta. Both the
+  # consumer and the transfers client are single-tenant only.
+  #   stream: br-sta's OWN Kafka cluster, read only by the br-sta fact consumer
+  #   (lerian.streaming.br-sta), never falling back to global.streaming:
+  #     { brokers, saslMechanism (PLAIN|SCRAM-SHA-256|SCRAM-SHA-512),
+  #       saslUsername, saslAllowPlaintext, tlsEnabled }
+  #   -> STA_STREAM_*. Secrets: STA_STREAM_SASL_PASSWORD, STA_STREAM_TLS_CA_CERT
+  #   (base64 PEM). With consumerEnabled the app requires brokers, the full SASL
+  #   triple and TLS + CA (or saslAllowPlaintext, refused in production).
   sta: {}
   # -- Background workers. One sub-map per worker:
-  #   permanentBlockExpiry:  { enabled, scanInterval, batchSize }
   #   kekRewrapBackfill:     { enabled, scanInterval, batchSize }
-  #   rehashBackfill:        { enabled, scanInterval, batchSize, dropPreviousKeyEnabled }
-  #   reconciliation:        { enabled, scanInterval, batchSize, intensifiedEnabled,
-  #                            intensifiedScanInterval, nearDeadlinePercent }
   #   slaAlert:              { enabled, scanInterval }
   #   returnFile:            { enabled, scanInterval, limit, environment }
   #   informationReturnFile: { enabled, scanInterval, limit }
-  #   informationRequest:    { enabled, scanInterval, batchSize, lockTtl }   (enabled default false; the rest opt-in)
-  #   monitoringExpiry:      { enabled, scanInterval, batchSize }            (opt-in)
-  #   execution:             { enabled, orchestratorLockTtl, orchestratorRenewInterval,
-  #                            unblockScanInterval, unblockBatchSize }
   #   processingLockReaper:  { enabled, intervalSec }
+  # (The monolith's executor-side workers — execution, reconciliation,
+  # permanentBlockExpiry, rehashBackfill, informationRequest, monitoringExpiry —
+  # moved to plugin-br-sisbajud; their keys are no longer rendered.)
   workers: {}
+  # -- Execution sweeper + canary (per-subject release sweep, retained-order
+  # alarms, executor round-trip probe):
+  #   responseDeadlineMargin  -> RESPONSE_DEADLINE_MARGIN            (Go duration, > 0; app has no default, chart "2h")
+  #   drainedHeadAlarmAfter   -> EXECUTION_DRAINED_HEAD_ALARM_AFTER  (Go duration, > 0; app has no default, chart "30m")
+  #   sweepIntervalSec        -> EXECUTION_SWEEP_INTERVAL_SEC        ("60")
+  #   deadlineMarginSec       -> EXECUTION_DEADLINE_MARGIN_SEC       (unset = returnFile scanInterval; must be > 0 and < 21600)
+  #   canaryIntervalSec       -> EXECUTION_CANARY_INTERVAL_SEC       ("300")
+  executionSweep: {}
   # -- Transactional outbox: enabled, tableName, dispatchIntervalSec, batchSize,
   # publishMaxAttempts, publishBackoffMs, retryWindowSec, maxDispatchAttempts,
   # processingTimeoutSec, maxFailedPerBatch, includeTenantMetrics,
@@ -261,18 +344,29 @@ brSisbajud:
   outbox: {}
   # -- Per-app streaming identity: cloudeventsSource (must stay "br-sisbajud"),
   # clientId, healthCheckTimeout, topicAutoProvision (STREAMING_TOPIC_AUTO_PROVISION,
-  # default "true": the app creates its own declared topics at boot; "false" when
-  # topics are pre-provisioned by IaC), closeTimeoutS (STREAMING_CLOSE_TIMEOUT_S,
+  # default "true": lib-streaming creates lerian.streaming.br-sisbajud and .dlq at
+  # boot when the principal holds CreateTopics, else it only WARNs; "false" when
+  # topics are pre-provisioned by IaC), topicPartitions / topicReplicationFactor
+  # (STREAMING_TOPIC_PARTITIONS / _REPLICATION_FACTOR for that auto-creation;
+  # unset = broker default), closeTimeoutS (STREAMING_CLOSE_TIMEOUT_S,
   # default "20": must stay below the pod terminationGracePeriodSeconds, Kubernetes
   # default 30s, which this chart does not override). Brokers/TLS/SASL come from
   # global.streaming.
   streaming: {}
-  # -- Core balance consumer (all optional): group, dedupTtl, retryBudget.
-  balanceConsumer: {}
-  # -- Midaz ledger integration: balanceTopic, balanceConsumerGroup,
-  # balanceDefaultAccountType, crmMode (legacy|embedded), manifestCheckInterval.
-  midaz: {}
-  # -- Inbound auth extras: trustedProxies, productName. enabled/host come from global.auth.
+  # -- Inbound auth extras. enabled/host come from global.auth.
+  #   trustedProxies, productName (AUTH_PRODUCT_NAME; must equal the Casdoor
+  #   seed product, leave unset).
+  #   Local bearer verification (lib-auth), REQUIRED at boot in BOTH auth switch
+  #   positions; the only exemption is PLUGIN_AUTH_ENABLED=true +
+  #   DEPLOYMENT_MODE=local + ENV_NAME=local:
+  #     jwtIssuer            -> AUTH_JWT_ISSUER (the exact `iss` the Access Manager stamps)
+  #     jwtVerifyCert        -> AUTH_JWT_VERIFY_CERT (inline PEM of the Access
+  #                             Manager's RSA PUBLIC key/cert; public, so it is
+  #                             rendered into the ConfigMap; wins over the path)
+  #     jwtVerifyCertSecret  -> { name, key }: a Secret/key holding that PEM,
+  #                             mounted read-only; sets AUTH_JWT_VERIFY_CERT_PATH
+  #     jwtVerifyCertPath    -> AUTH_JWT_VERIFY_CERT_PATH verbatim (with your own
+  #                             extraVolumes/extraVolumeMounts)
   auth: {}
   # -- Access-manager declaration publisher (lib-auth WireFromEnv):
   # declarationEnabled, host, m2mClientId. IDP_M2M_CLIENT_SECRET is a secret.
@@ -300,10 +394,12 @@ brSisbajud:
   # -- Secret keys (stringData). Credentials only, never in configmap. Use AVP
   # <path:...> placeholders in GitOps values, never real credentials. Keys the
   # chart models: POSTGRES_PASSWORD, POSTGRES_REPLICA_PASSWORD, REDIS_PASSWORD,
-  # LICENSE_KEY (required in every environment), VAULT_TOKEN,
+  # LICENSE_KEY (required in a production-like environment), VAULT_TOKEN,
   # VAULT_APPROLE_SECRET_ID, SEAWEEDFS_ACCESS_KEY, SEAWEEDFS_SECRET_KEY,
   # STA_CLIENT_SECRET, IDP_M2M_CLIENT_SECRET, STREAMING_SASL_PASSWORD,
-  # STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
+  # STREAMING_TLS_CA_CERT, STA_STREAM_SASL_PASSWORD, STA_STREAM_TLS_CA_CERT,
+  # MULTI_TENANT_SERVICE_API_KEY, MULTI_TENANT_REDIS_PASSWORD. Any other key is
+  # emitted verbatim.
   secrets: {}
   # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
   # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
@@ -321,15 +417,22 @@ brSisbajud:
   # -- Extra env vars rendered as explicit `env:` entries on the pod (a list of
   # {name, value|valueFrom}). They win over the ConfigMap and the Secret.
   extraEnvVars: []
+  # -- Extra pod volumes / app-container volumeMounts, rendered verbatim (e.g. a
+  # file an escape-hatch *_FILE / *_PATH key points at).
+  extraVolumes: []
+  extraVolumeMounts: []
 
 # =============================================================================
 # Detached migrations — ArgoCD PreSync Secret + Job that applies the SQL schema
 # to the br_sisbajud database before the app boots. The br-sisbajud-migrations
-# image runs golang-migrate against the /migrations directory. The connection
+# image (br-sfn cmd/postgres-migrations, released with the app) runs
+# golang-migrate against /migrations (single-tenant only). The connection
 # follows the app's resolved POSTGRES_* values unless overridden here.
 # =============================================================================
 migrations:
   enabled: true
+  # -- MIGRATIONS_TIMEOUT_SEC for the runner; unset keeps the runner default.
+  # timeoutSec: 300
   image:
     repository: ghcr.io/lerianstudio/br-sisbajud-migrations
     # -- Defaults to Chart.appVersion.
@@ -360,24 +463,29 @@ migrations:
       memory: 256Mi
 
 # =============================================================================
-# Detached topic provisioning — ArgoCD PreSync Job that idempotently ensures the
-# Redpanda topics exist before the app boots (list-then-create `rpk`). It reuses
-# the app's resolved STREAMING_* connection (global.streaming / configmap /
-# extraEnvVars); SASL password and CA cert come from a dedicated PreSync Secret
-# (or from the existing Secret / extraEnvVars valueFrom).
+# Detached topic provisioning — OFF by default. An optional ArgoCD PreSync Job
+# that idempotently ensures the Redpanda topics exist before the app boots
+# (list-then-create `rpk`). It reuses the app's resolved STREAMING_* connection
+# (global.streaming / configmap / extraEnvVars); SASL password and CA cert come
+# from a dedicated PreSync Secret (or from the existing Secret / extraEnvVars).
 #
-# lib-streaming v4 topics (app 1.x): the app's own `lerian.streaming.br-sisbajud`
-# and `.dlq` are also created by the app's Builder when its principal holds the
-# CreateTopics ACL; `.commands` is NOT — a consumer on a broker with auto-create
-# off never creates it and the balance trigger fails silently. All three are
-# listed here. `lerian.streaming.ledger` is Midaz's to create; never list it.
+# The Mensageria's only topics are its own `lerian.streaming.br-sisbajud` and
+# `.dlq`, and lib-streaming v4.1 creates both at boot (the producer Builder's
+# ensureOwnTopics) when STREAMING_TOPIC_AUTO_PROVISION is true (the default) and
+# its principal holds CreateTopics on them. Enable this Job only for a broker
+# whose app principal lacks CreateTopics (or set topicAutoProvision "false" and
+# let IaC create them). br-sfn publishes no Mensageria topics image: the Job
+# runs the product-agnostic monolith image (rpk + list-then-create entrypoint),
+# pinned below independently of appVersion. `lerian.streaming.br-sta` (STA
+# consumer) belongs to br-sta: never list it.
 # =============================================================================
 topics:
-  enabled: true
+  enabled: false
   image:
     repository: ghcr.io/lerianstudio/br-sisbajud-topics
-    # -- Defaults to Chart.appVersion.
-    tag: ""
+    # -- Pinned: the last published topics image (generic rpk entrypoint).
+    # NOT Chart.appVersion — br-sfn does not publish a Mensageria topics image.
+    tag: "1.2.0"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   partitions: 1
@@ -386,7 +494,6 @@ topics:
   list:
     - lerian.streaming.br-sisbajud
     - lerian.streaming.br-sisbajud.dlq
-    - lerian.streaming.br-sisbajud.commands
   backoffLimit: 3
   activeDeadlineSeconds: 600
   ttlSecondsAfterFinished: 600

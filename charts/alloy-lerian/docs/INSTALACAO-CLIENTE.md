@@ -116,6 +116,11 @@ Os blocos repetidos declaram que o Secret é **obrigatório**: com eles, um pod
 sem credencial não sobe. Sem eles, o pod subiria e descartaria telemetria em
 silêncio. Copie como está.
 
+> O mesmo conteúdo existe como modelo em `examples/values-cliente.yaml`. Nele o
+> `origin.id` é o marcador `SUBSTITUIR-prd`, e a instalação **falha** (`origin.id
+> "SUBSTITUIR-prd" is malformed`) até que ele seja trocado pelo identificador que
+> a Lerian informou.
+
 ### Instalar
 
 ```console
@@ -266,9 +271,12 @@ somente-leitura e sem privilégios elevados. A exceção é só para a rede.
 ### Quais permissões o chart cria no cluster?
 
 `ClusterRole` e `ClusterRoleBinding` de **leitura apenas** — um par por
-componente, três no total. Os verbos são `get`, `list` e `watch`, e servem para
-associar cada registro ao pod e namespace de origem, e para ler as métricas de
-consumo dos contêineres. O agente não cria, altera nem remove nada no cluster.
+componente, quatro no total na instalação padrão do perfil `client`: agente por
+nó, agente único, `kube-state-metrics` e um par extra só para ler o consumo dos
+contêineres (`nodes/proxy`, verbo `get`). Os verbos são `get`, `list` e `watch`
+(o do `kube-state-metrics` usa só `list` e `watch`), e servem para associar cada
+registro ao pod e namespace de origem, e para ler as métricas de consumo dos
+contêineres. O agente não cria, altera nem remove nada no cluster.
 
 ### Quanto consome?
 

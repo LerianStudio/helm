@@ -1,0 +1,57 @@
+{{- /*
+Migrations Job (external PostgreSQL). pre-install/pre-upgrade hook at weight -5
+(ArgoCD PreSync, wave -5): a failed migration aborts the release before any
+workload is created or updated. With the bundled postgresql the schema is
+applied by the app pod's `migrations` initContainer instead (deployment.yaml).
+*/ -}}
+{{- if and .Values.sisbajud.enabled (eq (include "plugin-br-sisbajud.migrationsOn" .) "true") (ne (include "plugin-br-sisbajud.postgresBundled" .) "true") -}}
+{{- $m := .Values.migrations -}}
+{{- $pg := include "plugin-br-sisbajud.postgres" . | fromYaml -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "plugin-br-sisbajud.migrationsFullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-sisbajud.labels" (dict "context" $ "component" "migrations") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-5"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: {{ ternary $m.backoffLimit 3 (hasKey $m "backoffLimit") }}
+  activeDeadlineSeconds: {{ $m.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ ternary $m.ttlSecondsAfterFinished 300 (hasKey $m "ttlSecondsAfterFinished") }}
+  template:
+    metadata:
+      labels:
+        {{- include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "migrations") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with (include "plugin-br-sisbajud.pullSecrets" (dict "context" $ "list" ($m.imagePullSecrets | default .Values.sisbajud.imagePullSecrets))) }}
+      {{- . | nindent 6 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.sisbajud.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.sisbajud.waitImage | default "busybox:1.37" }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              echo "waiting for {{ $pg.host }}:{{ $pg.port }}...";
+              until nc -z {{ $pg.host | quote }} {{ $pg.port | quote }}; do sleep 5; done;
+              echo "postgres reachable"
+          securityContext:
+            {{- toYaml .Values.sisbajud.securityContext | nindent 12 }}
+      containers:
+        {{- include "plugin-br-sisbajud.migrationsContainer" (dict "context" $ "name" "migrate" "hook" true) | nindent 8 }}
+      {{- if or .Values.sisbajud.nodeSelector .Values.sisbajud.affinity .Values.sisbajud.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.sisbajud | nindent 6 }}
+      {{- end }}
+{{- end -}}

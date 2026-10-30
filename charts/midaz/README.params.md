@@ -45,7 +45,7 @@
 | `global.externalMongoDefinitions.midazCredentials.username` | string | `"midaz"` | App username (ignored if useExistingSecret.name is set) |
 | `global.externalMongoDefinitions.midazCredentials.password` | string | `""` | Password for midaz user (ignored if useExistingSecret.name is set) |
 | `global.externalMongoDefinitions.midazCredentials.roles` | object | `{}` | List of roles to grant to the user. Each item is a {role, db} pair. |
-| `global.datastores` | object | `{}` | Shared datastore masks. Keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis / broker. Each accepts host/port/user/ssl/replicaHost/name. |
+| `global.datastores` | object | `{}` | Shared datastore masks. Keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis / broker. Each accepts host/port/user/replicaHost/name; `ssl` is honored only under the generic `postgres` key (and `global.cloud`), not under `postgresOnboarding`/`postgresTransaction`. |
 | `global.observability` | object | `{}` | Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment. |
 | `global.multiTenant` | object | `{}` | Env-wide multi-tenant (tenant-manager): url / redisHost / redisPort / redisTls / ... |
 | `global.streaming` | object | `{}` | Env-wide streaming (lib-streaming / RedPanda): brokers / saslMechanism / saslUsername / tlsEnabled / ... |
@@ -63,9 +63,10 @@
 | `ledger.enabled` | bool | `true` | NOTE: migration.allowAllServices is not in the public values.yaml - set it in your override values for internal testing |
 | `ledger.replicaCount` | int | `2` | Number of replicas for the ledger service |
 | `ledger.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
+| `ledger.terminationGracePeriodSeconds` | int | `60` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `ledger.image.repository` | string | `lerianstudio/midaz-ledger` | Repository for the ledger service container image |
 | `ledger.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
-| `ledger.image.tag` | string | `"4.0.0-beta.26"` | Image tag used for deployment |
+| `ledger.image.tag` | string | See `values.yaml` | Image tag used for deployment |
 | `ledger.migrations` | object | `{}` | Dedicated migration runner (`midaz-ledger-migrations`, built FROM migrate/migrate) applying the onboarding and transaction migration sets. |
 | `ledger.migrations.enabled` | object | `{}` | Run the migration Job. Unset means auto: on for 4.x ledger tags, which removed in-process migration, off for 3.x, which still migrates at startup. Set false to keep it off when the schema is applied out-of-band. |
 | `ledger.migrations.image.repository` | string | `lerianstudio/midaz-ledger-migrations` | Repository for the ledger migration-runner image |
@@ -113,9 +114,9 @@
 | `ledger.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one. |
 | `ledger.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `ledger.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
-| `ledger.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
+| `ledger.tolerations` | array | `[]` | Tolerations for scheduling on tainted nodes |
 | `ledger.affinity` | object | `{}` | Affinity rules for pod scheduling |
-| `ledger.datastores` | object | `templates/ledger/configmap.yaml` | Dedicated datastore masks for this component (override global.datastores). Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/ssl/replicaHost). |
+| `ledger.datastores` | object | `templates/ledger/configmap.yaml` | Dedicated datastore masks for this component (override global.datastores). Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/replicaHost). The Postgres `ssl` field is read from the generic `postgres` key (`postgres.ssl`), not from `postgresOnboarding`/`postgresTransaction`: those keys' `ssl` is ignored. |
 | `ledger.configmap` | object | `{}` | Escape hatch: any native env var (e.g. DB_ONBOARDING_MAX_OPEN_CONNS) overrides the template default. |
 | `ledger.useExistingSecret` | bool | `false` | Existing secrets name |
 | `ledger.extraEnvVars` | object | `{}` | Extra environment variables |
@@ -149,7 +150,7 @@
 | `crm.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
 | `crm.image.repository` | string | `lerianstudio/midaz-crm` | Repository for the CRM service container image |
 | `crm.image.pullPolicy` | string | `Always` | Image pull policy |
-| `crm.image.tag` | string | `"3.8.0"` | Image tag used for deployment |
+| `crm.image.tag` | string | See `values.yaml` | Image tag used for deployment |
 | `crm.imagePullSecrets` | list | `[]` | Secrets for pulling images from a private registry |
 | `crm.nameOverride` | string | `""` | Overrides the default generated name by Helm |
 | `crm.fullnameOverride` | string | `""` | Overrides the full name generated by Helm |
@@ -165,7 +166,7 @@
 | `crm.deploymentUpdate` | string | `{}` | Deployment update strategy |
 | `crm.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
 | `crm.deploymentUpdate.maxSurge` | int | `1` | Maximum number of pods that can be created over the desired number of pods |
-| `crm.deploymentUpdate.maxUnavailable` | int | `1` | Maximum number of pods that can be unavailable during the update |
+| `crm.deploymentUpdate.maxUnavailable` | int | `0` | Maximum number of pods that can be unavailable during the update |
 | `crm.service.type` | string | `ClusterIP` | Kubernetes service type |
 | `crm.service.port` | int | `4003` | Service port |
 | `crm.ingress.enabled` | bool | `false` | Enable or disable ingress |
@@ -181,7 +182,7 @@
 | `crm.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one. |
 | `crm.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `crm.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
-| `crm.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
+| `crm.tolerations` | array | `[]` | Tolerations for scheduling on tainted nodes |
 | `crm.affinity` | object | `{}` | Affinity rules for pod scheduling |
 | `crm.datastores` | object | `templates/crm/configmap.yaml` | Dedicated datastore mask (override global.datastores). Sub-key: mongo (host/port/user). |
 | `crm.configmap` | object | `{}` | Escape hatch: any native env var overrides the template default. |
@@ -198,9 +199,10 @@
 | `tracer.enabled` | bool | `false` | Enable or disable the Tracer service (disabled by default; opt-in per env) |
 | `tracer.replicaCount` | int | `1` | Number of replicas for the Tracer service |
 | `tracer.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
+| `tracer.terminationGracePeriodSeconds` | int | `45` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `tracer.image.repository` | string | `lerianstudio/midaz-tracer` | Repository for the Tracer service container image. In midaz v4 tracer ships from the monorepo (`components/tracer`) and the release pipeline publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates the configuration contract this chart renders. |
 | `tracer.image.pullPolicy` | string | `Always` | Image pull policy |
-| `tracer.image.tag` | string | `"4.0.0-beta.25"` | Image tag used for deployment |
+| `tracer.image.tag` | string | See `values.yaml` | Image tag used for deployment |
 | `tracer.migrations` | object | `{}` | Dedicated migration runner (`midaz-tracer-migrations`, built FROM migrate/migrate). The v4 tracer no longer migrates at startup: it boots against an already-migrated schema, so this Job has to apply it. |
 | `tracer.migrations.enabled` | bool | `true` | Enable or disable the tracer migration Job |
 | `tracer.migrations.image.repository` | string | `lerianstudio/midaz-tracer-migrations` | Repository for the tracer migration-runner image |
@@ -232,10 +234,10 @@
 | `tracer.deploymentUpdate` | object | `{}` | Deployment update strategy |
 | `tracer.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
 | `tracer.deploymentUpdate.maxSurge` | int | `1` | Maximum number of pods that can be created over the desired number of pods |
-| `tracer.deploymentUpdate.maxUnavailable` | int | `1` | Maximum number of pods that can be unavailable during the update |
+| `tracer.deploymentUpdate.maxUnavailable` | int | `0` | Maximum number of pods that can be unavailable during the update |
 | `tracer.service.type` | string | `ClusterIP` | Kubernetes service type |
 | `tracer.service.port` | int | `4020` | Service port (HTTP API) |
-| `tracer.service.grpcPort` | int | `4021` | gRPC reservation seam port. Only exposed when `tracer.configmap.TRACER_GRPC_PORT` is set; the seam is off in the app until then, so the port would otherwise route to a closed socket. |
+| `tracer.service.grpcPort` | int | `4021` | gRPC reservation seam port, always published on the container and Service. The tracer always listens on gRPC (":4021" when TRACER_GRPC_PORT is unset). When `tracer.configmap.TRACER_GRPC_PORT` is set, its numeric tail takes precedence over this value. |
 | `tracer.ingress.enabled` | bool | `false` | Enable or disable ingress |
 | `tracer.ingress.className` | string | `""` | Ingress class name |
 | `tracer.ingress.annotations` | object | `{}` | Additional ingress annotations |
@@ -249,7 +251,7 @@
 | `tracer.spread` | object | `{}` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one. |
 | `tracer.topologySpreadConstraints` | list | `[]` | Raw Kubernetes topologySpreadConstraints. Non-empty replaces the spread preset entirely; an entry without `labelSelector` gets the component's selector labels. |
 | `tracer.nodeSelector` | object | `{}` | Node selector for scheduling pods on specific nodes |
-| `tracer.tolerations` | object | `{}` | Tolerations for scheduling on tainted nodes |
+| `tracer.tolerations` | array | `[]` | Tolerations for scheduling on tainted nodes |
 | `tracer.affinity` | object | `{}` | Affinity rules for pod scheduling |
 | `tracer.datastores` | object | `templates/tracer/configmap.yaml` | Dedicated datastore mask (override global.datastores). Sub-key: postgres (host/port/user/ssl). |
 | `tracer.configmap` | object | `{}` | Escape hatch: any native env var overrides the template default. |
@@ -258,6 +260,5 @@
 | `tracer.secrets.DB_PASSWORD` | string | `""` | PostgreSQL password. Single-sourced from the Bitnami postgresql subchart Secret (key `password`) when internal; only set for an EXTERNAL PostgreSQL (subchart disabled / .external=true) without an existingSecret override. |
 | `tracer.secrets.API_KEY` | string | `""` | API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true). |
 | `tracer.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set. |
-| `grafana.ingress` | object | `{}` | Configure the ingress for Access Grafana Dashboard |
 | `otel-collector-lerian` | object | `{}` | OTEL exporter configuration for midaz services. When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES are injected into the `ledger` and `crm` deployments only. Port is fixed at 4317. If you need a different collector endpoint, leave enabled=false and configure OTEL env vars directly in the application configmap (ledger.configmap / crm.configmap). |
 | `otel-collector-lerian.enabled` | bool | `true` | Inject OTEL env vars into the midaz ledger and crm deployments |

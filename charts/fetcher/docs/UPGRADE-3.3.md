@@ -22,53 +22,60 @@ The application version (`appVersion: 3.1.0`) is unchanged. The `lerian-common-h
 
 ### 1. Topology spread constraint enhancements
 
-The global topology spread constraint configuration now supports two additional fields to fine-tune pod scheduling behavior in autoscaled environments:
+The global spread preset (`global.scheduling.spread`) now supports two additional fields to fine-tune pod scheduling behavior in autoscaled environments. (Earlier revisions of this guide named the key `global.topologySpreadConstraints`; the chart never read it, so setting it has no effect. The per-component `manager.spread` / `worker.spread` overrides accept the same fields.)
 
 **Before (v3.2.0):**
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: ""
-    maxSkew: 1
+  scheduling:
+    spread:
+      enabled: true
+      hostname: ScheduleAnyway
+      zone: ""
+      maxSkew: 1
 ```
 
 **After (v3.3.0):**
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: ""
-    maxSkew: 1
-    minDomains: 0
-    nodeTaintsPolicy: ""
+  scheduling:
+    spread:
+      enabled: true
+      hostname: ScheduleAnyway
+      zone: ""
+      maxSkew: 1
+      minDomains: 0
+      nodeTaintsPolicy: ""
 ```
 
 | Setting | v3.2.0 | v3.3.0 |
 |---------|--------|--------|
-| `global.topologySpreadConstraints.minDomains` | (not set) | `0` (default) |
-| `global.topologySpreadConstraints.nodeTaintsPolicy` | (not set) | `""` (default, omitted) |
+| `global.scheduling.spread.minDomains` | (not set) | `0` (default) |
+| `global.scheduling.spread.nodeTaintsPolicy` | (not set) | `""` (default, omitted) |
 
 #### minDomains
 
 The `minDomains` field controls the minimum number of eligible topology domains required for `DoNotSchedule` (hard) topology spread constraints. When set to a value greater than `0`, if the number of eligible domains is less than `minDomains`, the scheduler treats the global minimum as `0`. This prevents a hard hostname spread from stacking replicas on a single node when insufficient nodes are available — instead, the extra replica waits for a new node to be provisioned.
 
-**Use case:** In autoscaled clusters (e.g., with Karpenter), setting `minDomains: 1` ensures that when a hard hostname spread constraint is active and only one node exists, the scheduler will trigger node autoscaling rather than violating the spread constraint by placing multiple replicas on the same node.
+**Use case:** In autoscaled clusters (e.g., with Karpenter), setting `minDomains: 2` ensures that when a hard hostname spread constraint is active and only one node exists, the extra replica stays pending instead of being placed on the same node, which can prompt a configured autoscaler to provision an eligible node (it depends on the autoscaler and its capacity rules).
 
 **Example configuration:**
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: "kubernetes.io/hostname"
-    maxSkew: 1
-    minDomains: 1
+  scheduling:
+    spread:
+      enabled: true
+      hostname: DoNotSchedule
+      maxSkew: 1
+      minDomains: 2
 ```
 
-> **Note:** `minDomains` only affects `DoNotSchedule` constraints. If your topology spread constraints use `ScheduleAnyway` (soft constraints), this field has no effect. The default value of `0` disables this behavior, maintaining backward compatibility.
+> **Note:** `minDomains` takes effect only while the number of eligible domains is lower than its value, so `minDomains: 1` has no effect on a cluster that has a single node; use `2` to make a hard hostname spread wait for a second node.
+>
+> `minDomains` only affects `DoNotSchedule` constraints. If your topology spread constraints use `ScheduleAnyway` (soft constraints), this field has no effect. The default value of `0` disables this behavior, maintaining backward compatibility.
 
 #### nodeTaintsPolicy
 
@@ -84,11 +91,12 @@ The `nodeTaintsPolicy` field controls whether the scheduler considers node taint
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: "kubernetes.io/hostname"
-    maxSkew: 1
-    nodeTaintsPolicy: "Honor"
+  scheduling:
+    spread:
+      enabled: true
+      hostname: DoNotSchedule
+      maxSkew: 1
+      nodeTaintsPolicy: "Honor"
 ```
 
 > **Note:** The default value is an empty string (`""`), which omits the field from the rendered topology spread constraint. This maintains backward compatibility with Kubernetes versions that do not support `nodeTaintsPolicy` or clusters where the default `Ignore` behavior is desired.
@@ -107,35 +115,38 @@ The `lerian-common-helm` dependency has been updated from version `2.2.0` to `2.
 
 ### New topology spread constraint fields
 
-The following fields have been added to the global topology spread constraint configuration:
+The following fields have been added to `global.scheduling.spread`:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `minDomains` | `0` | Minimum eligible domains for `DoNotSchedule` constraints. When set to a value greater than `0`, if fewer domains exist, the scheduler treats the global minimum as `0`, allowing autoscalers to provision new nodes instead of violating hard spread constraints. Use on autoscaled clusters. |
+| `minDomains` | `0` | Minimum eligible domains for `DoNotSchedule` constraints. When set to a value greater than `0`, if fewer domains exist, the scheduler treats the global minimum as `0`, so the extra pod stays pending instead of violating the hard spread constraint, which can prompt a configured autoscaler to provision a node. Use on autoscaled clusters. |
 | `nodeTaintsPolicy` | `""` (omitted) | Controls whether the scheduler honors node taints when counting eligible domains. `Honor` counts only nodes the pod tolerates (e.g., skips nodes with `karpenter.sh/disrupted` taints). `Ignore` counts all nodes. Empty string omits the field (Kubernetes default `Ignore`). |
 
 **Example configuration for autoscaled clusters:**
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: "kubernetes.io/hostname"
-    maxSkew: 1
-    minDomains: 1
-    nodeTaintsPolicy: "Honor"
+  scheduling:
+    spread:
+      enabled: true
+      hostname: DoNotSchedule
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: "Honor"
 ```
 
 **Example configuration to maintain v3.2.0 behavior:**
 
 ```yaml
 global:
-  topologySpreadConstraints:
-    enabled: true
-    zone: ""
-    maxSkew: 1
-    minDomains: 0
-    nodeTaintsPolicy: ""
+  scheduling:
+    spread:
+      enabled: true
+      hostname: ScheduleAnyway
+      zone: ""
+      maxSkew: 1
+      minDomains: 0
+      nodeTaintsPolicy: ""
 ```
 
 > **Important:** Both fields are optional and default to values that maintain backward compatibility. No action is required unless you want to enable the new scheduling behaviors.
@@ -147,7 +158,7 @@ This upgrade requires no manual migration steps. The new topology spread constra
 **Recommended upgrade process:**
 
 1. Review the new `minDomains` and `nodeTaintsPolicy` fields to determine if they are beneficial for your cluster environment.
-2. If running on an autoscaled cluster (e.g., with Karpenter), consider setting `minDomains: 1` and `nodeTaintsPolicy: "Honor"` to improve pod scheduling behavior.
+2. If running on an autoscaled cluster (e.g., with Karpenter), consider setting `minDomains: 2` and `nodeTaintsPolicy: "Honor"` to improve pod scheduling behavior.
 3. Preview the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
 4. Run the upgrade command during a maintenance window.
 5. Verify all pods are running and properly distributed:

@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v2.0.0 to v2.1.0
 
 ## Topics
@@ -105,14 +106,10 @@ No action required if you do not need the Pix transit. The feature is disabled b
 1. Choose a TLS termination strategy (Option 1 or Option 2 above)
 2. If using Option 1, create the TLS Secret before upgrading
 3. Add the `roles.admin.pixTransit` block to your `values.yaml`
-4. Upgrade the chart
+4. Set `jd-courier.image.tag: "1.2.0"` (or later) in the same `values.yaml`: chart 2.1.0 still defaults to `1.1.0`, which has no transit listener
+5. Upgrade the chart with that `values.yaml` ([Command to upgrade](#command-to-upgrade))
 
-**Additional configuration keys:**
-
-The transit reads several environment variables from `config` (see the updated `values.yaml` comments). These keys are documented in the application README under "Pix transit":
-
-- `JD_ALLOW_PRIVATE_NETWORK` (now governs both SPB roles and the Pix transit)
-- Transit-specific keys (refer to the application README for the full list)
+The transit's `config` and Secret keys are in the chart README, [Pix transit (admin)](../README.md#pix-transit-admin).
 
 > **Important:** The chart now refuses `config.PIX_TRANSIT_SERVER_ADDRESS`, `config.PIX_TRANSIT_TLS_CERT_FILE`, `config.PIX_TRANSIT_TLS_KEY_FILE`, and `config.PIX_TRANSIT_TLS_TERMINATED_UPSTREAM` — these are derived from `ports.pixTransit` and `roles.admin.pixTransit.tls`.
 
@@ -135,14 +132,15 @@ If you were setting `JD_SPI_CLIENT_SECRET` in `config` (which was not explicitly
 If you use `JD_SPI_CLIENT_SECRET`:
 
 1. Remove it from `config` in your `values.yaml`
-2. Add it to the Secret referenced by `secrets.existingSecret`:
+2. Add it to the Secret every role loads:
 
 ```bash
-kubectl create secret generic br-jd-courier-secrets \
-  --from-literal=LICENSE_KEY='your-license-key' \
-  --from-literal=JD_PASSWORD='your-jd-password' \
-  --from-literal=JD_SPI_CLIENT_SECRET='your-spi-client-secret' \
-  --dry-run=client -o yaml | kubectl apply -f - -n br-jd-courier
+# secrets.existingSecret, or the release fullname when it is empty
+# (br-jd-courier for the release name in these commands).
+SECRET_NAME=br-jd-courier
+# Adds the one key and leaves every other key of the Secret as it is.
+kubectl patch secret "$SECRET_NAME" -n br-jd-courier --type merge \
+  -p '{"stringData":{"JD_SPI_CLIENT_SECRET":"your-spi-client-secret"}}'
 ```
 
 > **Note:** If you do not use `JD_SPI_CLIENT_SECRET`, no action is required.
@@ -240,78 +238,16 @@ The Secret referenced by `secrets.existingSecret` may now contain:
 
 | Key | Required By | Description |
 |-----|-------------|-------------|
-| `JD_SPI_CLIENT_SECRET` | SPB roles, Pix transit (if used) | JD SPI client secret for authentication |
+| `JD_SPI_CLIENT_SECRET` | the admin with the Pix transit, single-tenant (required) | JD SPI client secret for authentication |
 
-> **Note:** This key is optional. Add it only if your deployment uses JD SPI authentication.
-
-### Example values.yaml with Pix transit enabled
-
-**Option 1: TLS terminated by the pod**
-
-```yaml
-jd-courier:
-  image:
-    tag: "1.1.0"
-
-secrets:
-  existingSecret: "br-jd-courier-secrets"
-
-config:
-  ENVIRONMENT_NAME: "production"
-  PLUGIN_AUTH_ENABLED: "true"
-  PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
-  JD_BASE_URL: "https://jd-consultores.example.com"
-  JD_ALLOW_PRIVATE_NETWORK: "false"
-
-ports:
-  pixTransit: 8082
-
-roles:
-  admin:
-    enabled: true
-    replicas: 1
-    pixTransit:
-      enabled: true
-      tls:
-        existingSecret: "br-jd-courier-pix-transit-tls"
-```
-
-**Option 2: TLS terminated upstream**
-
-```yaml
-jd-courier:
-  image:
-    tag: "1.1.0"
-
-secrets:
-  existingSecret: "br-jd-courier-secrets"
-
-config:
-  ENVIRONMENT_NAME: "production"
-  PLUGIN_AUTH_ENABLED: "true"
-  PLUGIN_AUTH_HOST: "http://access-manager.auth.svc.cluster.local"
-  JD_BASE_URL: "https://jd-consultores.example.com"
-  JD_ALLOW_PRIVATE_NETWORK: "false"
-
-ports:
-  pixTransit: 8082
-
-roles:
-  admin:
-    enabled: true
-    replicas: 1
-    pixTransit:
-      enabled: true
-      tls:
-        terminatedUpstream: true
-```
+> **Note:** A single-tenant admin serving the transit refuses to boot without `JD_SPI_BASE_URL`, `JD_SPI_CLIENT_ID` and this key. Multi-tenant reads each tenant's `jd-spi` bundle from Secrets Manager instead.
 
 ---
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.1.0 -n br-jd-courier
+helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.1.0 -n br-jd-courier -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -321,5 +257,6 @@ helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-co
 ## Command to upgrade
 
 ```bash
-helm upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.1.0 -n br-jd-courier
+helm upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.1.0 -n br-jd-courier -f values.yaml
 ```
+<!-- {% endraw %} -->

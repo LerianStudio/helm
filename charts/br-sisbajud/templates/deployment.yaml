@@ -14,6 +14,9 @@
 {{- $telemetry := eq (include "br-sisbajud.isTrue" (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" -}}
 {{- $obs := (.Values.global | default dict).observability | default dict -}}
 {{- $explicitEndpoint := or (hasKey $cm "OTEL_EXPORTER_OTLP_ENDPOINT") $obs.otlpEndpoint (hasKey $x "OTEL_EXPORTER_OTLP_ENDPOINT") -}}
+{{- $ex := include "br-sisbajud.execution" . | fromYaml -}}
+{{- $appVolumes := include "br-sisbajud.appVolumes" . | fromYamlArray -}}
+{{- $appMounts := include "br-sisbajud.appVolumeMounts" . | fromYamlArray -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,6 +48,9 @@ spec:
         {{- if not .Values.brSisbajud.useExistingSecret }}
         checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
         {{- end }}
+        {{- if and $ex.enabled $ex.generate }}
+        checksum/execution-tls: {{ include "br-sisbajud.executionTlsData" . | sha256sum }}
+        {{- end }}
         {{- with .Values.brSisbajud.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -57,8 +63,15 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "br-sisbajud.serviceAccountName" . }}
       automountServiceAccountToken: false
+      {{- /* The Secret files (execution TLS, client CA, JWT PEM) are mounted 0440:
+         the non-root app (GID 65532) reads them through fsGroup, injected when
+         podSecurityContext does not set one. */}}
+      {{- $podSc := deepCopy (.Values.podSecurityContext | default dict) }}
+      {{- if and $appVolumes (not (hasKey $podSc "fsGroup")) }}
+      {{- $_ := set $podSc "fsGroup" 65532 }}
+      {{- end }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml $podSc | nindent 8 }}
       initContainers:
         - name: wait-for-dependencies
           image: {{ .Values.brSisbajud.waitImage | default "busybox:1.36" }}
@@ -166,8 +179,18 @@ spec:
             {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.brSisbajud.service.port | default 4029 }}
+              containerPort: {{ .Values.brSisbajud.service.port | default 4031 }}
               protocol: TCP
+            {{- if $ex.enabled }}
+            # Execution API (FC-3): TLS terminated in the pod; no probe (TLS + bearer).
+            - name: execution
+              containerPort: {{ $ex.port }}
+              protocol: TCP
+            {{- end }}
+          {{- with $appMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: {{ .Values.brSisbajud.livenessProbe.path | default "/health" }}
@@ -188,11 +211,17 @@ spec:
             failureThreshold: {{ .Values.brSisbajud.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.brSisbajud.resources | nindent 12 }}
-      {{- if or (and .Values.topics.enabled (eq (include "br-sisbajud.redpandaEnabled" .) "true")) (eq (include "br-sisbajud.openbaoEnabled" .) "true") }}
+      {{- $bundleTmp := or (and .Values.topics.enabled (eq (include "br-sisbajud.redpandaEnabled" .) "true")) (eq (include "br-sisbajud.openbaoEnabled" .) "true") }}
+      {{- if or $bundleTmp $appVolumes }}
       volumes:
+        {{- if $bundleTmp }}
         # Writable HOME for the bundled topics (rpk) / transit (bao) initContainers, read-only rootfs.
         - name: bundle-tmp
           emptyDir: {}
+        {{- end }}
+        {{- with $appVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- if or .Values.brSisbajud.nodeSelector .Values.brSisbajud.affinity .Values.brSisbajud.tolerations }}
       {{- include "lerian-common.scheduling" .Values.brSisbajud | nindent 6 }}

@@ -1,9 +1,19 @@
-br-sisbajud {{ .Values.brSisbajud.image.tag | default .Chart.AppVersion }} (SISBAJUD plugin) has been deployed to namespace {{ include "global.namespace" . }}.
+br-sisbajud {{ .Values.brSisbajud.image.tag | default .Chart.AppVersion }} (Sisbajud Mensageria) has been deployed to namespace {{ include "global.namespace" . }}.
 Environment: ENVIRONMENT_NAME={{ include "br-sisbajud.envName" . }}
 
 Verify:
   kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
   kubectl -n {{ include "global.namespace" . }} get cm,secret -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- $ex := include "br-sisbajud.execution" . | fromYaml }}
+{{- if $ex.enabled }}
+
+Execution API (plugin-br-sisbajud MENSAGERIA_BASE_URL):
+  https://{{ include "br-sisbajud.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ $ex.port }}
+  TLS: {{ ternary "mutual (the plugin needs MENSAGERIA_MTLS_ENABLED=true + a client cert signed by the client CA)" "one-way (the plugin trusts the server CA)" (eq $ex.mtls "true") }}; server cert/key from Secret {{ $ex.tlsSecret }}{{ if eq $ex.mtls "true" }}, client CA from Secret {{ $ex.caSecret }} key {{ $ex.caKey }}{{ end }}.
+{{- if $ex.generate }}
+  The dev CA is in Secret {{ $ex.tlsSecret }} key ca.crt: copy it into the plugin's Mensageria CA Secret.
+{{- end }}
+{{- end }}
 
 {{- if .Values.migrations.enabled }}
 
@@ -39,10 +49,11 @@ hook Job ensures: {{ join ", " .Values.topics.list }}.
 {{- end }}
 {{- if $set }}
 
-WARNING: these keys are set but app 1.x no longer reads them, so the chart no
-longer emits them: {{ join ", " $set }}.
-The Midaz/CRM connector routing and credentials now live per institution in
-institution_config.connector_metadata (admin API). See docs/UPGRADE-1.2.md.
+WARNING: these keys are set but the Mensageria does not read them, so the chart
+no longer emits them: {{ join ", " $set }}.
+The Midaz/CRM connector routing and credentials live per institution in
+institution_config.connector_metadata (admin API, see docs/UPGRADE-1.2.md); the
+executor-side workers and Midaz balance consumers moved to plugin-br-sisbajud.
 {{- end }}
 {{- if eq (include "br-sisbajud.productionLike" .) "true" }}
 {{- $bundled := list }}
@@ -58,10 +69,10 @@ managed PostgreSQL / Valkey / S3 in production (global.datastores / global.objec
 {{- end }}
 {{- if eq (toString (index (.Values.brSisbajud.secrets | default dict) "LICENSE_KEY")) "REPLACE_WITH_YOUR_LICENSE_KEY" }}
 
-WARNING: LICENSE_KEY is still the values-dev placeholder. App {{ .Values.brSisbajud.image.tag | default .Chart.AppVersion }}
-requires a license in every environment (development included, no dev bypass):
-the pod will not boot until brSisbajud.secrets.LICENSE_KEY holds a real key
-(a dev-gateway key also needs brSisbajud.license.isDevelopment: "true").
+WARNING: LICENSE_KEY is still the old values-dev placeholder: the license gateway
+refuses it and the pod will not boot. Set a real key (a dev-gateway key also
+needs brSisbajud.license.isDevelopment: "true"), or leave it EMPTY in
+local|development|staging|e2e|test (the app's dev bypass).
 {{- end }}
 {{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" }}
 

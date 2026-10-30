@@ -1,5 +1,1477 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent behavior in production environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent behavior across environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Defaulted the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent deployment behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Defaulted the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Defaulted the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent behavior across environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent behavior across environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Set the Pix Lerian chart to default to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Defaulted the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent behavior in production environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on flags that default to true, ensuring consistent behavior in the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on flags that default to true. This change ensures that flags with a default value of true can explicitly be set to false when needed. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on flags that default to true, ensuring consistent behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.2...plugin-br-pix-lerian-v2.0.0)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` in app version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environment variables, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` feature in app version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environment variables, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` and update the app to version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environments, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` and update the app to version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environments, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` feature in app version `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Update app version to `1.1.0` and enable `pixauto`. (@Leonardox7)
+- Wire `pixauto` `v1.1.0` environments (adapter, CRM, read-replica) into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README. (@Leonardox7)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.2)
+
+Features:
+- Enable `pixauto` and update the app version to `1.1.0`. (@Leonardox7)
+
+Fixes:
+- Wire `pixauto` `v1.1.0` environments, including adapter, CRM, and read-replica, into the chart. (@Leonardox7)
+
+Improvements:
+- Name the two `pixauto` keys in the README for better clarity. (@Leonardox7)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.1...plugin-br-pix-lerian-v1.0.2)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensured the deployment otel gate respects the `global.observability.otlpEndpoint` setting. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Updated the build process to use the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Clarified that a supplied routes list replaces the default routes in the documentation. (@gandalf-at-lerian)
+- Aligned the README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects the `global.observability.otlpEndpoint` configuration. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to clarify that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to indicate that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Build against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensured the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the `global.observability.otlpEndpoint` is honored in the deployment OTEL gate. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Build against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Honored `global.observability.otlpEndpoint` in the deployment otel gate. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the `global.observability.otlpEndpoint` is honored in the deployment OTEL gate. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and COB proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to indicate that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Fixes:
+- Honour `global.observability.otlpEndpoint` in the deployment otel gate. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Build against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+- Say that a supplied routes list replaces the defaults in the documentation. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Honored `global.observability.otlpEndpoint` in the deployment otel gate. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to clarify that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects the `global.observability.otlpEndpoint` configuration. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to indicate that a supplied routes list will replace the default routes. (@gandalf-at-lerian)
+- Align the README and guides with the rendered chart for consistency. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensured that `global.observability.otlpEndpoint` is honored in the deployment otel gate. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensured the deployment otel gate honors `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to indicate that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to indicate that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the `global.observability.otlpEndpoint` setting is respected in the deployment's otel gate. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to clarify that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align the README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Updated the deployment otel gate to respect `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Built against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Clarified that a supplied routes list replaces the default routes in the documentation. (@gandalf-at-lerian)
+- Aligned the README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Build against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+- Update documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Honored `global.observability.otlpEndpoint` in the deployment otel gate. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Fixes:
+- Ensure the deployment otel gate respects `global.observability.otlpEndpoint`. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+- Update documentation to specify that a supplied routes list will replace the default routes. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+- Add a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Ensure the deployment otel gate respects the `global.observability.otlpEndpoint` configuration. (@guimoreirar, @gandalf-at-lerian)
+- Disable the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Render `configmap.ORGANIZATION_ID` on the components that require it. (@gandalf-at-lerian)
+- Build against the published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Update documentation to clarify that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Align README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Honored `global.observability.otlpEndpoint` in the deployment OTEL gate. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Honored `global.observability.otlpEndpoint` in the deployment OTEL gate. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and COB proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.1)
+
+Features:
+
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.0`. (@guimoreirar)
+
+Fixes:
+
+- Honored `global.observability.otlpEndpoint` in the deployment otel gate. (@guimoreirar, @gandalf-at-lerian)
+- Disabled the structural-only dict and cob proxies by default. (@gandalf-at-lerian)
+- Rendered `configmap.ORGANIZATION_ID` on the components that read it. (@gandalf-at-lerian)
+- Built against published `lerian-common` `2.1.2`. (@fredcamaral)
+
+Improvements:
+
+- Updated documentation to state that a supplied routes list replaces the defaults. (@gandalf-at-lerian)
+- Aligned README and guides with the rendered chart. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v1.0.0...plugin-br-pix-lerian-v1.0.1)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+- Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)
+
+Fixes:
+- Point pix-lerian at the real access-manager service. (@Leonardox7)
+- Prefix the pix-lerian provider-mock callback URLs. (@Leonardox7)
+- Gate pix-lerian telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in pix-lerian. (@Leonardox7)
+- Align pix-lerian's chart and app versions with what is published. (@Leonardox7)
+- Put the pix-lerian migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Ship pix-lerian's template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component pix-lerian's template enables. (@Leonardox7)
+- Stop pix-lerian `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop pix-lerian defaults from discarding an explicit zero. (@Leonardox7)
+- Give the pix-lerian bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the STANDARD contract. (@guimoreirar)
+- Productize configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Fix getting-started documentation with prefixed probe paths and correct license client number. (@guimoreirar)
+- Drop internal review checklist from the published runbook. (@guimoreirar)
+- Restructure the pix-lerian README. (@Leonardox7)
+- Drop the license bypass from pix-lerian troubleshooting. (@Leonardox7)
+- Disambiguate two version numbers in the pix-lerian changelog. (@Leonardox7)
+- Scope the pix-lerian values migration to the one key that breaks. (@Leonardox7)
+- State pix-lerian's `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in plugin-br-pix-lerian. (@Leonardox7)
+- Add render assertions and a CI fixture for pix-lerian. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+- Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)
+
+Fixes:
+- Point pix-lerian at the real access-manager service. (@Leonardox7)
+- Prefix the pix-lerian provider-mock callback URLs. (@Leonardox7)
+- Gate pix-lerian telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in pix-lerian. (@Leonardox7)
+- Align pix-lerian's chart and app versions with what is published. (@Leonardox7)
+- Put the pix-lerian migration Jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Ship pix-lerian's template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component pix-lerian's template enables. (@Leonardox7)
+- Stop pix-lerian `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop pix-lerian defaults from discarding an explicit zero. (@Leonardox7)
+- Give the pix-lerian bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Fix getting-started documentation (pt) by prefixing probe paths and updating the license client number. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Fix getting-started documentation by prefixing probe paths and correcting the license client number to 5. (@guimoreirar)
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Drop internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop `VALKEY_URL` from the chart. (@Leonardox7)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize `ConfigMap` surface with defaults-in-template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Port the chart from develop. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop extraEnvVars from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Fix getting-start guide by prefixing probe paths and correcting the license client number. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope the values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Add render assertions and a CI fixture. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+- Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)
+
+Fixes:
+- Point the plugin-br-pix-lerian at the real access-manager service. (@Leonardox7)
+- Prefix the plugin-br-pix-lerian provider-mock callback URLs. (@Leonardox7)
+- Gate plugin-br-pix-lerian telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in plugin-br-pix-lerian. (@Leonardox7)
+- Align plugin-br-pix-lerian's chart and app versions with what is published. (@Leonardox7)
+- Put the plugin-br-pix-lerian migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Ship plugin-br-pix-lerian's template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component plugin-br-pix-lerian's template enables. (@Leonardox7)
+- Stop plugin-br-pix-lerian `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop plugin-br-pix-lerian defaults from discarding an explicit zero. (@Leonardox7)
+- Give the plugin-br-pix-lerian bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Fix the getting-started documentation by prefixed probe paths; update the license client to 5 from 8. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Disambiguate two version numbers in the plugin-br-pix-lerian changelog. (@Leonardox7)
+- Scope the plugin-br-pix-lerian values migration to the one key that breaks. (@Leonardox7)
+- State plugin-br-pix-lerian's `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Restructure the plugin-br-pix-lerian README. (@Leonardox7)
+- Drop the license bypass from plugin-br-pix-lerian troubleshooting. (@Leonardox7)
+- Quote `ingressClassName` in plugin-br-pix-lerian. (@Leonardox7)
+- Add render assertions and a CI fixture for plugin-br-pix-lerian. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+- Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)
+
+Fixes:
+- Point the pix-lerian at the real access-manager service. (@Leonardox7)
+- Prefix the pix-lerian provider-mock callback URLs. (@Leonardox7)
+- Gate pix-lerian telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in pix-lerian. (@Leonardox7)
+- Align pix-lerian's chart and app versions with what is published. (@Leonardox7)
+- Put the pix-lerian migration Jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Ship pix-lerian's template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component pix-lerian's template enables. (@Leonardox7)
+- Stop pix-lerian `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop pix-lerian defaults from discarding an explicit zero. (@Leonardox7)
+- Give the pix-lerian bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the STANDARD contract. (@guimoreirar)
+- Productize configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Fix and enhance the getting-started documentation with prefixed probe paths and correct license client information. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Restructure the pix-lerian README. (@Leonardox7)
+- Disambiguate two version numbers in the pix-lerian changelog. (@Leonardox7)
+- Scope the pix-lerian values migration to the one key that breaks. (@Leonardox7)
+- State pix-lerian's `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in plugin-br-pix-lerian. (@Leonardox7)
+- Add render assertions and a CI fixture for pix-lerian. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Fix the getting-started documentation by prefixing probe paths and correcting the license client number to 5. (@guimoreirar)
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align the chart and app versions with what is published. (@Leonardox7)
+- Put migration jobs under `seccomp` `RuntimeDefault`. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Drop internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize the configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope the values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Port the chart from develop. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+- Port the plugin-br-pix-lerian chart from develop. (@Leonardox7)
+
+Fixes:
+- Point the plugin-br-pix-lerian at the real access-manager service. (@Leonardox7)
+- Prefix the plugin-br-pix-lerian provider-mock callback URLs. (@Leonardox7)
+- Gate plugin-br-pix-lerian telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED` in plugin-br-pix-lerian. (@Leonardox7)
+- Align plugin-br-pix-lerian's chart and app versions with what is published. (@Leonardox7)
+- Put the plugin-br-pix-lerian migration Jobs under seccomp `RuntimeDefault`. (@Leonardox7)
+- Ship plugin-br-pix-lerian's template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component plugin-br-pix-lerian's template enables. (@Leonardox7)
+- Stop plugin-br-pix-lerian `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop plugin-br-pix-lerian defaults from discarding an explicit zero. (@Leonardox7)
+- Give the plugin-br-pix-lerian bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop DICT outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the STANDARD contract. (@guimoreirar)
+- Productize the configmap surface with defaults-in-template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Fix the getting-started documentation (pt) by prefixing probe paths and correcting the license client number. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite the runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Restructure the plugin-br-pix-lerian README. (@Leonardox7)
+- Disambiguate two version numbers in the plugin-br-pix-lerian changelog. (@Leonardox7)
+- Scope the plugin-br-pix-lerian values migration to the one key that breaks. (@Leonardox7)
+- State plugin-br-pix-lerian's `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in plugin-br-pix-lerian. (@Leonardox7)
+- Add render assertions and a CI fixture for plugin-br-pix-lerian. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+- Port the chart from develop. (@Leonardox7)
+
+Fixes:
+- Point to the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Ship template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the ConfigMap. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt `lerian-common` masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize ConfigMap surface with defaults in template. (@guimoreirar)
+- Adopt `lerian-common` workload fragments. (@guimoreirar)
+- Fix getting-started documentation with prefixed probe paths and correct license client number. (@guimoreirar)
+- Drop internal review checklist from the published runbook. (@guimoreirar)
+- Rewrite runbook tone and add English version. (@guimoreirar)
+- Add getting-started runbook. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Add render assertions and a CI fixture. (@Leonardox7)
+
+Chore:
+- Track `1.0.0` and `1.0.0-beta.379`. (@Leonardox7)
+- Release as `1.0.0`. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
+## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
+
+Features:
+- Drive `STREAMING_ENABLED` from `global.streaming.enabled`. (@guimoreirar)
+- Consolidate `SD_*` via `global.serviceDiscovery` using a chart-local helper. (@guimoreirar)
+
+Fixes:
+- Point the plugin at the real access-manager service. (@Leonardox7)
+- Prefix the provider-mock callback URLs. (@Leonardox7)
+- Gate telemetry on the resolved flag. (@Leonardox7)
+- Keep the OTel endpoint when an operator overrides `HOST_IP`. (@Leonardox7)
+- Accept every `ParseBool` truthy `TELEMETRY_ENABLED`. (@Leonardox7)
+- Align chart and app versions with what is published. (@Leonardox7)
+- Put migration Jobs under `seccomp RuntimeDefault`. (@Leonardox7)
+- Ship the template with the proxies disabled. (@Leonardox7)
+- Set `ENV_NAME=production` on every component the template enables. (@Leonardox7)
+- Stop `extraEnvVars` from duplicating an env name. (@Leonardox7)
+- Stop defaults from discarding an explicit zero. (@Leonardox7)
+- Give the bootstrap Postgres Job a security context. (@Leonardox7)
+
+Improvements:
+- Always emit `OTEL_RESOURCE_SERVICE_VERSION` into the `ConfigMap`. (@guimoreirar)
+- Drop `DICT` outbound callback fields. (@Leonardox7)
+- Adopt lerian-common masks and emit the `STANDARD` contract. (@guimoreirar)
+- Productize `ConfigMap` surface with defaults-in-template. (@guimoreirar)
+- Adopt lerian-common workload fragments. (@guimoreirar)
+- Rewrite runbook tone and add an English version. (@guimoreirar)
+- Add a getting-started runbook. (@guimoreirar)
+- Fix the getting-started guide by prefixed probe paths and correcting the license client number. (@guimoreirar)
+- Drop the internal review checklist from the published runbook. (@guimoreirar)
+- Restructure the README. (@Leonardox7)
+- Disambiguate two version numbers in the changelog. (@Leonardox7)
+- Scope the values migration to the one key that breaks. (@Leonardox7)
+- State `ORGANIZATION_ID` and master-key contracts once. (@Leonardox7)
+- Quote `ingressClassName` in the template. (@Leonardox7)
+- Port the chart from develop. (@Leonardox7)
+
+[View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+
+---
+
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v1.0.0)
 
 Features:

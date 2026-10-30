@@ -538,14 +538,18 @@ Inputs (dict): cm, p (params map), f (field), k (env key), d (default), opt.
 {{- end -}}
 
 {{/*
-br-sisbajud.removedKeys — env keys app 1.x no longer reads. They are dropped
-from the ConfigMap/Secret escape hatch (NOTES.txt lists any that are still set).
-The Midaz/CRM connector routing and credentials moved to the per-institution
-institution_config.connector_metadata row; STA institution identity moved to
-the institution_config table.
+br-sisbajud.removedKeys — env keys the Mensageria does not read. They are
+dropped from the ConfigMap/Secret escape hatch (NOTES.txt lists any that are
+still set). The Midaz/CRM connector routing and credentials moved to the
+per-institution institution_config.connector_metadata row (app 1.x); the
+executor-side workers (execution, reconciliation, permanent-block expiry,
+rehash backfill, information request, monitoring expiry) and the Midaz balance
+consumers moved to plugin-br-sisbajud with the Mensageria split.
 */}}
 {{- define "br-sisbajud.removedKeys" -}}
-{{- list "BALANCE_CONSUMER_DLQ_SUFFIX" "CONNECTOR_CREDS_USE_SECRET_STORE" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "LEDGER_BALANCE_TOPIC" "MIDAZ_AUTH_ADDRESS" "MIDAZ_AUTH_ENABLED" "MIDAZ_BASE_URL" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "OTEL_RESOURCE_SERVICE_VERSION" "SECRET_STORE_PROVIDER" "STA_INSTITUTION_CODE" "STA_INSTITUTION_ID" "VAULT_KV_MOUNT" | toJson -}}
+{{- /* Monolith (app 1.x) keys + the executor-side keys that moved to
+   plugin-br-sisbajud when the Mensageria was split out of the monolith. */ -}}
+{{- list "BALANCE_CONSUMER_DLQ_SUFFIX" "BALANCE_CONSUMER_GROUP" "BALANCE_CONSUMER_RETRY_BUDGET" "BALANCE_DEDUP_TTL" "CONNECTOR_CREDS_USE_SECRET_STORE" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "EXECUTION_ENABLED" "INFORMATION_REQUEST_BATCH_SIZE" "INFORMATION_REQUEST_ENABLED" "INFORMATION_REQUEST_LOCK_TTL" "INFORMATION_REQUEST_SCAN_INTERVAL" "LEDGER_BALANCE_TOPIC" "MIDAZ_AUTH_ADDRESS" "MIDAZ_AUTH_ENABLED" "MIDAZ_BALANCE_CONSUMER_GROUP" "MIDAZ_BALANCE_DEFAULT_ACCOUNT_TYPE" "MIDAZ_BALANCE_TOPIC" "MIDAZ_BASE_URL" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "MIDAZ_CRM_MODE" "MIDAZ_MANIFEST_CHECK_INTERVAL" "MONITORING_EXPIRY_BATCH_SIZE" "MONITORING_EXPIRY_ENABLED" "MONITORING_EXPIRY_SCAN_INTERVAL" "ORCHESTRATOR_LOCK_TTL" "ORCHESTRATOR_RENEW_INTERVAL" "OTEL_RESOURCE_SERVICE_VERSION" "PERMANENT_BLOCK_EXPIRY_BATCH_SIZE" "PERMANENT_BLOCK_EXPIRY_ENABLED" "PERMANENT_BLOCK_EXPIRY_SCAN_INTERVAL" "RECONCILIATION_BATCH_SIZE" "RECONCILIATION_ENABLED" "RECONCILIATION_INTENSIFIED_ENABLED" "RECONCILIATION_INTENSIFIED_SCAN_INTERVAL" "RECONCILIATION_NEAR_DEADLINE_PERCENT" "RECONCILIATION_SCAN_INTERVAL" "REHASH_BACKFILL_BATCH_SIZE" "REHASH_BACKFILL_DROP_PREVIOUS_KEY_ENABLED" "REHASH_BACKFILL_ENABLED" "REHASH_BACKFILL_SCAN_INTERVAL" "SECRET_STORE_PROVIDER" "STA_CONSUMER_GROUP" "STA_INSTITUTION_CODE" "STA_INSTITUTION_ID" "UNBLOCK_EXECUTION_BATCH_SIZE" "UNBLOCK_EXECUTION_SCAN_INTERVAL" "VAULT_KV_MOUNT" "VERSION" | toJson -}}
 {{- end -}}
 
 {{/*
@@ -570,7 +574,8 @@ br-sisbajud.configmapData — every app env key the chart models, as ConfigMap
 `data` lines (one per line; blank lines are dropped by the caller). Dependency
 connections go through the lerian-common masks/env helpers; every other key
 goes through lerian-common.cfgValue (via br-sisbajud.kv). Contract source:
-LerianStudio/br-sisbajud config/.env.example + internal/bootstrap/config.go.
+LerianStudio/br-sfn services/sisbajud config/.env.example +
+internal/bootstrap/config*.go / execution_tls.go.
 */}}
 {{- define "br-sisbajud.configmapData" -}}
 {{- $ := . -}}
@@ -603,7 +608,6 @@ LerianStudio/br-sisbajud config/.env.example + internal/bootstrap/config.go.
 ENVIRONMENT_NAME: {{ $envName | quote }}
 ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "logLevel" "k" "LOG_LEVEL" "d" "info") }}
-{{ include $kv (dict "cm" $cm "p" $b.app "f" "version" "k" "VERSION" "d" $imageTag) }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "deploymentMode" "k" "DEPLOYMENT_MODE" "d" "byoc") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "defaultTenantId" "k" "DEFAULT_TENANT_ID" "d" "11111111-1111-1111-1111-111111111111") }}
 {{ include $kv (dict "cm" $cm "p" $b.app "f" "systemplaneEnabled" "k" "SYSTEMPLANE_ENABLED" "d" "false") }}
@@ -615,12 +619,39 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 {{ include $kv (dict "cm" $cm "p" $b.runtime "f" "godebug" "k" "GODEBUG" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.runtime "f" "gotraceback" "k" "GOTRACEBACK" "opt" true) }}
 # --- HTTP server + CORS --------------------------------------------------------
-{{ include $kv (dict "cm" $cm "p" $b.server "f" "address" "k" "SERVER_ADDRESS" "d" (printf "0.0.0.0:%v" ($b.service.port | default 4029))) }}
+{{ include $kv (dict "cm" $cm "p" $b.server "f" "address" "k" "SERVER_ADDRESS" "d" (printf "0.0.0.0:%v" ($b.service.port | default 4031))) }}
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "bodyLimitBytes" "k" "HTTP_BODY_LIMIT_BYTES" "d" "104857600") }}
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "tlsTerminatedUpstream" "k" "TLS_TERMINATED_UPSTREAM" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "tlsCertFile" "k" "SERVER_TLS_CERT_FILE" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.server "f" "tlsKeyFile" "k" "SERVER_TLS_KEY_FILE" "opt" true) }}
-{{- /* CORS. The app's config binds CORS_* (config.go ServerConfig, re-exported by
+# --- Execution API listener (FC-3: always TLS, in-pod; files mounted from Secrets) --
+{{- $ex := include "br-sisbajud.execution" . | fromYaml }}
+{{- if $ex.enabled }}
+{{- /* The containerPort and Service always follow execution.port: an address on another
+       port would leave the app listening where nothing routes. */}}
+{{- /* Effective value: extraEnvVars (container env, wins over the ConfigMap) > configmap > execution.address.
+       A valueFrom entry cannot be resolved at render time and is not checked. */}}
+{{- $exX := include "br-sisbajud.extraEnv" $ | fromYaml }}
+{{- $exAddr := trim (toString ((index $exX "SISBAJUD_EXECUTION_ADDRESS") | default (index $cm "SISBAJUD_EXECUTION_ADDRESS") | default (($b.execution | default dict).address) | default "")) }}
+{{- if eq $exAddr "__valueFrom__" }}{{- $exAddr = "" }}{{- end }}
+{{- if and $exAddr (ne (regexReplaceAll "^.*:" $exAddr "") (toString $ex.port)) }}
+{{- fail (printf "\n\nERROR: br-sisbajud: SISBAJUD_EXECUTION_ADDRESS %q listens on another port than brSisbajud.execution.port (%v), which the containerPort and Service follow.\n  set: brSisbajud.execution.port only (leave the address unset)\n" $exAddr $ex.port) }}
+{{- end }}
+{{ include $kv (dict "cm" $cm "p" $b.execution "f" "address" "k" "SISBAJUD_EXECUTION_ADDRESS" "d" (printf ":%v" $ex.port)) }}
+{{ include $kv (dict "cm" $cm "p" (dict) "f" "-" "k" "SISBAJUD_EXECUTION_MTLS_ENABLED" "d" $ex.mtls) }}
+{{ include $kv (dict "cm" $cm "p" (dict) "f" "-" "k" "SISBAJUD_EXECUTION_TLS_CERT_FILE" "d" $ex.certFile) }}
+{{ include $kv (dict "cm" $cm "p" (dict) "f" "-" "k" "SISBAJUD_EXECUTION_TLS_KEY_FILE" "d" $ex.keyFile) }}
+{{- if eq $ex.mtls "true" }}
+{{ include $kv (dict "cm" $cm "p" (dict) "f" "-" "k" "SISBAJUD_EXECUTION_CLIENT_CA_FILE" "d" $ex.caFile) }}
+{{- end }}
+{{- end }}
+# --- Execution sweeper + canary --------------------------------------------------
+{{- $es := $b.executionSweep | default dict }}
+{{ include $kv (dict "cm" $cm "p" $es "f" "responseDeadlineMargin" "k" "RESPONSE_DEADLINE_MARGIN" "d" "2h") }}
+{{ include $kv (dict "cm" $cm "p" $es "f" "drainedHeadAlarmAfter" "k" "EXECUTION_DRAINED_HEAD_ALARM_AFTER" "d" "30m") }}
+{{ include $kv (dict "cm" $cm "p" $es "f" "sweepIntervalSec" "k" "EXECUTION_SWEEP_INTERVAL_SEC" "d" "60") }}
+{{ include $kv (dict "cm" $cm "p" $es "f" "deadlineMarginSec" "k" "EXECUTION_DEADLINE_MARGIN_SEC" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $es "f" "canaryIntervalSec" "k" "EXECUTION_CANARY_INTERVAL_SEC" "d" "300") }}{{- /* CORS. The app's config binds CORS_* (config.go ServerConfig, re-exported by
    syncRuntimeEnvironment), but the middleware that enforces CORS is lib-commons
    v7.9.0 commons/net/http/withCORS.go, which reads ACCESS_CONTROL_ALLOW_ORIGIN /
    _METHODS / _HEADERS / _EXPOSE_HEADERS / _CREDENTIALS. Both families are emitted
@@ -701,6 +732,19 @@ VAULT_TRANSIT_MOUNT_PATH: {{ include "lerian-common.kms.value" (dict "context" $
 {{- if $awsRegion }}
 AWS_REGION: {{ $awsRegion | quote }}
 {{- end }}
+{{- /* aws key-mode keys (br-sfn#1156): rendered only when the effective provider is aws */}}
+{{- if eq $kmsProvider "aws" }}
+{{- $awsKeyMode := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsKeyMode" "nativeKey" "KMS_AWS_KEY_MODE" "default" "") | trim }}
+{{- if $awsKeyMode }}
+KMS_AWS_KEY_MODE: {{ $awsKeyMode | quote }}
+{{- end }}
+{{- $awsKeyArn := include "lerian-common.kms.value" (dict "context" $ "dedicated" $kmsDed "configmap" $cm "field" "awsKeyArn" "nativeKey" "KMS_AWS_KEY_ARN" "default" "") | trim }}
+{{- if $awsKeyArn }}
+KMS_AWS_KEY_ARN: {{ $awsKeyArn | quote }}
+{{- end }}
+{{ include $kv (dict "cm" $cm "p" $b.vault "f" "awsKmsTimeoutSec" "k" "KMS_AWS_TIMEOUT_SEC" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $b.vault "f" "awsKmsRotationCheckIntervalSec" "k" "KMS_AWS_ROTATION_CHECK_INTERVAL_SEC" "opt" true) }}
+{{- end }}
 # --- Envelope encryption + blind index ---------------------------------------
 {{ include $kv (dict "cm" $cm "p" $b.crypto "f" "dekCacheTtl" "k" "SISBAJUD_DEK_CACHE_TTL" "d" "5m") }}
 {{ include $kv (dict "cm" $cm "p" $b.crypto "f" "dekCacheMaxEntries" "k" "SISBAJUD_DEK_CACHE_MAX_ENTRIES" "d" "50000") }}
@@ -718,7 +762,6 @@ TRANSFER_OBJECT_STORAGE_BUCKET: {{ (hasKey $cm "TRANSFER_OBJECT_STORAGE_BUCKET" 
 STA_OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "dedicated" $osDed "configmap" $cm "name" "sta" "field" "endpoint" "nativeKey" "STA_OBJECT_STORAGE_ENDPOINT" "default" $seaweedEndpoint) | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "fileLockTtl" "k" "STA_FILE_LOCK_TTL" "d" "5") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "consumerEnabled" "k" "STA_CONSUMER_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $b.sta "f" "consumerGroup" "k" "STA_CONSUMER_GROUP" "d" "sisbajud-sta-consumer") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "consumerRetryBudget" "k" "STA_CONSUMER_RETRY_BUDGET" "d" "3") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "sourceProduct" "k" "STA_SOURCE_PRODUCT" "d" "br-sisbajud") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "bacenSystemCode" "k" "STA_BACEN_SYSTEM_CODE" "d" "JUD") }}
@@ -730,23 +773,17 @@ STA_OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "dedicated" $osDe
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "documentTypeAjud302" "k" "STA_DOCUMENT_TYPE_AJUD302" "d" "AJUD302") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "documentTypeAjud309" "k" "STA_DOCUMENT_TYPE_AJUD309" "d" "AJUD309") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "clientId" "k" "STA_CLIENT_ID" "d" "") }}
+{{- /* br-sta's own cluster for the fact consumer (never global.streaming). */}}
+{{- $staStream := ($b.sta | default dict).stream | default dict }}
+{{ include $kv (dict "cm" $cm "p" $staStream "f" "brokers" "k" "STA_STREAM_BROKERS" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $staStream "f" "saslMechanism" "k" "STA_STREAM_SASL_MECHANISM" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $staStream "f" "saslUsername" "k" "STA_STREAM_SASL_USERNAME" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $staStream "f" "saslAllowPlaintext" "k" "STA_STREAM_SASL_ALLOW_PLAINTEXT" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $staStream "f" "tlsEnabled" "k" "STA_STREAM_TLS_ENABLED" "opt" true) }}
 # --- Background workers ------------------------------------------------------
-{{ include $kv (dict "cm" $cm "p" $w.permanentBlockExpiry "f" "enabled" "k" "PERMANENT_BLOCK_EXPIRY_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $w.permanentBlockExpiry "f" "scanInterval" "k" "PERMANENT_BLOCK_EXPIRY_SCAN_INTERVAL" "d" "86400") }}
-{{ include $kv (dict "cm" $cm "p" $w.permanentBlockExpiry "f" "batchSize" "k" "PERMANENT_BLOCK_EXPIRY_BATCH_SIZE" "d" "500") }}
 {{ include $kv (dict "cm" $cm "p" $w.kekRewrapBackfill "f" "enabled" "k" "KEK_REWRAP_BACKFILL_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $w.kekRewrapBackfill "f" "scanInterval" "k" "KEK_REWRAP_BACKFILL_SCAN_INTERVAL" "d" "300") }}
 {{ include $kv (dict "cm" $cm "p" $w.kekRewrapBackfill "f" "batchSize" "k" "KEK_REWRAP_BACKFILL_BATCH_SIZE" "d" "100") }}
-{{ include $kv (dict "cm" $cm "p" $w.rehashBackfill "f" "enabled" "k" "REHASH_BACKFILL_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $w.rehashBackfill "f" "scanInterval" "k" "REHASH_BACKFILL_SCAN_INTERVAL" "d" "300") }}
-{{ include $kv (dict "cm" $cm "p" $w.rehashBackfill "f" "batchSize" "k" "REHASH_BACKFILL_BATCH_SIZE" "d" "100") }}
-{{ include $kv (dict "cm" $cm "p" $w.rehashBackfill "f" "dropPreviousKeyEnabled" "k" "REHASH_BACKFILL_DROP_PREVIOUS_KEY_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $w.reconciliation "f" "enabled" "k" "RECONCILIATION_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $w.reconciliation "f" "scanInterval" "k" "RECONCILIATION_SCAN_INTERVAL" "d" "3600") }}
-{{ include $kv (dict "cm" $cm "p" $w.reconciliation "f" "batchSize" "k" "RECONCILIATION_BATCH_SIZE" "d" "500") }}
-{{ include $kv (dict "cm" $cm "p" $w.reconciliation "f" "intensifiedEnabled" "k" "RECONCILIATION_INTENSIFIED_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $w.reconciliation "f" "intensifiedScanInterval" "k" "RECONCILIATION_INTENSIFIED_SCAN_INTERVAL" "d" "300") }}
-{{ include $kv (dict "cm" $cm "p" $w.reconciliation "f" "nearDeadlinePercent" "k" "RECONCILIATION_NEAR_DEADLINE_PERCENT" "d" "75") }}
 {{ include $kv (dict "cm" $cm "p" $w.slaAlert "f" "enabled" "k" "SLA_ALERT_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $w.slaAlert "f" "scanInterval" "k" "SLA_ALERT_SCAN_INTERVAL" "d" "60") }}
 {{ include $kv (dict "cm" $cm "p" $w.returnFile "f" "enabled" "k" "RETURN_FILE_GENERATION_ENABLED" "d" "false") }}
@@ -756,18 +793,6 @@ STA_OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "dedicated" $osDe
 {{ include $kv (dict "cm" $cm "p" $w.informationReturnFile "f" "enabled" "k" "INFORMATION_RETURN_FILE_GENERATION_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $w.informationReturnFile "f" "scanInterval" "k" "INFORMATION_RETURN_FILE_GENERATION_SCAN_INTERVAL" "d" "3600") }}
 {{ include $kv (dict "cm" $cm "p" $w.informationReturnFile "f" "limit" "k" "INFORMATION_RETURN_FILE_GENERATION_LIMIT" "d" "500") }}
-{{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "enabled" "k" "INFORMATION_REQUEST_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "scanInterval" "k" "INFORMATION_REQUEST_SCAN_INTERVAL" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "batchSize" "k" "INFORMATION_REQUEST_BATCH_SIZE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $w.informationRequest "f" "lockTtl" "k" "INFORMATION_REQUEST_LOCK_TTL" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $w.monitoringExpiry "f" "enabled" "k" "MONITORING_EXPIRY_ENABLED" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $w.monitoringExpiry "f" "scanInterval" "k" "MONITORING_EXPIRY_SCAN_INTERVAL" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $w.monitoringExpiry "f" "batchSize" "k" "MONITORING_EXPIRY_BATCH_SIZE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $w.execution "f" "enabled" "k" "EXECUTION_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $w.execution "f" "orchestratorLockTtl" "k" "ORCHESTRATOR_LOCK_TTL" "d" "30") }}
-{{ include $kv (dict "cm" $cm "p" $w.execution "f" "orchestratorRenewInterval" "k" "ORCHESTRATOR_RENEW_INTERVAL" "d" "10") }}
-{{ include $kv (dict "cm" $cm "p" $w.execution "f" "unblockScanInterval" "k" "UNBLOCK_EXECUTION_SCAN_INTERVAL" "d" "60") }}
-{{ include $kv (dict "cm" $cm "p" $w.execution "f" "unblockBatchSize" "k" "UNBLOCK_EXECUTION_BATCH_SIZE" "d" "500") }}
 {{ include $kv (dict "cm" $cm "p" $w.processingLockReaper "f" "enabled" "k" "PROCESSING_LOCK_REAPER_ENABLED" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $w.processingLockReaper "f" "intervalSec" "k" "PROCESSING_LOCK_REAPER_INTERVAL_SEC" "d" "300") }}
 # --- Remittance layout ---------------------------------------------------------
@@ -781,7 +806,7 @@ STA_OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "dedicated" $osDe
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "publishMaxAttempts" "k" "OUTBOX_PUBLISH_MAX_ATTEMPTS" "d" "3") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "publishBackoffMs" "k" "OUTBOX_PUBLISH_BACKOFF_MS" "d" "200") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "retryWindowSec" "k" "OUTBOX_RETRY_WINDOW_SEC" "d" "300") }}
-{{ include $kv (dict "cm" $cm "p" $b.outbox "f" "maxDispatchAttempts" "k" "OUTBOX_MAX_DISPATCH_ATTEMPTS" "d" "10") }}
+{{ include $kv (dict "cm" $cm "p" $b.outbox "f" "maxDispatchAttempts" "k" "OUTBOX_MAX_DISPATCH_ATTEMPTS" "d" "864") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "processingTimeoutSec" "k" "OUTBOX_PROCESSING_TIMEOUT_SEC" "d" "600") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "maxFailedPerBatch" "k" "OUTBOX_MAX_FAILED_PER_BATCH" "d" "25") }}
 {{ include $kv (dict "cm" $cm "p" $b.outbox "f" "includeTenantMetrics" "k" "OUTBOX_INCLUDE_TENANT_METRICS" "d" "false") }}
@@ -797,20 +822,18 @@ STREAMING_ENABLED: {{ $streamingRaw | quote }}
    default 30s), or SIGKILL cuts the producer drain/flush short. */}}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "topicAutoProvision" "k" "STREAMING_TOPIC_AUTO_PROVISION" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "closeTimeoutS" "k" "STREAMING_CLOSE_TIMEOUT_S" "d" "20") }}
+{{ include $kv (dict "cm" $cm "p" $b.streaming "f" "topicPartitions" "k" "STREAMING_TOPIC_PARTITIONS" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $b.streaming "f" "topicReplicationFactor" "k" "STREAMING_TOPIC_REPLICATION_FACTOR" "opt" true) }}
 {{ include "lerian-common.streaming.env" (dict "context" (dict "Values" (dict "global" (dict "streaming" (include "br-sisbajud.streamingGlobal" . | fromYaml)))) "enabled" $streamingOn "configmap" $cm) }}
-{{ include $kv (dict "cm" $cm "p" $b.balanceConsumer "f" "group" "k" "BALANCE_CONSUMER_GROUP" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $b.balanceConsumer "f" "dedupTtl" "k" "BALANCE_DEDUP_TTL" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $b.balanceConsumer "f" "retryBudget" "k" "BALANCE_CONSUMER_RETRY_BUDGET" "opt" true) }}
-# --- Midaz ledger (balance translator + connector surface) ---------------------
-{{ include $kv (dict "cm" $cm "p" $b.midaz "f" "balanceTopic" "k" "MIDAZ_BALANCE_TOPIC" "d" "lerian.streaming.ledger") }}
-{{ include $kv (dict "cm" $cm "p" $b.midaz "f" "balanceConsumerGroup" "k" "MIDAZ_BALANCE_CONSUMER_GROUP" "d" "sisbajud-midaz-balance-translator") }}
-{{ include $kv (dict "cm" $cm "p" $b.midaz "f" "balanceDefaultAccountType" "k" "MIDAZ_BALANCE_DEFAULT_ACCOUNT_TYPE" "d" "deposit") }}
-{{ include $kv (dict "cm" $cm "p" $b.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "legacy") }}
-{{ include $kv (dict "cm" $cm "p" $b.midaz "f" "manifestCheckInterval" "k" "MIDAZ_MANIFEST_CHECK_INTERVAL" "d" "15m") }}
 # --- Inbound auth (lerian-common.auth.env) -------------------------------------
 {{ include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "") }}
 {{ include $kv (dict "cm" $cm "p" $b.auth "f" "trustedProxies" "k" "TRUSTED_PROXIES" "d" "") }}
 {{ include $kv (dict "cm" $cm "p" $b.auth "f" "productName" "k" "AUTH_PRODUCT_NAME" "opt" true) }}
+{{- /* Local bearer verification (lib-auth reads these itself). The PEM is the
+   Access Manager's PUBLIC key/cert, not a credential. */}}
+{{ include $kv (dict "cm" $cm "p" $b.auth "f" "jwtIssuer" "k" "AUTH_JWT_ISSUER" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $b.auth "f" "jwtVerifyCert" "k" "AUTH_JWT_VERIFY_CERT" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $b.auth "f" "jwtVerifyCertPath" "k" "AUTH_JWT_VERIFY_CERT_PATH" "d" (include "br-sisbajud.jwtVerifyCertMountFile" .) "opt" true) }}
 # --- Access-manager declaration publisher (lib-auth); client secret in the Secret --
 {{ include $kv (dict "cm" $cm "p" $b.identity "f" "declarationEnabled" "k" "IDP_DECLARATION_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $b.identity "f" "host" "k" "IDP_HOST" "d" "") }}
@@ -821,7 +844,7 @@ STREAMING_ENABLED: {{ $streamingRaw | quote }}
 # --- OpenTelemetry (lerian-common.otel.env) ------------------------------------
 {{ include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" $telemetryDefault "endpointDefault" "localhost:4317" "deploymentEnvironmentDefault" $envName) }}
 {{ include $kv (dict "cm" $cm "p" $b.observability "f" "serviceName" "k" "OTEL_RESOURCE_SERVICE_NAME" "d" "br-sisbajud") }}
-{{ include $kv (dict "cm" $cm "p" $b.observability "f" "libraryName" "k" "OTEL_LIBRARY_NAME" "d" "github.com/LerianStudio/br-sisbajud") }}
+{{ include $kv (dict "cm" $cm "p" $b.observability "f" "libraryName" "k" "OTEL_LIBRARY_NAME" "d" "github.com/LerianStudio/br-sfn/services/sisbajud") }}
 # --- Rate limiting (lerian-common.rateLimit.env) -------------------------------
 {{ include "lerian-common.rateLimit.env" (dict "configmap" $cm "params" $b.rateLimit) }}
 # --- Swagger -------------------------------------------------------------------
@@ -866,7 +889,7 @@ POSTGRES_PASSWORD: {{ $s.POSTGRES_PASSWORD | quote }}
 {{- if and (not $vkInternal) (not $vkAuth.existingSecret) $s.REDIS_PASSWORD }}
 REDIS_PASSWORD: {{ $s.REDIS_PASSWORD | quote }}
 {{- end }}
-{{- range $k := list "POSTGRES_REPLICA_PASSWORD" "LICENSE_KEY" "VAULT_TOKEN" "VAULT_APPROLE_SECRET_ID" "SEAWEEDFS_ACCESS_KEY" "SEAWEEDFS_SECRET_KEY" "STA_CLIENT_SECRET" "IDP_M2M_CLIENT_SECRET" }}
+{{- range $k := list "POSTGRES_REPLICA_PASSWORD" "LICENSE_KEY" "VAULT_TOKEN" "VAULT_APPROLE_SECRET_ID" "SEAWEEDFS_ACCESS_KEY" "SEAWEEDFS_SECRET_KEY" "STA_CLIENT_SECRET" "STA_STREAM_SASL_PASSWORD" "STA_STREAM_TLS_CA_CERT" "IDP_M2M_CLIENT_SECRET" }}
 {{- with index $s $k }}
 {{ $k }}: {{ . | quote }}
 {{- end }}
@@ -923,6 +946,7 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- $b := .Values.brSisbajud -}}
 {{- $cm := $b.configmap | default dict -}}
 {{- include "br-sisbajud.bundleGuard" . -}}
+{{- include "br-sisbajud.validateMensageria" . -}}
 {{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
 {{- $req := "br-sisbajud.required" -}}
 {{- $prodLike := eq (include "br-sisbajud.productionLike" .) "true" -}}
@@ -930,13 +954,6 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- $mtOn := eq (include "br-sisbajud.multiTenantEnabled" .) "true" -}}
 {{- /* STA inbound bucket: validated unconditionally by the app (no default by policy). */ -}}
 {{- include $req (dict "context" $ "key" "STA_INBOUND_BUCKET" "value" (index $data "STA_INBOUND_BUCKET") "why" "(the app refuses to boot without it; it must match br-sta's transfer bucket for the tier)" "set" "global.objectStorage.sta.bucket (or brSisbajud.objectStorage.sta.bucket)") -}}
-{{- /* STA consumer and transfers go together: app 1.2.x builds the shared-bucket
-   store only with transfers on, so the consumer alone leaves sta_bucket_parity
-   down (not_configured) and /health at 503 — the liveness probe restarts the pod
-   in a loop. Both off (the default) or both on. */ -}}
-{{- if and (eq (toString (index $data "STA_CONSUMER_ENABLED")) "true") (ne (toString (index $data "STA_TRANSFERS_ENABLED")) "true") -}}
-{{- fail "\n\nERROR: br-sisbajud: brSisbajud.sta.consumerEnabled needs brSisbajud.sta.transfersEnabled.\n  App 1.2.x builds the shared STA bucket store only with transfers on: with the consumer alone the readiness check sta_bucket_parity reports down (not_configured), /health answers 503 and the liveness probe restarts the pod in a loop.\n  set: both false (default), or both true (transfers need an access-manager for the m2m token: global.auth.host + brSisbajud.sta.clientId / STA_CLIENT_SECRET)\n" -}}
-{{- end -}}
 {{- /* Single-tenant datastores. */ -}}
 {{- if not $mtOn -}}
 {{- include $req (dict "context" $ "key" "POSTGRES_HOST" "value" (index $data "POSTGRES_HOST") "why" "when multi-tenancy is off (or enable the bundled postgresql subchart)" "set" "global.datastores.postgres.host") -}}
@@ -947,10 +964,11 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- include $req (dict "context" $ "key" "POSTGRES_PASSWORD" "secret" true "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q) with external Postgres" $envName) "set" "brSisbajud.secrets.POSTGRES_PASSWORD") -}}
 {{- end -}}
 {{- end -}}
-{{- /* License: fail-closed in EVERY environment (app 1.2.0+: no unlicensed mode and
-   no dev bypass; only a local -tags licensetest build, never the published image,
-   runs without one). ENVIRONMENT_NAME still relaxes other gates, not this one. */ -}}
-{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" (printf "in every environment (ENVIRONMENT_NAME=%q; app 1.2.0+ refuses to boot without a license, there is no dev bypass)" $envName) "set" "brSisbajud.secrets.LICENSE_KEY (a dev-gateway key also needs brSisbajud.license.isDevelopment: \"true\")") -}}
+{{- /* License (validateLicenseConfig): required in a production-like environment; in
+   local|development|staging|e2e|test an empty LICENSE_KEY is the app's dev bypass. */ -}}
+{{- if $prodLike -}}
+{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q; the app refuses to boot unlicensed)" $envName) "set" "brSisbajud.secrets.LICENSE_KEY (a dev-gateway key also needs brSisbajud.license.isDevelopment: \"true\")") -}}
+{{- end -}}
 {{- /* KMS backend. */ -}}
 {{- $kms := index $data "KMS_PROVIDER" -}}
 {{- if not (has $kms (list "vault" "aws")) -}}
@@ -971,14 +989,66 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- end -}}
 {{- else -}}
 {{- include $req (dict "context" $ "key" "AWS_REGION" "value" (index $data "AWS_REGION") "why" "when KMS_PROVIDER=aws" "set" "global.kms.awsRegion (or brSisbajud.kms.awsRegion)") -}}
+{{- /* AWS KMS key mode. The chart mirrors presence, exclusion and range only; ARN
+   format, alias and region consistency stay with the app boot
+   (config_validation.go). "^[0-9]+$" is deliberately stricter than Go Atoi
+   (it refuses "+30"). Timeout and interval are trimmed before validation, as
+   the app does (TrimSpace); the rendered value is unchanged. Case is not normalised: "Managed" fails, as in the app. */ -}}
+{{- $mode := toString (index $data "KMS_AWS_KEY_MODE" | default "") | trim -}}
+{{- if not (has $mode (list "managed" "provided")) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_PROVIDER=aws now requires KMS_AWS_KEY_MODE (managed | provided), got %q (the app refuses to boot without it).\n  set: brSisbajud.kms.awsKeyMode (or global.kms.awsKeyMode, or brSisbajud.configmap.KMS_AWS_KEY_MODE)\n" $mode) -}}
 {{- end -}}
-{{- /* Streaming (on by default): the app fails at boot when enabled without brokers,
-   and without TLS in a production-like environment (validateProductionConfig). With
-   TLS on, every consumer (Midaz balance translator, balance consumer, STA consumer)
-   builds its dialer from STREAMING_TLS_CA_CERT and silently never starts without it
-   (buildStreamingTLSConfig; wiring failures are non-fatal), so the CA is required. */ -}}
+{{- $keyArn := toString (index $data "KMS_AWS_KEY_ARN" | default "") | trim -}}
+{{- if eq $mode "provided" -}}
+{{- include $req (dict "context" $ "key" "KMS_AWS_KEY_ARN" "value" $keyArn "why" "when KMS_AWS_KEY_MODE=provided" "set" "brSisbajud.kms.awsKeyArn (or global.kms.awsKeyArn)") -}}
+{{- else if $keyArn -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_AWS_KEY_ARN must be empty when KMS_AWS_KEY_MODE=managed (got %q; the app creates and owns the key).\n  set: unset brSisbajud.kms.awsKeyArn, global.kms.awsKeyArn and brSisbajud.configmap.KMS_AWS_KEY_ARN, or brSisbajud.kms.awsKeyMode=provided\n" $keyArn) -}}
+{{- end -}}
+{{- if hasKey $data "KMS_AWS_TIMEOUT_SEC" -}}
+{{- $kt := toString (index $data "KMS_AWS_TIMEOUT_SEC") | trim -}}
+{{- if or (not (regexMatch "^[0-9]+$" $kt)) (lt (atoi $kt) 1) (gt (atoi $kt) 600) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_AWS_TIMEOUT_SEC must be a whole number of seconds between 1 and 600 (got %q).\n  set: brSisbajud.vault.awsKmsTimeoutSec\n" $kt) -}}
+{{- end -}}
+{{- end -}}
+{{- /* Rotation interval: only read by the app in provided mode (ignored in managed). */ -}}
+{{- if and (eq $mode "provided") (hasKey $data "KMS_AWS_ROTATION_CHECK_INTERVAL_SEC") -}}
+{{- $ri := toString (index $data "KMS_AWS_ROTATION_CHECK_INTERVAL_SEC") | trim -}}
+{{- if or (not (regexMatch "^[0-9]+$" $ri)) (lt (atoi $ri) 1) (gt (atoi $ri) 86400) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: KMS_AWS_ROTATION_CHECK_INTERVAL_SEC must be a whole number of seconds between 1 and 86400 when KMS_AWS_KEY_MODE=provided (got %q).\n  set: brSisbajud.vault.awsKmsRotationCheckIntervalSec\n" $ri) -}}
+{{- end -}}
+{{- end -}}
+{{- /* Image-tag gate (CA-10): images before 1.1.0-beta.13 ignore KMS_AWS_KEY_MODE /
+   KMS_AWS_KEY_ARN and create their own KMS key, silently. Same effective tag as
+   configmapData/deployment.yaml (DR-04, rule B'):
+   - a tag is verifiable ONLY in the canonical form
+     ^v?MAJOR.MINOR.PATCH(-(alpha|beta|rc).N)?$ (no "@", no leading zeros: SemVer
+     2.0.0 forbids leading zeros, so it is unverifiable, not lower). Such a tag is compared with
+     $min (the acknowledgement is NOT consulted): below it fails even with the flag.
+   - everything else FAILS CLOSED (DR-03/DR-04) unless acknowledged, and with the
+     acknowledgement no version check is made: "@" (tag@digest or digest-only; the
+     kubelet pulls by digest, so the label may lie), other suffixes (-amd64, beta1,
+     -beta.13-amd64), build metadata (+x), non-SemVer (latest, mirror tags).
+   The acknowledgement is brSisbajud.kms.allowUnverifiableImageTag only:
+   global.kms.allowUnverifiableImageTag is intentionally ignored because the minimum
+   tag differs per chart. */ -}}
+{{- $rawTag := $b.image.tag | default .Chart.AppVersion | toString -}}
+{{- $min := "1.1.0-beta.13" -}}
+{{- $ackTag := eq (toString (($b.kms | default dict).allowUnverifiableImageTag)) "true" -}}
+{{- if regexMatch "^v?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\\.(0|[1-9][0-9]*))?$" $rawTag -}}
+{{- if semverCompare (printf "<%s" $min) (trimPrefix "v" $rawTag) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q with KMS_PROVIDER=aws ignores KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and creates its own KMS key.\n  set: brSisbajud.image.tag >= %s\n" $rawTag $min) -}}
+{{- end -}}
+{{- else if not $ackTag -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: image tag %q is not in the canonical form vX.Y.Z[-(alpha|beta|rc).N] (digest pins, arch suffixes, build metadata and non-SemVer tags are refused), so the chart cannot verify it is >= %s (older images with KMS_PROVIDER=aws ignore KMS_AWS_KEY_MODE/KMS_AWS_KEY_ARN and create their own KMS key).\n  set: a canonical brSisbajud.image.tag >= %s, or brSisbajud.kms.allowUnverifiableImageTag: true to acknowledge the image is >= %s\n" $rawTag $min $min $min) -}}
+{{- end -}}
+{{- end -}}
+{{- /* Streaming (mandatory, see validateMensageria): the app fails at boot without
+   brokers, and without TLS in a production-like environment
+   (validateProductionConfig). The only STREAMING_* client is the lib-streaming
+   producer, for which an empty STREAMING_TLS_CA_CERT means the system trust pool,
+   so the CA is optional (the STA consumer dials its own STA_STREAM_* cluster). */ -}}
 {{- if eq (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true" -}}
-{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "when STREAMING_ENABLED=true (streaming is on by default; set global.streaming.enabled=false to run without a broker)" "set" "global.streaming.brokers") -}}
+{{- include $req (dict "context" $ "key" "STREAMING_BROKERS" "value" (index $data "STREAMING_BROKERS") "why" "(the Mensageria refuses to boot without a broker)" "set" "global.streaming.brokers") -}}
 {{- /* TLS may also arrive as a brSisbajud.extraEnvVars entry (the 1.1.x wiring); a
    valueFrom is undecidable at render, so both TLS gates are skipped for it. */ -}}
 {{- $xs := include "br-sisbajud.extraEnv" . | fromYaml -}}
@@ -987,10 +1057,7 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- $tlsKnown := ne (toString $tlsRaw) "__valueFrom__" -}}
 {{- $tlsOn := eq (include "br-sisbajud.isTrue" $tlsRaw) "true" -}}
 {{- if and $tlsKnown $prodLike (not $tlsOn) -}}
-{{- fail (printf "\n\nERROR: br-sisbajud: STREAMING_TLS_ENABLED=true is required when STREAMING_ENABLED=true in a production-like environment (ENVIRONMENT_NAME=%q; the app refuses to boot).\n  set: global.streaming.tlsEnabled=true (+ brSisbajud.secrets.STREAMING_TLS_CA_CERT)\n" $envName) -}}
-{{- end -}}
-{{- if $tlsOn -}}
-{{- include $req (dict "context" $ "key" "STREAMING_TLS_CA_CERT" "secret" true "why" "when STREAMING_ENABLED=true and STREAMING_TLS_ENABLED=true (base64 PEM of the broker CA: without it the Midaz balance translator, the balance consumer and the STA consumer never start)" "set" "brSisbajud.secrets.STREAMING_TLS_CA_CERT") -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: STREAMING_TLS_ENABLED=true is required when STREAMING_ENABLED=true in a production-like environment (ENVIRONMENT_NAME=%q; the app refuses to boot).\n  set: global.streaming.tlsEnabled=true (+ brSisbajud.secrets.STREAMING_TLS_CA_CERT for a private CA)\n" $envName) -}}
 {{- end -}}
 {{- $closeS := toString (index $data "STREAMING_CLOSE_TIMEOUT_S") -}}
 {{- if or (not (regexMatch "^[0-9]+$" $closeS)) (ge (atoi $closeS) 30) -}}
@@ -999,10 +1066,6 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- else if or (index $data "STREAMING_BROKERS") (index $cm "STREAMING_BROKERS") -}}
 {{- /* The app refuses STREAMING_BROKERS with STREAMING_ENABLED=false (validateStreamingEnablement). */ -}}
 {{- fail "\n\nERROR: br-sisbajud: STREAMING_BROKERS is set while STREAMING_ENABLED=false (the app refuses to boot: the Midaz balance translator would publish into a no-op).\n  set: global.streaming.enabled=true, or unset brSisbajud.configmap.STREAMING_BROKERS\n" -}}
-{{- end -}}
-{{- /* The STA consumer reads br-sta's facts off STREAMING_BROKERS, which the app only accepts with streaming on. */ -}}
-{{- if and (eq (include "br-sisbajud.isTrue" (index $data "STA_CONSUMER_ENABLED")) "true") (ne (include "br-sisbajud.isTrue" (index $data "STREAMING_ENABLED")) "true") -}}
-{{- fail "\n\nERROR: br-sisbajud: STA_CONSUMER_ENABLED=true requires STREAMING_ENABLED=true (the consumer needs STREAMING_BROKERS, which the app refuses while streaming is off).\n  set: global.streaming.enabled=true + global.streaming.brokers, or brSisbajud.sta.consumerEnabled=false\n" -}}
 {{- end -}}
 {{- /* STA transfers client (m2m to br-sta). */ -}}
 {{- if eq (include "br-sisbajud.isTrue" (index $data "STA_TRANSFERS_ENABLED")) "true" -}}
@@ -1021,14 +1084,16 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- include $req (dict "context" $ "key" "IDP_M2M_CLIENT_ID" "value" (index $data "IDP_M2M_CLIENT_ID") "why" "when IDP_DECLARATION_ENABLED=true" "set" "brSisbajud.identity.m2mClientId") -}}
 {{- include $req (dict "context" $ "key" "IDP_M2M_CLIENT_SECRET" "secret" true "why" "when IDP_DECLARATION_ENABLED=true" "set" "brSisbajud.secrets.IDP_M2M_CLIENT_SECRET") -}}
 {{- end -}}
-{{- /* License mode: GLOBAL only, required in every environment (the app refuses an
-   empty ORGANIZATION_IDS whatever ENVIRONMENT_NAME says). A literal
+{{- /* License mode: GLOBAL only; required in a production-like environment and, when
+   set, it must be "global" everywhere (validateLicenseConfig). A literal
    brSisbajud.extraEnvVars entry wins over the ConfigMap; a valueFrom is
    undecidable at render and only counts as provided. */ -}}
 {{- $orgX := include "br-sisbajud.extraEnv" . | fromYaml -}}
 {{- $org := trim (toString (index $data "ORGANIZATION_IDS")) -}}
 {{- if hasKey $orgX "ORGANIZATION_IDS" -}}{{- $org = trim (toString (index $orgX "ORGANIZATION_IDS")) -}}{{- end -}}
-{{- include $req (dict "context" $ "key" "ORGANIZATION_IDS" "value" $org "why" (printf "in every environment (ENVIRONMENT_NAME=%q) and must be \"global\"" $envName) "set" "brSisbajud.license.organizationIds: \"global\" (the default)") -}}
+{{- if $prodLike -}}
+{{- include $req (dict "context" $ "key" "ORGANIZATION_IDS" "value" $org "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q) and must be \"global\"" $envName) "set" "brSisbajud.license.organizationIds: \"global\" (the default)") -}}
+{{- end -}}
 {{- if and $org (ne $org "__valueFrom__") (ne (lower $org) "global") -}}
 {{- fail (printf "\n\nERROR: br-sisbajud: ORGANIZATION_IDS must be \"global\" (got %q): the app supports GLOBAL license mode only.\n" $org) -}}
 {{- end -}}
@@ -1140,6 +1205,11 @@ idempotent and lock-protected). Used by the Job and, with a bundled Postgres, as
 an app initContainer so the app never boots on an unmigrated schema.
 */}}
 {{- define "br-sisbajud.migrationsContainer" -}}
+{{- /* The runner refuses MULTI_TENANT_ENABLED=true (tenant schemas are migrated by the
+       service per tenant); rendering it would migrate the global POSTGRES_HOST instead. */ -}}
+{{- if eq (include "br-sisbajud.multiTenantEnabled" .) "true" -}}
+{{- fail "\n\nERROR: br-sisbajud: the migrations runner does not support MULTI_TENANT_ENABLED=true (tenant schemas are migrated by the service).\n  set: migrations.enabled=false with multi-tenancy on\n" -}}
+{{- end -}}
 {{- $c := include "br-sisbajud.migrationsConn" . | fromYaml -}}
 {{- $pgHost := $c.host -}}{{- $pgPort := $c.port -}}{{- $pgUser := $c.user -}}{{- $pgDb := $c.db -}}{{- $pgSslMode := $c.ssl -}}
 {{- $pgConnectTimeout := $c.connectTimeout -}}{{- $allowInsecureTLS := $c.allowInsecureTLS -}}{{- $secretName := $c.secretName -}}
@@ -1167,6 +1237,10 @@ an app initContainer so the app never boots on an unmigrated schema.
       value: {{ include "br-sisbajud.envName" . | quote }}
     - name: POSTGRES_CONNECT_TIMEOUT_SEC
       value: {{ $pgConnectTimeout | quote }}
+    {{- with .Values.migrations.timeoutSec }}
+    - name: MIGRATIONS_TIMEOUT_SEC
+      value: {{ . | toString | quote }}
+    {{- end }}
     - {{ $c.passwordEnv | fromJson | toYaml | nindent 6 | trim }}
   securityContext:
     runAsUser: 65532
@@ -1355,5 +1429,234 @@ dedicated or spot-only node pool schedules them like the app. Input: root.
 {{- define "br-sisbajud.jobScheduling" -}}
 {{- if or .Values.brSisbajud.nodeSelector .Values.brSisbajud.affinity .Values.brSisbajud.tolerations -}}
 {{- include "lerian-common.scheduling" .Values.brSisbajud -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+==============================================================================
+Execution API listener (FC-3). The Mensageria serves /v1/sisbajud/execution/*
+for plugin-br-sisbajud on its own TLS listener (SISBAJUD_EXECUTION_ADDRESS,
+app default :4032), TLS terminated in the pod in EVERY DEPLOYMENT_MODE (no
+plain-HTTP / upstream-TLS mode). The server cert+key paths are required at
+boot; the client CA only with SISBAJUD_EXECUTION_MTLS_ENABLED=true
+(internal/bootstrap/execution_tls.go validateExecutionTLSConfig).
+br-sisbajud.execution — the resolved listener as YAML:
+  enabled, port, mtls ("true"|"false"), tlsSecret, certKey, keyKey, mountPath,
+  certFile, keyFile, caSecret, caKey, caMountPath, caFile, generate.
+==============================================================================
+*/}}
+{{- define "br-sisbajud.execution" -}}
+{{- $ex := .Values.brSisbajud.execution | default dict -}}
+{{- $tls := $ex.tls | default dict -}}
+{{- $ca := $ex.clientCa | default dict -}}
+{{- $enabled := ne (toString $ex.enabled) "false" -}}
+{{- $generate := eq (toString $tls.generate) "true" -}}
+{{- $mount := $tls.mountPath | default "/etc/sisbajud/execution-tls" | trimSuffix "/" -}}
+{{- $caMount := $ca.mountPath | default "/etc/sisbajud/execution-client-ca" | trimSuffix "/" -}}
+{{- $tlsSecret := ternary (printf "%s-execution-tls" (include "br-sisbajud.fullname" . | trunc 49 | trimSuffix "-")) ($tls.existingSecret | default "") $generate -}}
+enabled: {{ $enabled }}
+port: {{ $ex.port | default 4032 }}
+mtls: {{ ternary "true" "false" (eq (toString $ex.mtlsEnabled) "true") | quote }}
+generate: {{ $generate }}
+tlsSecret: {{ $tlsSecret | quote }}
+certKey: {{ ternary "tls.crt" ($tls.certKey | default "tls.crt") $generate | quote }}
+keyKey: {{ ternary "tls.key" ($tls.keyKey | default "tls.key") $generate | quote }}
+mountPath: {{ $mount | quote }}
+certFile: {{ printf "%s/tls.crt" $mount | quote }}
+keyFile: {{ printf "%s/tls.key" $mount | quote }}
+caSecret: {{ $ca.existingSecret | default (ternary "" ($tls.existingSecret | default "") $generate) | quote }}
+caKey: {{ $ca.key | default "ca.crt" | quote }}
+caMountPath: {{ $caMount | quote }}
+caFile: {{ printf "%s/ca.crt" $caMount | quote }}
+{{- end -}}
+
+{{/*
+br-sisbajud.jwtVerifyCertMountFile — the in-pod path of the Access Manager
+verification PEM when brSisbajud.auth.jwtVerifyCertSecret is set, else "".
+*/}}
+{{- define "br-sisbajud.jwtVerifyCertMountFile" -}}
+{{- $ref := ((.Values.brSisbajud.auth | default dict).jwtVerifyCertSecret) | default dict -}}
+{{- if and $ref.name $ref.key -}}/etc/sisbajud/auth/jwt-verify.pem{{- end -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.appVolumes / br-sisbajud.appVolumeMounts — the app pod's Secret
+file mounts (execution TLS, execution client CA, JWT verification PEM) plus
+brSisbajud.extraVolumes / extraVolumeMounts, as YAML lists. Each Secret is
+projected with `items`, so the in-pod file name is fixed (tls.crt / tls.key /
+ca.crt / jwt-verify.pem) whatever the Secret's key names are, and the env keys
+in the ConfigMap point at exactly these files.
+*/}}
+{{- define "br-sisbajud.appVolumes" -}}
+{{- $ex := include "br-sisbajud.execution" . | fromYaml -}}
+{{- $out := list -}}
+{{- if $ex.enabled -}}
+{{- $out = append $out (dict "name" "execution-tls" "secret" (dict "secretName" $ex.tlsSecret "defaultMode" 288 "items" (list (dict "key" $ex.certKey "path" "tls.crt") (dict "key" $ex.keyKey "path" "tls.key")))) -}}
+{{- if eq $ex.mtls "true" -}}
+{{- $out = append $out (dict "name" "execution-client-ca" "secret" (dict "secretName" $ex.caSecret "defaultMode" 288 "items" (list (dict "key" $ex.caKey "path" "ca.crt")))) -}}
+{{- end -}}
+{{- end -}}
+{{- $jwt := ((.Values.brSisbajud.auth | default dict).jwtVerifyCertSecret) | default dict -}}
+{{- if and $jwt.name $jwt.key -}}
+{{- $out = append $out (dict "name" "jwt-verify" "secret" (dict "secretName" $jwt.name "defaultMode" 288 "items" (list (dict "key" $jwt.key "path" "jwt-verify.pem")))) -}}
+{{- end -}}
+{{- toYaml (concat $out (.Values.brSisbajud.extraVolumes | default list)) -}}
+{{- end -}}
+
+{{- define "br-sisbajud.appVolumeMounts" -}}
+{{- $ex := include "br-sisbajud.execution" . | fromYaml -}}
+{{- $out := list -}}
+{{- if $ex.enabled -}}
+{{- $out = append $out (dict "name" "execution-tls" "mountPath" $ex.mountPath "readOnly" true) -}}
+{{- if eq $ex.mtls "true" -}}
+{{- $out = append $out (dict "name" "execution-client-ca" "mountPath" $ex.caMountPath "readOnly" true) -}}
+{{- end -}}
+{{- end -}}
+{{- if include "br-sisbajud.jwtVerifyCertMountFile" . -}}
+{{- $out = append $out (dict "name" "jwt-verify" "mountPath" "/etc/sisbajud/auth" "readOnly" true) -}}
+{{- end -}}
+{{- toYaml (concat $out (.Values.brSisbajud.extraVolumeMounts | default list)) -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.validateMensageria — boot gates added by the Mensageria (br-sfn
+services/sisbajud), mirroring config_validation.go / config_auth_switch.go /
+execution_tls.go / config_execution_sweep.go. Invoked from br-sisbajud.validate.
+*/}}
+{{- define "br-sisbajud.validateMensageria" -}}
+{{- $ := . -}}
+{{- $b := .Values.brSisbajud -}}
+{{- $cm := $b.configmap | default dict -}}
+{{- $data := include "br-sisbajud.configmapData" . | fromYaml -}}
+{{- $x := include "br-sisbajud.extraEnv" . | fromYaml -}}
+{{- $req := "br-sisbajud.required" -}}
+{{- $prodLike := eq (include "br-sisbajud.productionLike" .) "true" -}}
+{{- $mtOn := eq (include "br-sisbajud.multiTenantEnabled" .) "true" -}}
+{{- /* Effective value of KEY: a literal extraEnvVars entry wins over the ConfigMap;
+   a valueFrom one is undecidable at render ("__valueFrom__"). */ -}}
+{{- $eff := dict -}}
+{{- range $k := list "PLUGIN_AUTH_ENABLED" "ENV_NAME" "DEPLOYMENT_MODE" "STREAMING_ENABLED" "OUTBOX_ENABLED" "SISBAJUD_EXECUTION_MTLS_ENABLED" "STA_CONSUMER_ENABLED" "STA_TRANSFERS_ENABLED" "STA_STREAM_SASL_ALLOW_PLAINTEXT" "STA_STREAM_TLS_ENABLED" "STA_STREAM_SASL_MECHANISM" -}}
+{{- $v := toString (index $data $k | default "") -}}
+{{- if hasKey $x $k -}}{{- $v = toString (index $x $k) -}}{{- end -}}
+{{- $_ := set $eff $k (trim $v) -}}
+{{- end -}}
+{{- $unknown := "__valueFrom__" -}}
+{{- /* Streaming is mandatory (R-03) and needs the outbox. */ -}}
+{{- if and (ne $eff.STREAMING_ENABLED $unknown) (ne (include "br-sisbajud.isTrue" $eff.STREAMING_ENABLED) "true") -}}
+{{- fail "\n\nERROR: br-sisbajud: STREAMING_ENABLED=false refuses the Mensageria boot (R-03: the execution releaser needs a real emitter, or plugin-br-sisbajud never learns of a released order).\n  set: global.streaming.enabled=true + global.streaming.brokers\n" -}}
+{{- end -}}
+{{- if and (ne $eff.OUTBOX_ENABLED $unknown) (ne (include "br-sisbajud.isTrue" $eff.OUTBOX_ENABLED) "true") -}}
+{{- fail "\n\nERROR: br-sisbajud: STREAMING_ENABLED=true requires OUTBOX_ENABLED=true (the app refuses to boot).\n  set: brSisbajud.outbox.enabled: \"true\" (the default)\n" -}}
+{{- end -}}
+{{- /* Auth switch (shared/envclass.ResolveAuthSwitch): exactly true|false; false only
+   with a development-class raw ENV_NAME and DEPLOYMENT_MODE != saas. */ -}}
+{{- $auth := lower $eff.PLUGIN_AUTH_ENABLED -}}
+{{- $rawEnv := lower $eff.ENV_NAME -}}
+{{- $mode := lower $eff.DEPLOYMENT_MODE -}}
+{{- if ne $eff.PLUGIN_AUTH_ENABLED $unknown -}}
+{{- if not (has $auth (list "true" "false")) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: PLUGIN_AUTH_ENABLED must be exactly \"true\" or \"false\" (got %q; a blank value refuses the boot).\n  set: global.auth.enabled\n" $eff.PLUGIN_AUTH_ENABLED) -}}
+{{- end -}}
+{{- if and (eq $auth "false") (ne $rawEnv $unknown) (not (has $rawEnv (list "development" "develop" "dev" "local" "test"))) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: PLUGIN_AUTH_ENABLED=false is accepted only with a development-class ENV_NAME (development|develop|dev|local|test), got ENV_NAME=%q.\n  set: global.auth.enabled=true + global.auth.host (plugin-access-manager)\n" $eff.ENV_NAME) -}}
+{{- end -}}
+{{- if and (eq $auth "false") (eq $mode "saas") -}}
+{{- fail "\n\nERROR: br-sisbajud: PLUGIN_AUTH_ENABLED=false is never accepted with DEPLOYMENT_MODE=saas.\n  set: global.auth.enabled=true + global.auth.host\n" -}}
+{{- end -}}
+{{- end -}}
+{{- /* Local bearer verification (validateJWTVerification): a cert source + issuer,
+   in BOTH switch positions; exempt only with auth=true, DEPLOYMENT_MODE local
+   (blank included) and raw ENV_NAME=local. */ -}}
+{{- $exempt := and (eq $auth "true") (has $mode (list "" "local")) (eq $rawEnv "local") -}}
+{{- if not $exempt -}}
+{{- $certSet := or (include "br-sisbajud.provided" (dict "context" $ "key" "AUTH_JWT_VERIFY_CERT" "value" (index $data "AUTH_JWT_VERIFY_CERT"))) (include "br-sisbajud.provided" (dict "context" $ "key" "AUTH_JWT_VERIFY_CERT_PATH" "value" (index $data "AUTH_JWT_VERIFY_CERT_PATH"))) -}}
+{{- if not $certSet -}}
+{{- fail "\n\nERROR: br-sisbajud: AUTH_JWT_VERIFY_CERT or AUTH_JWT_VERIFY_CERT_PATH is required (lib-auth verifies no bearer signature without one; the app refuses to boot, with the auth switch on OR off). Only PLUGIN_AUTH_ENABLED=true + DEPLOYMENT_MODE=local + ENV_NAME=local is exempt.\n  set: brSisbajud.auth.jwtVerifyCert (inline PEM of the Access Manager's RSA public key/cert) or brSisbajud.auth.jwtVerifyCertSecret {name, key}\n" -}}
+{{- end -}}
+{{- include $req (dict "context" $ "key" "AUTH_JWT_ISSUER" "value" (index $data "AUTH_JWT_ISSUER") "why" "with AUTH_JWT_VERIFY_CERT/_PATH (an unpinned issuer accepts any token the key ever signed; the app refuses to boot)" "set" "brSisbajud.auth.jwtIssuer (the exact `iss` the Access Manager stamps)") -}}
+{{- end -}}
+{{- /* Execution listener TLS (validateExecutionTLSConfig). */ -}}
+{{- $ex := include "br-sisbajud.execution" . | fromYaml -}}
+{{- if and (ne $eff.SISBAJUD_EXECUTION_MTLS_ENABLED $unknown) (not (has $eff.SISBAJUD_EXECUTION_MTLS_ENABLED (list "" "true" "false"))) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: SISBAJUD_EXECUTION_MTLS_ENABLED must be exactly true or false (got %q).\n  set: brSisbajud.execution.mtlsEnabled\n" $eff.SISBAJUD_EXECUTION_MTLS_ENABLED) -}}
+{{- end -}}
+{{- if $ex.enabled -}}
+{{- if $ex.generate -}}
+{{- if ne (include "br-sisbajud.devClass" .) "true" -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: brSisbajud.execution.tls.generate is dev-only (a chart-generated CA, regenerated whenever lookup sees no Secret) and is refused outside a development-class environment (ENVIRONMENT_NAME=%q).\n  set: brSisbajud.execution.tls.existingSecret (e.g. a cert-manager Certificate)\n" (include "br-sisbajud.envName" .)) -}}
+{{- end -}}
+{{- if $ex.tlsSecret | eq "" -}}{{- fail "br-sisbajud: internal: empty generated execution TLS Secret name" -}}{{- end -}}
+{{- else if not $ex.tlsSecret -}}
+{{- fail "\n\nERROR: br-sisbajud: the execution API listener needs its server certificate and key (SISBAJUD_EXECUTION_TLS_CERT_FILE/_KEY_FILE are required in every DEPLOYMENT_MODE; the listener never serves plain HTTP).\n  set: brSisbajud.execution.tls.existingSecret (a Secret with tls.crt/tls.key, e.g. from cert-manager; the cert SANs must include the name plugin-br-sisbajud dials, e.g. <fullname>.<namespace>.svc.cluster.local)\n  or (dev only): brSisbajud.execution.tls.generate: true\n" -}}
+{{- end -}}
+{{- if and (eq $ex.mtls "true") (not $ex.caSecret) -}}
+{{- fail "\n\nERROR: br-sisbajud: brSisbajud.execution.mtlsEnabled=true needs the client CA (SISBAJUD_EXECUTION_CLIENT_CA_FILE is then required).\n  set: brSisbajud.execution.clientCa.existingSecret (+ clientCa.key, default ca.crt)\n" -}}
+{{- end -}}
+{{- else -}}
+{{- range $k := list "SISBAJUD_EXECUTION_TLS_CERT_FILE" "SISBAJUD_EXECUTION_TLS_KEY_FILE" -}}
+{{- include $req (dict "context" $ "key" $k "value" (index $cm $k) "why" "with brSisbajud.execution.enabled=false (the app refuses to boot without the execution listener's certificate and key)" "set" (printf "brSisbajud.configmap.%s + brSisbajud.extraVolumes/extraVolumeMounts, or brSisbajud.execution.enabled=true" $k)) -}}
+{{- end -}}
+{{- end -}}
+{{- /* Execution sweeper durations (validateExecutionSweepConfig): required, > 0. */ -}}
+{{- range $k := list "RESPONSE_DEADLINE_MARGIN" "EXECUTION_DRAINED_HEAD_ALARM_AFTER" -}}
+{{- $v := trim (toString (index $data $k)) -}}
+{{- if hasKey $x $k -}}{{- $v = toString (index $x $k) -}}{{- end -}}
+{{- if and (ne $v $unknown) (or (not (regexMatch "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$" $v)) (regexMatch "^([0]+(\\.0+)?(ns|us|µs|ms|s|m|h))+$" $v)) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: %s must be a positive Go duration (e.g. 2h, 30m); the app has no default and refuses to boot (got %q).\n  set: brSisbajud.executionSweep (responseDeadlineMargin / drainedHeadAlarmAfter)\n" $k $v) -}}
+{{- end -}}
+{{- end -}}
+{{- /* STA consumer (validateSTAConsumerConfig + resolveSTAStreamTransport). */ -}}
+{{- if eq (include "br-sisbajud.isTrue" $eff.STA_CONSUMER_ENABLED) "true" -}}
+{{- if $mtOn -}}
+{{- fail "\n\nERROR: br-sisbajud: the STA consumer is not supported with MULTI_TENANT_ENABLED=true (the app refuses to boot).\n  set: brSisbajud.sta.consumerEnabled=false, or multi-tenancy off\n" -}}
+{{- end -}}
+{{- include $req (dict "context" $ "key" "STA_STREAM_BROKERS" "value" (index $data "STA_STREAM_BROKERS") "why" "when STA_CONSUMER_ENABLED=true (br-sta's own cluster; it never falls back to global.streaming)" "set" "brSisbajud.sta.stream.brokers") -}}
+{{- if and (ne $eff.STA_STREAM_SASL_MECHANISM $unknown) (not (has $eff.STA_STREAM_SASL_MECHANISM (list "PLAIN" "SCRAM-SHA-256" "SCRAM-SHA-512"))) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: STA_STREAM_SASL_MECHANISM must be PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512 when STA_CONSUMER_ENABLED=true (SASL is mandatory on br-sta's cluster; got %q).\n  set: brSisbajud.sta.stream.saslMechanism + saslUsername + secrets.STA_STREAM_SASL_PASSWORD\n" $eff.STA_STREAM_SASL_MECHANISM) -}}
+{{- end -}}
+{{- include $req (dict "context" $ "key" "STA_STREAM_SASL_USERNAME" "value" (index $data "STA_STREAM_SASL_USERNAME") "why" "when STA_CONSUMER_ENABLED=true" "set" "brSisbajud.sta.stream.saslUsername") -}}
+{{- include $req (dict "context" $ "key" "STA_STREAM_SASL_PASSWORD" "secret" true "why" "when STA_CONSUMER_ENABLED=true" "set" "brSisbajud.secrets.STA_STREAM_SASL_PASSWORD") -}}
+{{- $plain := eq (include "br-sisbajud.isTrue" $eff.STA_STREAM_SASL_ALLOW_PLAINTEXT) "true" -}}
+{{- if and $plain $prodLike -}}
+{{- fail "\n\nERROR: br-sisbajud: STA_STREAM_SASL_ALLOW_PLAINTEXT=true is not allowed in a production-like environment when STA_CONSUMER_ENABLED=true.\n  set: brSisbajud.sta.stream.tlsEnabled=\"true\" + secrets.STA_STREAM_TLS_CA_CERT\n" -}}
+{{- end -}}
+{{- if eq (include "br-sisbajud.isTrue" $eff.STA_STREAM_TLS_ENABLED) "true" -}}
+{{- include $req (dict "context" $ "key" "STA_STREAM_TLS_CA_CERT" "secret" true "why" "when STA_STREAM_TLS_ENABLED=true (base64 PEM of br-sta's broker CA)" "set" "brSisbajud.secrets.STA_STREAM_TLS_CA_CERT") -}}
+{{- else if and (not $plain) (ne $eff.STA_STREAM_TLS_ENABLED $unknown) -}}
+{{- fail "\n\nERROR: br-sisbajud: the STA consumer needs STA_STREAM_TLS_ENABLED=true (+ STA_STREAM_TLS_CA_CERT), or STA_STREAM_SASL_ALLOW_PLAINTEXT=true outside production.\n  set: brSisbajud.sta.stream.tlsEnabled=\"true\" + secrets.STA_STREAM_TLS_CA_CERT\n" -}}
+{{- end -}}
+{{- if not $mtOn -}}
+{{- include $req (dict "context" $ "key" "STA_EXPECTED_TENANT_ST" "value" (index $data "STA_EXPECTED_TENANT_ST") "why" "non-empty in single-tenant mode when STA_CONSUMER_ENABLED=true (br-sta's own DEFAULT_TENANT_ID)" "set" "brSisbajud.sta.expectedTenantSt") -}}
+{{- end -}}
+{{- end -}}
+{{- if and (eq (include "br-sisbajud.isTrue" $eff.STA_TRANSFERS_ENABLED) "true") $mtOn -}}
+{{- fail "\n\nERROR: br-sisbajud: STA transfers are not supported with MULTI_TENANT_ENABLED=true (the app refuses to boot).\n  set: brSisbajud.sta.transfersEnabled=false, or multi-tenancy off\n" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+br-sisbajud.executionTlsData — the dev-only generated execution TLS material
+(tls.crt, tls.key, ca.crt) as YAML: the live Secret's data when it already
+exists (lookup), else a fresh CA + server certificate whose SANs are the
+Service DNS names + execution.tls.extraDnsNames.
+*/}}
+{{- define "br-sisbajud.executionTlsData" -}}
+{{- $ex := include "br-sisbajud.execution" . | fromYaml -}}
+{{- $ns := include "global.namespace" . -}}
+{{- $existing := lookup "v1" "Secret" $ns $ex.tlsSecret -}}
+{{- if and $existing $existing.data (index $existing.data "tls.crt") (index $existing.data "tls.key") (index $existing.data "ca.crt") -}}
+tls.crt: {{ index $existing.data "tls.crt" | quote }}
+tls.key: {{ index $existing.data "tls.key" | quote }}
+ca.crt: {{ index $existing.data "ca.crt" | quote }}
+{{- else -}}
+{{- $svc := include "br-sisbajud.fullname" . -}}
+{{- $tls := (.Values.brSisbajud.execution | default dict).tls | default dict -}}
+{{- $days := int ($tls.validityDays | default 365) -}}
+{{- $sans := concat (list $svc (printf "%s.%s" $svc $ns) (printf "%s.%s.svc" $svc $ns) (printf "%s.%s.svc.cluster.local" $svc $ns)) ($tls.extraDnsNames | default list) -}}
+{{- $ca := genCA (printf "%s-execution-ca" $svc) $days -}}
+{{- $cert := genSignedCert $svc nil $sans $days $ca -}}
+tls.crt: {{ $cert.Cert | b64enc | quote }}
+tls.key: {{ $cert.Key | b64enc | quote }}
+ca.crt: {{ $ca.Cert | b64enc | quote }}
 {{- end -}}
 {{- end -}}

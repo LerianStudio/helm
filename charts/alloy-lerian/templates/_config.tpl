@@ -763,6 +763,38 @@ prometheus.relabel "allowlist_objetos" {
     action        = "keep"
   }
 
+  // ⚠️ PERÍMETRO DE NAMESPACE — o mesmo dos eventos de cluster deste papel
+  // (`namespaceInclude`). O kube-state-metrics descreve o cluster INTEIRO e não
+  // recebe argumento de namespace; sem esta regra a allowlist acima filtra só a
+  // FAMÍLIA, e cada pod, deployment e PVC do cliente sai do cluster dele.
+  //
+  // MEDIDO em voluti-stg (2026-10-20), primeiro BYOC migrado: 1.109 séries
+  // `kube_*`, das quais 647 (58%) eram de kube-system, observability e security
+  // do cliente. O agente anterior entregava só os namespaces da Lerian.
+  //
+  // Filtrar AQUI, e não nos argumentos do kube-state-metrics, é o que cobre o
+  // `clusterObjectTarget` apontado para uma instância que o cliente já roda —
+  // essa não é configurável por nós.
+  //
+  // ⚠️ `|^$` no fim, como no consumo de contêiner: `kube_node_*` e
+  // `kube_persistentvolume_*` são de ESCOPO DE CLUSTER e não têm `namespace`.
+  // Estão na allowlist de propósito (74 séries no mesmo cliente), e um `keep`
+  // sem a alternativa vazia as descartaria em silêncio.
+  //
+  // Só o `include` vira regra. O `exclude` do perfil `own` fica de fora: lá o
+  // cluster é nosso, e aplicá-lo aqui tiraria os `kube_*` de kube-system dos
+  // ambientes internos — mudança que esta correção não pediu nem mediu.
+  // VERIFICADO: com `examples/values-benedita.yaml` o render sai idêntico ao
+  // anterior, fora este comentário.
+{{- $nsIncludeObj := include "alloy-lerian.namespaceInclude" . }}
+{{- if $nsIncludeObj }}
+  rule {
+    source_labels = ["namespace"]
+    regex         = {{ printf "%s|^$" $nsIncludeObj | quote }}
+    action        = "keep"
+  }
+{{- end }}
+
   rule {
     target_label = "client_id"
     replacement  = sys.env("ALLOY_CLIENT_ID")

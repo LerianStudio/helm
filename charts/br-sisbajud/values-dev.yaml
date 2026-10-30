@@ -20,9 +20,10 @@
 # TLS is off everywhere.
 #
 # What development relaxes in the app (internal/bootstrap/config_validation.go):
-# POSTGRES_SSLMODE=disable and a plaintext broker are allowed. It does NOT relax
-# the license: since app 1.2.0 a license is mandatory in every environment (no
-# dev bypass), so set a real LICENSE_KEY below (see brSisbajud.secrets). Features that
+# POSTGRES_SSLMODE=disable, a plaintext broker, PLUGIN_AUTH_ENABLED=false and an
+# empty LICENSE_KEY (the license dev bypass) are allowed. Local bearer
+# verification (AUTH_JWT_*) and the execution listener TLS are NOT relaxed: see
+# brSisbajud.auth / brSisbajud.execution below. Features that
 # need services this bundle does not provide are OFF: inbound auth
 # (plugin-access-manager), the access-manager declaration publisher, the br-sta
 # consumer/transfers client, multi-tenancy. The Midaz ledger is not bundled:
@@ -54,18 +55,35 @@ brSisbajud:
   vault:
     # The dev root token never expires; renewal would be a no-op.
     tokenRenewEnabled: false
-  # GLOBAL license mode: the only value the app accepts (required everywhere).
+  # Local bearer verification is mandatory in both auth switch positions. This is
+  # a THROWAWAY RSA public key whose private half was discarded at generation:
+  # the app boots, but no token verifies against it. Replace it (and the issuer)
+  # with your Access Manager's public key and `iss` to call the API.
+  auth:
+    jwtIssuer: "dev-only-unverifiable-issuer"
+    jwtVerifyCert: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhJ23YF4HU1WMEOdpN7J
+      /pJt3ICTEsyhSP8Q32J5fZ1bvWvCOo++f4mA+38wwrfst02KWUohfFKPLQsPoqBO
+      3PkdBlW4rSjY1k7gK1uwLbDavQTwiF29Q0CiiI//oqwOjXVdviQTwKAPlEh0FRMO
+      HQBvxGej4Yl1jgnYgv6+6JAajn2oSdSf6KohPjqnJeCAx04J57IXYWS3jsEwQl0+
+      HTFZcB1q0ECDYysUKVfVAXo6xeost7vXmVCamPqnX2/lFxD4r3T80QYgD7jjn/Fu
+      XvB9UDWf1a83M/RaJute6vdd10m9WTJZ0GwVM9no8NI8MZJ5Uiw+NbfNpUDmki9F
+      vQIDAQAB
+      -----END PUBLIC KEY-----
+  # Execution API listener (always TLS): a chart-generated dev CA + server cert
+  # in Secret br-sisbajud-execution-tls (give its ca.crt to plugin-br-sisbajud).
+  execution:
+    tls:
+      generate: true
+  # GLOBAL license mode: the only value the app accepts.
   license:
     organizationIds: "global"
     # A key issued by the license dev gateway also needs:
     # isDevelopment: "true"
-  secrets:
-    # PLACEHOLDER, not a license. App 1.2.0+ validates the license in every
-    # environment, development included: the pod will not boot (the gateway
-    # refuses this value) until you set a real LICENSE_KEY for br-sisbajud
-    # (or a dev-gateway key together with brSisbajud.license.isDevelopment: "true"),
-    # e.g. --set brSisbajud.secrets.LICENSE_KEY=<your key>. Never commit a real key.
-    LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
+  # No LICENSE_KEY: with ENVIRONMENT_NAME=development an empty key is the app's
+  # dev bypass. To validate a real one, create a Secret from a file and point
+  # brSisbajud.secretRefs.LICENSE_KEY at it. Never commit a real key.
 
 # Explicit dev passwords: the Valkey subchart otherwise regenerates its password
 # on every render (every `helm upgrade` rotated it and restarted Valkey and the

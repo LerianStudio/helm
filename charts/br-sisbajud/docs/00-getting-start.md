@@ -3,6 +3,14 @@
 > Como instalar, validar e diagnosticar o br-sisbajud a partir deste chart (dev bundle,
 > com o br-sta, standalone, produção). Para quem opera a instalação do chart.
 
+> **Desatualizado: este runbook descreve o monólito br-sisbajud (app 1.2.x).** O chart
+> agora implanta a Sisbajud Mensageria (br-sfn `services/sisbajud`, app 1.0.0-beta.x):
+> API principal na 4031, API de execução num listener TLS na 4032, streaming
+> obrigatório, verificação de JWT obrigatória (`brSisbajud.auth`), licença só em
+> ambientes production-like e o consumer do br-sta no próprio cluster `sta.stream`. O
+> README ("From the monolith ... to the Mensageria", "Execution API", "Fail-fast
+> gates") é a referência até este runbook ser reescrito.
+
 ---
 
 ## 0. Metadados
@@ -25,7 +33,7 @@
 | Perfil | Values | O que roda | Uso |
 |---|---|---|---|
 | **Dev bundle (quickstart)** | `values-dev.yaml` | a app, mais PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, modo dev) e Redpanda embutidos; `ENVIRONMENT_NAME=development`; auth de entrada, consumer/cliente de transfers do br-sta e multi-tenancy desligados | Avaliação, desenvolvimento local, teste do chart |
-| **br-sisbajud + br-sta juntos** | `values-dev.yaml` + `values-dev-with-br-sta.yaml` | a app com PostgreSQL, Valkey e OpenBao próprios, reaproveitando o SeaweedFS e o Redpanda de um dev bundle do br-sta no mesmo namespace; consumer e cliente de transfers do br-sta ligados | Dev integrado do fluxo STA (entrada de remessas, arquivos de retorno) |
+| **br-sisbajud + br-sta juntos** | `values-dev.yaml` + `values-dev-with-br-sta.yaml` | a app com PostgreSQL, Valkey e OpenBao próprios, reaproveitando o SeaweedFS e o Redpanda de um dev bundle do br-sta no mesmo namespace; cliente de transfers do br-sta ligado; o consumer do br-sta fica desligado (exige SASL, que o Redpanda do dev bundle do br-sta não oferece) | Dev integrado do fluxo STA (entrada de remessas, arquivos de retorno) |
 | **Standalone (sem br-sta)** | `values-dev.yaml` (ou seu arquivo) com `sta.consumerEnabled` / `sta.transfersEnabled` desligados (o default) | só a app; as remessas entram pela recepção HTTP `POST /v1/remittance-files/notifications` depois que o arquivo bruto é depositado no `STA_INBOUND_BUCKET` | Rodar o SISBAJUD sem o trilho do br-sta (seção 3, "Standalone") |
 | **Produção / infra externa** | seu arquivo, a partir do `values-template.yaml` | a app + Jobs de migrations e tópicos; toda dependência externa | Tiers reais. Ambiente default `production` (fail-closed) |
 
@@ -41,7 +49,7 @@ chart falha de propósito até as conexões externas e os secrets estarem setado
 | PostgreSQL | Sempre (single-tenant: o host é obrigatório) | `global.datastores.postgres` + `brSisbajud.secrets.POSTGRES_PASSWORD` |
 | Valkey / Redis | Sempre (rate limit, idempotência, locks de processamento) | `global.datastores.redis` (`host:porta`) + `brSisbajud.secrets.REDIS_PASSWORD` |
 | Kafka / Redpanda | Streaming ligado por default (producer/consumers lib-streaming, tradutor de saldo do Midaz, fatos do br-sta): brokers obrigatórios; TLS + CA em produção | `global.streaming` + `brSisbajud.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` |
-| HashiCorp Vault Transit **ou** AWS KMS | Sempre (criptografia envelope dos dados de bloqueio judicial) | `global.kms` + `brSisbajud.secrets.VAULT_APPROLE_SECRET_ID` (ou `VAULT_TOKEN`) |
+| HashiCorp Vault Transit **ou** AWS KMS | Sempre (criptografia envelope dos dados de bloqueio judicial) | `global.kms` + `brSisbajud.secrets.VAULT_APPROLE_SECRET_ID` (ou `VAULT_TOKEN`); com AWS KMS: `awsRegion` + `awsKeyMode` (`managed`\|`provided`) e, em `provided`, `awsKeyArn` (em `brSisbajud.kms` ou `global.kms`) |
 | Object storage S3 | Sempre (artefatos criptografados + o bucket de transfer do br-sta) | `global.objectStorage.sisbajud` / `.sta` + `SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY` |
 | br-sta | Entrada de remessas (fatos em `lerian.streaming.br-sta`) e envio de arquivos de retorno (`POST /v1/transfers`) | `brSisbajud.sta.*`, `global.objectStorage.sta` (o mesmo bloco que o br-sta lê) |
 | plugin-access-manager | Validação JWT de entrada, bearer m2m do STA, declaração de permissões | `global.auth`, `brSisbajud.identity` |
@@ -330,7 +338,8 @@ global:
 | `global.datastores.*` | `POSTGRES_*`, `REDIS_*` | os subcharts embutidos derivam sozinhos |
 | `global.objectStorage.sisbajud` | `SEAWEEDFS_S3_ENDPOINT/BUCKET/REGION` | — |
 | `global.objectStorage.sta` | `STA_INBOUND_BUCKET` (+ `TRANSFER_OBJECT_STORAGE_BUCKET`), `STA_OBJECT_STORAGE_ENDPOINT` | O endpoint segue o do sisbajud; a app exige paridade de bucket e endpoint com o br-sta |
-| `global.kms` | `KMS_PROVIDER`, `VAULT_*`, `AWS_REGION` | `VAULT_APPROLE_SECRET_ID` / `VAULT_TOKEN` são secrets |
+| `global.kms` | `KMS_PROVIDER`, `VAULT_*`, `AWS_REGION`, `KMS_AWS_KEY_MODE`, `KMS_AWS_KEY_ARN` | `VAULT_APPROLE_SECRET_ID` / `VAULT_TOKEN` são secrets. Modo e ARN: `brSisbajud.configmap` > `brSisbajud.kms` > `global.kms`; `provided` exige o ARN, `managed` o recusa. As chaves `KMS_AWS_*` derivadas pelo chart (`kms.awsKeyMode`/`awsKeyArn` e os knobs de `brSisbajud.vault`) só saem com `KMS_PROVIDER=aws`; `brSisbajud.configmap.KMS_AWS_*` é a válvula de escape e sai com qualquer provider |
+| `brSisbajud.vault.awsKmsTimeoutSec` / `awsKmsRotationCheckIntervalSec` | `KMS_AWS_TIMEOUT_SEC` / `KMS_AWS_ROTATION_CHECK_INTERVAL_SEC` | Opcionais, só com `KMS_PROVIDER=aws`; segundos inteiros, `1`..`600` (todo modo aws) e `1`..`86400` (validado só em `provided`) |
 | `global.streaming` | `STREAMING_*` | os fatos do br-sta chegam em `lerian.streaming.br-sta` |
 | `global.auth` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | O cliente de transfers do STA emite o bearer m2m a partir deste host mesmo com auth desligado |
 
@@ -349,6 +358,7 @@ Ligação com o br-sta (valores agrupados em `brSisbajud.sta`): `consumerEnabled
 | OpenBao modo dev | Reiniciar o pod do OpenBao perde todas as chaves Transit: linhas criptografadas antes ficam ilegíveis | Só dev/avaliação; resete o banco junto |
 | Cliente de transfers do STA | Precisa de um plugin-access-manager acessível para emitir o bearer m2m | Sem ele, o envio de arquivo de retorno ao br-sta falha |
 | Fatos do br-sta de transfers desconhecidos | Comportamento conhecido da app: um fato em `lerian.streaming.br-sta` de um transfer que o br-sisbajud não criou é tratado como transitório e segura a partição | Acompanhe `sta_consumer` no `/readyz` (`degraded`, `consumer_not_polling`) |
+| Trava de imagem com AWS KMS | Imagens anteriores a `1.1.0-beta.13` ignoram `KMS_AWS_KEY_MODE`/`KMS_AWS_KEY_ARN` e criam a própria chave KMS; com `KMS_PROVIDER=aws` o render recusa essas tags. Só a forma canônica `vX.Y.Z[-(alpha\|beta\|rc).N]` (sem zeros à esquerda, sem `@`) é comparada com o mínimo | Qualquer outra tag (digest `@`, sufixo de arquitetura, `+build`, não-SemVer) exige `brSisbajud.kms.allowUnverifiableImageTag: true` (não é lido de `global.kms`); com a flag, uma tag não canônica passa sem checagem de versão. Uma tag canônica abaixo de `1.1.0-beta.13` falha mesmo com a flag |
 | Imagens | Imagens da app, migrations e tópicos são públicas no GHCR | Pull secret (`imagePullSecrets`) só para um mirror/registry privado |
 
 ### Modo só-consumer (limitação conhecida da app 1.2.0)

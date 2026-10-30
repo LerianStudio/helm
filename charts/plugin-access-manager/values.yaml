@@ -139,7 +139,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.11.1"
+    tag: "3.14.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -261,12 +261,20 @@ identity:
     # Environment name is resolved via the global mask (global.env.name) — same
     # rule as the datastore masks: do NOT pin ENV_NAME here, it WINS over the
     # mask and defeats it. The default ("development") lives in
-    # templates/identity/configmap.yaml.
+    # templates/identity/configmap.yaml. OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
+    # derives from the same resolved value unless explicitly overridden here.
     # AUTH_ENABLED/AUTH_PORT are NOT pinned here — the chart already defaults
     # them ("true"/"4000") in templates/identity/configmap.yaml; no mask reads
     # them, so duplicating the value here was pure noise.
     # AUTH_ADDRESS defaults to http://<auth component>:4000 (templates/identity/configmap.yaml).
     # Set it only to point identity at an auth outside this release.
+    # Google Workspace directory (identity 3.12.0+). Each key is omitted from the
+    # ConfigMap unless set. With GOOGLE_DIRECTORY_ENABLED "true", identity needs
+    # all four GOOGLE_DIRECTORY_* values (these two plus the two in secrets below)
+    # and the chart refuses to render without them.
+    # GOOGLE_DIRECTORY_ENABLED: ""       # "true" turns on the Google Workspace directory connection
+    # GOOGLE_DIRECTORY_CLIENT_ID: ""     # client id of Lerian's Google OAuth client
+    # GOOGLE_DIRECTORY_REDIRECT_URL: ""  # OAuth redirect URL registered on that client; https
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -278,6 +286,16 @@ identity:
     ORGANIZATION_IDS: ""
     # -- Consul ACL token for service discovery (empty = no ACL)
     SD_TOKEN: ""
+    # -- Client secret of Lerian's Google OAuth client (Google Workspace
+    # directory). Empty = key not rendered.
+    GOOGLE_DIRECTORY_CLIENT_SECRET: ""
+    # -- Key that encrypts each organization's stored Google refresh token; at
+    # least 32 bytes. Empty = key not rendered. Changing it makes the stored
+    # tokens unreadable and every connected organization must reconnect.
+    GOOGLE_DIRECTORY_ENCRYPTION_KEY: ""
+  # -- With useExistingSecret=true the chart renders no identity Secret: to turn
+  # on the Google Workspace directory, add GOOGLE_DIRECTORY_CLIENT_SECRET and
+  # GOOGLE_DIRECTORY_ENCRYPTION_KEY to your own Secret (existingSecretName).
   useExistingSecret: false
   existingSecretName: ""
 auth:
@@ -305,7 +323,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.11.1"
+    tag: "3.14.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -426,6 +444,8 @@ auth:
     # ENV_NAME is resolved via the global mask (global.env.name) — same rule:
     # do NOT pin it here, it WINS over the mask and defeats it. The default
     # ("development") lives in templates/auth/configmap.yaml.
+    # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT derives from the same resolved value
+    # unless explicitly overridden here.
     # -- Multi-factor authentication gate. Unset (the default) omits MFA_ENABLED
     # from the ConfigMap, leaving the application's own default in force.
     # MFA_ENABLED: "false"
@@ -575,7 +595,7 @@ caradhras:
     # -- to override.
     repository: ghcr.io/lerianstudio/caradhras
     pullPolicy: Always
-    tag: "1.5.1"
+    tag: "1.8.6"
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -612,9 +632,15 @@ caradhras:
       # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
       pullPolicy: ""
       # -- Empty preserves auth.backend.migrations.image.tag overrides;
-      # -- otherwise defaults to 1.5.1 in templates/_helpers.tpl.
+      # -- otherwise defaults to 1.8.6 in templates/_helpers.tpl.
       # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
+    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests (e.g. cross). Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
+    skipRBACChain: false
+    # -- Extra env vars for the migrate init container only, as a NAME: value map
+    # -- (rendered as name/value pairs, values quoted). Chart-owned names (POSTGRES_HOST/PORT/DB/
+    # -- USER/PASSWORD/SSLMODE, MIGRATIONS_SKIP_RBAC_CHAIN) are refused. Not for secrets: values land in the pod spec.
+    extraEnvVars: {}
   # -- Caradhras UI (SPA console): nginx serving the SPA, reverse-proxying
   # -- same-origin to the caradhras backend Service. Disabled by default.
   # -- Caradhras console (SPA), disabled by default and intentionally not

@@ -1,0 +1,527 @@
+suite: internal-facts-worker (optional workload)
+templates:
+  - templates/worker-deployment.yaml
+  - templates/worker-configmap.yaml
+  - templates/worker-secret.yaml
+  - templates/worker-serviceaccount.yaml
+release:
+  name: system-facts
+  namespace: system-facts
+set:
+  worker.enabled: true
+  worker.systemFacts.url: https://system-facts:8080
+  worker.systemFacts.authUrl: https://am-auth:4000
+  worker.streaming.brokers: redpanda:9092
+  worker.streaming.saslMechanism: SCRAM-SHA-256
+  worker.streaming.saslUsername: facts-worker
+  worker.secrets.SYSTEM_FACTS_CLIENT_ID: cid
+  worker.secrets.SYSTEM_FACTS_CLIENT_SECRET: csecret
+  worker.secrets.STREAMING_SASL_PASSWORD: pw
+tests:
+  # The gate: opt-in, so a chart bump alone changes no existing install.
+  - it: renders nothing by default
+    set:
+      worker.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders a Deployment, ConfigMap, Secret and ServiceAccount, and no Service
+    asserts:
+      - isKind:
+          of: Deployment
+        template: templates/worker-deployment.yaml
+      - isKind:
+          of: ConfigMap
+        template: templates/worker-configmap.yaml
+      - isKind:
+          of: Secret
+        template: templates/worker-secret.yaml
+      - isKind:
+          of: ServiceAccount
+        template: templates/worker-serviceaccount.yaml
+
+  # The API Service/HPA/PDB select on name+instance only. The worker must not
+  # carry name=system-facts or it receives API traffic on its admin port.
+  - it: selects on its own name label, never the API's
+    template: templates/worker-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: system-facts-worker
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: system-facts-worker
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: worker
+
+  - it: runs the worker image on the tracked tag, probes /health and /readyz
+    template: templates/worker-deployment.yaml
+    set:
+      worker.image.tag: 1.0.0-beta.9
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/lerianstudio/system-facts-worker:1.0.0-beta.9
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /health
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /readyz
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 60
+      - notExists:
+          path: spec.template.spec.containers[0].args
+
+  - it: defaults the image tag to the chart appVersion
+    template: templates/worker-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/lerianstudio/system-facts-worker:1.1.0
+
+  - it: turns the consumer on and never emits the producer variables or the fixed scope
+    template: templates/worker-configmap.yaml
+    asserts:
+      - equal:
+          path: data.STREAMING_CONSUMER_ENABLED
+          value: "true"
+      - equal:
+          path: data.STREAMING_CONSUMER_BROKERS
+          value: redpanda:9092
+      - equal:
+          path: data.REQUIRE_BROKER_SECURITY
+          value: "true"
+      - notExists:
+          path: data.STREAMING_ENABLED
+      - notExists:
+          path: data.STREAMING_BROKERS
+      - notExists:
+          path: data.STREAMING_CONSUMER_TOPICS
+      - notExists:
+          path: data.STREAMING_CONSUMER_APPS
+      - notExists:
+          path: data.STREAMING_CONSUMER_GROUP
+
+  - it: carries only the worker credentials in the Secret
+    template: templates/worker-secret.yaml
+    asserts:
+      - equal:
+          path: stringData.SYSTEM_FACTS_CLIENT_ID
+          value: cid
+      - notExists:
+          path: stringData.POSTGRES_PASSWORD
+      - notExists:
+          path: stringData.STREAMING_TLS_CA_CERT
+
+  - it: renders the CA only when one is given
+    template: templates/worker-secret.yaml
+    set:
+      worker.secrets.STREAMING_TLS_CA_CERT: Q0E=
+    asserts:
+      - equal:
+          path: stringData.STREAMING_TLS_CA_CERT
+          value: Q0E=
+
+  - it: uses an existing Secret and renders none
+    set:
+      worker.useExistingSecret: true
+      worker.existingSecretName: facts-worker-vault
+      worker.secrets.SYSTEM_FACTS_CLIENT_ID: ""
+      worker.secrets.SYSTEM_FACTS_CLIENT_SECRET: ""
+      worker.secrets.STREAMING_SASL_PASSWORD: ""
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/worker-secret.yaml
+      - equal:
+          path: spec.template.spec.containers[0].envFrom[0].secretRef.name
+          value: facts-worker-vault
+        template: templates/worker-deployment.yaml
+
+  - it: raw configmap and extraEnvVars win over the params
+    template: templates/worker-configmap.yaml
+    set:
+      worker.configmap.REQUIRE_BROKER_SECURITY: "false"
+      worker.extraEnvVars:
+        - name: WORKER_LAG_POLL_INTERVAL
+          value: 1m
+    asserts:
+      - equal:
+          path: data.REQUIRE_BROKER_SECURITY
+          value: "false"
+      - equal:
+          path: data.WORKER_LAG_POLL_INTERVAL
+          value: 1m
+
+  # ---- guards: each is a boot refusal or a silent no-op in the binary ----
+  - it: refuses the consumer scope the products fix (topics)
+    template: templates/worker-deployment.yaml
+    set:
+      worker.configmap.STREAMING_CONSUMER_TOPICS: lerian.streaming.ledger
+    asserts:
+      - failedTemplate:
+          errorPattern: "STREAMING_CONSUMER_TOPICS"
+
+  - it: refuses the consumer scope the products fix (apps, through extraEnvVars)
+    template: templates/worker-deployment.yaml
+    set:
+      worker.extraEnvVars:
+        - name: STREAMING_CONSUMER_APPS
+          value: ledger
+    asserts:
+      - failedTemplate:
+          errorPattern: "STREAMING_CONSUMER_APPS"
+
+  - it: refuses an explicit consumer group
+    template: templates/worker-deployment.yaml
+    set:
+      worker.configmap.STREAMING_CONSUMER_GROUP: x
+    asserts:
+      - failedTemplate:
+          errorPattern: "STREAMING_CONSUMER_GROUP"
+
+  - it: refuses to switch the consumer off
+    template: templates/worker-deployment.yaml
+    set:
+      worker.configmap.STREAMING_CONSUMER_ENABLED: "false"
+    asserts:
+      - failedTemplate:
+          errorPattern: "STREAMING_CONSUMER_ENABLED must be true"
+
+  - it: refuses without the System Facts URL
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.url: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "needs SYSTEM_FACTS_URL"
+
+  - it: refuses without brokers
+    template: templates/worker-deployment.yaml
+    set:
+      worker.streaming.brokers: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "needs STREAMING_CONSUMER_BROKERS"
+
+  - it: refuses multi-tenant without ENV_NAME
+    template: templates/worker-deployment.yaml
+    set:
+      worker.multiTenant.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "needs worker.multiTenant.env"
+
+  - it: refuses without the bootstrap credential
+    template: templates/worker-deployment.yaml
+    set:
+      worker.secrets.SYSTEM_FACTS_CLIENT_SECRET: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "SYSTEM_FACTS_CLIENT_SECRET is required"
+
+  - it: refuses a SASL mechanism without a password
+    template: templates/worker-deployment.yaml
+    set:
+      worker.secrets.STREAMING_SASL_PASSWORD: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "STREAMING_SASL_PASSWORD is required"
+
+  - it: refuses a SASL mechanism without a username
+    template: templates/worker-deployment.yaml
+    set:
+      worker.streaming.saslUsername: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "saslUsername is required"
+
+  - it: refuses replicas above the partition ceiling
+    template: templates/worker-deployment.yaml
+    set:
+      worker.replicaCount: 2
+    asserts:
+      - failedTemplate:
+          errorPattern: "exceeds worker.partitionCeiling"
+
+  - it: accepts replicas up to a raised ceiling
+    template: templates/worker-deployment.yaml
+    set:
+      worker.replicaCount: 3
+      worker.partitionCeiling: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: refuses a shutdown budget below 60s
+    template: templates/worker-deployment.yaml
+    set:
+      worker.terminationGracePeriodSeconds: 30
+    asserts:
+      - failedTemplate:
+          errorPattern: "terminationGracePeriodSeconds must be >= 60"
+
+  # A YAML boolean false is an operator decision, not a missing value: `default`
+  # would rewrite it to "true" and the chart would report nothing.
+  - it: keeps an explicit boolean false for tlsEnabled, requireSecurity and topicAutoProvision
+    set:
+      worker.streaming.tlsEnabled: false
+      worker.streaming.requireSecurity: false
+      worker.streaming.topicAutoProvision: false
+    asserts:
+      - equal:
+          path: data.STREAMING_TLS_ENABLED
+          value: "false"
+        template: templates/worker-configmap.yaml
+      - equal:
+          path: data.REQUIRE_BROKER_SECURITY
+          value: "false"
+        template: templates/worker-configmap.yaml
+      - equal:
+          path: data.STREAMING_TOPIC_AUTO_PROVISION
+          value: "false"
+        template: templates/worker-configmap.yaml
+
+  - it: defaults tlsEnabled and requireSecurity to true when the keys are absent
+    set:
+      worker.streaming.tlsEnabled: null
+      worker.streaming.requireSecurity: null
+    asserts:
+      - equal:
+          path: data.STREAMING_TLS_ENABLED
+          value: "true"
+        template: templates/worker-configmap.yaml
+      - equal:
+          path: data.REQUIRE_BROKER_SECURITY
+          value: "true"
+        template: templates/worker-configmap.yaml
+
+  # ---- product selection and the http opt-in (system-facts #65, #71) ----
+  - it: renders no WORKER_PRODUCTS and SYSTEM_FACTS_ALLOW_INSECURE_HTTP false by default
+    template: templates/worker-configmap.yaml
+    asserts:
+      - notExists:
+          path: data.WORKER_PRODUCTS
+      - equal:
+          path: data.SYSTEM_FACTS_ALLOW_INSECURE_HTTP
+          value: "false"
+
+  - it: renders WORKER_PRODUCTS for midaz only
+    template: templates/worker-configmap.yaml
+    set:
+      worker.products:
+        - midaz
+    asserts:
+      - equal:
+          path: data.WORKER_PRODUCTS
+          value: midaz
+
+  - it: renders WORKER_PRODUCTS for midaz and plugin-br-pix-jd in the given order
+    template: templates/worker-configmap.yaml
+    set:
+      worker.products:
+        - midaz
+        - plugin-br-pix-jd
+    asserts:
+      - equal:
+          path: data.WORKER_PRODUCTS
+          value: midaz,plugin-br-pix-jd
+
+  - it: refuses plugin-br-pix-jd without midaz
+    template: templates/worker-deployment.yaml
+    set:
+      worker.products:
+        - plugin-br-pix-jd
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-jd requires midaz"
+
+  - it: refuses an unknown product in worker.products at schema time
+    template: templates/worker-deployment.yaml
+    set:
+      worker.products:
+        - ledger
+    asserts:
+      - failedTemplate:
+          errorPattern: "'/worker/products"
+
+  - it: refuses an unknown product in a raw WORKER_PRODUCTS
+    template: templates/worker-deployment.yaml
+    set:
+      worker.configmap.WORKER_PRODUCTS: "midaz,ledger"
+    asserts:
+      - failedTemplate:
+          errorPattern: 'unknown product "ledger"'
+
+  - it: refuses an empty entry in a raw WORKER_PRODUCTS
+    template: templates/worker-deployment.yaml
+    set:
+      worker.configmap.WORKER_PRODUCTS: "midaz,"
+    asserts:
+      - failedTemplate:
+          errorPattern: "WORKER_PRODUCTS has an empty entry"
+
+  - it: refuses a duplicate product in worker.products at schema time
+    template: templates/worker-deployment.yaml
+    set:
+      worker.products:
+        - midaz
+        - midaz
+    asserts:
+      - failedTemplate:
+          errorPattern: "'/worker/products"
+
+  - it: refuses a duplicate product in a raw WORKER_PRODUCTS
+    template: templates/worker-deployment.yaml
+    set:
+      worker.extraEnvVars:
+        - name: WORKER_PRODUCTS
+          value: "midaz,midaz"
+    asserts:
+      - failedTemplate:
+          errorPattern: 'lists "midaz" more than once'
+
+  - it: refuses a scalar worker.products at schema time
+    template: templates/worker-deployment.yaml
+    set:
+      worker.products: midaz
+    asserts:
+      - failedTemplate:
+          errorPattern: "'/worker/products"
+
+  - it: leaves a blank raw WORKER_PRODUCTS to the binary default
+    set:
+      worker.configmap.WORKER_PRODUCTS: ""
+    asserts:
+      - equal:
+          path: data.WORKER_PRODUCTS
+          value: ""
+        template: templates/worker-configmap.yaml
+      - isKind:
+          of: Deployment
+        template: templates/worker-deployment.yaml
+
+  - it: refuses a plain http SYSTEM_FACTS_URL without the opt-in
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.url: http://system-facts:8080
+    asserts:
+      - failedTemplate:
+          errorPattern: "SYSTEM_FACTS_URL is .*plain http is not allowed"
+
+  - it: refuses a plain http SYSTEM_FACTS_AUTH_URL without the opt-in
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.authUrl: http://am-auth:4000
+    asserts:
+      - failedTemplate:
+          errorPattern: "SYSTEM_FACTS_AUTH_URL is .*plain http is not allowed"
+
+  - it: refuses an upper-case HTTP scheme without the opt-in
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.url: HTTP://system-facts:8080
+    asserts:
+      - failedTemplate:
+          errorPattern: "SYSTEM_FACTS_URL is .*plain http"
+
+  - it: accepts plain http URLs with allowInsecureHttp true
+    set:
+      worker.systemFacts.url: http://system-facts:8080
+      worker.systemFacts.authUrl: http://am-auth:4000
+      worker.systemFacts.allowInsecureHttp: true
+    asserts:
+      - equal:
+          path: data.SYSTEM_FACTS_ALLOW_INSECURE_HTTP
+          value: "true"
+        template: templates/worker-configmap.yaml
+      - equal:
+          path: data.SYSTEM_FACTS_URL
+          value: http://system-facts:8080
+        template: templates/worker-configmap.yaml
+      - isKind:
+          of: Deployment
+        template: templates/worker-deployment.yaml
+
+  - it: accepts plain http URLs with a raw SYSTEM_FACTS_ALLOW_INSECURE_HTTP override
+    set:
+      worker.systemFacts.url: http://system-facts:8080
+      worker.systemFacts.authUrl: http://am-auth:4000
+      worker.configmap.SYSTEM_FACTS_ALLOW_INSECURE_HTTP: "true"
+    asserts:
+      - equal:
+          path: data.SYSTEM_FACTS_ALLOW_INSECURE_HTTP
+          value: "true"
+        template: templates/worker-configmap.yaml
+      - isKind:
+          of: Deployment
+        template: templates/worker-deployment.yaml
+
+  - it: keeps an explicit allowInsecureHttp false
+    template: templates/worker-configmap.yaml
+    set:
+      worker.systemFacts.allowInsecureHttp: false
+    asserts:
+      - equal:
+          path: data.SYSTEM_FACTS_ALLOW_INSECURE_HTTP
+          value: "false"
+
+  - it: refuses a non-boolean raw SYSTEM_FACTS_ALLOW_INSECURE_HTTP
+    template: templates/worker-deployment.yaml
+    set:
+      worker.configmap.SYSTEM_FACTS_ALLOW_INSECURE_HTTP: "yes"
+    asserts:
+      - failedTemplate:
+          errorPattern: "not a boolean"
+
+  - it: refuses a mixed-case raw SYSTEM_FACTS_ALLOW_INSECURE_HTTP
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.url: http://system-facts:8080
+      worker.configmap.SYSTEM_FACTS_ALLOW_INSECURE_HTTP: "tRUE"
+    asserts:
+      - failedTemplate:
+          errorPattern: "not a boolean"
+
+  - it: accepts the Go ParseBool spellings for the raw opt-in
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.url: http://system-facts:8080
+      worker.systemFacts.authUrl: http://am-auth:4000
+      worker.configmap.SYSTEM_FACTS_ALLOW_INSECURE_HTTP: "T"
+    asserts:
+      - isKind:
+          of: Deployment
+
+  - it: masks userinfo in the plain http refusal
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.url: http://user:pw@sf:8080
+    asserts:
+      - failedTemplate:
+          errorPattern: "http://<redacted>@sf:8080"
+
+  # Go's url.Parse splits userinfo at the LAST "@" of the authority, so the mask
+  # must be greedy up to the path: a password containing "@" is still hidden.
+  - it: masks userinfo that contains an at sign
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.url: http://user:p@ss@sf:8080
+    asserts:
+      - failedTemplate:
+          errorPattern: "http://<redacted>@sf:8080\""
+
+  # A query string or fragment may carry a token: the refusal prints the origin
+  # only. The closing quote right after the port proves nothing follows it.
+  - it: prints only the origin of a plain http url in the refusal
+    template: templates/worker-deployment.yaml
+    set:
+      worker.systemFacts.url: http://sf:8080/base?token=secret#frag
+    asserts:
+      - failedTemplate:
+          errorPattern: "SYSTEM_FACTS_URL is \"http://sf:8080\": plain http"

@@ -7,14 +7,16 @@ replicaCount: 1
 # -- Number of old ReplicaSets to retain for deployment rollback
 revisionHistoryLimit: 10
 # -- Readiness probe configuration. All fields override chart defaults.
-# Defaults to '/api/admin/health/alive', which does NOT gate on MongoDB. The
-# image this chart pins opens its database connection on the first request that
-# needs one, so readiness on '/api/admin/health/readyz' deadlocks a fresh pod:
-# not Ready, no traffic, no connection, never Ready. Set
+# Defaults to '/api/admin/health/alive', which does NOT gate on MongoDB.
+# Console images before 2.0 opened their database connection on the first
+# request that needed one, so readiness on '/api/admin/health/readyz'
+# deadlocked a fresh pod: not Ready, no traffic, no connection, never Ready.
+# From 2.0 on the console connects at startup, so the image pinned in image.tag
+# does not deadlock; 'alive' stays the default so existing installs are
+# unchanged. Set
 #   readinessProbe:
 #     path: /api/admin/health/readyz
-# once you run an image that connects at startup, to gate readiness on the
-# database again.
+# (only on a console image from 2.0 on) to gate readiness on the database.
 readinessProbe: {}
 # -- Liveness probe configuration. All fields override chart defaults.
 # Keep this on a MongoDB-independent path. Pointing it at readyz turns a
@@ -26,7 +28,7 @@ image:
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)
-  tag: "2.12.0"
+  tag: "2.16.4"
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
 # - name: regcred

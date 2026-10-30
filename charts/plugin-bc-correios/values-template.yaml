@@ -76,7 +76,7 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    APP_ENV: ""       # REQUIRED - e.g., production, staging
+    ENV_NAME: "production"   # "development" (with PLUGIN_AUTH_ENABLED "false") for a dev install
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: ""   # REQUIRED - matches image tag
     LOG_LEVEL: "info"
@@ -120,8 +120,8 @@ bc-correios:
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
 
     # Plugin Auth
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""          # REQUIRED when PLUGIN_AUTH_ENABLED=true
+    PLUGIN_AUTH_ENABLED: "true"   # "false" is refused unless ENV_NAME is development-class
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
 
     # License
@@ -153,7 +153,9 @@ bc-correios:
     # Encryption - REQUIRED (AES-256, exactly 32 bytes)
     ENCRYPTION_KEY: ""     # REQUIRED - override dev placeholder
 
-    # Cache (Valkey) credentials (required when Valkey auth is enabled)
+    # Cache (Valkey) credentials, for the external Valkey below (required when its auth is enabled).
+    # Alternatively set valkey.auth.existingSecret (+ existingSecretPasswordKey, default
+    # "valkey-password"), which takes precedence and is read via secretKeyRef.
     CACHE_PASSWORD: ""
 
     # Object storage - REQUIRED when using S3 or SeaweedFS with auth
@@ -177,11 +179,13 @@ bc-correios:
 #   - Schema: public
 #
 # RabbitMQ:
-#   - User: plugin-bc-correios (with full permissions on / vhost)
-#   - Exchange: bc_correios.events (topic, durable)
-#   - Exchange: bc_correios.events.dlx (topic, durable)
-#   - Queue: bc_correios.mail.inbound (durable)
-#   - Queue: bc_correios.mail.inbound.dlq (durable)
+#   - User: the account in RABBITMQ_URL (with full permissions on / vhost); the chart does not create it
+#   - Exchanges: bc-correios.audit, bc-correios.audit.dlx, bc-correios.mail-events,
+#     bc-correios.webhook.dlx
+#   - Queues: bc-correios.audit.events, bc-correios.audit.dead, bc-correios.webhook.dispatch,
+#     bc-correios.webhook.dead
+#   (exchanges/queues/bindings come from files/rabbitmq/load_definitions.json: bundled broker
+#   or global.externalRabbitmqDefinitions.enabled)
 #
 # Valkey (Redis-compatible):
 #   - Used for: caching, rate limiting

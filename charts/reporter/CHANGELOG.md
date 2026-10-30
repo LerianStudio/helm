@@ -1,5 +1,985 @@
 # Reporter Changelog
 
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add a Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid over Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add a Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.1)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.0.0`. (@guimoreirar)
+
+Fixes:
+- Resolve issues with the GitHub Pages build by using Liquid templates instead of Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.0...reporter-v5.0.1)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Features:
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+Improvements:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags, ensuring accurate representation of flag states. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to prevent configuration issues. (@prymax10)
+
+Improvements:
+
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to enhance performance and stability. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to maintain proper configuration. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags in the reporter. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions within the reporter. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to improve configuration handling. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest changes and improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to enhance configuration handling. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest improvements and bug fixes. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to improve configuration handling. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest improvements and fixes. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Features:
+
+- Update `reporter-manager` to `@4.5.1` and `reporter-worker` to `@4.5.1`. (@lerian-studio)
+
+Fixes:
+
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags, ensuring accurate representation of flag states. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions, improving configuration handling. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest enhancements and fixes. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to prevent configuration issues. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest enhancements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags, ensuring accurate representation of flag states. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions, improving configuration accuracy. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`, ensuring compatibility and performance improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Features:
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+Improvements:
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions. (@prymax10)
+
+Improvements:
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags to ensure accurate representation. (@fredcamaral)
+- Resolve vault placeholders in RabbitMQ definitions to prevent configuration issues. (@prymax10)
+- Update `reporter-manager@4.5.1` and `reporter-worker@4.5.1` to incorporate the latest fixes and improvements. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.5.0...reporter-v5.0.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration from `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.5.0)
+
+Features:
+- Pin `lerian-common-helm` to version `2.4.0` for the `IDP_*` declaration helper. (@qnen)
+- Render the `IDP_*` permission declaration using `lerian-common`, applicable to manager only. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.3...reporter-v4.5.0)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.3)
+
+Fixes:
+- Accept the `IDP_*` declaration keys in the configmap schema for reporter. (@qnen)
+
+Improvements:
+- Add a Helm upgrade guide for reporter `v4.4.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.2...reporter-v4.4.3)
+
+---
+
+## [4.4.3](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.3)
+
+Fixes:
+- Accept the `IDP_*` declaration keys in the configmap schema for improved compatibility. (@qnen)
+
+Improvements:
+- Add a Helm upgrade guide for `reporter` `v4.4.2` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.2...reporter-v4.4.3)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+
+- Add Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+
+- Align worker container port with health port and fix README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Updated documentation to require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Updated documentation to require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Add a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Align the worker container port with the health port and correct README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Fixes:
+- Align the worker container port with the health port and correct the README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+Features:
+- Add Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected the README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Required overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Add Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Align worker container port with health port and correct README inconsistencies. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Add Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Add Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Align worker container port with health port and fix README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.2)
+
+Features:
+- Added a Helm upgrade guide for `reporter` `v4.4.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `reporter` `v4.4.1`. (@guimoreirar)
+
+Fixes:
+- Aligned the worker container port with the health port and corrected the README drift. (@guimoreirar, @gandalf-at-lerian)
+
+Improvements:
+- Updated documentation to require overriding every fixed host when the namespace changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.1...reporter-v4.4.2)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and excluded tests from the package to ensure a cleaner distribution. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` directories and ensured test files are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
+## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
+
+Fixes:
+- Removed committed `__pycache__` files and ensured tests are excluded from the package. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v4.4.0...reporter-v4.4.1)
+
+---
+
 ## [4.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v4.4.1)
 
 Fixes:

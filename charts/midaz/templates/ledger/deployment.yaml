@@ -50,6 +50,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "midaz-ledger.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.ledger.terminationGracePeriodSeconds }}
       {{- /* The helper owns both branches: fsGroup 65532 when Roles Anywhere is on, so
          the sidecar (runAsUser 65532) can read the 0440 cert volume; otherwise
          ledger.podSecurityContext. Called unguarded on purpose. */}}

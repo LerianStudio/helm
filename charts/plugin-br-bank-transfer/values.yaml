@@ -8,16 +8,16 @@ global:
   # -- Env-wide SHARED datastore mask (set once per environment; a native
   # bankTransfer.configmap.<KEY> overrides it). Consumed by
   # lerian-common.datastore.value. Fields: postgres.{host,port,user,ssl,
-  # replicaHost}, redis.{host,user,tls} — redis.host is "host:port" (no
-  # separate redis.port field); redis.user is only needed for
-  # ACL-authenticated Redis/Valkey deployments.
+  # replicaHost}, redis.{host,tls} — redis.host is "host:port" (no
+  # separate redis.port field).
   # Example:
   #   datastores:
   #     postgres: { host: "my-rds.example.com", user: "bank_transfer" }
-  #     redis: { host: "my-elasticache.example.com:6379", user: "default", tls: "true" }
+  #     redis: { host: "my-elasticache.example.com:6379", tls: "true" }
   datastores: {}
-  # -- Env-wide environment name. Consumed by lerian-common.globalValue (block
-  # "env"). Fields: name. (configmap.ENV_NAME overrides.)
+  # -- Env-wide environment name, read by templates/configmap.yaml. Fields:
+  # name. (configmap.ENVIRONMENT_NAME, or its deprecated alias
+  # configmap.ENV_NAME, overrides.)
   # Example: env: { name: "production" }
   env: {}
   # -- Env-wide multi-tenancy gate. Consumed by lerian-common.globalValue
@@ -26,21 +26,30 @@ global:
   # Example: multiTenant: { enabled: true }
   multiTenant: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
-  # "observability"). Fields: enabled. (configmap.ENABLE_TELEMETRY overrides.)
+  # "observability"). Fields: enabled, otlpEndpoint (unset = the node-local
+  # collector at $(HOST_IP):4317). (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT override.)
   # Example: observability: { enabled: true }
   observability: {}
   # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
   auth: {}
-  # -- Env-wide streaming (lib-streaming v3 / RedPanda) gate. `enabled` is
+  # -- Env-wide Access Manager permission declaration (RI). Consumed by
+  # lerian-common.idp.env (block "idp"). Fields: declarationEnabled, host.
+  # (bankTransfer.configmap.IDP_DECLARATION_ENABLED / IDP_HOST override.)
+  # declarationEnabled turns the gate on for every component of the release;
+  # prefer the component configmap for the gate and use global for the host.
+  # Example: idp: { host: "http://plugin-access-manager-identity.<ns>.svc.cluster.local:4001" }
+  idp: {}
+  # -- Env-wide streaming (lib-streaming v4 / RedPanda) gate. `enabled` is
   # consumed by lerian-common.globalValue (block "streaming"), same pattern
   # as multiTenant/observability above (configmap.STREAMING_ENABLED
-  # overrides). The remaining fields (brokers, tlsEnabled, saslMechanism,
-  # saslUsername, saslAllowPlaintext, compression, requiredAcks,
-  # batchLingerMs) are consumed by lerian-common.streaming.env directly —
+  # overrides). brokers, tlsEnabled, saslMechanism, saslUsername and
+  # saslAllowPlaintext are consumed by lerian-common.streaming.env directly —
   # they only render once enabled=true AND brokers is set, and any matching
   # native bankTransfer.configmap.STREAMING_* key still wins over these.
+  # The shared helper also renders compression, requiredAcks, batchLingerMs
+  # and importantEmitTimeoutMs, but this app ignores them (fixed in code).
   # STREAMING_SASL_PASSWORD/STREAMING_TLS_CA_CERT are secrets, set via
   # bankTransfer.secrets, never here.
   # Example:
@@ -210,7 +219,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.1.0"
+    tag: "3.4.0"
   # -- PostgreSQL migrations. External Postgres: a Job (Helm hook pre-install,pre-upgrade;
   # ArgoCD PreSync). Bundled Postgres: an initContainer of each app pod, so no pod starts
   # on an unmigrated schema; the hook notes below apply to the external Job only.
@@ -276,9 +285,11 @@ bankTransfer:
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
+    # -- Minimum number of available pods. Ignored while maxUnavailable is set
+    # (templates/pdb.yaml renders maxUnavailable first); clear maxUnavailable
+    # to use it.
     minAvailable: 1
-    # -- Maximum number of unavailable pods
+    # -- Maximum number of unavailable pods. Takes precedence over minAvailable
     maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
@@ -359,15 +370,25 @@ bankTransfer:
     # =================================================================
     # Application identity
     # =================================================================
-    # ENV_NAME is resolved via the global mask (global.env.name) — do NOT pin
-    # it here, a native configmap.ENV_NAME WINS over the mask and defeats it.
-    # The default ("production") lives in templates/configmap.yaml.
-    # APPLICATION_NAME/SERVER_ADDRESS/HTTP_BODY_LIMIT_BYTES are NOT pinned —
+    # ENVIRONMENT_NAME (deprecated alias: ENV_NAME) comes from global.env.name;
+    # a native key here wins over it. Default "production" (templates/configmap.yaml).
+    # SERVER_ADDRESS/HTTP_BODY_LIMIT_BYTES are NOT pinned —
     # no mask reads them and the chart already defaults them
-    # ("plugin-br-bank-transfer"/":4027"/"1048576") in templates/configmap.yaml;
+    # (":4027"/"1048576") in templates/configmap.yaml;
     # duplicating the value here was pure noise (and a drift risk: a future
     # template default change would silently have no effect while this pin
     # stands).
+
+    # =================================================================
+    # System Facts producer (OFF by default; rendered "false" by the template)
+    # When true it needs SYSTEM_FACTS_URL plus bankTransfer.secrets.SYSTEM_FACTS_CLIENT_ID/_SECRET
+    # (both modes: single-tenant delivers+registers with it, multi-tenant registers
+    # the contract with it). The app registers its own contract at boot; see README.
+    # SYSTEM_FACTS_ENABLED: "false"
+    # SYSTEM_FACTS_URL: ""
+    # SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE: "false"  # true only after every credential is rotated
+    # SYSTEM_FACTS_INSECURE_HTTP: "false"            # plaintext URL off loopback; refused in production
+    # =================================================================
 
     # =================================================================
     # TLS / proxy
@@ -375,19 +396,8 @@ bankTransfer:
     # ("true") in templates/configmap.yaml.
     # =================================================================
 
-    # =================================================================
-    # CORS policy
-    # In production the plugin's validator rejects wildcard "*" and any
-    # localhost / 127.0.0.1 / [::1] origin. Leave empty in single-tenant
-    # dev defaults; production deployments MUST override CORS_ALLOWED_ORIGINS
-    # with the API's public ingress hostname (e.g.
-    # "https://bank-transfer.sa-east-1.lerian.io"). When unset, the app's
-    # in-code safety net defaults to http://localhost:3000 — fine for dev,
-    # fatal in production.
-    # =================================================================
-    CORS_ALLOWED_ORIGINS: ""
-    CORS_ALLOWED_METHODS: ""
-    CORS_ALLOWED_HEADERS: ""
+    # CORS (cors.allowed_origins/methods/headers, origins default "*") and rate
+    # limiting (rate_limit.*, off by default) are systemplane keys, not env.
     # =================================================================
     # Multi-tenancy
     # Only the toggle and the infrastructure endpoints live in the chart.
@@ -403,14 +413,17 @@ bankTransfer:
     # templates/configmap.yaml.
     # When MULTI_TENANT_ENABLED=true the chart also emits:
     #   MULTI_TENANT_URL, AWS_REGION, MULTI_TENANT_REDIS_HOST,
-    #   MULTI_TENANT_REDIS_PORT, MULTI_TENANT_REDIS_TLS,
-    #   MULTI_TENANT_ENVIRONMENT, MULTI_TENANT_ALLOW_INSECURE_HTTP,
-    #   MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE
+    #   MULTI_TENANT_REDIS_PORT, MULTI_TENANT_REDIS_TLS
+    # The tenant environment, and whether an http:// MULTI_TENANT_URL is allowed
+    # (development or test only), follow ENVIRONMENT_NAME (global.env.name).
     # Optional tuning (lib-commons defaults apply when unset):
     #   MULTI_TENANT_MAX_TENANT_POOLS, MULTI_TENANT_IDLE_TIMEOUT_SEC,
-    #   MULTI_TENANT_TIMEOUT, MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD,
-    #   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC, MULTI_TENANT_CACHE_TTL_SEC
+    #   MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD,
+    #   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC
     # Set those under .configmap as needed.
+    # MULTI_TENANT_TIMEOUT and MULTI_TENANT_CACHE_TTL_SEC are read by the app
+    # (defaults 30 / 120) but no template renders them from .configmap; set
+    # them through bankTransfer.extraEnvVars if you need to change them.
 
     # =================================================================
     # PostgreSQL (primary)
@@ -420,7 +433,7 @@ bankTransfer:
     # (global.datastores.postgres / global.cloud). Do NOT pin them here — a native
     # configmap.<KEY> WINS over the mask and defeats it. Defaults live in the template.
     # POSTGRES_DB/MAX_OPEN_CONNS/MAX_IDLE_CONNS/CONN_MAX_LIFETIME_MINS/
-    # CONN_MAX_IDLE_TIME_MINS/CONNECT_TIMEOUT_SEC/MIGRATIONS_PATH are NOT
+    # CONN_MAX_IDLE_TIME_MINS/CONNECT_TIMEOUT_SEC are NOT
     # pinned either — no mask reads them, and the chart already defaults them
     # in templates/configmap.yaml.
     # PostgreSQL replica (optional — CQRS read scaling)
@@ -437,7 +450,7 @@ bankTransfer:
     # WRITE_TIMEOUT_MS/DIAL_TIMEOUT_MS are NOT pinned — no mask reads them,
     # and the chart already defaults them in templates/configmap.yaml.
     # =================================================================
-    # REDIS_TLS/host/user/caCert resolved via the redis datastore mask
+    # REDIS_TLS/host resolved via the redis datastore mask
     # (global.datastores.redis / global.cloud) — do NOT pin them here.
 
     # =================================================================
@@ -448,9 +461,10 @@ bankTransfer:
     # =================================================================
 
     # =================================================================
-    # RabbitMQ (event bus, optional)
-    # RABBITMQ_URL is rendered from chart defaults when empty.
-    # Retries / timeouts / routing-key prefix are systemplane-managed.
+    # RabbitMQ (event bus, optional; both modes)
+    # RABBITMQ_URL is a credential: set it under bankTransfer.secrets
+    # (amqps:// outside development/test/local). Retries / timeouts /
+    # routing-key prefix are systemplane-managed.
     # RABBITMQ_ENABLED/RABBITMQ_EXCHANGE are NOT pinned — the chart already
     # defaults them in templates/configmap.yaml.
     # =================================================================
@@ -462,20 +476,30 @@ bankTransfer:
     # =================================================================
 
     # =================================================================
-    # License gateway override (optional — defaults to lib-license-go's
-    # hard-coded endpoint when LICENSE_SERVICE_ADDRESS is unset)
+    # Access Manager permission declaration (RI) — rendered by
+    # lerian-common.idp.env. IDP_DECLARATION_ENABLED defaults to "false";
+    # IDP_HOST is rendered only when set. Client pair: bankTransfer.secrets.
+    # IDP_DECLARATION_ENABLED: "false"
+    # IDP_HOST: ""
     # =================================================================
-    # LICENSE_SERVICE_ADDRESS: ""
-    # TENANT_IDS: ""
+
+    # =================================================================
+    # License gateway — newer app images refuse to boot without LICENSE_KEY
+    # (bankTransfer.secrets) and ORGANIZATION_IDS (below), in every
+    # environment. lib-license-go picks the gateway itself: IS_DEVELOPMENT
+    # "true" (exactly) selects the development gateway, which a development
+    # licence key needs. Rendered only when set.
+    # =================================================================
+    # IS_DEVELOPMENT: "true"
 
     # =================================================================
     # OpenTelemetry
     # ENABLE_TELEMETRY is resolved via the global mask (global.observability.
     # enabled) — do NOT pin it here, a native configmap.ENABLE_TELEMETRY WINS
     # over the mask and defeats it. The default ("false") lives in
-    # templates/configmap.yaml. OTEL_LIBRARY_NAME/OTEL_RESOURCE_SERVICE_NAME/
-    # OTEL_EXPORTER_OTLP_ENDPOINT/OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT are NOT
-    # pinned — no mask reads them, and the chart already defaults them.
+    # templates/configmap.yaml. OTEL_EXPORTER_OTLP_ENDPOINT follows
+    # global.observability.otlpEndpoint. The app derives service name, version
+    # and environment itself.
     # =================================================================
 
     # =================================================================
@@ -484,15 +508,16 @@ bankTransfer:
     # path templates are systemplane-managed at runtime.
     # =================================================================
 
-    # Midaz — MIDAZ_BASE_URL/MIDAZ_TRANSACTION_URL/MIDAZ_AUTH_ADDRESS are NOT
-    # pinned — the chart already defaults them (standard in-cluster Midaz
-    # ledger/auth service names) in templates/configmap.yaml. Override here
-    # only for a non-standard install.
+    # Midaz — MIDAZ_BASE_URL/MIDAZ_TRANSACTION_URL are NOT pinned — the chart
+    # already defaults them (standard in-cluster Midaz ledger service name) in
+    # templates/configmap.yaml. The in-cluster http:// defaults boot only outside
+    # ENVIRONMENT_NAME=production, where the app refuses non-https upstreams: set
+    # https:// endpoints here (and for CRM/Fees below, and global.auth.host).
     # MIDAZ_BASE_URL: ""
     # MIDAZ_TRANSACTION_URL: ""
     # MIDAZ_AUTH_ENABLED is NOT pinned — the chart already defaults it
     # ("false") in templates/configmap.yaml.
-    # MIDAZ_AUTH_ADDRESS: ""
+    # MIDAZ_AUTH_ADDRESS: ""  # unset = PLUGIN_AUTH_ADDRESS (global.auth.host)
     # MIDAZ_TIMEOUT_MS: ""
     # Fee mode (app v3.1.0+) — defaulted in templates/configmap.yaml to the app's
     # own defaults. "auto" turns native fees on by itself against Midaz >= 4.1;
@@ -501,13 +526,13 @@ bankTransfer:
     # MIDAZ_FEE_MODE: "auto"            # auto | legacy | native
     # MIDAZ_FEE_MODE_REFRESH: "5m"      # positive Go duration; never empty
 
-    # CRM (REQUIRED — no chart default, must be set)
+    # CRM — in-cluster dev default; production needs an https:// URL
     CRM_BASE_URL: "http://plugin-crm.midaz-plugins.svc.cluster.local:4003"
     # CRM_AUTH_ENABLED is NOT pinned — the chart already defaults it
     # ("false") in templates/configmap.yaml.
     # CRM_TIMEOUT_MS: ""
 
-    # Fees (REQUIRED — no chart default, must be set)
+    # Fees — in-cluster dev default; production needs an https:// URL
     FEES_BASE_URL: "http://plugin-fees.midaz-plugins.svc.cluster.local:4004"
     # FEES_AUTH_ENABLED is NOT pinned — the chart already defaults it
     # ("false") in templates/configmap.yaml.
@@ -516,6 +541,12 @@ bankTransfer:
     # Courier (optional outbound integration, added in app 2.2.0). Set the base
     # URL here; the CLIENT_ID/CLIENT_SECRET go under bankTransfer.secrets.
     # COURIER_BASE_URL: ""
+    # COURIER_ACCOUNT_CLAIMS_ENABLED (app v3.2.0+) turns on the sweep that
+    # claims this engine's CRM accounts on the Courier. Rendered with the app
+    # default "false". When "true", single-tenant also needs COURIER_BASE_URL,
+    # the COURIER_CLIENT_ID/COURIER_CLIENT_SECRET pair and ORGANIZATION_ID;
+    # multi-tenant reads the Courier from each tenant's JD bundle.
+    # COURIER_ACCOUNT_CLAIMS_ENABLED: "false"
 
     # TRUSTED_PROXIES (optional; complements SERVER_TRUSTED_PROXIES, added in app 2.2.0)
     # TRUSTED_PROXIES: ""
@@ -525,25 +556,22 @@ bankTransfer:
     # pinned — no mask reads them, and the chart already defaults them
     # ("false"/"/soap"/"local_pem"/"false") in templates/configmap.yaml.
     JD_BASE_URL: "" # MUST BE SET — JD SOAP endpoint
-    JD_ORIGIN_ISPB: "" # MUST BE SET — Origin ISPB code
-    # JD_LEGACY_CODE: ""
+    # JD_LEGACY_CODE: ""  # MUST BE SET
+    # Origin ISPB is not env: seed the systemplane key tenancy.ispb_organization_bindings.
 
     # =================================================================
     # Single-tenant defaults
-    # IS_DEVELOPMENT removed: no template reads it, so it never rendered
-    # into the ConfigMap at all — dead configuration.
     # =================================================================
     ORGANIZATION_ID: ""
     ORGANIZATION_IDS: ""
     # =================================================================
     # Feature flags
-    # WEBHOOK_ENABLED/BTF_FEE_ENABLED/RATE_LIMIT_ENABLED/ALLOW_INSECURE_TLS/
-    # OTEL_SDK_DISABLED are NOT pinned — no mask reads them, and the chart
-    # already defaults them in templates/configmap.yaml.
+    # WEBHOOK_ENABLED/BTF_FEE_ENABLED/ALLOW_INSECURE_TLS are NOT pinned — no
+    # mask reads them, and the chart already defaults them in templates/configmap.yaml.
     # =================================================================
 
     # =================================================================
-    # Streaming (lib-streaming v3 — business event publication)
+    # Streaming (lib-streaming v4 — business event publication)
     # STREAMING_ENABLED defaults to "false" in templates/configmap.yaml (a
     # disabled emitter is a no-op, not held-and-replayed — see .env.example).
     # STREAMING_CLOUDEVENTS_SOURCE always renders (app validates it at
@@ -571,13 +599,15 @@ bankTransfer:
 
     # Redis/Valkey password
     REDIS_PASSWORD: ""
-    # MongoDB password. With the bundled subchart it is read from the subchart Secret
-    # (key mongodb-passwords); set here only for an external MongoDB without mongodb.auth.existingSecret.
+    # MongoDB password for an external MongoDB without mongodb.auth.existingSecret, used only
+    # when MONGO_URI references $(MONGO_PASSWORD).
     MONGO_PASSWORD: ""
-    # Authentication (plugin-auth) - client secret for M2M auth
-    # PLUGIN_AUTH_CLIENT_SECRET: ""
+    # MONGO_URI: ""  # REQUIRED for an external MongoDB in single-tenant mode, credential inline
+    #                # or $(MONGO_PASSWORD) (the app reads only MONGO_URI). Bundled: the chart assembles it.
+    # PLUGIN_AUTH_CLIENT_ID/PLUGIN_AUTH_CLIENT_SECRET are not read by the app
+    # since v3.1.0 (inbound auth needs only PLUGIN_AUTH_ADDRESS); do not set them.
 
-    # License Key (required in production)
+    # License Key (newer app images refuse to boot without it, in every environment)
     # LICENSE_KEY: ""
     # Organization IDs — alternative to configmap.ORGANIZATION_IDS; when set,
     # the ConfigMap omits its own key so envFrom doesn't declare it twice.
@@ -589,16 +619,20 @@ bankTransfer:
     # Fees Outbound M2M Credentials (optional - when FEES_AUTH_ENABLED=true)
     # FEES_CLIENT_SECRET: ""
 
-    # Systemplane Secrets (optional - for runtime config)
-    # SYSTEMPLANE_SECRET_MASTER_KEY: ""
-    # SYSTEMPLANE_POSTGRES_DSN: ""
+    # Systemplane: templates/secrets.yaml does not render SYSTEMPLANE_SECRET_MASTER_KEY,
+    # and no SYSTEMPLANE_POSTGRES_DSN exists in the app (systemplane uses the
+    # primary Postgres connection). The app's own README still lists the master
+    # key for local runs; if your image needs it, supply it through
+    # bankTransfer.useExistingSecret.
 
-    # JD SPB Credentials (REQUIRED for production)
+    # JD SPB Credentials (MUST BE SET single-tenant unless JD_SANDBOX_MODE=true)
     # JD_USER_CODE: ""
     # JD_PASSWORD: ""
-    # JD_PRIVATE_KEY_PEM: ""
+    # JD_PRIVATE_KEY_PEM: ""  # MUST BE SET in JD_SIGNING_MODE=local_pem (the default)
     # JD_PUBLIC_KEY_PEM: ""  # Required for external_provided mode with signature validation
     # JD_PRIVATE_KEY_KEYINFO: ""  # key metadata for external signing providers (credential-like → Secret)
+    # JD_EXTERNAL_SIGNER_AUTH_TOKEN: ""  # bearer for JD_EXTERNAL_SIGNER_URL; that URL, JD_EXTERNAL_SIGNER_TIMEOUT_MS
+    #                                    # and JD_ALLOW_PRIVATE_NETWORK go under bankTransfer.extraEnvVars
 
     # Encryption Keys (REQUIRED - hex-encoded 32-byte AES-256 keys, 64 hex characters)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""
@@ -611,21 +645,35 @@ bankTransfer:
   # STREAMING_SASL_PASSWORD: ""
   # STREAMING_TLS_CA_CERT: ""
 
-  # Multi-tenant Redis CA (optional — only when MULTI_TENANT_REDIS_TLS=true
-  # and the cluster's CA isn't in the system trust pool)
+  # Multi-tenant (only when MULTI_TENANT_ENABLED=true). Redis CA: only when
+  # MULTI_TENANT_REDIS_TLS=true and the cluster's CA isn't in the system trust pool.
+  # MULTI_TENANT_SERVICE_API_KEY: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
+  # MULTI_TENANT_REDIS_PASSWORD: ""
   # MULTI_TENANT_REDIS_CA_CERT: ""
 
-  # RabbitMQ credentials (when RABBITMQ_ENABLED=true)
-  # RABBITMQ_PASSWORD: ""
+  # RabbitMQ credentials (when RABBITMQ_ENABLED=true; RABBITMQ_URL is required,
+  # amqps:// outside development/test/local)
+  # RABBITMQ_URL: ""
   # RABBITMQ_EVENT_SIGNING_SECRET: ""
 
   # Webhook secrets (when WEBHOOK_ENABLED=true)
   # WEBHOOK_SIGNING_SECRET: ""
   # WEBHOOK_BROKER_EVENT_SIGNING_SECRET: ""
 
+  # System Facts client pair (required when SYSTEM_FACTS_ENABLED=true; both or neither)
+  # SYSTEM_FACTS_CLIENT_ID: ""
+  # SYSTEM_FACTS_CLIENT_SECRET: ""
+
   # Courier outbound M2M credentials (courier integration, added in app 2.2.0)
   # COURIER_CLIENT_ID: ""
   # COURIER_CLIENT_SECRET: ""
+
+  # Access Manager permission declaration (RI) client pair, used only when
+  # IDP_DECLARATION_ENABLED="true" (configmap.IDP_DECLARATION_ENABLED / IDP_HOST, or
+  # global.idp.{declarationEnabled,host}). With useExistingSecret=true the chart renders
+  # neither key: the existing Secret must carry both.
+  # IDP_M2M_CLIENT_ID: ""
+  # IDP_M2M_CLIENT_SECRET: ""
 
   # -- Existing secrets name
   useExistingSecret: false

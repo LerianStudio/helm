@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset.
+- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - Initial admin: `auth.initUser.enabled` controls a `post-install` bootstrap Job only. It never runs on upgrades, so upgrades and later values changes do not reset the password or recreate a deleted admin account. The init-user binary (since v3.9.0) preserves existing users instead of resetting their credentials. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow; do not assume `auth.initUser.adminPassword` overwrites them. For a new account, supply that value or the key selected by `auth.initUser.adminPasswordSecretName` / `adminPasswordSecretKey`.
@@ -11,7 +11,7 @@
 
 > **Uninstall keeps the identity data.** `helm uninstall` leaves the bundled database volume (`data-<release>-auth-database-0`) and its password Secret (`<release>-auth-database`), so a reinstall under the same release name opens the same users, organizations and applications with the same password. This chart, not the Bitnami subchart, owns that Secret: it takes `auth-database.auth.password` when set, else the Secret already in the namespace, else a new random password. Deleting the data is a separate, manual step: delete that PVC and that Secret together (the Valkey volume `valkey-data-<release>-valkey-primary-0`, sessions and cached tokens only, is left too). Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned.
 
-This helm chart installs [Plugin Acess Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance and open-source ledger.
+This helm chart installs [Plugin Access Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance ledger.
 
 ---
 
@@ -37,6 +37,15 @@ mutate that package.
   `configmap`, and identity's auth switch in `identity.configmap.AUTH_ENABLED`, not in
   `extraEnvVars`: they are already emitted and duplicate YAML keys are refused. Set
   `AUTH_M2M_JWKS_URL` in one place only.
+- **Google Workspace directory (identity 3.12.0+).** With
+  `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, the chart refuses to render
+  unless `GOOGLE_DIRECTORY_CLIENT_ID` and `GOOGLE_DIRECTORY_REDIRECT_URL` are set in
+  `identity.configmap`, and `GOOGLE_DIRECTORY_CLIENT_SECRET` and
+  `GOOGLE_DIRECTORY_ENCRYPTION_KEY` (at least 32 bytes) in `identity.secrets`. With
+  `identity.useExistingSecret=true` it checks only that `identity.existingSecretName`
+  is set; add the two secret keys to that Secret yourself. The two secret keys are
+  refused in `identity.configmap` and `identity.extraEnvVars`; the plain keys must be
+  quoted strings in `extraEnvVars`. Unset, none of the five keys is rendered.
 - These checks validate chart-visible settings only; they do not certify an
   end-to-end upgrade, TLS trust, licenses, or existing users' MFA recovery paths.
   See the [9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md) before rollout.
@@ -113,31 +122,47 @@ power-user reference; `values.schema.json` validates it.
 ---
 ## Configuring Ingress for Different Controllers
 
-The Midaz Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. It is possible to enable Ingress for the following services: Transaction, Onboarding and Console. Below are the configurations for commonly used controllers.
+This chart has no top-level `ingress:` block: a top-level `ingress.*` value is ignored and renders no Ingress. Each exposed component has its own block, with the same shape (`enabled`, `className`, `annotations`, `hosts`, `tls`):
+
+| Component | Values key | Service port | Host derived from `global.ingress.domain` |
+| --- | --- | --- | --- |
+| Auth | `auth.ingress` | `auth.service.port` (`4000`) | `auth.<domain>` |
+| Identity | `identity.ingress` | `identity.service.port` (`4001`) | `identity.<domain>` |
+| Caradhras (API and admin panel) | `caradhras.ingress` | `8000` | `caradhras.<domain>` |
+| Caradhras UI (needs `caradhras.ui.enabled`) | `caradhras.ui.ingress` | `caradhras.ui.service.port` (`8080`) | `caradhras.<domain>` |
+
+Ingresses are off by default. To set `className`, `annotations`, `tls` and the host domain once for all of them, use `global.ingress` (`className`, `annotations`, `tls`, `domain`); a per-component value always wins. With `global.ingress.domain` set and no explicit `hosts`, the host is `<subdomain>.<domain>` as in the last column. The caradhras UI Ingress derives the same `caradhras.<domain>` host as `caradhras.ingress`, so give one of them explicit `hosts` when you enable both.
+
+**Keep Caradhras internal.** `caradhras.ingress` and `caradhras.ui.ingress` must be internal only, on an internal
+load balancer or a private network, never internet-facing. On AWS ALB that means `alb.ingress.kubernetes.io/scheme: internal`.
+Only the Access Manager (auth and identity) and operators call Caradhras; organization admins and end users go through
+the Access Manager and never reach Caradhras directly. The [https rule](#production-reach-caradhras-over-https) still
+holds: a public-CA certificate does not need an internet-facing load balancer.
 
 - **Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. The Ingress Controller is responsible for managing external access to the services. Examples of popular Ingress Controllers include NGINX, AWS ALB, and Traefik.
+
+The examples below configure `auth.ingress`; use the same keys under `identity.ingress`, `caradhras.ingress` or `caradhras.ui.ingress`.
 
 ### NGINX Ingress Controller
 To use the **NGINX Ingress Controller**, configure the `values.yaml` as follows:
 
 ```yaml
-ingress:
-  enabled: true
-  className: "nginx"
-  // The `annotations` field is used to add custom metadata to the Nginx resource.
-  // Annotations are key-value pairs that can be used to attach arbitrary non-identifying metadata to objects.
-  // These annotations can be used by various tools and libraries to augment the behavior of the Nginx resource.
-  // See more https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
-  annotations: {} 
-  hosts:
-    - host: midaz.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: midaz-tls  # Ensure this secret exists or is managed by cert-manager
-      hosts:
-        - midaz.example.com
+auth:
+  ingress:
+    enabled: true
+    className: "nginx"
+    # Annotations are key-value pairs read by the controller.
+    # See more https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/annotations.md
+    annotations: {}
+    hosts:
+      - host: auth.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: auth-tls  # Ensure this secret exists or is managed by cert-manager
+        hosts:
+          - auth.example.com
 ```
 
 ---
@@ -146,21 +171,22 @@ ingress:
 For **AWS ALB Ingress Controller**, use the following configuration:
 
 ```yaml
-ingress:
-  enabled: true
-  className: "alb"
-  annotations:
-    alb.ingress.kubernetes.io/scheme: internal  # Use "internet-facing" for public ALB
-    alb.ingress.kubernetes.io/target-type: ip   # Use "instance" if targeting EC2 instances
-    alb.ingress.kubernetes.io/group.name: "midaz"  # Group ALB resources under this name
-    alb.ingress.kubernetes.io/healthcheck-path: "/healthz"  # Health check path
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'  # Listen on HTTP and HTTPS
-  hosts:
-    - host: midaz.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []  # TLS is managed by the ALB using ACM certificates
+auth:
+  ingress:
+    enabled: true
+    className: "alb"
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internal  # Use "internet-facing" for public ALB
+      alb.ingress.kubernetes.io/target-type: ip   # Use "instance" if targeting EC2 instances
+      alb.ingress.kubernetes.io/group.name: "access-manager"  # Group ALB resources under this name
+      alb.ingress.kubernetes.io/healthcheck-path: "/health"  # Auth health check path
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'  # Listen on HTTP and HTTPS
+    hosts:
+      - host: auth.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []  # TLS is managed by the ALB using ACM certificates
 ```
 
 ---
@@ -169,21 +195,22 @@ ingress:
 For **Traefik**, configure the `values.yaml` as follows:
 
 ```yaml
-ingress:
-  enabled: true
-  className: "traefik"
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: "web, websecure"  # Entrypoints defined in Traefik
-    traefik.ingress.kubernetes.io/router.tls: "true"  # Enable TLS for this route
-  hosts:
-    - host: midaz.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: midaz-tls  # Ensure this secret exists and contains the TLS certificate
-      hosts:
-        - midaz.example.com
+auth:
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: "web, websecure"  # Entrypoints defined in Traefik
+      traefik.ingress.kubernetes.io/router.tls: "true"  # Enable TLS for this route
+    hosts:
+      - host: auth.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: auth-tls  # Ensure this secret exists and contains the TLS certificate
+        hosts:
+          - auth.example.com
 ```
 
 ## Pod Spreading (`global.scheduling.spread`)
@@ -259,8 +286,8 @@ required. To keep the previous pod template exactly, set
 | `replicaCount` | Number of replicas for the deployment | `1` |
 | `image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-identity` |
 | `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag used for deployment | `3.11.1` |
-| `imagePullSecrets` | Secrets for pulling images from a private registry | `[{"name": "regcred"}]` |
+| `image.tag` | Image tag used for deployment | `3.14.0` |
+| `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `nameOverride` | Overrides the default generated name by Helm | `""` |
 | `fullnameOverride` | Overrides the full name generated by Helm | `""` |
 | `ingress.enabled` | Enable or disable ingress | `false` |
@@ -290,6 +317,11 @@ required. To keep the previous pod template exactly, set
 | `affinity` | Affinity rules for pod scheduling | `{}` |
 | `extraEnvVars` | Extra environment variables to be added to the deployment | `{}` |
 | `configmap.PLUGIN_AUTH_SSO_CALLBACK_URL` | Literal callback URL for this component, overriding `common.sso.*`. Must match the auth component — see [Single sign-on](#single-sign-on-commonssobaseurl) | unset |
+| `configmap.GOOGLE_DIRECTORY_ENABLED` | `"true"` turns on the Google Workspace directory connection (identity 3.12.0+). Needs the other four `GOOGLE_DIRECTORY_*` values | unset |
+| `configmap.GOOGLE_DIRECTORY_CLIENT_ID` | Client id of Lerian's Google OAuth client | unset |
+| `configmap.GOOGLE_DIRECTORY_REDIRECT_URL` | OAuth redirect URL registered on that client (https) | unset |
+| `secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` | Client secret of that Google OAuth client. Rendered only when set | `""` |
+| `secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` | Encrypts each organization's stored Google refresh token; at least 32 bytes. Changing it forces every connected organization to reconnect. Rendered only when set | `""` |
 | `useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `existingSecretName` | The name of the existing secret to use | `""` |
 
@@ -300,8 +332,8 @@ required. To keep the previous pod template exactly, set
 | `replicaCount` | Number of replicas for the deployment | `3` |
 | `image.repository` | Repository for the console service container image | `ghcr.io/lerianstudio/plugin-auth` |
 | `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag used for deployment | `3.11.1` |
-| `imagePullSecrets` | Secrets for pulling images from a private registry | `[{"name": "regcred"}]` |
+| `image.tag` | Image tag used for deployment | `3.14.0` |
+| `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `nameOverride` | Overrides the default generated name by Helm | `""` |
 | `fullnameOverride` | Overrides the full name generated by Helm | `""` |
 | `namespaceOverride` | Overrides the namespace for the service | `""` |
@@ -470,25 +502,27 @@ Caradhras is a top-level component, sibling to `identity`/`auth` (formerly the
 nested `auth.backend`, which ran the legacy Casdoor image). A legacy
 `auth.backend.*` override in your OWN values file is still honored as a
 fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
-`replicaCount` — see `docs/UPGRADE-10.0.md`.
+`replicaCount` — see `docs/UPGRADE-8.6-to-9.2.md`.
 
 | Parameter | Description | Default |
 | --- | --- | --- |
 | `caradhras.replicaCount` | Number of replicas | `1` |
 | `caradhras.name` | Name of the caradhras component | `<release>-caradhras` |
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
-| `caradhras.image.tag` | Image tag used for deployment | `1.5.1` |
+| `caradhras.image.tag` | Image tag used for deployment | `1.8.6` |
 | `caradhras.service.port` | Service port | `8000` |
 | `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). `nodeSelector` / `affinity` / `tolerations` for caradhras still come from `auth.*` | `{}` |
 | `caradhras.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
-| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions | `1.5.1` |
+| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions | `1.8.6` |
+| `caradhras.migrations.skipRBACChain` | Render `MIGRATIONS_SKIP_RBAC_CHAIN=true` on the migrate init container and on the caradhras container: the migrate applies the schema chain and skips the `migrations-rbac` chain (Lerian product permissions/roles/groups under owner `lerian`), and the caradhras boot schema check skips the same chain. For installs whose permissions arrive only via RI manifests (e.g. cross). Needs caradhras and caradhras-migrations images that understand the variable; `false` renders nothing | `false` |
+| `caradhras.migrations.extraEnvVars` | Extra `NAME: value` env vars for the migrate init container only, rendered as name/value pairs. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused; names must be valid env var names (`[-._a-zA-Z][-._a-zA-Z0-9]*`); not for secrets | `{}` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
 | `caradhras.ui.image.repository` | Repository for the caradhras-ui container image | `ghcr.io/lerianstudio/caradhras-ui` |
 | `caradhras.ui.image.tag` | Image tag used for deployment | `1.4.0` |
-| `caradhras.ui.service.port` | Service port | `80` |
+| `caradhras.ui.service.port` | Service port | `8080` |
 | `caradhras.ui.ingress.enabled` | Enable ingress for the UI | `false` |
 | `caradhras.ui.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew) | unset (`{}`) |
 | `caradhras.ui.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | unset (`[]`) |
@@ -613,7 +647,7 @@ caradhras both.
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `otel-collector-lerian.enabled` | Enable the OpenTelemetry collector | `false` |
+| `otel-collector-lerian.enabled` | Inject `HOST_IP` (node IP) and `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` into the auth, identity and caradhras containers, so telemetry goes to a node-local OTLP collector. This chart declares no collector dependency and deploys none: install `otel-collector-lerian` (or any collector listening on the node IP, port 4317) separately. Set `false` to omit the two variables | `true` |
 
 | `auth.deploymentStrategy.rollingUpdate.maxSurge` | Maximum number of pods that can be created over the desired number of pods.              | `1`                                            |
 | `auth.deploymentStrategy.rollingUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during the update.                        | `1`                                            |
@@ -626,8 +660,8 @@ caradhras both.
 | `auth.resources.requests.cpu`                 | Minimum CPU request for the pods.                                                        | `"500m"`                                       |
 | `auth.resources.requests.memory`              | Minimum memory request for the pods.                                                     | `"256Mi"`                                      |
 | `auth.autoscaling.enabled`                    | Specifies whether autoscaling is enabled.                                                | `true`                                         |
-| `auth.autoscaling.minReplicas`                | Minimum number of replicas for autoscaling.                                              | `1`                                            |
-| `auth.autoscaling.maxReplicas`                | Maximum number of replicas for autoscaling.                                              | `3`                                            |
+| `auth.autoscaling.minReplicas`                | Minimum number of replicas for autoscaling.                                              | `3`                                            |
+| `auth.autoscaling.maxReplicas`                | Maximum number of replicas for autoscaling.                                              | `9`                                            |
 | `auth.autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling.                                       | `80`                                           |
 | `auth.autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling.                                    | `80`                                           |
 | `auth.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). | `{}` |

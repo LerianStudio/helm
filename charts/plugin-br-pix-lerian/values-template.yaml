@@ -4,12 +4,12 @@
 # release), so any number written here goes stale on the next merge.
 #
 # Override only the fields you need to change from values.yaml defaults.
-# 8 of the 14 components are enabled by default. Disabled by default:
-# adapter-provider-mock, dict-hub-vsync, the adapter-lerian pair
-# (adapterLerian / adapterLerianSystemplane) and the pixauto pair
-# (pixauto / pixautoSystemplane). Disable any component by setting
-# `enabled: false`; enabling one means supplying everything it requires --
-# see the chart README, "Required before installation".
+# 8 of the 14 components are enabled by default, now including the pixauto pair
+# (pixauto / pixautoSystemplane). Disabled by default: adapter-provider-mock,
+# dict-hub-vsync, the two proxies (dictProxy / cobProxy) and the adapter-lerian
+# pair (adapterLerian / adapterLerianSystemplane). Disable any component by
+# setting `enabled: false`; enabling one means supplying everything it requires
+# -- see the chart README, "Required before installation".
 
 # There is NO shared `global.image` key. Each of the 14 components publishes
 # and pulls its own image (ghcr.io/lerianstudio/plugin-br-pix-lerian-<component>),
@@ -38,13 +38,9 @@ spi:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"            # or "saas" / "local"
-    # ENV_NAME must be set on EVERY enabled component, not just here. The
-    # chart default in values.yaml is "development", and two behaviours key off
-    # it: a Systemplane skips the SYSTEMPLANE_SECRET_MASTER_KEY requirement
-    # when ENV_NAME is "local" or "development" (booting with secret encryption
-    # off), and SWAGGER_ENABLED, when unset, resolves to `envName != production`
-    # (serving /docs and /openapi.json). Every component below therefore
-    # repeats it.
+    # The chart default is "production". To opt into dev conveniences (such as
+    # /docs and /openapi.json when SWAGGER_ENABLED is unset), set "local" or
+    # "development" on every enabled component, Systemplanes included.
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
@@ -102,8 +98,7 @@ spiSystemplane:
   # those values back and gates /readyz on them. Setting them only on `spi`
   # above is not enough. Keys below are the spi domain's seed mappings.
   configmap:
-    # Production environment gate. See spi above -- this template ships a
-    # production deployment, and the chart default is "development".
+    # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
@@ -151,8 +146,7 @@ dictHub:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
-    # Production environment gate. See spi above -- this template ships a
-    # production deployment, and the chart default is "development".
+    # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
@@ -187,8 +181,7 @@ dictHub:
 dictHubVsync:
   enabled: true
   configmap:
-    # Production environment gate. See spi above -- this template ships a
-    # production deployment, and the chart default is "development".
+    # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
     VSYNC_ENABLED: "true"
     # License allow-list, required alongside LICENSE_KEY. See spi above. The
@@ -221,8 +214,7 @@ dictProxy:
   enabled: false
   configmap:
     DEPLOYMENT_MODE: "byoc"
-    # Production environment gate. See spi above -- this template ships a
-    # production deployment, and the chart default is "development".
+    # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
@@ -241,8 +233,7 @@ dictSystemplane:
   # Seeds the dict.* configuration store; dictHub and dictHubVsync read these
   # back and gate /readyz on them.
   configmap:
-    # Production environment gate. See spi above -- this template ships a
-    # production deployment, and the chart default is "development".
+    # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
@@ -274,8 +265,7 @@ cobHub:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
-    # Production environment gate. See spi above -- this template ships a
-    # production deployment, and the chart default is "development".
+    # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
@@ -305,8 +295,7 @@ cobProxy:
   enabled: false
   configmap:
     DEPLOYMENT_MODE: "byoc"
-    # Production environment gate. See spi above -- this template ships a
-    # production deployment, and the chart default is "development".
+    # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
@@ -323,8 +312,7 @@ cobSystemplane:
   # Seeds the cob.* configuration store; cobHub reads these back and gates
   # /readyz on organization_id, ispb, provider and dict_base_url.
   configmap:
-    # Production environment gate. See spi above -- this template ships a
-    # production deployment, and the chart default is "development".
+    # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
     ORGANIZATION_ID: "<your-org-id>"
     ISPB: "<8-digit-ispb>"
@@ -409,7 +397,7 @@ adapterLerianSystemplane:
 # the br-sfn rail carries the recurrence message family.
 # ------------------------------------------------------------
 pixauto:
-  enabled: false
+  enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
     PLUGIN_AUTH_ENABLED: "true"
@@ -438,7 +426,7 @@ pixauto:
 # pixauto/systemplane/api — runtime config plane for Pix Automático
 # ------------------------------------------------------------
 pixautoSystemplane:
-  enabled: false
+  enabled: true
   configmap: {}
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-pixauto?sslmode=require"

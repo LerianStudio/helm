@@ -25,7 +25,7 @@ This release moves the application from 3.11.1 to 3.13.1, which spans two minor 
 
 **What this means for operators:**
 
-The upgrade triggers rolling updates of the `identity` and `auth` deployments. The application releases between 3.11.1 and 3.13.1 add no database migration, and the Caradhras image does not change in this release. The chart needs no new values.
+The upgrade triggers rolling updates of the `identity` and `auth` deployments with the new images. The `caradhras` Deployment rolls as well, although its images stay on `1.5.1`. The pod templates of the auth, identity and caradhras Deployments carry the label `helm.sh/chart: plugin-access-manager-<version>`, so any chart version bump replaces the pods of all three, even when nothing else in the pod changes. I checked this by rendering the previous and the new chart version with `helm template`. Auth and identity render `maxSurge: 1` and `maxUnavailable: 1` by default (auth runs 3 replicas, identity 1), so identity can be briefly unavailable during the rollout when it runs a single replica. The application releases between 3.11.1 and 3.13.1 add no database migration, and the Caradhras image does not change in this release. The chart needs no new values.
 
 Two things need your attention before you upgrade: pinned image tags, and the upgrade order relative to Bank Transfer. Read [Before you upgrade](#before-you-upgrade). Also read [What the application brings](#what-the-application-brings): some API behavior changes.
 

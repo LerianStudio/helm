@@ -11,7 +11,7 @@
 
 ## Overview
 
-This is a patch release that updates the product-console application from version 2.13.1 to 2.16.2. No chart configuration changes are required.
+This release moves the default product-console application version from 2.13.1 to 2.16.2. The chart changes only `appVersion` and the default `image.tag`. No chart values or templates change, but the jump spans several application minor versions (2.14, 2.15 and 2.16), so read the application release notes before you upgrade.
 
 | Field | v4.4.4 | v4.4.5 |
 |-------|--------|--------|
@@ -22,7 +22,7 @@ This is a patch release that updates the product-console application from versio
 
 ### 1. Application version updated to 2.16.2
 
-The chart now deploys product-console application version 2.16.2, up from 2.13.1. The container image tag has been updated accordingly.
+The chart now deploys product-console application version 2.16.2 by default, up from 2.13.1. `image.tag` in `values.yaml` and `appVersion` in `Chart.yaml` both changed.
 
 | Setting | v4.4.4 | v4.4.5 |
 |---------|--------|--------|
@@ -31,15 +31,15 @@ The chart now deploys product-console application version 2.16.2, up from 2.13.1
 
 **What changed:**
 
-The default image tag in `values.yaml` has been updated to match the new application version. If you have not overridden `image.tag` in your values, the upgrade will pull and deploy the new image version.
+The default image tag in `values.yaml` is `2.16.2`. The image repository stays `lerianstudio/product-console`. The init container `copy-public-files` uses the same tag as the main container. If you did not set `image.tag` in your values, the upgrade deploys the new image.
 
 **Impact:**
 
 - Deployments using the default `image.tag` will automatically upgrade to version 2.16.2
-- The upgrade will trigger a rolling restart of console pods to deploy the new image
-- If you have pinned `image.tag` to a specific version in your values file, that override will continue to take precedence and no image change will occur
+- The upgrade triggers a rolling restart of the console pods to deploy the new image
+- If you pinned `image.tag` in your values file, the pin takes precedence and the image does not change. The pods still roll once, because the chart version is part of the `helm.sh/chart` label in the pod template
 
-> **Note:** Review the product-console application release notes for versions 2.13.2 through 2.16.2 to understand application-level changes, new features, and bug fixes included in this update.
+> **Note:** Review the product-console application release notes for the versions after 2.13.1 up to 2.16.2. The chart does not describe application-level changes.
 
 ## Migration Steps
 
@@ -49,17 +49,17 @@ This upgrade requires no configuration changes. The application version update i
 
 1. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
 
-2. Verify your current image tag setting:
+2. Check whether your values pin the image tag. `helm get values` shows only the values you supplied:
 
 ```bash
 helm get values product-console -n product-console | grep -A2 "^image:"
 ```
 
-If `image.tag` is not set or is set to `2.13.1`, the upgrade will deploy version 2.16.2.
+If the command prints nothing, `image.tag` is not set and the upgrade deploys 2.16.2. If it prints a tag, that tag stays in use (for example, a pin to `2.13.1` keeps 2.13.1) until you change it.
 
 3. Run the upgrade command.
 
-4. Monitor the rolling restart:
+4. Monitor the rolling restart (this assumes the release and chart name are both `product-console`; adjust the deployment name otherwise):
 
 ```bash
 kubectl rollout status deployment/product-console -n product-console
@@ -71,7 +71,7 @@ kubectl rollout status deployment/product-console -n product-console
 kubectl get pods -n product-console -l app.kubernetes.io/name=product-console -o jsonpath='{.items[0].spec.containers[0].image}'
 ```
 
-Expected output: `lerianstudio/product-console:2.16.2`
+Expected output: `lerianstudio/product-console:2.16.2` (or your pinned tag).
 
 6. Check application logs for any startup issues:
 
@@ -79,7 +79,7 @@ Expected output: `lerianstudio/product-console:2.16.2`
 kubectl logs -n product-console -l app.kubernetes.io/name=product-console --tail=100
 ```
 
-> **Note:** The rolling restart ensures zero-downtime deployment. Existing pods continue serving traffic until new pods pass readiness checks.
+> **Note:** The default strategy is `RollingUpdate` with `maxSurge: 1` and `maxUnavailable: 0`. Existing pods keep serving traffic until the new pods pass their readiness checks.
 
 ## Preview changes before upgrading
 

@@ -61,7 +61,8 @@ manager:
 - **`REGULATORY_CATALOG_CHANNEL`:** `stable` is the default and reads only releases (production). `rc` reads release candidates and never a beta (staging). `beta` reads the newest of any kind (development).
 - **No token.** The catalog repository is public.
 - **Releases are verified offline.** Every release must carry its Sigstore attestation, which the app checks against the root of trust it embeds. A release without one is refused with `RPT-0155`. There is no key to configure.
-- **Worker:** the setting goes on the manager only; the worker never reads the catalog.
+- **Worker:** the GitHub settings go on the manager only. The worker does not read them. The exception is a mounted catalog (`REGULATORY_CATALOG_DIR`, for development), which the worker reads too: set it for both components and mount the tree in both pods.
+- **Private mirror:** only a private mirror needs `REGULATORY_CATALOG_GITHUB_TOKEN`. It is a credential: put it under `secrets`, not in a configmap.
 - **While unset:** the regulatory endpoints answer `RPT-0147`, and every other feature works as before.
 
 ## Behaviour change: institutions scope classic reports

@@ -257,7 +257,7 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.3.0"
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -759,7 +759,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.3.0"
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -1165,7 +1165,7 @@ otel-collector-lerian:
   enabled: true
 midaz-ledger-migrations:
   image:
-    tag: 4.3.0
+    tag: 4.4.0
 midaz-tracer-migrations:
   image:
-    tag: 4.3.0
+    tag: 4.4.0

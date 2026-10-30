@@ -4,6 +4,18 @@
 
 Features:
 
+- Add streaming SASL password and TLS CA secrets to the PIX configuration. (@digocelos)
+
+- Update `plugin-br-pix-indirect-btg` to `@1.12.0` with new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.0)
+
+Features:
+
 - Add streaming SASL password and TLS CA secrets to the plugin. (@digocelos)
 
 - Update to `plugin-br-pix-indirect-btg@1.12.0` with new environment variables. (@lerian-studio)

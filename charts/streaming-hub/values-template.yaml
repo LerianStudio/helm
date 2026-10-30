@@ -1,0 +1,122 @@
+# streaming-hub — operator override template.
+#
+# Copy this file, fill the blanks per environment, and pass it with `-f`.
+# It documents only the keys an operator typically sets; every other key keeps
+# the default from values.yaml. See README "Chart Contract" for the full
+# secret/dependency/override contract. Secrets are blank here — provide them
+# inline or via `useExistingSecret` + `existingSecretName`.
+
+streamingHub:
+  # Topology: `all` (one Deployment) or `split` (ingest + delivery). Never both
+  # — the roles compete for one Kafka consumer group. See README.
+  mode: all
+
+  image:
+    tag: ""  # defaults to the chart appVersion
+
+  configmap:
+    STREAMING_HUB_ENV: production          # local | staging | production
+    STREAMING_HUB_LOG_LEVEL: info
+    STREAMING_HUB_KAFKA_BROKERS: ""         # e.g. redpanda.example.internal:9092
+    STREAMING_HUB_KAFKA_SCRAM_MECHANISM: "" # e.g. SCRAM-SHA-256 (empty = no SASL)
+    STREAMING_HUB_ALLOW_INSECURE_KAFKA: "false"
+    STREAMING_HUB_KEK_SOURCE: ""            # env | aws-kms | ...
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_ADDRESS: ""
+    STREAMING_HUB_TENANT_ID: default
+    # License (lib-license-go, GLOBAL mode). The key is a secret (below).
+    ORGANIZATION_IDS: global                # must be EXACTLY "global" (the chart default)
+    # IS_DEVELOPMENT: "true"                # dev license server; refused with STREAMING_HUB_ENV=production
+    # Multi-tenant: the switch plus the values it REQUIRES when true. The hub
+    # refuses to boot with an empty or "local" ENV_NAME, and the credential sweep
+    # fails without a region the AWS SDK chain can resolve.
+    MULTI_TENANT_ENABLED: "false"
+    ENV_NAME: ""                            # staging | production (secrets path segment)
+    AWS_REGION: ""                          # e.g. us-east-2 (where the tenant credentials live)
+    # MANDATORY when MULTI_TENANT_ENABLED=true — the chart REFUSES TO RENDER
+    # without it, because the app refuses to boot without it. The platform
+    # tenant-manager, which reports the active tenant set.
+    # MULTI_TENANT_URL: ""                  # e.g. https://tenant-manager.internal
+    # Tenant-lifecycle Pub/Sub — the TENANT-MANAGER's Valkey, so an onboarding
+    # lands without waiting for the fixed 5-minute roster tick. Optional, but on a
+    # `delivery`-role pod the tick is not mounted and the allowlist freezes at its
+    # boot value without it. NOT the STREAMING_HUB_REDIS_* instance below.
+    # MULTI_TENANT_REDIS_HOST: ""
+    # MULTI_TENANT_REDIS_PORT: "6379"
+    # MULTI_TENANT_REDIS_TLS: "true"
+    # SASL/SCRAM username (NOT a credential — the password is a secret). Set here
+    # ONLY when the Secret does not carry it: envFrom reads the Secret first and
+    # this ConfigMap second, so a value here overwrites a projected one. Left
+    # commented out, nothing is emitted and the Secret's value reaches the pod.
+    # STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""
+    STREAMING_HUB_KEK_REF: ""               # KEK reference / pointer (KMS key id / ARN / env-var name — not key material)
+    # Control-plane rate limiting — the EXTERNAL Redis/Valkey the lib-commons
+    # limiter counts in. Leave the address empty and nothing is limited (silently;
+    # the pod still looks healthy). On 2.x this must be an instance DEDICATED to
+    # the hub — nothing at boot checks that, so pointing it at the tenant-manager's
+    # Redis just works, wrongly. The limits themselves (RATE_LIMIT_MAX & co.) live
+    # under streamingHub.rateLimit below.
+    RATE_LIMIT_ENABLED: "true"              # 2.x expects enforcement on
+    STREAMING_HUB_REDIS_ADDRESS: ""         # e.g. valkey.example.internal:6379
+    STREAMING_HUB_REDIS_TLS: "true"         # "false" only on a trusted network
+    STREAMING_HUB_REDIS_CA_CERT: ""         # base64 PEM CA bundle (empty = system roots)
+
+  secrets:
+    # On 2.x the DSN must verify the server certificate:
+    #   ...?sslmode=verify-full&sslrootcert=/etc/streaming-hub/postgres-ca/bundle.pem
+    # Turn on postgres.caBundle (bottom of this file) so that file exists.
+    STREAMING_HUB_POSTGRES_DSN: ""            # full Postgres DSN, credentials embedded
+    # STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY — 32 bytes, base64. MANDATORY on
+    # 2.x: the app refuses to boot without it. Deliberately has NO line here.
+    # Supply it through useExistingSecret + existingSecretName (Vault /
+    # ExternalSecret), never in a file that reaches git.
+    # LICENSE_KEY — the Lerian license. MANDATORY in EVERY environment on a
+    # license-gated image: the app refuses to boot without it. Same rule as the
+    # HMAC key: no line here, supply it through useExistingSecret.
+    STREAMING_HUB_KAFKA_SCRAM_PASSWORD: ""
+    # STREAMING_HUB_REDIS_PASSWORD: ""        # rate-limiter Redis AUTH (omit when it takes none)
+    # STREAMING_HUB_DEV_KEK: ""               # dev only
+    # Multi-tenant needs exactly ONE extra secret — the key that authenticates
+    # the hub to the tenant-manager it reads the allowlist from. On 2.x an empty
+    # one refuses the boot, same as a missing MULTI_TENANT_URL.
+    # MULTI_TENANT_SERVICE_API_KEY: ""
+    # Each TENANT's own credentials still need nothing here: the hub sweeps them
+    # from AWS Secrets Manager with its own IAM identity. Set MULTI_TENANT_ENABLED,
+    # MULTI_TENANT_URL, ENV_NAME and AWS_REGION in the configmap.
+
+  # lib-commons rate limits. Empty = the helper defaults (500 req / 60s, etc.).
+  # allowFailOpen is a SECURITY BYPASS lib-commons logs as one: an unreachable
+  # limiter allows the request. Drop it for fail-closed.
+  rateLimit:
+    allowFailOpen: "true"
+    # max: "500"
+    # windowSec: "60"
+
+  useExistingSecret: false
+  existingSecretName: ""
+
+  # Per-role sizing. Honor Σ(replicas × poolMaxOpenConns) ≤ Postgres max_connections.
+  all:
+    replicaCount: 1
+  # mode: split uses these instead:
+  # ingest:
+  #   replicaCount: 2
+  # delivery:
+  #   replicaCount: 2
+
+# Postgres server CA. Turn this on wherever the DSN above verifies the server
+# certificate (sslmode=verify-full / verify-ca) — the 2.x boot refuses a DSN
+# whose sslrootcert names a file that is not there. The bundle is projected
+# read-only at /etc/streaming-hub/postgres-ca/bundle.pem in every role AND in
+# the migrations Job. For AWS RDS this is the PUBLIC global-bundle.pem, so it
+# is a ConfigMap, not a secret.
+#
+# Set EXACTLY ONE of pem / existingConfigMap — both together fail the render.
+# With existingConfigMap, that ConfigMap must ALREADY exist before the sync:
+# the migrations Job is a PreSync hook, so an object the same Application
+# creates at wave 0 leaves the Job in ContainerCreating.
+postgres:
+  caBundle:
+    enabled: false
+    pem: ""                # the PEM itself; the chart renders the ConfigMap
+    # existingConfigMap: ""  # an operator-managed ConfigMap; key contract: bundle.pem

@@ -3,106 +3,74 @@
 
 ## Topics
 
-- **[Fixes](#fixes)**
-  - [1. Tolerations field type correction](#1-tolerations-field-type-correction)
+- **[Breaking changes](#breaking-changes)**
+  - [1. Tolerations field type changed from object to array](#1-tolerations-field-type-changed-from-object-to-array)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
-## Fixes
+## Breaking changes
 
-### 1. Tolerations field type correction
+> **Warning:** If your values file sets `ledger.tolerations`, `crm.tolerations` or `tracer.tolerations` to `{}`, v10.0.1 rejects it and `helm upgrade` fails. Chart v10.0.2 accepts an empty map again. Upgrade to v10.0.2 or later, or change the value to `[]` before you use v10.0.1.
 
-The `tolerations` field for `ledger`, `crm`, and `tracer` services has been corrected from an empty object (`{}`) to an empty array (`[]`). This aligns with the Kubernetes API specification, which requires `tolerations` to be an array of toleration objects.
+### 1. Tolerations field type changed from object to array
+
+The chart now defines `tolerations` for the `ledger`, `crm` and `tracer` services as an array, the type Kubernetes uses for pod tolerations. The default in `values.yaml` changed from `{}` to `[]`. The `values.schema.json` type changed from `object` to `array`.
 
 #### What changed
 
-| Service | Setting | v10.0.0 | v10.0.1 |
-|---------|---------|---------|---------|
-| ledger | tolerations | `{}` | `[]` |
-| crm | tolerations | `{}` | `[]` |
-| tracer | tolerations | `{}` | `[]` |
+| Service | Setting | v10.0.0 default | v10.0.1 default | Schema type in v10.0.0 | Schema type in v10.0.1 |
+|---------|---------|-----------------|-----------------|------------------------|------------------------|
+| ledger | `ledger.tolerations` | `{}` | `[]` | object | array |
+| crm | `crm.tolerations` | `{}` | `[]` | object | array |
+| tracer | `tracer.tolerations` | `{}` | `[]` | object | array |
 
-**Before (v10.0.0):**
+The `README.md` and `README.params.md` tables follow the new type.
 
-```yaml
-ledger:
-  tolerations: {}
+#### What an operator sees
 
-crm:
-  tolerations: {}
+A values file that sets `tolerations: {}` for one of these services fails schema validation in v10.0.1:
 
-tracer:
-  tolerations: {}
+```text
+Error: values don't meet the specifications of the schema(s) in the following chart(s):
+- at '/ledger/tolerations': got object, want array
 ```
 
-**After (v10.0.1):**
-
-```yaml
-ledger:
-  tolerations: []
-
-crm:
-  tolerations: []
-
-tracer:
-  tolerations: []
-```
-
-#### Why this matters
-
-- **Kubernetes API compliance**: The `tolerations` field in pod specifications must be an array, not an object. While an empty object may have been silently ignored or caused validation warnings, the correct type is an array.
-- **Template compatibility**: Helm templates that iterate over tolerations (e.g., `{{- with .Values.ledger.tolerations }}` or `{{- range .Values.ledger.tolerations }}`) expect an array structure.
-- **Prevents potential errors**: Using the correct type prevents potential issues when adding tolerations in the future or when Kubernetes API validation becomes stricter.
+The same error applies to `crm` and `tracer`. Chart v10.0.2 fixes this: its schema accepts an array or an empty map.
 
 #### Operational impact
 
-For deployments using the default values (empty tolerations), this change has **no functional impact** on running pods. Both `{}` and `[]` result in no tolerations being applied. The rendered pod specification remains identical:
-
-```yaml
-spec:
-  tolerations: []
-```
-
-If your values file explicitly sets tolerations as an array (the correct format), this change also has no impact:
-
-```yaml
-ledger:
-  tolerations:
-    - key: "workload"
-      operator: "Equal"
-      value: "ledger"
-      effect: "NoSchedule"
-```
+- Default values: the rendered tolerations do not change. The templates only emit a `tolerations` block when the value is not empty, so no `tolerations` key is rendered for `{}` or for `[]`.
+- A non-empty array: the rendered tolerations are the same as before.
+- Pods still roll once. The chart version is part of the `helm.sh/chart` label in the pod templates, so any chart version bump, including this one, triggers a rolling restart of the Midaz pods.
+- The ledger migrations Job runs as a `pre-upgrade` hook on every upgrade, including this one.
 
 #### Action required
 
 ##### Scenario 1: You use default values or already use array syntax
 
-**No action required.** The upgrade will apply the corrected default, and your existing toleration configurations will continue to work.
+No action required.
 
 ##### Scenario 2: Your values file contains `tolerations: {}`
 
-If your custom values file explicitly sets `tolerations: {}` (copied from the old chart defaults), you should update it to use the correct array syntax:
+Change the value to an empty array, or skip v10.0.1 and upgrade to v10.0.2 or later.
 
-**Before:**
+Before:
 
 ```yaml
 ledger:
   tolerations: {}
 ```
 
-**After:**
+After:
 
 ```yaml
 ledger:
   tolerations: []
 ```
 
-> **Note:** While leaving `tolerations: {}` in your values may still work due to Helm's merge behavior, updating to `[]` ensures consistency with Kubernetes API standards and the chart's new defaults.
+##### Scenario 3: You add tolerations
 
-##### Scenario 3: Adding tolerations after upgrade
-
-When adding tolerations, always use array syntax:
+Use array syntax:
 
 ```yaml
 ledger:
@@ -110,9 +78,6 @@ ledger:
     - key: "dedicated"
       operator: "Equal"
       value: "ledger-workload"
-      effect: "NoSchedule"
-    - key: "high-memory"
-      operator: "Exists"
       effect: "NoSchedule"
 
 crm:
@@ -132,15 +97,15 @@ tracer:
 
 #### Verification after upgrade
 
-After upgrading, verify that tolerations are correctly applied (or absent) in your pod specifications:
+Check the tolerations on the running pods:
 
 ```bash
-kubectl get pod -n midaz -l app.kubernetes.io/component=ledger -o jsonpath='{.items[0].spec.tolerations}'
-kubectl get pod -n midaz -l app.kubernetes.io/component=crm -o jsonpath='{.items[0].spec.tolerations}'
-kubectl get pod -n midaz -l app.kubernetes.io/component=tracer -o jsonpath='{.items[0].spec.tolerations}'
+kubectl get pod -n midaz -l app.kubernetes.io/name=midaz-ledger -o jsonpath='{.items[0].spec.tolerations}'
+kubectl get pod -n midaz -l app.kubernetes.io/name=midaz-crm -o jsonpath='{.items[0].spec.tolerations}'
+kubectl get pod -n midaz -l app.kubernetes.io/name=midaz-tracer -o jsonpath='{.items[0].spec.tolerations}'
 ```
 
-If you have configured custom tolerations, verify they appear in the output. If using defaults, the output should be `[]` or empty.
+Kubernetes adds its own default tolerations (`node.kubernetes.io/not-ready` and `node.kubernetes.io/unreachable`) to every pod. The output lists those plus the ones you configured. The `crm` and `tracer` commands return a result only when those services are enabled.
 
 ## Preview changes before upgrading
 

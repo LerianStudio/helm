@@ -20,8 +20,10 @@
 global:
   # -- Environment name. A ledger up to 4.3.0-beta.53 refuses to boot with
   #    ENV_NAME=production (the chart default) unless PLUGIN_AUTH_ENABLED=true, and the
-  #    chart fails the render on that pair; from 4.3.0-beta.54 only DEPLOYMENT_MODE=saas
-  #    requires auth. This quickstart has no auth service, so it runs as "development".
+  #    chart fails the render on that pair; from 4.3.0-beta.54 ENV_NAME no longer counts
+  #    and only DEPLOYMENT_MODE=saas requires auth. Every 4.x ledger also requires auth
+  #    for MULTI_TENANT_ENABLED=true. This quickstart has no auth service, so it runs as
+  #    "development".
   #    For production, remove this block and enable auth below (global.auth).
   env:
     name: "development"

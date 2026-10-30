@@ -34,6 +34,14 @@ plugin-br-pix-lerian:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-pix-lerian/**
 
+plugin-br-sisbajud:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-br-sisbajud/**
+
+plugin-br-ted-lerian:
+  - changed-files:
+      - any-glob-to-any-file: charts/plugin-br-ted-lerian/**
+
 plugin-br-payments:
   - changed-files:
       - any-glob-to-any-file: charts/plugin-br-payments/**
@@ -70,6 +78,22 @@ br-slc:
   - changed-files:
       - any-glob-to-any-file: charts/br-slc/**
 
+br-sisbajud:
+  - changed-files:
+      - any-glob-to-any-file: charts/br-sisbajud/**
+
 br-jd-courier:
   - changed-files:
       - any-glob-to-any-file: charts/br-jd-courier/**
+
+agent:
+  - changed-files:
+      - any-glob-to-any-file: charts/agent/**
+
+system-facts:
+  - changed-files:
+      - any-glob-to-any-file: charts/system-facts/**
+
+streaming-hub:
+  - changed-files:
+      - any-glob-to-any-file: charts/streaming-hub/**

@@ -42,6 +42,11 @@ global:
   # Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
   auth: {}
+  # -- Env-wide Access Manager permission declaration (RI), manager only. Consumed by
+  # lerian-common.idp.env (block "idp"). Fields: declarationEnabled, host.
+  # (manager.configmap.IDP_DECLARATION_ENABLED / IDP_HOST override.)
+  # Example: idp: { host: "http://plugin-access-manager-identity.<ns>.svc.cluster.local:4001" }
+  idp: {}
   # -- Env-wide streaming (lib-streaming). Consumed by lerian-common.streaming.env when
   # streaming is enabled. Fields: enabled, brokers, saslUsername, tlsEnabled, compression,
   # requiredAcks, ... (brokers gates emission). Per-app identity (client-id / cloudevents-source)
@@ -60,6 +65,35 @@ global:
   # gate today; other MULTI_TENANT_* keys are set via common.configmap.<KEY>.
   # Example: multiTenant: { enabled: true }
   multiTenant: {}
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to every Deployment (manager, and
+  # the worker when it runs as a Deployment, i.e. keda.enabled=false). Each constraint
+  # counts only the component's own pods (labelSelector = its selector labels) of the
+  # same ReplicaSet (matchLabelKeys: [pod-template-hash]), so rolling updates never
+  # deadlock. A component's `spread` overrides these fields one by one; a component's
+  # raw `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      # Off by default: the scheduler skips nodes without the zone label when scoring a
+      # soft spread, so on clusters missing it (bare-metal, k3s) a zone constraint
+      # silently cancels the hostname spread. Enable it where every node has zone labels (EKS, GKE, AKS).
+      zone: ""
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
+      # -- Minimum eligible domains for DoNotSchedule constraints (0 = off). With
+      # fewer domains the scheduler treats the global minimum as 0, so a hard
+      # hostname spread never stacks replicas on a single node; the extra replica
+      # waits for a new node (Karpenter launches it). Use on autoscaled clusters.
+      minDomains: 0
+      # -- Honor | Ignore | "" (omitted = Kubernetes default Ignore). Honor counts
+      # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
+      # draining, tainted karpenter.sh/disrupted).
+      nodeTaintsPolicy: ""
   # -- Bootstrap job for external MongoDB: creates users and grants privileges
   externalMongoDefinitions:
     # -- Enable or disable the MongoDB bootstrap job
@@ -121,7 +155,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.5.0"
+    tag: "4.5.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -177,6 +211,13 @@ manager:
     requests:
       cpu: 100m
       memory: 256Mi
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -271,6 +312,13 @@ manager:
     # request. Set it to the ingress / load-balancer addresses actually in front of this
     # service.
     TRUSTED_PROXIES: ""
+    # -- Access Manager permission declaration (lib-auth declaration.WireFromEnv). With
+    # IDP_DECLARATION_ENABLED="true" the manager publishes its permission manifest at boot and
+    # refuses to start without IDP_HOST and the client pair (top-level `secrets.IDP_M2M_CLIENT_ID`
+    # / `secrets.IDP_M2M_CLIENT_SECRET`, rendered into the manager Secret only). Rendered by
+    # lerian-common.idp.env: manager.configmap > manager.extraEnvVars > common.configmap > global.idp.
+    # IDP_DECLARATION_ENABLED: "false"
+    # IDP_HOST: ""   # e.g. http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001
   # Extra Env Vars
   extraEnvVars: {}
   # -- HPA configuration (used when KEDA is disabled)
@@ -312,7 +360,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.5.0"
+    tag: "4.5.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -346,6 +394,13 @@ worker:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
@@ -760,7 +815,8 @@ mongodb:
     rootPassword: ""
     # -- Secret with the root password. The default points the subchart at the one this chart keeps
     # across uninstall (templates/mongodb-secrets.yaml); reporter's own templates read it as empty. Name yours to replace it.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   persistence:
     size: 8Gi
     # -- The data volume outlives the release: helm uninstall keeps it.

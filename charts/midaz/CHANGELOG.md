@@ -1,5 +1,1944 @@
 # Midaz Changelog
 
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Added a Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+
+Fixes:
+- Updated `midaz-ledger` to `4.4.0`, `midaz-tracer` to `4.4.0`, `midaz-ledger-migrations` to `4.4.0`, and `midaz-tracer-migrations` to `4.4.0`. (@lerian-studio)
+- Fixed the `v10.0.2` upgrade guide to describe the schema fix. (@gandalf-at-lerian)
+
+Improvements:
+- Rewrote the `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Added a Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+
+Fixes:
+- Updated `midaz-ledger` to `4.4.0`, `midaz-tracer` to `4.4.0`, `midaz-ledger-migrations` to `4.4.0`, and `midaz-tracer-migrations` to `4.4.0`. (@lerian-studio)
+- Rewrote the `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+- Fixed the `v10.0.2` upgrade guide to describe the schema fix. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning, ensuring it is not lost during the process. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it, allowing for seamless scaling. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade to maintain configuration consistency. (@fredcamaral)
+- Name the ledger and tracer migration switches to clarify their purpose during transitions. (@fredcamaral)
+- Scope the migrate-first order to the default settings, ensuring proper sequence during migrations. (@fredcamaral)
+- Name the hook type per deploy tool to enhance clarity in deployment processes. (@fredcamaral)
+- Provide the `v4.3` cutover steps at chart level for better guidance during upgrades. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt to prevent data loss and ensure financial integrity. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to accurately reflect upgrade impacts. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade to ensure comprehensive upgrade handling. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to improve system robustness during operations. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume, ensuring consistency in image usage. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data overflow and maintain stability. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` to ensure a smooth transition and reduce downtime. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Provide the `v4.3` cutover steps at chart level. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a StatefulSet valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Provide the `v4.3` cutover steps at chart level. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover StatefulSet, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a StatefulSet valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Give the `v4.3` cutover steps at chart level. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover StatefulSet, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Provide the `v4.3` cutover steps at chart level. (@fredcamaral)
+
+Fixes:
+
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Provide documentation on maintaining the valkey claim during Argo CD pruning. (@fredcamaral)
+- Explain how to expand a statefulset valkey claim without data loss. (@fredcamaral)
+- Outline the process for passing edited valkey values during the `10.0.3` upgrade. (@fredcamaral)
+- Detail the requirement for a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to default settings. (@fredcamaral)
+- Specify the hook type per deployment tool. (@fredcamaral)
+- Provide `v4.3` cutover steps at the chart level. (@fredcamaral)
+
+Fixes:
+- Implement fsync for every valkey write and halt upgrades when there is an open fee debt. (@fredcamaral)
+- Account for account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback scenarios in the valkey upgrade process. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image due to its volume opening capability. (@fredcamaral)
+- Retain the bundled valkey's data and prevent writes when full. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` as part of the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Document the requirement for a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Provide the `v4.3` cutover steps at the chart level. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+Improvements:
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning, ensuring data persistence during deployment changes. (@fredcamaral)
+- Grow a statefulset valkey claim without data loss, enhancing scalability. (@fredcamaral)
+- Pass the edited valkey values during the `10.0.3` upgrade to maintain configuration integrity. (@fredcamaral)
+- Name the ledger and tracer migration switches to clarify migration processes. (@fredcamaral)
+- Scope the migrate-first order to the default settings for improved clarity in migration procedures. (@fredcamaral)
+- Name the hook type per deploy tool to standardize deployment processes. (@fredcamaral)
+- Provide `v4.3` cutover steps at the chart level for streamlined upgrades. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and halt upgrades on open fee debt to ensure data consistency and prevent upgrade issues. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to improve error handling. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade to ensure comprehensive upgrade support. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to enhance system robustness. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume to maintain version control. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data overflow and maintain system stability. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` to ensure a smooth transition. (@fredcamaral)
+- Ensure a drained cutover from `midaz v4.2.x` for consistent upgrade procedures. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a StatefulSet valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Provide the `v4.3` cutover steps at chart level. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover StatefulSet, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning, ensuring stability during deployment processes. (@fredcamaral)
+- Grow a StatefulSet valkey claim without losing it, enhancing data persistence. (@fredcamaral)
+- Pass the edited valkey values during the `10.0.3` upgrade for seamless transitions. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`, ensuring a smooth upgrade path. (@fredcamaral)
+- Name the ledger and tracer migration switches for better clarity in migration processes. (@fredcamaral)
+- Scope the migrate-first order to the default settings, providing a clearer upgrade path. (@fredcamaral)
+- Name the hook type per deploy tool, improving deployment clarity. (@fredcamaral)
+- Provide the `v4.3` cutover steps at the chart level for comprehensive upgrade guidance. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt to prevent data loss and ensure financial accuracy. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to maintain data integrity. (@fredcamaral)
+- Cover StatefulSet, image, and rollback in the valkey upgrade to ensure comprehensive upgrade coverage. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to enhance system reliability. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume, ensuring consistent deployment. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data overflow and maintain system stability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Provide documentation for keeping the valkey claim through Argo CD pruning. (@fredcamaral)
+- Explain how to grow a StatefulSet valkey claim without losing it. (@fredcamaral)
+- Detail the process of passing edited valkey values during the `10.0.3` upgrade. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x` and provide the cutover steps at the chart level for `v4.3`. (@fredcamaral)
+- Name the ledger and tracer migration switches, and scope the migrate-first order to the default settings. (@fredcamaral)
+- Specify the hook type per deploy tool. (@fredcamaral)
+
+Fixes:
+- Ensure fsync is performed on every valkey write and stop upgrades when there is an open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover StatefulSet, image, and rollback scenarios in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Maintain the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` as part of the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+
+- Keep the valkey claim through Argo CD pruning. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to the default settings. (@fredcamaral)
+- Name the hook type per deploy tool. (@fredcamaral)
+- Give the `v4.3` cutover steps at chart level. (@fredcamaral)
+- Require a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+
+Fixes:
+
+- Fsync every valkey write and stop upgrades on open fee debt. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning, ensuring persistent storage. (@fredcamaral)
+- Grow a StatefulSet valkey claim without losing data, enhancing scalability. (@fredcamaral)
+- Pass the edited valkey values during the `10.0.3` upgrade, maintaining configuration integrity. (@fredcamaral)
+- Name the ledger and tracer migration switches for clarity during migrations. (@fredcamaral)
+- Scope the migrate-first order to the default settings, providing a clear upgrade path. (@fredcamaral)
+- Name the hook type per deploy tool, aiding in deployment customization. (@fredcamaral)
+- Provide the `v4.3` cutover steps at the chart level for streamlined upgrades. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt to ensure data consistency and prevent upgrade issues. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to improve error handling. (@fredcamaral)
+- Cover StatefulSet, image, and rollback in the valkey upgrade to ensure a smooth transition. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to improve resource management. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume, ensuring compatibility. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data loss. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` to ensure a clean upgrade process. (@fredcamaral)
+- Provide documentation for a drained cutover from `midaz v4.2.x`, enhancing upgrade guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.2)
+
+Fixes:
+- Ensure that an empty map for component tolerations is still accepted. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.1...midaz-v10.0.2)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.2)
+
+Fixes:
+- Keep accepting an empty map for component tolerations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.1...midaz-v10.0.2)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.2)
+
+Fixes:
+- Ensure that an empty map is accepted for component tolerations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.1...midaz-v10.0.2)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.2)
+
+Fixes:
+
+- Ensure that an empty map is still accepted for component tolerations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.1...midaz-v10.0.2)
+
+---
+
+## [10.0.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.1)
+
+Fixes:
+- Accept a list for ledger, CRM, and tracer tolerations. (@guimoreirar)
+
+Improvements:
+- Correct guidance for `ALLOW_INSECURE_TLS` and quoted-value in the `UPGRADE-10.0` documentation. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.0...midaz-v10.0.1)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior when flags are not explicitly set. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate flag representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on flags that are default-true, ensuring accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate flag representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean `false` on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate representation of flag states. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address the resolution of placeholders in RabbitMQ users to prevent configuration issues. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address the issue of placeholders in RabbitMQ users to improve user management. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for improved functionality. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the upgrade process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users to improve system reliability. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@andreimatiazi)
+- Address issues with placeholders in RabbitMQ users to improve system reliability. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users to improve system reliability. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users in updating their deployments. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure proper configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users to prevent configuration issues. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.1)
+
+Fixes:
+- Update `midaz-ledger` to `4.3.0`, `midaz-tracer` to `4.3.0`, `midaz-ledger-migrations` to `4.3.0`, and `midaz-tracer-migrations` to `4.3.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `midaz` `v9.8.0`. (@guimoreirar)
+- Add Helm upgrade guide for `midaz` `v9.7.3`. (@guimoreirar)
+- Add Helm upgrade guide for `midaz` `v9.7.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.0...midaz-v9.8.1)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+
+Fixes:
+- Ensure balance sync fork variables are kept in the configmap-only setup. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Add balance sync fork configuration to the ledger, allowing for enhanced synchronization capabilities. (@Ygohr)
+- Reflect balance sync fork configuration in the values template to ensure accurate configuration management. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables within the configmap-only setup to maintain consistency and prevent configuration drift. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`, providing users with detailed instructions for a smooth transition to the new version. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only, ensuring proper synchronization. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Add balance sync fork configuration to the ledger, allowing better management of balance synchronization processes. (@Ygohr)
+- Reflect balance sync fork configuration in the values template to ensure consistent configuration management. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the ConfigMap only, ensuring proper synchronization of balance-related configurations. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0` to assist users in transitioning to the new version smoothly. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for midaz `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only, ensuring balance synchronization. (@Ygohr)
+
+Improvements:
+- Add an upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s`. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Set an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Increase the ledger termination grace period to `60s`. (@fredcamaral)
+- Assign a `45s` termination grace period to ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s`. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for midaz and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s` for midaz. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods in midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.2)
+
+Features:
+- Documented the gRPC-only ledger to tracer transport. (@Ygohr)
+
+Fixes:
+- Ensured that the tracer gRPC port is always published. (@Ygohr)
+- Stopped defaulting the ledger `TRACER_TRANSPORT` to REST. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.1...midaz-v9.7.2)
+
+---
+
+## [9.7.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.2)
+
+Features:
+
+- Documented the gRPC-only ledger to tracer transport. (@Ygohr)
+
+Fixes:
+
+- Ensured the tracer gRPC port is always published. (@Ygohr)
+- Stopped defaulting the ledger `TRACER_TRANSPORT` to REST. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.1...midaz-v9.7.2)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the TRACER_TRANSPORT note to a configured tracer integration. (@gandalf-at-lerian)
+- Explain the TRACER_TRANSPORT default based on ledger version. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Documented the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensured the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Defaulted the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevented rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allowed a fresh install to reach Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualified the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Covered an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Included custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Addressed the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- Stated the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach the Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in the `UPGRADE-9.7` documentation. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Documented the `9.7.0` upgrade, highlighting changes to CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensured the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Defaulted the standalone CRM to legacy KMS mode, aligning it with the ledger. (@jeffersonrodrigues92)
+- Prevented rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allowed a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualified the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Covered the explicit use of HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Included custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Addressed the ledger auth render guard and upgrade hook in the `UPGRADE-9.7` documentation. (@jeffersonrodrigues92)
+- Stated the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing issues with tracer schema and RabbitMQ cookie. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing issues with tracer schema and RabbitMQ cookie. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover scenarios involving an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Maintain the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status, addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Cover the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Keep the tracer migration as a pre-upgrade hook during the upgrade process. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready status by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensure the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach the Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover scenarios involving an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Document the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Maintain the tracer migration as a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Default the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevent rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allow a fresh install to reach Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualify the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Cover explicit HashiCorp Vault usage without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Include custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Address the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- State the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger@4.2.1` and `midaz-tracer@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:  
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:  
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.0)
+
+Features:
+- Spread ledger, CRM, and tracer pods across nodes to enhance distribution. (@guimoreirar)
+- Expose configuration options for spread `minDomains` and `nodeTaintsPolicy` in `lerian-common` `2.3.0`. (@guimoreirar)
+- Spread ledger, CRM, and tracer pods across both nodes and zones for improved redundancy. (@guimoreirar)
+
+Fixes:
+- Disable zone spread by default to prevent unintended distribution. (@guimoreirar)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.5.0` to assist users with the update process. (@guimoreirar)
+- Provide a Helm upgrade guide for `midaz` `v9.4.0` to facilitate smoother transitions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.5.0...midaz-v9.6.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Implemented the ability to run `midaz-ledger` and `midaz-tracer` version `4.2.0`. (@guimoreirar)
+- Rendered the remaining `.env.example` contract for the ledger and tracer components. (@guimoreirar)
+- Enabled the rendering of environment variables for staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allowed the configuration map keys to be read by templates even when the schema previously refused them. (@guimoreirar)
+- Made the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Implemented the ability to run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Rendered the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Enabled rendering of the environment staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allowed the configmap keys that templates read but the schema previously refused. (@guimoreirar)
+- Made the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Implemented the ability to run `midaz-ledger` and `midaz-tracer` version `4.2.0`. (@guimoreirar)
+- Rendered the remaining parts of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Enabled rendering of the environment staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allowed the configuration map keys to be read by the templates, even if the schema initially refused them. (@guimoreirar)
+- Made the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment for staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment for staging through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.4.0)
+
+Features:
+- Render the ledger seam token wait timeout. (@andreimatiazi)
+- Render the ledger tracer seam credentials. (@andreimatiazi)
+- Support AWS IAM Roles Anywhere on the ledger. (@andreimatiazi)
+
+Fixes:
+- Name the seam token wait `TRACER_M2M_WAIT_TIMEOUT_MS`. (@andreimatiazi)
+- Update `midaz-ledger@4.1.2`, `midaz-tracer@4.1.2`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.3.0...midaz-v9.4.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+Features:
+- Update `midaz-ledger@4.1.0` and `midaz-tracer@4.1.0`. (@guimoreirar)
+- Introduce new environment variables for `midaz-ledger@4.1.0` and `midaz-tracer@4.1.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guides for `midaz` versions: `v9.2.5`, `v9.2.7`, `v9.2.8`, `v9.2.9`, `v9.2.10`, `v9.2.11`, `v9.2.12`, `v9.2.13`, `v9.2.14`, and `v9.2.15`. (@guimoreirar)
+
+Fixes:
+- Correct upgrade guides for `midaz` versions: `v9.2.8`, `v9.2.9`, `v9.2.10`, `v9.2.13`, `v9.2.14`, and `v9.2.15`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
 ## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
 
 - **Features:**

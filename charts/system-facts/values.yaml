@@ -1,0 +1,611 @@
+# Default values for system-facts components.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+nameOverride: "system-facts"
+fullnameOverride: ""
+namespaceOverride: "system-facts"
+# -- Extra labels added to the metadata of every resource this chart renders
+# (including pod templates). Never added to selectors. Used by Palantir for
+# label-based cleanup (palantir.lerian.studio/*).
+commonLabels: {}
+global:
+  # -- Managed-cloud topology preset: aws | gcp | azure (unset = bundled
+  # in-cluster infra, plaintext). Sets the TOPOLOGY defaults (tls/scheme/ports/
+  # ssl) for the masks below — see lerian-common.cloud.table. Only ENDPOINTS
+  # (host/port/user) stay client-supplied via global.datastores; a cloud can't
+  # know your RDS host. Precedence: native configmap key > dedicated
+  # (boilerplate.<field>) > shared (global.*) > this cloud preset > hardcoded
+  # default — an explicit global.datastores.<type>.<field> still overrides the
+  # preset.
+  # Example: cloud: "aws"
+  cloud: ""
+  # -- Env-wide SHARED datastore masks (set once per environment; a native
+  # boilerplate.configmap.<KEY> always overrides these). Only postgres/redis
+  # sub-keys are used by this chart (no Mongo/broker datastore here).
+  # Fields: postgres.{host,port,user,ssl}, redis.{host,port}.
+  # Example:
+  #   datastores:
+  #     postgres: { host: "my-rds.example.com", user: "system-facts" }
+  #     redis: { host: "my-elasticache.example.com:6379" }
+  datastores: {}
+  # -- Env-wide telemetry. Consumed by lerian-common.otel.env (block
+  # "observability"). Fields: enabled, otlpEndpoint, deploymentEnvironment.
+  # (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT /
+  # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT override; falls back to
+  # boilerplate.otel.* when neither this nor a native key is set.) Per-service
+  # OTEL identity (library/service name/version) stays in boilerplate.otel.
+  # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
+  observability: {}
+  # -- Env-wide plugin-access-manager auth. Consumed by lerian-common.auth.env
+  # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
+  # Example: auth: { host: "http://plugin-access-manager-auth:4000" }
+  auth: {}
+  # -- Env-wide Access Manager permission declaration (RI). Consumed by
+  # lerian-common.idp.env (block "idp"). Fields: host, declarationEnabled.
+  # (system-facts.configmap.IDP_HOST / IDP_DECLARATION_ENABLED override.) Prefer
+  # the gate in system-facts.configmap: global.idp.declarationEnabled turns it on
+  # for every component of the release. The client pair goes in system-facts.secrets.
+  # Example: idp: { host: "http://plugin-access-manager-identity:4001" }
+  idp: {}
+  # -- Env-wide multi-tenant infra (lib-commons/multitenancy). Consumed by
+  # lerian-common.multiTenant.env when boilerplate.multiTenant.enabled=true.
+  # Fields: url, redisHost, redisPort, redisTls. (configmap.MULTI_TENANT_*
+  # overrides.)
+  # Example: multiTenant: { url: "http://tenant-manager:8080", redisHost: "my-elasticache.example.com" }
+  multiTenant: {}
+  # -- Env-wide service discovery (Consul), consumed by
+  # lerian-common.serviceDiscovery.env when boilerplate.serviceDiscovery.enabled=true.
+  # Fields: address, tls, tlsSkipVerify, workload, preferView, internalScheme,
+  # externalPort. (configmap.SD_* overrides.)
+  # Example: serviceDiscovery: { address: "consul.internal:8500", tls: "true" }
+  serviceDiscovery: {}
+  # -- Env-wide streaming backend (lib-streaming/RedPanda), consumed by
+  # lerian-common.streaming.env when boilerplate.streaming.enabled=true and
+  # brokers is set (otherwise stays inert). Fields: brokers, tlsEnabled,
+  # saslMechanism, saslUsername, saslAllowPlaintext, compression, requiredAcks,
+  # batchLingerMs, importantEmitTimeoutMs. (configmap.STREAMING_* overrides.)
+  # Example: streaming: { brokers: "redpanda:9092" }
+  streaming: {}
+  # -- Bootstrap job for external PostgreSQL: creates databases, roles, and grants privileges
+  externalPostgresDefinitions:
+    # -- Enable or disable the PostgreSQL bootstrap job
+    enabled: false
+    # -- PostgreSQL connection settings
+    connection:
+      # -- PostgreSQL host
+      host: "system-facts-postgresql"
+      # -- PostgreSQL port
+      port: "5432"
+    # -- Admin credentials for PostgreSQL
+    postgresAdminLogin:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_USER_ADMIN and DB_ADMIN_PASSWORD keys
+        name: ""
+      # -- Admin username (ignored if useExistingSecret.name is set)
+      username: "postgres"
+      # -- Admin password (ignored if useExistingSecret.name is set). No default:
+      # this Job only runs against an EXTERNAL database, and a shipped password
+      # is a credential every install would share.
+      password: ""
+    # -- Credentials for system-facts role created by the job
+    boilerplateCredentials:
+      useExistingSecret:
+        # -- Name of existing secret containing DB_PASSWORD_BOILERPLATE key
+        name: ""
+      # -- Password for the system-facts role (ignored if
+      # useExistingSecret.name is set). No default, and it MUST match
+      # boilerplate.secrets.POSTGRES_PASSWORD — this value creates the role,
+      # that one is what the service logs in with. Prefer
+      # useExistingSecret.name, which makes both read the same Secret.
+      password: ""
+system-facts:
+  # ----- Workload · identity -------------------------------------------------
+  # -- Service name
+  name: system-facts
+  # -- Service description
+  description: "Lerian Go service reference template"
+  # -- Enable or disable the boilerplate service
+  enabled: true
+  # -- Number of replicas for the boilerplate service
+  replicaCount: 1
+  # -- Number of old ReplicaSets to retain for deployment rollback
+  revisionHistoryLimit: 10
+  # ----- Workload · image ----------------------------------------------------
+  image:
+    # -- Repository for the boilerplate service container image
+    repository: ghcr.io/lerianstudio/system-facts
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag used for deployment
+    tag: "1.1.0" # defaults to appVersion when empty
+  # -- Secrets for pulling images from a private registry
+  imagePullSecrets: []
+  # ----- Workload · pod security ---------------------------------------------
+  # -- Pod annotations for additional metadata
+  podAnnotations: {}
+  podSecurityContext: {}
+  # fsGroup: 2000
+
+  securityContext:
+    # -- Defines the group ID for the user running the process inside the container
+    runAsGroup: 65532
+    # -- Defines the user ID for the process running inside the container
+    runAsUser: 65532
+    # -- Ensures the process does not run as root
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    # -- Defines the root filesystem as read-only
+    readOnlyRootFilesystem: true
+  # ----- Workload · availability & rollout -----------------------------------
+  # -- PodDisruptionBudget configuration
+  pdb:
+    # -- Enable or disable PodDisruptionBudget
+    enabled: true
+    # -- Minimum number of available pods
+    minAvailable: 1
+    # -- Maximum number of unavailable pods
+    maxUnavailable: 1
+    # -- Annotations for the PodDisruptionBudget
+    annotations: {}
+  # -- Deployment update strategy
+  deploymentUpdate:
+    # -- Type of deployment strategy
+    type: RollingUpdate
+    # -- Maximum number of pods that can be created over the desired number of pods
+    maxSurge: 1
+    # -- Maximum number of pods that can be unavailable during the update
+    maxUnavailable: 1
+  # ----- Workload · networking -----------------------------------------------
+  service:
+    # -- Kubernetes service type
+    type: ClusterIP
+    # -- Port for the HTTP API
+    port: 8080
+    annotations: {}
+  ingress:
+    # -- Enable or disable ingress
+    enabled: true
+    # -- Ingress class name
+    className: "nginx"
+    # -- Additional ingress annotations
+    annotations: {}
+    hosts:
+      - host: "system-facts.lerian.net"
+        paths:
+          - path: /
+            pathType: Prefix
+    # -- TLS configuration for ingress
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  # ----- Workload · resources & autoscaling ----------------------------------
+  resources:
+    # -- CPU and memory limits for pods
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    # -- Minimum CPU and memory requests
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  autoscaling:
+    # -- Enable or disable horizontal pod autoscaling
+    enabled: true
+    # -- Minimum number of replicas
+    minReplicas: 1
+    # -- Maximum number of replicas
+    maxReplicas: 5
+    # -- Target CPU utilization percentage for autoscaling
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  # ----- Workload · scheduling -----------------------------------------------
+  # -- Node selector for scheduling pods on specific nodes
+  nodeSelector: {}
+  # -- Tolerations for scheduling on tainted nodes
+  tolerations: {}
+  # -- Affinity rules for pod scheduling
+  affinity: {}
+  # ----- Feature toggles (env-wide config in global.*, inert until set) -------
+  multiTenant:
+    # -- Enable lib-commons/multitenancy for this component (emits MULTI_TENANT_ENABLED + config)
+    enabled: false
+  serviceDiscovery:
+    # -- Enable lib-service-discovery for this component (emits SD_ENABLED + derives SD_* from global.serviceDiscovery)
+    enabled: false
+  streaming:
+    # -- Enable lib-streaming for this component (emits STREAMING_ENABLED + STREAMING_* from global.streaming)
+    enabled: false
+  otel:
+    # -- Enable OpenTelemetry for this component (emits ENABLE_TELEMETRY + the OTLP podEnv)
+    enabled: false
+    libraryName: "github.com/LerianStudio/system-facts" # → OTEL_LIBRARY_NAME
+    serviceName: "system-facts" # → OTEL_RESOURCE_SERVICE_NAME
+    endpoint: "" # → OTEL_EXPORTER_OTLP_ENDPOINT (overridden by HOST_IP:4317 podEnv when enabled)
+    deploymentEnvironment: "production" # → OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT
+  # ===========================================================================
+  # PRODUCTIZED CONFIG — clean, grouped params (raw configmap.<KEY> still OVERRIDES;
+  # connection host/user/port/ssl comes from the global.datastores mask). Defaults
+  # match the legacy template defaults → existing installs render unchanged.
+  # ===========================================================================
+  # --- App -------------------------------------------------------------------
+  env: "production" # → ENV_NAME
+  logLevel: "info" # → LOG_LEVEL
+  serverAddress: ":8080" # → SERVER_ADDRESS
+  httpBodyLimitBytes: "104857600" # → HTTP_BODY_LIMIT_BYTES
+  allowInsecureTls: "" # → ALLOW_INSECURE_TLS ("true" when POSTGRES_SSLMODE=disable, app v1.2.2+)
+  tlsTerminatedUpstream: "true" # → TLS_TERMINATED_UPSTREAM
+  defaultTenantId: "11111111-1111-1111-1111-111111111111" # → DEFAULT_TENANT_ID
+  infraConnectTimeoutSec: "30" # → INFRA_CONNECT_TIMEOUT_SEC
+  dbMetricsIntervalSec: "15" # → DB_METRICS_INTERVAL_SEC
+  idempotencyRetryWindowSec: "300" # → IDEMPOTENCY_RETRY_WINDOW_SEC
+  # --- CORS ------------------------------------------------------------------
+  cors:
+    allowedOrigins: "*" # → CORS_ALLOWED_ORIGINS
+    allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS" # → CORS_ALLOWED_METHODS
+    allowedHeaders: "Origin,Content-Type,Accept,Authorization,X-Request-ID" # → CORS_ALLOWED_HEADERS
+  # --- Database (PostgreSQL) — host/user/port/ssl → global.datastores.postgres
+  database:
+    name: "system-facts" # → POSTGRES_NAME
+    migrationsPath: "migrations" # → MIGRATIONS_PATH
+    maxOpenConns: "25" # → POSTGRES_MAX_OPEN_CONNS
+    maxIdleConns: "5" # → POSTGRES_MAX_IDLE_CONNS
+    connMaxLifetimeMins: "30" # → POSTGRES_CONN_MAX_LIFETIME_MINS
+    connMaxIdleTimeMins: "5" # → POSTGRES_CONN_MAX_IDLE_TIME_MINS
+    connectTimeoutSec: "10" # → POSTGRES_CONNECT_TIMEOUT_SEC
+  # --- Redis / Valkey — host → global.datastores.redis; tuning below
+  redis:
+    db: "0" # → REDIS_DB
+    protocol: "3" # → REDIS_PROTOCOL
+    poolSize: "10" # → REDIS_POOL_SIZE
+    minIdleConns: "2" # → REDIS_MIN_IDLE_CONNS
+    readTimeoutMs: "3000" # → REDIS_READ_TIMEOUT_MS
+    writeTimeoutMs: "3000" # → REDIS_WRITE_TIMEOUT_MS
+    dialTimeoutMs: "5000" # → REDIS_DIAL_TIMEOUT_MS
+  # --- Rate limiting ---------------------------------------------------------
+  rateLimit:
+    enabled: "true" # → RATE_LIMIT_ENABLED
+    max: "500" # → RATE_LIMIT_MAX
+    windowSec: "60" # → RATE_LIMIT_WINDOW_SEC
+  # --- Systemplane (runtime config plane + /system/** admin routes) ----------
+  # "true" mounts /system/**, guarded by systemplane:read|write (platform
+  # identity only), and makes the registered keys (RATE_LIMIT_*, LOG_LEVEL, the
+  # emission switches) writable at runtime; the stored row wins over the env.
+  # Needs the root migrations 000003+ (see migrationsJob) and LISTEN/NOTIFY on
+  # the service database user. If the client cannot be built the pod REFUSES to
+  # boot, so enable it per environment, not by default.
+  systemplane:
+    enabled: "false" # → SYSTEMPLANE_ENABLED
+  # --- Swagger ---------------------------------------------------------------
+  swagger:
+    enabled: "true" # → SWAGGER_ENABLED
+    title: "System Facts" # → SWAGGER_TITLE
+  # -- Raw env override (advanced escape hatch). EMPTY by default — everything a
+  #    client tunes is a clean param above; connection host/user/port/ssl comes from
+  #    global.datastores. Any key set here WINS (backward-compatible) — e.g.
+  #    POSTGRES_HOST, REDIS_HOST, PLUGIN_AUTH_HOST, OTEL_EXPORTER_OTLP_ENDPOINT.
+  # @default -- templates/configmap.yaml
+  configmap: {}
+  # -- Secrets for storing sensitive data
+  # @default -- templates/secrets.yaml
+  secrets:
+    # -- PostgreSQL password. When the bootstrap Job creates the role from
+    # global.externalPostgresDefinitions.boilerplateCredentials, this must be
+    # the same password — or set useExistingSecret.name there and the service
+    # reads that Secret directly instead.
+    POSTGRES_PASSWORD: ""
+    # -- Redis password (empty if auth disabled)
+    REDIS_PASSWORD: ""
+    # -- Multi-tenant service API key (required when MULTI_TENANT_ENABLED=true)
+    MULTI_TENANT_SERVICE_API_KEY: ""
+    # -- Multi-tenant Redis password (empty if auth disabled)
+    MULTI_TENANT_REDIS_PASSWORD: ""
+    # -- Permission declaration (RI) M2M client ID, read by lib-auth
+    # declaration.WireFromEnv when IDP_DECLARATION_ENABLED="true". Rendered by
+    # lerian-common.idp.secret only when non-empty.
+    IDP_M2M_CLIENT_ID: ""
+    # -- Permission declaration (RI) M2M client secret (same rules as the ID)
+    IDP_M2M_CLIENT_SECRET: ""
+  # -- Existing secrets name
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Extra environment variables
+  extraEnvVars: []
+  serviceAccount:
+    # -- Specifies whether a ServiceAccount should be created
+    create: true
+    # -- Annotations for the ServiceAccount
+    annotations: {}
+    # -- Name of the service account
+    # @default -- `boilerplate.fullname`
+    name: ""
+# -- AWS integration. When rolesAnywhere.enabled=true, an aws-signing-helper
+# sidecar exchanges an X.509 cert (mounted from certificateSecretName) for
+# temporary AWS credentials via IAM Roles Anywhere, exposed to the app over a
+# local IMDS endpoint. Disabled by default — the chart renders identically to the
+# no-AWS path when off (see lerian-common rolesAnywhere helpers).
+# -----------------------------------------------------------------------------
+# Root (control-plane) schema migrations — ArgoCD Sync-hook Job.
+#
+# The service image is distroless (no shell, no `migrate`), so it cannot apply its
+# own /migrations. A dedicated runner image does, published by the app release as
+# system-facts-migrations. Only the flat root sequence is applied; migrations/tenant
+# stays with the service (boot / tenant-added event, schema_migrations_tenant).
+# Runs in single-tenant AND multi-tenant: the contract catalog is environment-global.
+# Disabled by default so an existing install is not changed by a chart bump alone.
+# -----------------------------------------------------------------------------
+migrations:
+  # -- Render the migrations Job
+  enabled: false
+  image:
+    # -- Runner image repository. Never the application image: it has no `migrate` binary. The Job refuses to render if this is empty.
+    repository: ghcr.io/lerianstudio/system-facts-migrations
+    # -- Empty tracks the chart appVersion; the app release writes it to .migrations.image.tag
+    tag: "1.1.0"
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  # -- Extra annotations merged onto the Job (the ArgoCD Sync-hook pair is always emitted)
+  annotations: {}
+  waitImage: busybox:1.37
+  # -- Override the connection. Empty values resolve from the same datastores mask the workload uses.
+  postgres:
+    host: ""
+    port: ""
+    user: ""
+    database: ""
+    sslMode: ""
+    passwordSecret:
+      name: ""
+      key: POSTGRES_PASSWORD
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+aws:
+  rolesAnywhere:
+    # -- Enable the IAM Roles Anywhere credential-helper sidecar
+    enabled: false
+    # -- IAM Roles Anywhere trust anchor ARN (required when enabled)
+    trustAnchorArn: ""
+    # -- IAM Roles Anywhere profile ARN (required when enabled)
+    profileArn: ""
+    # -- IAM role ARN to assume (required when enabled)
+    roleArn: ""
+    # -- AWS region for the credential exchange
+    region: "us-east-2"
+    # -- Session duration (seconds) for issued credentials
+    sessionDuration: 3600
+    # -- Name of the Secret holding the X.509 client cert (tls.crt/tls.key)
+    certificateSecretName: "system-facts-iam-tls"
+    sidecar:
+      image:
+        # -- Credential-helper image repository
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        # -- Credential-helper image tag
+        tag: "latest-amd64"
+        # -- Image pull policy
+        pullPolicy: IfNotPresent
+      # -- Local IMDS port the sidecar listens on
+      port: 9911
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+# =============================================================================
+# BUNDLED INFRA SUBCHARTS — DISABLED by default.
+#
+# On benedita, Postgres and Valkey are external, pre-provisioned services: the
+# host comes from `global.datastores.*` (or an explicit
+# `boilerplate.configmap.POSTGRES_HOST` / `REDIS_HOST`) and the password from
+# `boilerplate.secrets.*`, typically Vault-templated by the GitOps layer.
+#
+# Enable these for a SELF-CONTAINED install, where the app brings its own
+# datastores instead of sharing cluster-wide ones — the anacleto chaos/fuzzing
+# pattern. When enabled:
+#   - POSTGRES_HOST / REDIS_HOST default to the in-cluster subchart Services
+#     (templates/configmap.yaml resolves them), so no host needs to be set.
+#   - POSTGRES_PASSWORD / REDIS_PASSWORD are read straight from the subchart's
+#     OWN Secret (templates/deployment.yaml), so no password needs to be set
+#     and none is duplicated into this chart's Secret.
+#
+# `external: true` alongside `enabled: false` states the intent explicitly:
+# these values are read by the templates to decide which wiring to emit, not
+# just by Helm's `condition`.
+# =============================================================================
+# lerian-common-helm ships no chart-level overrides here — this empty block
+# only exists so values.schema.json (additionalProperties:false at root) has a
+# property for the dependency key Helm always coalesces into .Values.
+lerian-common-helm: {}
+postgresql:
+  enabled: false
+  external: true
+  # docker.io/bitnami/* no longer serves these tags, so the org pins the
+  # bitnamisecure mirror. allowInsecureImages is what lets the Bitnami chart
+  # accept a non-default image repository.
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/postgresql
+    # Pinned by DIGEST, not a tag: `latest` is mutable, and it currently resolves
+    # to PostgreSQL 18.4 while the chart's own default tag is 17.2 — exactly the
+    # drift a redeploy would pick up silently. This digest is the image this
+    # configuration was actually validated against in a live cluster.
+    tag: ""
+    digest: "sha256:db2312d9b243afa8c3b3f5496e478d17d0dff9791d06f3b93b9567abd86ae92f"
+  # A DEDICATED user/database, not the postgres superuser: the app's own
+  # POSTGRES_USER / POSTGRES_NAME defaults are "system-facts", so these
+  # line up with no extra configuration. This is also what makes the subchart
+  # publish the `password` key its Secret — with the default empty `username` it
+  # only publishes `postgres-password`, and the Deployment's secretKeyRef would
+  # not resolve.
+  #
+  # No `enabled` key here: this subchart has no `auth.enabled` toggle (it uses
+  # `auth.enablePostgresUser` for the superuser), so one would read as a switch
+  # that does not exist.
+  auth:
+    username: "system-facts"
+    database: "system-facts"
+    # Left empty on purpose: the subchart generates a random password and stores
+    # it in its own Secret, which is exactly what the app reads.
+    password: ""
+valkey:
+  enabled: false
+  external: true
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/valkey
+    # Pinned by digest for the same reason as postgresql above; `latest` here
+    # currently resolves to Valkey 9.1.1 against a chart default of 8.0.2.
+    tag: ""
+    digest: "sha256:5d43ca8bb57aa263ef78d1684dbf1e4b4f63844727eafdd5ea2b0e102a25b141"
+  # Auth on so the subchart publishes `valkey-password`, which the Deployment
+  # reads into REDIS_PASSWORD.
+  auth:
+    enabled: true
+# =============================================================================
+# internal-facts-worker — OPTIONAL separate workload (image system-facts-worker).
+#
+# Consumes product events from RedPanda and delivers them to the System Facts API
+# as facts. It is not an HTTP service: the admin port (/health, /readyz, /version)
+# is for the kubelet only, so this block renders a Deployment, ConfigMap, Secret
+# and ServiceAccount and NO Service, Ingress, HPA, PDB, database or migrations.
+# Disabled by default so an existing install is not changed by a chart bump alone.
+#
+# What the products fix, and the chart therefore refuses to render when set:
+# STREAMING_CONSUMER_TOPICS / _COMMANDS / _APPS / _GROUP (via configmap or
+# extraEnvVars). The consumer group is <cloudeventsSource>-fact-consumer.
+# =============================================================================
+worker:
+  # -- Render the worker
+  enabled: false
+  image:
+    repository: ghcr.io/lerianstudio/system-facts-worker
+    # -- Empty tracks the chart appVersion; the app release writes .worker.image.tag
+    tag: "1.1.0"
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  # -- Replicas. Effective parallelism = min(replicas, partitions of the subscribed
+  # topics, distinct tenants). Single-tenant Midaz stamps tenant `default` on every
+  # record, so the ceiling there is 1.
+  replicaCount: 1
+  # -- Upper bound the chart enforces on replicaCount (replicas above it idle with a
+  # green probe). Raise only after `rpk topic describe <topic> -p` and a tenant count.
+  partitionCeiling: 1
+  revisionHistoryLimit: 10
+  deploymentUpdate:
+    type: RollingUpdate
+    maxSurge: 1
+    maxUnavailable: 0
+  # -- Admin port (SERVER_ADDRESS). Probes only; never exposed through a Service.
+  port: 8080
+  # -- >= 60 (consumer close 30s + admin drain 10s + telemetry flush); the chart refuses less.
+  terminationGracePeriodSeconds: 60
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsGroup: 65532
+    runAsUser: 65532
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  livenessProbe: {}
+  readinessProbe: {}
+  nodeSelector: {}
+  tolerations: {}
+  affinity: {}
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+  # -- ENVIRONMENT_NAME. "production" turns on lib-observability production mode.
+  # Unrelated to multiTenant.env (the Secrets Manager path segment).
+  environmentName: ""
+  # -- WORKER_PRODUCTS: products this worker serves, System Facts producer names (midaz, plugin-br-pix-jd; plugin-br-pix-jd requires midaz). Empty = every product. A product left out has no topic checked, no subscription and no contract registered by this worker.
+  products: []
+  # --- System Facts API the worker delivers to ---
+  systemFacts:
+    # -- SYSTEM_FACTS_URL (required)
+    url: ""
+    # -- SYSTEM_FACTS_AUTH_URL: Access Manager address for client_credentials (required)
+    authUrl: ""
+    # -- SYSTEM_FACTS_ALLOW_INSECURE_HTTP: true admits plain http:// for url and authUrl. Only inside a namespace whose pod-to-pod traffic is already encrypted (istio ambient); the worker logs a WARN at every boot.
+    allowInsecureHttp: false
+  # --- Tenancy ---
+  multiTenant:
+    # -- MULTI_TENANT_ENABLED. false: one credential from secrets.SYSTEM_FACTS_CLIENT_*.
+    # true: per-tenant credentials from Secrets Manager; SYSTEM_FACTS_CLIENT_* stays the
+    # bootstrap credential that registers the manifests.
+    enabled: false
+    # -- ENV_NAME, required when enabled
+    env: ""
+    # -- M2M_APPLICATION_NAME (binary default: internal-facts-worker)
+    m2mApplicationName: ""
+    # -- M2M_TARGET_SERVICE (binary default: system-facts)
+    m2mTargetService: ""
+  # --- Broker (the CONSUMER; the producer variables STREAMING_ENABLED / STREAMING_BROKERS do nothing here) ---
+  streaming:
+    # -- STREAMING_CONSUMER_BROKERS (required)
+    brokers: ""
+    # -- STREAMING_CLOUDEVENTS_SOURCE: names the group <source>-fact-consumer and the
+    # DLQ lerian.streaming.<source>.dlq (binary default: internal-facts-worker)
+    cloudeventsSource: ""
+    tlsEnabled: "true"
+    # -- STREAMING_SASL_MECHANISM, e.g. SCRAM-SHA-256. Needs saslUsername + secrets.STREAMING_SASL_PASSWORD.
+    saslMechanism: ""
+    saslUsername: ""
+    # -- STREAMING_TOPIC_AUTO_PROVISION. Leave empty (library default: on) only when the
+    # identity holds CREATE on the DLQ; "false" when IaC pre-provisions it.
+    topicAutoProvision: ""
+    # -- REQUIRE_BROKER_SECURITY. true refuses to boot without TLS and SASL and turns a
+    # broker preflight failure (missing or ungranted topic) into a boot refusal.
+    requireSecurity: "true"
+  otel:
+    enabled: false
+    serviceName: ""
+    libraryName: ""
+    deploymentEnvironment: ""
+    endpoint: ""
+  # --- Go durations (30s, 2m); blank keeps the 30s defaults ---
+  timing:
+    lagPollInterval: ""
+    credentialCacheTtl: ""
+    credentialNegativeTtl: ""
+  # -- Raw env override. Wins over the params above. Do not set STREAMING_CONSUMER_TOPICS,
+  # _COMMANDS, _APPS or _GROUP (the chart refuses).
+  configmap: {}
+  extraEnvVars: []
+  # -- Secrets. SYSTEM_FACTS_CLIENT_ID / _SECRET required: an Access Manager M2M
+  # Application whose target is system-facts. It must be allowed to register the reserved
+  # `lerian` prefix (catalog:reserved): the System Facts reconciler grants every M2M
+  # Application that targets it all of its roles, so nothing extra is granted per app today.
+  # STREAMING_SASL_PASSWORD required with a SASL mechanism. STREAMING_TLS_CA_CERT is
+  # base64 PEM; empty means the system pool.
+  secrets:
+    SYSTEM_FACTS_CLIENT_ID: ""
+    SYSTEM_FACTS_CLIENT_SECRET: ""
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
+  useExistingSecret: false
+  existingSecretName: ""

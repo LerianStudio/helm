@@ -1,0 +1,101 @@
+# plugin-br-sisbajud — production template (external infrastructure).
+#
+# Copy, fill every <...> and keep credentials out of git: prefer
+# sisbajud.useExistingSecret + existingSecretName (ESO / Vault) over inline
+# sisbajud.secrets. Everything not listed here keeps the chart default.
+
+global:
+  # -- aws | gcp | azure: TLS/ssl defaults for PostgreSQL and Redis.
+  cloud: ""
+  datastores:
+    postgres:
+      host: "<postgres-host>"
+      port: "5432"
+      user: "sisbajud"
+      name: "sisbajud"
+      ssl: "require"
+    redis:
+      host: "<redis-host>"
+      port: "6379"
+      tls: "true"
+  auth:
+    enabled: true
+    # The executor mints its Mensageria token here (required even when inbound auth is off).
+    host: "http://plugin-access-manager-auth.plugin-access-manager.svc.cluster.local:4000"
+  kms:
+    vendor: "hashicorp-vault"          # or "aws" (+ awsRegion)
+    vaultAddr: "https://<vault-host>:8200"
+    vaultAuthMethod: "approle"
+    vaultRoleId: "<approle-role-id>"
+    vaultMount: "transit"
+    # aws + provided example (single-tenant/BYOC only; replaces the vault* keys):
+    # vendor: "aws"
+    # awsRegion: "<aws-region>"
+    # awsKeyMode: "provided"            # or "managed" (leave both ARNs empty)
+    # awsKeyArn: "<kms-key-arn>"
+    # awsCredentialsKeyArn: "<kms-credentials-key-arn>"   # distinct from awsKeyArn
+    # aws: only a canonical tag (X.Y.Z or X.Y.Z-(alpha|beta|rc).N) is compared with
+    # the minimum 1.1.0-beta.1; any other tag (arch suffix, build metadata,
+    # non-SemVer, or "@") needs sisbajud.kms.allowUnverifiableImageTag: true
+    # (not read from global.kms).
+  observability:
+    enabled: true
+
+sisbajud:
+  app:
+    environmentName: "production"
+    deploymentMode: "byoc"
+    defaultTenantId: "<tenant-uuid>"
+
+  mensageria:
+    baseUrl: "https://<mensageria-host>"
+    # Must match the Mensageria's SISBAJUD_EXECUTION_MTLS_ENABLED.
+    mtlsEnabled: false
+    ca:
+      # CA that issued the Mensageria server certificate (optional in one-way TLS:
+      # empty = system trust store; required with mTLS).
+      # kubectl create secret generic sisbajud-mensageria-ca --from-file=ca.crt=<mensageria-ca.pem>
+      existingSecret: "sisbajud-mensageria-ca"
+    # mTLS only (mtlsEnabled: true): the executor client pair.
+    # tls:
+    #   kubectl create secret tls sisbajud-mensageria-client --cert=<client.pem> --key=<client-key.pem>
+    #   existingSecret: "sisbajud-mensageria-client"
+
+  executor:
+    m2mSubject: "<executor-m2m-token-sub>"
+    # SAME value as the Streaming Hub deployment's STREAMING_HUB_TENANT_ID.
+    streamingHubTenantId: "<streaming-hub-tenant-id>"
+    heartbeatEvery: "1m"
+    # SAME value as the Sisbajud Mensageria.
+    responseDeadlineMargin: "2h"
+    transport: "webhook"
+    webhook:
+      # TLS terminated (and validated) by the ingress in front of the listener.
+      upstreamTlsValidated: true
+      ingress:
+        enabled: true
+        className: "nginx"
+        hosts:
+          - host: "<sisbajud-webhook-host>"
+            paths:
+              - path: /v1/webhooks/hub
+                pathType: Prefix
+        tls:
+          - hosts: ["<sisbajud-webhook-host>"]
+            secretName: "<tls-secret>"
+
+  # Production: an external Secret carrying the keys below.
+  useExistingSecret: true
+  existingSecretName: "plugin-br-sisbajud-secrets"
+  # Inline alternative (development only):
+  secrets:
+    LICENSE_KEY: ""
+    MENSAGERIA_CLIENT_ID: ""
+    MENSAGERIA_CLIENT_SECRET: ""
+    EXECUTOR_HUB_WEBHOOK_SECRET: ""
+    POSTGRES_PASSWORD: ""
+    REDIS_PASSWORD: ""
+    VAULT_APPROLE_SECRET_ID: ""
+
+migrations:
+  enabled: true

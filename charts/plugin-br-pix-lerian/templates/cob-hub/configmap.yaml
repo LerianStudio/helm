@@ -13,8 +13,10 @@ lerian-common masks; the chart emits STANDARD key names.
   - streaming (streaming.env -> STREAMING_BROKERS/SASL/CLIENT_ID/...; global.streaming)
 
 DROPPED deviating app keys (superseded by the standard names above):
-  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), ORGANIZATION_ID (->ORGANIZATION_IDS),
-  DB_SSL_MODE (->DB_SSLMODE).
+  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), DB_SSL_MODE (->DB_SSLMODE).
+ORGANIZATION_ID (single-tenant business identity read by this component) is NOT
+superseded by ORGANIZATION_IDS (the license allow-list): it is not enumerated
+below, so <component>.configmap.ORGANIZATION_ID passes through when set.
 The composed URI DATABASE_URL remains ONLY in secrets.yaml as the migration
 Job's input (never app-runtime config here). The cache is configured
 through the discrete REDIS_* keys above.
@@ -56,7 +58,7 @@ data:
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-cob-hub" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4108" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
   REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-cob-hub" | quote }}
@@ -99,7 +101,7 @@ data:
       "IDP_DECLARATION_ENABLED" "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET"
       "LICENSE_KEY" "LOG_LEVEL" "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD"
       "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" "MULTI_TENANT_ENABLED"
-      "MULTI_TENANT_SERVICE_API_KEY" "MULTI_TENANT_URL" "ORGANIZATION_ID" "ORGANIZATION_IDS"
+      "MULTI_TENANT_SERVICE_API_KEY" "MULTI_TENANT_URL" "ORGANIZATION_IDS"
       "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
       "OTEL_RESOURCE_SERVICE_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED"
       "PLUGIN_AUTH_HOST" "PLUGIN_AUTH_URL" "REDIS_DB" "REDIS_HOST" "REDIS_PASSWORD"

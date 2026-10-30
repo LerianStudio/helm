@@ -1,0 +1,1 @@
+{"body": "{\\\"customerName\\\":\\\"Joao **********\\\"}", "categoria": "canonico", "descricao": "Nome em corpo JSON camelCase. GAP de paridade com o otel-collector-lerian: a regra exigia `Name=` e o JSON (`\":\"`) passava intacto."}

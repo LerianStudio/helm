@@ -13,9 +13,8 @@ Only ENDPOINTS (host/port/user) stay client-supplied — a cloud can't know your
 host. Topology (tls/scheme/ports/ssl/object-storage path-style) is per-cloud and
 lives here.
 
-`global.cloud` unset (or "opensource") => no column matches => hardcoded defaults
-(bundled in-cluster infra, plaintext). Nobody running open source needs to know
-this knob exists.
+`global.cloud` unset => no column matches => hardcoded defaults (bundled
+in-cluster infra, plaintext).
 
 Deliberately ABSENT:
   - `mongo` for gcp/azure — no Lerian-owned managed Mongo-compatible service
@@ -111,7 +110,7 @@ for the active cloud. This is the ONE cloud dimension that is NOT a configmap va
 the annotation KEY differs per cloud (IRSA / GKE Workload Identity / Azure AD WI),
 while the client supplies a single identity string at global.objectStorage.identity
 (role ARN on AWS, GCP service-account email, Azure client-id). Emits nothing when
-the identity or cloud is unset (opensource / static-key path). Arg: context.
+the identity or cloud is unset (static-key path). Arg: context.
 
 Usage in a chart's serviceAccount template:
   annotations:

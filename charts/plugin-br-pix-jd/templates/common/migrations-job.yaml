@@ -16,6 +16,9 @@
 {{- else -}}
 {{- $bundled := include "plugin-br-pix-jd.postgresRenders" . -}}
 {{- $fullname := printf "%s-migrations" (include "plugin-br-pix-jd.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- /* The connection the api ConfigMap carries, resolved the same way (global.datastores,
+   global.cloud, api.extraConfigmap): the Job runs before that ConfigMap exists. */ -}}
+{{- $pg := mergeOverwrite (fromYaml (include "plugin-br-pix-jd.platformEnv" (dict "root" $ "configmap" .Values.api.configmap "serviceName" "plugin-br-pix-jd"))) (.Values.api.extraConfigmap | default dict) -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -29,7 +32,8 @@ metadata:
        pre-hook would race a database that does not exist yet. Running post-Sync also
        means the chart's own Secrets already exist, so no migration-only hook Secret is
        needed on this path. The cost: the api rolls out before the schema lands and
-       returns errors on PIX routes until this Job finishes. */}}
+       returns errors on PIX routes until this Job finishes, and it can only boot with
+       SYSTEMPLANE_ENABLED off, the bundled default. */}}
     "helm.sh/hook": post-install,post-upgrade
     "argocd.argoproj.io/hook": PostSync
     {{- else }}
@@ -79,9 +83,9 @@ spec:
               echo "postgres is ready"
           env:
             - name: POSTGRES_HOST
-              value: {{ include "plugin-br-pix-jd.postgresHost" . | quote }}
+              value: {{ $pg.POSTGRES_HOST | quote }}
             - name: POSTGRES_PORT
-              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_PORT" "default" "5432") | quote }}
+              value: {{ $pg.POSTGRES_PORT | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
       {{- end }}
@@ -120,15 +124,15 @@ spec:
           imagePullPolicy: {{ ($migImage.pullPolicy | default $mig.imagePullPolicy) | default "IfNotPresent" }}
           env:
             - name: POSTGRES_HOST
-              value: {{ include "plugin-br-pix-jd.postgresHost" . | quote }}
+              value: {{ $pg.POSTGRES_HOST | quote }}
             - name: POSTGRES_PORT
-              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_PORT" "default" "5432") | quote }}
+              value: {{ $pg.POSTGRES_PORT | quote }}
             - name: POSTGRES_USER
-              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_USER" "default" "plugin-br-pix-jd") | quote }}
+              value: {{ $pg.POSTGRES_USER | quote }}
             - name: POSTGRES_NAME
-              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_NAME" "default" "plugin-br-pix-jd") | quote }}
+              value: {{ $pg.POSTGRES_NAME | quote }}
             - name: POSTGRES_SSLMODE
-              value: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+              value: {{ $pg.POSTGRES_SSLMODE | quote }}
             {{- with $mig.table }}
             - name: POSTGRES_MIGRATIONS_TABLE
               value: {{ . | quote }}

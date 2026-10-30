@@ -31,7 +31,8 @@ global:
         name: ""
       # -- Password for bc_correios role (ignored if useExistingSecret.name is set)
       password: ""
-  # -- Bootstrap job for external RabbitMQ: creates users, vhosts, and permissions
+  # -- Bootstrap job for external RabbitMQ: imports the exchanges, queues, and bindings from
+  # files/rabbitmq/load_definitions.json (vhost "/"). It does NOT create users or permissions.
   externalRabbitmqDefinitions:
     # -- Enable or disable the RabbitMQ bootstrap job
     enabled: false
@@ -204,7 +205,9 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    APP_ENV: "development"
+    # Deployment environment. A development install without Access Manager sets ENV_NAME
+    # "development" and PLUGIN_AUTH_ENABLED "false": the app refuses auth off in production.
+    ENV_NAME: "production"
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: "1.0.0"
     LOG_LEVEL: "info"
@@ -244,9 +247,9 @@ bc-correios:
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
     BC_CORREIO_RETRY_MAX_RETRIES: "3"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
-    # Plugin Auth
-    PLUGIN_AUTH_ENABLED: "false"
-    PLUGIN_AUTH_HOST: ""
+    # Plugin Auth (Access Manager). PLUGIN_AUTH_ADDRESS is the auth service URL the app calls.
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
     # License
     LICENSE_KEY: ""
@@ -278,7 +281,10 @@ bc-correios:
     RABBITMQ_ERLANG_COOKIE: ""
     # AES-256 encryption key (32 bytes — override with a real key in production)
     ENCRYPTION_KEY: ""
-    # Cache (Valkey) credentials
+    # Cache (Valkey) credentials. Only used for an external Valkey (valkey.enabled=false or
+    # valkey.external=true) without valkey.auth.existingSecret. With the bundled Valkey (auth
+    # enabled) or valkey.auth.existingSecret, CACHE_PASSWORD is read from the Valkey Secret via
+    # secretKeyRef and this value is ignored.
     CACHE_PASSWORD: ""
     # Object storage credentials
     OBJECT_STORAGE_ACCESS_KEY: ""
@@ -312,7 +318,11 @@ valkey:
   architecture: standalone
   auth:
     enabled: true
+    # Leave empty to let the subchart generate it into <release>-valkey (key valkey-password);
+    # the app reads it from there via secretKeyRef (CACHE_PASSWORD).
     password: ""
+    # Not used: the Bitnami valkey 2.4.7 subchart has no ACL user (single password) and the app
+    # only reads CACHE_PASSWORD.
     username: bc_correios
   primary:
     kind: Deployment
@@ -354,6 +364,9 @@ rabbitmq:
   enabled: true
   image:
     tag: "4.0.5"
+  # NOTE: `persistence.size` is NOT a key of the groundhog2k/rabbitmq subchart and has no effect:
+  # the broker data volume (/var/lib/rabbitmq) renders as an emptyDir, so queue data does not
+  # survive a pod restart. The subchart's own key for a PVC is `storage.requestedSize`.
   persistence:
     size: 4Gi
   resources:
@@ -377,6 +390,11 @@ rabbitmq:
   # authentication.existingSecret + erlangCookie.secretKey. Setting existingSecret only
   # affects keys that declare a secretKey, so the broker user/password behaviour is
   # unchanged; the cookie is no longer a deterministic literal shipped in the chart.
+  # `user.value` / `password.value` below are IGNORED while existingSecret is set (they are only
+  # honoured without existingSecret), and neither declares a secretKey, so the bundled broker is
+  # started WITHOUT RABBITMQ_DEFAULT_USER/RABBITMQ_DEFAULT_PASS and files/rabbitmq/load_definitions.json
+  # declares no users. Provision the account that bc-correios.secrets.RABBITMQ_URL points at yourself
+  # (or use an external broker).
   # RABBITMQ_ERLANG_COOKIE is REQUIRED in the app Secret when rabbitmq.enabled (see
   # secrets + bc-correios.rabbitmqErlangCookieRequired). Must be a STABLE value — changing
   # it across upgrades breaks the cluster. Generate once with: openssl rand -hex 32

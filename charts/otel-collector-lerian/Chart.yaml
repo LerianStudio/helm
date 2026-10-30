@@ -1,6 +1,6 @@
 apiVersion: v2
 name: otel-collector-lerian
-description: A Helm chart for Kubernetes
+description: OpenTelemetry Collector (contrib) DaemonSet that collects Kubernetes traces, logs and metrics and exports them over OTLP/HTTP to the Lerian telemetry backend
 type: application
 annotations:
   lerian.studio/chart-type: dependency-wrapper

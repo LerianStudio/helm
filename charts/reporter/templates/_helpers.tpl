@@ -370,6 +370,14 @@ reporter.isTrue — "true" when the value is a truthy token (case-insensitive).
 {{- end -}}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "reporter.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 reporter.commonConfigmapData — the SHARED (common) ConfigMap data block for both the
 manager and worker surfaces. Dependency CONNECTIONS are resolved through lerian-common
 typed masks/helpers (datastore.value / globalValue / streaming.env); everything else is
@@ -426,6 +434,7 @@ Input: the root context ($).
     "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS" "MULTI_TENANT_REDIS_CA_CERT"
     "MULTI_TENANT_TIMEOUT" "MULTI_TENANT_CACHE_TTL_SEC" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC"
     "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS"
+    "IDP_DECLARATION_ENABLED" "IDP_HOST"
     "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD"
     "SD_TLS" "SD_TLS_SKIP_VERIFY" "STREAMING_ENABLED"
     "STREAMING_BROKERS" "STREAMING_CLOUDEVENTS_SOURCE" "STREAMING_CLIENT_ID"
@@ -449,7 +458,7 @@ ENV_NAME: {{ $envName | quote }}
    default "false" meant a plain `helm install` with zero overrides always
    crashed. Same convention as plugin-access-manager: default "true" for the
    bundled path; a managed-cloud profile flips it explicitly. */ -}}
-ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+ALLOW_INSECURE_TLS: {{ include "reporter.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
 {{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
    topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker profile
    (e.g. AmazonMQ over TLS) sets global.datastores.broker.{scheme,amqpPort,port}

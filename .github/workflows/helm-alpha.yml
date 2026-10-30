@@ -1,12 +1,30 @@
 name: Helm Alpha Release
 
 # Thin caller. The logic lives in the reusable helm-alpha-release.yml of
-# github-actions-shared-workflows. Publishes a disposable alpha release of a
+# shared-workflows-public. Publishes a disposable alpha release of a
 # chart to the isolated package ghcr.io/lerianstudio/alpha/<chart> (TTL ~3 days
 # via helm-alpha-cleanup.yml). Authenticates with the built-in GITHUB_TOKEN.
+# Does not touch release.yml, semantic-release, or main.
 #
-# Run it via "Run workflow" selecting YOUR working branch — the checkout uses
-# that ref, so charts that only exist on the branch also work.
+# The alpha namespace is org-wide on purpose: the cleanup action refuses any
+# image-names entry outside alpha/, so a repo-private namespace would be
+# published without a TTL. Package names are the chart directories.
+#
+# Two ways to trigger:
+#   - push: branches named <feature|fix|chore>-<chart>/<objetivo> touching
+#     charts/** auto-resolve "chart" from the branch name. Every push to the
+#     branch republishes, so an open PR always has an installable artifact —
+#     when it is opened and on every new commit. A push, not pull_request: this
+#     repository is public, and a pull_request trigger would also run for fork
+#     PRs, whose token cannot write packages. Severino's generate_chart relies
+#     on this trigger too: it pushes feature-<app>/new-app-helm-chart and waits
+#     for the alpha before opening the chart's PR to main.
+#   - workflow_dispatch: pick "chart" manually, any branch — including a chart
+#     that only exists on that branch.
+#
+# Alphas do NOT create a git tag, a GitHub Release or a CHANGELOG entry: the
+# reusable does not run semantic-release. The alpha exists only as an OCI
+# package, versioned <chart-version>-alpha.<timestamp>.<sha>.
 
 on:
   workflow_dispatch:
@@ -19,17 +37,133 @@ on:
         description: "Package and validate, but do not publish"
         type: boolean
         default: false
+  push:
+    branches:
+      - 'feature-*/**'
+      - 'fix-*/**'
+      - 'chore-*/**'
+    paths:
+      # A chart's own files only. A file directly under charts/ belongs to no chart,
+      # and the cross-check below would otherwise count its name as one.
+      - 'charts/*/**'
 
 permissions:
   contents: read
 
+concurrency:
+  group: helm-alpha-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  resolve-chart:
+    if: github.event_name == 'push'
+    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    outputs:
+      chart: ${{ steps.resolve.outputs.chart }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # The cross-check below diffs the branch against its merge base with
+          # the default branch, so the single commit a default checkout
+          # fetches is not enough.
+          fetch-depth: 0
+
+      - name: Resolve chart name from branch
+        id: resolve
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          branch="$BRANCH"
+          # Strip exactly one <type>- prefix (the first one that matches, so
+          # a chart name that itself starts with a reserved word, e.g.
+          # "feature-fix-orders/goal" -> chart "fix-orders", isn't double-stripped)
+          # and take everything before the first "/" as the chart name — never
+          # split on "-", chart names may be hyphenated (e.g. go-boilerplate-ddd).
+          case "$branch" in
+            feature-*) without_prefix="${branch#feature-}" ;;
+            fix-*) without_prefix="${branch#fix-}" ;;
+            chore-*) without_prefix="${branch#chore-}" ;;
+            *)
+              echo "::error::Branch \"${branch}\" does not match the naming convention <feature|fix|chore>-<chart>/<objetivo>"
+              exit 1
+              ;;
+          esac
+
+          if [[ "$without_prefix" != */* ]]; then
+            echo "::error::Branch \"${branch}\" is missing the /<objetivo> segment — expected <type>-<chart>/<objetivo>"
+            exit 1
+          fi
+
+          chart="${without_prefix%%/*}"
+          objetivo="${without_prefix#*/}"
+
+          if [[ -z "$chart" || -z "$objetivo" ]]; then
+            echo "::error::Branch \"${branch}\" has an empty chart or objetivo segment — expected <type>-<chart>/<objetivo>"
+            exit 1
+          fi
+
+          if [[ ! -d "charts/${chart}" ]]; then
+            echo "::error::Branch name resolved to chart \"${chart}\" but charts/${chart}/ does not exist — check the branch naming convention <type>-<chart>/<objetivo>"
+            exit 1
+          fi
+
+          echo "chart=${chart}" >> "$GITHUB_OUTPUT"
+
+      # The branch name is a claim about what this branch touches, and nothing
+      # so far has checked it. A "feature-chart-a/..." branch that edits
+      # charts/chart-b would publish an alpha of chart-a — a package identical
+      # to main — while the change under review is never packaged at all, and
+      # the reviewer installs an artifact that does not contain it. Fail loudly
+      # instead: the mismatch is a branch naming mistake, not a chart problem.
+      - name: Cross-check the branch name against the changed charts
+        env:
+          CHART: ${{ steps.resolve.outputs.chart }}
+          BRANCH: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          # Always the merge base with the default branch, never the push's
+          # "before": after the default branch is merged into a chart branch,
+          # before..HEAD carries every chart main changed in the meantime, and
+          # a branch that only ever touched its own chart would be refused as
+          # changing several. The merge base moves with that merge, so the diff
+          # is what THIS branch changes and nothing upstream.
+          base="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
+
+          # 'charts/*/*' and not 'charts/': a file directly under charts/ is no
+          # chart, and `cut` would report its file name as one.
+          changed="$(git diff --name-only "${base}" HEAD -- 'charts/*/*' | cut -d/ -f2 | sort -u)"
+
+          if [ -z "${changed}" ]; then
+            # The paths filter fired on the push, but the branch as a whole
+            # changes no chart against the default branch — e.g. a change that
+            # was reverted. Nothing to contradict, so publish.
+            echo "::notice::No chart change on this branch against ${DEFAULT_BRANCH} — skipping the cross-check"
+            exit 0
+          fi
+
+          if [ "$(printf '%s\n' "${changed}" | wc -l | tr -d ' ')" -gt 1 ]; then
+            echo "::error::This branch changes more than one chart ($(printf '%s' "${changed}" | tr '\n' ' ')). One chart per branch — split the work, or publish a specific chart with the manual dispatch."
+            exit 1
+          fi
+
+          if [ "${changed}" != "${CHART}" ]; then
+            echo "::error::Branch \"${BRANCH}\" resolves to chart \"${CHART}\" but this branch changes charts/${changed}. The alpha would be a copy of ${CHART} with none of your changes in it. Rename the branch to <feature|fix|chore>-${changed}/<objetivo>."
+            exit 1
+          fi
+
+          echo "::notice::Branch and changed paths agree on ${CHART}"
+
   alpha:
+    needs: [resolve-chart]
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.resolve-chart.result == 'success')
     permissions:
       contents: read # checkout the chart (in the reusable)
       packages: write # push the alpha chart to GHCR
     # Testing: @develop. Once stable: @vX.Y.Z.
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-alpha-release.yml@develop
+    uses: LerianStudio/shared-workflows-public/.github/workflows/helm-alpha-release.yml@tier-1
     with:
-      chart: ${{ inputs.chart }}
-      dry_run: ${{ inputs.dry_run }}
+      chart: ${{ github.event_name == 'workflow_dispatch' && inputs.chart || needs.resolve-chart.outputs.chart }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}

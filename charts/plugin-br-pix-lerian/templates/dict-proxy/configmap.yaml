@@ -10,8 +10,10 @@ lerian-common masks; the chart emits STANDARD key names.
   - observability (otel.env -> ENABLE_TELEMETRY + OTEL_EXPORTER_OTLP_ENDPOINT + OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT; global.observability)
 
 DROPPED deviating app keys (superseded by the standard names above):
-  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), ORGANIZATION_ID (->ORGANIZATION_IDS),
-  DB_SSL_MODE (->DB_SSLMODE).
+  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), DB_SSL_MODE (->DB_SSLMODE).
+ORGANIZATION_ID (single-tenant business identity read by this component) is NOT
+superseded by ORGANIZATION_IDS (the license allow-list): it is not enumerated
+below, so <component>.configmap.ORGANIZATION_ID passes through when set.
 The composed URI DATABASE_URL remains ONLY in secrets.yaml as the migration
 Job's input (never app-runtime config here), and this component uses no
 cache.
@@ -35,7 +37,7 @@ data:
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-dict-proxy" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4106" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
   REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-dict-proxy" | quote }}
@@ -55,7 +57,7 @@ data:
   {{- $enumerated := dict }}
   {{- range $k := (list
       "APPLICATION_NAME" "DB_REPLICA_SSL_MODE" "DB_SSL_MODE" "DEPLOYMENT_MODE"
-      "ENABLE_TELEMETRY" "ENV_NAME" "LICENSE_KEY" "LOG_LEVEL" "ORGANIZATION_ID"
+      "ENABLE_TELEMETRY" "ENV_NAME" "LICENSE_KEY" "LOG_LEVEL"
       "ORGANIZATION_IDS" "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME"
       "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME"
       "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_HOST"

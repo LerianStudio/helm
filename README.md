@@ -110,7 +110,7 @@ The release bumps `jd-courier.image.tag`, which is the column below.
 
 | Chart Version | Br-Jd-Courier Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0 |
+| `1.0.0` | 1.2.0 |
 -----------------
 
 ### Plugin BR Pix Lerian
@@ -162,19 +162,6 @@ For implementation and configuration details, see the [README](https://charts.le
 | `3.1.0` | 3.0.2 | 3.0.2 |
 -----------------
 
-### Lender
-
-For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
-
-#### Application Version Mapping
-
-| Chart Version | Lender Version |
-| :---: | :---: |
-| `1.0.0-beta.1` | 1.0.0-beta.48 |
------------------
-
 ### Tracer
 
 For more details, check out the [official documentation](https://docs.lerian.studio/en/tracer).
@@ -188,7 +175,25 @@ For implementation and configuration details, see the [README](https://charts.le
 | `2.1.0` | 1.0.0 |
 -----------------
 
+### Alloy Lerian
+
+Telemetry collection agent for client clusters (BYOC). Replaces Otel Collector Lerian in the client-side collection role.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/alloy-lerian).
+
+#### Application Version Mapping
+
+| Chart Version | Alloy Version |
+| :---: | :---: |
+| `1.0.0` | 1.18.1 |
+-----------------
+
 ### Otel Collector Lerian
+
+> [!WARNING]
+> **Deprecated.** Superseded by [Alloy Lerian](#alloy-lerian) for client-side
+> collection. New installations should use Alloy Lerian; existing ones remain
+> supported while they migrate.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/otel-collector-lerian).
 
@@ -235,6 +240,44 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.0.0-beta.4` | 0.1.0 |
 -----------------
 
+### BR SISBAJUD
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sisbajud).
+
+#### Application Version Mapping
+
+| Chart Version | App Version | Migrations Version |
+| :---: | :---: | :---: |
+| `1.2.0` | `1.2.0` | `1.2.0` |
+| `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
+-----------------
+
+### Plugin BR SISBAJUD
+
+SISBAJUD executor: pulls judicial orders from the Sisbajud Mensageria over TLS (optional mTLS), executes them on Midaz and posts the results back. Complements `br-sisbajud`, which deploys the Mensageria the executor calls; run both.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-sisbajud).
+
+#### Application Version Mapping
+
+| Chart Version | Sisbajud Version | Migrations Version |
+| :---: | :---: | :---: |
+| `1.0.0` | `1.0.0-beta.1` | `1.0.0-beta.1` |
+-----------------
+
+### Plugin BR TED Lerian
+
+TED transfers plugin for Midaz.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-ted-lerian).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.0.0` | `1.0.0-beta.33` |
+-----------------
+
 ### BR Consignado GW
 
 API gateway and same-origin operator console for the Dataprev consignado rail.
@@ -248,6 +291,45 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.1.0` | `1.3.0-beta.36` |
 -----------------
 
+### BR STA
+
+BACEN STA (Sistema de Transferência de Arquivos): file transfers to and from BACEN, operator credentials and the audit trail.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
+
+#### Application Version Mapping
+
+| Chart Version | Manager Version | Worker Version | Migrations Version |
+| :---: | :---: | :---: | :---: |
+| `1.0.0` | `1.0.0` | `1.0.0` | `1.0.0` |
+-----------------
+
+### Agent
+
+Lerian BYOC agent: runs in your Kubernetes cluster, polls the Lerian control plane over an outbound-only connection and executes the Helm operations it is assigned.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/agent).
+
+#### Application Version Mapping
+
+| Chart Version | Agent Version |
+| :---: | :---: |
+| `1.0.0` | 1.0.2 |
+-----------------
+
+### Streaming Hub
+
+Event delivery edge: consumes lib-streaming CloudEvents from Redpanda and fans them out per tenant to webhooks and queues.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/streaming-hub).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `2.0.0` | `3.0.0` |
+-----------------
+
 ### Lerian Common (Library)
 
 Library chart consumed by other Lerian charts — renders nothing on its own.
@@ -259,4 +341,15 @@ For implementation and configuration details, see the [README](https://charts.le
 | Chart Version |
 | :---: |
 | `2.1.0` |
+-----------------
+
+### System Facts
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/system-facts).
+
+#### Application Version Mapping
+
+| Chart Version | System-Facts Version |
+| :---: | :---: |
+| `1.0.0` | 1.1.0 |
 -----------------

@@ -68,26 +68,6 @@ times by hand, one of them eventually loses a clause and nil-pointers the render
 on a values file that omits `aws` entirely.
 ------------------------------------------------------------------------------
 */}}
-{{/*
-------------------------------------------------------------------------------
-workerOwnImage — truthy when the worker runs its OWN image, not the api's.
-
-The app used to ship ONE image with two entry points, so the chart had to override
-the ENTRYPOINT with `command: ["/worker"]` to reach the second binary. It now
-publishes a dedicated plugin-br-pix-jd-worker image whose own ENTRYPOINT is
-already /worker.
-
-Both shapes stay supported, and the difference matters: overriding the command on
-a dedicated image asserts a binary path inside an image this chart does not build.
-It happens to be correct today; it is not the chart's to promise.
-------------------------------------------------------------------------------
-*/}}
-{{- define "plugin-br-pix-jd.workerOwnImage" -}}
-{{- $wi := (.Values.worker | default dict).image | default dict -}}
-{{- $repo := $wi.repository | default "" -}}
-{{- if and $repo (ne $repo .Values.api.image.repository) -}}true{{- end -}}
-{{- end }}
-
 {{- define "plugin-br-pix-jd.rolesAnywhereEnabled" -}}
 {{- $aws := .Values.aws | default dict -}}
 {{- $ra := $aws.rolesAnywhere | default dict -}}
@@ -188,7 +168,7 @@ Input dict: root, comp.
 {{- $registry := ((.root.Values.global | default dict).imageRegistry | default "") -}}
 {{- /* An empty repository printf'd to ":<tag>" — valid YAML, InvalidImageName at
    admission. Fail at render with the value to set. */ -}}
-{{- $repository := required "\n\nERROR: image.repository is empty for one of the components.\nAn empty repository renders as \":<tag>\", which the API server rejects with\nInvalidImageName. Set api.image.repository (the worker inherits it).\n" (.comp.image.repository | default "") -}}
+{{- $repository := required "\n\nERROR: image.repository is empty for one of the components.\nAn empty repository renders as \":<tag>\", which the API server rejects with\nInvalidImageName. Set api.image.repository or worker.image.repository.\n" (.comp.image.repository | default "") -}}
 {{- if $registry -}}
 {{- $repository = printf "%s/%s" (trimSuffix "/" $registry) $repository -}}
 {{- end -}}
@@ -240,8 +220,7 @@ ela um campo de primeira classe faria parecer knob suportado. Quem precisa dela 
 `api.extraConfigmap.IS_DEVELOPMENT`.
 
 Mas os GATES têm de continuar enxergando-a, senão removê-la abriria um buraco: o
-gate de produção deixaria de barrar o bypass e o gate de licença do worker deixaria
-de saber que pode relaxar. Por isso todo gate resolve contra esta visão mesclada, e
+gate de produção deixaria de barrar o bypass. Por isso todo gate resolve contra esta visão mesclada, e
 não contra `.configmap` sozinho — a mesma precedência que o ConfigMap renderiza.
 
 Input: root context ($).
@@ -267,10 +246,10 @@ Input: root context ($).
    (internal/bootstrap/config_validation.go) and refuses to boot when any is truthy
    under production: ALLOW_CORS_WILDCARD, ALLOW_RATELIMIT_FAIL_OPEN and IS_DEVELOPMENT.
    Each disables a safe default — a wildcard CORS origin, a fail-OPEN money-path rate
-   limiter, and (IS_DEVELOPMENT) the worker per-tick license validation, which leaves
-   the settlement-reconcile poller running unlicensed. Catching them at render beats a
+   limiter, and (IS_DEVELOPMENT) the production licence gateway, which it swaps for
+   the development one. Catching them at render beats a
    CrashLoop. ALLOW_INSECURE_TLS is deliberately NOT here: the app treats it as the one
-   sovereign switch for internal-datastore TLS in any environment. */ -}}
+   sovereign switch for plaintext datastores and http upstreams in any environment. */ -}}
 {{- if $isProduction -}}
 {{- $rl := .Values.api.rateLimit | default dict -}}
 {{- $bypasses := dict
@@ -279,7 +258,7 @@ Input: root context ($).
       "IS_DEVELOPMENT" (index $cfg "IS_DEVELOPMENT" | default "") -}}
 {{- range $name, $value := $bypasses -}}
 {{- if and $value (ne ($value | toString) "false") -}}
-{{- fail (printf "\n\nERROR: %s must not be set under ENVIRONMENT_NAME=production.\nThe app lists it in productionForbiddenBypassEnvVars and refuses to boot with it truthy,\nso this deploy would CrashLoop. It also disables a safe default: a wildcard CORS origin,\na fail-OPEN money-path rate limiter, or the worker per-tick license validation.\n" $name) -}}
+{{- fail (printf "\n\nERROR: %s must not be set under ENVIRONMENT_NAME=production.\nThe app lists it in productionForbiddenBypassEnvVars and refuses to boot with it truthy,\nso this deploy would CrashLoop. It also disables a safe default: a wildcard CORS origin,\na fail-OPEN money-path rate limiter, or the production licence gateway.\n" $name) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -524,7 +503,6 @@ each component can still override any shared key), serviceName (OTel identity).
    shared value (one datastore set, one auth, one telemetry backend) while keeping the
    ability to override any single key. For the api itself the merge is idempotent. */ -}}
 {{- $cm := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) (.configmap | default dict) -}}
-{{- $api := $root.Values.api -}}
 {{- /* Runtime + server. ENVIRONMENT_NAME=production arms the app's security gates
    (auth forced on, Postgres password + SSL required, every ALLOW_* bypass and
    IS_DEVELOPMENT=true rejected at boot). */ -}}
@@ -551,8 +529,10 @@ DEPLOYMENT_MODE: {{ $deploymentMode | quote }}
 LOG_LEVEL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "LOG_LEVEL" "default" "info") | quote }}
 INFRA_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "INFRA_CONNECT_TIMEOUT_SEC" "default" "30") | quote }}
 DB_METRICS_INTERVAL_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "DB_METRICS_INTERVAL_SEC" "default" "15") | quote }}
-SYSTEMPLANE_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEMPLANE_ENABLED" "default" "false") | quote }}
-ORGANIZATION_IDS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ORGANIZATION_IDS" "default" "") | quote }}
+{{- /* Off with the bundled Postgres: its schema lands PostSync, and with the plane on the
+   api cannot boot before systemplane_entries exists, so the hook would never run. */}}
+SYSTEMPLANE_ENABLED: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "SYSTEMPLANE_ENABLED" "default" (empty (include "plugin-br-pix-jd.postgresRenders" $root) | toString)) | quote }}
+ORGANIZATION_IDS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ORGANIZATION_IDS" "default" "global") | quote }}
 {{- /* TRUSTED_PROXIES is read by lib-auth (not by an app struct): without it the caller IP is
    not derived from X-Forwarded-For and the per-tenant IP allowlist sees the proxy. The CIDR
    is environment-specific, so there is no chart default. IS_DEVELOPMENT is deliberately NOT
@@ -589,11 +569,16 @@ MIGRATIONS_PATH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "
    It is emitted ONLY when explicitly set: absent means the app's own safe default
    (false). The chart never ships it enabled.
 
+   Since app 1.2.1 it is also the one opt-out for plain-http upstreams: the ledger, the
+   Access Manager token exchange, the tenant manager, a tenant's jd.base_url and
+   indirect-participant delivery. It replaces MULTI_TENANT_ALLOW_INSECURE_HTTP, which
+   the app no longer reads and the chart no longer emits.
+
    Deliberately NOT in the production-bypass gate, unlike the other three ALLOW_*: the
-   app treats this one as the single sovereign switch for internal-datastore TLS in ANY
-   environment (config_validation.go says so explicitly, and both the production guard
-   and the SaaS TLS enforcement defer to it). Gating it here would be the chart
-   overruling the app. The separate production check that DOES still apply is
+   app treats this one as the single sovereign switch for plaintext datastores and http
+   upstreams in ANY environment (config_validation.go says so explicitly, and both the
+   production guard and the SaaS TLS enforcement defer to it). Gating it here would be
+   the chart overruling the app. The separate production check that DOES still apply is
    POSTGRES_SSLMODE != disable — those are independent, so setting this does not buy a
    plaintext Postgres under ENVIRONMENT_NAME=production. */ -}}
 {{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ALLOW_INSECURE_TLS" "default" "")) }}
@@ -647,11 +632,11 @@ REDIS_MASTER_NAME: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key"
 {{- if and (not $deployEnv) (not $otlpEndpoint) (has ($telemetryEnabled | toString | lower) (list "true" "1" "t")) -}}
 {{- $deployEnv = include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ENVIRONMENT_NAME" "default" "") -}}
 {{- end -}}
-{{- $otelKeys := list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT" -}}
+{{- $otelKeys := list "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT" -}}
 {{- /* The closing `}}` here deliberately keeps its newline: every preceding
    assignment trims both sides, so this is what terminates the last emitted key
    line above. */ -}}
-{{- $otelDefaults := dict "OTEL_RESOURCE_SERVICE_NAME" .serviceName "OTEL_LIBRARY_NAME" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OTEL_LIBRARY_NAME" "default" "plugin-br-pix-jd")) "OTEL_RESOURCE_SERVICE_VERSION" ($api.image.tag | default $root.Chart.AppVersion) "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $deployEnv "OTEL_EXPORTER_OTLP_ENDPOINT" $otlpEndpoint }}
+{{- $otelDefaults := dict "OTEL_RESOURCE_SERVICE_NAME" .serviceName "OTEL_LIBRARY_NAME" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "OTEL_LIBRARY_NAME" "default" "plugin-br-pix-jd")) "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $deployEnv "OTEL_EXPORTER_OTLP_ENDPOINT" $otlpEndpoint }}
 ENABLE_TELEMETRY: {{ $telemetryEnabled | quote }}
 {{ include "lerian-common.otel.envFlat" (dict "configmap" $cm "keys" $otelKeys "defaults" $otelDefaults) }}
 {{- end }}
@@ -734,9 +719,11 @@ Input dict: root, configmap (the component's map).
 {{- $c := dict "configmap" $cm -}}
 {{- /* JD / JDPI. JD_ISPB IS NO LONGER READ BY THE APP, in either deployment mode.
    The plugin's own ISPB now comes from the systemplane key
-   tenancy/jd_integration_binding, field "ispb", and a missing or malformed value
-   FAILS THE BOOT with a named error instead of silently disabling the six MED
-   pollers. That boot gate is why the 8-character render guard that used to live
+   tenancy/jd_integration_binding, field "ispb", read per request: a missing or
+   malformed value fails each Pix flow that needs it with a coded error (PIX-0092,
+   PIX-0121) instead of silently disabling the six MED pollers, and with
+   SYSTEMPLANE_ENABLED=false every such flow answers 503 PIX-0051. That app-side
+   check is why the 8-character render guard that used to live
    here is gone: it existed only to compensate for a silent skip that no longer
    exists, and duplicating a check the app now makes for itself only gives an
    operator two places to be told the same thing — in one of which the message is
@@ -759,35 +746,52 @@ JD_ISPB: {{ $ispb | quote }}
 {{- end }}
 JD_GRANT_TYPE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JD_GRANT_TYPE" "default" "client_credentials") | quote }}
 {{- /* DNS+Service+Path gateway mode: true inserts the fixed JDPI service segment for an
-   APISIX-fronted JDPI; false keeps the direct-JDPI/mock scheme. */}}
+   APISIX-fronted JDPI; false keeps the direct-JDPI/mock scheme. Single-tenant only:
+   multi-tenant reads it from the tenant's bundle and WARNs on a present variable. */}}
+{{- if ne (index $cm "MULTI_TENANT_ENABLED" | default "false" | toString) "true" }}
 JD_USE_SERVICE_SEGMENTS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JD_USE_SERVICE_SEGMENTS" "default" "false") | quote }}
+{{- end }}
 {{- /* Idempotency-aware transport retry. A bare money POST that JDPI may already have
    processed is never re-fired; only GETs and idempotency-keyed POSTs retry. */}}
 JDPI_MAX_RETRIES: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_MAX_RETRIES" "default" "2") | quote }}
 JDPI_RETRY_BASE_DELAY_MS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_RETRY_BASE_DELAY_MS" "default" "100") | quote }}
-{{- /* Midaz ledger. MIDAZ_ASSET_ID has NO safe default: the app silently backfills "1"
-   when it is empty, which posts against a fabricated asset instead of failing. The
-   chart refuses instead — same defect class the app's own smoke report flagged. */ -}}
-{{- /* O `}}` abaixo NÃO right-trima de propósito: o comentário acima e este
-   assignment trimam ambos os lados, então esta é a newline que termina a última
-   chave emitida antes do bloco Midaz. Sem ela as duas se juntam numa linha só. */ -}}
-{{- $assetId := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_ASSET_ID" "default" "") }}
-MIDAZ_ORGANIZATION_ID: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_ORGANIZATION_ID" "default" "") | quote }}
-MIDAZ_LEDGER_ID: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_LEDGER_ID" "default" "") | quote }}
-MIDAZ_ASSET_ID: {{ required "\n\nERROR: api.configmap.MIDAZ_ASSET_ID is required.\nAn empty value is NOT inert: the app backfills \"1\" and posts against a fabricated\nasset instead of failing closed. Set the real asset code (for example BRL).\n" $assetId | quote }}
-MIDAZ_EXTERNAL_ID: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_EXTERNAL_ID" "default" "") | quote }}
+{{- /* JDPI transport budgets (ms). CALL bounds one HTTP attempt; TOTAL bounds a whole
+   call (token, attempts, backoff) and must stay below the ingress timeout so a hung JD
+   answers 504 PIX-1051 instead of the proxy's 504. Deployment-level in both modes. */}}
+JDPI_CALL_TIMEOUT_MS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_CALL_TIMEOUT_MS" "default" "30000") | quote }}
+JDPI_TOTAL_TIMEOUT_MS: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "JDPI_TOTAL_TIMEOUT_MS" "default" "50000") | quote }}
+{{- /* Midaz ledger. MIDAZ_ORGANIZATION_ID, MIDAZ_LEDGER_ID, MIDAZ_ASSET_ID and
+   MIDAZ_EXTERNAL_ID are NO LONGER READ BY THE APP (1.0.0+), in either deployment mode:
+   the organization and ledger come from tenancy/jd_integration_binding, the asset code
+   and the external account from tenant_policy/midaz.asset_id and midaz.external_id.
+   Same shape as JD_ISPB above: emitted only when an operator set them, because the
+   app's ignored-env scanner WARNs on a PRESENT variable (empty counts). */ -}}
+{{- range $k := (list "MIDAZ_ORGANIZATION_ID" "MIDAZ_LEDGER_ID" "MIDAZ_ASSET_ID" "MIDAZ_EXTERNAL_ID") }}
+{{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" $k "default" "")) }}
+{{ $k }}: {{ . | quote }}
+{{- end }}
+{{- end }}
 MIDAZ_TIMEOUT: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_TIMEOUT" "default" "30000") | quote }}
 MIDAZ_URL_ONBOARDING: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_ONBOARDING" "default" "") | quote }}
 MIDAZ_URL_TRANSACTION: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_TRANSACTION" "default" "") | quote }}
+MIDAZ_URL_TRACER: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_URL_TRACER" "default" "") | quote }}
+APPLICATION_NAME: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "APPLICATION_NAME" "default" "") | quote }}
+{{- /* Fee mode: auto posts on /v2 when the ledger's /version reports 4.1.0+, else /v1.
+   The app's envDefault is not applied by its loader, so an unset key reads as legacy;
+   emitting the defaults is what makes "auto" real. */}}
+MIDAZ_FEE_MODE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_FEE_MODE" "default" "auto") | quote }}
+MIDAZ_FEE_MODE_REFRESH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIDAZ_FEE_MODE_REFRESH" "default" "5m") | quote }}
 {{- /* CRM — alias resolution. */}}
 CRM_URL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "CRM_URL" "default" "") | quote }}
-{{- /* Transaction limits: NOT emitted. TRANSACTION_LIMIT_DAILY_PERIOD_INIT/_END are in the
-   app's PluginSystemplaneManagedIgnoredEnvVars (ignored_systemplane_env.go): the window now
-   lives in the systemplane transaction_limits.* keys and the env twins are never parsed. This
-   chart used to ship 06:00 / 20:00 for them, so EVERY pod logged a "systemplane-managed
-   environment variable is set and ignored" WARN about a value the chart itself invented
-   (same reasoning as JD_ISPB above, which is emitted only when an operator sets it). */}}
-{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "PIX_AUTOMATICO_BLOQUEAR_ENABLED" "PIX_AUTOMATICO_ESTORNO_ENABLED" "APPLICATION_NAME")) }}
+{{- /* Not emitted: TRANSACTION_LIMIT_DAILY_PERIOD_INIT/_END. The app ignores them (systemplane-managed,
+   transaction_limits.*) and WARNs per pod when present. APPLICATION_NAME is emitted above. */}}
+{{- include "plugin-br-pix-jd.optionalEnv" (dict "configmap" $cm "keys" (list "PIX_AUTOMATICO_BLOQUEAR_ENABLED" "PIX_AUTOMATICO_ESTORNO_ENABLED")) }}
+{{- /* Courier ownership map, single-tenant only: multi-tenant reads it from the tenant's
+   jd-spi bundle and WARNs on a present COURIER_URL, so it is emitted only when set.
+   Must point at the Courier `admin` role, the only one that serves the lookup. */}}
+{{- with (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "COURIER_URL" "default" "")) }}
+COURIER_URL: {{ . | quote }}
+{{- end }}
 {{- /* Notification providers. SENDGRID_BASE_URL / TWILIO_BASE_URL MUST default to
    empty: empty means "the real provider", and they exist only so a test rig can point
    the adapter at a local counterparty. A non-empty default here would silently divert
@@ -801,7 +805,9 @@ TWILIO_BASE_URL: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "
 
 {{/*
 ------------------------------------------------------------------------------
-qrcodeEnv — dynamic-QR JWS hosting. API-ONLY: the worker serves no QR payloads.
+qrcodeEnv — dynamic-QR JWS hosting. Emitted for both components: the worker serves
+no QR payloads, but its config validation, shared with the api, requires
+QRCODE_PUBLIC_BASE_URL in production.
 
 QRCODE_PUBLIC_BASE_URL has no safe default and two constraints that are easy to
 violate and expensive to discover, so both are gates rather than comments:
@@ -859,6 +865,169 @@ QRCODE_JWKS_CONTENT_TYPE: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $c
 
 {{/*
 ------------------------------------------------------------------------------
+paymentSigning — the key that signs the JDPI payment order.
+
+Optional, as in the app: with neither PEM the app sends unsigned orders, which a JD
+not running HashAtivo accepts; with both it signs every order. With exactly one the
+app refuses every order (409 PIX-0136), so the render refuses first, naming the
+missing value.
+
+With MULTI_TENANT_ENABLED=true the app does not read these variables, so nothing is
+rendered or checked.
+
+With api.existingSecret.name the operator's Secret carries the two PEMs and the chart
+renders no Secret of its own, so the gate does not apply.
+
+AVP: a `<path:...>` placeholder is substituted in the rendered manifest AFTER helm
+runs, so at template time the value is the literal placeholder and the PEM shape
+check is skipped for it. The Vault value must hold the PEM with real line breaks.
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.paymentSigningApplies" -}}
+{{- if ne (index (fromYaml (include "plugin-br-pix-jd.effectiveConfig" .)) "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
+true
+{{- end -}}
+{{- end }}
+
+{{/* paymentSigningEnv — JD_PAYMENT_SIGNING_ALGORITHM, emitted only when set: blank
+means the app's own default (ECDSA_P256_SHA256), owned in one place.
+Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.paymentSigningEnv" -}}
+{{- if include "plugin-br-pix-jd.paymentSigningApplies" . -}}
+{{- $alg := index (fromYaml (include "plugin-br-pix-jd.effectiveConfig" .)) "JD_PAYMENT_SIGNING_ALGORITHM" | default "" | toString -}}
+{{- if $alg -}}
+{{- if not (has $alg (list "ECDSA_P256_SHA256" "ECDSA_P384_SHA384" "RSA_PKCS1_SHA256")) -}}
+{{- fail (printf "\n\nERROR: api.configmap.JD_PAYMENT_SIGNING_ALGORITHM must be one of ECDSA_P256_SHA256,\nECDSA_P384_SHA384 or RSA_PKCS1_SHA256; got %q. Leave it empty for ECDSA_P256_SHA256.\n" $alg) -}}
+{{- end }}
+JD_PAYMENT_SIGNING_ALGORITHM: {{ $alg | quote }}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/* paymentSigningSecrets — the two PEMs as `KEY: <b64>` lines; the caller nindents
+under `data:`. Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.paymentSigningSecrets" -}}
+{{- if include "plugin-br-pix-jd.paymentSigningApplies" . -}}
+{{- $s := .Values.api.secrets | default dict -}}
+{{- $key := index $s "JD_PAYMENT_SIGNING_PRIVATE_KEY" | default "" | toString -}}
+{{- $cert := index $s "JD_PAYMENT_SIGNING_CERTIFICATE" | default "" | toString -}}
+{{- $lines := list -}}
+{{- if or $key $cert -}}
+{{- if not (and $key $cert) -}}
+{{- $set := ternary "JD_PAYMENT_SIGNING_PRIVATE_KEY" "JD_PAYMENT_SIGNING_CERTIFICATE" (ne $key "") -}}
+{{- $missing := ternary "JD_PAYMENT_SIGNING_CERTIFICATE" "JD_PAYMENT_SIGNING_PRIVATE_KEY" (ne $key "") -}}
+{{- $what := ternary "the PEM certificate registered in JDPI Cabine for the signing key" "the PEM private key whose certificate is registered in JDPI Cabine" (ne $key "") -}}
+{{- fail (printf "\n\nERROR: api.secrets.%s is missing: %s.\napi.secrets.%s is set, and with only one of the two the app refuses every payment order:\nset both or neither (with neither, payment orders are sent unsigned).\n" $missing $what $set) -}}
+{{- end -}}
+{{- range $k, $v := (dict "JD_PAYMENT_SIGNING_PRIVATE_KEY" $key "JD_PAYMENT_SIGNING_CERTIFICATE" $cert) -}}
+{{- if and (not (hasPrefix "<path:" $v)) (not (contains "-----BEGIN " $v)) -}}
+{{- fail (printf "\n\nERROR: api.secrets.%s must be PEM (a \"-----BEGIN ...-----\" block); got %d characters\nwith no PEM header. Pass the file content, e.g. --set-file api.secrets.%s=<file>.pem\n" $k (len $v) $k) -}}
+{{- end -}}
+{{- $lines = append $lines (printf "%s: %s" $k ($v | b64enc | quote)) -}}
+{{- end -}}
+{{- end -}}
+{{- join "\n" $lines -}}
+{{- end -}}
+{{- end }}
+
+{{/* declarationSources — where each declaration key effectively comes from, as
+YAML: {KEY: {cfg, sec, extraSec}}. cfg is api.extraConfigmap over api.configmap;
+sec is api.extraSecrets over api.secrets, and extraSec says the extraSecrets loop
+emits it. The api reads the keys from either the ConfigMap or the Secret, so a
+value counts wherever the operator put it. A blank api.extraSecrets entry is
+absent: the extraSecrets loop skips it (see declarationKeys), so it cannot mount
+an empty Secret value over a ConfigMap one. The client secret counts from
+configuration only through api.extraConfigmap, the one config source that emits
+it; api.configmap.IDP_M2M_CLIENT_SECRET is never rendered, so it does not count.
+Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.declarationKeys" -}}
+{{- toJson (list "IDP_HOST" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET") -}}
+{{- end }}
+
+{{- define "plugin-br-pix-jd.declarationSources" -}}
+{{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .) -}}
+{{- $extraCfg := .Values.api.extraConfigmap | default dict -}}
+{{- $sec := .Values.api.secrets | default dict -}}
+{{- $extra := .Values.api.extraSecrets | default dict -}}
+{{- $out := dict -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" . | fromJsonArray) -}}
+{{- $viaExtra := ne (index $extra $k | default "" | toString | trim) "" -}}
+{{- $cfgValue := ternary (index $extraCfg $k) (index $cfg $k) (eq $k "IDP_M2M_CLIENT_SECRET") -}}
+{{- $_ := set $out $k (dict
+      "cfg" ($cfgValue | default "" | toString | trim)
+      "sec" (ternary (index $extra $k) (index $sec $k) $viaExtra | default "" | toString | trim)
+      "extraSec" $viaExtra) -}}
+{{- end -}}
+{{- toYaml $out -}}
+{{- end }}
+
+{{/* declarationEnv — IDP_DECLARATION_ENABLED when set and, when "true", IDP_HOST and
+IDP_M2M_CLIENT_ID if they were given as configuration. Api-only: the api publishes
+the permissions manifest to the Access Manager at boot; the worker never does.
+Unset, nothing is emitted and the app's default (off) applies; off, the app reads
+nothing else. On, the
+render fails on what the app would refuse at boot: IDP_HOST, IDP_M2M_CLIENT_ID or
+IDP_M2M_CLIENT_SECRET blank in every source, a host that is not an http(s) URL or
+carries credentials, or PLUGIN_AUTH_ENABLED off (the M2M token is minted by the
+lib-auth client). With api.existingSecret.name the Secret's content is unknown, so
+an absent value is not refused. A `<path:...>` placeholder counts as set and skips
+the format check. authEnabled is the platform value; an api.extraConfigmap
+override merges last and so is the one checked. Input dict: root, authEnabled. */}}
+{{- define "plugin-br-pix-jd.declarationEnv" -}}
+{{- $cfg := fromYaml (include "plugin-br-pix-jd.effectiveConfig" .root) -}}
+{{- $raw := index $cfg "IDP_DECLARATION_ENABLED" -}}
+{{- if not (kindIs "invalid" $raw) -}}
+{{- $enabled := $raw | toString -}}
+{{- if not (has $enabled (list "true" "false")) -}}
+{{- fail (printf "\n\nERROR: api.configmap.IDP_DECLARATION_ENABLED must be \"true\" or \"false\"; got %q.\n" $enabled) -}}
+{{- end }}
+IDP_DECLARATION_ENABLED: {{ $enabled | quote }}
+{{- if eq $enabled "true" -}}
+{{- $src := fromYaml (include "plugin-br-pix-jd.declarationSources" .root) -}}
+{{- $ownSecret := include "plugin-br-pix-jd.rendersOwnSecret" (dict "comp" .root.Values.api) -}}
+{{- $missing := list -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" .root | fromJsonArray) -}}
+{{- $v := index $src $k -}}
+{{- if and $ownSecret (not $v.cfg) (not $v.sec) -}}{{- $missing = append $missing $k -}}{{- end -}}
+{{- end -}}
+{{- $extra := .root.Values.api.extraConfigmap | default dict -}}
+{{- $auth := ternary (index $extra "PLUGIN_AUTH_ENABLED") .authEnabled (hasKey $extra "PLUGIN_AUTH_ENABLED") -}}
+{{- if ne ($auth | default "false" | toString) "true" -}}{{- $missing = append $missing "PLUGIN_AUTH_ENABLED=true" -}}{{- end -}}
+{{- if $missing -}}
+{{- fail (printf "\n\nERROR: IDP_DECLARATION_ENABLED=true requires %s.\nSet each in api.configmap or api.secrets (or their extra* overrides). The app refuses to\nboot without them: it cannot publish its permissions to the Access Manager.\n" (join ", " $missing)) -}}
+{{- end -}}
+{{- /* The Secret is mounted after the ConfigMap, so a secret value is the one the app reads. */ -}}
+{{- $host := (index $src "IDP_HOST").sec | default (index $src "IDP_HOST").cfg -}}
+{{- if and $host (not (hasPrefix "<path:" $host)) (not (regexMatch "^https?://[^/@?#[:space:]]+(/.*)?$" $host)) -}}
+{{- fail "\n\nERROR: IDP_HOST must be an absolute http(s) URL with a host and no user credentials.\nThe app refuses any other value at boot.\n" -}}
+{{- end -}}
+{{- range $k := (list "IDP_HOST" "IDP_M2M_CLIENT_ID") -}}
+{{- with (index $src $k).cfg }}
+{{ $k }}: {{ . | quote }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/* declarationSecrets — IDP_HOST, IDP_M2M_CLIENT_ID and IDP_M2M_CLIENT_SECRET from
+api.secrets as `KEY: <b64>` lines; the caller nindents under `data:`. A key in
+api.extraSecrets wins and is emitted by the extraSecrets loop, so this helper then
+emits nothing for it: each key appears once. Input: root context ($). */}}
+{{- define "plugin-br-pix-jd.declarationSecrets" -}}
+{{- $src := fromYaml (include "plugin-br-pix-jd.declarationSources" .) -}}
+{{- $lines := list -}}
+{{- range $k := (include "plugin-br-pix-jd.declarationKeys" . | fromJsonArray) -}}
+{{- $v := index $src $k -}}
+{{- if and $v.sec (not $v.extraSec) -}}
+{{- $lines = append $lines (printf "%s: %s" $k ($v.sec | b64enc | quote)) -}}
+{{- end -}}
+{{- end -}}
+{{- join "\n" $lines -}}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
 workerCronEnv — the worker's own surface: cron cadence and the stuck-order threshold.
 Input dict: root, configmap.
 ------------------------------------------------------------------------------
@@ -897,7 +1066,7 @@ Input dict: root, comp (the component values block).
 {{- $s := mergeOverwrite (deepCopy $api) $own -}}
 {{- $mt := eq (index (.root.Values.api.configmap | default dict) "MULTI_TENANT_ENABLED" | default "false" | toString) "true" -}}
 {{- $lines := list -}}
-{{- range $k := (list "JD_CLIENT_ID" "JD_SECRET" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "SENDGRID_API_KEY" "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN" "POSTGRES_REPLICA_PASSWORD" "RABBITMQ_URL" "RABBITMQ_DEFAULT_PASS") -}}
+{{- range $k := (list "JD_CLIENT_ID" "JD_SECRET" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "COURIER_CLIENT_ID" "COURIER_CLIENT_SECRET" "SENDGRID_API_KEY" "TWILIO_ACCOUNT_SID" "TWILIO_AUTH_TOKEN" "POSTGRES_REPLICA_PASSWORD" "RABBITMQ_URL" "RABBITMQ_DEFAULT_PASS") -}}
 {{- with (index $s $k) -}}
 {{- $lines = append $lines (printf "%s: %s" $k (. | b64enc | quote)) -}}
 {{- end -}}
@@ -965,7 +1134,7 @@ Input dict: root, configmap.
 {{- end }}
 {{ include "lerian-common.multiTenant.envFlat" (dict
       "configmap" $cm
-      "keys" (list "MULTI_TENANT_URL" "MULTI_TENANT_ALLOW_INSECURE_HTTP"
+      "keys" (list "MULTI_TENANT_URL"
                    "MULTI_TENANT_MAX_TENANT_POOLS" "MULTI_TENANT_IDLE_TIMEOUT_SEC"
                    "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
                    "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS"
@@ -1056,7 +1225,7 @@ STREAMING_CLOSE_TIMEOUT_S: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $
 {{ include "lerian-common.streaming.env" (dict
       "context" $root "enabled" true "configmap" $cm
       "clientId" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "STREAMING_CLIENT_ID" "default" "plugin-br-pix-jd"))
-      "cloudeventsSource" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "STREAMING_CLOUDEVENTS_SOURCE" "default" "//lerian.midaz/plugin-br-pix-jd"))) }}
+      "cloudeventsSource" (include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "STREAMING_CLOUDEVENTS_SOURCE" "default" "plugin-br-pix-jd"))) }}
 {{- end }}
 {{- end }}
 

@@ -8,10 +8,10 @@
 #   adapter-provider-mock/api BTG provider mock (dev/staging only)
 #   dict/hub/api             DICT hub (key directory operations)
 #   dict/hub/vsync           DICT verification sync worker
-#   dict/proxy/api           DICT proxy to BCB
+#   dict/proxy/api           DICT proxy to BCB (structural only; ships disabled)
 #   dict/systemplane/api     Runtime config plane for DICT
 #   cob/hub/api              COB hub (BR Code / charge operations)
-#   cob/proxy/api            COB proxy to BCB
+#   cob/proxy/api            COB proxy to BCB (structural only; ships disabled)
 #   cob/systemplane/api      Runtime config plane for COB
 #   adapter-lerian/api       Lerian provider adapter (br-sfn)
 #   adapter-lerian/systemplane/api  Runtime config plane for adapter-lerian
@@ -706,7 +706,12 @@ dictHubVsync:
 # dict/proxy/api — DICT proxy to BCB (BaseConfig only)
 # -----------------------------------------------------------------------------
 dictProxy:
-  enabled: true
+  # -- Ships DISABLED. The proxy tier is structural only in this release: it serves
+  # health, readyz and an OpenAPI document with no operations, and answers 404 to
+  # every business request while its probes stay green. The supported topology is
+  # hub-only (README, "Production quickstart"). Enable it only if your provider
+  # topology requires the tier to exist, and never route client traffic to it.
+  enabled: false
   name: "dict-proxy"
   description: "DICT proxy to BCB"
   replicaCount: 1
@@ -1013,7 +1018,12 @@ cobHub:
 # -----------------------------------------------------------------------------
 
 cobProxy:
-  enabled: true
+  # -- Ships DISABLED. The proxy tier is structural only in this release: it serves
+  # health, readyz and an OpenAPI document with no operations, and answers 404 to
+  # every business request while its probes stay green. The supported topology is
+  # hub-only (README, "Production quickstart"). Enable it only if your provider
+  # topology requires the tier to exist, and never route client traffic to it.
+  enabled: false
   name: "cob-proxy"
   description: "COB proxy to BCB"
   replicaCount: 1
@@ -1299,6 +1309,8 @@ appsIngress:
       pathType: Prefix
       component: dictHub
       serviceName: dict-hub
+    # The two proxy routes below stay listed but render nothing while dictProxy /
+    # cobProxy are disabled (the chart skips routes whose component is disabled).
     - path: /dict-proxy
       pathType: Prefix
       component: dictProxy
@@ -1556,10 +1568,12 @@ adapterLerianSystemplane:
 # Job below is the app's only one and lives on this API component.
 # -----------------------------------------------------------------------------
 pixauto:
-  # Onboarding default, same as adapter-lerian: the component ships in the chart
-  # so the release pipeline's `.pixauto.image.tag` key resolves, and each
-  # environment opts in once its `pix-pixauto` database and DSN secret exist.
-  enabled: false
+  # Enabled by default: Pix Automático ships on in the cohort. An environment
+  # upgrading into this default gets the pixauto workloads, so its `pix-pixauto`
+  # database, the `DATABASE_URL` / `SYSTEMPLANE_POSTGRES_DSN` secret and the
+  # systemplane master key must exist BEFORE the upgrade. Set `enabled: false`
+  # to opt a lane out.
+  enabled: true
   name: "pixauto"
   description: "Pix Automático payer API"
   replicaCount: 1
@@ -1650,8 +1664,16 @@ pixauto:
   #    protected values source or useExistingSecret. DATABASE_URL is a
   #    composed URI consumed by the migration Job (and parsed by the
   #    wait-for-dependencies init container) -- NOT app-runtime config.
+  #    DATABASE_READ_REPLICA is an optional composed DSN for the read-replica
+  #    pool (app-runtime; blank keeps a single pool). ADAPTER_CLIENT_SECRET and
+  #    CRM_CLIENT_SECRET are the v1.1.0 M2M secrets -- ADAPTER_CLIENT_SECRET is
+  #    REQUIRED (with ADAPTER_CLIENT_ID) once REGULATORY_DISPATCH_ENABLED=true in
+  #    a non-local ENV_NAME, or the app refuses to boot.
   #    The cache is configured through the discrete REDIS_* keys.
   secrets:
+    ADAPTER_CLIENT_SECRET: ""
+    CRM_CLIENT_SECRET: ""
+    DATABASE_READ_REPLICA: ""
     DATABASE_URL: ""
     IDP_M2M_CLIENT_SECRET: ""
     LICENSE_KEY: ""
@@ -1688,7 +1710,10 @@ pixauto:
 # against the SAME database. No migration Job — see pixauto.migrations above.
 # -----------------------------------------------------------------------------
 pixautoSystemplane:
-  enabled: false
+  # Enabled by default alongside pixauto: it is the sole writer of the pixauto
+  # systemplane store the API reads. Requires SYSTEMPLANE_SECRET_MASTER_KEY and
+  # the pix-pixauto DSN before upgrade. Set `enabled: false` to opt a lane out.
+  enabled: true
   name: "pixauto-systemplane"
   description: "Runtime config plane for Pix Automático"
   replicaCount: 1

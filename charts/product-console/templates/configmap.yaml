@@ -45,9 +45,13 @@ data:
   {{- end -}}
   NEXTAUTH_URL: {{ $cm.NEXTAUTH_URL | default ($ingressOrigin | default "http://localhost:8081") | quote }}
   {{- /* ALLOWED_ORIGINS (CSV) gates the app's own CSRF guard (rejects every
-     mutating request outside /api/auth/* when unset) — not part of any
-     lerian-common mask; defaults to the same origin as NEXTAUTH_URL since
-     that's virtually always what operators want (the app calling itself). */}}
+     mutating request outside its small public allow-list, /api/auth/* among
+     them, when empty) — not part of any lerian-common mask. It defaults to
+     the ingress origin ($ingressOrigin, "https://<first ingress host>"), NOT
+     to NEXTAUTH_URL: NEXTAUTH_URL falls back to http://localhost:8081 when
+     there is no ingress host, ALLOWED_ORIGINS falls back to empty, and an
+     empty value blocks every write. Set it explicitly whenever there is no
+     ingress host or the browser-facing origin differs from it. */}}
   ALLOWED_ORIGINS: {{ $cm.ALLOWED_ORIGINS | default $ingressOrigin | quote }}
   {{- /* Client IP resolution. TRUSTED_PROXIES used to be reachable only
      through extraEnvVars, and still is from there, so existing installs are
@@ -131,12 +135,18 @@ data:
 
   # Reporter Configuration
   REPORTER_BASE_PATH: {{ $cm.REPORTER_BASE_PATH | default "http://reporter-manager.reporter.svc.cluster.local:4005/v1" | quote }}
-  {{- /* Optional sibling services: Flowker, Tracer.
+  {{- /* Optional sibling services: Flowker, Lender, Matcher, Tracer.
      No shipped default on purpose: unlike the ledger and the Access
-     Manager, these two are optional deployments. A default address would make
+     Manager, these are optional deployments. A default address would make
      the console call a service that may not exist, turning "feature not
      installed" into a connection error on the page. */}}
   {{- with (include $opt (dict "cm" $cm "key" "FLOWKER_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "LENDER_BASE_PATH")) }}
+  {{ . }}
+  {{- end }}
+  {{- with (include $opt (dict "cm" $cm "key" "MATCHER_BASE_PATH")) }}
   {{ . }}
   {{- end }}
   {{- with (include $opt (dict "cm" $cm "key" "TRACER_BASE_PATH")) }}

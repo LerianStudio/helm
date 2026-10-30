@@ -1,4 +1,5 @@
 {{- if .Values.rabbitmq.enabled }}
+{{- include "midaz.rabbitmqErlangCookieRequired" . }}
 {{- $pass := .Values.ledger.secrets }}
 {{- if .Values.ledger.useExistingSecret }}
 {{- $pass = dict }}
@@ -17,8 +18,9 @@ apiVersion: v1
 metadata:
   name: "midaz-rabbitmq-load-definition"
 data:
-  {{- /* The bundled broker imports this at every boot: a permission for a user the file lacks fails the boot. */}}
-  load_definition.json: {{ $defs | toJson | b64enc | quote }}
+  {{- /* The bundled broker imports this at every boot: a permission for a user the file lacks fails the boot.
+       toRawJson keeps < and > as is: toJson escapes them, so a <path:...> placeholder in the passwords never resolves. */}}
+  load_definition.json: {{ $defs | toRawJson | b64enc | quote }}
   {{- if $defs.users }}
   transaction-password: {{ $pass.RABBITMQ_DEFAULT_PASS | b64enc | quote }}
   {{- end }}

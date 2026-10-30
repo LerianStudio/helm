@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v1.3.2 to v1.3.3
 
 ## Topics ToC
@@ -218,3 +219,4 @@ helm diff upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-c
 ```bash
 helm upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-common-helm --version 1.3.3 -n lerian-common
 ```
+<!-- {% endraw %} -->

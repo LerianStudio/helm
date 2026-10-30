@@ -1,0 +1,34 @@
+{{- if .Values.brSisbajud.enabled -}}
+{{- include "br-sisbajud.validate" . -}}
+{{- /* Chart-modeled keys (templates/_helpers.tpl br-sisbajud.configmapData), then
+   the escape hatch: any other brSisbajud.configmap key is emitted verbatim,
+   except the keys app 1.x no longer reads (br-sisbajud.removedKeys). */ -}}
+{{- $body := include "br-sisbajud.configmapData" . -}}
+{{- $emitted := fromYaml $body -}}
+{{- $removed := include "br-sisbajud.removedKeys" . | fromJsonArray -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "br-sisbajud.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud.labels" . | nindent 4 }}
+data:
+  {{- range $line := splitList "\n" $body }}
+  {{- if trim $line }}
+  {{ $line }}
+  {{- end }}
+  {{- end }}
+  {{- $extra := list }}
+  {{- range $k, $v := (.Values.brSisbajud.configmap | default dict) }}
+  {{- if and (not (hasKey $emitted $k)) (not (has $k $removed)) }}
+  {{- $extra = append $extra $k }}
+  {{- end }}
+  {{- end }}
+  {{- if $extra }}
+  # --- Escape hatch: brSisbajud.configmap keys not modeled by the chart ----------
+  {{- range $k := $extra }}
+  {{ $k }}: {{ index $.Values.brSisbajud.configmap $k | toString | quote }}
+  {{- end }}
+  {{- end }}
+{{- end -}}

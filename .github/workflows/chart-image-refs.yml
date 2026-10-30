@@ -109,7 +109,7 @@ jobs:
       - name: Verify referenced images exist
         id: refs
         continue-on-error: true
-        uses: LerianStudio/github-actions-shared-workflows/src/validate/helm-image-refs@tier-2
+        uses: LerianStudio/shared-workflows-public/src/validate/helm-image-refs@tier-1
         with:
           chart-path: charts/${{ matrix.chart }}
           values-file: .github/configs/helm-render-values/${{ matrix.chart }}.yaml
@@ -323,13 +323,13 @@ jobs:
       # and skipped counts as a pass. Without this the check would go green on a
       # run that never looked at a single chart.
       - name: Gate on the scope result
-        uses: LerianStudio/github-actions-shared-workflows/src/validate/result-gate@tier-2
+        uses: LerianStudio/shared-workflows-public/src/validate/result-gate@tier-1
         with:
           result: ${{ needs.scope.result }}
           label: Chart scope detection
 
       - name: Gate on the verification result
-        uses: LerianStudio/github-actions-shared-workflows/src/validate/result-gate@tier-2
+        uses: LerianStudio/shared-workflows-public/src/validate/result-gate@tier-1
         with:
           result: ${{ needs.verify.result }}
           label: Chart image references

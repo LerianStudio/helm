@@ -39,10 +39,26 @@ The Reporter plugin provides a flexible document templating system that enables 
 
 ## Prerequisites
 
-- Kubernetes 1.19+
+- Kubernetes 1.19+ (1.27+ with the default pod-spread preset, see [Pod Spreading](#pod-spreading-globalschedulingspread); the chart does not set `kubeVersion`, so Helm does not enforce this)
 - Helm 3.2.0+
 - KEDA 2.0+ (can be installed by the chart or externally)
 - PV provisioner support in the underlying infrastructure (for MongoDB, SeaweedFS, and RabbitMQ persistence)
+
+## Release Name and Namespace
+
+The in-cluster defaults for the bundled dependencies are fixed strings in
+`<svc>.reporter.svc.cluster.local` form: `MONGO_HOST`, `RABBITMQ_HOST`,
+`RABBITMQ_HEALTH_CHECK_URL`, `REDIS_HOST` and `OBJECT_STORAGE_ENDPOINT` in the
+ConfigMaps, and the RabbitMQ host the KEDA `ScaledJob` trigger uses. The bundled
+MongoDB, RabbitMQ and Valkey Services are named after the release
+(`<release>-mongodb`, `<release>-rabbitmq`, `<release>-valkey`), while the
+SeaweedFS Service keeps the fixed name `seaweedfs-s3`. The defaults therefore match
+only when the release is named `reporter` and installed in the `reporter`
+namespace (as in the commands below). With another release name, override the
+MongoDB, RabbitMQ and Valkey hosts through `global.datastores.*` (or the matching
+`common.configmap` keys); with another namespace, override those same three hosts
+(they also hardcode the `reporter` namespace) and `global.objectStorage.s3.endpoint`. Otherwise the manager and worker will not reach
+the bundled dependencies.
 
 ## Installing the Chart
 
@@ -119,6 +135,77 @@ render-equivalent for the bundled dev topology (no override needed) unless noted
 unintentional short-name drift was caught in review) are unchanged from the
 pre-adoption defaults — kept byte-identical for existing installs.
 
+### Pod Spreading (`global.scheduling.spread`)
+
+Every Deployment of this chart (the manager, and the worker when it runs as a
+Deployment with `keda.enabled=false`) renders `topologySpreadConstraints` from the
+`lerian-common` spread preset. The default is
+**soft** (`ScheduleAnyway`) across nodes, so replicas are spread across nodes (e.g. spot nodes)
+whenever possible, but a pod is never left `Pending` because of it.
+
+Zone spreading is **off** by default (`zone: ""`). When scoring a soft spread, the
+scheduler skips every node that lacks the `topology.kubernetes.io/zone` label, so on
+clusters without zone labels (bare-metal, k3s) a zone constraint silently cancels the
+node spread. Turn it on (`zone: ScheduleAnyway`) where every node carries zone labels
+(EKS, GKE, AKS).
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
+      maxSkew: 1               # integer >= 1
+      minDomains: 0            # DoNotSchedule constraints only; 0 = off
+      nodeTaintsPolicy: ""     # Honor | Ignore | "" (Kubernetes default Ignore)
+manager:
+  spread: { hostname: DoNotSchedule }  # field-level override of the global preset
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
+```
+
+On EKS + Karpenter use a hard node spread:
+
+```yaml
+global:
+  scheduling:
+    spread:
+      hostname: DoNotSchedule
+      zone: ScheduleAnyway
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: Honor
+```
+
+`minDomains: 2` is required with `DoNotSchedule`. Skew is measured only against nodes
+that already exist, so on a single eligible node all replicas would otherwise share
+it. With fewer than 2 nodes the extra replica stays `Pending` until Karpenter launches
+another node. `nodeTaintsPolicy: Honor` stops tainted nodes (for example a node being
+drained) from counting as domains.
+
+Precedence: `<component>.topologySpreadConstraints` (non-empty, wins entirely) >
+`<component>.spread.<field>` > `global.scheduling.spread.<field>` > off. Each
+preset constraint selects only the component's own pods
+(`labelSelector` = the Deployment's `spec.selector.matchLabels`) of the same
+ReplicaSet (`matchLabelKeys: [pod-template-hash]`), so a rolling update is never
+blocked by the old ReplicaSet's pods, even with `DoNotSchedule`. Requires
+Kubernetes >= 1.27 (`matchLabelKeys`, beta since 1.27 and enabled by default);
+on 1.19–1.26 set `global.scheduling.spread.enabled: false`, leave every
+`<component>.spread.enabled` unset or `false` (both override the global switch). Raw
+`<component>.topologySpreadConstraints` must also respect the cluster version: omit
+`matchLabelKeys` (needs 1.27+), `minDomains` (GA in 1.30) and `nodeTaintsPolicy` /
+`nodeAffinityPolicy` (on by default since 1.26) on older clusters, or the API
+rejects or drops them. Use `DoNotSchedule` only when
+the cluster can always provide enough distinct nodes/zones for the replica count
+(a hard constraint leaves extra pods `Pending` otherwise). The KEDA `ScaledJob`
+worker (the default) is a Job and is not spread.
+
+**Upgrade note:** the preset is on by default, so upgrading to the chart version
+that introduces it adds `topologySpreadConstraints` to the manager (and the
+Deployment-mode worker) pod template and triggers **one rolling restart** of
+those Deployments. No values change is required. To keep the previous pod
+template exactly, set `global.scheduling.spread.enabled: false`.
+
 ### Common Settings
 
 | Parameter | Description | Default |
@@ -132,7 +219,7 @@ pre-adoption defaults — kept byte-identical for existing installs.
 |-----------|-------------|---------|
 | `manager.replicaCount` | Number of manager replicas | `1` |
 | `manager.image.repository` | Manager image repository | `ghcr.io/lerianstudio/reporter-manager` |
-| `manager.image.tag` | Manager image tag | `1.2.0` |
+| `manager.image.tag` | Manager image tag | `4.5.0` |
 | `manager.image.pullPolicy` | Manager image pull policy | `IfNotPresent` |
 | `manager.service.type` | Kubernetes Service type | `ClusterIP` |
 | `manager.service.port` | Service HTTP port | `4005` |
@@ -147,8 +234,10 @@ pre-adoption defaults — kept byte-identical for existing installs.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `worker.image.repository` | Worker image repository | `ghcr.io/lerianstudio/reporter-worker` |
-| `worker.image.tag` | Worker image tag | `1.2.0` |
+| `worker.image.tag` | Worker image tag | `4.5.0` |
 | `worker.image.pullPolicy` | Worker image pull policy | `IfNotPresent` |
+| `worker.service.port` | Service port. It forwards to the worker health server (`worker.configmap.HEALTH_PORT`). The Service has endpoints only when the worker runs as a Deployment (`keda.enabled=false` and `keda.external=false`); the default KEDA `ScaledJob` has no Service endpoints | `80` |
+| `worker.configmap.HEALTH_PORT` | Worker health server port: container port, Service target and probe port | `4006` |
 | `worker.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `worker.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `worker.existingSecretName` | Name of the existing secret to use | `""` |
@@ -164,6 +253,18 @@ pre-adoption defaults — kept byte-identical for existing installs.
 | `valkey.enabled` | Enable or disable Valkey (Redis) deployment | `true` |
 | `keda.enabled` | Enable or disable KEDA operator deployment | `true` |
 | `keda.external` | Use an externally installed KEDA operator | `false` |
+
+### Access Manager Permission Declaration (manager)
+
+The manager publishes its permission manifest to the Access Manager at boot (lib-auth
+`declaration.WireFromEnv`) when `IDP_DECLARATION_ENABLED="true"`; with the flag on it refuses
+to start without `IDP_HOST` and the client pair. The worker never declares.
+
+| Key | Where | Rendered |
+|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `manager.configmap` > `manager.extraEnvVars` (legacy) > `common.configmap` > `global.idp.declarationEnabled` | always, default `"false"` |
+| `IDP_HOST` | same precedence, with `global.idp.host` | only when set |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | top-level `secrets` | manager Secret only, each only when set |
 
 ## Secrets Management
 
@@ -358,6 +459,13 @@ secrets:
   CRYPTO_ENCRYPT_SECRET_KEY_CRM: "<crm-encryption-key>"
 ```
 
+> **Production worker:** the worker app (4.5.0) refuses to start with
+> `ENV_NAME=production` unless `CRYPTO_HASH_SECRET_KEY_CRM` and
+> `CRYPTO_ENCRYPT_SECRET_KEY_CRM` are non-empty, even when no CRM datasource is
+> declared. The chart requires these two keys only when CRM is declared, so a
+> production install without CRM must still set both under `secrets:` (or in the
+> external worker Secret); the render does not check this.
+
 Do not replace or rotate `DATASOURCE_CRED_ENC_KEY` as part of this setup. With
 `manager.useExistingSecret` or `worker.useExistingSecret`, Helm cannot inspect
 the external Secret; provide the same CRM keys in each selected external Secret.
@@ -469,6 +577,18 @@ kubectl port-forward svc/reporter-manager 4005:4005 -n reporter
 ```
 
 Then access: http://localhost:4005
+
+### Health Endpoints
+
+| Component | Port | Liveness probe | Readiness probe | Also |
+|-----------|------|----------------|-----------------|------|
+| Manager | `manager.service.port` (`4005`) | `/health` | `/readyz` | `/version` |
+| Worker | `worker.configmap.HEALTH_PORT` (`4006`) | `/health` | `/readyz` | `/version` |
+
+`/readyz` reports non-200 while a dependency is down. The probe paths are set with
+`<component>.livenessProbe.path` and `<component>.readinessProbe.path`. The
+default worker is a KEDA `ScaledJob`, which defines no probes; the probes above
+apply to the worker Deployment (`keda.enabled=false` and `keda.external=false`).
 
 ## API Documentation
 

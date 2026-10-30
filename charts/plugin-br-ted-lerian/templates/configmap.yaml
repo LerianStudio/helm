@@ -1,0 +1,177 @@
+{{- if (index .Values "plugin-br-ted-lerian").enabled }}
+{{/*
+Bundled-infra host defaults. Precedence is unchanged and still handled by
+lerian-common.datastore.value: an explicit boilerplate.configmap.* wins, then
+the global.datastores mask. These only replace the final "localhost" fallback,
+so enabling a subchart needs no host configuration at all, while an external
+deployment behaves exactly as before.
+*/}}
+{{- $pgDefault := "localhost" -}}
+{{- if and (ne (toString (dig "enabled" false .Values.postgresql)) "false") (not (dig "external" false .Values.postgresql)) -}}
+{{/*
+In replication mode the subchart publishes <fullname>-<primary.name> and
+<fullname>-read; there is NO bare <fullname> Service, so the standalone name
+would point at something that does not exist.
+*/}}
+{{- $pgName := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .) -}}
+{{- if eq (dig "architecture" "standalone" .Values.postgresql) "replication" -}}
+{{- $pgName = printf "%s-%s" $pgName (dig "primary" "name" "primary" .Values.postgresql) -}}
+{{- end -}}
+{{- $pgDefault = printf "%s.%s.svc.cluster.local" $pgName (include "global.namespace" .) -}}
+{{- end -}}
+{{- $redisDefault := "localhost:6379" -}}
+{{- if and (ne (toString (dig "enabled" false .Values.valkey)) "false") (not (dig "external" false .Values.valkey)) -}}
+{{- $redisDefault = printf "%s-primary.%s.svc.cluster.local:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) (include "global.namespace" .) -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "plugin-br-ted-lerian.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name) | nindent 4 }}
+data:
+  # =============================================================================
+  # APP
+  # =============================================================================
+  ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "ENV_NAME" "params" (index .Values "plugin-br-ted-lerian") "field" "env" "default" "production") | quote }}
+  LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "LOG_LEVEL" "params" (index .Values "plugin-br-ted-lerian") "field" "logLevel" "default" "info") | quote }}
+  SERVER_ADDRESS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "SERVER_ADDRESS" "params" (index .Values "plugin-br-ted-lerian") "field" "serverAddress" "default" ":8080") | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "HTTP_BODY_LIMIT_BYTES" "params" (index .Values "plugin-br-ted-lerian") "field" "httpBodyLimitBytes" "default" "104857600") | quote }}
+  {{- $insecureTls := include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "ALLOW_INSECURE_TLS" "params" (index .Values "plugin-br-ted-lerian") "field" "allowInsecureTls" "default" "") }}
+  {{- if $insecureTls }}
+  ALLOW_INSECURE_TLS: {{ $insecureTls | quote }}
+  {{- end }}
+
+  # =============================================================================
+  # CORS
+  # =============================================================================
+  CORS_ALLOWED_ORIGINS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "CORS_ALLOWED_ORIGINS" "params" (index .Values "plugin-br-ted-lerian").cors "field" "allowedOrigins" "default" "*") | quote }}
+  CORS_ALLOWED_METHODS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "CORS_ALLOWED_METHODS" "params" (index .Values "plugin-br-ted-lerian").cors "field" "allowedMethods" "default" "GET,POST,PUT,PATCH,DELETE,OPTIONS") | quote }}
+  CORS_ALLOWED_HEADERS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "CORS_ALLOWED_HEADERS" "params" (index .Values "plugin-br-ted-lerian").cors "field" "allowedHeaders" "default" "Origin,Content-Type,Accept,Authorization,X-Request-ID") | quote }}
+
+  # =============================================================================
+  # TLS / TENANCY
+  # =============================================================================
+  TLS_TERMINATED_UPSTREAM: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "TLS_TERMINATED_UPSTREAM" "params" (index .Values "plugin-br-ted-lerian") "field" "tlsTerminatedUpstream" "default" "true") | quote }}
+  DEFAULT_TENANT_ID: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "DEFAULT_TENANT_ID" "params" (index .Values "plugin-br-ted-lerian") "field" "defaultTenantId" "default" "11111111-1111-1111-1111-111111111111") | quote }}
+
+  # =============================================================================
+  # POSTGRESQL — connection host/user/port/ssl via global.datastores.postgres mask
+  # =============================================================================
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" $pgDefault) | quote }}
+  POSTGRES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432") | quote }}
+  POSTGRES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "plugin-br-ted-lerian") | quote }}
+  POSTGRES_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "POSTGRES_NAME" "params" (index .Values "plugin-br-ted-lerian").database "field" "name" "default" "plugin-br-ted-lerian") | quote }}
+  POSTGRES_SSLMODE: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable") | quote }}
+  MIGRATIONS_PATH: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "MIGRATIONS_PATH" "params" (index .Values "plugin-br-ted-lerian").database "field" "migrationsPath" "default" "migrations") | quote }}
+  # Connection pool
+  POSTGRES_MAX_OPEN_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "POSTGRES_MAX_OPEN_CONNS" "params" (index .Values "plugin-br-ted-lerian").database "field" "maxOpenConns" "default" "25") | quote }}
+  POSTGRES_MAX_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "POSTGRES_MAX_IDLE_CONNS" "params" (index .Values "plugin-br-ted-lerian").database "field" "maxIdleConns" "default" "5") | quote }}
+  POSTGRES_CONN_MAX_LIFETIME_MINS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "POSTGRES_CONN_MAX_LIFETIME_MINS" "params" (index .Values "plugin-br-ted-lerian").database "field" "connMaxLifetimeMins" "default" "30") | quote }}
+  POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "POSTGRES_CONN_MAX_IDLE_TIME_MINS" "params" (index .Values "plugin-br-ted-lerian").database "field" "connMaxIdleTimeMins" "default" "5") | quote }}
+  POSTGRES_CONNECT_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "POSTGRES_CONNECT_TIMEOUT_SEC" "params" (index .Values "plugin-br-ted-lerian").database "field" "connectTimeoutSec" "default" "10") | quote }}
+
+  # =============================================================================
+  # REDIS — connection host via global.datastores.redis mask; tuning below
+  # =============================================================================
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" $redisDefault) | quote }}
+  REDIS_DB: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_DB" "params" (index .Values "plugin-br-ted-lerian").redis "field" "db" "default" "0") | quote }}
+  REDIS_PROTOCOL: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_PROTOCOL" "params" (index .Values "plugin-br-ted-lerian").redis "field" "protocol" "default" "3") | quote }}
+  REDIS_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_POOL_SIZE" "params" (index .Values "plugin-br-ted-lerian").redis "field" "poolSize" "default" "10") | quote }}
+  REDIS_MIN_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_MIN_IDLE_CONNS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "minIdleConns" "default" "2") | quote }}
+  REDIS_READ_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_READ_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "readTimeoutMs" "default" "3000") | quote }}
+  REDIS_WRITE_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_WRITE_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "writeTimeoutMs" "default" "3000") | quote }}
+  REDIS_DIAL_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_DIAL_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "dialTimeoutMs" "default" "5000") | quote }}
+
+  # =============================================================================
+  # AUTH — resolved from the global.auth contract (configmap overrides)
+  # =============================================================================
+  {{- include "lerian-common.auth.env" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
+
+  # Infrastructure boot timeout
+  INFRA_CONNECT_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "INFRA_CONNECT_TIMEOUT_SEC" "params" (index .Values "plugin-br-ted-lerian") "field" "infraConnectTimeoutSec" "default" "30") | quote }}
+
+  # =============================================================================
+  # OPEN TELEMETRY — identity (library/service name/version) stays chart-local,
+  # productized via boilerplate.otel. enable + endpoint + deployment env resolve
+  # through the shared global.observability contract (lerian-common.globalValue,
+  # block "observability"): native configmap key > global.observability.<field>
+  # > this component's own boilerplate.otel.* param > hardcoded default — so an
+  # env sets telemetry ONCE (global.observability) instead of per-component, and
+  # an install that sets neither renders byte-identical to before.
+  # =============================================================================
+  {{- $otelComponentEnabled := eq (dig "otel" "enabled" false (index .Values "plugin-br-ted-lerian") | toString) "true" }}
+  ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" $otelComponentEnabled) | quote }}
+  OTEL_LIBRARY_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "OTEL_LIBRARY_NAME" "params" (index .Values "plugin-br-ted-lerian").otel "field" "libraryName" "default" "github.com/LerianStudio/plugin-br-ted-lerian") | quote }}
+  OTEL_RESOURCE_SERVICE_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "OTEL_RESOURCE_SERVICE_NAME" "params" (index .Values "plugin-br-ted-lerian").otel "field" "serviceName" "default" "plugin-br-ted-lerian") | quote }}
+  OTEL_RESOURCE_SERVICE_VERSION: {{ (index .Values "plugin-br-ted-lerian").image.tag | default .Chart.AppVersion | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" (include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "params" (index .Values "plugin-br-ted-lerian").otel "field" "endpoint" "default" ""))) | quote }}
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "block" "observability" "field" "deploymentEnvironment" "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "default" (include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "params" (index .Values "plugin-br-ted-lerian").otel "field" "deploymentEnvironment" "default" "production"))) | quote }}
+
+  # =============================================================================
+  # RATE LIMITING
+  # =============================================================================
+  RATE_LIMIT_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "RATE_LIMIT_ENABLED" "params" (index .Values "plugin-br-ted-lerian").rateLimit "field" "enabled" "default" "true") | quote }}
+  RATE_LIMIT_MAX: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "RATE_LIMIT_MAX" "params" (index .Values "plugin-br-ted-lerian").rateLimit "field" "max" "default" "500") | quote }}
+  RATE_LIMIT_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "RATE_LIMIT_WINDOW_SEC" "params" (index .Values "plugin-br-ted-lerian").rateLimit "field" "windowSec" "default" "60") | quote }}
+
+  # =============================================================================
+  # SWAGGER / METRICS / IDEMPOTENCY
+  # =============================================================================
+  SWAGGER_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "SWAGGER_ENABLED" "params" (index .Values "plugin-br-ted-lerian").swagger "field" "enabled" "default" "true") | quote }}
+  SWAGGER_TITLE: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "SWAGGER_TITLE" "params" (index .Values "plugin-br-ted-lerian").swagger "field" "title" "default" "Plugin Br Ted Lerian") | quote }}
+  DB_METRICS_INTERVAL_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "DB_METRICS_INTERVAL_SEC" "params" (index .Values "plugin-br-ted-lerian") "field" "dbMetricsIntervalSec" "default" "15") | quote }}
+  IDEMPOTENCY_RETRY_WINDOW_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "IDEMPOTENCY_RETRY_WINDOW_SEC" "params" (index .Values "plugin-br-ted-lerian") "field" "idempotencyRetryWindowSec" "default" "300") | quote }}
+
+  # Auto-generated version
+  VERSION: {{ (index .Values "plugin-br-ted-lerian").image.tag | default .Chart.AppVersion | quote }}
+
+  # =============================================================================
+  # MULTI-TENANT — enable per-component; env-wide config from global.multiTenant
+  # =============================================================================
+  {{- $mtEnabled := eq (dig "multiTenant" "enabled" false (index .Values "plugin-br-ted-lerian") | toString) "true" }}
+  MULTI_TENANT_ENABLED: {{ $mtEnabled | quote }}
+  {{- with (include "lerian-common.multiTenant.env" (dict
+        "context" $
+        "configmap" (index .Values "plugin-br-ted-lerian").configmap
+        "enabled" $mtEnabled
+        "requiredUrl" true "requiredRedisHost" true
+        "emitRedis" true "emitPool" true "emitCache" true
+      )) }}{{ . | nindent 2 }}{{- end }}
+
+  # =============================================================================
+  # SERVICE DISCOVERY — enable per-component; server config from global.serviceDiscovery
+  # =============================================================================
+  {{- $sdEnabled := eq (dig "serviceDiscovery" "enabled" false (index .Values "plugin-br-ted-lerian") | toString) "true" }}
+  SD_ENABLED: {{ $sdEnabled | quote }}
+  {{- with (include "lerian-common.serviceDiscovery.env" (dict
+        "context" $
+        "enabled" $sdEnabled
+        "name" (include "plugin-br-ted-lerian.fullname" .)
+        "port" (index .Values "plugin-br-ted-lerian").service.port
+        "namespace" (include "global.namespace" $)
+        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" (index .Values "plugin-br-ted-lerian").ingress))
+      )) }}{{ . | nindent 2 }}{{- end }}
+
+  # =============================================================================
+  # STREAMING — enable per-component; broker/TLS/SASL from global.streaming.
+  # Identity passed explicitly (clientId/cloudeventsSource fall back to the name).
+  # =============================================================================
+  {{- $streamEnabled := eq (dig "streaming" "enabled" false (index .Values "plugin-br-ted-lerian") | toString) "true" }}
+  STREAMING_ENABLED: {{ $streamEnabled | quote }}
+  {{- with (include "lerian-common.streaming.env" (dict
+        "context" $
+        "enabled" $streamEnabled
+        "name" (index .Values "plugin-br-ted-lerian").name
+        "clientId" (dig "streaming" "clientId" (index .Values "plugin-br-ted-lerian").name (index .Values "plugin-br-ted-lerian"))
+        "cloudeventsSource" (dig "streaming" "cloudeventsSource" (index .Values "plugin-br-ted-lerian").name (index .Values "plugin-br-ted-lerian"))
+      )) }}{{ . | nindent 2 }}{{- end }}
+
+  # Extra Env Vars
+  {{- with (index .Values "plugin-br-ted-lerian").extraEnvVars }}
+  {{- range . }}
+  {{ .name }}: {{ .value | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

@@ -114,6 +114,9 @@ spec:
                 name: {{ $secretName }}
                 key: POSTGRES_PASSWORD
           {{- end }}
+          {{- if include "bc-correios.valkeyPasswordFromSubchart" . }}
+          {{- include "bc-correios.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" (include "bc-correios.valkeyPasswordKey" .) "envName" "CACHE_PASSWORD") | nindent 10 }}
+          {{- end }}
           {{- if eq (toString $component.configmap.TRACING_ENABLED) "true" }}
           - name: "HOST_IP"
             valueFrom:

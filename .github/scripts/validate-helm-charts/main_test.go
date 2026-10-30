@@ -14,23 +14,27 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Every product-console render below runs against a COPY of the chart with its
+// Every chart render below runs against a COPY of the chart with its
 // dependencies built, never against the working tree. .gitignore excludes
 // `**/*.tgz` and `**/charts/*/charts`, so a clean checkout carries no
-// lerian-common-helm or mongodb archive and every render would fail on a missing
-// dependency rather than on the chart under test. Built once per run, through
+// dependency archive and every render would fail on a missing dependency
+// rather than on the chart under test. Built once per chart per run, through
 // the same steps the render gate itself uses.
+type preparedChartState struct {
+	once sync.Once
+	root string
+	dir  string
+	err  error
+}
+
 var (
-	preparedChartOnce sync.Once
-	preparedChartRoot string
-	preparedChartDir  string
-	preparedChartErr  error
+	preparedChartsMu sync.Mutex
+	preparedCharts   = map[string]*preparedChartState{}
 )
 
-// The prepared chart directory holds a copy of charts/product-console, the two
-// dependency archives it builds (under 500 KB together) and the Bitnami
-// repository index isolatedHelmEnv writes next to them (about 27 MB), and the
-// sync.Once shares it
+// Each prepared chart directory holds a copy of charts/<name>, the dependency
+// archives it builds and the Bitnami repository index isolatedHelmEnv writes
+// next to them (about 27 MB), and the sync.Once shares it
 // across every render test, so no single test can clean it up: a t.Cleanup on
 // the first caller would delete it under the others. Removed here instead, once,
 // after the package has finished. CI runners are ephemeral; a developer box and
@@ -42,15 +46,18 @@ var (
 // chart.
 func TestMain(m *testing.M) {
 	code := m.Run()
-	if preparedChartRoot != "" {
-		if err := os.RemoveAll(preparedChartRoot); err != nil {
-			fmt.Fprintf(os.Stderr, "the prepared chart is still at %s: %v\n", preparedChartRoot, err)
+	for _, prepared := range preparedCharts {
+		if prepared.root == "" {
+			continue
+		}
+		if err := os.RemoveAll(prepared.root); err != nil {
+			fmt.Fprintf(os.Stderr, "the prepared chart is still at %s: %v\n", prepared.root, err)
 		}
 	}
 	os.Exit(code)
 }
 
-func preparedProductConsoleChart(t *testing.T) string {
+func preparedChart(t *testing.T, name string) string {
 	t.Helper()
 	if _, err := exec.LookPath("helm"); err != nil {
 		// Gated exactly like the dependency-build failure below, and for the
@@ -60,37 +67,44 @@ func preparedProductConsoleChart(t *testing.T) string {
 		// removed or fails soft would leave the refusals unguarded with nobody
 		// told. On a developer machine a missing helm is just a missing tool.
 		if os.Getenv("CI") != "" {
-			t.Fatalf("helm is not on PATH, so the charts/product-console render pins did not run: %v", err)
+			t.Fatalf("helm is not on PATH, so the charts/%s render pins did not run: %v", name, err)
 		}
 		t.Skip("helm not on PATH")
 	}
-	preparedChartOnce.Do(func() {
-		preparedChartDir, preparedChartErr = buildProductConsoleChart()
-	})
-	if preparedChartErr != nil {
-		// The build fetches lerian-common-helm from ghcr.io and mongodb from
-		// charts.bitnami.com. In CI that is a real failure and has to be red; on
-		// a developer machine with no network it is not the chart, so name the
-		// archives that are missing and skip instead of reporting a red that has
-		// nothing to do with the code under test.
-		if os.Getenv("CI") != "" {
-			t.Fatalf("building charts/product-console dependencies (lerian-common-helm, mongodb): %v", preparedChartErr)
-		}
-		t.Skipf("charts/product-console dependencies (lerian-common-helm, mongodb) could not be built: %v", preparedChartErr)
+	preparedChartsMu.Lock()
+	prepared, ok := preparedCharts[name]
+	if !ok {
+		prepared = &preparedChartState{}
+		preparedCharts[name] = prepared
 	}
-	return preparedChartDir
+	preparedChartsMu.Unlock()
+	prepared.once.Do(func() {
+		prepared.dir, prepared.err = buildPreparedChart(name, prepared)
+	})
+	if prepared.err != nil {
+		// The build fetches dependencies from ghcr.io and charts.bitnami.com. In
+		// CI that is a real failure and has to be red; on a developer machine
+		// with no network it is not the chart, so name the chart and skip
+		// instead of reporting a red that has nothing to do with the code under
+		// test.
+		if os.Getenv("CI") != "" {
+			t.Fatalf("building charts/%s dependencies: %v", name, prepared.err)
+		}
+		t.Skipf("charts/%s dependencies could not be built: %v", name, prepared.err)
+	}
+	return prepared.dir
 }
 
-func buildProductConsoleChart() (string, error) {
-	tmpRoot, err := os.MkdirTemp("", "product-console-render-*")
+func buildPreparedChart(name string, prepared *preparedChartState) (string, error) {
+	tmpRoot, err := os.MkdirTemp("", name+"-render-*")
 	if err != nil {
 		return "", err
 	}
 	// Recorded before anything else can fail, so TestMain still removes the
 	// directory when the dependency build gives up halfway through it.
-	preparedChartRoot = tmpRoot
-	chartDir := filepath.Join(tmpRoot, "product-console")
-	if err := copyDir(filepath.Join("..", "..", "..", "charts", "product-console"), chartDir); err != nil {
+	prepared.root = tmpRoot
+	chartDir := filepath.Join(tmpRoot, name)
+	if err := copyDir(filepath.Join("..", "..", "..", "charts", name), chartDir); err != nil {
 		return "", err
 	}
 	env, err := isolatedHelmEnv(tmpRoot)
@@ -230,7 +244,7 @@ spec:
 // names a host, and this pins both halves of that: it refuses without one, and
 // it renders with the very host the refusal prints.
 func TestProductConsoleRefusesAnUnnameableMongoHost(t *testing.T) {
-	chart := preparedProductConsoleChart(t)
+	chart := preparedChart(t, "product-console")
 	render := func(values ...string) (string, error) {
 		args := append([]string{"template", "product-console", chart, "-n", "product-console"}, values...)
 		out, err := exec.Command("helm", args...).CombinedOutput()
@@ -314,7 +328,7 @@ func TestProductConsoleRefusesAnUnnameableMongoHost(t *testing.T) {
 // shape is rendered here, and the remedy the notes print is then applied and
 // asserted to actually wire the password.
 func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
-	chart := preparedProductConsoleChart(t)
+	chart := preparedChart(t, "product-console")
 	// values.yaml pins namespaceOverride, so the console always lands here.
 	const consoleNs = "product-console"
 	const remedy = "--set global.namespaceOverride=" + consoleNs
@@ -400,7 +414,7 @@ func TestProductConsoleNamespaceSplitRemedy(t *testing.T) {
 // assertion pass, and the API server rejects the Deployment at apply time with
 // an error that names neither key, on an upgrade rather than at render.
 func TestProductConsoleRefusesAnExistingSecretWithNoName(t *testing.T) {
-	chart := preparedProductConsoleChart(t)
+	chart := preparedChart(t, "product-console")
 
 	// The values.yaml default, a name that is only whitespace, and an explicit
 	// null all reach the API server the same way: a secretRef with nothing

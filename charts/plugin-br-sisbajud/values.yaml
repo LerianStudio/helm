@@ -1,0 +1,469 @@
+# =============================================================================
+# plugin-br-sisbajud — SISBAJUD executor (single-service chart)
+#
+# One Go process: the executor runner (pulls orders from the Sisbajud
+# Mensageria, executes them on Midaz, posts results back), its HTTP API (:4029)
+# and the Streaming Hub webhook listener (:9082). The regulatory side (STA
+# intake, return files, BACEN) is NOT here: it is the Sisbajud Mensageria, a
+# br-sfn rail.
+#
+# Precedence for every application env key (lerian-common):
+#
+#   sisbajud.configmap.<KEY>          escape hatch: the native env key, wins
+#   > sisbajud.<group>.<field>        grouped chart parameter (cfgValue)
+#   > sisbajud.datastores / kms       dedicated connection masks
+#   > global.<block>.<field>          env-wide contract (set once per environment)
+#   > global.cloud preset             managed-cloud topology defaults
+#   > chart default                   lives in templates/_helpers.tpl
+#
+# With the defaults alone the chart does NOT render: the executor needs the
+# Mensageria URL (+ its server CA), its M2M identity, a license, a KMS and
+# PostgreSQL/Redis. Every missing piece fails the render with the exact key to
+# set. Start from values-template.yaml.
+# =============================================================================
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+
+# =============================================================================
+# global — env-wide contract (lerian-common). Empty by default.
+# =============================================================================
+global:
+  imagePullSecrets: []
+  # -- Managed-cloud topology preset: aws | gcp | azure ("" = self-managed).
+  cloud: ""
+  # -- Shared datastore masks. postgres: host | port | user | name | ssl |
+  #    replicaHost. redis: host | port | tls | caCert.
+  #    Example: datastores: { postgres: { host: "pg.internal", ssl: "require" }, redis: { host: "valkey.internal", tls: "true" } }
+  datastores: {}
+  # -- Observability: enabled | otlpEndpoint | deploymentEnvironment.
+  observability: {}
+  # -- Auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
+  #    PLUGIN_AUTH_HOST is also where the executor mints its Mensageria token.
+  auth: {}
+  # -- Multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls.
+  #    The executor serves ONE tenant (the notice transport is single-tenant).
+  multiTenant: {}
+  # -- KMS: vendor (hashicorp-vault | aws) | vaultAddr | vaultAuthMethod |
+  #    vaultRoleId | vaultMount | awsRegion.
+  #    plugin-br-sisbajud also reads awsKeyMode, awsKeyArn and awsCredentialsKeyArn
+  #    here when vendor=aws (precedence: sisbajud.kms > global.kms; see sisbajud.kms).
+  kms: {}
+
+# =============================================================================
+# sisbajud — the executor service.
+# =============================================================================
+sisbajud:
+  enabled: true
+  replicaCount: 1
+  revisionHistoryLimit: 10
+
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-sisbajud
+    # -- Defaults to Chart.appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  # -- Image of the wait-for-dependencies initContainer.
+  waitImage: busybox:1.37
+
+  podAnnotations: {}
+  # -- fsGroup lets the nonroot container read the mounted Mensageria TLS files (0440).
+  podSecurityContext:
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  # -- distroless static-debian12:nonroot (UID/GID 65532)
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  service:
+    type: ClusterIP
+    port: 4029
+    annotations: {}
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts: []
+    tls: []
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+  # -- Keep 1 replica: one runner per tenant and one webhook subscription.
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 1
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  pdb:
+    enabled: true
+    maxUnavailable: 1
+    annotations: {}
+
+  readinessProbe:
+    path: /readyz
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+  # -- /version (static build info, always 200): the app's /health answers 503
+  #    until its startup self-probe passes, and that self-probe stays degraded
+  #    while no institution is routed (executor_institutions), so a /health
+  #    liveness probe would restart a fresh install in a loop.
+  livenessProbe:
+    path: /version
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+
+  terminationGracePeriodSeconds: 30
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  # -- Raw topologySpreadConstraints (labelSelector defaults to this pod's
+  #    selector). When empty, the lerian-common `spread` preset below applies.
+  topologySpreadConstraints: []
+  # -- lerian-common spread preset (overrides global.scheduling.spread field by
+  #    field): enabled, hostname, zone, maxSkew, minDomains, nodeTaintsPolicy.
+  #    Example: spread: { enabled: true, hostname: ScheduleAnyway }
+  spread: {}
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  # -- Extra volumes / mounts (e.g. a CA bundle for REDIS_CA_CERT or Postgres).
+  extraVolumes: []
+  extraVolumeMounts: []
+
+  # ---------------------------------------------------------------------------
+  # Application
+  # ---------------------------------------------------------------------------
+  app:
+    # -- ENVIRONMENT_NAME / ENV_NAME. local | development | staging | e2e | test
+    #    relax the app's production gates; anything else is production-like.
+    environmentName: "production"
+    logLevel: "info"
+    # -- DEPLOYMENT_MODE: byoc | saas | local (saas enforces TLS on every dependency).
+    deploymentMode: "byoc"
+    # -- DEFAULT_TENANT_ID: the single-tenant id. MUST be a UUID.
+    defaultTenantId: "11111111-1111-1111-1111-111111111111"
+    systemplaneEnabled: "false"
+    infraConnectTimeoutSec: "30"
+
+  server:
+    bodyLimitBytes: "104857600"
+    tlsTerminatedUpstream: "false"
+
+  # -- CORS for the HTTP API (CORS_* and the ACCESS_CONTROL_* keys the lib-commons
+  #    middleware reads, from one resolution).
+  cors:
+    allowedOrigins: ""
+    allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    allowedHeaders: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
+    exposeHeaders: ""
+    allowCredentials: "false"
+
+  # -- ORGANIZATION_IDS. The app accepts only "global". LICENSE_KEY goes in secrets.
+  license:
+    organizationIds: "global"
+    # -- IS_DEVELOPMENT: "true" routes lib-license-go to the license DEV gateway
+    #    (for dev-issued keys). Unset = production gateway.
+    isDevelopment: ""
+
+  # ---------------------------------------------------------------------------
+  # Sisbajud Mensageria (execution contract). Setting baseUrl is what turns the
+  # process into the executor. The transport is always TLS; mutual TLS is
+  # optional (mtlsEnabled) and must match the Mensageria's
+  # SISBAJUD_EXECUTION_MTLS_ENABLED (plugin false vs Mensageria true fails the
+  # handshake on the first fetch).
+  # ---------------------------------------------------------------------------
+  mensageria:
+    # -- MENSAGERIA_BASE_URL (https, required).
+    baseUrl: ""
+    # -- MENSAGERIA_MTLS_ENABLED. true: present the executor client pair (tls.*)
+    #    and verify the server against the CA (both required). false (default,
+    #    one-way TLS): the pair is not mounted and the CA is optional.
+    mtlsEnabled: false
+    ca:
+      # -- Secret holding the CA that issued the Mensageria server certificate,
+      #    mounted at <mountPath>/ca.crt -> MENSAGERIA_TLS_CA_FILE. Optional in
+      #    one-way TLS (empty = the system trust store, which does not trust a
+      #    private in-cluster CA); required with mTLS. Empty here falls back to
+      #    tls.existingSecret + tls.caKey.
+      existingSecret: ""
+      key: "ca.crt"
+      mountPath: "/etc/plugin-br-sisbajud/mensageria-ca"
+    tls:
+      # -- Secret with the executor's client pair, mounted ONLY with mtlsEnabled
+      #    at <mountPath>/tls.crt|tls.key -> MENSAGERIA_TLS_CLIENT_CERT_FILE /
+      #    _KEY_FILE. The cert must chain to the Mensageria's client CA (clientAuth EKU).
+      existingSecret: ""
+      # -- CA key in this Secret, used only when ca.existingSecret is empty.
+      caKey: "ca.crt"
+      certKey: "tls.crt"
+      keyKey: "tls.key"
+      mountPath: "/etc/plugin-br-sisbajud/mensageria"
+
+  executor:
+    # -- EXECUTOR_M2M_SUBJECT: `sub` of the executor's M2M token (required).
+    #    MENSAGERIA_CLIENT_ID / MENSAGERIA_CLIENT_SECRET go in secrets.
+    m2mSubject: ""
+    # -- STREAMING_HUB_TENANT_ID: Streaming Hub tenant (required in executor mode;
+    #    the same value as the Streaming Hub deployment's STREAMING_HUB_TENANT_ID).
+    streamingHubTenantId: ""
+    # -- EXECUTOR_HEARTBEAT_EVERY (Go duration, required, e.g. "1m").
+    heartbeatEvery: ""
+    humanDecisionAfterBeats: "3"
+    # -- RESPONSE_DEADLINE_MARGIN (Go duration, required): SAME value as the
+    #    Sisbajud Mensageria (e.g. "2h").
+    responseDeadlineMargin: ""
+    # -- EXECUTOR_SETTLE_WINDOW ("" = app default 1s).
+    settleWindow: ""
+    tickEvery: "30s"
+    orphanReconcileWindow: "48h"
+    # -- EXECUTOR_TRANSPORT: webhook (default) | sqs.
+    transport: "webhook"
+
+    # -- Streaming Hub webhook listener (transport=webhook). Its own port and
+    #    Service; EXECUTOR_HUB_WEBHOOK_SECRET goes in secrets.
+    webhook:
+      port: 9082
+      path: "/v1/webhooks/hub"
+      maxSkewSec: "300"
+      maxHandleAttempts: "5"
+      # -- Outside DEPLOYMENT_MODE=local the listener needs its own TLS pair
+      #    (tls.existingSecret) or TLS terminated in front of it (true).
+      upstreamTlsValidated: false
+      tls:
+        existingSecret: ""
+        certKey: "tls.crt"
+        keyKey: "tls.key"
+        mountPath: "/etc/plugin-br-sisbajud/webhook-tls"
+      service:
+        type: ClusterIP
+        port: 9082
+        annotations: {}
+      # -- Exposes ONLY the webhook path to the Streaming Hub.
+      ingress:
+        enabled: false
+        className: ""
+        annotations: {}
+        hosts: []
+        tls: []
+
+    # -- SQS consumer (transport=sqs). Needs AWS credentials (IRSA via
+    #    serviceAccount.annotations, or aws.rolesAnywhere).
+    sqs:
+      queueUrl: ""
+      region: ""
+      waitTimeSeconds: "20"
+      maxMessages: "10"
+      visibilityTimeoutSeconds: "300"
+      maxReceiveCount: "5"
+
+  # -- Midaz connector default. Ledger URL and credentials are per institution
+  #    (institution config, sealed in the database), not env.
+  midaz:
+    crmMode: "legacy"
+
+  # -- Inbound auth extras. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST come from
+  #    global.auth (or configmap).
+  auth:
+    productName: ""
+    trustedProxies: ""
+
+  # -- Access Manager declaration publisher (lib-auth). IDP_M2M_CLIENT_ID /
+  #    IDP_M2M_CLIENT_SECRET go in secrets.
+  identity:
+    declarationEnabled: "false"
+    host: ""
+
+  postgres:
+    maxOpenConns: "25"
+    maxIdleConns: "5"
+    connMaxLifetimeMins: "30"
+    connMaxIdleTimeMins: "5"
+    connectTimeoutSec: "10"
+
+  redis:
+    db: "0"
+    protocol: "3"
+    masterName: ""
+
+  # -- Vault/KMS knobs. Optional with vendor=aws: awsKmsTimeoutSec (1..600) and
+  #    awsKmsRotationCheckIntervalSec (1..86400), validated in every aws key mode.
+  vault:
+    timeoutSec: "15"
+    renewEnabled: "true"
+    renewMinIntervalSec: "60"
+
+  crypto:
+    dekCacheTtl: "5m"
+    hmacCoexistenceWindow: "720h"
+
+  # -- lerian-common.rateLimit.env params (enabled | max | windowSec | ...).
+  rateLimit: {}
+
+  observability:
+    serviceName: "plugin-br-sisbajud"
+    libraryName: "github.com/LerianStudio/plugin-br-sisbajud"
+
+  swagger:
+    enabled: "false"
+
+  # -- Dedicated datastore masks (override global.datastores).
+  datastores: {}
+  # -- Dedicated KMS mask (override global.kms). Extras with vendor=aws:
+  #    awsKeyMode (managed | provided; required with aws), awsKeyArn and
+  #    awsCredentialsKeyArn (both required and distinct with provided; both must be
+  #    empty with managed, where the app creates and owns the keys). aws is refused
+  #    with multi-tenant (single-tenant/BYOC only). The KMS_AWS_* keys can NOT be set
+  #    through sisbajud.configmap (its schema key enum rejects them); use this block.
+  #    With vendor=aws the image must be >= plugin-br-sisbajud-v1.1.0-beta.1
+  #    (sisbajud.image.tag >= 1.1.0-beta.1): older images ignore the key mode and
+  #    create their own KMS key, so the render fails on them. allowUnverifiableImageTag:
+  #    true acknowledges a tag the chart cannot verify (any tag outside the
+  #    canonical form vX.Y.Z[-(alpha|beta|rc).N], e.g. "@", arch suffix, "+build"); read ONLY here, global.kms ignores it.
+  kms: {}
+
+  # -- Escape hatch: native env keys. Only the executor's non-credential keys
+  #    are accepted (values.schema.json); credentials go in `secrets`.
+  configmap: {}
+  # -- Credentials, emitted only when set: LICENSE_KEY, MENSAGERIA_CLIENT_ID,
+  #    MENSAGERIA_CLIENT_SECRET, EXECUTOR_HUB_WEBHOOK_SECRET(_PREVIOUS),
+  #    POSTGRES_PASSWORD, POSTGRES_REPLICA_PASSWORD, REDIS_PASSWORD, VAULT_TOKEN,
+  #    VAULT_APPROLE_SECRET_ID, MULTI_TENANT_SERVICE_API_KEY,
+  #    MULTI_TENANT_REDIS_PASSWORD, IDP_M2M_CLIENT_ID, IDP_M2M_CLIENT_SECRET.
+  secrets: {}
+  # -- Use an existing Secret (ESO / Vault) instead of the chart Secret. It
+  #    REPLACES the chart Secret (not merged) and must carry the keys above.
+  useExistingSecret: false
+  existingSecretName: ""
+  # -- Extra plain env entries (name: value); win over ConfigMap and Secret.
+  extraEnvVars: {}
+
+# =============================================================================
+# migrations — runs cmd/postgres-migrations (dedicated image) against the
+# executor database. External PostgreSQL: pre-install/pre-upgrade hook Job
+# (ArgoCD PreSync). Bundled postgresql: an initContainer of the app pod.
+# Skipped when MULTI_TENANT_ENABLED=true (per-tenant schemas are migrated
+# outside this chart; the runner refuses multi-tenant mode).
+# =============================================================================
+migrations:
+  enabled: true
+  image:
+    repository: ghcr.io/lerianstudio/plugin-br-sisbajud-migrations
+    # -- Defaults to Chart.appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  # -- MIGRATIONS_TIMEOUT_SEC
+  timeoutSec: "300"
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 300
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+  # -- Use an existing Secret with POSTGRES_PASSWORD for the hook Job (else the
+  #    chart copies sisbajud.secrets.POSTGRES_PASSWORD into a hook Secret, or
+  #    reads sisbajud.existingSecretName).
+  existingSecret: ""
+
+# =============================================================================
+# aws — IAM Roles Anywhere credential-helper sidecar (KMS_PROVIDER=aws or
+# EXECUTOR_TRANSPORT=sqs without IRSA).
+# =============================================================================
+aws:
+  rolesAnywhere:
+    enabled: false
+    trustAnchorArn: ""
+    profileArn: ""
+    roleArn: ""
+    region: "us-east-2"
+    sessionDuration: 3600
+    certificateSecretName: "plugin-br-sisbajud-iam-tls"
+    sidecar:
+      image:
+        repository: public.ecr.aws/rolesanywhere/credential-helper
+        tag: "1.8.5-2026.08.24.20.52"
+        pullPolicy: IfNotPresent
+      port: 9911
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 64Mi
+
+# -- Library chart values (lerian-common-helm). Helm coalesces a dependency's
+#    values under its name; declared here so the closed root schema accepts it.
+lerian-common-helm: {}
+
+# =============================================================================
+# Bundled infra — DEVELOPMENT ONLY (disabled by default). The app reads the
+# subchart-generated passwords (postgresql key `password`, valkey key
+# `valkey-password`) via secretKeyRef.
+# =============================================================================
+postgresql:
+  enabled: false
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/postgresql
+    tag: "latest"
+  auth:
+    username: "sisbajud"
+    database: "sisbajud"
+    password: ""
+    postgresPassword: ""
+    existingSecret: ""
+
+valkey:
+  enabled: false
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamisecure/valkey
+    tag: "latest"
+  architecture: standalone
+  auth:
+    enabled: true
+    password: ""
+    existingSecret: ""

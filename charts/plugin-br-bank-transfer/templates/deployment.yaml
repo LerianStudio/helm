@@ -37,7 +37,10 @@ spec:
       serviceAccountName: {{ include "bank-transfer.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.bankTransfer.podSecurityContext | nindent 8 }}
-      {{- $multiTenantEnabled := eq (toString (.Values.bankTransfer.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
+      {{- /* Same global.multiTenant mask configmap.yaml resolves MULTI_TENANT_ENABLED through, so the
+             dependency wait gate is skipped exactly when the ConfigMap omits POSTGRES_*. */}}
+      {{- $multiTenantEnabledRaw := include "lerian-common.globalValue" (dict "context" $ "configmap" (.Values.bankTransfer.configmap | default dict) "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") }}
+      {{- $multiTenantEnabled := eq (lower (toString $multiTenantEnabledRaw)) "true" }}
       {{- if not $multiTenantEnabled }}
       # In multi-tenant mode the bootstrap does not connect to any static
       # Postgres / Redis at boot — per-tenant connections are resolved via
@@ -82,6 +85,9 @@ spec:
               wait_for_service "$REDIS_SVC" "$REDIS_PORT_NUM"
 
               echo "All dependencies are ready!"
+        {{- if and (eq (include "bank-transfer.postgresInternal" .) "true") (eq (lower (toString .Values.bankTransfer.migrations.enabled)) "true") }}
+        {{- include "bank-transfer.migrationsContainer" . | nindent 8 }}
+        {{- end }}
       {{- end }}
       containers:
         - name: {{ include "bank-transfer.fullname" . }}
@@ -118,8 +124,10 @@ spec:
                 name: {{ $secretName }}
                 key: REDIS_PASSWORD
           {{- end }}
-          {{- include "bank-transfer.mongoEnv" (dict "context" $ "secretName" $secretName) | nindent 10 }}
-          {{- if eq (toString .Values.bankTransfer.configmap.ENABLE_TELEMETRY) "true" }}
+          {{- include "bank-transfer.mongoEnv" (dict "context" $) | nindent 10 }}
+          {{- /* Same global.observability mask configmap.yaml resolves ENABLE_TELEMETRY and the endpoint through. */}}
+          {{- $otelCm := .Values.bankTransfer.configmap | default dict }}
+          {{- if eq (lower (include "lerian-common.globalValue" (dict "context" $ "configmap" $otelCm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
@@ -128,8 +136,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
+          {{- if not (include "lerian-common.globalValue" (dict "context" $ "configmap" $otelCm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "")) }}
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
+          {{- end }}
           - name: "OTEL_RESOURCE_ATTRIBUTES"
             value: "k8s.pod.ip=$(POD_IP)"
           {{- end }}
@@ -157,17 +167,14 @@ spec:
             failureThreshold: {{ .Values.bankTransfer.readinessProbe.failureThreshold | default 3 }}
           resources:
             {{- toYaml .Values.bankTransfer.resources | nindent 12 }}
-      {{- with .Values.bankTransfer.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.bankTransfer.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.bankTransfer.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, bankTransfer.spread, bankTransfer.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.bankTransfer
+            "global" .Values.global
+            "selectorLabels" (include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
       {{- with .Values.bankTransfer.hostAliases }}
       hostAliases:

@@ -1,0 +1,57 @@
+# CI-only render fixture for charts/br-sisbajud (render gate + install test).
+# NOT a production example. It renders the FULL dev bundle, the same shape as
+# charts/br-sisbajud/values-dev.yaml: bundled PostgreSQL, Valkey, SeaweedFS,
+# OpenBao (dev mode) and Redpanda. The render gate then checks every secretKeyRef
+# the chart points at the subchart Secrets, the release-name collapse, the derived
+# endpoints (POSTGRES_HOST, REDIS_HOST, SEAWEEDFS_S3_ENDPOINT, VAULT_ADDR,
+# STREAMING_BROKERS) and the bootstrap Jobs (buckets, Transit, migrations and
+# topics as bundle-aware hooks). OpenBao/Redpanda are refused in a production-like
+# environment, so this fixture runs in development. The OpenBao dev root token is
+# generated at render (no reusable credential in this file).
+global:
+  env:
+    name: "development"
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+
+brSisbajud:
+  vault:
+    tokenRenewEnabled: false
+  # Local bearer verification is mandatory in both auth switch positions. This is
+  # a THROWAWAY RSA public key whose private half was discarded at generation:
+  # the app boots, but no token verifies against it. Replace it (and the issuer)
+  # with your Access Manager's public key and `iss` to call the API.
+  auth:
+    jwtIssuer: "dev-only-unverifiable-issuer"
+    jwtVerifyCert: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhJ23YF4HU1WMEOdpN7J
+      /pJt3ICTEsyhSP8Q32J5fZ1bvWvCOo++f4mA+38wwrfst02KWUohfFKPLQsPoqBO
+      3PkdBlW4rSjY1k7gK1uwLbDavQTwiF29Q0CiiI//oqwOjXVdviQTwKAPlEh0FRMO
+      HQBvxGej4Yl1jgnYgv6+6JAajn2oSdSf6KohPjqnJeCAx04J57IXYWS3jsEwQl0+
+      HTFZcB1q0ECDYysUKVfVAXo6xeost7vXmVCamPqnX2/lFxD4r3T80QYgD7jjn/Fu
+      XvB9UDWf1a83M/RaJute6vdd10m9WTJZ0GwVM9no8NI8MZJ5Uiw+NbfNpUDmki9F
+      vQIDAQAB
+      -----END PUBLIC KEY-----
+  # Execution API listener (always TLS): a chart-generated dev CA + server cert
+  # in Secret br-sisbajud-execution-tls (give its ca.crt to plugin-br-sisbajud).
+  execution:
+    tls:
+      generate: true
+  # development: an empty LICENSE_KEY is the Mensageria's dev bypass.
+  license:
+    organizationIds: "global"
+
+postgresql:
+  enabled: true
+  external: false
+valkey:
+  enabled: true
+  external: false
+seaweedfs:
+  enabled: true
+openbao:
+  enabled: true
+redpandaBundle:
+  enabled: true

@@ -1,0 +1,107 @@
+{{- if (index .Values "plugin-br-ted-lerian").enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "plugin-br-ted-lerian.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ (index .Values "plugin-br-ted-lerian").revisionHistoryLimit | default 10 }}
+  strategy:
+    type: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.type }}
+    {{- if eq (index .Values "plugin-br-ted-lerian").deploymentUpdate.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.maxSurge }}
+      maxUnavailable: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.maxUnavailable }}
+    {{- end }}
+  {{- if not (index .Values "plugin-br-ted-lerian").autoscaling.enabled }}
+  replicas: {{ (index .Values "plugin-br-ted-lerian").replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-ted-lerian.selectorLabels" (dict "context" . "name" (index .Values "plugin-br-ted-lerian").name) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not (index .Values "plugin-br-ted-lerian").useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with (index .Values "plugin-br-ted-lerian").podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name) | nindent 8 }}
+    spec:
+      {{- with (index .Values "plugin-br-ted-lerian").imagePullSecrets }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "plugin-br-ted-lerian.serviceAccountName" . }}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" (index .Values "plugin-br-ted-lerian").podSecurityContext) | nindent 6 }}
+      containers:
+        - name: {{ include "plugin-br-ted-lerian.fullname" . }}
+          securityContext:
+            {{- toYaml (index .Values "plugin-br-ted-lerian").securityContext | nindent 12 }}
+          image: "{{ (index .Values "plugin-br-ted-lerian").image.repository }}:{{ (index .Values "plugin-br-ted-lerian").image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ (index .Values "plugin-br-ted-lerian").image.pullPolicy }}
+          {{- $otelEnabled := eq (dig "otel" "enabled" false (index .Values "plugin-br-ted-lerian") | toString) "true" }}
+          {{- $rolesAnywhereEnabled := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+          {{- /*
+          Bundled-infra passwords come from the subchart's own Secret, never from
+          this chart's. Emitted as `env` (not `envFrom`) on purpose: `env` wins
+          for the same variable name, so the subchart's value takes precedence
+          over anything the app Secret might still carry.
+          */}}
+          {{- $pg := .Values.postgresql | default dict }}
+          {{- $pgAuth := $pg.auth | default dict }}
+          {{- $pgInternal := and (ne (toString $pg.enabled) "false") (not $pg.external) }}
+          {{- $vk := .Values.valkey | default dict }}
+          {{- $vkAuth := $vk.auth | default dict }}
+          {{- $vkInternal := and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled }}
+          envFrom:
+          - secretRef:
+              name: {{ if (index .Values "plugin-br-ted-lerian").useExistingSecret }}{{ (index .Values "plugin-br-ted-lerian").existingSecretName }}{{ else }}{{ include "plugin-br-ted-lerian.fullname" . }}{{ end }}
+          - configMapRef:
+              name: {{ include "plugin-br-ted-lerian.fullname" . }}
+          {{- if or $otelEnabled $rolesAnywhereEnabled $pgInternal $vkInternal }}
+          env:
+          {{- if $pgInternal }}
+          {{- include "plugin-br-ted-lerian.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
+          {{- end }}
+          {{- if $vkInternal }}
+          {{- include "plugin-br-ted-lerian.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 10 }}
+          {{- end }}
+          {{- if $otelEnabled }}
+          {{- include "lerian-common.otel.podEnv" (dict "port" 4317 "scheme" "http://") | nindent 10 }}
+          {{- end }}
+          {{- if $rolesAnywhereEnabled }}
+          {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}
+          {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ (index .Values "plugin-br-ted-lerian").service.port }}
+              protocol: TCP
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" (index .Values "plugin-br-ted-lerian").livenessProbe
+                "port" (index .Values "plugin-br-ted-lerian").service.port
+                "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" (index .Values "plugin-br-ted-lerian").readinessProbe
+                "port" (index .Values "plugin-br-ted-lerian").service.port
+                "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          resources:
+            {{- toYaml (index .Values "plugin-br-ted-lerian").resources | nindent 12 }}
+        {{- if $rolesAnywhereEnabled }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
+        {{- end }}
+      {{- if $rolesAnywhereEnabled }}
+      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "plugin-br-ted-lerian-iam-tls") | nindent 6 }}
+      {{- end }}
+      {{- if or (index .Values "plugin-br-ted-lerian").nodeSelector (index .Values "plugin-br-ted-lerian").affinity (index .Values "plugin-br-ted-lerian").tolerations }}
+      {{- include "lerian-common.scheduling" (index .Values "plugin-br-ted-lerian") | nindent 6 }}
+      {{- end }}
+{{- end }}

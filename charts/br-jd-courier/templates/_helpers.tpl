@@ -22,6 +22,15 @@
 {{- .Values.secrets.existingSecret | default (include "br-jd-courier.fullname" .) -}}
 {{- end -}}
 
+{{- /* Every role's ServiceAccount: the namespace default unless serviceAccount says otherwise. */ -}}
+{{- define "br-jd-courier.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "br-jd-courier.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "br-jd-courier.image" -}}
 {{ printf "%s:%s" (index .Values "jd-courier" "image").repository ((index .Values "jd-courier" "image").tag | default .Chart.AppVersion) }}
 {{- end -}}
@@ -50,6 +59,12 @@ there are three layers and not one: the boot guard reads the registry and catche
 what the chart cannot, and the chart catches what never reaches a boot.
 */ -}}
 {{- define "br-jd-courier.guards" -}}
+{{- /* Trimmed, as the service reads it. Empty would boot as
+     "development": no production checks, and a wrong segment in every secret path. */ -}}
+{{- $env := trim (toString (get $.Values.config "ENVIRONMENT_NAME" | default "")) -}}
+{{- if not $env -}}
+{{- fail "config.ENVIRONMENT_NAME is required: it turns the Courier's production checks on (production) and is the environment segment of every Pix engine credentialRef and multi-tenant JD bundle path (tenants/{env}/...). Unset, the service boots as development. config.ENV_NAME, the service's deprecated alias, does not satisfy this chart: rename it to ENVIRONMENT_NAME." -}}
+{{- end -}}
 {{- $singleWriterRoles := dict "spbConsumer" "spb-consumer" -}}
 {{- range $key, $role := $singleWriterRoles -}}
 {{- $values := index $.Values.roles $key -}}
@@ -57,9 +72,16 @@ what the chart cannot, and the chart catches what never reaches a boot.
 {{- fail (printf "roles.%s.replicas=%v: %s is a SINGLE WRITER — it drains a destructive vendor queue, and a second replica loses messages. It runs exactly one replica." $key $values.replicas $role) -}}
 {{- end -}}
 {{- end -}}
-{{- range $key := list "SERVER_ADDRESS" "SOAP_SERVER_ADDRESS" -}}
+{{- $soapTls := "roles.spbSender.soapTls and roles.spbSender.ingress" -}}
+{{- $transit := "roles.admin.pixTransit" -}}
+{{- range $key, $source := dict "SERVER_ADDRESS" "ports.*" "SOAP_SERVER_ADDRESS" "ports.*" "SOAP_TLS_CERT_FILE" $soapTls "SOAP_TLS_KEY_FILE" $soapTls "SOAP_TLS_TERMINATED_UPSTREAM" $soapTls "PIX_TRANSIT_SERVER_ADDRESS" $transit "PIX_TRANSIT_TLS_CERT_FILE" $transit "PIX_TRANSIT_TLS_KEY_FILE" $transit "PIX_TRANSIT_TLS_TERMINATED_UPSTREAM" $transit -}}
 {{- if hasKey $.Values.config $key -}}
-{{- fail (printf "config.%s is refused: the chart derives it from ports.*" $key) -}}
+{{- fail (printf "config.%s is refused: the chart derives it from %s" $key $source) -}}
+{{- end -}}
+{{- end -}}
+{{- with $.Values.roles.admin.pixTransit -}}
+{{- if and .enabled (not (or .tls.existingSecret .tls.terminatedUpstream)) -}}
+{{- fail "roles.admin.pixTransit.enabled needs roles.admin.pixTransit.tls.existingSecret or roles.admin.pixTransit.tls.terminatedUpstream=true: the Pix engines refuse plain HTTP" -}}
 {{- end -}}
 {{- end -}}
 {{- if hasKey $.Values.config "OTEL_EXPORTER_OTLP_ENDPOINT" -}}
@@ -68,7 +90,7 @@ what the chart cannot, and the chart catches what never reaches a boot.
 {{- if hasKey $.Values.config "ALLOW_AUTH_DISABLED_LOCAL_ONLY" -}}
 {{- fail "config.ALLOW_AUTH_DISABLED_LOCAL_ONLY is refused: authentication is off only on a developer's machine, never in a chart install" -}}
 {{- end -}}
-{{- $forbidden := list "COURIER_ROLES" "LICENSE_KEY" "DATABASE_URL" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "MULTI_TENANT_SERVICE_API_KEY" "JD_PASSWORD" "JD_PRIVATE_KEY_PEM" -}}
+{{- $forbidden := list "COURIER_ROLES" "LICENSE_KEY" "DATABASE_URL" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "MULTI_TENANT_SERVICE_API_KEY" "JD_PASSWORD" "JD_SPI_CLIENT_SECRET" "JD_PRIVATE_KEY_PEM" "IDP_M2M_CLIENT_SECRET" "M2M_CLIENT_SECRET" -}}
 {{- range $key := $forbidden -}}
 {{- if hasKey $.Values.config $key -}}
 {{- if eq $key "COURIER_ROLES" -}}
@@ -97,6 +119,13 @@ One role's Deployment. Called from deployment-<role>.yaml with
 {{- $ctx := .ctx -}}
 {{- $values := index $ctx.Values.roles .key -}}
 {{- $singleWriter := eq .role "spb-consumer" -}}
+{{- $soapCert := and (has "soap" .ports) $values.soapTls.existingSecret -}}
+{{- $transit := has "pixTransit" .ports -}}
+{{- $transitCert := and $transit $values.pixTransit.tls.existingSecret -}}
+{{- /* TLS Secrets this role mounts, by volume name, at /etc/jd-courier/<name>. */ -}}
+{{- $tls := dict -}}
+{{- with $soapCert }}{{ $_ := set $tls "soap-tls" . }}{{ end -}}
+{{- with $transitCert }}{{ $_ := set $tls "pix-transit-tls" . }}{{ end -}}
 {{- if $values.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -128,6 +157,9 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      serviceAccountName: {{ include "br-jd-courier.serviceAccountName" $ctx }}
+      # No Kubernetes API token: the Courier never calls the API. IRSA and EKS Pod
+      # Identity inject their own projected token regardless of this field.
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: {{ $ctx.Values.terminationGracePeriodSeconds }}
       securityContext:
@@ -184,17 +216,40 @@ spec:
                 secretKeyRef:
                   name: {{ include "br-jd-courier.secretName" $ctx }}
                   key: LICENSE_KEY
+            {{- if $soapCert }}
+            # Read once at boot: a rotated certificate needs a rollout restart.
+            - name: SOAP_TLS_CERT_FILE
+              value: /etc/jd-courier/soap-tls/tls.crt
+            - name: SOAP_TLS_KEY_FILE
+              value: /etc/jd-courier/soap-tls/tls.key
+            {{- end }}
+            {{- if and (has "soap" .ports) (or $values.ingress.enabled $values.soapTls.terminatedUpstream) }}
+            - name: SOAP_TLS_TERMINATED_UPSTREAM
+              value: "true"
+            {{- end }}
+            {{- if $transit }}
+            - name: PIX_TRANSIT_SERVER_ADDRESS
+              value: {{ printf ":%v" $ctx.Values.ports.pixTransit | quote }}
+            {{- if $transitCert }}
+            - name: PIX_TRANSIT_TLS_CERT_FILE
+              value: /etc/jd-courier/pix-transit-tls/tls.crt
+            - name: PIX_TRANSIT_TLS_KEY_FILE
+              value: /etc/jd-courier/pix-transit-tls/tls.key
+            {{- end }}
+            {{- if $values.pixTransit.tls.terminatedUpstream }}
+            - name: PIX_TRANSIT_TLS_TERMINATED_UPSTREAM
+              value: "true"
+            {{- end }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "br-jd-courier.fullname" $ctx }}
             - secretRef:
                 name: {{ include "br-jd-courier.secretName" $ctx }}
           ports:
-            - name: http
-              containerPort: {{ $ctx.Values.ports.http }}
-            {{- if has "soap" .ports }}
-            - name: soap
-              containerPort: {{ $ctx.Values.ports.soap }}
+            {{- range .ports }}
+            - name: {{ kebabcase . }}
+              containerPort: {{ index $ctx.Values.ports . }}
             {{- end }}
           # /health answers on every role, the consumer included. A revoked
           # licence never fails it: the pod stays up and says why. It
@@ -212,6 +267,8 @@ spec:
               path: /readyz
               port: http
             periodSeconds: 10
+            # /readyz gives its database ping 2 s; the kubelet's default is 1 s.
+            timeoutSeconds: 3
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -221,6 +278,20 @@ spec:
           {{- with $values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $tls }}
+          volumeMounts:
+            {{- range $name, $secret := . }}
+            - name: {{ $name }}
+              mountPath: /etc/jd-courier/{{ $name }}
+              readOnly: true
+            {{- end }}
+      volumes:
+            {{- range $name, $secret := . }}
+        - name: {{ $name }}
+          secret:
+            secretName: {{ $secret | quote }}
+            {{- end }}
           {{- end }}
       {{- with $ctx.Values.nodeSelector }}
       nodeSelector:
@@ -235,6 +306,12 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 {{- end }}
+{{- end -}}
+
+{{- /* The admin's ports: http, plus pixTransit while the transit is on. dig, because values
+     reused from 2.0.0 (helm upgrade --reuse-values) carry no roles.admin.pixTransit. */ -}}
+{{- define "br-jd-courier.adminPorts" -}}
+http{{ if dig "pixTransit" "enabled" false .Values.roles.admin }} pixTransit{{ end }}
 {{- end -}}
 
 {{- define "br-jd-courier.service" -}}
@@ -252,14 +329,16 @@ spec:
   selector:
     {{- include "br-jd-courier.selector" (dict "ctx" $ctx "component" .role) | nindent 4 }}
   ports:
-    - name: {{ .port }}
-      port: {{ index $ctx.Values.ports .port }}
-      targetPort: {{ .port }}
+    {{- range .ports }}
+    - name: {{ kebabcase . }}
+      port: {{ index $ctx.Values.ports . }}
+      targetPort: {{ kebabcase . }}
+    {{- end }}
 {{- end }}
 {{- end -}}
 
-{{- /* "true" when the service reads MULTI_TENANT_ENABLED as true (strconv.ParseBool spellings,
-     trimmed), else empty. Refusing too much is safe here, refusing too little is not. */}}
+{{- /* "true" when MULTI_TENANT_ENABLED may mean true, else empty. The service accepts only the
+     exact word "true"; refusing 1, t and any case too is safe here, refusing too little is not. */}}
 {{- define "br-jd-courier.multiTenant" -}}
 {{- if has (lower (trim (toString (get .Values.config "MULTI_TENANT_ENABLED" | default "false")))) (list "1" "t" "true") }}true{{ end }}
 {{- end }}

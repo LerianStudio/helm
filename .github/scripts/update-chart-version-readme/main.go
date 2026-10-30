@@ -55,7 +55,8 @@ func main() {
 	if *chart != "" {
 		chartDir := getChartDirectory(*chart)
 		valuesPath := fmt.Sprintf("charts/%s/values.yaml", chartDir)
-		appVersions := extractAppVersionsFromValues(valuesPath, headers)
+		appVersion := readChartAppVersion(fmt.Sprintf("charts/%s/Chart.yaml", chartDir))
+		appVersions := extractAppVersionsFromValues(valuesPath, headers, appVersion)
 		updatedRows = updateAppVersions(updatedRows, appVersions)
 	}
 
@@ -99,10 +100,30 @@ func getChartDirectory(chartName string) string {
 	return strings.TrimSuffix(chartName, "-helm")
 }
 
+// readChartAppVersion returns the appVersion declared in Chart.yaml, or "" when
+// it cannot be read.
+func readChartAppVersion(chartPath string) string {
+	content, err := os.ReadFile(chartPath)
+	if err != nil {
+		fmt.Printf("WARNING: Could not read %s: %v\n", chartPath, err)
+		return ""
+	}
+
+	var chart struct {
+		AppVersion string `yaml:"appVersion"`
+	}
+	if err := yaml.Unmarshal(content, &chart); err != nil {
+		fmt.Printf("WARNING: Could not parse %s: %v\n", chartPath, err)
+		return ""
+	}
+
+	return chart.AppVersion
+}
+
 // extractAppVersionsFromValues reads values.yaml and extracts app versions
 // based on the table headers. For each "X Version" header, it looks for
 // the corresponding {x}.image.tag path in values.yaml
-func extractAppVersionsFromValues(valuesPath string, headers []string) map[string]string {
+func extractAppVersionsFromValues(valuesPath string, headers []string, appVersion string) map[string]string {
 	versions := make(map[string]string)
 
 	content, err := os.ReadFile(valuesPath)
@@ -132,6 +153,17 @@ func extractAppVersionsFromValues(valuesPath string, headers []string) map[strin
 
 		// Look for {component}.image.tag in values.yaml
 		tag := getImageTag(values, componentKey)
+
+		// Charts on lerian-common leave image.tag empty and render .Chart.AppVersion,
+		// so an empty tag on the component, or the generic "App Version" column, is
+		// the chart's appVersion.
+		if tag == "" && appVersion != "" {
+			if _, ok := lookupKey(values, componentKey); ok || componentKey == "app" {
+				tag = appVersion
+				fmt.Printf("  (%s falls back to Chart.yaml appVersion)\n", header)
+			}
+		}
+
 		if tag != "" {
 			versions[header] = tag
 			fmt.Printf("Found %s = %s (from %s.image.tag)\n", header, tag, componentKey)
@@ -147,7 +179,7 @@ func extractAppVersionsFromValues(valuesPath string, headers []string) map[strin
 // Looks for {component}.image.tag in the values map, with fallback to root image.tag
 func getImageTag(values map[string]interface{}, component string) string {
 	// First, try {component}.image.tag
-	if componentSection, ok := values[component]; ok {
+	if componentSection, ok := lookupKey(values, component); ok {
 		if componentMap, ok := componentSection.(map[string]interface{}); ok {
 			if tag := extractTagFromImageSection(componentMap); tag != "" {
 				return tag
@@ -164,6 +196,20 @@ func getImageTag(values map[string]interface{}, component string) string {
 	}
 
 	return ""
+}
+
+// lookupKey finds a top-level values key case-insensitively, since the column
+// header is lowercased ("bankTransfer Version" -> "banktransfer").
+func lookupKey(values map[string]interface{}, key string) (interface{}, bool) {
+	if v, ok := values[key]; ok {
+		return v, true
+	}
+	for k, v := range values {
+		if strings.EqualFold(k, key) {
+			return v, true
+		}
+	}
+	return nil, false
 }
 
 // extractTagFromImageSection extracts the tag from a map that contains an "image" section

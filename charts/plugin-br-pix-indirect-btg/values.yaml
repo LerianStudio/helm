@@ -261,6 +261,24 @@ pix:
     ANTIFRAUD_HOOK_CB_TIMEOUT: "30s"
     ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: "5"
     ANTIFRAUD_HOOK_PREWARM_ENABLED: "true"
+    # Streaming (lib-streaming v4 business events; pix component only, workers do not emit).
+    # Off by default: while false the app reads nothing but STREAMING_ENABLED/STREAMING_TENANT_ID.
+    # When "true", STREAMING_BROKERS is required (Redpanda/Kafka bootstrap list, host:port,...).
+    # Topics: lerian.streaming.<CLOUDEVENTS_SOURCE> and its .dlq. Needs a database role able to
+    # CREATE in the public schema and database (migration 000056 creates streaming.outbox_events).
+    STREAMING_ENABLED: "false"
+    # One deployment = one tenant. Stamped on every event (ce-tenantid), 1-256 [A-Za-z0-9_-].
+    STREAMING_TENANT_ID: "default"
+    STREAMING_BROKERS: ""
+    STREAMING_CLOUDEVENTS_SOURCE: "plugin-br-pix-indirect-btg"
+    # Optional knobs, rendered only when set (app defaults in parentheses):
+    # STREAMING_CLIENT_ID (hostname-derived), STREAMING_TLS_ENABLED (false),
+    # STREAMING_SASL_MECHANISM (PLAIN|SCRAM-SHA-256|SCRAM-SHA-512), STREAMING_SASL_USERNAME,
+    # STREAMING_SASL_ALLOW_PLAINTEXT (false, local dev only), STREAMING_CB_FAILURE_RATIO (0.5),
+    # STREAMING_CB_MIN_REQUESTS (10), STREAMING_CB_TIMEOUT_S (30), STREAMING_CLOSE_TIMEOUT_S (30),
+    # STREAMING_TOPIC_AUTO_PROVISION (true; false where topics come from IaC),
+    # STREAMING_TOPIC_PARTITIONS (-1), STREAMING_TOPIC_REPLICATION_FACTOR (-1),
+    # STREAMING_OUTBOX_RETENTION_PUBLISHED_H (72), STREAMING_OUTBOX_RETENTION_INVALID_H (720).
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml

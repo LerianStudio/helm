@@ -79,6 +79,11 @@ pix:
     ANTIFRAUD_HOOK_CB_TIMEOUT: "30s"
     ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: "5"
     ANTIFRAUD_HOOK_PREWARM_ENABLED: "true"
+    # Streaming (off by default; STREAMING_BROKERS required when enabled)
+    STREAMING_ENABLED: "false"
+    STREAMING_TENANT_ID: "default"
+    STREAMING_BROKERS: ""
+    STREAMING_CLOUDEVENTS_SOURCE: "plugin-br-pix-indirect-btg"
 
   secrets:
     DB_PASSWORD: ""

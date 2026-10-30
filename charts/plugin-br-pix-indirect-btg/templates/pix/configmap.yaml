@@ -190,11 +190,33 @@ data:
   ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: {{ .Values.pix.configmap.ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD | default "5" | quote }}
   ANTIFRAUD_HOOK_PREWARM_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.ANTIFRAUD_HOOK_PREWARM_ENABLED | quote }}
 
+  # Streaming (lib-streaming v4 business events, application binary only; workers do not emit).
+  # Off by default. While STREAMING_ENABLED is false the app reads nothing but the two gating
+  # keys, so the rest is rendered only when enabled. Optional knobs are emitted only when set,
+  # so the app (lib-streaming) keeps its own defaults.
+  {{- $cm := .Values.pix.configmap }}
+  {{- $streamingEnabled := eq (toString (default "false" $cm.STREAMING_ENABLED)) "true" }}
+  STREAMING_ENABLED: {{ $streamingEnabled | quote }}
+  STREAMING_TENANT_ID: {{ $cm.STREAMING_TENANT_ID | default "default" | quote }}
+  {{- if $streamingEnabled }}
+  STREAMING_BROKERS: {{ required "pix.configmap.STREAMING_BROKERS is required when pix.configmap.STREAMING_ENABLED=true" $cm.STREAMING_BROKERS | quote }}
+  STREAMING_CLOUDEVENTS_SOURCE: {{ $cm.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-indirect-btg" | quote }}
+  {{- range $k := list "STREAMING_CLIENT_ID" "STREAMING_SASL_MECHANISM" "STREAMING_SASL_USERNAME" "STREAMING_CB_FAILURE_RATIO" "STREAMING_CB_MIN_REQUESTS" "STREAMING_CB_TIMEOUT_S" "STREAMING_CLOSE_TIMEOUT_S" "STREAMING_TOPIC_PARTITIONS" "STREAMING_TOPIC_REPLICATION_FACTOR" "STREAMING_OUTBOX_RETENTION_PUBLISHED_H" "STREAMING_OUTBOX_RETENTION_INVALID_H" }}
+  {{- $v := index $cm $k }}
+  {{- if not (or (kindIs "invalid" $v) (eq (toString $v) "")) }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+  {{- end }}
+  {{- /* Booleans: `default` would drop an explicit false, so test for unset/null/empty instead. */}}
+  {{- range $k := list "STREAMING_TLS_ENABLED" "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_TOPIC_AUTO_PROVISION" }}
+  {{- $v := index $cm $k }}
+  {{- if not (or (kindIs "invalid" $v) (eq (toString $v) "")) }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+
   SWAGGER_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.pix.configmap.SWAGGER_ENABLED | quote }}
-  STREAMING_BROKERS: {{ .Values.pix.configmap.STREAMING_BROKERS | default "" | quote }}
-  STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.pix.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-indirect-btg" | quote }}
-  STREAMING_ENABLED: {{ .Values.pix.configmap.STREAMING_ENABLED | default "false" | quote }}
-  STREAMING_TENANT_ID: {{ .Values.pix.configmap.STREAMING_TENANT_ID | default "default" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

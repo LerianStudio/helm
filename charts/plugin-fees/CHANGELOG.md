@@ -3,6 +3,18 @@
 ## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
 
 Fixes:
+- Render boolean false on default-true flags for plugin-fees, ensuring accurate flag representation. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for upgrading. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
 - Render boolean false on default-true flags, ensuring accurate representation of boolean values in plugin-fees. (@fredcamaral)
 
 Improvements:

@@ -3,6 +3,15 @@
 ## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
 
 Improvements:
+- Ensure the Caradhras ingress is configured to remain internal. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)
+
+---
+
+## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
+
+Improvements:
 - Ensure the Caradhras ingress remains internal for plugin-access-manager. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)

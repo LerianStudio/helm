@@ -8,11 +8,9 @@
 
 # Overview
 
-This is a patch release that updates only the chart version metadata. No functional changes, template modifications, or configuration updates are included in this release.
+This release changes the chart documentation only. The chart version moves from 10.1.2 to 10.1.3 in `Chart.yaml`, and `README.md` gains a note on keeping the Caradhras ingress internal. No template, `values.yaml` or `values.schema.json` change, and the application version stays at 3.14.0.
 
 **What changed:**
-
-The chart version has been incremented from 10.1.2 to 10.1.3 in the Chart.yaml metadata file. The application version remains unchanged at 3.14.0.
 
 | Setting | v10.1.2 | v10.1.3 |
 |---------|---------|---------|
@@ -21,13 +19,9 @@ The chart version has been incremented from 10.1.2 to 10.1.3 in the Chart.yaml m
 
 **What this means for operators:**
 
-- No configuration changes are required
-- No template or resource definitions have been modified
-- No new features, fixes, or behavioral changes are included
-- The upgrade is purely administrative and should have zero impact on running workloads
-- All existing values.yaml configurations will continue to work without modification
-
-> **Note:** This release does not modify any Kubernetes resources, container images, or application behavior. The upgrade will not trigger pod restarts or service disruptions unless other configuration changes are applied simultaneously.
+- You do not need to change your values.
+- Rendered resources differ from v10.1.2 only in the `helm.sh/chart` label. That label is part of the pod templates of the auth, identity and caradhras Deployments, so the upgrade replaces the pods of all three, even though no image or setting changes. Caradhras rolls with `maxSurge: 1` and `maxUnavailable: 0`. Auth and identity render `maxSurge: 1` and `maxUnavailable: 1` by default (auth runs 3 replicas, identity 1), so identity can be briefly unavailable during the rollout when it runs a single replica.
+- If you expose Caradhras through an ingress, read the new README note and keep that ingress internal.
 
 # Preview changes before upgrading
 

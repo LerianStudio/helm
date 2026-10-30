@@ -3,6 +3,33 @@
 ## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
 
 Features:
+- Provide documentation on maintaining the valkey claim during Argo CD pruning. (@fredcamaral)
+- Explain how to expand a statefulset valkey claim without data loss. (@fredcamaral)
+- Outline the process for passing edited valkey values during the `10.0.3` upgrade. (@fredcamaral)
+- Detail the requirement for a drained cutover from `midaz v4.2.x`. (@fredcamaral)
+- Name the ledger and tracer migration switches. (@fredcamaral)
+- Scope the migrate-first order to default settings. (@fredcamaral)
+- Specify the hook type per deployment tool. (@fredcamaral)
+- Provide `v4.3` cutover steps at the chart level. (@fredcamaral)
+
+Fixes:
+- Implement fsync for every valkey write and halt upgrades when there is an open fee debt. (@fredcamaral)
+- Account for account-block exceptions in the valkey upgrade loss. (@fredcamaral)
+- Cover statefulset, image, and rollback scenarios in the valkey upgrade process. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule. (@fredcamaral)
+- Pin the bundled valkey image due to its volume opening capability. (@fredcamaral)
+- Retain the bundled valkey's data and prevent writes when full. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` as part of the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
 - Document the requirement for a drained cutover from `midaz v4.2.x`. (@fredcamaral)
 - Provide the `v4.3` cutover steps at the chart level. (@fredcamaral)
 - Name the hook type per deploy tool. (@fredcamaral)

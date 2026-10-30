@@ -2,6 +2,16 @@
 
 ## [10.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.2)
 
+Fixes:
+- Updated `plugin-access-manager` to version `3.14.0` to ensure compatibility with `caradhras` `1.8.6`. (@fredcamaral)
+- Bumped `caradhras` dependency to `1.8.6` for `plugin-access-manager`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.1...plugin-access-manager-v10.1.2)
+
+---
+
+## [10.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.2)
+
 Features:
 - Update `plugin-access-manager` to version `3.14.0`. (@fredcamaral)
 

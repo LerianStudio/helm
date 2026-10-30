@@ -47,10 +47,9 @@ spec:
       {{- /* Above the lib-streaming close timeout, same coupling as the api: the worker
          publishes lifecycle events through the outbox relay too. */}}
       terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
-      {{- /* Wait for Postgres but do NOT migrate here. The api pod owns the migration
-         (one migrator is enough, and golang-migrate would serialize a second one on its
-         advisory lock for no benefit). Waiting still matters: without it a cold
-         StatefulSet makes the worker crashloop until Postgres accepts connections. */}}
+      {{- /* Wait for Postgres but do NOT migrate here: the migrations Job owns the schema.
+         Without the wait a cold StatefulSet makes the worker crashloop until Postgres
+         accepts connections. */}}
       initContainers:
         - name: wait-for-postgres
           image: {{ (.Values.migrations | default dict).waitImage | default "busybox:1.36" | quote }}
@@ -58,23 +57,19 @@ spec:
             - /bin/sh
             - -c
             - >
-              until nc -z {{ include "plugin-br-pix-jd.postgresHost" . }} {{ include "plugin-br-pix-jd.cfg" (dict "configmap" (.Values.api.configmap | default dict) "key" "POSTGRES_PORT" "default" "5432") }}; do
+              until nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
                 echo "postgres not ready, waiting..."; sleep 3;
               done
+          {{- /* The worker's own ConfigMap: the same host and port the worker dials. */}}
+          envFrom:
+            - configMapRef:
+                name: {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "worker") }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
       containers:
         - name: worker
-          image: {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" (dict "image" (dict "repository" (.Values.worker.image.repository | default .Values.api.image.repository) "tag" (.Values.worker.image.tag | default .Values.api.image.tag)))) | quote }}
+          image: {{ include "plugin-br-pix-jd.componentImage" (dict "root" $ "comp" .Values.worker) | quote }}
           imagePullPolicy: {{ .Values.worker.image.pullPolicy | default .Values.api.image.pullPolicy }}
-          {{- /* THE ONLY DIFFERENCE FROM THE API on the single-image path: `command`
-             overrides that image's ENTRYPOINT (/service) to reach the second binary.
-             With a dedicated worker image the override is skipped — its own ENTRYPOINT
-             is already /worker, and asserting a binary path inside an image this chart
-             does not build is not the chart's to promise. */}}
-          {{- if not (include "plugin-br-pix-jd.workerOwnImage" .) }}
-          command: ["/worker"]
-          {{- end }}
           {{- /* No ports and no probes: cmd/worker exposes no HTTP surface, so an
              httpGet probe would fail forever and a tcpSocket probe would have nothing
              to connect to. Liveness for a cron process is its own exit. */}}

@@ -301,11 +301,14 @@ The chart default tag is `1.5.1` in this chart version. The chart does not say w
 
 **Check your current image tags:**
 
-`helm get values` shows only the values you set, not the chart defaults. To see the images the release really runs, read the rendered manifest:
+`helm get values` shows only the values you set, not the chart defaults. To see the images the release really runs, read the rendered manifest. The command selects the `image:` lines of the Caradhras Deployment by template path, so it also works when you use a custom image repository:
 
 ```bash
-helm get manifest plugin-access-manager -n plugin-access-manager | grep -E 'image: .*caradhras'
+helm get manifest plugin-access-manager -n plugin-access-manager \
+  | awk '/^# Source:/ {s=$3} s ~ /templates\/caradhras\/deployment\.yaml$/ && /^[[:space:]]+image:/'
 ```
+
+The output has one line for the `wait-for-dependencies` init container, one for the `migrate` init container (`caradhras-migrations`) and one for the `caradhras` container. Read the tags of the last two.
 
 To see which tag keys you set yourself, check these keys in `helm get values plugin-access-manager -n plugin-access-manager -o yaml`:
 

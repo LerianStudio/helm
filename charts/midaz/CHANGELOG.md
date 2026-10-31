@@ -1,5 +1,17 @@
 # Midaz Changelog
 
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
 ## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
 
 Features:

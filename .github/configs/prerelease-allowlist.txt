@@ -1,0 +1,5 @@
+# Charts allowed to release as stable while pinning a prerelease app.
+# One chart directory name per line; the release leg fails for any other chart
+# whose appVersion or image tag carries -alpha, -beta or -rc.
+plugin-br-ted-lerian
+plugin-br-payments

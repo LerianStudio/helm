@@ -230,7 +230,7 @@ jobs:
           if grep -qxF "$CHART_NAME" <(sed -E 's/[[:space:]]*#.*//' .github/configs/prerelease-allowlist.txt); then
             exit 0
           fi
-          PRE='[0-9]-(alpha|beta|rc)([.0-9]|$)'
+          PRE='[0-9]-(alpha|beta|rc)([^[:alpha:]]|$)'
           HITS=$( { grep -nE "^appVersion:.*${PRE}" "$CHART_DIR/Chart.yaml" | sed "s|^|Chart.yaml:|"
                     grep -nE "^[[:space:]]*tag:.*${PRE}" "$CHART_DIR/values.yaml" | sed "s|^|values.yaml:|"; } || true)
           if [ -n "$HITS" ]; then

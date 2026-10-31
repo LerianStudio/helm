@@ -4,6 +4,16 @@
 
 Fixes:
 
+- Update `plugin-br-pix-jd` to `1.5.0`. (@fredcamaral, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.7...plugin-br-pix-jd-v0.5.8)
+
+---
+
+## [0.5.8](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.8)
+
+Fixes:
+
 - Updated `plugin-br-pix-jd` to `@1.5.0`. (@fredcamaral, @lerian-studio)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.7...plugin-br-pix-jd-v0.5.8)

@@ -7,6 +7,26 @@ Features:
 
 Fixes:
 - Provide a license for the IdP declaration test fixtures. (@bedatty)
+- Update to `reporter-manager@4.6.0` and `reporter-worker@4.6.0`. (@bedatty, @lerian-studio)
+- Stage the `4.6.0` upgrade and ensure only valid semver is parsed in the license gate. (@augusto-draxx)
+
+Improvements:
+- Remove the hand-written `5.1` upgrade guide. (@bedatty)
+- Document that the worker reads a mounted catalog and the catalog token is a secret. (@augusto-draxx)
+- Add a Helm upgrade guide for reporter `v5.0.1`. (@victorlazari)
+- Correct the pod roll note in the `v5.0.1` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.0.1...reporter-v5.1.0)
+
+---
+
+## [5.1.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.1.0)
+
+Features:
+- Require a license for app `4.6.0` and document the regulatory catalog. (@bedatty, @augusto-draxx)
+
+Fixes:
+- Provide a license for the IdP declaration test fixtures. (@bedatty)
 - Update `reporter-manager@4.6.0` and `reporter-worker@4.6.0`. (@bedatty, @lerian-studio)
 - Stage the `4.6.0` upgrade and ensure only valid semver is parsed in the license gate. (@augusto-draxx)
 

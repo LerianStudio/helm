@@ -20,7 +20,13 @@ on:
 permissions:
   contents: write
   packages: write
-  id-token: write
+
+# One release per branch at a time. In-flight runs finish; a burst keeps only the
+# newest queued run, so a leg dropped by that or by a moved branch must fail
+# loudly (see the check after Semantic Release) instead of ending green.
+concurrency:
+  group: helm-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   get-changed-paths:
@@ -31,9 +37,10 @@ jobs:
       matrix: ${{ steps.restrict.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Get changed paths
         id: changed-paths
@@ -124,16 +131,19 @@ jobs:
     steps:
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
         with:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
+          # Later steps authenticate with the token themselves (semantic-release,
+          # README sync); the repository is public, so fetches need no credential.
+          persist-credentials: false
 
       - name: Update Last Changes
         run: git pull origin ${{ github.ref_name }}
@@ -180,7 +190,7 @@ jobs:
           go run ./validate-helm-charts --root ../.. --render-gate --charts "$chart_name"
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -211,8 +221,28 @@ jobs:
           chart-path: ${{ matrix.chart.working_dir }}
           values-file: .github/configs/helm-render-values/${{ matrix.chart.name }}.yaml
 
+      # A stable chart release must not ship a prerelease app by accident. Charts
+      # that do so on purpose are listed in .github/configs/prerelease-allowlist.txt.
+      - name: Refuse prerelease app versions in a stable chart
+        env:
+          CHART_NAME: ${{ matrix.chart.name }}
+          CHART_DIR: ${{ matrix.chart.working_dir }}
+        run: |
+          set -euo pipefail
+          if grep -qxF "$CHART_NAME" <(sed -E 's/[[:space:]]*#.*//' .github/configs/prerelease-allowlist.txt); then
+            exit 0
+          fi
+          PRE='[0-9]-(alpha|beta|rc)([.0-9]|$)'
+          HITS=$( { grep -nE "^appVersion:.*${PRE}" "$CHART_DIR/Chart.yaml" | sed "s|^|Chart.yaml:|"
+                    grep -nE "^[[:space:]]*tag:.*${PRE}" "$CHART_DIR/values.yaml" | sed "s|^|values.yaml:|"; } || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::${CHART_NAME} would release as stable with a prerelease app version. Pin a stable one, or list the chart in .github/configs/prerelease-allowlist.txt:"
+            echo "$HITS"
+            exit 1
+          fi
+
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         id: import_gpg
         with:
           gpg_private_key: ${{ secrets.LERIAN_CI_CD_USER_GPG_KEY }}
@@ -330,6 +360,22 @@ jobs:
       # moving after the per-chart release scoping. Only on main: a maintenance
       # line must not rewrite the "latest" row. The commit touches README.md alone,
       # which the trigger's paths-ignore skips, so it starts no other release.
+      # semantic-release exits 0 without publishing when the branch moved after the
+      # checkout. A leg that published nothing while behind origin is a dropped
+      # release: fail it so the job is re-run (a re-run catches up first).
+      - name: Fail when the release was skipped because the branch moved
+        if: steps.semantic_changelog.outputs.new_release_published != 'true'
+        env:
+          BRANCH: ${{ github.ref_name }}
+          CHART_NAME: ${{ matrix.chart.name }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin "$BRANCH"
+          if ! git merge-base --is-ancestor "origin/$BRANCH" HEAD; then
+            echo "::error::$BRANCH moved during the run and ${CHART_NAME} published nothing; re-run this job to release it"
+            exit 1
+          fi
+
       - name: Sync README version matrix
         if: steps.semantic_changelog.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
         env:

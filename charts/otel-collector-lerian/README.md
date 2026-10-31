@@ -6,7 +6,7 @@
 - Required secrets: `OTEL_API_KEY` must be supplied by the referenced `otel-api-key` Kubernetes Secret for telemetry export.
 - Dependency notes: Wraps the upstream OpenTelemetry Collector chart and intentionally has no local application templates.
 - Production overrides: Override collector endpoints, resource limits, RBAC scope, and the Secret referenced by `extraEnvs` for the target cluster.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 This Helm chart installs the [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) configured for Lerian's observability stack. It collects traces, logs, and metrics from Kubernetes workloads and exports them to Lerian's central telemetry backend.
 

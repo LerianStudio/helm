@@ -10,7 +10,7 @@
 - Production overrides: for HA set `consul.server.replicas`/`consul.server.bootstrapExpect` to an odd number (3/5) and `consul.server.disruptionBudget.enabled=true`; set `consul.global.tls.enabled=true` for cross-trust-boundary access; tune `consul.server.storage`, `consul.server.storageClass`, `consul.global.image` and `consul.server.resources` per cluster.
 - Reproducibility: `values.schema.json` keeps the `consul:` override block validated and `Chart.lock` pins the resolved dependency. Note that the schema is strict only at the top level and under `networkPolicy`; `consul:` and `consul.global` are open, so a typo under `consul:` is silently ignored. Check the effect with `helm template`.
 - Prerequisite: the HashiCorp repository must be known to Helm before `helm dependency build` (see [Building the chart locally](#building-the-chart-locally)).
-- Source/license: chart source in `github.com/LerianStudio/helm` under Apache-2.0. **The deployed Consul is third-party software under the Business Source License 1.1 — see [License](#license) below.**
+- Source/license: chart source in `github.com/LerianStudio/helm` under the Elastic License 2.0. **The deployed Consul is third-party software under the Business Source License 1.1 — see [License](#license) below.**
 
 ---
 
@@ -194,7 +194,7 @@ $ helm dependency build charts/lerian-consul
 
 ## License
 
-This chart (the Lerian wrapper) is licensed **Apache-2.0**.
+This chart (the Lerian wrapper) is licensed under the **Elastic License 2.0**.
 
 The workload it deploys — **HashiCorp Consul** (pinned `1.20.6`) — is **not** Apache/MPL: Consul `1.17.0`+ is under the **Business Source License 1.1 (BSL)**, HashiCorp's source-available license (Consul `≤ 1.16.x` was MPL 2.0). This chart does **not** redistribute the Consul binary — it references the upstream chart/images (`helm.releases.hashicorp.com`), which your cluster pulls at deploy time.
 

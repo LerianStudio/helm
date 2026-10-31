@@ -2,7 +2,7 @@
 
 ![banner](image/README/midaz-banner.png)
 
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
+[![License: Elastic-2.0](https://img.shields.io/badge/License-Elastic_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Lerian%20Studio-%237289da.svg?logo=discord)](https://discord.gg/DnhqKwkGv3)
 
 ## Chart Maintenance
@@ -353,3 +353,8 @@ For implementation and configuration details, see the [README](https://charts.le
 | :---: | :---: |
 | `1.1.0` | 1.1.0 |
 -----------------
+
+## License
+
+Copyright 2024 Lerian Studio Ltd. Licensed under the Elastic License 2.0. See
+[LICENSE](LICENSE).

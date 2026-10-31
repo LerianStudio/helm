@@ -6,7 +6,7 @@
 - Required secrets: `app.secrets.BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 A Helm chart for [plugin-br-payments](https://github.com/LerianStudio/plugin-br-payments) — Lerian Studio's plugin for Brazilian payment operations: boleto issuance, bill payments (bankslip, utilities, DARF), settlement via webhooks, and periodic reconciliation.
 
@@ -186,4 +186,4 @@ kubectl delete pvc -n midaz-plugins -l app.kubernetes.io/instance=my-payments
 
 ## License
 
-[Apache 2.0](../../LICENSE) (chart). The `plugin-br-payments` application itself is proprietary to Lerian Studio Ltd.
+[Elastic License 2.0](https://github.com/LerianStudio/helm/blob/main/LICENSE) (chart). The `plugin-br-payments` application itself is proprietary to Lerian Studio Ltd.

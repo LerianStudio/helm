@@ -177,8 +177,7 @@ common:
   # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
   # a bundled plaintext datastore is enabled), allowCorsWildcard, allowInsecureOtel.
   security: {}
-  # -- organizationIds (ORGANIZATION_IDS — required in every environment), isDevelopment
-  # (routes the license SDK to the dev gateway). LICENSE_KEY is a secret.
+  # -- organizationIds (ORGANIZATION_IDS — required in every environment). LICENSE_KEY is a secret.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
   # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.

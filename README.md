@@ -201,7 +201,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `4.3.0` | 0.142.0 |
+| `4.3.1` | 0.142.0 |
 -----------------
 
 ### Product Console

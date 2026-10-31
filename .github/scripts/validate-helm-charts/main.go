@@ -59,6 +59,9 @@ var dualSecretRequiredPattern = regexp.MustCompile(`(?m)^\s*([A-Za-z0-9_]+)\s*:\
 // rotate the credential for existing releases on upgrade. Keep this list minimal and
 // document the rationale per entry. Key format: "<chartName>:<dotted values path>".
 var allowlistedCredentialDefaults = map[string]bool{
+	// plugin-access-manager ships a default initUser.adminPassword so existing releases keep
+	// their admin login across upgrades; operators are expected to override it in production.
+	"plugin-access-manager:auth.initUser.adminPassword": true,
 	// reporter's BUNDLED groundhog2k RabbitMQ (rabbitmq.enabled=true) is dev/local-only —
 	// production points at an EXTERNAL broker with real, per-tier credentials. A configured
 	// load_definitions import makes RabbitMQ skip seeding the default user, so the reporter

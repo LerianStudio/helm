@@ -21,11 +21,12 @@ permissions:
   contents: write
   packages: write
 
-# One release per branch at a time. Runs of the push bot (all jobs skipped) get
-# their own group so they never cancel a pending human-merge run.
+# One release per branch at a time; queue: max keeps every merge's run pending
+# instead of cancelling the middle one of a burst.
 concurrency:
-  group: helm-release-${{ github.ref }}${{ github.actor == 'lerian-studio-midaz-push-bot[bot]' && format('-{0}', github.run_id) || '' }}
+  group: helm-release-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   get-changed-paths:
@@ -35,12 +36,6 @@ jobs:
     outputs:
       matrix: ${{ steps.restrict.outputs.matrix }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
       - name: Get changed paths
         id: changed-paths
         uses: LerianStudio/shared-workflows-public/src/config/changed-paths@tier-1
@@ -200,7 +195,7 @@ jobs:
       # CLI never reads. The image gate below inspects manifests through the Docker
       # CLI, so GHCR needs a login there as well.
       - name: Log in to GitHub Container Registry (Docker CLI)
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: lerianstudio

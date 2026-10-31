@@ -209,7 +209,7 @@ plugin-br-payments README.
 {{- $ownSecret := not .Values.app.useExistingSecret }}
 {{- $cmAll := dict -}}
 {{- range $k, $v := (.Values.app.configmap | default dict) }}{{- if not (kindIs "invalid" $v) }}{{- $_ := set $cmAll $k $v -}}{{- end }}{{- end }}
-{{- $production := eq (include "lerian-common.globalValue" (dict "context" . "configmap" $cmAll "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | toString | trim | lower) "production" }}
+{{- $production := eq (include "lerian-common.globalValue" (dict "context" . "configmap" $cmAll "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | toString | lower) "production" }}
 
 {{- if and .Values.app.useExistingSecret (not .Values.app.existingSecretName) }}
 {{- fail "\n\nERROR: app.existingSecretName is REQUIRED when app.useExistingSecret=true.\n" }}
@@ -311,15 +311,15 @@ plugin-br-payments README.
 {{- end }}
 
 {{/* Credential encryption key: the worker, the multi-tenant API and every production boot read it. */}}
-{{- if and $ownSecret (or (eq $svcType "both") (eq $svcType "worker") (and $multiTenantEnabled $servesAPI) $production) (not .Values.app.secrets.CREDENTIAL_ENCRYPTION_KEY) }}
+{{- if and $ownSecret (or (eq $svcType "both") (eq $svcType "worker") $multiTenantEnabled $production) (not .Values.app.secrets.CREDENTIAL_ENCRYPTION_KEY) }}
 {{- fail "\n\nERROR: app.secrets.CREDENTIAL_ENCRYPTION_KEY is REQUIRED when SERVICE_TYPE includes worker (\"both\" or \"worker\"), when multi-tenant serves the API, or when ENV_NAME is production.\n   The plugin uses this key to encrypt provider OAuth credentials at rest.\n   Must be a base64-encoded AES-256 key (32 random bytes).\n   Generate with: openssl rand -base64 32\n" }}
 {{- end }}
 
-{{/* BTG webhook HMAC secret: required in production for every tenancy mode and SERVICE_TYPE; the app enforces 32+ characters whenever it is set. */}}
+{{/* BTG webhook HMAC secret: the webhook route needs it wherever the API is served, and every production boot checks it; 32+ characters whenever set. */}}
 {{- if $ownSecret }}
 {{- $btgHmac := .Values.app.secrets.BTG_WEBHOOK_HMAC_SECRET | default "" | toString }}
-{{- if and $production (not $btgHmac) }}
-{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_HMAC_SECRET is REQUIRED when ENV_NAME is production.\n   The app refuses to boot without it. Must be at least 32 characters.\n   Generate with: openssl rand -hex 32\n" }}
+{{- if and (or $production $servesAPI) (not $btgHmac) }}
+{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_HMAC_SECRET is REQUIRED wherever the API is served (SERVICE_TYPE \"both\" or \"api\") and on every pod when ENV_NAME is production.\n   The app refuses to boot without it. Must be at least 32 characters.\n   Generate with: openssl rand -hex 32\n" }}
 {{- end }}
 {{- if and $btgHmac (lt (len $btgHmac) 32) }}
 {{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_HMAC_SECRET must be at least 32 characters.\n   Generate with: openssl rand -hex 32\n" }}

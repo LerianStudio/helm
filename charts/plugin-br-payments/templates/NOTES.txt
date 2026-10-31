@@ -58,7 +58,7 @@ The following values MUST be set for the deployment to start successfully:
 {{- end }}
   - app.secrets.INTERNAL_API_KEY          (>=32 chars; required for SERVICE_TYPE=both/worker)
   - app.secrets.CREDENTIAL_ENCRYPTION_KEY (base64 AES-256; required for SERVICE_TYPE=both/worker, multi-tenant API, or ENV_NAME=production)
-  - app.secrets.BTG_WEBHOOK_HMAC_SECRET   (>=32 chars; required when ENV_NAME=production, every tenancy mode)
+  - app.secrets.BTG_WEBHOOK_HMAC_SECRET   (>=32 chars; required where the API is served and in production)
   - app.secrets.CONSULT_AUDIT_HMAC_KEY    (>=32 chars, no surrounding whitespace; required for SERVICE_TYPE=both/api)
   - app.secrets.LICENSE_KEY               (required in every environment)
   - app.configmap.ORGANIZATION_IDS        ("global" or the organization UUIDs the license covers)

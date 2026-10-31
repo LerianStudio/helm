@@ -63,7 +63,7 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. Same conditionality as above; renamed from `BTG_CLIENT_SECRET`. |
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker, when multi-tenant serves the API, or when `ENV_NAME=production` (the default). Generate with `openssl rand -base64 32`. |
-| `app.secrets.BTG_WEBHOOK_HMAC_SECRET` | HMAC-SHA256 secret of the provider webhook subscription. Required when `ENV_NAME=production` (the default), in every tenancy mode and `SERVICE_TYPE`; at least 32 characters whenever set. Generate with `openssl rand -hex 32`. |
+| `app.secrets.BTG_WEBHOOK_HMAC_SECRET` | HMAC-SHA256 secret of the provider webhook subscription. Required wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`) and on every pod when `ENV_NAME=production` (the default), in every tenancy mode; at least 32 characters whenever set. Generate with `openssl rand -hex 32`. |
 | `app.secrets.CONSULT_AUDIT_HMAC_KEY` | HMAC key of the bill consult audit's line fingerprint (`line_fp`). Required when `SERVICE_TYPE` serves the API (`both`, the default, or `api`); the app refuses to boot without it. At least 32 characters, no leading or trailing whitespace; with `ENV_NAME=production` the app also refuses the published example placeholders. Generate with `openssl rand -hex 32` and, outside local, source it from the platform secret manager. Rotating it is a restart, but older `line_fp` values stop correlating (there is no `_PREVIOUS` key). Not checked at render when `app.useExistingSecret=true`. |
 
 Secret keys are not checked at render with `app.useExistingSecret=true`; the Secret named by `app.existingSecretName` must carry them.
@@ -366,7 +366,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `OTEL_RESOURCE_SERVICE_NAME` | `"plugin-br-payments"` |
 | `OTEL_RESOURCE_SERVICE_VERSION` | the image tag |
 
-The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collector endpoint it sets itself (`otel-collector-lerian.enabled=true`, plaintext `$(HOST_IP):4317`); a plaintext endpoint you supply gets no automatic opt-out, so under `ENV_NAME=production` either use `https://` or set `ALLOW_INSECURE_OTEL` yourself through `app.extraEnvVars`.
+The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collector endpoint it sets itself (`otel-collector-lerian.enabled=true`, plaintext `$(HOST_IP):4317`); a plaintext endpoint you supply gets no automatic opt-out, so while `deploymentEnvironment` is `production` or `prod` (the chart default) either use `https://` or set `ALLOW_INSECURE_OTEL` yourself through `app.extraEnvVars`.
 
 </details>
 

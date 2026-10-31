@@ -33,7 +33,7 @@ global:
   # -- OpenTelemetry: enabled / otlpEndpoint / deploymentEnvironment.
   observability: {}
   #   enabled: "true"
-  #   otlpEndpoint: "otel-collector-lerian:4317"
+  #   otlpEndpoint: "https://otel-collector.example.com:4317"
   #   deploymentEnvironment: "production"
   # -- Tenant-manager: enabled / url (MULTI_TENANT_ENABLED / MULTI_TENANT_URL).
   multiTenant: {}
@@ -226,8 +226,8 @@ app:
   # Required: LICENSE_KEY; POSTGRES_PASSWORD and INTERNAL_API_KEY (>= 32 chars) when
   # SERVICE_TYPE runs the worker ("both"/"worker"); CREDENTIAL_ENCRYPTION_KEY when
   # SERVICE_TYPE runs the worker, multi-tenant serves the API, or ENV_NAME is
-  # production; BTG_WEBHOOK_HMAC_SECRET (>= 32 chars) when ENV_NAME is production
-  # (every tenancy mode and SERVICE_TYPE; checked at any length whenever set);
+  # production; BTG_WEBHOOK_HMAC_SECRET (>= 32 chars) wherever the API is served
+  # and on every pod in production (checked at any length whenever set);
   # PROVIDER_CLIENT_ID and PROVIDER_CLIENT_SECRET in single-tenant mode (resolved
   # per tenant otherwise); MULTI_TENANT_SERVICE_API_KEY in multi-tenant mode;
   # CONSULT_AUDIT_HMAC_KEY when SERVICE_TYPE serves the API ("both"/"api");

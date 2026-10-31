@@ -21,11 +21,10 @@ permissions:
   contents: write
   packages: write
 
-# One release per branch at a time. In-flight runs finish; a burst keeps only the
-# newest queued run, so a leg dropped by that or by a moved branch must fail
-# loudly (see the check after Semantic Release) instead of ending green.
+# One release per branch at a time. Runs of the push bot (all jobs skipped) get
+# their own group so they never cancel a pending human-merge run.
 concurrency:
-  group: helm-release-${{ github.ref }}
+  group: helm-release-${{ github.ref }}${{ github.actor == 'lerian-studio-midaz-push-bot[bot]' && format('-{0}', github.run_id) || '' }}
   cancel-in-progress: false
 
 jobs:
@@ -131,7 +130,7 @@ jobs:
     steps:
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
         with:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
@@ -140,9 +139,8 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-          # Later steps authenticate with the token themselves (semantic-release,
-          # README sync); the repository is public, so fetches need no credential.
+          # Later steps authenticate with the app token themselves; the repository
+          # is public, so clone and fetch need no credential.
           persist-credentials: false
 
       - name: Update Last Changes
@@ -353,13 +351,6 @@ jobs:
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_COMMITTER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
 
-      # The root README version matrix is synced here, from the repo root, and not
-      # by @semantic-release/git: semantic-release runs with cwd = the chart dir,
-      # and that plugin only stages files `git ls-files -m` reports inside the cwd,
-      # so a `../../README.md` asset was silently dropped and the matrix stopped
-      # moving after the per-chart release scoping. Only on main: a maintenance
-      # line must not rewrite the "latest" row. The commit touches README.md alone,
-      # which the trigger's paths-ignore skips, so it starts no other release.
       # semantic-release exits 0 without publishing when the branch moved after the
       # checkout. A leg that published nothing while behind origin is a dropped
       # release: fail it so the job is re-run (a re-run catches up first).
@@ -376,6 +367,13 @@ jobs:
             exit 1
           fi
 
+      # The root README version matrix is synced here, from the repo root, and not
+      # by @semantic-release/git: semantic-release runs with cwd = the chart dir,
+      # and that plugin only stages files `git ls-files -m` reports inside the cwd,
+      # so a `../../README.md` asset was silently dropped and the matrix stopped
+      # moving after the per-chart release scoping. Only on main: a maintenance
+      # line must not rewrite the "latest" row. The commit touches README.md alone,
+      # which the trigger's paths-ignore skips, so it starts no other release.
       - name: Sync README version matrix
         if: steps.semantic_changelog.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
         env:

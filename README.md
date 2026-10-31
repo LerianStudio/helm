@@ -159,7 +159,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `4.0.0` | 3.1.1 | 3.1.1 |
+| `4.0.1` | 3.1.1 | 3.1.1 |
 -----------------
 
 ### Tracer

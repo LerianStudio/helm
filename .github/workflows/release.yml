@@ -222,9 +222,9 @@ jobs:
           if grep -qxF "$CHART_NAME" <(sed -E 's/[[:space:]]*#.*//' .github/configs/prerelease-allowlist.txt); then
             exit 0
           fi
-          PRE='[0-9]-(alpha|beta|rc)([^[:alpha:]]|$)'
+          PRE='-(alpha|beta|rc)([^[:alpha:]]|$)'
           HITS=$( { grep -nE "^appVersion:.*${PRE}" "$CHART_DIR/Chart.yaml" | sed "s|^|Chart.yaml:|"
-                    grep -nE "^[[:space:]]*tag:.*${PRE}" "$CHART_DIR/values.yaml" | sed "s|^|values.yaml:|"; } || true)
+                    grep -nE "^[[:space:]]*(tag|image[[:alnum:]]*):.*${PRE}" "$CHART_DIR/values.yaml" | sed "s|^|values.yaml:|"; } || true)
           if [ -n "$HITS" ]; then
             echo "::error::${CHART_NAME} would release as stable with a prerelease app version. Pin a stable one, or list the chart in .github/configs/prerelease-allowlist.txt:"
             echo "$HITS"
@@ -527,7 +527,11 @@ jobs:
   update-gitops:
     name: Update GitOps
     needs: collect-published-charts
-    if: needs.collect-published-charts.outputs.matrix != '[]'
+    # A failed sibling leg must not cost the charts that did publish their GitOps pins.
+    if: >-
+      !cancelled() &&
+      needs.collect-published-charts.result == 'success' &&
+      needs.collect-published-charts.outputs.matrix != '[]'
     strategy:
       # Serial: every leg commits to the same GitOps repository, and racing
       # pushes would spend the composite's single rebase retry on each other.

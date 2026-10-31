@@ -140,7 +140,7 @@ Shared (`common.*`):
 | `cors.exposeHeaders` / `allowCredentials` | `CORS_EXPOSE_HEADERS` / `CORS_ALLOW_CREDENTIALS` | `""` / `false` |
 | `security.allowInsecureTls` | `ALLOW_INSECURE_TLS` | `true` only with a bundled plaintext datastore, else `false` |
 | `security.allowCorsWildcard` / `allowInsecureOtel` | `ALLOW_CORS_WILDCARD` / `ALLOW_INSECURE_OTEL` | unset |
-| `license.organizationIds` / `isDevelopment` | `ORGANIZATION_IDS` / `IS_DEVELOPMENT` | unset (organizationIds required in every environment) |
+| `license.organizationIds` | `ORGANIZATION_IDS` | unset (organizationIds required in every environment) |
 | `postgres.maxOpenConns` / `maxIdleConns` / `connMaxLifetimeMins` / `connMaxIdleTimeMins` / `connectTimeoutSec` | `POSTGRES_MAX_OPEN_CONNS` / `..._MAX_IDLE_CONNS` / `..._CONN_MAX_LIFETIME_MINS` / `..._CONN_MAX_IDLE_TIME_MINS` / `..._CONNECT_TIMEOUT_SEC` | `25` / `5` / `30` / `5` / `10` |
 | `redis.db` / `protocol` / `poolSize` / `minIdleConns` | `REDIS_DB` / `REDIS_PROTOCOL` / `REDIS_POOL_SIZE` / `REDIS_MIN_IDLE_CONNS` | `0` / `3` / `10` / `2` |
 | `redis.readTimeout` / `writeTimeout` / `dialTimeout` / `poolTimeout` | `REDIS_READ_TIMEOUT` / `REDIS_WRITE_TIMEOUT` / `REDIS_DIAL_TIMEOUT` / `REDIS_POOL_TIMEOUT` | `3` / `3` / `5` / `2` |
@@ -305,7 +305,7 @@ $ helm install br-sta charts/br-sta -f charts/br-sta/values-dev.yaml -n sta-dev 
 
 The key is read from a file into a Secret, so it never lands in shell history or process arguments; `common.secretRefs.LICENSE_KEY` overrides the dev placeholder.
 
-`values-dev.yaml` carries placeholder license values so it renders; the pods do not boot until a real `LICENSE_KEY` and organization id are set (a key issued by the dev license gateway also needs `common.license.isDevelopment: "true"`).
+`values-dev.yaml` carries placeholder license values so it renders; the pods do not boot until a real `LICENSE_KEY` and organization id are set.
 
 It bundles, in the release namespace:
 

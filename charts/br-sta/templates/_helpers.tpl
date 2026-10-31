@@ -607,7 +607,6 @@ ALLOW_INSECURE_TLS: {{ include "br-sta.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowInsecureOtel" "k" "ALLOW_INSECURE_OTEL" "opt" true) }}
 # --- License (lib-license-go); LICENSE_KEY lives in the Secret ------------------
 {{ include $kv (dict "cm" $cm "p" $c.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.license "f" "isDevelopment" "k" "IS_DEVELOPMENT" "opt" true) }}
 # --- Multi-tenant (lerian-common.multiTenant.env; secrets via multiTenant.secret) --
 MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 {{- /* Tenant-manager client tuning as grouped params (common.multiTenant.*): the

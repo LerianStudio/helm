@@ -70,8 +70,7 @@ helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
 ```
 
 O `values-dev.yaml` traz só valores de licença placeholder: o manager e o worker não
-sobem até você setar uma chave e um organization id reais (chave emitida pelo gateway
-de licença dev também exige `common.license.isDevelopment: "true"`).
+sobem até você setar uma chave e um organization id reais.
 
 Todas as imagens são públicas, então não é preciso pull secret. Para um mirror
 privado, sete `imagePullSecrets` (chave raiz): manager, worker, Job de migrations e mock
@@ -236,7 +235,7 @@ export generator).
 |---|---|
 | Uma chave por produto | Uma chave licencia um único produto. Chave emitida para outro produto é recusada com `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; chave desconhecida ou adulterada, com `(LCS-1002)` |
 | Na recusa | O processo sai e o pod entra em `CrashLoopBackOff`. Num rolling update o pod que já está rodando continua servindo: o rollout trava, mas nada cai |
-| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging também são validadas neste gateway de produção. `common.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) troca para `https://license.dev.lerian.io`: use só para chaves emitidas pelo gateway dev |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging também são validadas neste gateway de produção. `IS_DEVELOPMENT` está obsoleta e é ignorada: os produtos validam só no gateway de produção |
 | Refresh e carência | A chave é revalidada a cada 6 h. Quando o gateway não responde (erro de rede ou 5xx) depois de ter confirmado a chave uma vez, o processo segue servindo em janelas de carência decrescentes (2 d, 1 d, 12 h, 6 h, no máximo 3 d 18 h) e depois sai. Um processo que nunca foi confirmado ganha só 6 h. Uma recusa 4xx encerra a carência na hora. As janelas vivem em memória: um pod reiniciado durante uma queda começa sem confirmação |
 | Offline | Não há modo de licença offline nesta versão da app |
 | Gate de render | Em todos os ambientes o render falha sem `LICENSE_KEY` e `ORGANIZATION_IDS` (a app recusa o boot sem licença; não há modo sem licença) |

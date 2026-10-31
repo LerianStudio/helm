@@ -18,8 +18,8 @@ api:
     REDIS_HOST: ""
 
     # Arms the app's production security gates: auth forced on, Postgres password
-    # and SSL required, and ALLOW_CORS_WILDCARD, ALLOW_RATELIMIT_FAIL_OPEN and
-    # IS_DEVELOPMENT=true rejected at boot. ALLOW_INSECURE_TLS stays allowed (see
+    # and SSL required, and ALLOW_CORS_WILDCARD and ALLOW_RATELIMIT_FAIL_OPEN
+    # rejected at boot. ALLOW_INSECURE_TLS stays allowed (see
     # below). Leave empty only for development.
     ENVIRONMENT_NAME: ""
 
@@ -73,8 +73,7 @@ api:
     ALLOW_INSECURE_TLS: ""
 
   secrets:
-    # REQUIRED for the api and the worker, in every mode. IS_DEVELOPMENT only
-    # selects the development license gateway; it does not skip validation.
+    # REQUIRED for the api and the worker, in every mode.
     LICENSE_KEY: ""
 
     # Optional: an in-cluster Redis with no auth is a legitimate topology.

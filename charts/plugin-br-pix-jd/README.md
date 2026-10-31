@@ -41,7 +41,7 @@ The chart **renders** without the values below, but the service does not work wi
 | `api.configmap.JD_BASE_URL`, `api.configmap.MIDAZ_URL_ONBOARDING`, `api.configmap.MIDAZ_URL_TRANSACTION`, `api.configmap.CRM_URL` | URLs | empty | the plugin has no address for JD, Midaz or CRM |
 | `api.secrets.JD_CLIENT_ID`, `api.secrets.JD_SECRET`, `api.secrets.MIDAZ_CLIENT_ID`, `api.secrets.MIDAZ_CLIENT_SECRET`, `api.secrets.CRM_CLIENT_ID`, `api.secrets.CRM_CLIENT_SECRET` | client IDs and secrets | empty | the plugin cannot authenticate to JD, Midaz or CRM. These keys are read **only** from `api.secrets`; the chart ignores them in `api.configmap` |
 
-With `ENVIRONMENT_NAME=production`, never set `ALLOW_CORS_WILDCARD`, `ALLOW_RATELIMIT_FAIL_OPEN` or `IS_DEVELOPMENT`: the render fails, because the service refuses to start with them.
+With `ENVIRONMENT_NAME=production`, never set `ALLOW_CORS_WILDCARD` or `ALLOW_RATELIMIT_FAIL_OPEN`: the render fails, because the service refuses to start with them.
 
 For the other variables the plugin reads, see [Environment variables](https://docs.lerian.studio/en/interfaces/pix-jd/pix-jd-environment-variables).
 

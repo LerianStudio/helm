@@ -301,7 +301,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version | Migrations Version |
 | :---: | :---: | :---: | :---: |
-| `1.0.2` | 1.0.0 | 1.0.0 | 1.0.0 |
+| `1.0.3` | 1.0.0 | 1.0.0 | 1.0.0 |
 -----------------
 
 ### Agent

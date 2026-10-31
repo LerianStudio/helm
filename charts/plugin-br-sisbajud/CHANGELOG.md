@@ -3,6 +3,31 @@
 ## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.0)
 
 Features:
+- Released version `1.1.0` of the plugin. (@brunobls)
+- Implemented refusal of images without specified key modes. (@brunobls)
+- Added rendering and validation for AWS KMS key modes. (@brunobls)
+
+Fixes:
+- Corrected the handling of canonical image tags to refuse leading zeros. (@brunobls)
+- Ensured only canonical image tags are verified. (@brunobls)
+
+Improvements:
+- Updated documentation to include AWS KMS key modes in the getting started guide. (@brunobls)
+- Clarified the behavior of KMS trim in the documentation. (@brunobls)
+- Noted that AWS KMS knobs render only with AWS in the documentation. (@brunobls)
+- Aligned tag gate notes with canonical rules in the documentation. (@brunobls)
+- Documented canonical tags and their limits. (@brunobls)
+- Noted the digest-only tag limit in the documentation. (@brunobls)
+- Documented the image tag gate and its limits. (@brunobls)
+- Documented AWS KMS key mode values. (@brunobls)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.0.0...plugin-br-sisbajud-v1.1.0)
+
+---
+
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.0)
+
+Features:
 - Released app version `1.1.0`. (@brunobls)
 - Implemented refusal of images without key modes. (@brunobls)
 - Added rendering and validation for AWS KMS key modes. (@brunobls)

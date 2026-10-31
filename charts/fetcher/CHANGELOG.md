@@ -10,6 +10,22 @@ Features:
 Improvements:
 
 - Link the license by URL so packaged charts resolve it. (@fredcamaral)
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+Improvements:
+
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
 
 Fixes:
 

@@ -114,6 +114,13 @@ spec:
             timeoutSeconds: {{ .Values.app.readinessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.app.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.app.readinessProbe.failureThreshold | default 2 }}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: {{ ($.Values.app.startupProbe | default dict).periodSeconds | default 10 }}
+            timeoutSeconds: {{ ($.Values.app.startupProbe | default dict).timeoutSeconds | default 3 }}
+            failureThreshold: {{ ($.Values.app.startupProbe | default dict).failureThreshold | default 40 }}
           livenessProbe:
             httpGet:
               path: /health

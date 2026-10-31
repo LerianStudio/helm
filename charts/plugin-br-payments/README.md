@@ -77,6 +77,7 @@ When `app.configmap.MULTI_TENANCY_ENABLED=true`, the following are additionally 
 
 | Probe | Path | Notes |
 |-------|------|-------|
+| Startup | `/health` | Covers boot (connect 30s + migrations up to `MIGRATION_TIMEOUT_SEC`, default 300s) before liveness and readiness start. Default 40 x 10s = 400s. |
 | Liveness | `/health` | Lightweight startup self-probe. Returns 200 once startup completes. |
 | Readiness | `/readyz` | Deep per-dependency checks (Postgres, Provider, Midaz, Tenant Manager). Returns 503 if any dep is `down`/`degraded`. |
 | Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANCY_ENABLED=true`. Anti-enumeration uniform shape. |

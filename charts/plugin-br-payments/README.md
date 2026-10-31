@@ -326,6 +326,11 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `RECONCILIATION_BATCH_SUBMISSION_CLAIM_LEASE` | unset (app default `3m`; floored at `4 × BTG_HTTP_TIMEOUT + 1m`) |
 | `RECONCILIATION_BATCH_SUBMISSIONS_PER_CYCLE` | unset (app default `10`; non-numeric stops the boot) |
 | `RECONCILIATION_BATCH_RECOVERY_ALERT_AGE` | unset (app default `1h`; the alert never changes the item) |
+| `RECONCILIATION_INSTALLMENT_ACCOUNT_DISCOVERY_ALERT_AGE` | unset (app default `1h`; the alert never changes the installment) |
+| `RECONCILIATION_INSTALLMENT_CLAIM_LEASE` | unset (app default `10m`; floored at `4 × BTG_HTTP_TIMEOUT + 1m`) |
+| `RECONCILIATION_INSTALLMENT_DISCOUNT_CUTOFF_MARGIN` | unset (app default `30m`; capped at `6h`; zero, negative or unparseable takes the default) |
+| `RECONCILIATION_INSTALLMENT_RECOVERY_ALERT_AGE` | unset (app default `1h`; the alert never changes the installment) |
+| `RECONCILIATION_INSTALLMENT_RECOVERY_ESCALATION_AGE` | unset (app default `24h`; an escalation not greater than the alert age is replaced at boot, with a warning) |
 
 </details>
 

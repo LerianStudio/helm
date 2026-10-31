@@ -3,6 +3,26 @@
 ## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
 
 Features:
+
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+
+- Correct image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+
+- Add Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
 - Update `product-console` to `@3.0.0`. (@lerian-studio)
 
 Fixes:

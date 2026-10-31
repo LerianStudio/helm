@@ -549,7 +549,7 @@ consumers moved to plugin-br-sisbajud with the Mensageria split.
 {{- define "br-sisbajud.removedKeys" -}}
 {{- /* Monolith (app 1.x) keys + the executor-side keys that moved to
    plugin-br-sisbajud when the Mensageria was split out of the monolith. */ -}}
-{{- list "BALANCE_CONSUMER_DLQ_SUFFIX" "BALANCE_CONSUMER_GROUP" "BALANCE_CONSUMER_RETRY_BUDGET" "BALANCE_DEDUP_TTL" "CONNECTOR_CREDS_USE_SECRET_STORE" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "EXECUTION_ENABLED" "INFORMATION_REQUEST_BATCH_SIZE" "INFORMATION_REQUEST_ENABLED" "INFORMATION_REQUEST_LOCK_TTL" "INFORMATION_REQUEST_SCAN_INTERVAL" "LEDGER_BALANCE_TOPIC" "MIDAZ_AUTH_ADDRESS" "MIDAZ_AUTH_ENABLED" "MIDAZ_BALANCE_CONSUMER_GROUP" "MIDAZ_BALANCE_DEFAULT_ACCOUNT_TYPE" "MIDAZ_BALANCE_TOPIC" "MIDAZ_BASE_URL" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "MIDAZ_CRM_MODE" "MIDAZ_MANIFEST_CHECK_INTERVAL" "MONITORING_EXPIRY_BATCH_SIZE" "MONITORING_EXPIRY_ENABLED" "MONITORING_EXPIRY_SCAN_INTERVAL" "ORCHESTRATOR_LOCK_TTL" "ORCHESTRATOR_RENEW_INTERVAL" "OTEL_RESOURCE_SERVICE_VERSION" "PERMANENT_BLOCK_EXPIRY_BATCH_SIZE" "PERMANENT_BLOCK_EXPIRY_ENABLED" "PERMANENT_BLOCK_EXPIRY_SCAN_INTERVAL" "RECONCILIATION_BATCH_SIZE" "RECONCILIATION_ENABLED" "RECONCILIATION_INTENSIFIED_ENABLED" "RECONCILIATION_INTENSIFIED_SCAN_INTERVAL" "RECONCILIATION_NEAR_DEADLINE_PERCENT" "RECONCILIATION_SCAN_INTERVAL" "REHASH_BACKFILL_BATCH_SIZE" "REHASH_BACKFILL_DROP_PREVIOUS_KEY_ENABLED" "REHASH_BACKFILL_ENABLED" "REHASH_BACKFILL_SCAN_INTERVAL" "SECRET_STORE_PROVIDER" "STA_CONSUMER_GROUP" "STA_INSTITUTION_CODE" "STA_INSTITUTION_ID" "UNBLOCK_EXECUTION_BATCH_SIZE" "UNBLOCK_EXECUTION_SCAN_INTERVAL" "VAULT_KV_MOUNT" "VERSION" | toJson -}}
+{{- list "BALANCE_CONSUMER_DLQ_SUFFIX" "BALANCE_CONSUMER_GROUP" "BALANCE_CONSUMER_RETRY_BUDGET" "BALANCE_DEDUP_TTL" "CONNECTOR_CREDS_USE_SECRET_STORE" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET" "EXECUTION_ENABLED" "INFORMATION_REQUEST_BATCH_SIZE" "INFORMATION_REQUEST_ENABLED" "INFORMATION_REQUEST_LOCK_TTL" "INFORMATION_REQUEST_SCAN_INTERVAL" "IS_DEVELOPMENT" "LEDGER_BALANCE_TOPIC" "MIDAZ_AUTH_ADDRESS" "MIDAZ_AUTH_ENABLED" "MIDAZ_BALANCE_CONSUMER_GROUP" "MIDAZ_BALANCE_DEFAULT_ACCOUNT_TYPE" "MIDAZ_BALANCE_TOPIC" "MIDAZ_BASE_URL" "MIDAZ_CLIENT_ID" "MIDAZ_CLIENT_SECRET" "MIDAZ_CRM_MODE" "MIDAZ_MANIFEST_CHECK_INTERVAL" "MONITORING_EXPIRY_BATCH_SIZE" "MONITORING_EXPIRY_ENABLED" "MONITORING_EXPIRY_SCAN_INTERVAL" "ORCHESTRATOR_LOCK_TTL" "ORCHESTRATOR_RENEW_INTERVAL" "OTEL_RESOURCE_SERVICE_VERSION" "PERMANENT_BLOCK_EXPIRY_BATCH_SIZE" "PERMANENT_BLOCK_EXPIRY_ENABLED" "PERMANENT_BLOCK_EXPIRY_SCAN_INTERVAL" "RECONCILIATION_BATCH_SIZE" "RECONCILIATION_ENABLED" "RECONCILIATION_INTENSIFIED_ENABLED" "RECONCILIATION_INTENSIFIED_SCAN_INTERVAL" "RECONCILIATION_NEAR_DEADLINE_PERCENT" "RECONCILIATION_SCAN_INTERVAL" "REHASH_BACKFILL_BATCH_SIZE" "REHASH_BACKFILL_DROP_PREVIOUS_KEY_ENABLED" "REHASH_BACKFILL_ENABLED" "REHASH_BACKFILL_SCAN_INTERVAL" "SECRET_STORE_PROVIDER" "STA_CONSUMER_GROUP" "STA_INSTITUTION_CODE" "STA_INSTITUTION_ID" "UNBLOCK_EXECUTION_BATCH_SIZE" "UNBLOCK_EXECUTION_SCAN_INTERVAL" "VAULT_KV_MOUNT" "VERSION" | toJson -}}
 {{- end -}}
 
 {{/*
@@ -671,7 +671,6 @@ ALLOW_INSECURE_TLS: {{ include "br-sisbajud.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.security "f" "allowWebhookPrivateNetwork" "k" "ALLOW_WEBHOOK_PRIVATE_NETWORK" "opt" true) }}
 # --- License (lib-license-go, GLOBAL mode); LICENSE_KEY lives in the Secret ------
 {{ include $kv (dict "cm" $cm "p" $b.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "d" "global") }}
-{{ include $kv (dict "cm" $cm "p" $b.license "f" "isDevelopment" "k" "IS_DEVELOPMENT" "opt" true) }}
 # --- Multi-tenant (lerian-common.multiTenant.env; secrets via multiTenant.secret) --
 MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 {{ include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $cm "enabled" $mtOn "requiredUrl" true "requiredRedisHost" true "emitRedis" true "emitPool" true "emitCache" true "emitAllowInsecure" true) }}
@@ -967,7 +966,7 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- /* License (validateLicenseConfig): required in a production-like environment; in
    local|development|staging|e2e|test an empty LICENSE_KEY is the app's dev bypass. */ -}}
 {{- if $prodLike -}}
-{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q; the app refuses to boot unlicensed)" $envName) "set" "brSisbajud.secrets.LICENSE_KEY (a dev-gateway key also needs brSisbajud.license.isDevelopment: \"true\")") -}}
+{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q; the app refuses to boot unlicensed)" $envName) "set" "brSisbajud.secrets.LICENSE_KEY") -}}
 {{- end -}}
 {{- /* KMS backend. */ -}}
 {{- $kms := index $data "KMS_PROVIDER" -}}

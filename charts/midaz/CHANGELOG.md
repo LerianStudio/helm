@@ -18,6 +18,18 @@ Features:
 - Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
 
 Improvements:
+- Relicensed charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
 - Relicensed the charts under the Elastic License 2.0. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)

@@ -206,15 +206,15 @@ app:
   # a key here always wins over those masks. A null counts as unset. The full key
   # list, with defaults, is in README.md ("Configuration keys").
   #
-  # Required: BTG_API_BASE_URL, BTG_AUTH_URL, MIDAZ_LEDGER_URL. With
-  # MULTI_TENANT_ENABLED=true also MULTI_TENANT_URL and AWS_REGION.
+  # Required: BTG_API_BASE_URL, BTG_AUTH_URL, MIDAZ_LEDGER_URL (https:// under
+  # ENV_NAME=production, the default) and ORGANIZATION_IDS ("global" or the org
+  # UUIDs the license covers). With MULTI_TENANT_ENABLED=true also MULTI_TENANT_URL,
+  # AWS_REGION and WEBHOOK_PUBLIC_BASE_URL, and an external Postgres.
   configmap: {}
     # BTG_API_BASE_URL: "https://api.btgpactual.com"
     # BTG_AUTH_URL: "https://id.btgpactual.com/oauth2/token"
-    # MIDAZ_LEDGER_URL: "http://midaz-ledger.midaz.svc.cluster.local:3002/v1"
-    # MIDAZ_CRM_URL: "http://midaz-crm.midaz.svc.cluster.local:4003/v1"
-    # MIDAZ_DEFAULT_ORG_ID: ""
-    # MIDAZ_DEFAULT_LEDGER_ID: ""
+    # MIDAZ_LEDGER_URL: "https://midaz-ledger.example.com/v1"
+    # ORGANIZATION_IDS: "global"
     # MULTI_TENANT_ENABLED: "true"
     # AWS_REGION: "us-east-2"
     # Bill consult route limit per (tenantId, sub), in-process. Not the AGGRESSIVE_*
@@ -223,14 +223,15 @@ app:
     # CONSULT_RATE_LIMIT_WINDOW_SEC: "60"
 
   # -- Per-key Secret values, each rendered only when set (templates/secrets.yaml).
-  # Required: POSTGRES_PASSWORD, INTERNAL_API_KEY (>= 32 chars) and
+  # Required: LICENSE_KEY; POSTGRES_PASSWORD, INTERNAL_API_KEY (>= 32 chars) and
   # CREDENTIAL_ENCRYPTION_KEY when SERVICE_TYPE runs the worker ("both"/"worker");
   # PROVIDER_CLIENT_ID and PROVIDER_CLIENT_SECRET in single-tenant mode (resolved
   # per tenant otherwise); MULTI_TENANT_SERVICE_API_KEY in multi-tenant mode;
-  # CONSULT_AUDIT_HMAC_KEY when SERVICE_TYPE serves the API ("both"/"api").
+  # CONSULT_AUDIT_HMAC_KEY when SERVICE_TYPE serves the API ("both"/"api");
+  # PLUGIN_AUTH_CLIENT_ID and PLUGIN_AUTH_CLIENT_SECRET in single-tenant mode while
+  # MIDAZ_AUTH_ENABLED is true (the default). Not checked with useExistingSecret.
   # Also accepted: POSTGRES_REPLICA_PASSWORD, BTG_WEBHOOK_HMAC_SECRET,
-  # INTERNAL_API_KEY_PREVIOUS, CREDENTIAL_ENCRYPTION_KEY_PREVIOUS, LICENSE_KEY,
-  # PLUGIN_AUTH_CLIENT_ID, PLUGIN_AUTH_CLIENT_SECRET.
+  # INTERNAL_API_KEY_PREVIOUS, CREDENTIAL_ENCRYPTION_KEY_PREVIOUS.
   secrets: {}
     # POSTGRES_PASSWORD: ""
     # PROVIDER_CLIENT_ID: ""
@@ -260,22 +261,10 @@ app:
   # See templates/controlplane-migrations.yaml for the full render gate.
   # @default -- templates/controlplane-migrations.yaml
   controlplaneMigrations:
-    # -- Enable the Job. Default OFF: app.image resolves to the currently
-    # released plugin-br-payments image, which does NOT yet contain the
-    # /controlplane-migrate binary (still on an unmerged branch). Do not set
-    # true until a plugin-br-payments release containing the binary is
-    # deployed — see CHANGELOG.md. The Job renders only when all three are
-    # true: app.configmap.MULTI_TENANT_ENABLED=true, the chart's own
-    # "postgresql.enabled" helper resolves to "false" (the bundled database
-    # is disabled), and this controlplaneMigrations.enabled=true. It does not
-    # depend on global.externalPostgresDefinitions.enabled: that separate flag
-    # controls database/role bootstrap and may remain false for an existing
-    # external database. See
-    # templates/controlplane-migrations.yaml's header comment for why each
-    # condition exists. Independently of this gate,
-    # plugin-br-payments.validatePostgresExclusivity fails the whole render
-    # with fail() if postgresql.enabled/postgresql.external are set to the
-    # contradictory bundled-and-external combination.
+    # -- Enable the Job. Required for a multi-tenant API (the render fails without
+    # it). It renders only with app.configmap.MULTI_TENANT_ENABLED=true and an
+    # external Postgres (the "postgresql.enabled" helper resolves "false"), and runs /controlplane-migrate from app.image (shipped since app 1.0.2). A
+    # multi-tenant API refuses to boot without the tables it creates.
     enabled: false
     # -- Resource requests and limits for the migrations Job. Deliberately
     # smaller than app.resources: this runs once, briefly, not steady-state

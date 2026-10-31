@@ -21,7 +21,7 @@ data:
   # ====================================================================
   ENV_NAME: {{ include $gv (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | quote }}
   LOG_LEVEL: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "LOG_LEVEL" "default" "info") | quote }}
-  DEPLOYMENT_MODE: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "DEPLOYMENT_MODE" "default" "saas") | quote }}
+  DEPLOYMENT_MODE: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "DEPLOYMENT_MODE" "default" "byoc") | quote }}
   SERVICE_TYPE: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "SERVICE_TYPE" "default" "both") | quote }}
   SWAGGER_ENABLED: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "SWAGGER_ENABLED" "default" "false") | quote }}
   VERSION: {{ include "plugin-br-payments.defaultTag" . | quote }}
@@ -233,12 +233,8 @@ data:
   {{- if hasKey $cm "MIDAZ_CRM_URL" }}
   MIDAZ_CRM_URL: {{ index $cm "MIDAZ_CRM_URL" | quote }}
   {{- end }}
-  {{- if hasKey $cm "MIDAZ_AUTH_ENABLED" }}
-  MIDAZ_AUTH_ENABLED: {{ index $cm "MIDAZ_AUTH_ENABLED" | quote }}
-  {{- end }}
-  {{- if hasKey $cm "MIDAZ_ALLOW_INSECURE_HTTP" }}
-  MIDAZ_ALLOW_INSECURE_HTTP: {{ index $cm "MIDAZ_ALLOW_INSECURE_HTTP" | quote }}
-  {{- end }}
+  MIDAZ_AUTH_ENABLED: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "MIDAZ_AUTH_ENABLED" "default" "true") | quote }}
+  MIDAZ_ALLOW_INSECURE_HTTP: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "MIDAZ_ALLOW_INSECURE_HTTP" "default" "true") | quote }}
   {{- if hasKey $cm "MIDAZ_DEFAULT_ORG_ID" }}
   MIDAZ_DEFAULT_ORG_ID: {{ index $cm "MIDAZ_DEFAULT_ORG_ID" | quote }}
   {{- end }}

@@ -204,6 +204,9 @@ plugin-br-payments README.
 {{- define "plugin-br-payments.validateRequired" -}}
 {{- include "plugin-br-payments.validateRetiredKeys" . -}}
 {{- $multiTenantEnabled := eq (include "plugin-br-payments.multiTenantEnabled" .) "true" }}
+{{- $svcType := .Values.app.configmap.SERVICE_TYPE | default "both" | toString }}
+{{- $servesAPI := or (eq $svcType "both") (eq $svcType "api") }}
+{{- $ownSecret := not .Values.app.useExistingSecret }}
 
 {{/* BTG provider integration — required for any write operation */}}
 {{- if not .Values.app.configmap.BTG_API_BASE_URL }}
@@ -224,13 +227,16 @@ plugin-br-payments README.
      credential row, nothing reads these two, and the app WARNs at boot for each one
      left set. Demanding them unconditionally made a valid multi-tenant deployment
      fail to render. */}}
-{{- if not $multiTenantEnabled }}
+{{- if and (not $multiTenantEnabled) $ownSecret }}
 {{- if not .Values.app.secrets.PROVIDER_CLIENT_ID }}
 {{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_ID is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client ID in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
 {{- end }}
 
 {{- if not .Values.app.secrets.PROVIDER_CLIENT_SECRET }}
 {{- fail "\n\nERROR: app.secrets.PROVIDER_CLIENT_SECRET is REQUIRED in single-tenant mode.\n   Set the provider OAuth2 client secret in the secrets section.\n   (In multi-tenant it is resolved per tenant and must be left unset.)\n" }}
+{{- end }}
+{{- if and (eq (include "plugin-br-payments.cfg" (dict "root" . "key" "MIDAZ_AUTH_ENABLED" "default" "true") | toString | lower) "true") (not (and .Values.app.secrets.PLUGIN_AUTH_CLIENT_ID .Values.app.secrets.PLUGIN_AUTH_CLIENT_SECRET)) }}
+{{- fail "\n\nERROR: app.secrets.PLUGIN_AUTH_CLIENT_ID and PLUGIN_AUTH_CLIENT_SECRET are REQUIRED in single-tenant mode while MIDAZ_AUTH_ENABLED=true (the default).\n   The Midaz client exchanges them for a token at boot.\n" }}
 {{- end }}
 {{- end }}
 
@@ -243,6 +249,14 @@ plugin-br-payments README.
      MIDAZ_LEDGER_URL. */}}
 {{- if not .Values.app.configmap.MIDAZ_LEDGER_URL }}
 {{- fail "\n\nERROR: app.configmap.MIDAZ_LEDGER_URL is REQUIRED.\n   Set the Midaz Ledger service URL (one URL serves onboarding and transaction).\n" }}
+{{- end }}
+
+{{/* License: the app refuses to boot without both, in every environment. */}}
+{{- if not .Values.app.configmap.ORGANIZATION_IDS }}
+{{- fail "\n\nERROR: app.configmap.ORGANIZATION_IDS is REQUIRED.\n   Set \"global\" or the comma-separated organization UUIDs the license covers.\n" }}
+{{- end }}
+{{- if and $ownSecret (not .Values.app.secrets.LICENSE_KEY) }}
+{{- fail "\n\nERROR: app.secrets.LICENSE_KEY is REQUIRED.\n   The app refuses to boot without a license in every environment.\n" }}
 {{- end }}
 
 {{/* PostgreSQL password is single-sourced from the postgresql subchart Secret
@@ -258,7 +272,7 @@ plugin-br-payments README.
 {{- if not (include "lerian-common.globalValue" (dict "context" . "configmap" $mtCm "block" "multiTenant" "field" "url" "nativeKey" "MULTI_TENANT_URL" "default" "")) }}
 {{- fail "\n\nERROR: MULTI_TENANT_URL is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Set global.multiTenant.url (env-wide) or app.configmap.MULTI_TENANT_URL.\n" }}
 {{- end }}
-{{- if not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY }}
+{{- if and $ownSecret (not .Values.app.secrets.MULTI_TENANT_SERVICE_API_KEY) }}
 {{- fail "\n\nERROR: app.secrets.MULTI_TENANT_SERVICE_API_KEY is REQUIRED when MULTI_TENANT_ENABLED=true.\n" }}
 {{- end }}
 {{/* The app resolves this with strings.EqualFold(strings.TrimSpace(...), "vault")
@@ -275,11 +289,18 @@ plugin-br-payments README.
 {{- if not (trim (.Values.app.configmap.AWS_REGION | toString)) }}
 {{- fail "\n\nERROR: app.configmap.AWS_REGION is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle.\n" }}
 {{- end }}
+{{- if $servesAPI }}
+{{- if not .Values.app.configmap.WEBHOOK_PUBLIC_BASE_URL }}
+{{- fail "\n\nERROR: app.configmap.WEBHOOK_PUBLIC_BASE_URL is REQUIRED when MULTI_TENANT_ENABLED=true and SERVICE_TYPE serves the API.\n   The connect flow composes each tenant's webhook URL from it.\n" }}
+{{- end }}
+{{- if or (eq (include "postgresql.enabled" .) "true") (not .Values.app.controlplaneMigrations.enabled) }}
+{{- fail "\n\nERROR: multi-tenant needs the control-plane tables that the controlplane-migrations Job creates; the app refuses to boot without them.\n   Use an external Postgres (postgresql.enabled=false, app.configmap.POSTGRES_HOST) and keep app.controlplaneMigrations.enabled=true.\n" }}
+{{- end }}
+{{- end }}
 {{- end }}
 
 {{/* Internal API key + credential encryption — required when worker runs in-process or as worker pod */}}
-{{- $svcType := .Values.app.configmap.SERVICE_TYPE | default "both" | toString }}
-{{- if or (eq $svcType "both") (eq $svcType "worker") }}
+{{- if and $ownSecret (or (eq $svcType "both") (eq $svcType "worker") (and $multiTenantEnabled (eq $svcType "api"))) }}
 {{- if not .Values.app.secrets.INTERNAL_API_KEY }}
 {{- fail "\n\nERROR: app.secrets.INTERNAL_API_KEY is REQUIRED when SERVICE_TYPE includes worker (\"both\" or \"worker\").\n   The plugin uses this key for cross-pod token retrieval.\n   Must be at least 32 characters. Generate with: openssl rand -hex 32\n" }}
 {{- end }}
@@ -298,7 +319,7 @@ plugin-br-payments README.
      lives in the operator's Secret, which the chart cannot read. The app also refuses
      the published example placeholders when ENV_NAME=production; that check stays
      in the app. */}}
-{{- if and (or (eq $svcType "both") (eq $svcType "api")) (not .Values.app.useExistingSecret) }}
+{{- if and $servesAPI $ownSecret }}
 {{- $consultKey := .Values.app.secrets.CONSULT_AUDIT_HMAC_KEY | default "" | toString }}
 {{- if not $consultKey }}
 {{- fail "\n\nERROR: app.secrets.CONSULT_AUDIT_HMAC_KEY is REQUIRED when SERVICE_TYPE serves the API (\"both\" or \"api\").\n   HMAC key of the bill consult audit's line fingerprint; the app refuses to boot without it.\n   Must be at least 32 characters, with no leading or trailing whitespace.\n   Generate with: openssl rand -hex 32 (outside local, source it from the platform secret manager)\n   or set app.useExistingSecret with a Secret that carries the key.\n" }}
@@ -316,7 +337,7 @@ plugin-br-payments README.
 {{- if not .Values.app.configmap.INTERNAL_WORKER_URL }}
 {{- fail "\n\nERROR: app.configmap.INTERNAL_WORKER_URL is REQUIRED when SERVICE_TYPE=\"api\".\n   API pods need to reach the worker pod's internal token endpoint.\n" }}
 {{- end }}
-{{- if not .Values.app.secrets.INTERNAL_API_KEY }}
+{{- if and $ownSecret (not .Values.app.secrets.INTERNAL_API_KEY) }}
 {{- fail "\n\nERROR: app.secrets.INTERNAL_API_KEY is REQUIRED when SERVICE_TYPE=\"api\".\n" }}
 {{- end }}
 {{- end }}
@@ -332,9 +353,6 @@ Generate annotation listing default-value warnings (non-blocking).
 {{- if eq (.Values.postgresql.auth.password | toString) "lerian" -}}
 {{- $warnings = append $warnings "postgresql.auth.password is using default value 'lerian'" -}}
 {{- end -}}
-{{- end -}}
-{{- if not .Values.app.secrets.LICENSE_KEY -}}
-{{- $warnings = append $warnings "LICENSE_KEY is empty - required for production" -}}
 {{- end -}}
 {{- if gt (len $warnings) 0 -}}
 lerian.studio/security-warnings: {{ $warnings | join "; " | quote }}

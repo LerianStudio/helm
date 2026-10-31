@@ -38,12 +38,10 @@ Renders ONLY when all three are true:
     included unconditionally below, before the render gate) fails the whole
     render on that literal combination regardless of which of the two flags
     is set, closing that gap independently of this gate.
-  - app.controlplaneMigrations.enabled=true (default false) — app.image
-    resolves to the currently released plugin-br-payments image today, which
-    does NOT contain /controlplane-migrate; that binary exists only on an
-    still-unmerged plugin-br-payments branch. Do not flip this on until a
-    plugin-br-payments release containing the binary is deployed — see
-    CHANGELOG.md.
+  - app.controlplaneMigrations.enabled=true (default false; a multi-tenant API
+    render fails without it). The image ships
+    /controlplane-migrate since plugin-br-payments 1.0.2, and a multi-tenant
+    API refuses to boot without the control-plane tables it creates.
 
 Postgres connection env vars are inlined rather than envFrom-ing the app
 ConfigMap (templates/configmap.yaml): that ConfigMap carries no hook
@@ -180,7 +178,7 @@ spec:
             {{- $pgAuth := $pg.auth | default dict }}
             {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
             {{- include "plugin-br-payments.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
-            {{- else if .Values.app.secrets.POSTGRES_PASSWORD }}
+            {{- else if or .Values.app.useExistingSecret .Values.app.secrets.POSTGRES_PASSWORD }}
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:

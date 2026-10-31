@@ -273,7 +273,10 @@ sisbajud:
       drainerInfraAlarmThreshold: "3"
       # -- EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER: ERROR log once the oldest
       #    direct order eligible for a MANUAL purge is this old (Go duration > 0).
-      #    The plugin never purges (runbook direct-channel-operations.md § 10).
+      #    No automatic purge: a person decides, through the audited erase
+      #    (purge preview + erase by order). A BLOCK order is kept at least one
+      #    CALENDAR year after its first ledger effect; an ACTIVE permanent block
+      #    is never eligible (runbook direct-channel-operations.md § 10).
       purgeEligibleAlarmAfter: "168h"
       # -- EXECUTOR_DIRECT_PURGE_REFRESH_EVERY: how often the purge-eligible
       #    count behind that alarm is refreshed (Go duration > 0; app default 15m).

@@ -287,7 +287,7 @@ plugin-br-payments README.
      "   " would pass a bare `not` check and let the AWS SDK load with an
      empty effective region, failing later on the first Secrets Manager call
      instead of failing closed at render time. Validate the trimmed value. */}}
-{{- if not (trim (.Values.app.configmap.AWS_REGION | toString)) }}
+{{- if not (trim (.Values.app.configmap.AWS_REGION | default "" | toString)) }}
 {{- fail "\n\nERROR: app.configmap.AWS_REGION is REQUIRED when MULTI_TENANT_ENABLED=true.\n   Read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle.\n" }}
 {{- end }}
 {{- if $servesAPI }}

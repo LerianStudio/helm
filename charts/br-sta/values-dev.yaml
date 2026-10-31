@@ -23,7 +23,7 @@
 # The license is NOT relaxed: the app refuses to boot in every ENV_NAME without
 # LICENSE_KEY and ORGANIZATION_IDS. The values below are placeholders so the
 # chart renders; the pods will not boot until you set a real key and
-# organization id (or a dev-gateway key with common.license.isDevelopment: "true").
+# organization id.
 #
 # Pairs with the br-sisbajud dev bundle: point br-sisbajud at this release's
 # transfers API (brSisbajud.sta.transfersBaseUrl =
@@ -52,8 +52,6 @@ common:
   license:
     # PLACEHOLDER: replace with your Lerian organization id.
     organizationIds: "REPLACE_WITH_YOUR_ORGANIZATION_ID"
-    # Set "true" only for a key issued by the Lerian dev license gateway.
-    # isDevelopment: "true"
   secrets:
     # Public, dev-only values. They never land in a ConfigMap.
     # Envelope-encryption key material: "v1:<64 hex chars>" (an all-zero key —

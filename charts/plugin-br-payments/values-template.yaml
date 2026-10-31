@@ -47,7 +47,7 @@ global:
 app:
   replicaCount: 2
   image:
-    tag: "1.0.0"   # pin to a published immutable tag
+    tag: "1.0.2"   # pin to a published immutable tag
   ingress:
     enabled: false
     className: nginx
@@ -67,9 +67,6 @@ app:
     BTG_AUTH_URL: ""
     # Midaz (REQUIRED): one Ledger URL serves onboarding and transaction.
     MIDAZ_LEDGER_URL: ""
-    MIDAZ_CRM_URL: ""
-    MIDAZ_DEFAULT_ORG_ID: ""
-    MIDAZ_DEFAULT_LEDGER_ID: ""
     ORGANIZATION_IDS: ""
     # AWS_REGION: "us-east-2"    # REQUIRED with multi-tenancy (Secrets Manager)
   secrets:

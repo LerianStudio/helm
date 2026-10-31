@@ -55,14 +55,19 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 |-------|-------------|
 | `app.configmap.BTG_API_BASE_URL` | BTG API base URL. |
 | `app.configmap.BTG_AUTH_URL` | BTG OAuth2 token URL. |
-| `app.configmap.MIDAZ_LEDGER_URL` | Midaz Ledger service URL: one URL serves onboarding and transaction. The former `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair is refused at render with the rename named. |
+| `app.configmap.MIDAZ_LEDGER_URL` | Midaz Ledger service URL: one URL serves onboarding and transaction. Must be `https://` under `ENV_NAME=production` (the default). The former `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair is refused at render with the rename named. |
+| `app.configmap.ORGANIZATION_IDS` | `"global"` or the comma-separated organization UUIDs the license covers. The app validates its license at startup in every environment. |
+| `app.secrets.LICENSE_KEY` | License key. Required in every environment. |
+| `app.secrets.PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` | Access Manager client credentials of the Midaz client. Single-tenant, while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). |
 | `app.secrets.PROVIDER_CLIENT_ID` | Provider OAuth2 client ID. **Single-tenant only** — in multi-tenant it is resolved per tenant and must be left empty. Named for the role rather than the vendor; renamed from `BTG_CLIENT_ID`. |
 | `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. Same conditionality as above; renamed from `BTG_CLIENT_SECRET`. |
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
 | `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |
 | `app.secrets.CONSULT_AUDIT_HMAC_KEY` | HMAC key of the bill consult audit's line fingerprint (`line_fp`). Required when `SERVICE_TYPE` serves the API (`both`, the default, or `api`); the app refuses to boot without it. At least 32 characters, no leading or trailing whitespace; with `ENV_NAME=production` the app also refuses the published example placeholders. Generate with `openssl rand -hex 32` and, outside local, source it from the platform secret manager. Rotating it is a restart, but older `line_fp` values stop correlating (there is no `_PREVIOUS` key). Not checked at render when `app.useExistingSecret=true`. |
 
-When `app.configmap.MULTI_TENANT_ENABLED=true`, the `PROVIDER_CLIENT_*` pair above stops being required — the app resolves it per tenant — and the following are additionally required:
+Secret keys are not checked at render with `app.useExistingSecret=true`; the Secret named by `app.existingSecretName` must carry them.
+
+When `app.configmap.MULTI_TENANT_ENABLED=true`, the `PROVIDER_CLIENT_*` and `PLUGIN_AUTH_CLIENT_*` pairs above stop being required — the app resolves them per tenant — and the following are additionally required, with an external Postgres (`postgresql.enabled=false`) so the control-plane migrations Job can run:
 
 | Field | Description |
 |-------|-------------|
@@ -70,6 +75,7 @@ When `app.configmap.MULTI_TENANT_ENABLED=true`, the `PROVIDER_CLIENT_*` pair abo
 | `app.secrets.MULTI_TENANT_SERVICE_API_KEY` | Tenant Manager service API key. |
 | `app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE` | Must be `"vault"` — the only accepted value. The app fails closed at boot for any other value (empty, a typo, or the retired `"tenant_manager"` spelling). |
 | `app.configmap.AWS_REGION` | Standard AWS SDK region variable, read directly by the AWS SDK when building the Secrets Manager client for the per-tenant integrations bundle. |
+| `app.configmap.WEBHOOK_PUBLIC_BASE_URL` | Public base URL the connect flow composes each tenant's webhook URL from. Required where the API is served. |
 
 > **Database password:** with the bundled PostgreSQL subchart (default), the password is auto-generated into the subchart's own Secret and read by the app via `secretKeyRef` — leave `app.secrets.POSTGRES_PASSWORD` empty. Only set it for an external Postgres that has no `postgresql.auth.existingSecret`.
 
@@ -109,7 +115,7 @@ is no longer needed.
 ## Configuration keys
 
 The ConfigMap and Secret are **template-owned**: they render exactly the keys below (the
-application v1.0.0-beta.163 contract), and `values.schema.json` refuses any other key under
+application 1.0.2 contract), and `values.schema.json` refuses any other key under
 `app.configmap` / `app.secrets`. Set `app.configmap.<KEY>` to override a key; a key marked
 *unset* is rendered only when you set it, so the application default applies otherwise. A
 `null` counts as unset. Connection endpoints resolve through the lerian-common masks, native
@@ -122,7 +128,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 |-----|---------|
 | `ENV_NAME` | `global.env.name`, else `"production"` |
 | `LOG_LEVEL` | `"info"` |
-| `DEPLOYMENT_MODE` | `"saas"` |
+| `DEPLOYMENT_MODE` | `"byoc"` (`"saas"` refuses to boot unless every configured endpoint, OTLP included, uses TLS) |
 | `SERVICE_TYPE` | `"both"` |
 | `SWAGGER_ENABLED` | `"false"` |
 | `VERSION` | the image tag |
@@ -293,12 +299,12 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 |-----|---------|
 | `MIDAZ_LEDGER_URL` | `""` |
 | `MIDAZ_CRM_URL` | unset (app default) |
-| `MIDAZ_AUTH_ENABLED` | unset (app default) |
-| `MIDAZ_ALLOW_INSECURE_HTTP` | unset (app default) |
+| `MIDAZ_AUTH_ENABLED` | `"true"` (the app refuses `false` under `ENV_NAME=production`) |
+| `MIDAZ_ALLOW_INSECURE_HTTP` | `"true"` (lets the Midaz client reach an `http://` `PLUGIN_AUTH_ADDRESS`; `MIDAZ_LEDGER_URL` stays HTTPS-only under production) |
 | `MIDAZ_DEFAULT_ORG_ID` | unset (app default) |
 | `MIDAZ_DEFAULT_LEDGER_ID` | unset (app default) |
 | `M2M_CRM_TARGET_SERVICE` | unset (app default) |
-| `ORGANIZATION_IDS` | unset (app default) |
+| `ORGANIZATION_IDS` | unset — **required** (`"global"` or organization UUIDs) |
 | `ACCOUNT_VALIDATION_DISABLED` | unset (app default) |
 | `ACCOUNTING_ROUTES_ENABLED` | unset (app default) |
 | `ACCOUNTING_ROUTES_CACHE_TTL_SEC` | unset (app default) |
@@ -395,18 +401,24 @@ livenessProbe:
 The plugin supports schema-per-tenant via Lerian's Tenant Manager. To enable:
 
 ```yaml
+postgresql:
+  enabled: false
 app:
+  controlplaneMigrations:
+    enabled: true
   configmap:
+    POSTGRES_HOST: "<external postgres host>"
     MULTI_TENANT_ENABLED: "true"
     MULTI_TENANT_URL: "https://tenant-manager.example.com"
     MULTI_TENANT_SERVICE_NAME: "plugin-br-payments"
     MULTI_TENANT_CREDENTIAL_SOURCE: "vault"
     AWS_REGION: "<aws-region>"
+    WEBHOOK_PUBLIC_BASE_URL: "https://payments.example.com"
   secrets:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```
 
-When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.BTG_CLIENT_ID` or `app.secrets.BTG_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record.
+When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.PROVIDER_CLIENT_ID` or `app.secrets.PROVIDER_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record. The control-plane migrations Job (`app.controlplaneMigrations.enabled`, required for multi-tenant) runs before each install and upgrade; the render fails if it cannot (bundled Postgres, or the Job disabled).
 
 ### AWS credentials for Secrets Manager (`aws.rolesAnywhere`)
 

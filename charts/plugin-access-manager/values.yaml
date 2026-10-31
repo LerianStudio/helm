@@ -472,17 +472,6 @@ auth:
     SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
-  # -- Init User Job: creates the admin user on FIRST INSTALL ONLY (not on
-  # -- upgrades; if deleted by the customer, it is NOT recreated). Disabled
-  # -- by default and intentionally not advertised here — no environment
-  # -- across benedita/anacleto/AWS staging+production relies on the
-  # -- implicit default, every one of them sets this explicitly either way.
-  # -- All defaults (image, adminEmail/adminDisplayName, timeouts, resources)
-  # -- live in templates/auth/init_user.yaml — set initUser.enabled=true and
-  # -- adminPassword (or useExistingSecret + adminPasswordSecretName) to turn
-  # -- it on.
-  initUser:
-    enabled: false
 
 # -- Caradhras: the auth backend/authorization service, promoted to a
 # top-level component sibling of `identity`/`auth` (formerly nested as

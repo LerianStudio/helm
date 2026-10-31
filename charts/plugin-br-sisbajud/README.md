@@ -105,6 +105,13 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 
 Existing Mensageria installs are unchanged: with `executor.enabled` unset the `EXECUTOR_ENABLED` key is not emitted; the chart adds only the four direct-channel knobs above at the app defaults.
 
+## DIRECT permanent block switch (`DIRECT_PERMANENT_BLOCK_ENABLED`)
+
+`sisbajud.direct.permanentBlockEnabled: false` stops only NEW permanent blocks: the direct POST refuses them (422 SBJ-0027) and no new permanent opens. Permanents already ACTIVE keep their capture of credits, expiry, retry and result republish while the app can serve that path (single tenant, inbound auth on, `STREAMING_ENABLED=true` with `STREAMING_BROKERS`).
+
+- While the switch is off and ACTIVE permanents exist, the app sets the gauge `sisbajud_executor_permanent_active_with_switch_off` (and logs an ERROR once per episode). Alert on `> 0`: turn the switch back on, or let those permanents close.
+- Turning the switch off (a rollback) with ACTIVE permanents is REFUSED at boot when that path cannot be served (`DIRECT_PERMANENT_BLOCK_ENABLED=false with ACTIVE permanents whose maintenance cannot run`): their capture, expiry and retry would stop silently. This chart pins `STREAMING_ENABLED=false`, so with ACTIVE permanents such a rollback does not boot.
+
 ## Midaz CRM mode
 
 `sisbajud.midaz.crmMode` (`MIDAZ_CRM_MODE`) must match the Midaz the institutions use; set it explicitly. The default stays `legacy` so an upgrade never changes an existing install.

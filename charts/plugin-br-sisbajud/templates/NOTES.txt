@@ -8,6 +8,8 @@ plugin-br-sisbajud {{ .Values.sisbajud.image.tag | default .Chart.AppVersion }} 
   Transport:   {{ include "plugin-br-sisbajud.transport" . }}{{ if eq (include "plugin-br-sisbajud.webhookEnabled" .) "true" }} (listener {{ include "plugin-br-sisbajud.webhookFullname" . }}:{{ .Values.sisbajud.executor.webhook.service.port }}{{ .Values.sisbajud.executor.webhook.path }}){{ end }}
 {{- end }}
   KMS:         {{ include "plugin-br-sisbajud.kmsProvider" . }}
+  Permanent:   DIRECT_PERMANENT_BLOCK_ENABLED={{ include "plugin-br-sisbajud.val" (dict "cm" (.Values.sisbajud.configmap | default dict) "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.direct | default dict) "f" "permanentBlockEnabled" "d" "false") | default "false" }}. Off stops only NEW permanents; ACTIVE ones keep running.
+               Alert on sisbajud_executor_permanent_active_with_switch_off > 0 (see the chart README).
 
 Verify:
   kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}

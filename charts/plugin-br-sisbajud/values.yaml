@@ -263,6 +263,9 @@ sisbajud:
     # -- EXECUTOR_RESULT_MAX_ATTEMPTS: result drainer attempt cap per outbox row
     #    (>= 1; "0" = app default 12). Exhausted = human decision + alarm.
     resultMaxAttempts: "12"
+    # -- EXECUTOR_ORDER_SWEEP_ENABLED: the execution_order sweep that closes
+    #    stale orders (true | false; app default false).
+    orderSweepEnabled: "false"
     # -- Direct channel drainer alarms (every executor mode).
     direct:
       # -- EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD: alarm at every multiple
@@ -272,6 +275,9 @@ sisbajud:
       #    direct order eligible for a MANUAL purge is this old (Go duration > 0).
       #    The plugin never purges (runbook direct-channel-operations.md § 10).
       purgeEligibleAlarmAfter: "168h"
+      # -- EXECUTOR_DIRECT_PURGE_REFRESH_EVERY: how often the purge-eligible
+      #    count behind that alarm is refreshed (Go duration > 0; app default 15m).
+      purgeRefreshEvery: "15m"
     # -- EXECUTOR_TRANSPORT: webhook (default) | sqs.
     transport: "webhook"
 
@@ -324,6 +330,13 @@ sisbajud:
     #    recorded); cancellations and UNBLOCK/TRANSFER of a permanent parent are
     #    always taken. Any other value refuses the render (and the boot).
     permanentBlockEnabled: false
+    # -- DIRECT_PERMANENT_REFRESH_EVERY: how often the accounts of ACTIVE
+    #    permanent blocks are refreshed (Go duration from 1m to 15m; app default 15m).
+    permanentRefreshEvery: "15m"
+    # -- EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED: publish a result for each
+    #    subsequent block of a permanent (true | false; app default false).
+    #    true needs permanentBlockEnabled: true (the app refuses the boot otherwise).
+    permanentResultEmitterEnabled: "false"
 
   # -- Midaz connector default. Ledger URL and credentials are per institution
   #    (institution config, sealed in the database), not env.

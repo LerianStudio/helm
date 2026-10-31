@@ -82,10 +82,14 @@ MENSAGERIA_TLS_CLIENT_KEY_FILE: {{ $mt.keyFile | quote }}
 EXECUTOR_ENABLED: {{ $exOn | quote }}
 {{- end }}
 {{- include $kv (dict "cm" $cm "p" $ex "f" "resultMaxAttempts" "k" "EXECUTOR_RESULT_MAX_ATTEMPTS" "d" "12") }}
+{{- include $kv (dict "cm" $cm "p" $ex "f" "orderSweepEnabled" "k" "EXECUTOR_ORDER_SWEEP_ENABLED" "d" "false") }}
 # --- Direct channel: drainer alarms + permanent-block switch ----------------------
 {{- include $kv (dict "cm" $cm "p" $exDirect "f" "drainerInfraAlarmThreshold" "k" "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD" "d" "3") }}
 {{- include $kv (dict "cm" $cm "p" $exDirect "f" "purgeEligibleAlarmAfter" "k" "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER" "d" "168h") }}
+{{- include $kv (dict "cm" $cm "p" $exDirect "f" "purgeRefreshEvery" "k" "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY" "d" "15m") }}
 {{- include $kv (dict "cm" $cm "p" $direct "f" "permanentBlockEnabled" "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "d" "false") }}
+{{- include $kv (dict "cm" $cm "p" $direct "f" "permanentRefreshEvery" "k" "DIRECT_PERMANENT_REFRESH_EVERY" "d" "15m") }}
+{{- include $kv (dict "cm" $cm "p" $direct "f" "permanentResultEmitterEnabled" "k" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED" "d" "false") }}
 # --- Direct drainer attempt cap (every executor mode; also the webhook's) ----------
 {{- include $kv (dict "cm" $cm "p" $wh "f" "maxHandleAttempts" "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "d" "5") }}
 {{- if ne $mode "direct" }}

@@ -60,9 +60,13 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.executor.sqs.*` | `EXECUTOR_SQS_*` | needs AWS credentials (IRSA annotation or `aws.rolesAnywhere`) |
 | `sisbajud.executor.webhook.maxHandleAttempts` | `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` | `5`; also the direct drainer's attempt cap in every executor mode (>= 1 + ceil(settleWindow / tickEvery)) |
 | `sisbajud.executor.resultMaxAttempts` | `EXECUTOR_RESULT_MAX_ATTEMPTS` | `12`; result drainer cap per row (`0` = app default) |
+| `sisbajud.executor.orderSweepEnabled` | `EXECUTOR_ORDER_SWEEP_ENABLED` | `false`; only `true`/`false`: the execution_order sweep |
 | `sisbajud.executor.direct.drainerInfraAlarmThreshold` | `EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD` | `3`; integer >= 1 |
 | `sisbajud.executor.direct.purgeEligibleAlarmAfter` | `EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER` | `168h`; Go duration > 0. The plugin never purges the direct intake |
+| `sisbajud.executor.direct.purgeRefreshEvery` | `EXECUTOR_DIRECT_PURGE_REFRESH_EVERY` | `15m`; Go duration > 0: how often the purge-eligible count is refreshed |
 | `sisbajud.direct.permanentBlockEnabled` | `DIRECT_PERMANENT_BLOCK_ENABLED` | **`false`** (keep it): the direct POST refuses permanent blocks with 422 SBJ-0027. Only `true`/`false` |
+| `sisbajud.direct.permanentRefreshEvery` | `DIRECT_PERMANENT_REFRESH_EVERY` | `15m`; Go duration from `1m` to `15m` (the app refuses the boot outside): refresh of the ACTIVE permanents' accounts |
+| `sisbajud.direct.permanentResultEmitterEnabled` | `EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED` | `false`; only `true`/`false`. `true` needs `permanentBlockEnabled: true` (the app refuses the boot otherwise) |
 | `global.kms.*` | `KMS_PROVIDER`, `VAULT_*`, `AWS_REGION`, `KMS_AWS_KEY_MODE`, `KMS_AWS_KEY_ARN`, `KMS_AWS_CREDENTIALS_KEY_ARN` | `vault` or `aws`; the app has no in-memory provider. With `aws`: `awsRegion`, `awsKeyMode`, `awsKeyArn`, `awsCredentialsKeyArn` |
 | `sisbajud.kms.awsKeyMode` | `KMS_AWS_KEY_MODE` | `managed` or `provided`; required with `KMS_PROVIDER=aws` |
 | `sisbajud.kms.awsKeyArn` | `KMS_AWS_KEY_ARN` | `provided`: required; `managed`: must be empty |

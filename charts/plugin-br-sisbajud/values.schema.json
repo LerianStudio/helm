@@ -52,11 +52,13 @@
               "DEFAULT_TENANT_ID",
               "DEPLOYMENT_MODE",
               "DIRECT_PERMANENT_BLOCK_ENABLED",
+              "DIRECT_PERMANENT_REFRESH_EVERY",
               "ENABLE_TELEMETRY",
               "ENVIRONMENT_NAME",
               "ENV_NAME",
               "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD",
               "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER",
+              "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY",
               "EXECUTOR_ENABLED",
               "EXECUTOR_HEARTBEAT_EVERY",
               "EXECUTOR_HUB_WEBHOOK_ADDRESS",
@@ -68,7 +70,9 @@
               "EXECUTOR_HUB_WEBHOOK_UPSTREAM_TLS_VALIDATED",
               "EXECUTOR_HUMAN_DECISION_AFTER_BEATS",
               "EXECUTOR_M2M_SUBJECT",
+              "EXECUTOR_ORDER_SWEEP_ENABLED",
               "EXECUTOR_ORPHAN_RECONCILE_WINDOW",
+              "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED",
               "EXECUTOR_RESULT_MAX_ATTEMPTS",
               "EXECUTOR_SETTLE_WINDOW",
               "EXECUTOR_SQS_MAX_MESSAGES",
@@ -211,6 +215,30 @@
             "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER": {
               "type": "string",
               "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "DIRECT_PERMANENT_REFRESH_EVERY": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "EXECUTOR_ORDER_SWEEP_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
             }
           }
         },
@@ -262,6 +290,22 @@
               "minimum": 0,
               "description": "EXECUTOR_RESULT_MAX_ATTEMPTS (0 = app default 12)."
             },
+            "orderSweepEnabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "EXECUTOR_ORDER_SWEEP_ENABLED (default false)."
+            },
             "direct": {
               "type": "object",
               "additionalProperties": false,
@@ -279,6 +323,11 @@
                   "type": "string",
                   "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$",
                   "description": "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER (Go duration > 0)."
+                },
+                "purgeRefreshEvery": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$",
+                  "description": "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY (Go duration > 0; default 15m)."
                 }
               }
             }
@@ -303,6 +352,27 @@
                 }
               ],
               "description": "DIRECT_PERMANENT_BLOCK_ENABLED (default false; keep false unless permanent blocks are a decided product choice)."
+            },
+            "permanentRefreshEvery": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$",
+              "description": "DIRECT_PERMANENT_REFRESH_EVERY (Go duration from 1m to 15m; default 15m; the app refuses the boot outside that range)."
+            },
+            "permanentResultEmitterEnabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED (default false; true needs permanentBlockEnabled true)."
             }
           }
         }

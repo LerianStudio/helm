@@ -73,6 +73,14 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not (has $pb (list "" "true" "false")) -}}
 {{- include $f (dict "msg" (printf "DIRECT_PERMANENT_BLOCK_ENABLED must be true or false, got %q." $pb) "set" "sisbajud.direct.permanentBlockEnabled") -}}
 {{- end -}}
+{{- $sweep := include $val (dict "cm" $cm "k" "EXECUTOR_ORDER_SWEEP_ENABLED" "p" ($s.executor | default dict) "f" "orderSweepEnabled" "d" "false") | trim -}}
+{{- if not (has $sweep (list "" "true" "false")) -}}
+{{- include $f (dict "msg" (printf "EXECUTOR_ORDER_SWEEP_ENABLED must be true or false, got %q." $sweep) "set" "sisbajud.executor.orderSweepEnabled") -}}
+{{- end -}}
+{{- $emit := include $val (dict "cm" $cm "k" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED" "p" ($s.direct | default dict) "f" "permanentResultEmitterEnabled" "d" "false") | trim -}}
+{{- if not (has $emit (list "" "true" "false")) -}}
+{{- include $f (dict "msg" (printf "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED must be true or false, got %q." $emit) "set" "sisbajud.direct.permanentResultEmitterEnabled") -}}
+{{- end -}}
 {{- $mode := include "plugin-br-sisbajud.executorMode" . -}}
 {{- if not $mode -}}
 {{- include $f (dict "msg" "MENSAGERIA_BASE_URL is required, or EXECUTOR_ENABLED=true for a DIRECT-only executor: one of them is what runs the process as the executor (without both the binary boots the retired monolith and refuses STA_INBOUND_BUCKET)." "set" "sisbajud.mensageria.baseUrl=https://<mensageria-host> (or sisbajud.executor.enabled=true)") -}}

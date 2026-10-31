@@ -10,6 +10,24 @@ Fixes:
 
 Improvements:
 - Remove orphaned streaming-hub documentation left after the removal of the chart. (@guimoreirar)
+- Remove the streaming-hub chart, which has been moved to helm-internal. (@guimoreirar)
+- Add a Helm upgrade guide for streaming-hub `v1.1.1`. (@guimoreirar)
+- Add a Helm upgrade guide for streaming-hub `v1.1.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v1.1.1...streaming-hub-v2.0.0)
+
+---
+
+## [2.0.0](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.0.0)
+
+Features:
+- Add streaming-hub chart for the license-gated `3.0.0` line. (@guimoreirar)
+
+Fixes:
+- Correct the role count in the double-consume rule documentation. (@guimoreirar)
+
+Improvements:
+- Remove orphaned streaming-hub documentation left after the removal of the chart. (@guimoreirar)
 - Remove the streaming-hub chart as it has been moved to helm-internal. (@guimoreirar)
 - Add a Helm upgrade guide for streaming-hub `v1.1.1`. (@guimoreirar)
 - Add a Helm upgrade guide for streaming-hub `v1.1.0`. (@guimoreirar)

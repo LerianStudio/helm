@@ -39,6 +39,18 @@ Improvements:
 ## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.0)
 
 Features:
+- Render the system-facts RI declaration environment through `lerian-common.idp`. (@qnen)
+
+Improvements:
+- Expect the worker image at `appVersion` `1.1.0`. (@qnen)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.0.2...system-facts-v1.1.0)
+
+---
+
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.0)
+
+Features:
 - Render the RI declaration environment through `lerian-common.idp` in system-facts. (@qnen)
 
 Improvements:

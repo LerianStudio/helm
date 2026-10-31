@@ -1,5 +1,17 @@
 # Plugin-access-manager Changelog
 
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:  
+- Pass the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:  
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
 ## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
 
 Features:

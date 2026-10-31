@@ -6,7 +6,7 @@
 - Required secrets: none are enforced at render time, so the default render succeeds, but the application will not start without `secrets.NOTIFICATION_ENCRYPTION_KEY` and `secrets.NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY` (each a base64-encoded 32-byte key), and `secrets.POSTGRES_PASSWORD` is required when `config.ENV_NAME` is `production`. `secrets.DATABASE_URL` is required by the migrations Job while `migrations.enabled` is `true`. See [Required secrets](#required-secrets).
 - Dependency notes: No local dependency charts are bundled. PostgreSQL, Redis, and RabbitMQ are external (provided by the target environment); migrations run as a Helm pre-install/pre-upgrade Job against the external PostgreSQL. External notification providers are configured through values.
 - Production overrides: Provide provider credentials through chart secrets or existing Secrets where supported; override API/worker image tags, ingress, resources, and provider endpoints.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
 
 Helm chart for the Notifications service — multi-channel delivery (email, SMS, webhook) for the Lerian platform.
 

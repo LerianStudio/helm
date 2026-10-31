@@ -20,7 +20,8 @@ data:
   {{- end }}
   {{- $extra := list }}
   {{- range $k, $v := (.Values.sisbajud.configmap | default dict) }}
-  {{- if not (hasKey $emitted $k) }}
+  {{- /* IS_DEVELOPMENT is deprecated and ignored: accepted by the schema, never emitted. */ -}}
+  {{- if and (ne $k "IS_DEVELOPMENT") (not (hasKey $emitted $k)) }}
   {{- $extra = append $extra $k }}
   {{- end }}
   {{- end }}

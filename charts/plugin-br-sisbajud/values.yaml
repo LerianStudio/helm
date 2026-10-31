@@ -197,9 +197,6 @@ sisbajud:
   # -- ORGANIZATION_IDS. The app accepts only "global". LICENSE_KEY goes in secrets.
   license:
     organizationIds: "global"
-    # -- IS_DEVELOPMENT: "true" routes lib-license-go to the license DEV gateway
-    #    (for dev-issued keys). Unset = production gateway.
-    isDevelopment: ""
 
   # ---------------------------------------------------------------------------
   # Sisbajud Mensageria (execution contract). Setting baseUrl is what turns the

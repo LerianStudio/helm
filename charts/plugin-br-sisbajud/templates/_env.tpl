@@ -212,7 +212,7 @@ STREAMING_ENABLED: {{ (hasKey $cm "STREAMING_ENABLED" | ternary (index $cm "STRE
 # --- OpenTelemetry (lerian-common.otel.env) ------------------------------------------
 {{ include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "false" "endpointDefault" "localhost:4317" "deploymentEnvironmentDefault" $envName) }}
 {{- include $kv (dict "cm" $cm "p" $s.observability "f" "serviceName" "k" "OTEL_RESOURCE_SERVICE_NAME" "d" "plugin-br-sisbajud") }}
-{{- include $kv (dict "cm" $cm "p" $s.observability "f" "libraryName" "k" "OTEL_LIBRARY_NAME" "d" "github.com/LerianStudio/plugin-br-sisbajud") }}
+{{- include $kv (dict "cm" $cm "p" $s.observability "f" "libraryName" "k" "OTEL_LIBRARY_NAME" "d" "github.com/LerianStudio/br-sisbajud") }}
 # --- Rate limiting (lerian-common.rateLimit.env) ------------------------------------
 {{ include "lerian-common.rateLimit.env" (dict "configmap" $cm "params" $s.rateLimit) }}
 # --- Swagger -----------------------------------------------------------------------

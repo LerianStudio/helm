@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `10.1.3` | 3.14.0 | 3.14.0 | 1.8.6 |
+| `10.1.4` | 3.14.0 | 3.14.0 | 1.8.6 |
 -----------------
 
 ### Plugin Fees Helm Chart

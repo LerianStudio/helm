@@ -544,8 +544,12 @@ caradhras:
     # reaches a ConfigMap. Mutually exclusive with
     # caradhras.configmap.redisEndpoint.
     redisEndpoint: ""
+    # -- Caradhras license key, injected as env LICENSE_KEY by secretKeyRef.
+    # Required by images that carry the license gate (they refuse to boot
+    # without it). Issued for product `caradhras`; not the auth/identity key.
+    LICENSE_KEY: ""
   # -- Set true to manage the caradhras Secret yourself: the chart creates none
-  # and reads key `redisEndpoint` from existingSecretName instead.
+  # and reads keys `redisEndpoint` and `LICENSE_KEY` from existingSecretName.
   useExistingSecret: false
   existingSecretName: ""
   # -- Redis/Valkey AUTH password, injected as the beego config key

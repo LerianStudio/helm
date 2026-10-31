@@ -528,8 +528,9 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.ui.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | unset (`[]`) |
 | `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |
 | `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
+| `caradhras.secrets.LICENSE_KEY` | Caradhras license key (env `LICENSE_KEY`, by Secret). Required by images with the license gate, which refuse to boot without it. Issued for product `caradhras`, not the auth/identity key | `""` |
 | `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
-| `caradhras.existingSecretName` | Name of that Secret. Must carry the key `redisEndpoint` | `""` |
+| `caradhras.existingSecretName` | Name of that Secret. Must carry the keys `redisEndpoint` and `LICENSE_KEY` | `""` |
 | `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
@@ -606,7 +607,7 @@ wrong on its own. Set one or the other, never a mix.
 To keep the password out of your values file entirely, set
 `caradhras.useExistingSecret=true` and point `caradhras.existingSecretName` at a
 Secret you manage (external-secrets, sealed-secrets, or `kubectl create secret`)
-carrying the key `redisEndpoint`. The chart then creates no Secret of its own.
+carrying the keys `redisEndpoint` and `LICENSE_KEY`. The chart then creates no Secret of its own.
 
 The config keys are the beego literals in camelCase on purpose: caradhras
 resolves them with `conf.GetConfigString`, which looks the exact key up in the

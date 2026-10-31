@@ -420,6 +420,37 @@ class StartupContract(unittest.TestCase):
         env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
         self.assertEqual(env['my.var-1_X'], 'ok')
 
+    def caradhras_license(self, secrets=None, **caradhras):
+        docs = self.succeeds({'caradhras': {**caradhras, **({'secrets': secrets} if secrets else {})}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        env = {e['name']: e for e in deployment['spec']['template']['spec']['containers'][0]['env']}
+        secret = next((d for d in docs if d['kind'] == 'Secret'
+                       and d['metadata']['name'].endswith('-caradhras')), None)
+        return env.get('LICENSE_KEY'), secret
+
+    def test_caradhras_license_key_from_chart_secret(self):
+        env, secret = self.caradhras_license({'LICENSE_KEY': 'lic-123'})
+        self.assertEqual(env['valueFrom']['secretKeyRef'],
+                         {'name': 'startup-test-caradhras', 'key': 'LICENSE_KEY', 'optional': True})
+        self.assertEqual(base64.b64decode(secret['data']['LICENSE_KEY']), b'lic-123')
+        self.assertNotIn('redisEndpoint', secret['data'])
+
+    def test_caradhras_license_key_from_existing_secret(self):
+        env, secret = self.caradhras_license(useExistingSecret=True, existingSecretName='operator-secret')
+        self.assertEqual(env['valueFrom']['secretKeyRef'], {'name': 'operator-secret', 'key': 'LICENSE_KEY', 'optional': True})
+        self.assertIsNone(secret)
+
+    def test_caradhras_without_license_key_renders_no_env(self):
+        env, secret = self.caradhras_license()
+        self.assertIsNone(env)
+        self.assertIsNone(secret)
+
+    def test_caradhras_redis_endpoint_only_secret_has_no_license_key(self):
+        env, secret = self.caradhras_license({'redisEndpoint': 'valkey:6379,100,pw'})
+        self.assertIsNone(env)
+        self.assertEqual(list(secret['data']), ['redisEndpoint'])
+
 
 if __name__ == '__main__':
     unittest.main()

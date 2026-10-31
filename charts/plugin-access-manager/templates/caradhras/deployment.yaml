@@ -169,8 +169,19 @@ spec:
           - name: redisEndpoint
             valueFrom:
               secretKeyRef:
-                name: {{ include "plugin-caradhras.sessionSecretName" . }}
+                name: {{ include "plugin-caradhras.secretName" . }}
                 key: redisEndpoint
+          {{- end }}
+          {{- if or (.Values.caradhras.secrets | default dict).LICENSE_KEY .Values.caradhras.useExistingSecret }}
+          # Caradhras refuses to boot without its own license key (product
+          # `caradhras`, not the auth/identity key). optional: a Secret lacking
+          # the key renders no env, so older images keep booting on upgrade.
+          - name: LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "plugin-caradhras.secretName" . }}
+                key: LICENSE_KEY
+                optional: true
           {{- end }}
           {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
           {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}

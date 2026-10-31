@@ -87,6 +87,7 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 
 **AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `sisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` needs both `awsKeyArn` and `awsCredentialsKeyArn`, and they must differ; `managed` needs both empty (the app creates and owns the keys). `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated in every aws mode. The mode and both ARNs are trimmed both for validation and in the ConfigMap; `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated after trimming but rendered as set (the app trims them at boot). `"+30"` is refused at render although the app accepts it (deliberately stricter).
 
+- `ALLOW_RATELIMIT_DISABLED` is accepted in `sisbajud.configmap` for compatibility; the plugin ignores it.
 - `KMS_AWS_*` enter only via `sisbajud.kms.*` / `sisbajud.vault.*` (or `global.kms.*`); the `sisbajud.configmap` key enum (`values.schema.json`) rejects them.
 - `aws` is single-tenant (BYOC) only: the render fails with multi-tenant enabled (the app refuses it).
 - `sisbajud.extraEnvVars` entries are container env and override the ConfigMap, but they are not validated at render: a `MULTI_TENANT_ENABLED` or `KMS_AWS_*` set there (including `KMS_PROVIDER=aws`, or an image whose tag the gate never sees) bypasses the checks above, and only the app's boot validation refuses an invalid combination.

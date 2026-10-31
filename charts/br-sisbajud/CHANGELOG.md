@@ -1,5 +1,17 @@
 # Br-sisbajud Changelog
 
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+- Relicense the project under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
 ## [1.4.0](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.0)
 
 Features:

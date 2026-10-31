@@ -272,6 +272,18 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_MTLS_INBOUND_ENABLED` | unset (app default) |
 | `BTG_MTLS_INBOUND_CERT_HEADER` | unset (app default) |
 | `BTG_WEBHOOK_CERTIFICATE_URL` | unset (app default) |
+| `BTG_BULK_MAX_BODY_BYTES` | unset (app default `7680` bytes; zero, negative or non-numeric stops the boot) |
+
+</details>
+
+<details><summary><b>BOLETO BATCH</b></summary>
+
+| Key | Default |
+|-----|---------|
+| `BOLETO_BATCH_INLINE_SUBMIT_BUDGET` | unset (app default `8s`; bounds only the request's wait, never the provider call) |
+| `BOLETO_BATCH_UNKNOWN_ATTEMPTS_BEFORE_SEARCH` | unset (app default `3`; non-numeric stops the boot) |
+| `BOLETO_BATCH_ITEM_OVERDUE_AFTER` | unset (app default `30m`; an overdue item is reported, never failed) |
+| `BOLETO_BATCH_CANCEL_CONCURRENCY` | unset (app default `5`; non-numeric stops the boot) |
 
 </details>
 
@@ -311,6 +323,9 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `PAYMENT_UNCONFIRMED_BATCH_SIZE` | unset (app default `50`) |
 | `RECONCILIATION_WEBHOOK_CLAIM_LEASE` | unset (app default) |
 | `RECONCILIATION_WEBHOOK_SILENCE_WINDOW` | unset (app default) |
+| `RECONCILIATION_BATCH_SUBMISSION_CLAIM_LEASE` | unset (app default `3m`; floored at `4 × BTG_HTTP_TIMEOUT + 1m`) |
+| `RECONCILIATION_BATCH_SUBMISSIONS_PER_CYCLE` | unset (app default `10`; non-numeric stops the boot) |
+| `RECONCILIATION_BATCH_RECOVERY_ALERT_AGE` | unset (app default `1h`; the alert never changes the item) |
 
 </details>
 

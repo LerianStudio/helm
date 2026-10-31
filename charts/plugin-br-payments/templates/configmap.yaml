@@ -208,6 +208,24 @@ data:
   {{- if hasKey $cm "BTG_WEBHOOK_CERTIFICATE_URL" }}
   BTG_WEBHOOK_CERTIFICATE_URL: {{ index $cm "BTG_WEBHOOK_CERTIFICATE_URL" | quote }}
   {{- end }}
+  {{- if hasKey $cm "BTG_BULK_MAX_BODY_BYTES" }}
+  BTG_BULK_MAX_BODY_BYTES: {{ index $cm "BTG_BULK_MAX_BODY_BYTES" | quote }}
+  {{- end }}
+  # ====================================================================
+  # BOLETO BATCH
+  # ====================================================================
+  {{- if hasKey $cm "BOLETO_BATCH_INLINE_SUBMIT_BUDGET" }}
+  BOLETO_BATCH_INLINE_SUBMIT_BUDGET: {{ index $cm "BOLETO_BATCH_INLINE_SUBMIT_BUDGET" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "BOLETO_BATCH_UNKNOWN_ATTEMPTS_BEFORE_SEARCH" }}
+  BOLETO_BATCH_UNKNOWN_ATTEMPTS_BEFORE_SEARCH: {{ index $cm "BOLETO_BATCH_UNKNOWN_ATTEMPTS_BEFORE_SEARCH" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "BOLETO_BATCH_ITEM_OVERDUE_AFTER" }}
+  BOLETO_BATCH_ITEM_OVERDUE_AFTER: {{ index $cm "BOLETO_BATCH_ITEM_OVERDUE_AFTER" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "BOLETO_BATCH_CANCEL_CONCURRENCY" }}
+  BOLETO_BATCH_CANCEL_CONCURRENCY: {{ index $cm "BOLETO_BATCH_CANCEL_CONCURRENCY" | quote }}
+  {{- end }}
   # ====================================================================
   # MIDAZ
   # ====================================================================
@@ -286,6 +304,15 @@ data:
   {{- end }}
   {{- if hasKey $cm "RECONCILIATION_WEBHOOK_SILENCE_WINDOW" }}
   RECONCILIATION_WEBHOOK_SILENCE_WINDOW: {{ index $cm "RECONCILIATION_WEBHOOK_SILENCE_WINDOW" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "RECONCILIATION_BATCH_SUBMISSION_CLAIM_LEASE" }}
+  RECONCILIATION_BATCH_SUBMISSION_CLAIM_LEASE: {{ index $cm "RECONCILIATION_BATCH_SUBMISSION_CLAIM_LEASE" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "RECONCILIATION_BATCH_SUBMISSIONS_PER_CYCLE" }}
+  RECONCILIATION_BATCH_SUBMISSIONS_PER_CYCLE: {{ index $cm "RECONCILIATION_BATCH_SUBMISSIONS_PER_CYCLE" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "RECONCILIATION_BATCH_RECOVERY_ALERT_AGE" }}
+  RECONCILIATION_BATCH_RECOVERY_ALERT_AGE: {{ index $cm "RECONCILIATION_BATCH_RECOVERY_ALERT_AGE" | quote }}
   {{- end }}
   # ====================================================================
   # WEBHOOKS

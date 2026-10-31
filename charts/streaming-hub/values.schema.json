@@ -337,7 +337,7 @@
         "configmap": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Operator ConfigMap overrides (key -> value). See templates/configmap.yaml.",
+          "description": "Operator ConfigMap overrides (key -> value). See templates/configmap.yaml. IS_DEVELOPMENT is deprecated: still accepted so upgrades keep validating, ignored.",
           "propertyNames": {
             "enum": [
               "AGGRESSIVE_RATE_LIMIT_MAX",

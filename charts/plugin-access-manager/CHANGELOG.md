@@ -3,6 +3,32 @@
 ## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
 
 Features:
+- Add Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Correct the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Fix pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Fix pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fix pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Correct rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fix image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Correct init-user text and add app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fix upgrade guide for the `v10.1.1` caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Fix upgrade guide for `v10.1.0` regarding `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Correct timeout wording and pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
 
 - Add Helm upgrade guide for `v10.0.2`. (@victorlazari)
 - Add Helm upgrade guide for `v10.0.3`. (@victorlazari)

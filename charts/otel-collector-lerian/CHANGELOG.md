@@ -3,6 +3,21 @@
 ## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.1)
 
 Features:
+- Relicense the charts under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+- Align the README, upgrade guide, and comments with the rendered chart for better consistency and clarity. (@gandalf-at-lerian)
+
+Fixes:
+- Update documentation to reflect changes in `otel-collector-lerian` for version `v4.3.0`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.0...otel-collector-lerian-v4.3.1)
+
+---
+
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.1)
+
+Features:
 - Relicense the charts under the Elastic License `2.0`. (@fredcamaral)
 
 Improvements:

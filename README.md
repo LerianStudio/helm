@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `3.0.3` | 3.4.0 |
+| `3.0.4` | 3.4.0 |
 -----------------
 
 

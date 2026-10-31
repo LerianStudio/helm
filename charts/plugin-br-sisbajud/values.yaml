@@ -236,6 +236,14 @@ sisbajud:
       mountPath: "/etc/plugin-br-sisbajud/mensageria"
 
   executor:
+    # -- EXECUTOR_ENABLED: "" (default, not emitted) | "true" | "false". Blank or
+    #    false = the legacy signal: a non-blank mensageria.baseUrl runs the
+    #    executor (false never turns it off). "true" WITHOUT mensageria.baseUrl
+    #    boots a DIRECT-only executor (no Mensageria, no Hub webhook / SQS
+    #    intake): only m2mSubject, responseDeadlineMargin, heartbeatEvery and
+    #    tickEvery are required; transport, webhook.* (except maxHandleAttempts),
+    #    sqs.*, streamingHubTenantId and MENSAGERIA_CLIENT_ID/SECRET are not used.
+    enabled: ""
     # -- EXECUTOR_M2M_SUBJECT: `sub` of the executor's M2M token (required).
     #    MENSAGERIA_CLIENT_ID / MENSAGERIA_CLIENT_SECRET go in secrets.
     m2mSubject: ""
@@ -252,6 +260,18 @@ sisbajud:
     settleWindow: ""
     tickEvery: "30s"
     orphanReconcileWindow: "48h"
+    # -- EXECUTOR_RESULT_MAX_ATTEMPTS: result drainer attempt cap per outbox row
+    #    (>= 1; "0" = app default 12). Exhausted = human decision + alarm.
+    resultMaxAttempts: "12"
+    # -- Direct channel drainer alarms (every executor mode).
+    direct:
+      # -- EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD: alarm at every multiple
+      #    of this many consecutive infra errors of a revision (integer >= 1).
+      drainerInfraAlarmThreshold: "3"
+      # -- EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER: ERROR log once the oldest
+      #    direct order eligible for a MANUAL purge is this old (Go duration > 0).
+      #    The plugin never purges (runbook direct-channel-operations.md § 10).
+      purgeEligibleAlarmAfter: "168h"
     # -- EXECUTOR_TRANSPORT: webhook (default) | sqs.
     transport: "webhook"
 
@@ -261,6 +281,10 @@ sisbajud:
       port: 9082
       path: "/v1/webhooks/hub"
       maxSkewSec: "300"
+      # -- EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS (>= 1). Also the direct
+      #    drainer's attempt cap in every executor mode; in a DIRECT-only executor
+      #    it is the only webhook.* key emitted. Must cover the settle wait:
+      #    >= 1 + ceil(settleWindow / tickEvery).
       maxHandleAttempts: "5"
       # -- Outside DEPLOYMENT_MODE=local the listener needs its own TLS pair
       #    (tls.existingSecret) or TLS terminated in front of it (true).
@@ -292,9 +316,24 @@ sisbajud:
       visibilityTimeoutSeconds: "300"
       maxReceiveCount: "5"
 
+  # -- Direct channel (POST /v1/institutions/{id}/executor/...).
+  direct:
+    # -- DIRECT_PERMANENT_BLOCK_ENABLED: true | false. KEEP false unless the
+    #    institution has decided to take permanent blocks (SISBAJUD "P"/"D"):
+    #    false refuses their creation with 422 SBJ-0027 (audited, nothing
+    #    recorded); cancellations and UNBLOCK/TRANSFER of a permanent parent are
+    #    always taken. Any other value refuses the render (and the boot).
+    permanentBlockEnabled: false
+
   # -- Midaz connector default. Ledger URL and credentials are per institution
   #    (institution config, sealed in the database), not env.
   midaz:
+    # -- MIDAZ_CRM_MODE: legacy | embedded. Match the institution's Midaz:
+    #    Midaz v4 serves the CRM embedded in the ledger and no longer has the
+    #    legacy /v1/holders surface, so it needs "embedded"; Midaz v3 needs
+    #    "legacy". The default stays "legacy" so an upgrade never changes the
+    #    surface of an existing install: set it explicitly. Symptom of the wrong
+    #    mode: every holder read fails.
     crmMode: "legacy"
 
   # -- Inbound auth extras. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST come from

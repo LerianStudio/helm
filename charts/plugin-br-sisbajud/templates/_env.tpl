@@ -3,7 +3,8 @@
 plugin-br-sisbajud.configmapData — every env key the chart models, as
 ConfigMap `data` lines. Contract source: LerianStudio/plugin-br-sisbajud
 internal/bootstrap/config*.go (env tags + validations), restricted to what the
-process reads in EXECUTOR mode (MENSAGERIA_BASE_URL set). Dependency
+process reads in EXECUTOR mode: MENSAGERIA_BASE_URL set, or EXECUTOR_ENABLED=true
+without it (DIRECT-only, DR-07: no transport / Hub webhook / SQS keys). Dependency
 connections go through the lerian-common masks/env helpers; the rest through
 lerian-common.cfgValue (plugin-br-sisbajud.kv). No credential is emitted here.
 ==============================================================================
@@ -22,7 +23,11 @@ lerian-common.cfgValue (plugin-br-sisbajud.kv). No credential is emitted here.
 {{- $envName := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "ENVIRONMENT_NAME" "p" $s.app "f" "environmentName" "d" "production") -}}
 {{- $mtOn := eq (include "plugin-br-sisbajud.multiTenantEnabled" .) "true" -}}
 {{- $transport := include "plugin-br-sisbajud.transport" . -}}
-{{- $kmsProvider := include "plugin-br-sisbajud.kmsProvider" . }}
+{{- $kmsProvider := include "plugin-br-sisbajud.kmsProvider" . -}}
+{{- $mode := include "plugin-br-sisbajud.executorMode" . -}}
+{{- $exOn := include "plugin-br-sisbajud.executorEnabled" . -}}
+{{- $exDirect := $ex.direct | default dict -}}
+{{- $direct := $s.direct | default dict }}
 # --- Application -------------------------------------------------------------
 ENVIRONMENT_NAME: {{ $envName | quote }}
 ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) | quote }}
@@ -73,13 +78,23 @@ MENSAGERIA_TLS_CLIENT_KEY_FILE: {{ $mt.keyFile | quote }}
 {{- include $kv (dict "cm" $cm "p" $ex "f" "settleWindow" "k" "EXECUTOR_SETTLE_WINDOW" "opt" true) }}
 {{- include $kv (dict "cm" $cm "p" $ex "f" "tickEvery" "k" "EXECUTOR_TICK_EVERY" "d" "30s") }}
 {{- include $kv (dict "cm" $cm "p" $ex "f" "orphanReconcileWindow" "k" "EXECUTOR_ORPHAN_RECONCILE_WINDOW" "d" "48h") }}
+{{- if $exOn }}
+EXECUTOR_ENABLED: {{ $exOn | quote }}
+{{- end }}
+{{- include $kv (dict "cm" $cm "p" $ex "f" "resultMaxAttempts" "k" "EXECUTOR_RESULT_MAX_ATTEMPTS" "d" "12") }}
+# --- Direct channel: drainer alarms + permanent-block switch ----------------------
+{{- include $kv (dict "cm" $cm "p" $exDirect "f" "drainerInfraAlarmThreshold" "k" "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD" "d" "3") }}
+{{- include $kv (dict "cm" $cm "p" $exDirect "f" "purgeEligibleAlarmAfter" "k" "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER" "d" "168h") }}
+{{- include $kv (dict "cm" $cm "p" $direct "f" "permanentBlockEnabled" "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "d" "false") }}
+# --- Direct drainer attempt cap (every executor mode; also the webhook's) ----------
+{{- include $kv (dict "cm" $cm "p" $wh "f" "maxHandleAttempts" "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "d" "5") }}
+{{- if ne $mode "direct" }}
 EXECUTOR_TRANSPORT: {{ $transport | quote }}
 {{- if eq $transport "webhook" }}
 # --- Executor: Streaming Hub webhook listener ------------------------------------
 EXECUTOR_HUB_WEBHOOK_ADDRESS: {{ (hasKey $cm "EXECUTOR_HUB_WEBHOOK_ADDRESS" | ternary (index $cm "EXECUTOR_HUB_WEBHOOK_ADDRESS") (printf ":%v" ($wh.port | default 9082))) | quote }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "path" "k" "EXECUTOR_HUB_WEBHOOK_PATH" "d" "/v1/webhooks/hub") }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "maxSkewSec" "k" "EXECUTOR_HUB_WEBHOOK_MAX_SKEW_SEC" "d" "300") }}
-{{- include $kv (dict "cm" $cm "p" $wh "f" "maxHandleAttempts" "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "d" "5") }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "upstreamTlsValidated" "k" "EXECUTOR_HUB_WEBHOOK_UPSTREAM_TLS_VALIDATED" "d" "false") }}
 {{- if $whTls.existingSecret }}
 EXECUTOR_HUB_WEBHOOK_TLS_CERT_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.mountPath) $whTls.certKey | quote }}
@@ -99,6 +114,7 @@ EXECUTOR_HUB_WEBHOOK_TLS_KEY_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.moun
 {{- include $kv (dict "cm" $cm "p" $sqs "f" "maxMessages" "k" "EXECUTOR_SQS_MAX_MESSAGES" "d" "10") }}
 {{- include $kv (dict "cm" $cm "p" $sqs "f" "visibilityTimeoutSeconds" "k" "EXECUTOR_SQS_VISIBILITY_TIMEOUT_SECONDS" "d" "300") }}
 {{- include $kv (dict "cm" $cm "p" $sqs "f" "maxReceiveCount" "k" "EXECUTOR_SQS_MAX_RECEIVE_COUNT" "d" "5") }}
+{{- end }}
 {{- end }}
 # --- Midaz connector (ledger URL + credentials are per institution, in the DB) ----
 {{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "legacy") }}

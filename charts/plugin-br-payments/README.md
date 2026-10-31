@@ -186,4 +186,4 @@ kubectl delete pvc -n midaz-plugins -l app.kubernetes.io/instance=my-payments
 
 ## License
 
-[Elastic License 2.0](../../LICENSE) (chart). The `plugin-br-payments` application itself is proprietary to Lerian Studio Ltd.
+[Elastic License 2.0](https://github.com/LerianStudio/helm/blob/main/LICENSE) (chart). The `plugin-br-payments` application itself is proprietary to Lerian Studio Ltd.

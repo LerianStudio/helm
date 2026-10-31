@@ -21,13 +21,6 @@ permissions:
   contents: write
   packages: write
 
-# One release per branch at a time; queue: max keeps every merge's run pending
-# instead of cancelling the middle one of a burst.
-concurrency:
-  group: helm-release-${{ github.ref }}
-  cancel-in-progress: false
-  queue: max
-
 jobs:
   get-changed-paths:
     if: github.actor != 'lerian-studio-midaz-push-bot[bot]'
@@ -116,6 +109,12 @@ jobs:
     needs: get-changed-paths
     name: Release Helm Chart
     if: needs.get-changed-paths.outputs.matrix != '[]'
+    # Every push to main happens in this job; update-gitops stays out of the group
+    # so a stalled GitOps runner never blocks a publish.
+    concurrency:
+      group: helm-release-${{ github.ref }}
+      cancel-in-progress: false
+      queue: max
     runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       max-parallel: 1
@@ -214,8 +213,6 @@ jobs:
           chart-path: ${{ matrix.chart.working_dir }}
           values-file: .github/configs/helm-render-values/${{ matrix.chart.name }}.yaml
 
-      # A stable chart release must not ship a prerelease app by accident. Charts
-      # that do so on purpose are listed in .github/configs/prerelease-allowlist.txt.
       - name: Refuse prerelease app versions in a stable chart
         env:
           CHART_NAME: ${{ matrix.chart.name }}
@@ -491,6 +488,7 @@ jobs:
     name: Collect Published Charts
     needs: [get-changed-paths, release-helm-chart]
     if: >-
+      !cancelled() &&
       needs.get-changed-paths.outputs.matrix != '[]' &&
       github.ref_name == github.event.repository.default_branch
     runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}

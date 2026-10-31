@@ -432,13 +432,13 @@ class StartupContract(unittest.TestCase):
     def test_caradhras_license_key_from_chart_secret(self):
         env, secret = self.caradhras_license({'LICENSE_KEY': 'lic-123'})
         self.assertEqual(env['valueFrom']['secretKeyRef'],
-                         {'name': 'startup-test-caradhras', 'key': 'LICENSE_KEY'})
+                         {'name': 'startup-test-caradhras', 'key': 'LICENSE_KEY', 'optional': True})
         self.assertEqual(base64.b64decode(secret['data']['LICENSE_KEY']), b'lic-123')
         self.assertNotIn('redisEndpoint', secret['data'])
 
     def test_caradhras_license_key_from_existing_secret(self):
         env, secret = self.caradhras_license(useExistingSecret=True, existingSecretName='operator-secret')
-        self.assertEqual(env['valueFrom']['secretKeyRef'], {'name': 'operator-secret', 'key': 'LICENSE_KEY'})
+        self.assertEqual(env['valueFrom']['secretKeyRef'], {'name': 'operator-secret', 'key': 'LICENSE_KEY', 'optional': True})
         self.assertIsNone(secret)
 
     def test_caradhras_without_license_key_renders_no_env(self):

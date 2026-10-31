@@ -12,8 +12,7 @@ import yaml
 
 CHART = Path(__file__).resolve().parents[1]
 BASE = {
-    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'},
-             'initUser': {'enabled': False}},
+    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'}},
     'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'}},
 }
 
@@ -358,14 +357,6 @@ class StartupContract(unittest.TestCase):
         deployment = next(d for d in docs if d['kind'] == 'Deployment' and d['metadata']['name'].endswith('-auth'))
         container_ports = {p['name'] for p in deployment['spec']['template']['spec']['containers'][0]['ports']}
         self.assertEqual({p['targetPort'] for p in service['spec']['ports']}, container_ports)
-
-    def test_init_user_post_install_only(self):
-        docs = self.succeeds({'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}}})
-        jobs = [d for d in docs if d['kind'] == 'Job']
-        job = next(d for d in jobs if d['metadata']['name'].endswith('init-user'))
-        self.assertEqual(job['metadata']['annotations']['helm.sh/hook'], 'post-install')
-        self.assertEqual(job['spec']['template']['spec']['containers'][0]['image'],
-                         'ghcr.io/lerianstudio/caradhras-user-init:3.14.0')
 
 
     def migrate_env(self, patch):

@@ -80,8 +80,6 @@ auth:
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
 
-  initUser:
-    enabled: true
 
 # Caradhras (auth backend — formerly the nested `auth.backend`/Casdoor path)
 # is now a top-level component. Its image/service/replicaCount default from

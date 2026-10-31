@@ -1,5 +1,20 @@
 # Otel-collector-lerian Changelog
 
+## [4.3.1](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.1)
+
+Features:
+- Align README, upgrade guide, and comments with the rendered chart for better consistency and clarity. (@gandalf-at-lerian)
+
+Improvements:
+- Relicense the project under Elastic License `2.0` to update the licensing terms. (@fredcamaral)
+
+Fixes:
+- Complete the upgrade documentation for `otel-collector-lerian` to version `v4.3.0`, ensuring all necessary changes are captured. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.0...otel-collector-lerian-v4.3.1)
+
+---
+
 ## [4.3.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v4.3.0)
 
 Features:

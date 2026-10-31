@@ -1,5 +1,14 @@
 # Plugin-br-ted-lerian Changelog
 
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.0.2)
+
+Fixes:
+- Moved the chart to app `1.0.0-beta.64`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.0.1...plugin-br-ted-lerian-v1.0.2)
+
+---
+
 ## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.0.1)
 
 Features:

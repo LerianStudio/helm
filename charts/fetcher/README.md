@@ -6,7 +6,7 @@
 - Required secrets: None enforced at render time: the default render succeeds with no secret set (only `rabbitmq.enabled=true` fails at render, unless `manager.secrets` sets `RABBITMQ_DEFAULT_USER: plugin` and a non-default `RABBITMQ_DEFAULT_PASS`). The application still needs `APP_ENC_KEY`, `MONGO_USER`/`MONGO_PASSWORD` and `RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS` at runtime (plus `LICENSE_KEY` for licensed deployments), see [Secrets](#secrets). Production credentials must not be committed in values files.
 - Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override manager/worker image tags, ingress, resources, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 ## Overview
 
@@ -528,4 +528,4 @@ kubectl logs -n midaz-plugins -l app.kubernetes.io/name=fetcher-worker
 
 ## License
 
-[Apache 2.0](../../LICENSE) (chart). The Fetcher application itself is proprietary to Lerian Studio Ltd. Versions released under the Elastic License 2.0 keep that license.
+[Elastic License 2.0](../../LICENSE) (chart). The Fetcher application itself is proprietary to Lerian Studio Ltd. Versions released under the Elastic License 2.0 keep that license.

@@ -6,7 +6,7 @@
 - Required secrets: `bc-correios.secrets.RABBITMQ_PASS`, `RABBITMQ_URL`, and `ENCRYPTION_KEY`. The PostgreSQL password is **not** operator-provided with the bundled subchart: the Bitnami `postgresql` subchart auto-generates it into the `<release>-postgresql` Secret (key `password`) and the app reads it via `secretKeyRef`. Set `bc-correios.secrets.POSTGRES_PASSWORD` only for an external PostgreSQL (`postgresql.external=true`) without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses local PostgreSQL, RabbitMQ, and Valkey dependency charts (plus an inline SeaweedFS deployment) unless external services are configured. The in-cluster PostgreSQL, RabbitMQ, Valkey, and object-storage hosts are derived automatically (collapse-aware), so any release name works; set the corresponding `bc-correios.configmap.*_HOST`/`CACHE_ADDR`/`OBJECT_STORAGE_ENDPOINT` only when pointing at external/overridden endpoints.
 - Production overrides: Provide production database, RabbitMQ, and encryption secrets through chart secrets or an existing Secret where supported; override image tags, ingress, resources, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 Helm chart for deploying the BC Correios plugin service.
 

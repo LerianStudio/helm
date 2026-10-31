@@ -6,7 +6,7 @@
 - Required secrets: `plugin-br-ted-lerian.secrets.POSTGRES_PASSWORD` (no default). `REDIS_PASSWORD` only when Redis/Valkey auth is on, `MULTI_TENANT_SERVICE_API_KEY` and `MULTI_TENANT_REDIS_PASSWORD` only when `plugin-br-ted-lerian.multiTenant.enabled=true`. When the bootstrap Job runs, `global.externalPostgresDefinitions.postgresAdminLogin.password` and `.boilerplateCredentials.password` are required too — or point both at an existing Secret.
 - Dependency notes: `lerian-common-helm` (library, no objects of its own) plus PostgreSQL and Valkey, both declared with exact pins, condition-gated and **disabled by default** — the target environments provide them externally. Archives are not vendored in git; `helm dependency update` resolves them from `Chart.lock`.
 - Production overrides: image tag and pull secrets, ingress host/TLS, resources, autoscaling, `global.datastores` (or `plugin-br-ted-lerian.configmap.POSTGRES_HOST` / `REDIS_HOST`), and every credential above. Never ship a published default as a production secret.
-- Source/license: chart source in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm) (Apache-2.0); application in [LerianStudio/plugin-br-ted-lerian](https://github.com/LerianStudio/plugin-br-ted-lerian).
+- Source/license: chart source in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm) (Elastic License 2.0); application in [LerianStudio/plugin-br-ted-lerian](https://github.com/LerianStudio/plugin-br-ted-lerian).
 
 ## Overview
 

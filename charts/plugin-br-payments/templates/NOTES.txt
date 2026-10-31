@@ -53,8 +53,12 @@ The following values MUST be set for the deployment to start successfully:
 {{- if and (ne (include "postgresql.enabled" .) "true") (not .Values.postgresql.auth.existingSecret) }}
   - app.secrets.POSTGRES_PASSWORD         (PostgreSQL application password; required for external Postgres without postgresql.auth.existingSecret)
 {{- end }}
+{{- if ne (include "plugin-br-payments.multiTenantEnabled" .) "true" }}
+  - app.secrets.PLUGIN_AUTH_CLIENT_ID / PLUGIN_AUTH_CLIENT_SECRET (Midaz client credentials — single-tenant, while MIDAZ_AUTH_ENABLED=true)
+{{- end }}
   - app.secrets.INTERNAL_API_KEY          (>=32 chars; required for SERVICE_TYPE=both/worker)
-  - app.secrets.CREDENTIAL_ENCRYPTION_KEY (base64 AES-256; required for SERVICE_TYPE=both/worker)
+  - app.secrets.CREDENTIAL_ENCRYPTION_KEY (base64 AES-256; required for SERVICE_TYPE=both/worker, multi-tenant API, or ENV_NAME=production)
+  - app.secrets.BTG_WEBHOOK_HMAC_SECRET   (>=32 chars; required when ENV_NAME=production, every tenancy mode)
   - app.secrets.CONSULT_AUDIT_HMAC_KEY    (>=32 chars, no surrounding whitespace; required for SERVICE_TYPE=both/api)
   - app.secrets.LICENSE_KEY               (required in every environment)
   - app.configmap.ORGANIZATION_IDS        ("global" or the organization UUIDs the license covers)
@@ -64,7 +68,9 @@ When MULTI_TENANT_ENABLED=true, additionally:
   - app.secrets.MULTI_TENANT_SERVICE_API_KEY
   - app.configmap.MULTI_TENANT_CREDENTIAL_SOURCE (must be "vault" — no fallback credential source)
   - app.configmap.AWS_REGION               (read directly by the AWS SDK for the Secrets Manager client)
-  - BTG OAuth2 credentials are resolved per tenant; do not set app.secrets.BTG_CLIENT_ID or app.secrets.BTG_CLIENT_SECRET
+  - app.configmap.WEBHOOK_PUBLIC_BASE_URL  (where the API is served)
+  - external Postgres (postgresql.enabled=false) with app.controlplaneMigrations.enabled=true, so the control-plane Job creates the tables the app needs
+  - provider OAuth2 credentials are resolved per tenant; do not set app.secrets.PROVIDER_CLIENT_ID or app.secrets.PROVIDER_CLIENT_SECRET
 
 and the PROVIDER_CLIENT_* pair above is NOT required — it is resolved per tenant
 from the credential row, and the app logs a WARN at boot naming each one left set.

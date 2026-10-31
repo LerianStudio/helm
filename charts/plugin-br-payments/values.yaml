@@ -223,21 +223,24 @@ app:
     # CONSULT_RATE_LIMIT_WINDOW_SEC: "60"
 
   # -- Per-key Secret values, each rendered only when set (templates/secrets.yaml).
-  # Required: LICENSE_KEY; POSTGRES_PASSWORD, INTERNAL_API_KEY (>= 32 chars) and
-  # CREDENTIAL_ENCRYPTION_KEY when SERVICE_TYPE runs the worker ("both"/"worker");
+  # Required: LICENSE_KEY; POSTGRES_PASSWORD and INTERNAL_API_KEY (>= 32 chars) when
+  # SERVICE_TYPE runs the worker ("both"/"worker"); CREDENTIAL_ENCRYPTION_KEY when
+  # SERVICE_TYPE runs the worker, multi-tenant serves the API, or ENV_NAME is
+  # production; BTG_WEBHOOK_HMAC_SECRET (>= 32 chars) when ENV_NAME is production
+  # (every tenancy mode and SERVICE_TYPE; checked at any length whenever set);
   # PROVIDER_CLIENT_ID and PROVIDER_CLIENT_SECRET in single-tenant mode (resolved
   # per tenant otherwise); MULTI_TENANT_SERVICE_API_KEY in multi-tenant mode;
   # CONSULT_AUDIT_HMAC_KEY when SERVICE_TYPE serves the API ("both"/"api");
   # PLUGIN_AUTH_CLIENT_ID and PLUGIN_AUTH_CLIENT_SECRET in single-tenant mode while
   # MIDAZ_AUTH_ENABLED is true (the default). Not checked with useExistingSecret.
-  # Also accepted: POSTGRES_REPLICA_PASSWORD, BTG_WEBHOOK_HMAC_SECRET,
-  # INTERNAL_API_KEY_PREVIOUS, CREDENTIAL_ENCRYPTION_KEY_PREVIOUS.
+  # Also accepted: POSTGRES_REPLICA_PASSWORD, INTERNAL_API_KEY_PREVIOUS, CREDENTIAL_ENCRYPTION_KEY_PREVIOUS.
   secrets: {}
     # POSTGRES_PASSWORD: ""
     # PROVIDER_CLIENT_ID: ""
     # PROVIDER_CLIENT_SECRET: ""
     # INTERNAL_API_KEY: ""            # openssl rand -hex 32
     # CREDENTIAL_ENCRYPTION_KEY: ""   # openssl rand -base64 32
+    # BTG_WEBHOOK_HMAC_SECRET: ""     # openssl rand -hex 32 (>= 32 chars)
     # Bill consult audit: HMAC key of the line fingerprint (line_fp). REQUIRED for
     # SERVICE_TYPE "both"/"api": the app refuses to boot without it. >= 32 chars, no
     # leading/trailing whitespace; production refuses the published example
@@ -263,7 +266,8 @@ app:
   controlplaneMigrations:
     # -- Enable the Job. Required for a multi-tenant API (the render fails without
     # it). It renders only with app.configmap.MULTI_TENANT_ENABLED=true and an
-    # external Postgres (the "postgresql.enabled" helper resolves "false"), and runs /controlplane-migrate from app.image (shipped since app 1.0.2). A
+    # external Postgres (the "postgresql.enabled" helper resolves "false"), and runs
+    # /controlplane-migrate from app.image (in the image since v1.0.0). A
     # multi-tenant API refuses to boot without the tables it creates.
     enabled: false
     # -- Resource requests and limits for the migrations Job. Deliberately

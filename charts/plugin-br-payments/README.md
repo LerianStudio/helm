@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, and `CREDENTIAL_ENCRYPTION_KEY` for the default worker-enabled render, and `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render, and `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
@@ -62,7 +62,8 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.secrets.PROVIDER_CLIENT_ID` | Provider OAuth2 client ID. **Single-tenant only** — in multi-tenant it is resolved per tenant and must be left empty. Named for the role rather than the vendor; renamed from `BTG_CLIENT_ID`. |
 | `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. Same conditionality as above; renamed from `BTG_CLIENT_SECRET`. |
 | `app.secrets.INTERNAL_API_KEY` | At least 32 characters. Required when `SERVICE_TYPE` includes worker (default `both`). Generate with `openssl rand -hex 32`. |
-| `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker. Generate with `openssl rand -base64 32`. |
+| `app.secrets.CREDENTIAL_ENCRYPTION_KEY` | Base64-encoded AES-256 key. Required when `SERVICE_TYPE` includes worker, when multi-tenant serves the API, or when `ENV_NAME=production` (the default). Generate with `openssl rand -base64 32`. |
+| `app.secrets.BTG_WEBHOOK_HMAC_SECRET` | HMAC-SHA256 secret of the provider webhook subscription. Required when `ENV_NAME=production` (the default), in every tenancy mode and `SERVICE_TYPE`; at least 32 characters whenever set. Generate with `openssl rand -hex 32`. |
 | `app.secrets.CONSULT_AUDIT_HMAC_KEY` | HMAC key of the bill consult audit's line fingerprint (`line_fp`). Required when `SERVICE_TYPE` serves the API (`both`, the default, or `api`); the app refuses to boot without it. At least 32 characters, no leading or trailing whitespace; with `ENV_NAME=production` the app also refuses the published example placeholders. Generate with `openssl rand -hex 32` and, outside local, source it from the platform secret manager. Rotating it is a restart, but older `line_fp` values stop correlating (there is no `_PREVIOUS` key). Not checked at render when `app.useExistingSecret=true`. |
 
 Secret keys are not checked at render with `app.useExistingSecret=true`; the Secret named by `app.existingSecretName` must carry them.
@@ -278,7 +279,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_MTLS_INBOUND_ENABLED` | unset (app default) |
 | `BTG_MTLS_INBOUND_CERT_HEADER` | unset (app default) |
 | `BTG_WEBHOOK_CERTIFICATE_URL` | unset (app default) |
-| `BTG_BULK_MAX_BODY_BYTES` | unset (app default `7680` bytes; zero, negative or non-numeric stops the boot) |
+| `BTG_BULK_MAX_BODY_BYTES` | read only by app versions after 1.0.2; unset (app default `7680` bytes; zero, negative or non-numeric stops the boot) |
 
 </details>
 
@@ -286,10 +287,10 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 
 | Key | Default |
 |-----|---------|
-| `BOLETO_BATCH_INLINE_SUBMIT_BUDGET` | unset (app default `8s`; bounds only the request's wait, never the provider call) |
-| `BOLETO_BATCH_UNKNOWN_ATTEMPTS_BEFORE_SEARCH` | unset (app default `3`; non-numeric stops the boot) |
-| `BOLETO_BATCH_ITEM_OVERDUE_AFTER` | unset (app default `30m`; an overdue item is reported, never failed) |
-| `BOLETO_BATCH_CANCEL_CONCURRENCY` | unset (app default `5`; non-numeric stops the boot) |
+| `BOLETO_BATCH_INLINE_SUBMIT_BUDGET` | read only by app versions after 1.0.2; unset (app default `8s`; bounds only the request's wait, never the provider call) |
+| `BOLETO_BATCH_UNKNOWN_ATTEMPTS_BEFORE_SEARCH` | read only by app versions after 1.0.2; unset (app default `3`; non-numeric stops the boot) |
+| `BOLETO_BATCH_ITEM_OVERDUE_AFTER` | read only by app versions after 1.0.2; unset (app default `30m`; an overdue item is reported, never failed) |
+| `BOLETO_BATCH_CANCEL_CONCURRENCY` | read only by app versions after 1.0.2; unset (app default `5`; non-numeric stops the boot) |
 
 </details>
 
@@ -298,12 +299,12 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | Key | Default |
 |-----|---------|
 | `MIDAZ_LEDGER_URL` | `""` |
-| `MIDAZ_CRM_URL` | unset (app default) |
+| `MIDAZ_CRM_URL` | retired by app 1.0.2 (it only logs a warning); still rendered when set |
 | `MIDAZ_AUTH_ENABLED` | `"true"` (the app refuses `false` under `ENV_NAME=production`) |
 | `MIDAZ_ALLOW_INSECURE_HTTP` | `"true"` (lets the Midaz client reach an `http://` `PLUGIN_AUTH_ADDRESS`; `MIDAZ_LEDGER_URL` stays HTTPS-only under production) |
-| `MIDAZ_DEFAULT_ORG_ID` | unset (app default) |
-| `MIDAZ_DEFAULT_LEDGER_ID` | unset (app default) |
-| `M2M_CRM_TARGET_SERVICE` | unset (app default) |
+| `MIDAZ_DEFAULT_ORG_ID` | retired by app 1.0.2 (it only logs a warning); still rendered when set |
+| `MIDAZ_DEFAULT_LEDGER_ID` | retired by app 1.0.2 (it only logs a warning); still rendered when set |
+| `M2M_CRM_TARGET_SERVICE` | retired by app 1.0.2 (it only logs a warning); still rendered when set |
 | `ORGANIZATION_IDS` | unset — **required** (`"global"` or organization UUIDs) |
 | `ACCOUNT_VALIDATION_DISABLED` | unset (app default) |
 | `ACCOUNTING_ROUTES_ENABLED` | unset (app default) |
@@ -329,14 +330,14 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `PAYMENT_UNCONFIRMED_BATCH_SIZE` | unset (app default `50`) |
 | `RECONCILIATION_WEBHOOK_CLAIM_LEASE` | unset (app default) |
 | `RECONCILIATION_WEBHOOK_SILENCE_WINDOW` | unset (app default) |
-| `RECONCILIATION_BATCH_SUBMISSION_CLAIM_LEASE` | unset (app default `3m`; floored at `4 × BTG_HTTP_TIMEOUT + 1m`) |
-| `RECONCILIATION_BATCH_SUBMISSIONS_PER_CYCLE` | unset (app default `10`; non-numeric stops the boot) |
-| `RECONCILIATION_BATCH_RECOVERY_ALERT_AGE` | unset (app default `1h`; the alert never changes the item) |
-| `RECONCILIATION_INSTALLMENT_ACCOUNT_DISCOVERY_ALERT_AGE` | unset (app default `1h`; the alert never changes the installment) |
-| `RECONCILIATION_INSTALLMENT_CLAIM_LEASE` | unset (app default `10m`; floored at `4 × BTG_HTTP_TIMEOUT + 1m`) |
-| `RECONCILIATION_INSTALLMENT_DISCOUNT_CUTOFF_MARGIN` | unset (app default `30m`; capped at `6h`; zero, negative or unparseable takes the default) |
-| `RECONCILIATION_INSTALLMENT_RECOVERY_ALERT_AGE` | unset (app default `1h`; the alert never changes the installment) |
-| `RECONCILIATION_INSTALLMENT_RECOVERY_ESCALATION_AGE` | unset (app default `24h`; an escalation not greater than the alert age is replaced at boot, with a warning) |
+| `RECONCILIATION_BATCH_SUBMISSION_CLAIM_LEASE` | read only by app versions after 1.0.2; unset (app default `3m`; floored at `4 × BTG_HTTP_TIMEOUT + 1m`) |
+| `RECONCILIATION_BATCH_SUBMISSIONS_PER_CYCLE` | read only by app versions after 1.0.2; unset (app default `10`; non-numeric stops the boot) |
+| `RECONCILIATION_BATCH_RECOVERY_ALERT_AGE` | read only by app versions after 1.0.2; unset (app default `1h`; the alert never changes the item) |
+| `RECONCILIATION_INSTALLMENT_ACCOUNT_DISCOVERY_ALERT_AGE` | read only by app versions after 1.0.2; unset (app default `1h`; the alert never changes the installment) |
+| `RECONCILIATION_INSTALLMENT_CLAIM_LEASE` | read only by app versions after 1.0.2; unset (app default `10m`; floored at `4 × BTG_HTTP_TIMEOUT + 1m`) |
+| `RECONCILIATION_INSTALLMENT_DISCOUNT_CUTOFF_MARGIN` | read only by app versions after 1.0.2; unset (app default `30m`; capped at `6h`; zero, negative or unparseable takes the default) |
+| `RECONCILIATION_INSTALLMENT_RECOVERY_ALERT_AGE` | read only by app versions after 1.0.2; unset (app default `1h`; the alert never changes the installment) |
+| `RECONCILIATION_INSTALLMENT_RECOVERY_ESCALATION_AGE` | read only by app versions after 1.0.2; unset (app default `24h`; an escalation not greater than the alert age is replaced at boot, with a warning) |
 
 </details>
 
@@ -358,12 +359,14 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 
 | Key | Default |
 |-----|---------|
-| `ENABLE_TELEMETRY` | `global.observability.enabled`, else `"true"` |
+| `ENABLE_TELEMETRY` | `global.observability.enabled`, else `"true"` when an OTLP endpoint is configured or `otel-collector-lerian.enabled=true`, else `"false"` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `global.observability.otlpEndpoint`, else `""` |
 | `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` | `global.observability.deploymentEnvironment`, else `"production"` |
 | `OTEL_LIBRARY_NAME` | `"github.com/LerianStudio/plugin-br-payments"` |
 | `OTEL_RESOURCE_SERVICE_NAME` | `"plugin-br-payments"` |
 | `OTEL_RESOURCE_SERVICE_VERSION` | the image tag |
+
+The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collector endpoint it sets itself (`otel-collector-lerian.enabled=true`, plaintext `$(HOST_IP):4317`); a plaintext endpoint you supply gets no automatic opt-out, so under `ENV_NAME=production` either use `https://` or set `ALLOW_INSECURE_OTEL` yourself through `app.extraEnvVars`.
 
 </details>
 

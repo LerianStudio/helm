@@ -127,6 +127,9 @@ spec:
                   fieldPath: status.hostIP
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "$(HOST_IP):4317"
+            # The node-local collector is plaintext; lib-observability refuses that in production without a reason.
+            - name: ALLOW_INSECURE_OTEL
+              value: "node-local collector"
           {{- end }}
           {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT

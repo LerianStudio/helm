@@ -207,6 +207,13 @@ plugin-br-payments README.
 {{- $svcType := .Values.app.configmap.SERVICE_TYPE | default "both" | toString }}
 {{- $servesAPI := or (eq $svcType "both") (eq $svcType "api") }}
 {{- $ownSecret := not .Values.app.useExistingSecret }}
+{{- $cmAll := dict -}}
+{{- range $k, $v := (.Values.app.configmap | default dict) }}{{- if not (kindIs "invalid" $v) }}{{- $_ := set $cmAll $k $v -}}{{- end }}{{- end }}
+{{- $production := eq (include "lerian-common.globalValue" (dict "context" . "configmap" $cmAll "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "production") | toString | trim | lower) "production" }}
+
+{{- if and .Values.app.useExistingSecret (not .Values.app.existingSecretName) }}
+{{- fail "\n\nERROR: app.existingSecretName is REQUIRED when app.useExistingSecret=true.\n" }}
+{{- end }}
 
 {{/* BTG provider integration — required for any write operation */}}
 {{- if not .Values.app.configmap.BTG_API_BASE_URL }}
@@ -240,13 +247,7 @@ plugin-br-payments README.
 {{- end }}
 {{- end }}
 
-{{/* Midaz Ledger URL — required for production.
-     Preferred: app.configmap.MIDAZ_LEDGER_URL (single Ledger plane URL; the
-     app now serves onboarding + transaction from one plane).
-     DEPRECATED fallback: MIDAZ_ONBOARDING_URL + MIDAZ_TRANSACTION_URL (the
-     former split pair). Still accepted for backward compatibility with
-     environments that have not migrated yet; remove once all overlays use
-     MIDAZ_LEDGER_URL. */}}
+{{/* Midaz Ledger URL: one URL serves onboarding and transaction. */}}
 {{- if not .Values.app.configmap.MIDAZ_LEDGER_URL }}
 {{- fail "\n\nERROR: app.configmap.MIDAZ_LEDGER_URL is REQUIRED.\n   Set the Midaz Ledger service URL (one URL serves onboarding and transaction).\n" }}
 {{- end }}
@@ -300,15 +301,28 @@ plugin-br-payments README.
 {{- end }}
 
 {{/* Internal API key + credential encryption — required when worker runs in-process or as worker pod */}}
-{{- if and $ownSecret (or (eq $svcType "both") (eq $svcType "worker") (and $multiTenantEnabled (eq $svcType "api"))) }}
+{{- if and $ownSecret (or (eq $svcType "both") (eq $svcType "worker")) }}
 {{- if not .Values.app.secrets.INTERNAL_API_KEY }}
 {{- fail "\n\nERROR: app.secrets.INTERNAL_API_KEY is REQUIRED when SERVICE_TYPE includes worker (\"both\" or \"worker\").\n   The plugin uses this key for cross-pod token retrieval.\n   Must be at least 32 characters. Generate with: openssl rand -hex 32\n" }}
 {{- end }}
 {{- if lt (len (.Values.app.secrets.INTERNAL_API_KEY | toString)) 32 }}
 {{- fail "\n\nERROR: app.secrets.INTERNAL_API_KEY must be at least 32 characters.\n   Generate with: openssl rand -hex 32\n" }}
 {{- end }}
-{{- if not .Values.app.secrets.CREDENTIAL_ENCRYPTION_KEY }}
-{{- fail "\n\nERROR: app.secrets.CREDENTIAL_ENCRYPTION_KEY is REQUIRED when SERVICE_TYPE includes worker (\"both\" or \"worker\").\n   The plugin uses this key to encrypt provider OAuth credentials at rest.\n   Must be a base64-encoded AES-256 key (32 random bytes).\n   Generate with: openssl rand -base64 32\n" }}
+{{- end }}
+
+{{/* Credential encryption key: the worker, the multi-tenant API and every production boot read it. */}}
+{{- if and $ownSecret (or (eq $svcType "both") (eq $svcType "worker") (and $multiTenantEnabled $servesAPI) $production) (not .Values.app.secrets.CREDENTIAL_ENCRYPTION_KEY) }}
+{{- fail "\n\nERROR: app.secrets.CREDENTIAL_ENCRYPTION_KEY is REQUIRED when SERVICE_TYPE includes worker (\"both\" or \"worker\"), when multi-tenant serves the API, or when ENV_NAME is production.\n   The plugin uses this key to encrypt provider OAuth credentials at rest.\n   Must be a base64-encoded AES-256 key (32 random bytes).\n   Generate with: openssl rand -base64 32\n" }}
+{{- end }}
+
+{{/* BTG webhook HMAC secret: required in production for every tenancy mode and SERVICE_TYPE; the app enforces 32+ characters whenever it is set. */}}
+{{- if $ownSecret }}
+{{- $btgHmac := .Values.app.secrets.BTG_WEBHOOK_HMAC_SECRET | default "" | toString }}
+{{- if and $production (not $btgHmac) }}
+{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_HMAC_SECRET is REQUIRED when ENV_NAME is production.\n   The app refuses to boot without it. Must be at least 32 characters.\n   Generate with: openssl rand -hex 32\n" }}
+{{- end }}
+{{- if and $btgHmac (lt (len $btgHmac) 32) }}
+{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_HMAC_SECRET must be at least 32 characters.\n   Generate with: openssl rand -hex 32\n" }}
 {{- end }}
 {{- end }}
 

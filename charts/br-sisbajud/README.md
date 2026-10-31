@@ -132,7 +132,6 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `security.allowInsecureTls` | `ALLOW_INSECURE_TLS` | `true` only with a bundled subchart, else `false` |
 | `security.allowCorsWildcard` / `allowInsecureOtel` / `allowWebhookPrivateNetwork` | `ALLOW_CORS_WILDCARD` / `ALLOW_INSECURE_OTEL` / `ALLOW_WEBHOOK_PRIVATE_NETWORK` | unset |
 | `license.organizationIds` | `ORGANIZATION_IDS` | `global` (the only accepted value) |
-| `license.isDevelopment` | `IS_DEVELOPMENT` | unset (license SDK dev gateway when `true`) |
 | `postgres.maxOpenConns` / `maxIdleConns` | `POSTGRES_MAX_OPEN_CONNS` / `POSTGRES_MAX_IDLE_CONNS` | `25` / `5` |
 | `postgres.connMaxLifetimeMins` / `connMaxIdleTimeMins` / `connectTimeoutSec` | `POSTGRES_CONN_MAX_LIFETIME_MINS` / `POSTGRES_CONN_MAX_IDLE_TIME_MINS` / `POSTGRES_CONNECT_TIMEOUT_SEC` | `30` / `5` / `10` |
 | `redis.db` / `protocol` / `poolSize` / `minIdleConns` | `REDIS_DB` / `REDIS_PROTOCOL` / `REDIS_POOL_SIZE` / `REDIS_MIN_IDLE_CONNS` | `0` / `3` / `10` / `2` |

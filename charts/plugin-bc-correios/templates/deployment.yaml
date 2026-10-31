@@ -131,7 +131,7 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: {{ $component.livenessProbe.path | default "/health/live" }}
+              path: {{ $component.livenessProbe.path | default "/health" }}
               port: http
             initialDelaySeconds: {{ $component.livenessProbe.initialDelaySeconds | default 15 }}
             periodSeconds: {{ $component.livenessProbe.periodSeconds | default 20 }}
@@ -140,7 +140,7 @@ spec:
             failureThreshold: {{ $component.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
             httpGet:
-              path: {{ $component.readinessProbe.path | default "/health/ready" }}
+              path: {{ $component.readinessProbe.path | default "/readyz" }}
               port: http
             initialDelaySeconds: {{ $component.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ $component.readinessProbe.periodSeconds | default 10 }}
@@ -149,7 +149,7 @@ spec:
             failureThreshold: {{ $component.readinessProbe.failureThreshold | default 3 }}
           startupProbe:
             httpGet:
-              path: {{ $component.startupProbe.path | default "/health/live" }}
+              path: {{ $component.startupProbe.path | default "/health" }}
               port: http
             initialDelaySeconds: {{ $component.startupProbe.initialDelaySeconds | default 0 }}
             periodSeconds: {{ $component.startupProbe.periodSeconds | default 10 }}

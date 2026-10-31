@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "customerName=Joao da Silva criado"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

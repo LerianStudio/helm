@@ -1,0 +1,164 @@
+{{- if .Values.agent.enabled }}
+{{- $registry := include "lerian-agent.chartRegistryEnabled" . }}
+{{- $trust := .Values.agent.trust.additionalCABundle }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lerian-agent.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.agent.revisionHistoryLimit | default 10 }}
+  {{- include "lerian-common.deploymentStrategy" (dict
+        "type" .Values.agent.deploymentUpdate.type
+        "maxSurge" (.Values.agent.deploymentUpdate.maxSurge | default 0)
+        "maxUnavailable" (.Values.agent.deploymentUpdate.maxUnavailable | default 1)
+      ) | nindent 2 }}
+  {{- if not .Values.agent.autoscaling.enabled }}
+  replicas: {{ .Values.agent.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "lerian-agent.selectorLabels" (dict "context" . "name" .Values.agent.name) | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- if not .Values.agent.useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.agent.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 8 }}
+    spec:
+      {{- with .Values.agent.imagePullSecrets }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "lerian-agent.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.agent.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.agent.terminationGracePeriodSeconds }}
+      containers:
+        - name: {{ .Values.agent.name }}
+          securityContext:
+            {{- toYaml .Values.agent.securityContext | nindent 12 }}
+          image: {{ include "lerian-agent.image" . | quote }}
+          imagePullPolicy: {{ .Values.agent.image.pullPolicy }}
+          envFrom:
+          - secretRef:
+              name: {{ include "lerian-agent.secretName" . }}
+          - configMapRef:
+              name: {{ include "lerian-agent.fullname" . }}
+          env:
+          # Writable state for the read-only root filesystem, and Helm's own
+          # cache/config/data homes and temp dir inside it. Both are emptyDir
+          # volumes below, which is why an enrolled identity is kept in the
+          # <fullname>-identity Secret as well.
+          - name: AGENT_STATE_DIR
+            value: "/var/lib/lerian-agent"
+          - name: TMPDIR
+            value: "/tmp"
+          - name: HELM_CACHE_HOME
+            value: "/var/lib/lerian-agent/helm/cache"
+          - name: HELM_CONFIG_HOME
+            value: "/var/lib/lerian-agent/helm/config"
+          - name: HELM_DATA_HOME
+            value: "/var/lib/lerian-agent/helm/data"
+          # The one object the self-update may write to, and the name every
+          # RBAC grant below is pinned to.
+          - name: AGENT_SELF_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: AGENT_SELF_DEPLOYMENT
+            value: {{ include "lerian-agent.fullname" . | quote }}
+          {{- if $registry }}
+          # A path, never the credential: the pod's environment yields no token.
+          - name: OCI_REGISTRY_CONFIG_FILE
+            value: {{ include "lerian-agent.chartRegistryFile" . | quote }}
+          {{- end }}
+          {{- with .Values.agent.secretVault }}
+          {{- range $key, $env := dict "provider" "AGENT_SECRET_VAULT_PROVIDER" "storeName" "AGENT_SECRET_VAULT_STORE_NAME" "storeKind" "AGENT_SECRET_VAULT_STORE_KIND" "pathPrefix" "AGENT_SECRET_VAULT_PATH_PREFIX" "refreshInterval" "AGENT_SECRET_VAULT_REFRESH_INTERVAL" }}
+          {{- with index $.Values.agent.secretVault $key }}
+          - name: {{ $env }}
+            value: {{ . | quote }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- if $trust }}
+          - name: AGENT_TRUST_BUNDLE_DIR
+            value: /etc/lerian-agent/trust
+          - name: SSL_CERT_DIR
+            value: /etc/lerian-agent/trust
+          {{- end }}
+          {{- if eq (toString .Values.agent.configmap.ENABLE_TELEMETRY) "true" }}
+          {{- if not .Values.agent.configmap.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 10 }}
+          {{- end }}
+          {{- end }}
+          {{- with .Values.agent.extraEnvVars }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.agent.service.port }}
+              protocol: TCP
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "startupProbe" "probe" .Values.agent.startupProbe "port" "http"
+                "path" "/health/live" "initialDelay" 5 "period" 5 "timeout" 3 "success" 1 "failure" 120
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "livenessProbe" "probe" .Values.agent.livenessProbe "port" "http"
+                "path" "/health/live" "initialDelay" 5 "period" 15 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict
+                "kind" "readinessProbe" "probe" .Values.agent.readinessProbe "port" "http"
+                "path" "/health/ready" "initialDelay" 5 "period" 10 "timeout" 5 "success" 1 "failure" 3
+              ) | nindent 10 }}
+          resources:
+            {{- toYaml .Values.agent.resources | nindent 12 }}
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/lerian-agent
+            - name: tmp
+              mountPath: /tmp
+            {{- if $registry }}
+            - name: chart-registry
+              mountPath: {{ include "lerian-agent.chartRegistryMountPath" . | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if $trust }}
+            - name: trust-bundle
+              mountPath: /etc/lerian-agent/trust
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: state
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- if $registry }}
+        # A file the kubelet keeps in sync with the Secret, re-read by the agent
+        # on every chart pull: rotating it needs no restart. Only the one key,
+        # and 0400, which fsGroup turns into the group read the agent uses.
+        - name: chart-registry
+          secret:
+            secretName: {{ include "lerian-agent.chartRegistrySecretName" . }}
+            items:
+              - key: .dockerconfigjson
+                path: .dockerconfigjson
+            defaultMode: 0400
+        {{- end }}
+        {{- if $trust }}
+        - name: trust-bundle
+          configMap:
+            name: {{ $trust | quote }}
+            defaultMode: 0444
+        {{- end }}
+      {{- if or .Values.agent.nodeSelector .Values.agent.affinity .Values.agent.tolerations }}
+      {{- include "lerian-common.scheduling" .Values.agent | trim | nindent 6 }}
+      {{- end }}
+{{- end }}

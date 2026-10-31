@@ -1,0 +1,6 @@
+dependencies:
+- name: lerian-common-helm
+  repository: oci://ghcr.io/lerianstudio
+  version: 2.2.0
+digest: sha256:a6ade4e0b5047438a23bdd90b864acc3fb3b14e159515aaddc6efae158a515cb
+generated: "2026-10-07T16:23:14.70196-03:00"

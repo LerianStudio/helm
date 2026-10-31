@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "clientName=Producao da regiao inicializado"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

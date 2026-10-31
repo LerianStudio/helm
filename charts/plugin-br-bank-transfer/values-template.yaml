@@ -10,7 +10,7 @@
 # STYLE (canonical, mirrors the reporter/plugin-access-manager productized
 # charts): the whole env-wide typed contract lives in ONE `global:` block,
 # FIRST — set each dependency connection ONCE with its typed mask; the chart
-# emits the app's native env keys from it. Do NOT pin ENV_NAME/
+# emits the app's native env keys from it. Do NOT pin ENVIRONMENT_NAME/
 # MULTI_TENANT_ENABLED/ENABLE_TELEMETRY or POSTGRES_*/REDIS_* connection keys
 # under bankTransfer.configmap when a mask exists below — a native key WINS
 # over its mask and defeats it.
@@ -36,14 +36,15 @@ global:
   multiTenant:
     enabled: false
   # -- Env-wide telemetry gate. Leave disabled to keep the bundled default off.
-  # Only "enabled" is supported on this chart (no otlpEndpoint/deploymentEnvironment
-  # fields — those exist on other charts' observability mask, not this one's).
+  # otlpEndpoint is optional: unset, telemetry exports to the node-local collector
+  # at $(HOST_IP):4317.
   observability:
     enabled: false
-  # -- Env-wide auth (plugin-access-manager). Leave unset to keep the chart's
-  # own default endpoint; point it at your access-manager instance otherwise.
+  # -- Env-wide auth (plugin-access-manager). REQUIRED under production: an
+  # https:// endpoint (the app refuses http:// there); the chart's http://
+  # default works only outside production.
   auth:
-    host: ""   # <- e.g. "http://plugin-access-manager-auth:4000"
+    host: ""   # <- e.g. "https://plugin-access-manager-auth.example:4000"
 
 # --- Component config ------------------------------------------------------
 bankTransfer:
@@ -77,17 +78,14 @@ bankTransfer:
     # Multi-tenancy — only when global.multiTenant.enabled=true above
     # =================================================================
     # MULTI_TENANT_URL: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
-    # MULTI_TENANT_ENVIRONMENT: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # AWS_REGION: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # MULTI_TENANT_REDIS_HOST: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
     # MULTI_TENANT_REDIS_TLS: "false"
-    # MULTI_TENANT_INTEGRATION_SECRET_NAME_TEMPLATE: "tenants/{env}/{tenantId}/{applicationName}/integration/configuration"
 
     # =================================================================
     # RabbitMQ (event bus, optional)
     # =================================================================
-    RABBITMQ_ENABLED: "false"
-    # RABBITMQ_URL: ""  # Required if RABBITMQ_ENABLED=true
+    RABBITMQ_ENABLED: "false"  # RABBITMQ_URL goes under secrets below
 
     # =================================================================
     # Authentication (inbound). Set the endpoint via global.auth.host above —
@@ -103,38 +101,50 @@ bankTransfer:
     # =================================================================
 
     # Midaz — REQUIRED
-    MIDAZ_BASE_URL: ""  # REQUIRED - Midaz API endpoint
-    MIDAZ_TRANSACTION_URL: ""  # REQUIRED - Midaz transaction endpoint
+    MIDAZ_BASE_URL: ""  # REQUIRED - Midaz API endpoint (https:// under production)
+    MIDAZ_TRANSACTION_URL: ""  # REQUIRED - Midaz transaction endpoint (https:// under production)
+    # MIDAZ_FEE_MODE: "auto"  # Optional - auto | legacy | native (auto = native on Midaz >= 4.1)
+    # MIDAZ_FEE_MODE_REFRESH: "5m"  # Optional - how often auto re-reads the ledger version
 
     # CRM — REQUIRED
-    CRM_BASE_URL: ""  # REQUIRED - CRM API endpoint
+    CRM_BASE_URL: ""  # REQUIRED - CRM API endpoint (https:// under production)
 
     # Fees — REQUIRED
-    FEES_BASE_URL: ""  # REQUIRED - Fees API endpoint
+    FEES_BASE_URL: ""  # REQUIRED - Fees API endpoint (https:// under production)
 
     # JD-SPB
     JD_SANDBOX_MODE: "false"
-    JD_BASE_URL: ""  # REQUIRED when JD_SANDBOX_MODE=false
-    JD_ORIGIN_ISPB: ""  # REQUIRED when JD_SANDBOX_MODE=false
+    JD_BASE_URL: ""  # REQUIRED when JD_SANDBOX_MODE=false (https:// under production)
+    JD_LEGACY_CODE: ""  # REQUIRED when JD_SANDBOX_MODE=false (origin ISPB: systemplane tenancy.ispb_organization_bindings)
+
+    # Licence
+    ORGANIZATION_IDS: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment
+    # IS_DEVELOPMENT: "true"  # set only with a development licence key (development licence gateway)
 
   secrets:
     # PostgreSQL / Redis / MongoDB — REQUIRED (bundled subcharts read these too)
     POSTGRES_PASSWORD: ""  # REQUIRED
     REDIS_PASSWORD: ""  # REQUIRED
-    MONGO_PASSWORD: ""  # REQUIRED
+    MONGO_URI: ""  # REQUIRED for external MongoDB, e.g. mongodb://bank_transfer:<pw>@<host>:27017/plugin_br_bank_transfer?authSource=plugin_br_bank_transfer&tls=true
 
     # Encryption keys — REQUIRED (hex-encoded 32-byte AES-256 keys, 64 hex chars)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: ""  # REQUIRED
     RECIPIENT_DETAILS_ENCRYPTION_KEY: ""  # REQUIRED
 
-    # JD SPB credentials — required for production (unless JD_SANDBOX_MODE=true)
+    # Licence
+    LICENSE_KEY: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment; a development key also needs configmap.IS_DEVELOPMENT: "true"
+
+    # MULTI_TENANT_SERVICE_API_KEY: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
+
+    # JD SPB credentials — REQUIRED single-tenant unless JD_SANDBOX_MODE=true
     # JD_USER_CODE: ""
     # JD_PASSWORD: ""
-    # JD_PRIVATE_KEY_PEM: ""
+    # JD_PRIVATE_KEY_KEYINFO: ""
+    # JD_PRIVATE_KEY_PEM: ""  # REQUIRED in JD_SIGNING_MODE=local_pem (the default)
     # JD_PUBLIC_KEY_PEM: ""  # required for external_provided mode with signature validation
 
-    # RabbitMQ credentials (if RABBITMQ_ENABLED=true)
-    # RABBITMQ_PASSWORD: ""
+    # RabbitMQ (if RABBITMQ_ENABLED=true; amqps:// outside development/test/local)
+    # RABBITMQ_URL: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -144,10 +154,10 @@ bankTransfer:
 # ==============================================================================
 # PostgreSQL: database "bank_transfer", user "bank_transfer" (full privileges)
 # Redis/Valkey: rate limiting, idempotency keys, caching — no pre-config needed
-# MongoDB (MANDATORY): database "plugin_br_bank_transfer_jd", user "bank_transfer"
+# MongoDB (MANDATORY): database "plugin_br_bank_transfer", user "bank_transfer"
 #   — audit logs, event persistence, transfer tracking
-# RabbitMQ (OPTIONAL — webhook delivery): exchange "bank_transfer.lifecycle" +
-#   ".dlx", queue "transfer.webhook.delivery" + ".dlq"
+# RabbitMQ (OPTIONAL — webhook delivery): user "bank_transfer" with configure/
+#   write/read on its vhost; the app declares its own exchanges and queues
 # ==============================================================================
 
 # Bundled dependencies. On a managed-cloud install (global.cloud set, or any

@@ -1,0 +1,8 @@
+{{- if and (index .Values "system-facts").enabled (index .Values "system-facts").autoscaling.enabled }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" (index .Values "system-facts").autoscaling
+      "name" (include "system-facts.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "system-facts.labels" (dict "context" . "component" (index .Values "system-facts").name "name" (index .Values "system-facts").name))
+    ) }}
+{{- end }}

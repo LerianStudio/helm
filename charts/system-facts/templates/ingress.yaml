@@ -1,0 +1,12 @@
+{{- if and (index .Values "system-facts").enabled (index .Values "system-facts").ingress.enabled }}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" (index .Values "system-facts").ingress
+      "global" (.Values.global).ingress
+      "subdomain" "system-facts"
+      "name" (include "system-facts.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "system-facts.labels" (dict "context" . "component" (index .Values "system-facts").name "name" (index .Values "system-facts").name))
+      "svcPort" (index .Values "system-facts").service.port
+    ) }}
+{{- end }}

@@ -6,7 +6,7 @@ At Midaz, we believe in the power of collaboration and the incredible impact tha
 
 * **Impact**: Your work will directly impact and improve a project used by organizations around the world, making their operations smoother and more efficient.
 * **Learn and Grow**: Contributing to Midaz offers you a unique opportunity to learn from a community of talented developers, enhancing your skills and knowledge in architecture design, CQRS, Ports & Adapters, and more.
-* **Community**: Join a welcoming and supportive community of developers who share your passion for creating high-quality, open-source software.
+* **Community**: Join a welcoming and supportive community of developers who share your passion for creating high-quality software.
 
 #### How Can You Contribute?
 

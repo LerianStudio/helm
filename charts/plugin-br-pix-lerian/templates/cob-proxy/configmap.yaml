@@ -35,7 +35,7 @@ data:
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-cob-proxy" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4109" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
   REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-cob-proxy" | quote }}

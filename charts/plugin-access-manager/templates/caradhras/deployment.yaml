@@ -92,6 +92,20 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_SSLMODE
+            {{- with .Values.caradhras.migrations }}
+            {{- if .skipRBACChain }}
+            # Schema chain only; RBAC arrives via RI manifests. Needs an image that reads it.
+            - name: MIGRATIONS_SKIP_RBAC_CHAIN
+              value: "true"
+            {{- end }}
+            {{- range $name, $value := .extraEnvVars }}
+            {{- if has $name (list "POSTGRES_HOST" "POSTGRES_PORT" "POSTGRES_DB" "POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_SSLMODE" "MIGRATIONS_SKIP_RBAC_CHAIN") }}
+            {{- fail (printf "caradhras.migrations.extraEnvVars.%s duplicates a chart-owned env of the migrate init container; use the chart value instead" $name) }}
+            {{- end }}
+            - name: {{ $name | quote }}
+              value: {{ $value | toString | quote }}
+            {{- end }}
+            {{- end }}
       containers:
         - name: {{ include "plugin-caradhras.fullname" . }}
           # Caradhras (beego) writes to its working dir at runtime — logs/caradhras.log and
@@ -111,7 +125,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} dbname=${DB_NAME}"
+              export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} connect_timeout=5 dbname=${DB_NAME}"
               exec /server --createDatabase={{- if hasKey .Values.caradhras "createDatabase" }}{{ .Values.caradhras.createDatabase }}{{- else }}false{{- end }}
           envFrom:
           - configMapRef:
@@ -143,6 +157,12 @@ spec:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
           {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
+          {{- if (.Values.caradhras.migrations).skipRBACChain }}
+          # The boot schema check must skip the chain the migrate init container skipped,
+          # or any image with a newer rbac head crash-loops. Needs an image that reads it.
+          - name: MIGRATIONS_SKIP_RBAC_CHAIN
+            value: "true"
+          {{- end }}
           {{- if include "plugin-caradhras.sessionFromSecret" . }}
           # Beego session store. Delivered by Secret, never by ConfigMap: the
           # connection string's third field is the Redis password.
@@ -183,15 +203,18 @@ spec:
             timeoutSeconds: {{ include "caradhras.livenessProbeTimeoutSeconds" . }}
             successThreshold: {{ .Values.caradhras.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.caradhras.livenessProbe.failureThreshold | default 3 }}
-      {{- with .Values.auth.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations stay on auth.* (unchanged: caradhras has
+             always been placed with auth); spreading is caradhras' own
+             (global.scheduling.spread preset, caradhras.spread, caradhras.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" (dict
+                "nodeSelector" .Values.auth.nodeSelector
+                "affinity" .Values.auth.affinity
+                "tolerations" .Values.auth.tolerations
+                "spread" .Values.caradhras.spread
+                "topologySpreadConstraints" .Values.caradhras.topologySpreadConstraints)
+            "global" .Values.global
+            "selectorLabels" (include "plugin-caradhras.selectorLabels" (dict "context" . "name" .Values.caradhras.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

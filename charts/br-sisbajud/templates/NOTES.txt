@@ -1,0 +1,85 @@
+br-sisbajud {{ .Values.brSisbajud.image.tag | default .Chart.AppVersion }} (Sisbajud Mensageria) has been deployed to namespace {{ include "global.namespace" . }}.
+Environment: ENVIRONMENT_NAME={{ include "br-sisbajud.envName" . }}
+
+Verify:
+  kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl -n {{ include "global.namespace" . }} get cm,secret -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- $ex := include "br-sisbajud.execution" . | fromYaml }}
+{{- if $ex.enabled }}
+
+Execution API (plugin-br-sisbajud MENSAGERIA_BASE_URL):
+  https://{{ include "br-sisbajud.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ $ex.port }}
+  TLS: {{ ternary "mutual (the plugin needs MENSAGERIA_MTLS_ENABLED=true + a client cert signed by the client CA)" "one-way (the plugin trusts the server CA)" (eq $ex.mtls "true") }}; server cert/key from Secret {{ $ex.tlsSecret }}{{ if eq $ex.mtls "true" }}, client CA from Secret {{ $ex.caSecret }} key {{ $ex.caKey }}{{ end }}.
+{{- if $ex.generate }}
+  The dev CA is in Secret {{ $ex.tlsSecret }} key ca.crt: copy it into the plugin's Mensageria CA Secret.
+{{- end }}
+{{- end }}
+
+{{- if .Values.migrations.enabled }}
+
+{{- if eq (include "br-sisbajud.postgresInternal" .) "true" }}
+
+Migrations: the app's `migrations` initContainer applies the SQL schema before the app
+boots; the {{ include "br-sisbajud-migrations.fullname" . }} Job re-runs it as a
+post-install/post-upgrade (ArgoCD Sync) hook.
+{{- else }}
+
+Migrations: the {{ include "br-sisbajud-migrations.fullname" . }} Job applies the SQL schema
+as a pre-install/pre-upgrade hook (ArgoCD PreSync) before the app boots.
+{{- end }}
+{{- end }}
+{{- if and .Values.topics.enabled (eq (include "br-sisbajud.isTrue" (include "br-sisbajud.streamingEnabledRaw" .)) "true") }}
+
+{{- if eq (include "br-sisbajud.redpandaEnabled" .) "true" }}
+
+Topics: the app's `topics` initContainer and the {{ include "br-sisbajud-topics.fullname" . }}
+post-install/post-upgrade (ArgoCD Sync) hook Job ensure: {{ join ", " .Values.topics.list }}.
+{{- else }}
+
+Topics: the {{ include "br-sisbajud-topics.fullname" . }} pre-install/pre-upgrade (ArgoCD PreSync)
+hook Job ensures: {{ join ", " .Values.topics.list }}.
+{{- end }}
+{{- end }}
+{{- $removed := include "br-sisbajud.removedKeys" . | fromJsonArray }}
+{{- $set := list }}
+{{- range $k := $removed }}
+{{- if or (hasKey ($.Values.brSisbajud.configmap | default dict) $k) (hasKey ($.Values.brSisbajud.secrets | default dict) $k) }}
+{{- $set = append $set $k }}
+{{- end }}
+{{- end }}
+{{- if $set }}
+
+WARNING: these keys are set but the Mensageria does not read them, so the chart
+no longer emits them: {{ join ", " $set }}.
+The Midaz/CRM connector routing and credentials live per institution in
+institution_config.connector_metadata (admin API, see docs/UPGRADE-1.2.md); the
+executor-side workers and Midaz balance consumers moved to plugin-br-sisbajud.
+{{- end }}
+{{- if eq (include "br-sisbajud.productionLike" .) "true" }}
+{{- $bundled := list }}
+{{- if eq (include "br-sisbajud.postgresEnabled" .) "true" }}{{ $bundled = append $bundled "postgresql" }}{{ end }}
+{{- if eq (include "br-sisbajud.valkeyEnabled" .) "true" }}{{ $bundled = append $bundled "valkey" }}{{ end }}
+{{- if eq (include "br-sisbajud.seaweedfsEnabled" .) "true" }}{{ $bundled = append $bundled "seaweedfs" }}{{ end }}
+{{- if $bundled }}
+
+WARNING: bundled {{ join ", " $bundled }} enabled in a production-like environment.
+These single-replica, plaintext subcharts are meant for dev/evaluation; use
+managed PostgreSQL / Valkey / S3 in production (global.datastores / global.objectStorage).
+{{- end }}
+{{- end }}
+{{- if eq (toString (index (.Values.brSisbajud.secrets | default dict) "LICENSE_KEY")) "REPLACE_WITH_YOUR_LICENSE_KEY" }}
+
+WARNING: LICENSE_KEY is still the old values-dev placeholder: the license gateway
+refuses it and the pod will not boot. Set a real key (a dev-gateway key also
+needs brSisbajud.license.isDevelopment: "true"), or leave it EMPTY in
+local|development|staging|e2e|test (the app's dev bypass).
+{{- end }}
+{{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" }}
+
+OpenBao runs in DEV mode: its Transit keys live in memory. Restarting the
+OpenBao pod loses them and every value encrypted under them becomes
+unrecoverable. Dev/evaluation only.
+{{- end }}
+
+Institution onboarding is NOT configured here: seed one institution_config row per
+institution via the admin API (POST /v1/institutions) before orders can execute.

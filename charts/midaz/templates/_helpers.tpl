@@ -58,6 +58,18 @@ Return valid ledger version label
 {{- end -}}
 
 {{/*
+midaz.ledgerRolesAnywhereEnabled — truthy string when the ledger's AWS IAM Roles
+Anywhere sidecar is on. The guard is an `and` over possibly-absent maps repeated
+at several sites; one helper keeps a values file that omits ledger.aws from
+nil-pointering the render.
+*/}}
+{{- define "midaz.ledgerRolesAnywhereEnabled" -}}
+{{- $aws := .Values.ledger.aws | default dict -}}
+{{- $ra := $aws.rolesAnywhere | default dict -}}
+{{- if $ra.enabled -}}true{{- end -}}
+{{- end }}
+
+{{/*
 Create the name of the service account to use for ledger
 */}}
 {{- define "midaz-ledger.serviceAccountName" -}}
@@ -118,6 +130,25 @@ Fail loud at render time so the operator fixes the configuration.
 {{- $mongoAuth := $mongo.auth | default dict -}}
 {{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) (not $mongoAuth.enabled) (not (include "midaz.operatorSecret" (dict "context" . "subchart" "mongodb"))) -}}
 {{- fail "\n\nERROR: mongodb.auth.enabled is REQUIRED when the bundled mongodb subchart is internal.\n   ledger and crm read MONGO_*_PASSWORD from the mongodb Secret (single source), but Bitnami\n   mongodb creates no Secret when auth.enabled=false, leaving a dangling secretKeyRef.\n   Choose one: set mongodb.auth.enabled=true, or provide mongodb.auth.existingSecret, or set mongodb.external=true.\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+midaz.rabbitmqErlangCookieRequired — fail when the bundled groundhog2k rabbitmq subchart is
+enabled without an Erlang cookie. The subchart only sets ERLANG_COOKIE when
+rabbitmq.authentication.erlangCookie.value (or existingSecret + erlangCookie.secretKey) is given;
+otherwise its init script writes an empty .erlang.cookie and the broker exits at boot with
+"Too short cookie string", taking every ledger pod waiting on it down too.
+*/}}
+{{- define "midaz.rabbitmqErlangCookieRequired" -}}
+{{- $auth := .Values.rabbitmq.authentication | default dict -}}
+{{- $cookie := $auth.erlangCookie | default dict -}}
+{{- /* The subchart also takes the cookie as a plain env var or from extraEnvSecrets, whose contents
+   cannot be seen at render: either one stands the check down. */ -}}
+{{- $viaEnv := .Values.rabbitmq.extraEnvSecrets -}}
+{{- range (.Values.rabbitmq.env | default list) }}{{ if eq (toString .name) "ERLANG_COOKIE" }}{{ $viaEnv = true }}{{ end }}{{ end -}}
+{{- if and (ne (toString .Values.rabbitmq.enabled) "false") (not .Values.rabbitmq.external) (not $cookie.value) (not (and $auth.existingSecret $cookie.secretKey)) (not $viaEnv) -}}
+{{- fail "\n\nERROR: rabbitmq.authentication.erlangCookie.value is REQUIRED when the bundled rabbitmq subchart is enabled.\n   Without it the broker writes an empty Erlang cookie and refuses to boot (\"Too short cookie string\").\n   Provide a stable value (it must not change across upgrades), e.g.: openssl rand -hex 32,\n   or set rabbitmq.authentication.existingSecret + rabbitmq.authentication.erlangCookie.secretKey.\n" -}}
 {{- end -}}
 {{- end }}
 
@@ -293,13 +324,15 @@ true
 {{- end -}}
 
 {{/*
-midaz-tracer.migrationsFullname — one Job name per migration image tag. A Job
-spec is immutable, so a stable name would silently skip the run on upgrade; the
-tag suffix makes every version bump create a new Job. Re-running is safe:
+midaz-tracer.migrationsFullname — one Job name per rendered Job spec
+(dict "context" . "spec" <rendered spec>). The tracer Job is a regular release
+resource, and a Job spec is immutable, so the name has to change whenever the
+spec does: the migration image tag, then a hash of the spec. Re-running is safe:
 golang-migrate tracks progress in the schema_migrations table.
 */}}
 {{- define "midaz-tracer.migrationsFullname" -}}
-{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-tracer.fullname" .) "tag" (include "midaz-tracer.migrationsTag" .)) -}}
+{{- $tag := printf "%s-%s" (include "midaz-tracer.migrationsTag" .context) (sha256sum .spec | trunc 8) -}}
+{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-tracer.fullname" .context) "tag" $tag) -}}
 {{- end -}}
 
 {{- define "midaz-ledger.migrationsFullname" -}}
@@ -382,6 +415,14 @@ Matching is exact (no trimming), like ParseBool: " true" is false at runtime.
 {{- end -}}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "midaz.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 midaz.postgresqlPrimaryHost — in-cluster hostname of the bundled PostgreSQL
 primary for THIS release, so a release named something other than `midaz` still
 resolves its database. Bitnami names the Service `<fullname>-primary` in the
@@ -408,9 +449,11 @@ Deployment and the migration Job at a host that does not exist.
 */}}
 {{/*
 midaz-tracer.grpcPort — the numeric gRPC container/Service port, kept in sync with the app's
-listen address. When tracer.configmap.TRACER_GRPC_PORT is set (e.g. ":5000") the port is its
-numeric tail; otherwise tracer.service.grpcPort (default 4021). Prevents the container/Service
-from exposing 4021 while the app listens on a custom TRACER_GRPC_PORT.
+listen address. The tracer always serves the reservation seam over gRPC (":4021" when
+TRACER_GRPC_PORT is unset), so the port is always published. When
+tracer.configmap.TRACER_GRPC_PORT is set (e.g. ":5000") the port is its numeric tail; otherwise
+tracer.service.grpcPort (default 4021). Prevents the container/Service from exposing 4021 while
+the app listens on a custom TRACER_GRPC_PORT.
 */}}
 {{- define "midaz-tracer.grpcPort" -}}
 {{- $listen := (.Values.tracer.configmap | default dict).TRACER_GRPC_PORT -}}

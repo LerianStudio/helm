@@ -1,0 +1,28 @@
+{{- if .Values.agent.enabled }}
+{{- $config := .Values.agent.configmap }}
+{{- $url := required "agent.configmap.CONTROL_PLANE_URL is required: the base URL of the Lerian control plane (https://...)" $config.CONTROL_PLANE_URL }}
+{{- /*
+The agent authenticates with Authorization: Bearer on every request, so a
+cleartext http:// control-plane URL would ship the token unencrypted
+(CWE-319). Refused unless AGENT_ALLOW_INSECURE_HTTP opts in for an isolated
+dev/test cluster.
+*/}}
+{{- $parsed := urlParse $url }}
+{{- $insecure := eq (toString $config.AGENT_ALLOW_INSECURE_HTTP) "true" }}
+{{- if not (and $parsed.host $parsed.hostname (or (eq $parsed.scheme "https") (and (eq $parsed.scheme "http") $insecure))) }}
+{{- fail (printf "agent.configmap.CONTROL_PLANE_URL must be an https:// URL with a host (got %q): the agent sends its bearer token on every request. Set AGENT_ALLOW_INSECURE_HTTP=\"true\" only for isolated dev/test clusters." $url) }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lerian-agent.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 4 }}
+data:
+  {{- range $key, $value := $config }}
+  {{- if ne (toString $value) "" }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

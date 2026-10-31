@@ -110,6 +110,8 @@ The following KMS configuration variables have been added to `crm.configmap`:
 | KMS_VAULT_ADDR | `http://midaz-hc-vault:8200` | Vault server address |
 | KMS_VAULT_AUTH_METHOD | `token` | Vault authentication method |
 
+> **Changed in v9.7.0:** `KMS_VENDOR` defaults to `none` and `KMS_VAULT_ADDR` has no default. To keep Vault, set both explicitly — see [UPGRADE-9.7.md](UPGRADE-9.7.md).
+
 #### Example configuration
 
 To configure CRM to use an external Vault instance:

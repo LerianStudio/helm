@@ -1,0 +1,1 @@
+{"body": "campo \\\"password\\\" obrigatorio; \\\"token\\\" expirado; {\\\"token_type\\\":\\\"Bearer\\\",\\\"secretName\\\":\\\"alloy-lerian\\\",\\\"expires_in\\\":3600}", "categoria": "falso-positivo", "descricao": "Prosa com a palavra da credencial entre aspas e chaves JSON que so comecam ou terminam parecido (`token_type`, `secretName`): saida identica a entrada."}

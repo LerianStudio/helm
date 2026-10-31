@@ -103,8 +103,12 @@ spec:
             if [ "$ROLE_EXISTS" = "1" ]; then
               echo "Role 'plugin-bc-correios' already exists. Skipping creation."
             else
+              # \password reads the password as an input line: it must be non-empty, with no CR or LF.
+              [ -n "$DB_PASSWORD_BC_CORREIOS" ] && [ "$(printf '%s' "$DB_PASSWORD_BC_CORREIOS" | tr -d '\r\n')" = "$DB_PASSWORD_BC_CORREIOS" ] || { echo "DB_PASSWORD_BC_CORREIOS is empty or contains a carriage return or line feed (often a trailing one from a Secret made with echo or on Windows); the plugin-bc-correios role password must be a non-empty single line." >&2; exit 1; }
               echo "Creating role 'plugin-bc-correios'..."
-              PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_BC_CORREIOS" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE \"plugin-bc-correios\" LOGIN PASSWORD :'pw'"
+              # \password hashes the password inside psql, so the server only receives its
+              # verifier, never the plaintext; the transaction never leaves a passwordless role.
+              printf '%s\n' 'BEGIN;' 'CREATE ROLE "plugin-bc-correios" LOGIN;' '\password "plugin-bc-correios"' "$DB_PASSWORD_BC_CORREIOS" "$DB_PASSWORD_BC_CORREIOS" 'COMMIT;' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
             fi
 
             # Create database if not exists

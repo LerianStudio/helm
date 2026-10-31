@@ -1,0 +1,25 @@
+{{- if and .Values.manager.enabled .Values.manager.pdb.enabled -}}
+{{- $p := .Values.manager.pdb -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "br-sta.componentFullname" (dict "root" . "component" "manager") }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sta.labels" (dict "root" . "component" "manager") | nindent 4 }}
+  {{- with $p.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not (kindIs "invalid" $p.maxUnavailable) }}
+  maxUnavailable: {{ $p.maxUnavailable }}
+  {{- else }}
+  {{- /* hasKey, not `default`: an explicit 0 (the shipped default — never blocks a
+     node drain for a single replica) must not coerce to 1. */}}
+  minAvailable: {{ ternary $p.minAvailable 1 (hasKey $p "minAvailable") }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "br-sta.selectorLabels" (dict "root" . "component" "manager") | nindent 6 }}
+{{- end -}}

@@ -35,7 +35,7 @@ habilitar os workloads do seu caso de uso, apontar Postgres, e definir `LICENSE_
 | Homologação com provider mock | perfil de produção + `adapterProviderMock` | Testar ponta a ponta sem o provider real — **restrito a ambientes de desenvolvimento/homologação controlados**, ver seção 5 |
 
 - Cada perfil sempre inclui a app do domínio junto com sua Systemplane correspondente.
-- `dictProxy`/`cobProxy` e `adapterLerian`/`adapterLerianSystemplane` existem para
+- `dictProxy`/`cobProxy` (desabilitados por padrão) e `adapterLerian`/`adapterLerianSystemplane` existem para
   topologias específicas (provider já detém o estado do domínio, ou integração via
   adapter Lerian em ambiente local) — habilite-os apenas se sua topologia de provider
   exigir esse tier; ver [Hub e proxy não são intercambiáveis](../README.md#hub-and-proxy-are-not-interchangeable) no README do chart.
@@ -69,11 +69,11 @@ chart aplica as migrações, não cria o database em si (ver
    de chaves daquele workload, antes do `helm install` — os hooks de migração
    consultam esses Secrets no início da instalação.
 3. Definir `LICENSE_KEY` e `ORGANIZATION_IDS` nos workloads que de fato constroem um
-   client de licença: `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`. Os demais
-   (os componentes `*Systemplane`, `dictProxy`/`cobProxy`, `adapterLerian`) podem carregar
-   um slot `LICENSE_KEY`, mas ele é inerte — nunca constroem o client, então a chave não é
-   necessária ali. O `values.yaml` de exemplo do chart só traz `ORGANIZATION_IDS` em
-   `adapterLerian` e `pixauto` — complete os cinco workloads acima ao partir do default.
+   client de licença: `spi`, `dictHub`, `dictHubVsync`, `dictProxy`, `cobHub`, `cobProxy`,
+   `pixauto`, `adapterLerian`. Os componentes `*Systemplane` e `adapterProviderMock` podem
+   carregar um slot `LICENSE_KEY`, mas ele é inerte — nunca constroem o client. Os templates
+   do chart assumem `ORGANIZATION_IDS=global` em todos eles, exceto `adapterLerian`, onde o
+   default é vazio e precisa ser definido explicitamente.
 4. `helm install` (a instalação é sempre nova — não há caminho de upgrade in-place a
    partir de um chart anterior).
 5. Se algum hub de domínio permanecer desabilitado, aplicar o schema daquele domínio
@@ -158,7 +158,7 @@ não são validados um contra o outro no boot.
 
 ```bash
 kubectl get pods -n <namespace>
-kubectl get jobs -n <namespace>   # confirmar que o Job de migração de cada domínio habilitado completou
+kubectl get jobs -n <namespace>   # um Job de migração com falha é mantido; o bem-sucedido já foi removido (hook-succeeded)
 # health/readiness são servidos sob o prefixo de path de cada componente, ex. spi:
 curl <spi-url>/spi/health
 curl <spi-url>/spi/readyz
@@ -168,7 +168,7 @@ curl <spi-url>/spi/readyz
 | Check | Comando/URL | Esperado | Se não bater, checar primeiro |
 |---|---|---|---|
 | Pods dos workloads habilitados | `kubectl get pods -n <ns>` | `Running` | `CreateContainerConfigError` → Secret ausente; `CrashLoopBackOff` → log indica a variável faltante |
-| Migration Jobs | `kubectl get jobs -n <ns>` | `Complete` para cada domínio habilitado | Job ausente → hub daquele domínio está desabilitado (seção 5) |
+| Migration Jobs | `kubectl get jobs -n <ns>` | Nenhum Job com falha. O Helm remove cada Job de migração após o sucesso (`hook-succeeded`), então uma instalação bem-sucedida não lista nenhum | Um Job `Failed`/`BackoffLimitExceeded` é mantido para consulta dos logs. Se faltar schema, confirmar que o hub está habilitado (seção 5) e que um DSN foi informado |
 | Readiness | `curl <hub>/readyz` | 200, sem `required_keys` pendente no corpo da resposta | O corpo lista as chaves que a Systemplane store ainda não tem |
 | Auth ativo | request de negócio sem token contra um hub | 401/403 | Se retornar 200, confirmar que `PLUGIN_AUTH_ENABLED` está `true` naquele componente |
 | Roteamento correto | request de negócio contra `dictProxy`/`cobProxy` | 404 (esperado nesta versão) | Se esperava 200, confirmar se o tráfego deveria ir para o hub |
@@ -182,7 +182,7 @@ curl <spi-url>/spi/readyz
 |---|---|---|
 | `403 TENANT_CONFIG_NOT_FOUND` em toda request | Configuração do tenant/organização ausente na Systemplane store | Single-tenant: setar `ORGANIZATION_ID`/`ISPB`. Multi-tenant: provisionar o tenant explicitamente |
 | Pod `Ready`, mas requests de negócio falham sem erro visível | Tráfego roteado para `dictProxy`/`cobProxy`, ou schema do hub não migrado | Confirmar routing mode e status do Job de migração daquele domínio |
-| `CrashLoopBackOff` citando `LICENSE_KEY`/`ORGANIZATION_IDS` | Uma das duas está vazia num workload que constrói client de licença | Definir ambas nos 5 workloads listados na seção 3 (`spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`) |
+| `CrashLoopBackOff` citando `LICENSE_KEY`/`ORGANIZATION_IDS` | Uma das duas está vazia num workload que constrói client de licença | Definir ambas nos 8 workloads listados na seção 3 (`spi`, `dictHub`, `dictHubVsync`, `dictProxy`, `cobHub`, `cobProxy`, `pixauto`, `adapterLerian`) |
 | Render falha citando `RABBITMQ_URI` | `dictHubVsync` habilitado sem `RABBITMQ_URI` em `secrets` | Definir `RABBITMQ_URI` antes de habilitar `dictHubVsync` |
 | `CrashLoopBackOff` em `adapterLerian` fora de ambiente local | `DEPLOYMENT_MODE` diferente de `local` com o componente habilitado | Manter desabilitado fora de dev, ou usar `DEPLOYMENT_MODE=local` apenas nesse componente |
 | Mudança pela API administrativa da Systemplane "não pegou" | Chave é boot-captured | Reiniciar o pod do workload afetado |

@@ -318,6 +318,34 @@ secret-manager inputs must not be blocked at render time.
 {{- end }}
 
 {{/*
+reporter.licenseKeyRequired — refuse to render a reporter >= 4.6.0 without a license.
+
+Reporter 4.6.0 requires LICENSE_KEY in every run mode: the manager AND the worker refuse
+to boot without it ("LICENSE_KEY is empty; reporter does not run without a license"). A
+chart that renders without the key ships pods that never become ready, and the reason is
+only in their logs. This fails the render instead, naming the key.
+
+Like reporter.datasourceCredEncKeyRequired, presence is enforced only when the
+COMPONENT'S OWN resolved image tag parses as semver and is >= 4.6.0-0, so a release that
+still runs 4.5.x keeps rendering, and a floating tag ("latest", a digest) is left alone.
+An argocd-vault-plugin reference (`<path:...>`) counts as set: it is resolved after the
+render, and the plugin fails closed when it cannot resolve it. Called only when the
+component does not use an existing Secret, whose contents the chart cannot see.
+
+Input (dict): context (root .), component ("manager"|"worker"), tag (resolved image tag).
+*/}}
+{{- define "reporter.licenseKeyRequired" -}}
+{{- $key := default "" .context.Values.secrets.LICENSE_KEY | toString -}}
+{{- $tag := .tag | toString | trimPrefix "v" -}}
+{{- /* Only tags Masterminds semver can parse reach semverCompare: prerelease and build
+   metadata are [0-9A-Za-z-] dot-separated. Anything else (4.5.1-custom_1, latest, a digest)
+   skips the gate, as a floating tag does. */ -}}
+{{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag) (semverCompare ">=4.6.0-0" $tag) -}}
+{{- fail (printf "\n\nERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (%s.image.tag is %q).\n   The manager AND the worker refuse to boot without a license.\n   Set secrets.LICENSE_KEY (and secrets.ORGANIZATION_IDS for a per-organization license),\n   or point %s.useExistingSecret at a Secret that carries them.\n   See charts/reporter/docs/UPGRADE-5.1.md.\n" .component .tag .component) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 reporter.datasourceCredEncKeyRequired — gate secrets.DATASOURCE_CRED_ENC_KEY.
 
 The reporter app >= 3.0.0 stores registered data-source credentials ENCRYPTED at rest and
@@ -368,6 +396,14 @@ reporter.isTrue — "true" when the value is a truthy token (case-insensitive).
 {{- $v := lower (trim (toString .)) -}}
 {{- if or (eq $v "true") (eq $v "1") (eq $v "yes") (eq $v "on") -}}true{{- end -}}
 {{- end -}}
+
+{{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "reporter.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
 
 {{/*
 reporter.commonConfigmapData — the SHARED (common) ConfigMap data block for both the
@@ -426,6 +462,7 @@ Input: the root context ($).
     "MULTI_TENANT_REDIS_HOST" "MULTI_TENANT_REDIS_PORT" "MULTI_TENANT_REDIS_TLS" "MULTI_TENANT_REDIS_CA_CERT"
     "MULTI_TENANT_TIMEOUT" "MULTI_TENANT_CACHE_TTL_SEC" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC"
     "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_ADDRESS"
+    "IDP_DECLARATION_ENABLED" "IDP_HOST"
     "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD"
     "SD_TLS" "SD_TLS_SKIP_VERIFY" "STREAMING_ENABLED"
     "STREAMING_BROKERS" "STREAMING_CLOUDEVENTS_SOURCE" "STREAMING_CLIENT_ID"
@@ -449,7 +486,7 @@ ENV_NAME: {{ $envName | quote }}
    default "false" meant a plain `helm install` with zero overrides always
    crashed. Same convention as plugin-access-manager: default "true" for the
    bundled path; a managed-cloud profile flips it explicitly. */ -}}
-ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "true" | quote }}
+ALLOW_INSECURE_TLS: {{ include "reporter.flagDefaultTrue" $cm.ALLOW_INSECURE_TLS | quote }}
 {{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
    topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker profile
    (e.g. AmazonMQ over TLS) sets global.datastores.broker.{scheme,amqpPort,port}

@@ -5,6 +5,8 @@
 {{- end -}}
 {{- include "plugin-access-manager.validateSsoCallbackUrl" . -}}
 {{- include "plugin-access-manager.validateMfaEnabled" . -}}
+{{- include "plugin-access-manager.validateStartup" . -}}
+{{- include "plugin-access-manager.validateJwksTls" . -}}
 {{- /* Datastore masks (lerian-common): connection identity + TOPOLOGY resolved via
    global.datastores.<type> (shared, env-wide) with native auth.configmap.<KEY> and
    dedicated .Values.datastores overrides taking precedence. Defaults keep the
@@ -13,6 +15,7 @@
 {{- $dv := "lerian-common.datastore.value" -}}
 {{- $ded := .Values.datastores | default dict -}}
 {{- $cm := .Values.auth.configmap -}}
+{{- $envName := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -21,17 +24,16 @@ metadata:
     {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 4 }} 
 data:
   # -- Default Environment variables for the plugin-auth
-  ALLOW_INSECURE_TLS: {{ .Values.auth.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "plugin-access-manager.flagDefaultTrue" .Values.auth.configmap.ALLOW_INSECURE_TLS | quote }}
   APPLICATION_NAME: {{ .Values.auth.configmap.APPLICATION_NAME | default "plugin-auth" | quote }}
   {{- /* Environment name via the global mask (same shape as observability):
      a managed profile / the operator sets global.env.name ONCE for every
      component instead of the native ENV_NAME key on each. */}}
-  ENV_NAME: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "env" "field" "name" "nativeKey" "ENV_NAME" "default" "development") | quote }}
+  ENV_NAME: {{ $envName | quote }}
 
   # APP 
   SERVER_PORT: {{ .Values.auth.configmap.SERVER_PORT | default "4000" | quote }}
   SERVER_ADDRESS: {{ .Values.auth.configmap.SERVER_ADDRESS | default ":4000" | quote }}
-  VERSION: {{ .Values.auth.image.tag | quote }}
 
   # REDIS
   REDIS_HOST: {{ printf "%s:%s" (include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (include "plugin-access-manager.valkeyHost" .))) (include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | toString) | quote }}
@@ -67,16 +69,21 @@ data:
   # OPEN TELEMETRY
   {{- include "lerian-common.otel.envFlat" (dict
         "configmap" .Values.auth.configmap
+        "keys" (list
+          "OTEL_RESOURCE_SERVICE_NAME"
+          "OTEL_LIBRARY_NAME"
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT"
+          "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
+          "OTEL_EXPORTER_OTLP_ENDPOINT")
         "defaults" (dict
           "OTEL_RESOURCE_SERVICE_NAME" "auth"
           "OTEL_LIBRARY_NAME" "github.com/LerianStudio/auth"
-          "OTEL_RESOURCE_SERVICE_VERSION" .Values.auth.image.tag
-          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "dev"
+          "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" $envName
           "OTEL_EXPORTER_OTLP_ENDPOINT" "")) | nindent 2 }}
   ENABLE_TELEMETRY: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "true") | quote }}
 
   # AUTHORIZER
-  RUNNING_IN_DOCKER: {{ .Values.auth.configmap.RUNNING_IN_DOCKER | default "true" | quote }}
+  RUNNING_IN_DOCKER: {{ include "plugin-access-manager.flagDefaultTrue" .Values.auth.configmap.RUNNING_IN_DOCKER | quote }}
   AUTHORIZER_PORT: {{ .Values.auth.configmap.AUTHORIZER_PORT | default "8000" | quote }}
   AUTHORIZER_ADDRESS: {{ .Values.auth.configmap.AUTHORIZER_ADDRESS | default (printf "http://%s:%v" (include "plugin-caradhras.fullname" .) (include "caradhras.servicePort" .)) | quote }}
   AUTHORIZER_CLIENT_ID: {{ .Values.auth.configmap.AUTHORIZER_CLIENT_ID | default .Values.common.authorizer.clientId | quote }}
@@ -102,7 +109,7 @@ data:
   ACCESS_CONTROL_ALLOW_CREDENTIALS: {{ .Values.auth.configmap.ACCESS_CONTROL_ALLOW_CREDENTIALS | default "false" | quote }}
 
   #RATE LIMIT
-  RATE_LIMIT_ENABLED: {{ .Values.auth.configmap.RATE_LIMIT_ENABLED | default "true" | quote }}
+  RATE_LIMIT_ENABLED: {{ include "plugin-access-manager.flagDefaultTrue" .Values.auth.configmap.RATE_LIMIT_ENABLED | quote }}
   RATE_LIMIT_MAX: {{ .Values.auth.configmap.RATE_LIMIT_MAX | default "100" | quote }}
   RATE_LIMIT_WINDOW_SEC: {{ .Values.auth.configmap.RATE_LIMIT_WINDOW_SEC | default "60" | quote }}
   RATE_LIMIT_REDIS_TIMEOUT_MS: {{ .Values.auth.configmap.RATE_LIMIT_REDIS_TIMEOUT_MS | default "500" | quote }}
@@ -118,7 +125,7 @@ data:
   MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 
   # CIRCUIT BREAKER
-  CIRCUIT_BREAKER_ENABLED: {{ .Values.auth.configmap.CIRCUIT_BREAKER_ENABLED | default "true" | quote }}
+  CIRCUIT_BREAKER_ENABLED: {{ include "plugin-access-manager.flagDefaultTrue" .Values.auth.configmap.CIRCUIT_BREAKER_ENABLED | quote }}
   CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL_SEC: {{ .Values.auth.configmap.CIRCUIT_BREAKER_HEALTH_CHECK_INTERVAL_SEC | default "30" | quote }}
   CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT_SEC: {{ .Values.auth.configmap.CIRCUIT_BREAKER_HEALTH_CHECK_TIMEOUT_SEC | default "10" | quote }}
   CIRCUIT_BREAKER_MAX_REQUESTS_HALF_OPEN: {{ .Values.auth.configmap.CIRCUIT_BREAKER_MAX_REQUESTS_HALF_OPEN | default "3" | quote }}
@@ -159,7 +166,7 @@ data:
   DEPLOYMENT_MODE: {{ .Values.auth.configmap.DEPLOYMENT_MODE | default "local" | quote }}
   TRUSTED_PROXIES: {{ .Values.auth.configmap.TRUSTED_PROXIES | default "" | quote }}
   PLATFORM_INTERNAL_CIDRS: {{ .Values.auth.configmap.PLATFORM_INTERNAL_CIDRS | default "" | quote }}
-  SWAGGER_ENABLED: {{ .Values.auth.configmap.SWAGGER_ENABLED | default "true" | quote }}
+  SWAGGER_ENABLED: {{ include "plugin-access-manager.flagDefaultTrue" .Values.auth.configmap.SWAGGER_ENABLED | quote }}
 
   # CACHE (0 = use built-in default from constant)
   CACHE_TTL_ACCESS_TOKEN: {{ .Values.auth.configmap.CACHE_TTL_ACCESS_TOKEN | default "0" | quote }}

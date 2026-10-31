@@ -7,8 +7,8 @@ metadata:
   namespace: {{ include "global.namespace" . }}
 data:
   # Application Settings
-  ALLOW_INSECURE_TLS: {{ $component.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  APP_ENV: {{ $component.configmap.APP_ENV | default "development" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "bc-correios.flagDefaultTrue" $component.configmap.ALLOW_INSECURE_TLS | quote }}
+  ENV_NAME: {{ $component.configmap.ENV_NAME | default "production" | quote }}
   APP_NAME: {{ $component.configmap.APP_NAME | default "plugin-bc-correios" | quote }}
   APP_VERSION: {{ $component.configmap.APP_VERSION | default "1.0.0" | quote }}
   LOG_LEVEL: {{ $component.configmap.LOG_LEVEL | default "info" | quote }}
@@ -48,7 +48,7 @@ data:
   # SeaweedFS runs inline (templates/seaweedfs.yaml); its Service is named off bc-correios.fullname, not the release name.
   OBJECT_STORAGE_ENDPOINT: {{ $component.configmap.OBJECT_STORAGE_ENDPOINT | default (printf "http://%s-seaweedfs:8333" (include "bc-correios.fullname" .)) | quote }}
   OBJECT_STORAGE_BUCKET: {{ $component.configmap.OBJECT_STORAGE_BUCKET | default "bc-correios-attachments" | quote }}
-  OBJECT_STORAGE_PATH_STYLE: {{ $component.configmap.OBJECT_STORAGE_PATH_STYLE | default "true" | quote }}
+  OBJECT_STORAGE_PATH_STYLE: {{ include "bc-correios.flagDefaultTrue" $component.configmap.OBJECT_STORAGE_PATH_STYLE | quote }}
 
   # BC Correio integration
   BC_CORREIO_ENVIRONMENT: {{ $component.configmap.BC_CORREIO_ENVIRONMENT | default "homologation" | quote }}
@@ -58,15 +58,15 @@ data:
   BC_CORREIO_TLS_MIN_VERSION: {{ $component.configmap.BC_CORREIO_TLS_MIN_VERSION | default "TLSv1.2" | quote }}
 
   # Plugin Auth
-  PLUGIN_AUTH_ENABLED: {{ $component.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}
-  PLUGIN_AUTH_HOST: {{ $component.configmap.PLUGIN_AUTH_HOST | default "" | quote }}
+  PLUGIN_AUTH_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.PLUGIN_AUTH_ENABLED | quote }}
+  PLUGIN_AUTH_ADDRESS: {{ $component.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
   PLUGIN_AUTH_CLIENT_ID: {{ $component.configmap.PLUGIN_AUTH_CLIENT_ID | default "plugin-bc-correios" | quote }}
 
   # License
   LICENSE_KEY: {{ $component.configmap.LICENSE_KEY | default "" | quote }}
 
   # AI Insights
-  FEATURE_AI_INSIGHTS_ENABLED: {{ $component.configmap.FEATURE_AI_INSIGHTS_ENABLED | default "true" | quote }}
+  FEATURE_AI_INSIGHTS_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.FEATURE_AI_INSIGHTS_ENABLED | quote }}
   AI_TENANT_RATE_LIMIT_PER_MIN: {{ $component.configmap.AI_TENANT_RATE_LIMIT_PER_MIN | default "50" | quote }}
   AI_TENANT_MAX_CONCURRENT: {{ $component.configmap.AI_TENANT_MAX_CONCURRENT | default "3" | quote }}
   AI_GLOBAL_MAX_CONCURRENT: {{ $component.configmap.AI_GLOBAL_MAX_CONCURRENT | default "15" | quote }}

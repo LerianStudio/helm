@@ -1,6 +1,5 @@
 nameOverride: ""
 fullnameOverride: ""
-
 # One image for every role and for the migration Job. Keyed `jd-courier`
 # because that is the block the br-jd-courier release dispatch bumps
 # (helm_values_key_mappings, applied by .github/workflows/app-sync.yml as
@@ -9,40 +8,48 @@ jd-courier:
   image:
     repository: ghcr.io/lerianstudio/br-jd-courier
     # Registry tags have no leading `v`. Empty falls back to the chart's appVersion.
-    tag: "1.0.0-rc.1"
+    tag: "1.2.1"
     pullPolicy: IfNotPresent
-
 imagePullSecrets: []
-
+# The ServiceAccount every role runs as; README "AWS identity" (IRSA, Pod Identity).
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
 # Non-secret environment shared by every role, rendered into one ConfigMap.
 # COURIER_ROLES is set by the chart per Deployment and is refused here, and so
 # is every secret key: those arrive through `secrets.existingSecret` only.
-# Both SPB roles talk to JD and read SPB_VENDOR_TIMEOUT, JD_ALLOW_PRIVATE_NETWORK
-# and, in single-tenant, JD_BASE_URL, JD_SOAP_PATH, JD_LEGACY_CODE and
-# JD_USER_CODE. The spb-sender also reads SOAP_TLS_CERT_FILE/SOAP_TLS_KEY_FILE
-# (or SOAP_TLS_TERMINATED_UPSTREAM), SOAP_MAX_BODY_BYTES and
-# SPB_CHANNEL_CREDENTIAL_ROTATION_OVERLAP; the spb-consumer's
+# Both SPB roles and the admin's Pix transit talk to JD, and
+# JD_ALLOW_PRIVATE_NETWORK governs all three. The SPB roles read
+# SPB_VENDOR_TIMEOUT and, in single-tenant, JD_BASE_URL, JD_SOAP_PATH,
+# JD_LEGACY_CODE and JD_USER_CODE; the transit's keys are in README "Pix
+# transit". The spb-sender also reads SOAP_MAX_BODY_BYTES and
+# SPB_CHANNEL_CREDENTIAL_ROTATION_OVERLAP; its SOAP_TLS_* keys are refused here
+# and follow roles.spbSender.soapTls and roles.spbSender.ingress. The spb-consumer's
 # SPB_TAKE_BUDGET_SEC must cover SPB_VENDOR_TIMEOUT.
-# JD_PASSWORD is a secret key; JD_PRIVATE_KEY_PEM is refused everywhere — the
-# Courier holds no signing key. Where each engine takes Pix deliveries is on its
-# registry row, not here.
+# JD_PASSWORD and JD_SPI_CLIENT_SECRET are secret keys; JD_PRIVATE_KEY_PEM is
+# refused everywhere — the Courier holds no signing key. Where each engine
+# takes Pix deliveries is on its registry row, not here.
 # Authentication is on, and every role then needs PLUGIN_AUTH_HOST (the Access
 # Manager's address). ALLOW_AUTH_DISABLED_LOCAL_ONLY is refused: a chart install
-# is never a developer's machine. The pix-ingress role also needs the Pix
-# vendor's credential subject: PIX_VENDOR_SUBJECTS in single-tenant, or
-# SYSTEMPLANE_ENABLED=true in multi-tenant, where each tenant's subjects live in
-# systemplane jd-courier.pix/vendor_subjects; without it its pods refuse to boot.
+# is never a developer's machine. Single-tenant also needs the IDP_* keys
+# (README "Access Manager"); AWS_REGION: README "AWS identity".
+# ENVIRONMENT_NAME is required; README "Environment".
+# OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT follows ENVIRONMENT_NAME unless set here.
 config:
   PLUGIN_AUTH_ENABLED: "true"
-
+  # Single-tenant publishes the Courier's grants at boot; multi-tenant ignores it.
+  IDP_DECLARATION_ENABLED: "true"
+  # local, byoc or saas. saas refuses to boot unless every datastore connection
+  # is TLS; byoc and local do not check. A cluster install is never local.
+  DEPLOYMENT_MODE: "byoc"
 secrets:
   # Name of the Secret loaded into every role (envFrom, and LICENSE_KEY by name
   # through secretKeyRef); defaults to the release fullname. It must exist
-  # before install and carries LICENSE_KEY,
-  # POSTGRES_PASSWORD and, for the migration Job, DATABASE_URL. The chart never
-  # renders a Secret or a secret value.
+  # before install and carries LICENSE_KEY, POSTGRES_PASSWORD, DATABASE_URL for
+  # the migration Job and, single-tenant, IDP_M2M_CLIENT_SECRET and JD_PASSWORD.
+  # The chart never renders a Secret or a secret value.
   existingSecret: ""
-
 telemetry:
   # Where every role sends OTLP (metrics and traces): by default the collector
   # on the pod's own node, the Lerian convention. That hop never leaves the
@@ -51,7 +58,6 @@ telemetry:
   # with OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT=production it must be https://, or
   # config.ALLOW_INSECURE_OTEL must carry the operator's own reason.
   otlpEndpoint: "$(NODE_IP):4317"
-
 ports:
   # JSON surfaces and the probes (/health, /readyz, /version). Metrics leave
   # over OTLP (OTEL_EXPORTER_OTLP_ENDPOINT); nothing is scraped.
@@ -59,7 +65,9 @@ ports:
   # The mirrored SPB SOAP surface — a separate stdlib net/http listener,
   # served by the spb-sender only.
   soap: 8081
-
+  # The outbound Pix transit, served by the admin only while
+  # roles.admin.pixTransit.enabled.
+  pixTransit: 8082
 roles:
   # SINGLE WRITER: drains a destructive vendor queue. Exactly one replica,
   # Recreate strategy; the chart refuses to render more than one.
@@ -73,6 +81,30 @@ roles:
     resources: {}
     service:
       type: ClusterIP
+    # TLS for the SOAP listener (ports.soap). The engines refuse plain HTTP, and
+    # a production spb-sender refuses to boot unless one of these, or
+    # ingress.enabled, is set.
+    soapTls:
+      # A kubernetes.io/tls Secret (tls.crt, tls.key) mounted read-only at
+      # /etc/jd-courier/soap-tls; the listener then serves TLS itself. Read once
+      # at boot: rotating it needs a rollout restart.
+      existingSecret: ""
+      # TLS is terminated before the pod by something this chart does not
+      # render (a mesh, an external load balancer).
+      terminatedUpstream: false
+    # Routes the SOAP Service; TLS ends at the Ingress (the chart sets
+    # SOAP_TLS_TERMINATED_UPSTREAM=true). AWS annotations and the health check:
+    # README "SOAP TLS".
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts:
+        - host: ""
+          paths:
+            - path: /
+              pathType: Prefix
+      tls: []
   pixIngress:
     enabled: true
     replicas: 2
@@ -85,7 +117,19 @@ roles:
     resources: {}
     service:
       type: ClusterIP
-
+    # The outbound Pix transit on ports.pixTransit: Pix engines call it in place
+    # of JD's JDPI address. The engines refuse plain HTTP, so the render fails
+    # without one TLS shape below. README "Pix transit".
+    pixTransit:
+      enabled: false
+      tls:
+        # A kubernetes.io/tls Secret (tls.crt, tls.key) mounted read-only at
+        # /etc/jd-courier/pix-transit-tls; the listener then serves TLS itself.
+        # Read once at boot: rotating it needs a rollout restart.
+        existingSecret: ""
+        # TLS is terminated before the pod by something this chart does not
+        # render (a mesh, a load balancer).
+        terminatedUpstream: false
 migrations:
   # A pre-install/pre-upgrade Job running `migrate up` against the Courier's own
   # database. Single-tenant only: the chart refuses it under
@@ -95,7 +139,6 @@ migrations:
   backoffLimit: 3
   activeDeadlineSeconds: 600
   resources: {}
-
 podAnnotations: {}
 nodeSelector: {}
 tolerations: []

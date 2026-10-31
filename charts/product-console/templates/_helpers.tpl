@@ -193,6 +193,8 @@ application's own built-in default stays in force.
 {{- define "product-console.optionalConfigKeys" -}}
 {{- list
   "FLOWKER_BASE_PATH"
+  "LENDER_BASE_PATH"
+  "MATCHER_BASE_PATH"
   "MFA_ENABLED"
   "MIDAZ_V2_BASE_PATH"
   "PLUGIN_AUTH_PUBLIC_BASE_PATH"

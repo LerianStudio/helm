@@ -192,6 +192,35 @@ global:
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):
   #   address: "consul:8500"
   #   namespace: "midaz"
+  # -- Env-wide pod scheduling. `spread` is the topologySpreadConstraints preset
+  # (lerian-common.topologySpreadConstraints) applied to every Deployment of this
+  # chart (ledger, crm, tracer). Each constraint counts only the component's own pods
+  # (labelSelector = its selector labels) of the same ReplicaSet
+  # (matchLabelKeys: [pod-template-hash]), so rolling updates never deadlock. A
+  # component's `spread` overrides these fields one by one; a component's raw
+  # `topologySpreadConstraints` list replaces the preset entirely.
+  scheduling:
+    spread:
+      # -- Master switch for the spread preset.
+      enabled: true
+      # -- Spread across nodes (kubernetes.io/hostname): ScheduleAnyway (soft) | DoNotSchedule (hard) | "" (off).
+      hostname: ScheduleAnyway
+      # -- Spread across zones (topology.kubernetes.io/zone): ScheduleAnyway | DoNotSchedule | "" (off).
+      # Off by default: the scheduler skips nodes without the zone label when scoring a
+      # soft spread, so on clusters missing it (bare-metal, k3s) a zone constraint
+      # silently cancels the hostname spread. Enable it where every node has zone labels (EKS, GKE, AKS).
+      zone: ""
+      # -- Max allowed pod-count difference between topology domains (integer >= 1).
+      maxSkew: 1
+      # -- Minimum eligible domains for DoNotSchedule constraints (0 = off). With
+      # fewer domains the scheduler treats the global minimum as 0, so a hard
+      # hostname spread never stacks replicas on a single node; the extra replica
+      # waits for a new node (Karpenter launches it). Use on autoscaled clusters.
+      minDomains: 0
+      # -- Honor | Ignore | "" (omitted = Kubernetes default Ignore). Honor counts
+      # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
+      # draining, tainted karpenter.sh/disrupted).
+      nodeTaintsPolicy: ""
 ledger:
   # -- `wait-for-dependencies` init container tuning.
   # The init container blocks pod startup until ALL ledger datastore/broker
@@ -219,13 +248,16 @@ ledger:
   replicaCount: 2
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
+  # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
+  # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
+  terminationGracePeriodSeconds: 60
   image:
     # -- Repository for the ledger service container image
     repository: lerianstudio/midaz-ledger
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.1.2"
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -360,10 +392,17 @@ ledger:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
-  tolerations: {}
+  tolerations: []
   # -- Affinity rules for pod scheduling
   affinity: {}
   # -- Node affinity rules
@@ -380,7 +419,9 @@ ledger:
   # @default -- templates/ledger/configmap.yaml
   # -- Dedicated datastore masks for this component (override global.datastores).
   # Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding /
-  # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/ssl/replicaHost).
+  # mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/replicaHost).
+  # The Postgres `ssl` field is read from the generic `postgres` key (`postgres.ssl`),
+  # not from `postgresOnboarding`/`postgresTransaction`: those keys' `ssl` is ignored.
   datastores: {}
   # -- Escape hatch: native environment variables override template defaults.
   configmap:
@@ -396,6 +437,23 @@ ledger:
     IDP_DECLARATION_ENABLED: "false"
     IDP_HOST: ""
     IDP_M2M_CLIENT_ID: ""
+    # -- Ledger to tracer reservation seam. Empty keeps the integration off (the
+    # ledger then ignores TRACER_TRANSPORT). With the bundled tracer, point it at
+    # the tracer gRPC Service port, e.g. TRACER_BASE_URL: "midaz-tracer:4021".
+    TRACER_BASE_URL: ""
+    # -- Ledger to tracer transport. The 4.2+ ledger is gRPC-only: leave empty
+    # (resolves to gRPC) or set "grpc". "rest" is refused at boot, so the render
+    # fails when it is set together with TRACER_BASE_URL.
+    TRACER_TRANSPORT: ""
+    # -- Tracer reservation seam token identity (PLUGIN_AUTH_ENABLED=true,
+    # single-tenant): the ledger's Access Manager application client id. Pairs with
+    # ledger.secrets.TRACER_M2M_CLIENT_SECRET; rendered only when set.
+    TRACER_M2M_CLIENT_ID: ""
+    # -- Milliseconds a reservation seam call may wait for an M2M token that is not
+    # cached yet (pod start, or a tenant idle long enough for its token to expire),
+    # before the TRACER_TIMEOUT_MS budget of the call starts. Empty uses the ledger
+    # default (3000).
+    TRACER_M2M_WAIT_TIMEOUT_MS: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -447,6 +505,13 @@ ledger:
     # -- RI permission declaration M2M client secret. Operator-provided; only set
     # when IDP_DECLARATION_ENABLED=true. Rendered into the ledger Secret, never the ConfigMap.
     IDP_M2M_CLIENT_SECRET: ""
+    # -- Tracer reservation seam token identity client secret (pairs with
+    # ledger.configmap.TRACER_M2M_CLIENT_ID). Operator-provided; rendered into the
+    # ledger Secret, never the ConfigMap.
+    TRACER_M2M_CLIENT_SECRET: ""
+    # -- Tracer reservation seam API key identity (PLUGIN_AUTH_ENABLED=false; the
+    # tracer must run with API_KEY_ENABLED=true). Rendered into the ledger Secret.
+    TRACER_API_KEY: ""
     # -- Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set
     # when the streaming backend uses SASL auth and/or a private TLS CA. When set,
     # they are rendered into the ledger Secret (never the ConfigMap).
@@ -460,6 +525,56 @@ ledger:
     # -- Name of the service account
     # @default -- `midaz-ledger.fullname`
     name: ""
+  # -- AWS credential source for the multi-tenant ledger, which reads its
+  # per-tenant Tracer M2M credential from Secrets Manager at runtime
+  # (tenants/{env}/{tenant}/ledger/m2m/tracer/credentials).
+  #
+  # TWO MUTUALLY EXCLUSIVE OPTIONS — pick by cluster, never enable both:
+  #
+  #   EKS            -> IRSA. Leave rolesAnywhere.enabled=false and put the role ARN
+  #                     in ledger.serviceAccount.annotations["eks.amazonaws.com/role-arn"].
+  #   anywhere else  -> IAM Roles Anywhere (below). An aws-signing-helper sidecar
+  #                     trades an X.509 client certificate for temporary credentials
+  #                     and serves them on a loopback IMDS endpoint that the AWS SDK
+  #                     inside the ledger picks up.
+  #
+  # Enabling this adds the sidecar to the ledger pod only, mounts the certificate
+  # Secret read-only, and replaces ledger.podSecurityContext with fsGroup 65532 so
+  # the sidecar can read it. The certificate is NOT created by this chart —
+  # provision it (cert-manager or otherwise) into a Secret with tls.crt / tls.key.
+  # The ledger refuses to boot multi-tenant without a region: set AWS_REGION in
+  # ledger.extraEnvVars to the region the credentials live in.
+  aws:
+    rolesAnywhere:
+      # -- Enable the aws-signing-helper sidecar on the ledger. Keep false on EKS.
+      enabled: false
+      # -- Required when enabled; the render fails without them.
+      trustAnchorArn: ""
+      profileArn: ""
+      roleArn: ""
+      # -- Region the credentials are minted in.
+      region: "us-east-2"
+      # -- Credential lifetime in seconds; the helper refreshes before expiry.
+      sessionDuration: 3600
+      # -- Secret holding tls.crt / tls.key.
+      # @default -- `<midaz-ledger.fullname>-iam-tls`
+      certificateSecretName: ""
+      sidecar:
+        image:
+          # Same floating, amd64-only tag the sibling charts use. Pin a digest
+          # for production.
+          repository: public.ecr.aws/rolesanywhere/credential-helper
+          tag: latest-amd64
+          pullPolicy: IfNotPresent
+        # -- Loopback port the IMDS shim listens on.
+        port: 9911
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
 crm:
   # -- Readiness probe configuration. All fields override chart defaults.
   readinessProbe: {}
@@ -568,10 +683,17 @@ crm:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
-  tolerations: {}
+  tolerations: []
   # -- Affinity rules for pod scheduling
   affinity: {}
   # nodeAffinity:
@@ -625,6 +747,9 @@ tracer:
   replicaCount: 1
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
+  # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
+  # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
+  terminationGracePeriodSeconds: 45
   image:
     # -- Repository for the Tracer service container image. In midaz v4 tracer
     # ships from the monorepo (`components/tracer`) and the release pipeline
@@ -634,7 +759,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.1.2"
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -737,9 +862,10 @@ tracer:
     type: ClusterIP
     # -- Service port (HTTP API)
     port: 4020
-    # -- gRPC reservation seam port. Only exposed when
-    # `tracer.configmap.TRACER_GRPC_PORT` is set; the seam is off in the app
-    # until then, so the port would otherwise route to a closed socket.
+    # -- gRPC reservation seam port, always published on the container and Service.
+    # The tracer always listens on gRPC (":4021" when TRACER_GRPC_PORT is unset).
+    # When `tracer.configmap.TRACER_GRPC_PORT` is set, its numeric tail takes
+    # precedence over this value.
     grpcPort: 4021
   ingress:
     # -- Enable or disable ingress
@@ -777,10 +903,17 @@ tracer:
     # -- Target CPU utilization percentage for autoscaling
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
+  # -- Per-component override of global.scheduling.spread (same fields: enabled,
+  # hostname, zone, maxSkew, minDomains, nodeTaintsPolicy); each field set here wins over the global one.
+  # Example: spread: { hostname: DoNotSchedule }
+  spread: {}
+  # -- Raw Kubernetes topologySpreadConstraints. Non-empty = replaces the spread preset
+  # entirely; an entry without labelSelector gets the component's selector labels.
+  topologySpreadConstraints: []
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes
-  tolerations: {}
+  tolerations: []
   # -- Affinity rules for pod scheduling
   affinity: {}
   # -- ConfigMap for environment variables and configurations
@@ -828,8 +961,8 @@ tracer:
   useExistingSecret: false
   existingSecretName: ""
 valkey:
-  # Valkey is used to handle scenarios where real-time performance and fast data retrieval are essential.
-  # This component is responsible for providing an in-memory data store
+  # Valkey holds ledger state no other store has: balances not yet synced to PostgreSQL, idempotency keys,
+  # engine receipts and open fee debts. It is a datastore, not a cache: nothing in it may be evicted.
   enabled: true
   global:
     security:
@@ -837,6 +970,8 @@ valkey:
   image:
     repository: bitnamisecure/valkey
     tag: "latest"
+    # latest (Valkey 9.1.2), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:4dc6511a8a9d4d4cbf3ccf1270ddcc6929819a1e0f4005462cf782cc96d1c3b6"
   external: false
   architecture: standalone
   auth:
@@ -845,12 +980,25 @@ valkey:
     username: midaz
   primary:
     kind: Deployment
+    # Recreate, not a rolling update: two pods must never write the same append-only file.
+    # kind: StatefulSet needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+    updateStrategy:
+      type: Recreate
     resourcesPreset: "medium"
     persistence:
-      enabled: false
+      # Keeps the append-only file the subchart configuration turns on (appendonly yes).
+      enabled: true
+      # The data volume outlives the release, like the PostgreSQL and MongoDB ones.
+      annotations:
+        helm.sh/resource-policy: keep
     extraFlags:
-      - "--maxmemory 640mb" # Controls the memory usage limit to prevent OOM (never leave this unset).
-      - "--maxmemory-policy allkeys-lru" # Eviction policy when memory limit is reached (LRU works well for caching). Smart eviction strategy for rotating cache.
+      # About 150 approvals/s in the Lua engine at the default X-TTL (300 s), with few balances.
+      # Sizing rule: README, section Valkey (derived in Midaz docs/architecture/engine.md).
+      - "--maxmemory 640mb"
+      # Full means writes are refused and the ledger answers an error; never evict.
+      - "--maxmemory-policy noeviction"
+      # Each write reaches the disk before Valkey answers, so a host crash loses no acknowledged write.
+      - "--appendfsync always"
       - "--hz 100" # Improves responsiveness of internal events and increases the frequency of internal tasks such as memory cleanup, key expiration checks, etc.
       - "--maxclients 10000" # Supports a large number of simultaneous connections
 postgresql:
@@ -882,7 +1030,8 @@ postgresql:
     replicationPassword: ""
     # -- Secret with the passwords. The default points the subchart at the one this chart keeps across
     # uninstall (templates/datastore-secrets.yaml); midaz's own templates read it as empty. Name yours to replace it.
-    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   primary:
     extraVolumes:
       - name: init-script
@@ -957,7 +1106,8 @@ mongodb:
     rootUser: midaz
     rootPassword: ""
     # -- Secret with the passwords, as postgresql.auth.existingSecret.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   resourcesPreset: "medium"
   # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
   # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
@@ -995,6 +1145,9 @@ rabbitmq:
       value: "midaz"
     password:
       value: ""
+    # -- Erlang cookie for the bundled broker. REQUIRED when rabbitmq.enabled: the chart refuses to
+    # render without it (or without existingSecret + erlangCookie.secretKey), because an empty cookie
+    # stops the broker at boot. Must stay STABLE across upgrades. Generate once: openssl rand -hex 32
     erlangCookie:
       value: ""
   extraSecrets:
@@ -1010,3 +1163,9 @@ rabbitmq:
 otel-collector-lerian:
   # -- Inject OTEL env vars into the midaz ledger and crm deployments
   enabled: true
+midaz-ledger-migrations:
+  image:
+    tag: 4.4.0
+midaz-tracer-migrations:
+  image:
+    tag: 4.4.0

@@ -16,6 +16,18 @@
     "imagePullSecrets": {
       "type": "array"
     },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": { "type": "boolean" },
+        "name": { "type": "string" },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
     "config": {
       "type": "object",
       "additionalProperties": true

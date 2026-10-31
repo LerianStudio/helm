@@ -46,6 +46,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.tracer.terminationGracePeriodSeconds }}
       {{- with .Values.tracer.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -62,13 +63,12 @@ spec:
             - name: http
               containerPort: {{ .Values.tracer.service.port }}
               protocol: TCP
-            {{- if .Values.tracer.configmap.TRACER_GRPC_PORT }}
-            {{/* TRACER_GRPC_PORT is a listen address (":4021"); the container port is
-                 its numeric half, kept in sync with the Service via service.grpcPort. */}}
+            {{- /* The tracer always serves the reservation seam over gRPC (":4021" when
+                 TRACER_GRPC_PORT is unset). TRACER_GRPC_PORT is a listen address; the
+                 container port is its numeric half, kept in sync with the Service. */}}
             - name: grpc
               containerPort: {{ include "midaz-tracer.grpcPort" . }}
               protocol: TCP
-            {{- end }}
           envFrom:
           {{- if not .Values.tracer.useExistingSecret }}
           - secretRef:
@@ -129,16 +129,13 @@ spec:
             timeoutSeconds: {{ .Values.tracer.livenessProbe.timeoutSeconds | default 5 }}
             successThreshold: {{ .Values.tracer.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.tracer.livenessProbe.failureThreshold | default 3 }}
-      {{- with .Values.tracer.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tracer.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tracer.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, tracer.spread, tracer.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.tracer
+            "global" .Values.global
+            "selectorLabels" (include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}
 {{- end }}

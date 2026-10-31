@@ -1,0 +1,5 @@
+# install-test.sh grants the GHCR pull secret to the namespace's default ServiceAccount
+# only; the chart's own ServiceAccount would pull the private image anonymously (401).
+plugin-br-ted-lerian:
+  serviceAccount:
+    create: false

@@ -1,0 +1,4 @@
+# CI-only render values for br-jd-courier. Not a production example.
+# The chart refuses to render without config.ENVIRONMENT_NAME.
+config:
+  ENVIRONMENT_NAME: "ci"

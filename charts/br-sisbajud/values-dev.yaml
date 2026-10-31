@@ -1,0 +1,114 @@
+# br-sisbajud — values-dev.yaml: a SELF-CONTAINED dev / evaluation install.
+#
+#   helm install br-sisbajud charts/br-sisbajud -f charts/br-sisbajud/values-dev.yaml -n sisb-dev --create-namespace
+#
+# Bundles PostgreSQL, Valkey, SeaweedFS (S3), OpenBao (Vault Transit, dev mode)
+# and Redpanda (Kafka API) in the release namespace.
+#
+# Bundled infrastructure is for development and quickstart only. Production
+# installs must use external, managed infrastructure. That means PostgreSQL
+# with TLS, Valkey/Redis, Kafka/Redpanda with TLS, Vault/OpenBao in non-dev
+# mode (or AWS KMS) and S3 object storage. The render refuses the
+# OpenBao/Redpanda bundles outside a development-class environment
+# (local|development|develop|dev|test|e2e; staging is refused). The
+# PostgreSQL/Valkey/SeaweedFS bundles only get a NOTES warning in a
+# production-like environment, but they are unsupported in production all the
+# same.
+#
+# NEVER use this file for production: OpenBao dev mode keeps its keys in
+# memory (a restart makes the encrypted data unrecoverable), S3 auth is off and
+# TLS is off everywhere.
+#
+# What development relaxes in the app (internal/bootstrap/config_validation.go):
+# POSTGRES_SSLMODE=disable, a plaintext broker, PLUGIN_AUTH_ENABLED=false and an
+# empty LICENSE_KEY (the license dev bypass) are allowed. Local bearer
+# verification (AUTH_JWT_*) and the execution listener TLS are NOT relaxed: see
+# brSisbajud.auth / brSisbajud.execution below. Features that
+# need services this bundle does not provide are OFF: inbound auth
+# (plugin-access-manager), the access-manager declaration publisher, the br-sta
+# consumer/transfers client, multi-tenancy. The Midaz ledger is not bundled:
+# institutions (and their connector_metadata) are still seeded via the admin API.
+global:
+  env:
+    name: "development"
+  objectStorage:
+    sta:
+      bucket: "br-sta-transfer"
+  auth:
+    enabled: false
+  multiTenant:
+    enabled: false
+  observability:
+    enabled: false
+
+brSisbajud:
+  sta:
+    consumerEnabled: false
+    transfersEnabled: false
+  identity:
+    declarationEnabled: false
+  cors:
+    # A concrete dev origin: with none, the CORS middleware denies all.
+    allowedOrigins: "http://localhost:3000"
+  swagger:
+    enabled: true
+  vault:
+    # The dev root token never expires; renewal would be a no-op.
+    tokenRenewEnabled: false
+  # Local bearer verification is mandatory in both auth switch positions. This is
+  # a THROWAWAY RSA public key whose private half was discarded at generation:
+  # the app boots, but no token verifies against it. Replace it (and the issuer)
+  # with your Access Manager's public key and `iss` to call the API.
+  auth:
+    jwtIssuer: "dev-only-unverifiable-issuer"
+    jwtVerifyCert: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArhJ23YF4HU1WMEOdpN7J
+      /pJt3ICTEsyhSP8Q32J5fZ1bvWvCOo++f4mA+38wwrfst02KWUohfFKPLQsPoqBO
+      3PkdBlW4rSjY1k7gK1uwLbDavQTwiF29Q0CiiI//oqwOjXVdviQTwKAPlEh0FRMO
+      HQBvxGej4Yl1jgnYgv6+6JAajn2oSdSf6KohPjqnJeCAx04J57IXYWS3jsEwQl0+
+      HTFZcB1q0ECDYysUKVfVAXo6xeost7vXmVCamPqnX2/lFxD4r3T80QYgD7jjn/Fu
+      XvB9UDWf1a83M/RaJute6vdd10m9WTJZ0GwVM9no8NI8MZJ5Uiw+NbfNpUDmki9F
+      vQIDAQAB
+      -----END PUBLIC KEY-----
+  # Execution API listener (always TLS): a chart-generated dev CA + server cert
+  # in Secret br-sisbajud-execution-tls (give its ca.crt to plugin-br-sisbajud).
+  execution:
+    tls:
+      generate: true
+  # GLOBAL license mode: the only value the app accepts.
+  license:
+    organizationIds: "global"
+    # A key issued by the license dev gateway also needs:
+    # isDevelopment: "true"
+  # No LICENSE_KEY: with ENVIRONMENT_NAME=development an empty key is the app's
+  # dev bypass. To validate a real one, create a Secret from a file and point
+  # brSisbajud.secretRefs.LICENSE_KEY at it. Never commit a real key.
+
+# Explicit dev passwords: the Valkey subchart otherwise regenerates its password
+# on every render (every `helm upgrade` rotated it and restarted Valkey and the
+# app), and a GitOps render (no Helm `lookup`) would do the same for PostgreSQL
+# while its data volume keeps the first one. Public dev-only values; the app
+# reads them from the subchart Secrets.
+postgresql:
+  enabled: true
+  external: false
+  auth:
+    password: "dev-only-postgres"
+    postgresPassword: "dev-only-postgres-admin"
+valkey:
+  enabled: true
+  external: false
+  auth:
+    password: "dev-only-valkey"
+seaweedfs:
+  enabled: true
+openbao:
+  enabled: true
+  # The dev root token is generated per install (chart Secret, kept across
+  # upgrades); nothing reusable is committed here.
+redpandaBundle:
+  enabled: true
+
+topics:
+  replicationFactor: 1

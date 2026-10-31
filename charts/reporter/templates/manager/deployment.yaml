@@ -115,15 +115,12 @@ spec:
       {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "reporter-iam-tls") | nindent 6 }}
       {{- end }}
-      {{- with .Values.manager.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.manager.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.manager.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, manager.spread, manager.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.manager
+            "global" .Values.global
+            "selectorLabels" (include "plugin-manager.selectorLabels" (dict "context" . "name" .Values.manager.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

@@ -8,7 +8,7 @@
 
 api:
   image:
-    # Pin the published app tag explicitly in production (2.0.1 for this chart).
+    # Pin the published app tag explicitly in production (1.3.0 for this chart).
     # Empty inherits Chart.appVersion; registry tags have no leading v.
     tag: ""
 
@@ -18,8 +18,9 @@ api:
     REDIS_HOST: ""
 
     # Arms the app's production security gates: auth forced on, Postgres password
-    # and SSL required, and every ALLOW_* bypass plus IS_DEVELOPMENT=true rejected
-    # at boot. Leave empty only for development.
+    # and SSL required, and ALLOW_CORS_WILDCARD, ALLOW_RATELIMIT_FAIL_OPEN and
+    # IS_DEVELOPMENT=true rejected at boot. ALLOW_INSECURE_TLS stays allowed (see
+    # below). Leave empty only for development.
     ENVIRONMENT_NAME: ""
 
     # A production ENVIRONMENT_NAME requires SSL. Raise this from the bundled
@@ -32,11 +33,21 @@ api:
     # RETIRED — do not set. The app's own institution ISPB is no longer read from
     # the environment in either deployment mode: it comes from the systemplane key
     # tenancy/jd_integration_binding, field "ispb", and a missing or malformed value
-    # fails the boot with a named error. A JD_ISPB left set here is passed through
+    # fails each Pix flow that needs it. A JD_ISPB left set here is passed through
     # and produces one startup WARN saying it was ignored.
 
-    # Comma-separated list of organization UUIDs the license covers. Not a secret.
-    ORGANIZATION_IDS: ""
+    # RETIRED in app 1.0.0 — do not set: MIDAZ_ORGANIZATION_ID, MIDAZ_LEDGER_ID,
+    # MIDAZ_ASSET_ID, MIDAZ_EXTERNAL_ID. They come from tenancy/jd_integration_binding
+    # and tenant_policy/midaz.{asset_id,external_id}; a value left set is passed
+    # through and produces one startup WARN.
+
+    # Payment-order signature: ECDSA_P256_SHA256 (default when empty),
+    # ECDSA_P384_SHA384 or RSA_PKCS1_SHA256. Must match the signing key's type.
+    JD_PAYMENT_SIGNING_ALGORITHM: ""
+
+    # License organization scope: "global" for a global-plugin license, or the
+    # comma-separated organization IDs of a per-organization one. Empty fails the boot.
+    ORGANIZATION_IDS: "global"
 
     # Access Manager. PLUGIN_AUTH_HOST is the key this app reads — NOT
     # PLUGIN_AUTH_ADDRESS.
@@ -51,22 +62,29 @@ api:
     # bypass in production — the app rejects it at boot.
     CORS_ALLOWED_ORIGINS: ""
 
-    # Set to "true" when the datastores have NO TLS — which is the case in the
-    # benedita dev-st / stg-mt environments, where lib-commons otherwise refuses the
-    # plaintext connection to Postgres, Valkey and RabbitMQ.
-    # Unlike the other ALLOW_* switches this one is permitted in production (the app
-    # treats it as the sovereign TLS switch), so set it deliberately. It does NOT let
-    # you keep POSTGRES_SSLMODE=disable under ENVIRONMENT_NAME=production — that is a
+    # Set to "true" to let the app use plaintext connections: Postgres, Valkey and
+    # RabbitMQ without TLS, and http:// for the ledger, the Access Manager token
+    # exchange, MULTI_TENANT_URL, a tenant's JD base URL and indirect-participant
+    # delivery. Without it the app refuses each of these over plaintext.
+    # Unlike the other ALLOW_* switches this one is permitted in any environment,
+    # production included, so set it deliberately. It does NOT let you keep
+    # POSTGRES_SSLMODE=disable under ENVIRONMENT_NAME=production — that is a
     # separate check that still fires.
     ALLOW_INSECURE_TLS: ""
 
   secrets:
-    # Required only for the WORKER, which validates at startup and on every tick.
-    # The api does not validate a license at all. IS_DEVELOPMENT=true skips it.
+    # REQUIRED for the api and the worker, in every mode. IS_DEVELOPMENT only
+    # selects the development license gateway; it does not skip validation.
     LICENSE_KEY: ""
 
     # Optional: an in-cluster Redis with no auth is a legitimate topology.
     REDIS_PASSWORD: ""
+
+    # Optional, both or neither: the PEM key that signs the JDPI payment order and
+    # the PEM certificate registered at JD for it. Needed only when the JD enforces
+    # signed orders; the render fails when only one is set.
+    JD_PAYMENT_SIGNING_PRIVATE_KEY: ""
+    JD_PAYMENT_SIGNING_CERTIFICATE: ""
 
     # REQUIRED only when the bundled Postgres subchart is disabled or external.
     # With the subchart bundled, LEAVE THIS UNSET — the password is read from the
@@ -87,7 +105,7 @@ api:
     tls: []
 
 worker:
-  # Keep false until the app publishes an image that carries /worker. See README.
+  # The scheduled jobs, from the plugin-br-pix-jd-worker image. Off, they do not run.
   enabled: false
 
 postgresql:

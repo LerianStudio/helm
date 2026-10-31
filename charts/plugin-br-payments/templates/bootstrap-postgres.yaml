@@ -175,7 +175,10 @@ spec:
                   echo "Role '$APP_ROLE' already exists. Skipping creation."
                 else
                   echo "Creating role '$APP_ROLE'..."
-                  PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_PLUGIN_BR_PAYMENTS" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE plugin_br_payments LOGIN PASSWORD :'pw'"
+                  [ -n "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" ] && [ "$(printf '%s' "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" | tr -d '\r\n')" = "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" ] || { echo "DB_PASSWORD_PLUGIN_BR_PAYMENTS is empty or contains a carriage return or line feed (often a trailing one from a Secret made with echo or on Windows); the plugin_br_payments role password must be a non-empty single line." >&2; exit 1; }
+                  # \password hashes the password inside psql, so the server only receives its
+                  # verifier, never the plaintext; the transaction never leaves a passwordless role.
+                  printf '%s\n' 'BEGIN;' 'CREATE ROLE plugin_br_payments LOGIN;' '\password plugin_br_payments' "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" 'COMMIT;' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
                 fi
 
                 if [ "$DB_EXISTS" = "1" ]; then

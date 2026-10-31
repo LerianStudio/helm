@@ -1,0 +1,176 @@
+{{- if .Values.sisbajud.enabled -}}
+{{- $s := .Values.sisbajud -}}
+{{- $fullname := include "plugin-br-sisbajud.fullname" . -}}
+{{- $secretName := include "plugin-br-sisbajud.secretName" . -}}
+{{- $cm := $s.configmap | default dict -}}
+{{- $extra := $s.extraEnvVars | default dict -}}
+{{- $wh := ($s.executor | default dict).webhook | default dict -}}
+{{- $webhookOn := eq (include "plugin-br-sisbajud.webhookEnabled" .) "true" -}}
+{{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml -}}
+{{- $mountPair := and (eq $mt.mtls "true") $mt.tlsSecret -}}
+{{- $whTls := $wh.tls | default dict -}}
+{{- $raOn := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled -}}
+{{- /* Telemetry on and no explicit endpoint -> the node-local collector. */ -}}
+{{- $telemetry := eq (include "plugin-br-sisbajud.isTrue" (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" -}}
+{{- $explicitEndpoint := or (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "")) (hasKey $extra "OTEL_EXPORTER_OTLP_ENDPOINT") -}}
+{{- $bundledMigrations := and (eq (include "plugin-br-sisbajud.migrationsOn" .) "true") (eq (include "plugin-br-sisbajud.postgresBundled" .) "true") -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud") | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $s.revisionHistoryLimit | default 10 }}
+  {{- if not $s.autoscaling.enabled }}
+  replicas: {{ ternary $s.replicaCount 1 (hasKey $s "replicaCount") }}
+  {{- end }}
+  {{- include "lerian-common.deploymentStrategy" (dict
+        "type" ($s.deploymentStrategy.type | default "RollingUpdate")
+        "maxSurge" (dig "rollingUpdate" "maxSurge" 1 $s.deploymentStrategy)
+        "maxUnavailable" (dig "rollingUpdate" "maxUnavailable" 0 $s.deploymentStrategy)) | nindent 2 }}
+  selector:
+    matchLabels:
+      {{- include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not $s.useExistingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with $s.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud") | nindent 8 }}
+    spec:
+      {{- with (include "plugin-br-sisbajud.pullSecrets" (dict "context" $ "list" $s.imagePullSecrets)) }}
+      {{- . | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "plugin-br-sisbajud.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ $s.terminationGracePeriodSeconds | default 30 }}
+      {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" $s.podSecurityContext) | nindent 6 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: {{ $s.waitImage | default "busybox:1.37" }}
+          envFrom:
+            - configMapRef:
+                name: {{ $fullname }}
+          command:
+            - /bin/sh
+            - -c
+            - >
+              if [ -n "$POSTGRES_HOST" ]; then
+                echo "waiting for postgres $POSTGRES_HOST:${POSTGRES_PORT:-5432}...";
+                until nc -z "$POSTGRES_HOST" "${POSTGRES_PORT:-5432}"; do sleep 5; done;
+              fi;
+              if [ -n "$REDIS_HOST" ]; then
+                RH=$(echo "$REDIS_HOST" | cut -d: -f1); RP=$(echo "$REDIS_HOST" | cut -s -d: -f2);
+                echo "waiting for redis $RH:${RP:-6379}...";
+                until nc -z "$RH" "${RP:-6379}"; do sleep 5; done;
+              fi;
+              echo "dependencies ready"
+          securityContext:
+            {{- toYaml $s.securityContext | nindent 12 }}
+        {{- if $bundledMigrations }}
+        {{- /* Bundled (dev) PostgreSQL is a normal resource, so a pre-install hook
+           cannot reach it: the schema is applied here, before the app starts. */}}
+        {{- include "plugin-br-sisbajud.migrationsContainer" (dict "context" $ "name" "migrations" "hook" false) | nindent 8 }}
+        {{- end }}
+      containers:
+        - name: sisbajud
+          image: {{ include "plugin-br-sisbajud.image" . | quote }}
+          imagePullPolicy: {{ $s.image.pullPolicy | default "IfNotPresent" }}
+          securityContext:
+            {{- toYaml $s.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ $s.service.port }}
+              protocol: TCP
+            {{- if $webhookOn }}
+            - name: webhook
+              containerPort: {{ $wh.port | default 9082 }}
+              protocol: TCP
+            {{- end }}
+          # ConfigMap first, Secret second (a credential is never shadowed by a
+          # ConfigMap default); explicit env below wins over both.
+          envFrom:
+            - configMapRef:
+                name: {{ $fullname }}
+            - secretRef:
+                name: {{ $secretName }}
+          {{- $pgRef := and (eq (include "plugin-br-sisbajud.postgresPasswordFromRef" .) "true") (not (hasKey $extra "POSTGRES_PASSWORD")) }}
+          {{- $vkRef := and (eq (include "plugin-br-sisbajud.redisPasswordFromRef" .) "true") (not (hasKey $extra "REDIS_PASSWORD")) }}
+          {{- if or $pgRef $vkRef (and $telemetry (not $explicitEndpoint)) $raOn $extra }}
+          env:
+            {{- if $pgRef }}
+            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- end }}
+            {{- if $vkRef }}
+            {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 12 }}
+            {{- end }}
+            {{- if and $telemetry (not $explicitEndpoint) }}
+            {{- include "lerian-common.otel.podEnv" (dict "port" 4317) | nindent 12 }}
+            {{- end }}
+            {{- if $raOn }}
+            {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 12 }}
+            {{- end }}
+            {{- with (include "plugin-br-sisbajud.extraEnv" . | trim) }}
+            {{- . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- include "lerian-common.httpProbe" (dict "kind" "livenessProbe" "probe" $s.livenessProbe "port" "http" "path" "/version" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "http" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          resources:
+            {{- toYaml $s.resources | nindent 12 }}
+          {{- if or $mt.caSecret $mountPair (and $webhookOn $whTls.existingSecret) $s.extraVolumeMounts }}
+          volumeMounts:
+            {{- if $mt.caSecret }}
+            - name: mensageria-ca
+              mountPath: {{ $mt.caMount }}
+              readOnly: true
+            {{- end }}
+            {{- if $mountPair }}
+            - name: mensageria-tls
+              mountPath: {{ $mt.tlsMount }}
+              readOnly: true
+            {{- end }}
+            {{- if and $webhookOn $whTls.existingSecret }}
+            - name: webhook-tls
+              mountPath: {{ $whTls.mountPath }}
+              readOnly: true
+            {{- end }}
+            {{- with $s.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+        {{- if $raOn }}
+        {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
+        {{- end }}
+      {{- $volumes := list }}
+      {{- if $mt.caSecret }}
+      {{- $volumes = append $volumes (dict "name" "mensageria-ca" "secret" (dict "secretName" $mt.caSecret "defaultMode" 288 "items" (list (dict "key" $mt.caKey "path" "ca.crt")))) }}
+      {{- end }}
+      {{- if $mountPair }}
+      {{- $volumes = append $volumes (dict "name" "mensageria-tls" "secret" (dict "secretName" $mt.tlsSecret "defaultMode" 288 "items" (list (dict "key" $mt.certKey "path" "tls.crt") (dict "key" $mt.keyKey "path" "tls.key")))) }}
+      {{- end }}
+      {{- if and $webhookOn $whTls.existingSecret }}
+      {{- $volumes = append $volumes (dict "name" "webhook-tls" "secret" (dict "secretName" $whTls.existingSecret "defaultMode" 288 "items" (list (dict "key" $whTls.certKey "path" $whTls.certKey) (dict "key" $whTls.keyKey "path" $whTls.keyKey)))) }}
+      {{- end }}
+      {{- if $raOn }}
+      {{- $volumes = concat $volumes ((include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" (printf "%s-iam-tls" $fullname)) | fromYaml).volumes) }}
+      {{- end }}
+      {{- $volumes = concat $volumes ($s.extraVolumes | default list) }}
+      {{- with $volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (raw list, or the lib's spread preset) from lerian-common. */ -}}
+      {{- with (include "lerian-common.scheduling" (dict "component" $s "global" .Values.global "selectorLabels" (include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud"))) | trim) }}
+      {{- . | nindent 6 }}
+      {{- end }}
+{{- end -}}

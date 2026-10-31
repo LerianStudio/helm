@@ -61,7 +61,7 @@ spec:
               protocol: TCP
           envFrom:
           - secretRef:
-              name: {{ if .Values.auth.useExistingSecret }}{{ .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
+              name: {{ if .Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding the auth environment (AUTHORIZER_CLIENT_SECRET, LICENSE_KEY, ORGANIZATION_IDS, ...), or set auth.useExistingSecret=false.\n" .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-auth.fullname" . }}
           {{ if (index .Values "otel-collector-lerian").enabled }}
@@ -104,15 +104,12 @@ spec:
             successThreshold: {{ .Values.auth.startupProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.auth.startupProbe.failureThreshold | default 5 }}
           {{- end }}
-      {{- with .Values.auth.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, auth.spread, auth.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.auth
+            "global" .Values.global
+            "selectorLabels" (include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

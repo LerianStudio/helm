@@ -3,10 +3,10 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: None for default render; production MongoDB credentials must not be committed in values files.
+- Required secrets: None enforced at render time: the default render succeeds with no secret set (only `rabbitmq.enabled=true` fails at render, unless `manager.secrets` sets `RABBITMQ_DEFAULT_USER: plugin` and a non-default `RABBITMQ_DEFAULT_PASS`). The application still needs `APP_ENC_KEY`, `MONGO_USER`/`MONGO_PASSWORD` and `RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS` at runtime (plus `LICENSE_KEY` for licensed deployments), see [Secrets](#secrets). Production credentials must not be committed in values files.
 - Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override manager/worker image tags, ingress, resources, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 ## Overview
 
@@ -44,7 +44,7 @@ Fetcher is a data extraction service for Lerian Studio that enables automated da
 - Kubernetes 1.19+
 - Helm 3.2.0+
 - PV provisioner support in the underlying infrastructure (for MongoDB, SeaweedFS, and RabbitMQ persistence)
-- Optional: KEDA 2.0+ for event-driven autoscaling
+- Optional: KEDA 2.0+, only if you create your own `ScaledObject` (the chart installs the KEDA operator with `keda.enabled` but ships no `ScaledObject`)
 
 ## Installing the Chart
 
@@ -70,13 +70,56 @@ helm uninstall fetcher -n midaz-plugins
 
 The following table lists the configurable parameters and their default values.
 
+### Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster MongoDB/Valkey/RabbitMQ/SeaweedFS with one knob, via the
+[lerian-common](https://github.com/LerianStudio/helm/tree/main/charts/lerian-common)
+dependency:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    mongo: { host: "my-documentdb.example.com", port: "27017" }
+    redis: { host: "my-elasticache.example.com", port: "6379" }
+    broker: { host: "my-amazonmq.example.com" }
+  objectStorage:
+    fetcher: { endpoint: "https://s3.us-east-1.amazonaws.com", region: "us-east-1", bucket: "my-bucket" }
+  observability:
+    enabled: true
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth:4000"
+  streaming:
+    enabled: true
+    brokers: "redpanda.<namespace>:9092"   # mandatory: the worker will not boot without it
+  multiTenant:
+    enabled: true
+    url: "http://tenant-manager:8080"
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, S3
+path-style) for the masks above; only the ENDPOINTS (host/port) still come
+from `global.datastores`/`global.objectStorage` — a cloud preset can't know
+your DocumentDB/ElastiCache/AmazonMQ host. A native `common.configmap.<KEY>`
+(or `manager.configmap.<KEY>` / `worker.configmap.<KEY>` for their own masked
+fields) always overrides any mask.
+
+fetcher does **not** adopt `lerian-common.serviceDiscovery` — this chart has
+no `SD_*` contract at all today (no Consul/lib-service-discovery integration),
+so there is nothing to migrate onto that mask.
+
 ### Global Settings
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `nameOverride` | Override chart name | `""` |
 | `fullnameOverride` | Override full name | `""` |
-| `namespaceOverride` | Override namespace | `""` |
+| `namespaceOverride` | Namespace of the MongoDB bootstrap Job **only** (`global.externalMongoDefinitions.enabled`); every other object, including the RabbitMQ bootstrap Job, uses the release namespace. See [Object names and namespaces](#object-names-and-namespaces) | `"fetcher"` |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew / minDomains / nodeTaintsPolicy), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1, minDomains: 0, nodeTaintsPolicy: ""}` |
+| `manager.spread`, `worker.spread` | Field-level override of `global.scheduling.spread` for that Deployment | `{}` |
+| `manager.topologySpreadConstraints`, `worker.topologySpreadConstraints` | Raw list; non-empty replaces the preset entirely | `[]` |
 
 ### Manager Settings
 
@@ -122,8 +165,26 @@ The following table lists the configurable parameters and their default values.
 | `common.configmap.SEAWEEDFS_HOST` | SeaweedFS host | `seaweedfs-filer` |
 | `common.configmap.REDIS_HOST` | Redis/Valkey host | `valkey` |
 | `common.configmap.REDIS_PORT` | Redis/Valkey port | `6379` |
+| `common.configmap.REDIS_TLS` | Connect to Redis/Valkey over TLS. The app reads it, but no datastore mask (`global.datastores.redis.tls`, `global.cloud`) emits it: set it here. Passes through as-is when set. | unset (app default `false`) |
+| `common.configmap.RABBITMQ_TLS` | Connect to RabbitMQ over TLS. The app reads it, but no datastore mask (`global.datastores.broker.scheme`, `global.cloud`) emits it: set it here. Passes through as-is when set. | unset (app default `false`) |
+| `common.configmap.ALLOW_INSECURE_TLS` | Skip TLS certificate validation for MongoDB/RabbitMQ/Redis connections. Bundled dev-mode dependencies have no TLS, so the app refuses to connect unless this is `"true"`. Set to `"false"` in production with TLS-terminated backends. | `"true"` |
+| `global.streaming.enabled` | Enables lib-streaming (CloudEvents) job notifications for the worker. When unset, the template defaults `STREAMING_ENABLED` to `"true"`. `worker.configmap.STREAMING_ENABLED` overrides it. With streaming on, the worker needs a reachable broker. | unset (template default `"true"`) |
+| `worker.configmap.STREAMING_BROKERS` | **REQUIRED when the worker is deployed** - Kafka/Redpanda bootstrap address(es), e.g. `redpanda.<namespace>:9092`. No working default; not bundled by this chart. | `""` |
+
+### Access Manager Permission Declaration (manager)
+
+The manager publishes its permission manifest to the Access Manager at boot (lib-auth
+`declaration.WireFromEnv`) when `IDP_DECLARATION_ENABLED="true"`; with the flag on it refuses
+to start without `IDP_HOST` and the `manager.secrets.IDP_M2M_*` pair.
+
+| Key | Source (highest first) | Rendered |
+|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `manager.configmap` > `manager.extraEnvVars` (legacy) > `global.idp.declarationEnabled` | always, default `"false"` |
+| `IDP_HOST` | same, with `global.idp.host` | only when set |
 
 ### Secrets
+
+"**REQUIRED**" below means the application needs the value at runtime. The chart does **not** enforce it at render time (the default render works with every one of them empty); the only render-time checks are the bundled-RabbitMQ ones (`rabbitmq.enabled=true`, see Full Installation). `LICENSE_KEY` is enforced by the application only outside local deployment mode, and the chart sets no `DEPLOYMENT_MODE`.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -134,6 +195,12 @@ The following table lists the configurable parameters and their default values.
 | `manager.secrets.RABBITMQ_DEFAULT_USER`, `worker.secrets.RABBITMQ_DEFAULT_USER` | **REQUIRED** - RabbitMQ username (`plugin` with the bundled broker) | unset |
 | `manager.secrets.RABBITMQ_DEFAULT_PASS`, `worker.secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | unset |
 | `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
+| `manager.secrets.IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the manager publishes its permission manifest with. Required by the app only when `IDP_DECLARATION_ENABLED="true"`. Each is rendered only when set. Keep it in `manager.secrets`: the top-level `secrets` Secret also reaches the worker | unset |
+
+The top-level `secrets.*` block renders a shared `<release>-common` Secret with its
+non-empty keys only. Both Deployments load it **before** their own Secret
+(`manager.secrets` / `worker.secrets`, or `existingSecretName` when
+`useExistingSecret=true`), so the component Secret wins on any key both define.
 
 ### External RabbitMQ Bootstrap
 
@@ -162,7 +229,58 @@ The chart includes optional dependencies that can be enabled for local developme
 | MongoDB | `mongodb.enabled` | Document database for metadata |
 | RabbitMQ | `rabbitmq.enabled` | Message broker for async processing |
 | Valkey | `valkey.enabled` | In-memory data store (Redis alternative) |
-| KEDA | `keda.enabled` | Event-driven autoscaling |
+| KEDA | `keda.enabled` | Installs the KEDA **operator** only. This chart has no `ScaledObject` template, so enabling it does not autoscale the manager or worker. Use `manager.autoscaling` (HPA) or create your own `ScaledObject` |
+
+## Pod Spreading (`global.scheduling.spread`)
+
+The manager and worker Deployments render `topologySpreadConstraints` from the
+`lerian-common` spread preset. The default is **soft** (`ScheduleAnyway`) across
+nodes, so replicas are spread across nodes (e.g. spot nodes) whenever possible,
+but a pod is never left `Pending` because of it.
+
+Zone spreading is **off** by default (`zone: ""`). When scoring a soft spread, the
+scheduler skips every node that lacks the `topology.kubernetes.io/zone` label, so on
+clusters without zone labels (bare-metal, k3s) a zone constraint silently cancels the
+node spread. Turn it on (`zone: ScheduleAnyway`) where every node carries zone labels
+(EKS, GKE, AKS).
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
+      maxSkew: 1               # integer >= 1
+      minDomains: 0            # DoNotSchedule constraints only; 0 = off
+      nodeTaintsPolicy: ""     # Honor | Ignore | "" (Kubernetes default Ignore)
+worker:
+  spread: { hostname: DoNotSchedule }  # field-level override of the global preset
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset entirely
+```
+
+Each constraint counts only the component's own pods of the same ReplicaSet
+(`matchLabelKeys: [pod-template-hash]`), so rolling updates never deadlock.
+Requires Kubernetes >= 1.27.
+
+On EKS + Karpenter use a hard node spread:
+
+```yaml
+global:
+  scheduling:
+    spread:
+      hostname: DoNotSchedule
+      zone: ScheduleAnyway
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: Honor
+```
+
+`minDomains: 2` is required with `DoNotSchedule`. Skew is measured only against nodes
+that already exist, so on a single eligible node both replicas would otherwise share it.
+With fewer than 2 nodes the second replica stays `Pending` until Karpenter launches
+another node. `nodeTaintsPolicy: Honor` stops tainted nodes (for example a node being
+drained) from counting as domains.
 
 ## Examples
 
@@ -302,6 +420,21 @@ The bootstrap job will, on every install and upgrade:
 
 ## Important Notes
 
+### Object names and namespaces
+
+Some objects do not follow the Helm release name or namespace:
+
+| Object | Name | Namespace |
+|--------|------|-----------|
+| Shared ConfigMap and Secret | `<fullname>-common`, where `fullname` is `fullnameOverride`, else `nameOverride`, else `fetcher` (not the release name) | release |
+| Manager / worker objects | `manager.name` / `worker.name` (`fetcher-manager`, `fetcher-worker`) | release |
+| Secret `fetcher-manager-load-definitions` (bundled RabbitMQ definitions) | fixed | release |
+| ConfigMap `fetcher-bootstrap-rabbitmq-definitions` | fixed | release |
+| Job `fetcher-bootstrap-rabbitmq-<revision>` | fixed | release |
+| Job `<fullname>-bootstrap-mongodb-<revision>` | `<fullname>` as above | `namespaceOverride` (default `fetcher`), else release |
+
+Consequences: two releases of this chart in the same namespace collide on these names unless `fullnameOverride`, `manager.name` and `worker.name` differ (the fixed-name RabbitMQ objects collide regardless), and the MongoDB bootstrap Job lands in `fetcher` unless `namespaceOverride` is set to the release namespace. Subchart Services (`<release>-mongodb`, `<release>-rabbitmq`, `<release>-valkey`) do use the release name, see below.
+
 ### Service Names with Embedded Dependencies
 
 When enabling the bundled dependencies (mongodb, rabbitmq, valkey), the service names include the Helm release name as prefix. Update the `common.configmap` values accordingly:
@@ -395,4 +528,4 @@ kubectl logs -n midaz-plugins -l app.kubernetes.io/name=fetcher-worker
 
 ## License
 
-Apache 2.0 - See [LICENSE](https://github.com/LerianStudio/fetcher/blob/main/LICENSE) for details.
+[Elastic License 2.0](https://github.com/LerianStudio/helm/blob/main/LICENSE) (chart). The Fetcher application itself is proprietary to Lerian Studio Ltd. Versions released under the Elastic License 2.0 keep that license.

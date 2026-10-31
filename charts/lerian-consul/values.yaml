@@ -50,8 +50,12 @@ consul:
     # ---- ACL system ---------------------------------------------------------
     # Kept ON: the upstream chart bootstraps the ACL system (server-acl-init
     # Job) and writes the bootstrap token into a Kubernetes Secret named
-    # "<release>-consul-bootstrap-acl-token". lib-service-discovery presents
-    # this token on register/deregister/health calls.
+    # "<consul-fullname>-bootstrap-acl-token" (<consul-fullname> is
+    # consul.fullnameOverride, else consul.global.name, else
+    # "<release>-consul"). The bootstrap token is an ADMINISTRATOR credential:
+    # do NOT give it to workloads. Mint one scoped token per workload with it
+    # and pass that as SD_TOKEN to lib-service-discovery (see README, "ACL
+    # tokens"). The chart does not create those scoped tokens.
     # Set `manageSystemACLs: false` only for a fully open dev cluster.
     acls:
       manageSystemACLs: true
@@ -68,7 +72,7 @@ consul:
 
     # ---- TLS ----------------------------------------------------------------
     # DEFAULT: OFF. Rationale for the "minimal facilitator" posture:
-    #   * The server is reachable only in-cluster over ClusterIP (no external
+    #   * The server is reachable only in-cluster via its headless Service (no external
     #     exposure), so the HTTP API on :8500 stays inside the pod network.
     #   * Enabling TLS pulls in the tls-init Job (CA + server cert generation),
     #     forces the library onto the HTTPS port (:8501) and requires the CA to
@@ -77,8 +81,9 @@ consul:
     # TO ENABLE (recommended when Consul must be reached across trust
     # boundaries): set `consul.global.tls.enabled=true`. The upstream chart's
     # tls-init Job then auto-generates the CA and server certificates; point
-    # lib-service-discovery's SD_ADDRESS at the ClusterIP on port 8501 and give
-    # it the generated CA. `httpsOnly`/`verify` keep their secure upstream
+    # lib-service-discovery's SD_ADDRESS (host:port, no scheme) at the server
+    # Service on port 8501, set SD_TLS=true, and make the library trust the
+    # generated CA. `httpsOnly`/`verify` keep their secure upstream
     # defaults (true) once enabled.
     tls:
       enabled: false
@@ -116,7 +121,7 @@ consul:
 
     # ---- Port exposure ------------------------------------------------------
     # Keep gossip/RPC ports OFF the pod host — the server is reached only via
-    # the in-cluster ClusterIP Service. This must stay false so no hostPort is
+    # the in-cluster (headless) server Service. This must stay false so no hostPort is
     # opened on the node.
     exposeGossipAndRPCPorts: false
 
@@ -149,15 +154,17 @@ consul:
 
     # ---- Agent config: disable the DNS listener -----------------------------
     # lib-service-discovery uses the Consul HTTP API, never Consul DNS. Setting
-    # the DNS port to -1 stops the agent from listening on :8600 (the upstream
-    # Service still declares the port, but nothing binds it) — one less open
-    # listener on the SD backend. Extend this JSON for any other agent tuning.
+    # the DNS port to -1 stops the agent from listening on :8600. The upstream
+    # chart still declares port 8600 (dns-tcp/dns-udp) on the server Service,
+    # the container ports, and a separate "<consul-fullname>-dns" Service on
+    # port 53, but nothing binds them — one less open listener on the SD
+    # backend. Extend this JSON for any other agent tuning.
     extraConfig: |
       {"ports": {"dns": -1}}
 
   # ===========================================================================
   # DISABLED COMPONENTS — Lerian's usage needs none of these. Turning them off
-  # keeps the deployment to a single StatefulSet + its ClusterIP Services and
+  # keeps the deployment to a single StatefulSet + its in-cluster Services and
   # guarantees no LoadBalancer / NodePort / Ingress / DaemonSet is created.
   # ===========================================================================
 

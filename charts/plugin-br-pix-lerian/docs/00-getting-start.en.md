@@ -35,7 +35,7 @@ workloads for your use case, pointing at Postgres, and setting `LICENSE_KEY` +
 | Homologation with provider mock | production profile + `adapterProviderMock` | End-to-end testing without a real provider — **restricted to controlled dev/homologation environments**, see section 5 |
 
 - Every profile always pairs a domain's app with its matching Systemplane workload.
-- `dictProxy`/`cobProxy` and `adapterLerian`/`adapterLerianSystemplane` exist for
+- `dictProxy`/`cobProxy` (disabled by default) and `adapterLerian`/`adapterLerianSystemplane` exist for
   specific topologies (a provider already owns the domain's state, or a local
   development integration via the Lerian adapter) — enable them only when your
   provider topology calls for that tier; see
@@ -71,12 +71,11 @@ installation — the chart applies migrations, it does not create the database i
    key set for that workload, before `helm install` — migration hooks read these
    Secrets at the start of the installation.
 3. Set `LICENSE_KEY` and `ORGANIZATION_IDS` on the workloads that actually construct a
-   license client: `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`. Other workloads
-   (the `*Systemplane` components, `dictProxy`/`cobProxy`, `adapterLerian`) may carry a
-   `LICENSE_KEY` slot, but it is inert — they never build the client, so the key is not
-   required there. The chart's example `values.yaml` only sets `ORGANIZATION_IDS` on
-   `adapterLerian` and `pixauto` — add it to the five workloads above if starting from
-   the defaults.
+   license client: `spi`, `dictHub`, `dictHubVsync`, `dictProxy`, `cobHub`, `cobProxy`,
+   `pixauto`, `adapterLerian`. The `*Systemplane` components and `adapterProviderMock` may
+   carry a `LICENSE_KEY` slot, but it is inert — they never build the client. The chart
+   templates default `ORGANIZATION_IDS` to `global` on all of these except `adapterLerian`,
+   where it defaults to empty and must be set explicitly.
 4. `helm install` (installation is always fresh — there is no in-place upgrade path
    from an earlier chart).
 5. If a domain's hub stays disabled, apply that domain's schema through another
@@ -161,7 +160,7 @@ the two are not cross-validated at boot.
 
 ```bash
 kubectl get pods -n <namespace>
-kubectl get jobs -n <namespace>   # confirm each enabled domain's migration Job completed
+kubectl get jobs -n <namespace>   # a FAILED migration Job is kept; a successful one is already deleted (hook-succeeded)
 # health/readiness are served under each component's own path prefix, e.g. spi:
 curl <spi-url>/spi/health
 curl <spi-url>/spi/readyz
@@ -171,7 +170,7 @@ curl <spi-url>/spi/readyz
 | Check | Command/URL | Expected | If it doesn't match, check first |
 |---|---|---|---|
 | Pods of enabled workloads | `kubectl get pods -n <ns>` | `Running` | `CreateContainerConfigError` → missing Secret; `CrashLoopBackOff` → log names the missing variable |
-| Migration Jobs | `kubectl get jobs -n <ns>` | `Complete` for each enabled domain | Missing Job → that domain's hub is disabled (section 5) |
+| Migration Jobs | `kubectl get jobs -n <ns>` | No failed Job. Helm deletes each migration Job after it succeeds (`hook-succeeded`), so a successful install lists none | A `Failed`/`BackoffLimitExceeded` Job is kept for its logs. If the schema is missing, check that the hub is enabled (section 5) and that a DSN was supplied |
 | Readiness | `curl <hub>/readyz` | 200, no pending `required_keys` in the response body | The body lists the keys the Systemplane store is still missing |
 | Auth active | business request without a token against a hub | 401/403 | If it returns 200, confirm `PLUGIN_AUTH_ENABLED` is `true` on that component |
 | Correct routing | business request against `dictProxy`/`cobProxy` | 404 (expected in this release) | If you expected 200, confirm whether traffic should go to the hub instead |
@@ -185,7 +184,7 @@ curl <spi-url>/spi/readyz
 |---|---|---|
 | `403 TENANT_CONFIG_NOT_FOUND` on every request | Tenant/organization configuration missing from the Systemplane store | Single-tenant: set `ORGANIZATION_ID`/`ISPB`. Multi-tenant: provision the tenant explicitly |
 | Pod `Ready`, but business requests fail with no visible error | Traffic routed to `dictProxy`/`cobProxy`, or the hub's schema was never migrated | Confirm routing mode and that domain's migration Job status |
-| `CrashLoopBackOff` naming `LICENSE_KEY`/`ORGANIZATION_IDS` | One of the two is empty on a license-constructing workload | Set both on the 5 workloads listed in section 3 (`spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`) |
+| `CrashLoopBackOff` naming `LICENSE_KEY`/`ORGANIZATION_IDS` | One of the two is empty on a license-constructing workload | Set both on the 8 workloads listed in section 3 (`spi`, `dictHub`, `dictHubVsync`, `dictProxy`, `cobHub`, `cobProxy`, `pixauto`, `adapterLerian`) |
 | Render fails naming `RABBITMQ_URI` | `dictHubVsync` enabled without `RABBITMQ_URI` in `secrets` | Set `RABBITMQ_URI` before enabling `dictHubVsync` |
 | `CrashLoopBackOff` on `adapterLerian` outside a local environment | `DEPLOYMENT_MODE` other than `local` with the component enabled | Keep disabled outside dev, or use `DEPLOYMENT_MODE=local` only for that component |
 | Change via the Systemplane admin API "didn't take" | The key is boot-captured | Restart the affected workload's pod |

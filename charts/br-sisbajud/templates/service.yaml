@@ -1,0 +1,31 @@
+{{- if .Values.brSisbajud.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "br-sisbajud.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "br-sisbajud.labels" . | nindent 4 }}
+  {{- with .Values.brSisbajud.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.brSisbajud.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.brSisbajud.service.port | default 4031 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    {{- $ex := include "br-sisbajud.execution" . | fromYaml }}
+    {{- if $ex.enabled }}
+    # Execution API for plugin-br-sisbajud: https://<this Service>:<port> (TLS
+    # terminated in the pod; the server cert SANs must match the name dialed).
+    - port: {{ $ex.port }}
+      targetPort: execution
+      protocol: TCP
+      name: execution
+    {{- end }}
+  selector:
+    {{- include "br-sisbajud.selectorLabels" . | nindent 4 }}
+{{- end -}}

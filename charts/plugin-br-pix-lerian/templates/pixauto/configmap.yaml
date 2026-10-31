@@ -13,9 +13,11 @@ lerian-common masks; the chart emits STANDARD key names.
   - streaming (streaming.env -> STREAMING_BROKERS/SASL/CLIENT_ID/...; global.streaming)
 
 DROPPED deviating app keys (superseded by the standard names above):
-  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), ORGANIZATION_ID (->ORGANIZATION_IDS),
-  DB_SSL_MODE (->DB_SSLMODE),
+  TELEMETRY_ENABLED (->ENABLE_TELEMETRY), DB_SSL_MODE (->DB_SSLMODE),
   STREAMING_ALLOW_PLAINTEXT_SASL (->STREAMING_SASL_ALLOW_PLAINTEXT).
+ORGANIZATION_ID (single-tenant business identity read by this component) is NOT
+superseded by ORGANIZATION_IDS (the license allow-list): it is not enumerated
+below, so <component>.configmap.ORGANIZATION_ID passes through when set.
 The composed URI DATABASE_URL remains ONLY in secrets.yaml as the migration
 Job's input (never app-runtime config here). The cache is configured
 through the discrete REDIS_* keys above.
@@ -57,7 +59,7 @@ data:
   APPLICATION_NAME: {{ $cm.APPLICATION_NAME | default "pix-pixauto" | quote }}
   SERVER_ADDRESS: {{ $cm.SERVER_ADDRESS | default ":4116" | quote }}
   LOG_LEVEL: {{ $cm.LOG_LEVEL | default "info" | quote }}
-  ENV_NAME: {{ $cm.ENV_NAME | default "development" | quote }}
+  ENV_NAME: {{ $cm.ENV_NAME | default "production" | quote }}
   DEPLOYMENT_MODE: {{ $cm.DEPLOYMENT_MODE | default "byoc" | quote }}
   REQUEST_TIMEOUT_SEC: {{ $cm.REQUEST_TIMEOUT_SEC | default "30" | quote }}
   OTEL_RESOURCE_SERVICE_NAME: {{ $cm.OTEL_RESOURCE_SERVICE_NAME | default "pix-pixauto" | quote }}
@@ -101,18 +103,30 @@ data:
   # at WARN on every boot, and hand-emitting it shipped BOTH spellings at once. It
   # stays listed in the $enumerated suppression list below so the escape hatch
   # cannot leak it back either -- same treatment as the other superseded names.
-  SWAGGER_ENABLED: {{ $cm.SWAGGER_ENABLED | default "true" | quote }}
+  {{- /* SWAGGER_ENABLED is not emitted, so the app default applies (docs only in local/development); a set value passes through the escape hatch below. */}}
   SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4000/spi" | quote }}
   SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "" | quote }}
+  # -- Regulatory-intent drain to the counterparty adapter (v1.1.0). OFF by
+  # default; flip REGULATORY_DISPATCH_ENABLED=true to turn it on. Once on in a
+  # non-local/development ENV_NAME, ADAPTER_CLIENT_ID and ADAPTER_CLIENT_SECRET
+  # MUST be set together or the app refuses to boot; both empty is allowed only
+  # in a dev ENV_NAME (no-credential mock). ADAPTER_BASE_URL is the counterparty
+  # edge; ADAPTER_CLIENT_SECRET lives under secrets.
+  REGULATORY_DISPATCH_ENABLED: {{ $cm.REGULATORY_DISPATCH_ENABLED | default "false" | quote }}
+  ADAPTER_BASE_URL: {{ $cm.ADAPTER_BASE_URL | default "" | quote }}
+  ADAPTER_CLIENT_ID: {{ $cm.ADAPTER_CLIENT_ID | default "" | quote }}
+  # -- CRM (person/account enrichment). Unlike the SPI, pixauto reads no
+  # CRM_ORGANIZATION_ID. CRM_CLIENT_SECRET lives under secrets.
+  CRM_BASE_URL: {{ $cm.CRM_BASE_URL | default "" | quote }}
+  CRM_CLIENT_ID: {{ $cm.CRM_CLIENT_ID | default "" | quote }}
+  # -- Permit plaintext/insecure TLS to in-cluster dependencies (dev/CI only).
+  # Keep false in production.
+  ALLOW_INSECURE_TLS: {{ $cm.ALLOW_INSECURE_TLS | default "false" | quote }}
   STREAMING_DATASCHEMA_BASE_URL: {{ $cm.STREAMING_DATASCHEMA_BASE_URL | default "http://localhost:4007" | quote }}
-  {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
-     Chart.AppVersion); override via pixauto.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}
-  {{- /* OTEL_RESOURCE_SERVICE_VERSION: always emitted (like OTEL_RESOURCE_SERVICE_NAME/
-     OTEL_LIBRARY_NAME) so the value lives in the ConfigMap and does NOT require a
-     redundant extraEnvVars entry. configmap.<KEY> wins; else derive from image.tag
-     then Chart.AppVersion. */}}
-  {{- $compTag := default $.Chart.AppVersion $values.image.tag }}
-  OTEL_RESOURCE_SERVICE_VERSION: {{ $cm.OTEL_RESOURCE_SERVICE_VERSION | default $compTag | quote }}
+  {{- /* OTEL_RESOURCE_SERVICE_VERSION is deliberately NOT emitted: pixauto reads
+     no such env as of v1.1.0 (build identity is linked in via -X ldflags and
+     reported on the OTel resource from there). It stays in the suppression list
+     below so a stray configmap.OTEL_RESOURCE_SERVICE_VERSION cannot surface. */}}
   # --- service discovery: advertise pair derived from component identity;
   #     shared knobs come from this component's systemplane store, not here.
   #     global.serviceDiscovery lets the env set the shared knobs once. ---
@@ -122,16 +136,19 @@ data:
      (leaked-secret guard) so a configmap.<SECRET> can never surface here. */}}
   {{- $enumerated := dict }}
   {{- range $k := (list
-      "APPLICATION_NAME" "DATABASE_URL" "DB_REPLICA_SSL_MODE" "DB_SSL_MODE" "DEPLOYMENT_MODE"
+      "ADAPTER_BASE_URL" "ADAPTER_CLIENT_ID" "ADAPTER_CLIENT_SECRET" "ALLOW_INSECURE_TLS"
+      "APPLICATION_NAME" "CRM_BASE_URL" "CRM_CLIENT_ID" "CRM_CLIENT_SECRET"
+      "DATABASE_READ_REPLICA" "DATABASE_URL" "DB_REPLICA_SSL_MODE" "DB_SSL_MODE" "DEPLOYMENT_MODE"
       "ENABLE_TELEMETRY" "ENV_NAME" "IDP_DECLARATION_ENABLED" "IDP_HOST" "IDP_M2M_CLIENT_ID"
       "IDP_M2M_CLIENT_SECRET" "LICENSE_KEY" "LOG_LEVEL"
       "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC"
       "MULTI_TENANT_ENABLED" "MULTI_TENANT_SERVICE_API_KEY" "MULTI_TENANT_URL"
-      "ORGANIZATION_ID" "ORGANIZATION_IDS" "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME"
+      "ORGANIZATION_IDS" "OTEL_EXPORTER_OTLP_ENDPOINT" "OTEL_LIBRARY_NAME"
       "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_RESOURCE_SERVICE_NAME"
       "OTEL_RESOURCE_SERVICE_VERSION" "PLUGIN_AUTH_ENABLED" "PLUGIN_AUTH_HOST"
       "PLUGIN_AUTH_URL" "REDIS_DB" "REDIS_HOST" "REDIS_PASSWORD" "REDIS_PORT" "REDIS_TLS"
-      "REDIS_USER" "REQUEST_TIMEOUT_SEC" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT"
+      "REDIS_USER" "REGULATORY_DISPATCH_ENABLED" "REQUEST_TIMEOUT_SEC"
+      "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT"
       "SERVER_ADDRESS" "SPI_BASE_URL" "SPI_CLIENT_ID"
       "SPI_CLIENT_SECRET" "STREAMING_ALLOW_PLAINTEXT_SASL" "STREAMING_BATCH_LINGER_MS"
       "STREAMING_BROKERS" "STREAMING_CLIENT_ID" "STREAMING_CLOUDEVENTS_SOURCE"
@@ -139,7 +156,7 @@ data:
       "STREAMING_IMPORTANT_EMIT_TIMEOUT_MS" "STREAMING_REQUIRED_ACKS"
       "STREAMING_SASL_ALLOW_PLAINTEXT" "STREAMING_SASL_MECHANISM" "STREAMING_SASL_PASSWORD"
       "STREAMING_SASL_USERNAME" "STREAMING_TLS_CA_CERT" "STREAMING_TLS_ENABLED"
-      "SWAGGER_ENABLED" "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED" "VALKEY_URL"
+      "SYSTEMPLANE_POSTGRES_DSN" "TELEMETRY_ENABLED" "VALKEY_URL"
     ) }}
   {{- $_ := set $enumerated $k 1 }}
   {{- end }}

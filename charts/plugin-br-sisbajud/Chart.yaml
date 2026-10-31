@@ -1,0 +1,54 @@
+apiVersion: v2
+name: plugin-br-sisbajud-helm
+description: >-
+  plugin-br-sisbajud — the SISBAJUD executor. Pulls judicial orders from the
+  Sisbajud Mensageria (br-sfn) over the execution contract (one-way TLS by
+  default, optional mTLS), executes them on Midaz (block / unblock / transfer /
+  information) and posts the results back.
+type: application
+annotations:
+  lerian.studio/chart-type: single-service
+
+home: https://github.com/LerianStudio/helm
+
+sources:
+  - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-sisbajud
+  - https://github.com/LerianStudio/plugin-br-sisbajud
+
+maintainers:
+  - name: "Lerian Studio"
+    email: "support@lerian.studio"
+
+version: 1.1.1
+
+# Default image tag for the service AND the migrations Job (override with
+# sisbajud.image.tag / migrations.image.tag).
+appVersion: "1.1.0"
+
+keywords:
+  - midaz
+  - lerian
+  - plugins
+  - sisbajud
+  - bacen
+  - judicial
+  - plugin-br-sisbajud
+
+icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
+
+# lerian-common-helm: shared library (env contracts, datastore/KMS masks and the
+# workload fragments). postgresql / valkey are DECLARED so the chart can bundle
+# infra for development, but they default to disabled: production points the
+# executor at external, managed PostgreSQL and Valkey/Redis.
+dependencies:
+  - name: lerian-common-helm
+    version: "2.3.0"
+    repository: "oci://ghcr.io/lerianstudio"
+  - name: postgresql
+    version: "16.3.5"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: valkey
+    version: "2.4.7"
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+    condition: valkey.enabled

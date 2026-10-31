@@ -1,0 +1,338 @@
+{{- if .Values.agent.enabled }}
+{{- $name := include "lerian-agent.fullname" . -}}
+{{- $sa := include "lerian-agent.serviceAccountName" . -}}
+{{- if eq $sa "default" }}
+{{- fail "agent.serviceAccount must name a ServiceAccount of the agent's own: the chart binds cluster-wide and managed-namespace grants to it, and binding them to \"default\" hands them to every pod of the namespace that runs as it. Set agent.serviceAccount.create=true, or agent.serviceAccount.name to a dedicated ServiceAccount." }}
+{{- end }}
+{{- $ns := include "global.namespace" . -}}
+{{- $labels := include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) -}}
+{{- $managed := include "lerian-agent.managedNamespaces" . | fromJsonArray -}}
+# =============================================================================
+# RBAC for the Lerian Agent
+# =============================================================================
+# Four scopes, not one.
+#
+# The ClusterRole holds only what is genuinely cluster-scoped: read-only
+# questions the readiness probe, the preflight and the release health and
+# stats reads ask about the cluster as a whole, plus one read at startup of
+# the kube-system namespace, whose UID every heartbeat then carries as the
+# cluster's fingerprint, plus two named writes - namespace creation for
+# Helm's --create-namespace, and StorageClasses, which is what installs the
+# one cluster component the preflight repair path offers. It cannot alter or
+# delete an existing namespace, read a Secret, or create a pod.
+#
+# The identity Secret and the agent's own Deployment have Roles pinned by
+# resourceNames; every other write lives in one Role per agent.managedNamespaces
+# entry. The exception is its own namespace, where the self-update creates pods
+# and patching its Deployment runs any ServiceAccount: hold no other identity there.
+#
+# Consequence, stated plainly: installing a stack into a namespace that is not
+# on this list fails until an operator runs `helm upgrade` adding it. See
+# README.md, "Which namespaces the agent may write to".
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- $labels | nindent 4 }}
+rules:
+  # Cluster shape, read-only: the readiness probe lists one node to prove the
+  # API server answers; the capacity preflight reads each node's allocatable
+  # CPU and memory, cordon, taints and Ready condition; the image check reports
+  # the os and arch labels. Every one of those reads is a list, so no `get`:
+  # nothing reads a node by name.
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list"]
+
+  # Namespaces: `get` of kube-system, whose UID fingerprints the cluster on
+  # every heartbeat, and `get` then `create` before a Secret is written into a
+  # namespace that is not there yet; `create` also for Helm's
+  # --create-namespace. No `list`: nothing enumerates namespaces. No
+  # update/patch/delete - the agent has no reason to relabel, quota, or destroy
+  # a namespace, and delete on a namespace destroys everything inside it.
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "create"]
+
+  # Cluster-wide pod and Service reads. Pods: the capacity preflight sums what
+  # every pod already requests, the denominator of every "will this stack fit"
+  # answer. Services: the ingress preflight's fallback, looking for a
+  # LoadBalancer Service with an address when the cluster serves no
+  # IngressClass. Read-only, and cluster-wide on purpose - counting only the
+  # managed namespaces would answer a different question.
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["list"]
+
+  # StorageClasses: read for the preflight's default-StorageClass check, and
+  # WRITTEN for the one cluster component the preflight repair path installs.
+  #
+  # The read alone is what this rule used to be, and it is what discovers the
+  # defect: a cluster whose CSI driver is installed and whose only StorageClass
+  # is the legacy one has no default, so every PersistentVolumeClaim any product
+  # chart creates stays Pending forever. Reporting that and leaving an operator
+  # to open a terminal against their own cluster is exactly the manual step this
+  # product exists to remove, so the write is granted for the
+  # `lerian-cluster-defaults` component the repair route installs - install and
+  # uninstall alike, since a repair nobody can remove is not a repair. No
+  # `watch`: nothing here waits on a StorageClass, and the cluster scope keeps
+  # no standing subscriptions.
+  #
+  # Cluster-scoped because a StorageClass is. What a holder gets is written out
+  # in docs/threat-model.md; in short, it can add a class and move which one is
+  # default, which redirects where FUTURE volumes are provisioned and reaches no
+  # existing volume or its contents.
+  #
+  # This is the ONLY cluster-scoped write the repair path added. The other
+  # components of the initial set need ClusterRoles, aggregated APIServices and
+  # admission webhooks, and the threat model says per component why the agent
+  # did not get those and what an operator installs by hand instead.
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+  # Preflight capability check (read-only, cluster-scoped): whether anything
+  # serves Ingress. Without it the preflight cannot answer the question and
+  # reports it as unverified - which is never the same as reporting the cluster
+  # fit.
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingressclasses"]
+    verbs: ["get", "list"]
+
+  # The cert-manager ClusterIssuer a stack's exposure names, read BY NAME.
+  # An Ingress annotated with an issuer that is not there installs cleanly and
+  # is never answered: no certificate is issued, and the https address the
+  # control plane publishes fails in the browser. Without this rule the read
+  # comes back Forbidden, the prerequisite is reported unverified, and the
+  # install gate refuses every stack published the normal way - on a cluster
+  # that is in fact correct. `get` only: the agent looks the named issuer up,
+  # it never enumerates them.
+  - apiGroups: ["cert-manager.io"]
+    resources: ["clusterissuers"]
+    verbs: ["get"]
+
+  # Metrics API (read-only; only functional if metrics-server is installed).
+  # Nodes: the preflight lists one node's metrics to prove metrics-server
+  # answers, and uses no figure from it. Pods: live CPU/memory for a release's
+  # resource stats, read per namespace.
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- $labels | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+    namespace: {{ $ns }}
+
+---
+# =============================================================================
+# Enrollment identity: read and replace one Secret, and nothing else
+# =============================================================================
+# The chart creates the empty object before the pod starts. Kubernetes RBAC
+# cannot restrict `create` by resourceNames, so letting the agent create it
+# would necessarily let it create any Secret in this namespace. With the object
+# already present the agent needs only get/update, both pinned to its exact name.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $name }}-identity
+  namespace: {{ $ns }}
+  labels:
+    {{- $labels | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ printf "%s-identity" $name | quote }}]
+    verbs: ["get", "update"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $name }}-identity
+  namespace: {{ $ns }}
+  labels:
+    {{- $labels | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $name }}-identity
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+    namespace: {{ $ns }}
+{{- range $namespace := $managed }}
+
+---
+# =============================================================================
+# Managed namespace: {{ $namespace }}
+# =============================================================================
+# The full Helm verb set, and only here. `watch` is included because Helm's
+# own hook execution watches the hook resource until it completes - a chart
+# with a pre-install Job fails with Forbidden without it.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- $labels | nindent 4 }}
+rules:
+  # Core resources deployed by Helm charts, plus the Secrets the agent writes
+  # for a release and the Secrets Helm itself uses as its release store.
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets", "serviceaccounts", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Evidence for a failed install, read from the release's namespace before the
+  # broken release is torn down. Container logs say why a container crashed;
+  # Warning events say why a pod was never scheduled, could not pull its image,
+  # or was refused by a quota - none of which the pod itself reports. Without
+  # these two rules both reads come back Forbidden and every failed install is
+  # reported with the bare error text again.
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list"]
+
+  # Workload resources (apps/v1).
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Batch workloads.
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Networking resources.
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # RBAC for the applications a chart deploys - namespace-scoped only.
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Availability resources.
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Autoscaling resources.
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  {{- if $.Values.agent.secretVault.provider }}
+
+  # External Secrets objects: how a release's credentials come out of the
+  # CLIENT's own vault rather than being written once from the control plane and
+  # then living in etcd and nowhere else.
+  #
+  # The agent writes these two objects and reads them back; the FETCHING is done
+  # by the External Secrets operator with the cloud identity the client gave it,
+  # which the agent does not have and cannot obtain from here. The narrow verb
+  # set says so: no list, no watch, no delete. Removing an ExternalSecret would
+  # stop a running product's credential being refreshed, and the objects are
+  # looked up by the exact name of the Secret they fill rather than enumerated.
+  #
+  # Rendered ONLY for a client who configured a vault. A client who left
+  # agent.secretVault.provider empty never has a Secret with a residence to fill - the
+  # control plane composes one only for a cluster that REPORTED a vault - so the
+  # grant would be a standing power nobody exercises. It is not an idle one
+  # either, for a client who happens to run External Secrets for the rest of
+  # their estate: `create` on externalsecrets is the ability to write an object
+  # naming any store this namespace can reach and land its material in a Secret
+  # here, which the agent may then read. The client-side mitigation in
+  # docs/threat-model.md - scoping the store's identity to this platform's path
+  # prefix - is advice only a vault user ever reads, so the grant follows the
+  # same switch the feature does.
+  - apiGroups: ["external-secrets.io"]
+    resources: ["externalsecrets", "pushsecrets"]
+    verbs: ["get", "create", "update"]
+  {{- end }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- $labels | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+    namespace: {{ $ns }}
+{{- end }}
+
+---
+# =============================================================================
+# Self-update: prove a target build here, then patch this agent's Deployment
+# =============================================================================
+# The control plane names a target agent image; the agent runs it once as a
+# throwaway Pod, then applies it to its own Deployment. resourceNames pins the
+# patch to exactly one object - its own - not even another workload here.
+#
+# Granted here, at install time, on purpose: adding it later would be a second
+# RBAC change against clusters that already granted the first one, and a
+# client re-approving agent permissions is a contract renegotiation, not an
+# upgrade.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $name }}-selfupdate
+  namespace: {{ $ns }}
+  labels:
+    {{- $labels | nindent 4 }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: [{{ $name | quote }}]
+    verbs: ["get", "patch"]
+
+  # The throwaway Pod a target build runs in before that patch. The managed-
+  # namespace Role grants this only when agent.managedNamespaces lists this one.
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "delete", "get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $name }}-selfupdate
+  namespace: {{ $ns }}
+  labels:
+    {{- $labels | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $name }}-selfupdate
+subjects:
+  - kind: ServiceAccount
+    name: {{ $sa }}
+    namespace: {{ $ns }}
+{{- end }}

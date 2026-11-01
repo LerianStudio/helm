@@ -77,7 +77,7 @@ spec:
               port: {{ .Values.reconciliation.service.port }}
             initialDelaySeconds: {{ .Values.reconciliation.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.reconciliation.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.reconciliation.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.reconciliation.readinessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.reconciliation.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.reconciliation.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -86,7 +86,7 @@ spec:
               port: {{ .Values.reconciliation.service.port }}
             initialDelaySeconds: {{ .Values.reconciliation.livenessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.reconciliation.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.reconciliation.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.reconciliation.livenessProbe.failureThreshold | default 3 }}
           {{- if .Values.mtls.enabled }}

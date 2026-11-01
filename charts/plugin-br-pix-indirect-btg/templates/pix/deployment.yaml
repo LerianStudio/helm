@@ -80,7 +80,7 @@ spec:
               port: {{ .Values.pix.service.port }}
             initialDelaySeconds: {{ .Values.pix.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.pix.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.pix.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.pix.readinessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.pix.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.pix.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -89,7 +89,7 @@ spec:
               port: {{ .Values.pix.service.port }}
             initialDelaySeconds: {{ .Values.pix.livenessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.pix.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.pix.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.pix.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.pix.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.pix.livenessProbe.failureThreshold | default 3 }}
           {{- if .Values.mtls.enabled }}

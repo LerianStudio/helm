@@ -16,11 +16,15 @@ spec:
       {{- include "reconciliation.selectorLabels" (dict "context" . "name" .Values.reconciliation.name) | nindent 6 }}
   template:
     metadata:
-      {{- if and .Values.mtls.enabled (index .Values.mtls "tls.crt") }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/reconciliation/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.reconciliation.useExistingSecrets }}
+        checksum/secret: {{ include (print $.Template.BasePath "/reconciliation/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if and .Values.mtls.enabled (index .Values.mtls "tls.crt") }}
         # Roll the pods when the chart-managed mTLS cert changes (app snapshots it at startup).
         checksum/mtls: {{ include "plugin-br-pix-indirect-btg.mtlsChecksum" . }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 8 }}
     spec:

@@ -323,6 +323,13 @@ architectures. Used as the REDIS_HOST default.
 {{- end }}
 
 {{/*
+Name of the Secret holding the first Console admin's password: the user-supplied one, else the generated <auth>-init-user.
+*/}}
+{{- define "plugin-access-manager.initUserSecretName" -}}
+{{- .Values.auth.initUser.adminPasswordSecretName | default (printf "%s-init-user" (include "plugin-auth.fullname" .) | trunc 63 | trimSuffix "-") -}}
+{{- end }}
+
+{{/*
 plugin-auth.dbPasswordEnv — emit a single `- name: <envName> valueFrom: secretKeyRef: {name,key}`
 entry for the auth database password, single-sourced. With the bundled `auth-database`
 (aliased Bitnami postgresql) subchart, it reads the Secret this chart keeps across uninstall

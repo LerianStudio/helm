@@ -1,0 +1,17 @@
+{{- if .Values.auth.initUser.enabled }}
+{{- /* Validate: if useExistingSecret is true, adminPasswordSecretName must be set */ -}}
+{{- if and .Values.auth.initUser.useExistingSecret (not .Values.auth.initUser.adminPasswordSecretName) }}
+{{- fail "ERROR: When auth.initUser.useExistingSecret is true, auth.initUser.adminPasswordSecretName must be specified" }}
+{{- end }}
+{{- end }}
+{{- if and .Values.auth.initUser.enabled (not .Values.auth.initUser.useExistingSecret) }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "plugin-access-manager.initUserSecretName" . }}
+  labels:
+    {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name) | nindent 4 }}
+type: Opaque
+data:
+  ADMIN_PASSWORD: {{ required "\n\nERROR: auth.initUser is enabled with a generated secret but auth.initUser.adminPassword is empty.\n   Set auth.initUser.adminPassword, or set auth.initUser.useExistingSecret=true and point auth.initUser.adminPasswordSecretName at an existing Secret.\n" .Values.auth.initUser.adminPassword | b64enc | quote }}
+{{- end }}

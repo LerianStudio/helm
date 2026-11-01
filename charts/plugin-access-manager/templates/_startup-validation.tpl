@@ -6,10 +6,6 @@ with lookup: GitOps/offline rendering must remain deterministic. Runtime
 validates their contents.
 */}}
 {{- define "plugin-access-manager.validateStartup" -}}
-{{- /* The init-user Job was post-install only, so `helm upgrade` never ran it; only a fresh install would be left with no Console admin. */ -}}
-{{- if and .Release.IsInstall (.Values.auth.initUser | default dict).enabled -}}
-{{- fail "auth.initUser was removed: the chart no longer creates the first Console user. Remove auth.initUser from your values. Instead, sign in to Caradhras as built-in/admin, rotate its seed password, create the first lerian user and add it to lerian/admin-group (see the chart README, 'Initial admin')" -}}
-{{- end -}}
 {{- range $component := list "auth" "identity" -}}
 {{- $values := index $.Values $component -}}
 {{- $cm := $values.configmap | default dict -}}

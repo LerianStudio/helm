@@ -12,7 +12,8 @@ import yaml
 
 CHART = Path(__file__).resolve().parents[1]
 BASE = {
-    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'}},
+    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'},
+             'initUser': {'enabled': False}},
     'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'}},
 }
 
@@ -42,15 +43,14 @@ def merge(target, patch):
             target[key] = value
 
 
-def render(patch, upgrade=False):
+def render(patch):
     values = copy.deepcopy(BASE)
     merge(values, patch)
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml') as f:
         yaml.safe_dump(values, f)
         f.flush()
         return subprocess.run(['helm', 'template', 'startup-test', str(CHART),
-                               '-f', f.name, *(['--is-upgrade'] if upgrade else [])],
-                              text=True, capture_output=True)
+                               '-f', f.name], text=True, capture_output=True)
 
 
 def production() -> dict[str, Any]:
@@ -60,8 +60,8 @@ def production() -> dict[str, Any]:
 
 
 class StartupContract(unittest.TestCase):
-    def succeeds(self, patch, upgrade=False):
-        result = render(patch, upgrade)
+    def succeeds(self, patch):
+        result = render(patch)
         self.assertEqual(result.returncode, 0, result.stderr)
         return [d for d in yaml.load_all(result.stdout, Loader=UniqueLoader) if d]
 
@@ -375,6 +375,33 @@ class StartupContract(unittest.TestCase):
         container_ports = {p['name'] for p in deployment['spec']['template']['spec']['containers'][0]['ports']}
         self.assertEqual({p['targetPort'] for p in service['spec']['ports']}, container_ports)
 
+    def identity_env(self, init_user):
+        docs = self.succeeds({'auth': {'initUser': init_user}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('identity'))
+        env = deployment['spec']['template']['spec']['containers'][0].get('env', [])
+        return docs, {e['name']: e for e in env}
+
+    def test_init_user_feeds_identity_boot(self):
+        docs, env = self.identity_env({'enabled': False})
+        self.assertFalse({'ADMIN_PASSWORD', 'ADMIN_EMAIL', 'ADMIN_DISPLAY_NAME'} & env.keys())
+        docs, env = self.identity_env({'enabled': True, 'adminPassword': 'render-only'})
+        ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+        self.assertEqual((ref['key'], ref['optional']), ('ADMIN_PASSWORD', True))
+        self.assertEqual(env['ADMIN_EMAIL']['value'], 'admin@midaz.tech')
+        self.assertEqual(env['ADMIN_DISPLAY_NAME']['value'], 'Admin')
+        self.assertEqual([d['kind'] for d in docs if d['kind'] == 'Job'], [])
+        secret = next(d for d in docs if d['metadata']['name'] == ref['name'])
+        self.assertNotIn('annotations', secret['metadata'])
+
+    def test_init_user_existing_secret(self):
+        docs, env = self.identity_env({'enabled': True, 'useExistingSecret': True,
+                                       'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})
+        ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+        self.assertEqual((ref['name'], ref['key'], ref['optional']), ('mine', 'pw', True))
+        self.assertFalse([d for d in docs if d['metadata']['name'].endswith('init-user')])
+        self.fails({'auth': {'initUser': {'enabled': True, 'useExistingSecret': True}}},
+                   'adminPasswordSecretName must be specified')
 
     def migrate_env(self, patch):
         docs = self.succeeds(patch)
@@ -427,18 +454,6 @@ class StartupContract(unittest.TestCase):
         self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}}, pattern)
         env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
         self.assertEqual(env['my.var-1_X'], 'ok')
-
-    def test_removed_init_user_job_fails_only_on_install(self):
-        enabled = {'auth': {'initUser': {'enabled': True}}}
-        self.fails(enabled, 'auth.initUser was removed')
-        # The bundled database subchart refuses an upgrade without its current passwords.
-        db = {'auth-database': {'auth': {'password': 'x', 'postgresPassword': 'x'}}}
-        docs = self.succeeds({**enabled, **db}, upgrade=True)
-        self.assertFalse([d for d in docs if 'init-user' in d['metadata']['name']])
-        for init_user in [{'enabled': False, 'adminPassword': 'x'}, {'adminPassword': 'x'}]:
-            with self.subTest(init_user=init_user):
-                self.succeeds({'auth': {'initUser': init_user}})
-        self.succeeds({})
 
     def caradhras_license(self, secrets=None, **caradhras):
         docs = self.succeeds({'caradhras': {**caradhras, **({'secrets': secrets} if secrets else {})}})

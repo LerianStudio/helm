@@ -99,15 +99,32 @@ spec:
             successThreshold: {{ .Values.identity.startupProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.identity.startupProbe.failureThreshold | default 5 }}
           {{- end }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
+          {{- $otel := (index .Values "otel-collector-lerian").enabled }}
+          {{- $initUser := .Values.auth.initUser.enabled }}
+          {{- if or $otel $initUser }}
           env:
+          {{- if $otel }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
-          {{ end }}            
+          {{- end }}
+          {{- if $initUser }}
+          # Identity creates the first Console admin at boot, only while organization lerian has no users.
+          - name: ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "plugin-access-manager.initUserSecretName" . }}
+                key: {{ .Values.auth.initUser.adminPasswordSecretKey | default "ADMIN_PASSWORD" }}
+                optional: true
+          - name: ADMIN_EMAIL
+            value: {{ .Values.auth.initUser.adminEmail | default "admin@midaz.tech" | quote }}
+          - name: ADMIN_DISPLAY_NAME
+            value: {{ .Values.auth.initUser.adminDisplayName | default "Admin" | quote }}
+          {{- end }}
+          {{- end }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, identity.spread, identity.topologySpreadConstraints).
              selectorLabels MUST equal spec.selector.matchLabels above. */}}

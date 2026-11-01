@@ -155,7 +155,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 
 | Key | Default |
 |-----|---------|
-| `ACCESS_CONTROL_ALLOW_ORIGIN` | `"*"` |
+| `ACCESS_CONTROL_ALLOW_ORIGIN` | `""` (deny every browser origin) |
 | `ACCESS_CONTROL_ALLOW_METHODS` | `"GET,POST,PUT,PATCH,DELETE,OPTIONS"` |
 | `ACCESS_CONTROL_ALLOW_HEADERS` | `"Origin,Content-Type,Accept,Authorization,X-Request-ID"` |
 | `ACCESS_CONTROL_EXPOSE_HEADERS` | `""` |
@@ -452,7 +452,7 @@ Off by default — zero cost when unset.
 
 ## Accounting routes
 
-The accounting-route resolver attaches a `routeId` to the plugin's Midaz transactions by resolving the tenant's operation and transaction routes. The chart sets none of its keys: the app owns their defaults, and omitted, the resolver stays **off**, which is the behaviour the plugin had before the feature existed.
+The accounting-route resolver attaches a `routeId` to the plugin's Midaz transactions by resolving the tenant's operation and transaction routes. The chart renders these keys only when set under `app.configmap`: the app owns their defaults, and omitted, the resolver stays **off**, which is the behaviour the plugin had before the feature existed.
 
 | Key | App default | Meaning |
 |---|---|---|
@@ -465,7 +465,7 @@ Turn it on per environment, one deployment at a time, after the per-tenant crede
 
 ```yaml
 app:
-  extraEnvVars:
+  configmap:
     ACCOUNTING_ROUTES_ENABLED: "true"
 ```
 

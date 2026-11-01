@@ -1,0 +1,219 @@
+suite: lerian-common health preset
+templates:
+  - templates/app.yaml
+tests:
+  - it: go renders ports, env, probes, grace and rolling strategy
+    documentSelector: {path: kind, value: Deployment}
+    asserts:
+      - equal: {path: spec.replicas, value: 2}
+      - equal: {path: spec.strategy, value: {type: RollingUpdate, rollingUpdate: {maxSurge: "25%", maxUnavailable: 0}}}
+      - equal: {path: spec.template.spec.terminationGracePeriodSeconds, value: 55}
+      - equal: {path: "spec.template.spec.containers[0].ports[1]", value: {name: health, containerPort: 8099}}
+      - equal: {path: "spec.template.spec.containers[0].env", value: [{name: HEALTH_PORT, value: "8099"}, {name: SHUTDOWN_DRAIN_DELAY, value: 15s}, {name: SHUTDOWN_TIMEOUT, value: 30s}]}
+      - equal: {path: "spec.template.spec.containers[0].startupProbe", value: {httpGet: {path: /health, port: health}, periodSeconds: 5, timeoutSeconds: 3, failureThreshold: 60}}
+      - equal: {path: "spec.template.spec.containers[0].livenessProbe", value: {httpGet: {path: /health, port: health}, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3}}
+      - equal: {path: "spec.template.spec.containers[0].readinessProbe", value: {httpGet: {path: /readyz, port: health}, periodSeconds: 5, timeoutSeconds: 3, failureThreshold: 3}}
+      - notExists: {path: "spec.template.spec.containers[0].lifecycle"}
+
+  - it: go grace follows drainSeconds and shutdownSeconds (an explicit 0 drain is honored)
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.health: {stack: go, drainSeconds: 0, shutdownSeconds: 1190}}
+    asserts:
+      - equal: {path: spec.template.spec.terminationGracePeriodSeconds, value: 1200}
+      - equal: {path: "spec.template.spec.containers[0].env[1].value", value: 0s}
+      - equal: {path: "spec.template.spec.containers[0].env[2].value", value: 1190s}
+
+  - it: go-worker forces drain 0 (grace = shutdown + 10)
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.health: {stack: go-worker, drainSeconds: 40}}
+    asserts:
+      - equal: {path: spec.template.spec.terminationGracePeriodSeconds, value: 40}
+      - equal: {path: "spec.template.spec.containers[0].env[1].value", value: 0s}
+
+  - it: next sleeps in preStop and probes the console paths on the main port
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.health: {stack: next}}
+    asserts:
+      - equal: {path: spec.template.spec.terminationGracePeriodSeconds, value: 30}
+      - equal: {path: "spec.template.spec.containers[0].lifecycle.preStop.exec.command", value: [sleep, "15"]}
+      - equal: {path: "spec.template.spec.containers[0].livenessProbe.httpGet", value: {path: /api/admin/health/alive, port: 4000}}
+      - equal: {path: "spec.template.spec.containers[0].readinessProbe.httpGet", value: {path: /api/admin/health/readyz, port: 4000}}
+      - notExists: {path: "spec.template.spec.containers[0].env"}
+      - lengthEqual: {path: "spec.template.spec.containers[0].ports", count: 1}
+
+  - it: static sleeps 5 and answers /healthz
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.health: {stack: static, drainSeconds: 99}}
+    asserts:
+      - equal: {path: spec.template.spec.terminationGracePeriodSeconds, value: 15}
+      - equal: {path: "spec.template.spec.containers[0].lifecycle.preStop.exec.command", value: [sleep, "5"]}
+      - equal: {path: "spec.template.spec.containers[0].readinessProbe.httpGet", value: {path: /healthz, port: 4000}}
+
+  - it: external takes its own paths, port and startup budget
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.health: {stack: external, livenessPath: /up, readinessPath: /ready, port: 3000, startupBudgetSeconds: 600}}
+    asserts:
+      - equal: {path: spec.template.spec.terminationGracePeriodSeconds, value: 55}
+      - equal: {path: "spec.template.spec.containers[0].startupProbe.failureThreshold", value: 120}
+      - equal: {path: "spec.template.spec.containers[0].startupProbe.httpGet", value: {path: /up, port: 3000}}
+      - equal: {path: "spec.template.spec.containers[0].readinessProbe.httpGet", value: {path: /ready, port: 3000}}
+      - equal: {path: "spec.template.spec.containers[0].lifecycle.preStop.exec.command", value: [sleep, "15"]}
+
+  - it: external ALB check follows the port that serves the liveness path
+    documentSelector: {path: kind, value: Ingress}
+    set: {app.health: {stack: external, livenessPath: /up, readinessPath: /ready, port: 3000}}
+    asserts:
+      - equal: {path: 'metadata.annotations["alb.ingress.kubernetes.io/healthcheck-port"]', value: "3000"}
+
+  - it: external without paths is refused
+    set: {app.health: {stack: external}}
+    asserts:
+      - failedTemplate: {errorPattern: "requires health.livenessPath and health.readinessPath"}
+
+  - it: a singleton runs 1 replica, Recreate, no PDB
+    set: {app.health: {stack: go, singleton: true}}
+    asserts:
+      - equal: {path: spec.replicas, value: 1}
+        documentSelector: {path: kind, value: Deployment}
+      - equal: {path: spec.strategy, value: {type: Recreate}}
+        documentSelector: {path: kind, value: Deployment}
+      - hasDocuments: {count: 2}
+
+  - it: a singleton refuses replicas above 1
+    set: {app.health: {stack: go, singleton: true}, app.replicas: 3}
+    asserts:
+      - failedTemplate: {errorPattern: "singleton runs 1 replica"}
+
+  - it: a singleton refuses autoscaling
+    set: {app.health: {stack: go, singleton: true}, app.autoscaling: {enabled: true}}
+    asserts:
+      - failedTemplate: {errorPattern: "singleton has no autoscaling"}
+
+  - it: the PDB keeps one pod disruptable and evicts unhealthy pods
+    documentSelector: {path: kind, value: PodDisruptionBudget}
+    asserts:
+      - equal: {path: spec.maxUnavailable, value: 1}
+      - equal: {path: spec.unhealthyPodEvictionPolicy, value: AlwaysAllow}
+
+  - it: replicas 0 is honored (frozen component)
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.replicas: 0}
+    asserts:
+      - equal: {path: spec.replicas, value: 0}
+
+  - it: non-integer drain or shutdown seconds are refused
+    set: {app.health: {stack: go, drainSeconds: 15s}}
+    asserts:
+      - failedTemplate: {errorPattern: "drainSeconds must be a non-negative integer"}
+
+  - it: configured replicas win over the default of 2
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.replicas: 4}
+    asserts:
+      - equal: {path: spec.replicas, value: 4}
+
+  - it: unknown stack is refused
+    set: {app.health: {stack: java}}
+    asserts:
+      - failedTemplate: {errorPattern: "health.stack must be"}
+  - it: a key that does not belong to the stack is refused
+    set: {app.health: {stack: go, livenessPath: /x}}
+    asserts:
+      - failedTemplate: {errorPattern: "health.livenessPath is not a value for stack go"}
+
+  - it: image.tag below minImage fails the render
+    set: {app.image.tag: v1.1.9}
+    asserts:
+      - failedTemplate: {errorPattern: "image.tag v1.1.9 is below v1.2.0"}
+
+  - it: image.tag equal to minImage passes
+    documentSelector: {path: kind, value: Deployment}
+    asserts:
+      - isKind: {of: Deployment}
+  - it: a prerelease of minImage is below it
+    set: {app.image.tag: 1.2.0-rc.1}
+    asserts:
+      - failedTemplate: {errorPattern: "is below v1.2.0"}
+  - it: a prerelease minImage accepts its own line and refuses an older one
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.image.tag: v1.2.0-beta.4, minImage: v1.2.0-beta.3}
+    asserts:
+      - isKind: {of: Deployment}
+  - it: a prerelease minImage refuses an older prerelease
+    set: {app.image.tag: v1.2.0-beta.2, minImage: v1.2.0-beta.3}
+    asserts:
+      - failedTemplate: {errorPattern: "is below"}
+  - it: a newer tag passes
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.image.tag: v2.0.0}
+    asserts:
+      - isKind: {of: Deployment}
+  - it: a non-semver tag skips the guard
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.image.tag: main-3f2a1c}
+    asserts:
+      - isKind: {of: Deployment}
+
+  - it: the configmap may not carry the preset env
+    set: {app.configmap: {SHUTDOWN_DRAIN_DELAY: 12s}}
+    asserts:
+      - failedTemplate: {errorPattern: "configmap.SHUTDOWN_DRAIN_DELAY is owned by the health preset"}
+  - it: HEALTH_PORT is refused too
+    set: {app.configmap: {HEALTH_PORT: "9000"}}
+    asserts:
+      - failedTemplate: {errorPattern: "configmap.HEALTH_PORT is owned"}
+
+  - it: probe and grace overrides are refused
+    set: {app.livenessProbe: {path: /live}}
+    asserts:
+      - failedTemplate: {errorPattern: "livenessProbe is owned by the health preset"}
+  - it: a grace override is refused
+    set: {app.terminationGracePeriodSeconds: 60}
+    asserts:
+      - failedTemplate: {errorPattern: "terminationGracePeriodSeconds is owned"}
+
+  - it: the ALB checks the main port liveness path on the container port number
+    documentSelector: {path: kind, value: Ingress}
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            alb.ingress.kubernetes.io/healthcheck-path: /health
+            alb.ingress.kubernetes.io/healthcheck-port: "4000"
+            alb.ingress.kubernetes.io/success-codes: "200"
+            alb.ingress.kubernetes.io/healthcheck-interval-seconds: "10"
+            alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+            alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+  - it: the ALB path follows the stack and overrides a hand-set annotation
+    documentSelector: {path: kind, value: Ingress}
+    set:
+      app.health: {stack: next}
+      app.ingress.annotations: {alb.ingress.kubernetes.io/healthcheck-port: traffic-port}
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            alb.ingress.kubernetes.io/healthcheck-path: /api/admin/health/alive
+            alb.ingress.kubernetes.io/healthcheck-port: "4000"
+            alb.ingress.kubernetes.io/success-codes: "200"
+            alb.ingress.kubernetes.io/healthcheck-interval-seconds: "10"
+            alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+            alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+  - it: another ingress class gets no ALB annotations
+    documentSelector: {path: kind, value: Ingress}
+    set: {app.ingress.className: nginx}
+    asserts:
+      - notExists: {path: metadata.annotations}
+
+  - it: no PrometheusRule by default
+    asserts:
+      - hasDocuments: {count: 3}
+  - it: monitoring.prometheusRule.enabled renders the health rules for the release namespace
+    documentSelector: {path: kind, value: PrometheusRule}
+    release: {namespace: prod}
+    set: {monitoring.prometheusRule: {enabled: true, labels: {release: prom}}}
+    asserts:
+      - equal: {path: metadata.labels.release, value: prom}
+      - lengthEqual: {path: "spec.groups[0].rules", count: 9}
+      - equal: {path: "spec.groups[0].rules[0].alert", value: HealthStoreDown}
+      - equal: {path: "spec.groups[0].rules[4].expr", value: 'kube_deployment_status_replicas_available{namespace="prod"} == 0 and kube_deployment_spec_replicas{namespace="prod"} > 0'}

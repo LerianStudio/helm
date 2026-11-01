@@ -90,7 +90,7 @@ what the chart cannot, and the chart catches what never reaches a boot.
 {{- if hasKey $.Values.config "ALLOW_AUTH_DISABLED_LOCAL_ONLY" -}}
 {{- fail "config.ALLOW_AUTH_DISABLED_LOCAL_ONLY is refused: authentication is off only on a developer's machine, never in a chart install" -}}
 {{- end -}}
-{{- $forbidden := list "COURIER_ROLES" "LICENSE_KEY" "DATABASE_URL" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "MULTI_TENANT_SERVICE_API_KEY" "JD_PASSWORD" "JD_SPI_CLIENT_SECRET" "JD_PRIVATE_KEY_PEM" -}}
+{{- $forbidden := list "COURIER_ROLES" "LICENSE_KEY" "DATABASE_URL" "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "REDIS_PASSWORD" "MULTI_TENANT_REDIS_PASSWORD" "MULTI_TENANT_SERVICE_API_KEY" "JD_PASSWORD" "JD_SPI_CLIENT_SECRET" "JD_PRIVATE_KEY_PEM" "IDP_M2M_CLIENT_SECRET" "M2M_CLIENT_SECRET" -}}
 {{- range $key := $forbidden -}}
 {{- if hasKey $.Values.config $key -}}
 {{- if eq $key "COURIER_ROLES" -}}
@@ -267,6 +267,8 @@ spec:
               path: /readyz
               port: http
             periodSeconds: 10
+            # /readyz gives its database ping 2 s; the kubelet's default is 1 s.
+            timeoutSeconds: 3
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -335,8 +337,8 @@ spec:
 {{- end }}
 {{- end -}}
 
-{{- /* "true" when the service reads MULTI_TENANT_ENABLED as true (strconv.ParseBool spellings,
-     trimmed), else empty. Refusing too much is safe here, refusing too little is not. */}}
+{{- /* "true" when MULTI_TENANT_ENABLED may mean true, else empty. The service accepts only the
+     exact word "true"; refusing 1, t and any case too is safe here, refusing too little is not. */}}
 {{- define "br-jd-courier.multiTenant" -}}
 {{- if has (lower (trim (toString (get .Values.config "MULTI_TENANT_ENABLED" | default "false")))) (list "1" "t" "true") }}true{{ end }}
 {{- end }}

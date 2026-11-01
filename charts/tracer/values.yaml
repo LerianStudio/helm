@@ -275,6 +275,9 @@ tracer:
     #    The chart previously named this API_KEY_SECRET, which the app never
     #    reads — silently disabling API-key auth even with API_KEY_ENABLED=true.
     API_KEY: ""
+    # -- Lerian license key. Rendered into the Secret only when non-empty; the
+    #    application refuses to boot without a valid license.
+    LICENSE_KEY: ""
     # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
     #    Helm render fails fast if MT is enabled and this is empty.
     # MULTI_TENANT_SERVICE_API_KEY: ""

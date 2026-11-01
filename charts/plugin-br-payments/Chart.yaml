@@ -15,10 +15,10 @@ maintainers:
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 1.1.2
+version: 2.0.2
 
 # This is the version number of the application being deployed.
-appVersion: "1.0.0-beta.9"
+appVersion: "1.0.2"
 
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
@@ -39,6 +39,9 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # Idempotency uses PostgreSQL (ADR-003, no Redis), and async event publishing
 # uses the outbox pattern with PostgreSQL (ADR-002, no message broker).
 dependencies:
+  - name: lerian-common-helm
+    version: "2.1.2"
+    repository: "oci://ghcr.io/lerianstudio"
   - name: postgresql
     version: "16.3.5"
     repository: "https://charts.bitnami.com/bitnami"

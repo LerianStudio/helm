@@ -78,11 +78,31 @@ class StartupContract(unittest.TestCase):
         docs = self.succeeds({})
         images = [c['image'] for d in docs if d['kind'] == 'Deployment'
                   for c in d['spec']['template']['spec']['containers']]
-        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.13.1', images)
-        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.13.1', images)
+        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.14.0', images)
+        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.14.0', images)
+        self.assertIn('ghcr.io/lerianstudio/caradhras:1.8.6', images)
+        init_images = [c['image'] for d in docs if d['kind'] == 'Deployment'
+                       for c in d['spec']['template']['spec'].get('initContainers', [])]
+        self.assertIn('ghcr.io/lerianstudio/caradhras-migrations:1.8.6', init_images)
         for d in docs:
             if d['kind'] == 'HorizontalPodAutoscaler':
                 self.assertGreaterEqual(d['spec']['minReplicas'], 1)
+
+    def test_probes_outwait_checks_and_caradhras_drains(self):
+        docs = self.succeeds({'caradhras': {'ui': {'enabled': True}}})
+        for d in docs:
+            if d['kind'] != 'Deployment':
+                continue
+            name = d['metadata']['name']
+            pod = d['spec']['template']['spec']
+            for c in pod['containers']:
+                for kind in ('readinessProbe', 'livenessProbe', 'startupProbe'):
+                    if kind in c:
+                        floor = 8 if kind == 'readinessProbe' and name.endswith(('-auth', '-identity')) else 3
+                        self.assertGreaterEqual(c[kind]['timeoutSeconds'], floor, f'{name} {kind}')
+            if name.endswith('-caradhras'):
+                self.assertIn('sleep', pod['containers'][0]['lifecycle']['preStop']['exec']['command'])
+                self.assertGreaterEqual(pod['terminationGracePeriodSeconds'], 55)
 
     def test_production_http_is_rejected(self):
         for env in ['production', 'PRODUCTION', 'qa', 'prod']:
@@ -361,7 +381,102 @@ class StartupContract(unittest.TestCase):
         job = next(d for d in jobs if d['metadata']['name'].endswith('init-user'))
         self.assertEqual(job['metadata']['annotations']['helm.sh/hook'], 'post-install')
         self.assertEqual(job['spec']['template']['spec']['containers'][0]['image'],
-                         'ghcr.io/lerianstudio/caradhras-user-init:3.13.1')
+                         'ghcr.io/lerianstudio/caradhras-user-init:3.14.0')
+
+
+    def migrate_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        init = next(c for c in deployment['spec']['template']['spec']['initContainers']
+                    if c['name'] == 'migrate')
+        return {e['name']: e.get('value') for e in init['env']}
+
+    def test_migrate_skip_rbac_chain_only_when_true(self):
+        default = self.migrate_env({})
+        self.assertEqual(set(default), {'POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB',
+                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE'})
+        self.assertEqual(self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': False}}}), default)
+        env = self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def server_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        server = deployment['spec']['template']['spec']['containers'][0]
+        return {e['name']: e.get('value') for e in server['env']}
+
+    def test_server_skip_rbac_chain_follows_migrate(self):
+        # The boot schema check reads the same variable: a migrate that skips the
+        # rbac chain next to a server that asserts it is a crash-loop on the first
+        # image with a newer rbac head.
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN', self.server_env({}))
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN',
+                         self.server_env({'caradhras': {'migrations': {'skipRBACChain': False}}}))
+        env = self.server_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def test_migrate_extra_env_vars(self):
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'FOO': 'bar', 'RETRIES': 3}}}})
+        self.assertEqual((env['FOO'], env['RETRIES']), ('bar', '3'))
+        # YAML 1.1 boolean-like names must still render as strings (env.name is a string).
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'TRUE': 'a', 'ON': 'b'}}}})
+        self.assertEqual((env.get('TRUE'), env.get('ON')), ('a', 'b'))
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'POSTGRES_HOST': 'x'}}}},
+                   'caradhras.migrations.extraEnvVars.POSTGRES_HOST duplicates a chart-owned env')
+
+    def test_migrate_extra_env_var_names_are_schema_checked(self):
+        # A name Kubernetes rejects must fail at values validation, not at apply.
+        # Helm versions word (and locate) the schema error differently; the
+        # pattern itself is in every one of them.
+        pattern = '^[-._a-zA-Z][-._a-zA-Z0-9]*$'
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'BAD=NAME': 'x'}}}}, pattern)
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}}, pattern)
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
+        self.assertEqual(env['my.var-1_X'], 'ok')
+
+    def caradhras_license(self, secrets=None, **caradhras):
+        docs = self.succeeds({'caradhras': {**caradhras, **({'secrets': secrets} if secrets else {})}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        env = {e['name']: e for e in deployment['spec']['template']['spec']['containers'][0]['env']}
+        secret = next((d for d in docs if d['kind'] == 'Secret'
+                       and d['metadata']['name'].endswith('-caradhras')), None)
+        return env.get('LICENSE_KEY'), secret
+
+    def test_caradhras_license_key_from_chart_secret(self):
+        env, secret = self.caradhras_license({'LICENSE_KEY': 'lic-123'})
+        self.assertEqual(env['valueFrom']['secretKeyRef'],
+                         {'name': 'startup-test-caradhras', 'key': 'LICENSE_KEY', 'optional': True})
+        self.assertEqual(base64.b64decode(secret['data']['LICENSE_KEY']), b'lic-123')
+        self.assertNotIn('redisEndpoint', secret['data'])
+
+    def test_caradhras_license_key_from_existing_secret(self):
+        env, secret = self.caradhras_license(useExistingSecret=True, existingSecretName='operator-secret')
+        self.assertEqual(env['valueFrom']['secretKeyRef'], {'name': 'operator-secret', 'key': 'LICENSE_KEY', 'optional': True})
+        self.assertIsNone(secret)
+
+    def test_caradhras_existing_secret_with_plain_session_endpoint(self):
+        docs = self.succeeds({'caradhras': {'useExistingSecret': True, 'existingSecretName': 'operator-license',
+                                            'configmap': {'redisEndpoint': 'valkey:6379'}}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        env = {e['name']: e for e in deployment['spec']['template']['spec']['containers'][0]['env']}
+        self.assertEqual(env['LICENSE_KEY']['valueFrom']['secretKeyRef']['name'], 'operator-license')
+        self.assertNotIn('redisEndpoint', env)
+        configmap = next(d for d in docs if d['kind'] == 'ConfigMap' and d['metadata']['name'].endswith('-caradhras'))
+        self.assertEqual(configmap['data']['redisEndpoint'], 'valkey:6379')
+
+    def test_caradhras_without_license_key_renders_no_env(self):
+        env, secret = self.caradhras_license()
+        self.assertIsNone(env)
+        self.assertIsNone(secret)
+
+    def test_caradhras_redis_endpoint_only_secret_has_no_license_key(self):
+        env, secret = self.caradhras_license({'redisEndpoint': 'valkey:6379,100,pw'})
+        self.assertIsNone(env)
+        self.assertEqual(list(secret['data']), ['redisEndpoint'])
 
 
 if __name__ == '__main__':

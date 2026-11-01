@@ -29,6 +29,7 @@ spec:
       labels:
         {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: 55
       {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -92,6 +93,20 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_SSLMODE
+            {{- with .Values.caradhras.migrations }}
+            {{- if .skipRBACChain }}
+            # Schema chain only; RBAC arrives via RI manifests. Needs an image that reads it.
+            - name: MIGRATIONS_SKIP_RBAC_CHAIN
+              value: "true"
+            {{- end }}
+            {{- range $name, $value := .extraEnvVars }}
+            {{- if has $name (list "POSTGRES_HOST" "POSTGRES_PORT" "POSTGRES_DB" "POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_SSLMODE" "MIGRATIONS_SKIP_RBAC_CHAIN") }}
+            {{- fail (printf "caradhras.migrations.extraEnvVars.%s duplicates a chart-owned env of the migrate init container; use the chart value instead" $name) }}
+            {{- end }}
+            - name: {{ $name | quote }}
+              value: {{ $value | toString | quote }}
+            {{- end }}
+            {{- end }}
       containers:
         - name: {{ include "plugin-caradhras.fullname" . }}
           # Caradhras (beego) writes to its working dir at runtime — logs/caradhras.log and
@@ -143,14 +158,31 @@ spec:
                 name: {{ include "plugin-auth.fullname" . }}
                 key: DB_SSLMODE
           {{- include "plugin-auth.dbPasswordEnv" (dict "context" $ "envName" "DB_PASSWORD") | nindent 10 }}
+          {{- if (.Values.caradhras.migrations).skipRBACChain }}
+          # The boot schema check must skip the chain the migrate init container skipped,
+          # or any image with a newer rbac head crash-loops. Needs an image that reads it.
+          - name: MIGRATIONS_SKIP_RBAC_CHAIN
+            value: "true"
+          {{- end }}
           {{- if include "plugin-caradhras.sessionFromSecret" . }}
           # Beego session store. Delivered by Secret, never by ConfigMap: the
           # connection string's third field is the Redis password.
           - name: redisEndpoint
             valueFrom:
               secretKeyRef:
-                name: {{ include "plugin-caradhras.sessionSecretName" . }}
+                name: {{ include "plugin-caradhras.secretName" . }}
                 key: redisEndpoint
+          {{- end }}
+          {{- if or (.Values.caradhras.secrets | default dict).LICENSE_KEY .Values.caradhras.useExistingSecret }}
+          # Caradhras refuses to boot without its own license key (product
+          # `caradhras`, not the auth/identity key). optional: a Secret lacking
+          # the key renders no env, so older images keep booting on upgrade.
+          - name: LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "plugin-caradhras.secretName" . }}
+                key: LICENSE_KEY
+                optional: true
           {{- end }}
           {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
           {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}
@@ -165,6 +197,11 @@ spec:
           {{ end }}
           resources:
             {{- toYaml .Values.caradhras.resources | nindent 12 }}
+          # Serve 15s before SIGTERM while endpoints deregister; grace = 15 + SHUTDOWN_TIMEOUT_SEC (30) + 10.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "15"]
           readinessProbe:
             httpGet:
               path: {{ .Values.caradhras.readinessProbe.path | default "/api/readyz" }}

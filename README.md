@@ -2,7 +2,7 @@
 
 ![banner](image/README/midaz-banner.png)
 
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
+[![License: Elastic-2.0](https://img.shields.io/badge/License-Elastic_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Lerian%20Studio-%237289da.svg?logo=discord)](https://discord.gg/DnhqKwkGv3)
 
 ## Chart Maintenance
@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `9.0.0` | 3.8.3 | 3.8.2 |
+| `10.1.1` | 4.4.0 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `9.2.0` | 3.1.0 | 3.1.0 | 1.2.0 |
+| `10.2.2` | 3.14.0 | 3.14.0 | 1.8.6 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -50,7 +50,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `8.0.1` | 3.4.0 | `3.0.0` |
+| `9.0.1` | 3.4.0 | `3.0.0` |
 
 -----------------
 
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `4.2.0` | 3.0.0 | 3.0.0 |
+| `5.1.1` | 4.6.0 | 4.6.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0 |
+| `3.0.4` | 3.4.0 |
 -----------------
 
 
@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.4.0` | 1.13.0-beta.1 | 1.13.0-beta.1 |
+| `0.5.9` | 1.5.0 | 1.5.0 |
 -----------------
 
 ### BR JD Courier
@@ -110,7 +110,7 @@ The release bumps `jd-courier.image.tag`, which is the column below.
 
 | Chart Version | Br-Jd-Courier Version |
 | :---: | :---: |
-| `1.0.0` | 1.1.0 |
+| `2.1.2` | 1.2.1 |
 -----------------
 
 ### Plugin BR Pix Lerian
@@ -121,7 +121,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0-beta.337 |
+| `2.0.3` | 1.1.0 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `4.0.0` | 1.10.0 | 1.10.0 | 1.10.0 | 1.10.0 | 1.10.0 |
+| `5.2.2` | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 |
 
 -----------------
 
@@ -146,7 +146,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0` | 1.0.0-beta.9 |
+| `2.0.2` | 1.0.2 |
 -----------------
 
 ### Fetcher
@@ -159,7 +159,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.1.0` | 3.0.2 | 3.0.2 |
+| `4.0.1` | 3.1.1 | 3.1.1 |
 -----------------
 
 ### Tracer
@@ -172,7 +172,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `2.1.0` | 1.0.0 |
+| `3.1.0` | 1.0.0 |
 -----------------
 
 ### Alloy Lerian
@@ -185,7 +185,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Alloy Version |
 | :---: | :---: |
-| `1.0.0` | 1.18.1 |
+| `2.0.3` | 1.18.1 |
 -----------------
 
 ### Otel Collector Lerian
@@ -201,7 +201,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `4.2.0` | 0.142.0 |
+| `4.3.1` | 0.142.0 |
 -----------------
 
 ### Product Console
@@ -214,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `4.0.0` | 1.10.0 |
+| `4.4.8` | 3.0.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -225,7 +225,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.2.0` | 1.0.0 |
+| `3.0.2` | 1.2.0 |
 
 -----------------
 
@@ -248,7 +248,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version | Migrations Version |
 | :---: | :---: | :---: |
-| `1.2.0` | `1.2.0` | `1.2.0` |
+| `1.4.1` | 1.1.0 | 1.1.0 |
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------
 
@@ -262,7 +262,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Sisbajud Version | Migrations Version |
 | :---: | :---: | :---: |
-| `1.0.0` | `1.0.0-beta.1` | `1.0.0-beta.1` |
+| `1.1.1` | 1.1.0 | 1.1.0 |
 -----------------
 
 ### Plugin BR TED Lerian
@@ -275,7 +275,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | `1.0.0-beta.33` |
+| `1.1.0` | 1.0.0-beta.64 |
 -----------------
 
 ### BR Consignado GW
@@ -301,7 +301,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version | Migrations Version |
 | :---: | :---: | :---: | :---: |
-| `1.0.0` | `1.0.0` | `1.0.0` | `1.0.0` |
+| `1.0.3` | 1.0.0 | 1.0.0 | 1.0.0 |
 -----------------
 
 ### Agent
@@ -314,7 +314,20 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Agent Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.2 |
+| `1.0.3` | 1.0.2 |
+-----------------
+
+### Streaming Hub
+
+Event delivery edge: consumes lib-streaming CloudEvents from Redpanda and fans them out per tenant to webhooks and queues.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/streaming-hub).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `2.0.1` | 3.0.0 |
 -----------------
 
 ### Lerian Common (Library)
@@ -327,7 +340,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `2.1.0` |
+| `2.4.2` |
 -----------------
 
 ### System Facts
@@ -338,5 +351,10 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | System-Facts Version |
 | :---: | :---: |
-| `1.0.0` | 1.0.0 |
+| `1.1.1` | 1.1.0 |
 -----------------
+
+## License
+
+Copyright 2024 Lerian Studio Ltd. Licensed under the Elastic License 2.0. See
+[LICENSE](LICENSE).

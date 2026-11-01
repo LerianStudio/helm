@@ -76,7 +76,7 @@ spec:
               port: {{ .Values.identity.service.port }}
             initialDelaySeconds: {{ .Values.identity.readinessProbe.initialDelaySeconds | default 25 }}
             periodSeconds: {{ .Values.identity.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds | default 8 }}
             successThreshold: {{ .Values.identity.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.identity.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -85,7 +85,7 @@ spec:
               port: {{ .Values.identity.service.port }}
             initialDelaySeconds: {{ .Values.identity.livenessProbe.initialDelaySeconds | default 30 }}
             periodSeconds: {{ .Values.identity.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.identity.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold | default 3 }}
           {{- if .Values.identity.startupProbe.enabled }}

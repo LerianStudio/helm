@@ -55,13 +55,10 @@ data:
   # =============================================================================
   TLS_TERMINATED_UPSTREAM: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "TLS_TERMINATED_UPSTREAM" "params" (index .Values "system-facts") "field" "tlsTerminatedUpstream" "default" "true") | quote }}
   DEFAULT_TENANT_ID: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "DEFAULT_TENANT_ID" "params" (index .Values "system-facts") "field" "defaultTenantId" "default" "11111111-1111-1111-1111-111111111111") | quote }}
-  {{- /* License gate inputs (README: system-facts.configmap.ORGANIZATION_IDS / LICENSE_ENABLED).
-         Rendered only when set, so an install that leaves them out keeps the app defaults. */}}
+  {{- /* License gate inputs (README: system-facts.configmap.ORGANIZATION_IDS).
+         Rendered only when set, so an install that leaves it out keeps the app default. */}}
   {{- with (index .Values "system-facts").configmap.ORGANIZATION_IDS }}
   ORGANIZATION_IDS: {{ . | toString | quote }}
-  {{- end }}
-  {{- if hasKey ((index .Values "system-facts").configmap | default dict) "LICENSE_ENABLED" }}
-  LICENSE_ENABLED: {{ (index .Values "system-facts").configmap.LICENSE_ENABLED | toString | quote }}
   {{- end }}
 
   # =============================================================================
@@ -96,6 +93,22 @@ data:
   # AUTH — resolved from the global.auth contract (configmap overrides)
   # =============================================================================
   {{- include "lerian-common.auth.env" (dict "context" $ "configmap" (index .Values "system-facts").configmap "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "http://plugin-access-manager-auth:4000") | nindent 2 }}
+
+  # =============================================================================
+  # PERMISSION DECLARATION (RI) — lib-auth declaration.WireFromEnv, rendered by
+  # lerian-common.idp.env. Precedence: system-facts.configmap.<KEY> >
+  # system-facts.extraEnvVars entry (legacy) > global.idp.<field> > default.
+  # IDP_DECLARATION_ENABLED is always rendered (default "false"); IDP_HOST only
+  # when non-empty. extraEnvVars is a name/value list here, so its IDP_* entries
+  # are folded into a map for the helper and skipped in the passthrough below.
+  # The client pair (IDP_M2M_CLIENT_ID/SECRET) lives in the Secret.
+  # =============================================================================
+  {{- $idpEnvKeys := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
+  {{- $idpExtra := dict }}
+  {{- range ((index .Values "system-facts").extraEnvVars | default list) }}
+  {{- if has .name $idpEnvKeys }}{{- $_ := set $idpExtra .name .value }}{{- end }}
+  {{- end }}
+  {{- include "lerian-common.idp.env" (dict "context" $ "configmap" (index .Values "system-facts").configmap "extraEnvVars" $idpExtra) | nindent 2 }}
 
   # Infrastructure boot timeout
   INFRA_CONNECT_TIMEOUT_SEC: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "INFRA_CONNECT_TIMEOUT_SEC" "params" (index .Values "system-facts") "field" "infraConnectTimeoutSec" "default" "30") | quote }}
@@ -181,10 +194,12 @@ data:
         "cloudeventsSource" (dig "streaming" "cloudeventsSource" (index .Values "system-facts").name (index .Values "system-facts"))
       )) }}{{ . | nindent 2 }}{{- end }}
 
-  # Extra Env Vars
+  # Extra Env Vars (IDP_DECLARATION_ENABLED / IDP_HOST here already fed lerian-common.idp.env)
   {{- with (index .Values "system-facts").extraEnvVars }}
   {{- range . }}
+  {{- if not (has .name $idpEnvKeys) }}
   {{ .name }}: {{ .value | quote }}
+  {{- end }}
   {{- end }}
   {{- end }}
 {{- end }}

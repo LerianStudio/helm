@@ -7,7 +7,7 @@ description: >-
 type: application
 annotations:
   lerian.studio/chart-type: single-service
-version: 1.0.2
+version: 1.0.3
 appVersion: "1.0.2"
 # The floor is the oldest Kubernetes the fleet actually boots and installs
 # this chart on, not the oldest one its API versions would tolerate

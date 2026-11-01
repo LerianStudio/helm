@@ -19,6 +19,11 @@ global:
   # Env-wide plugin-access-manager auth.
   auth: {}
   #   host: "http://plugin-access-manager-auth:4000"
+  # Env-wide Access Manager permission declaration (RI). The gate is per
+  # component (system-facts.configmap.IDP_DECLARATION_ENABLED); the client pair
+  # goes in system-facts.secrets.IDP_M2M_CLIENT_ID / IDP_M2M_CLIENT_SECRET.
+  idp: {}
+  #   host: "http://plugin-access-manager-identity:4001"
   # Env-wide multi-tenant infra (only used when system-facts.multiTenant.enabled=true).
   multiTenant: {}
   #   url: "http://tenant-manager:8080"
@@ -97,16 +102,15 @@ system-facts:
   # override: a key listed here with "" renders "" instead of the global or bundled
   # endpoint. Add a key only to diverge from global.* for this service.
   configmap:
-    # Required while the license gate is on (the application default).
+    # Required: the application refuses to boot without a valid license.
     ORGANIZATION_IDS: ""
-  #   LICENSE_ENABLED: "false"              # turns the license gate off
   #   POSTGRES_HOST: "my-rds.example.com"   # only to override global.datastores.postgres
   #   REDIS_HOST: "my-elasticache.example.com:6379"
 
   secrets:
     POSTGRES_PASSWORD: ""
     REDIS_PASSWORD: ""
-    # Required while the license gate is on (the application default).
+    # Required: the application refuses to boot without a valid license.
     LICENSE_KEY: ""
 
   useExistingSecret: false

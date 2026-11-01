@@ -214,7 +214,7 @@ legacy overrides and then the defaults below.
 {{- end }}
 
 {{- define "caradhras.imageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.5.1") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.8.6") -}}
 {{- end }}
 
 {{- define "caradhras.imagePullPolicy" -}}
@@ -248,7 +248,7 @@ legacy overrides remain visible, including to the repository guard below.
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.5.1") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.8.6") -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImagePullPolicy" -}}
@@ -266,11 +266,11 @@ otherwise silently revert to the 1s default on upgrade and start flapping
 into CrashLoopBackOff from probe failures alone.
 */}}
 {{- define "caradhras.readinessProbeTimeoutSeconds" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.readinessProbe.timeoutSeconds "oldVal" (dig "backend" "readinessProbe" "timeoutSeconds" "" .Values.auth) "default" 1) -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.readinessProbe.timeoutSeconds "oldVal" (dig "backend" "readinessProbe" "timeoutSeconds" "" .Values.auth) "default" 3) -}}
 {{- end }}
 
 {{- define "caradhras.livenessProbeTimeoutSeconds" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.livenessProbe.timeoutSeconds "oldVal" (dig "backend" "livenessProbe" "timeoutSeconds" "" .Values.auth) "default" 1) -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.livenessProbe.timeoutSeconds "oldVal" (dig "backend" "livenessProbe" "timeoutSeconds" "" .Values.auth) "default" 3) -}}
 {{- end }}
 
 {{/*
@@ -429,15 +429,15 @@ leftover `replicaCount` is inert and must not be read as intent.
 {{- end }}
 
 {{/*
-plugin-caradhras.sessionSecretName — name of the Secret holding the caradhras
-`redisEndpoint` connection string. Same convention as auth/identity:
+plugin-caradhras.secretName — name of the Secret holding the caradhras secret
+keys (`redisEndpoint`, `LICENSE_KEY`). Same convention as auth/identity:
 `caradhras.useExistingSecret` hands the Secret over to the operator,
 `caradhras.existingSecretName` names it; otherwise the chart owns
 <release>-caradhras (templates/caradhras/secrets.yaml).
 */}}
-{{- define "plugin-caradhras.sessionSecretName" -}}
+{{- define "plugin-caradhras.secretName" -}}
 {{- if .Values.caradhras.useExistingSecret -}}
-{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the redisEndpoint key.\n" .Values.caradhras.existingSecretName -}}
+{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the LICENSE_KEY key (and redisEndpoint, unless caradhras.configmap.redisEndpoint is set).\n" .Values.caradhras.existingSecretName -}}
 {{- else -}}
 {{- include "plugin-caradhras.fullname" . -}}
 {{- end -}}
@@ -447,12 +447,13 @@ plugin-caradhras.sessionSecretName — name of the Secret holding the caradhras
 plugin-caradhras.sessionFromSecret — "true" when the session endpoint is
 delivered by Secret: either inline in `caradhras.secrets.redisEndpoint` (the
 chart writes the Secret) or in an operator-managed Secret
-(`caradhras.useExistingSecret` + `existingSecretName`, key `redisEndpoint`).
+(`caradhras.useExistingSecret` + `existingSecretName`, key `redisEndpoint`),
+unless `caradhras.configmap.redisEndpoint` is set: that Secret then carries only LICENSE_KEY.
 */}}
 {{- define "plugin-caradhras.sessionFromSecret" -}}
 {{- $secrets := .Values.caradhras.secrets | default dict -}}
 {{- $inline := $secrets.redisEndpoint | default "" | toString -}}
-{{- $existing := and .Values.caradhras.useExistingSecret (.Values.caradhras.existingSecretName | default "") -}}
+{{- $existing := and .Values.caradhras.useExistingSecret (.Values.caradhras.existingSecretName | default "") (not (include "plugin-caradhras.sessionFromConfigMap" .)) -}}
 {{- if or $inline $existing -}}true{{- end -}}
 {{- end }}
 
@@ -491,7 +492,7 @@ store. Included once, from templates/caradhras/configmap.yaml (always rendered).
 */}}
 {{- define "plugin-caradhras.validateSessionStore" -}}
 {{- if and .Values.caradhras.useExistingSecret (not (.Values.caradhras.existingSecretName | default "")) -}}
-{{- fail "caradhras.useExistingSecret is true but caradhras.existingSecretName is empty. Without a name the chart creates no Secret and wires no endpoint, so caradhras would silently fall back to per-pod file sessions. Name the Secret holding the redisEndpoint key, or set caradhras.useExistingSecret=false." -}}
+{{- fail "caradhras.useExistingSecret is true but caradhras.existingSecretName is empty. Without a name the chart creates no Secret, so caradhras gets no LICENSE_KEY and, unless caradhras.configmap.redisEndpoint is set, no session endpoint. Name the Secret holding LICENSE_KEY (plus redisEndpoint when the ConfigMap has none), or set caradhras.useExistingSecret=false." -}}
 {{- end -}}
 {{- $ccm := .Values.caradhras.configmap | default dict -}}
 {{- $plain := $ccm.redisEndpoint | default "" | toString -}}

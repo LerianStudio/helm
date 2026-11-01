@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `system-facts.secrets.POSTGRES_PASSWORD` (no default). `system-facts.secrets.LICENSE_KEY` (with `system-facts.configmap.ORGANIZATION_IDS`) unless the license gate is turned off with `LICENSE_ENABLED=false`: the application's license gate is on by default and refuses to boot without a key. `REDIS_PASSWORD` only when Redis/Valkey auth is on, `MULTI_TENANT_SERVICE_API_KEY` and `MULTI_TENANT_REDIS_PASSWORD` only when `system-facts.multiTenant.enabled=true`. When the bootstrap Job runs, `global.externalPostgresDefinitions.postgresAdminLogin.password` and `.boilerplateCredentials.password` are required too — or point both at an existing Secret.
+- Required secrets: `system-facts.secrets.POSTGRES_PASSWORD` (no default). `system-facts.secrets.LICENSE_KEY` (with `system-facts.configmap.ORGANIZATION_IDS`): the application refuses to boot without a valid key. `REDIS_PASSWORD` only when Redis/Valkey auth is on, `MULTI_TENANT_SERVICE_API_KEY` and `MULTI_TENANT_REDIS_PASSWORD` only when `system-facts.multiTenant.enabled=true`. When the bootstrap Job runs, `global.externalPostgresDefinitions.postgresAdminLogin.password` and `.boilerplateCredentials.password` are required too — or point both at an existing Secret.
 - Dependency notes: `lerian-common-helm` (library, no objects of its own) plus PostgreSQL and Valkey, both declared with exact pins, condition-gated and **disabled by default** — the target environments provide them externally. Archives are not vendored in git; `helm dependency update` resolves them from `Chart.lock`.
 - Access Manager prerequisite: `plugin-access-manager` app **3.11.2 or later** (it catalogs the `system-facts` and `internal-facts-worker` applications), plus `AUTH_M2M_INVERSION_ENABLED` and `AUTH_M2M_PRODUCT_FORWARD_ENABLED` set to `"true"` on the service when authorization is on. See [Access Manager](#access-manager).
 - Production overrides: image tag and pull secrets, ingress host/TLS, resources, autoscaling, `system-facts.configmap.POSTGRES_HOST` / `REDIS_HOST`, and every credential above. Never ship a published default as a production secret.
@@ -118,6 +118,7 @@ global:
     redis: { host: "my-elasticache.example.com", port: "6379" }
   observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   auth: { host: "http://plugin-access-manager-auth:4000" }
+  idp: { host: "http://plugin-access-manager-identity:4001" }
   multiTenant: { url: "http://tenant-manager:8080", redisHost: "my-elasticache.example.com" }
   serviceDiscovery: { address: "consul.internal:8500" }
   streaming: { brokers: "redpanda:9092" }
@@ -226,6 +227,32 @@ The image tag tracks `appVersion` when `worker.image.tag` is empty; the app rele
 `worker.systemFacts.allowInsecureHttp` is for cluster-local URLs inside a namespace whose pod-to-pod traffic is already encrypted (for example `istio.io/dataplane-mode: ambient`) only. The worker logs it as a WARN at every boot, production included.
 
 Both values need a worker image that carries the matching binary change (system-facts #65 and #71). An older image ignores the unknown variables: it still refuses to boot on a plain `http://` URL and still consumes every product.
+
+## Permission declaration (RI)
+
+The API publishes its embedded `permissions.yaml` to the Access Manager at boot (lib-auth `declaration.WireFromEnv`). It is off by default; with the gate on, the app refuses to boot without the host and the client pair:
+
+```yaml
+global:
+  idp: { host: "http://plugin-access-manager-identity:4001" }
+
+system-facts:
+  configmap:
+    IDP_DECLARATION_ENABLED: "true"
+  secrets:
+    IDP_M2M_CLIENT_ID: "<client-id>"
+    IDP_M2M_CLIENT_SECRET: "<client-secret>"
+```
+
+| Key | Where | Rendered |
+|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `system-facts.configmap` > `system-facts.extraEnvVars` entry (legacy) > `global.idp.declarationEnabled` | ConfigMap, always, default `"false"` |
+| `IDP_HOST` | same precedence, with `global.idp.host` | ConfigMap, only when non-empty |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | `system-facts.secrets` | Secret, each only when non-empty |
+
+- All four keys are rendered by `lerian-common.idp.*` and come out once each: `IDP_*` entries in `system-facts.extraEnvVars` still work, but feed the helper instead of the raw passthrough.
+- With `useExistingSecret: true`, put the client pair in the existing Secret.
+- Prefer the gate in `system-facts.configmap`: `global.idp.declarationEnabled` turns it on for every component of the release, and each one then needs its own client pair. The worker never declares and renders none of these keys.
 
 ## Environment variables
 

@@ -93,3 +93,7 @@ agent:
 system-facts:
   - changed-files:
       - any-glob-to-any-file: charts/system-facts/**
+
+streaming-hub:
+  - changed-files:
+      - any-glob-to-any-file: charts/streaming-hub/**

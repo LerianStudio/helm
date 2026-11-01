@@ -5,8 +5,9 @@
 # reference keys, which are required unless the environment is development).
 # kind has no license, no external Postgres or Valkey, and no Access Manager, so the
 # gate installs the chart's other supported topology: bundled Postgres and Valkey,
-# with the workload running as a development-class environment and the license gate
-# off. The production guards themselves are the application's contract, not the
+# with the workload running as a development-class environment. The license gate
+# has no off switch: the key comes from HELM_CI_LICENSE_KEY_SYSTEM_FACTS through the
+# IT_LICENSE_KEY placeholder below. The production guards themselves are the application's contract, not the
 # chart's.
 #
 # The chart pins `namespaceOverride: system-facts` while this gate installs with
@@ -20,9 +21,8 @@ namespaceOverride: "it-system-facts"
 system-facts:
   env: "development"
   allowInsecureTls: "true"
-  extraEnvVars:
-    - name: LICENSE_ENABLED
-      value: "false"
+  secrets:
+    LICENSE_KEY: "IT_LICENSE_KEY" # CI license placeholder (README)
   # The bundled subcharts own both passwords (the Deployment reads them from the
   # subchart Secrets), and the chart refuses a POSTGRES_PASSWORD it would ignore.
 migrations:

@@ -11,7 +11,7 @@
 - Bundled broker login: with `rabbitmq.enabled` the broker's only user is `secrets.RABBITMQ_DEFAULT_USER` (tag `management`, which the app's broker health check needs) with `secrets.RABBITMQ_DEFAULT_PASS`. Until the manager and the worker escape the password in their broker URL, only letters, digits and `-._~` are safe in it: a space, `"`, `\`, a backtick, `/`, `#`, `?`, `%` or a non-ASCII letter crash-loops the manager. The render refuses an empty password, the passwords printed in this chart (`reporter123` and `Lerian@123`, defaults of earlier versions, and the `CHANGE_ME` placeholder), and `manager.useExistingSecret` or `worker.useExistingSecret` (the broker never learns an external Secret's password). The broker takes the password when its pod starts: after changing it, or after upgrading from a version that shipped `reporter123`, run `kubectl -n <namespace> rollout restart statefulset/<release>-rabbitmq`. The broker's volume keeps the users it already has: after renaming `secrets.RABBITMQ_DEFAULT_USER`, delete the old one with `kubectl -n <namespace> exec <release>-rabbitmq-0 -- rabbitmqctl delete_user <old-user>`.
 - Dependency notes: Uses local MongoDB and RabbitMQ dependency charts unless external services are configured.
 - Production overrides: Provide reporting database and messaging credentials through chart secrets or existing Secrets where supported; override manager/worker image tags, ingress, resources, KEDA settings, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 ## Overview
 

@@ -6,7 +6,7 @@
 - Required secrets: None for default render.
 - Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured. Also depends on `lerian-common-helm` (shared library chart) for the HPA/PDB/Service/Ingress templates and the `global.*` config masks below.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 A Helm chart for deploying Product Console - Lerian Studio's web interface for managing Midaz ledger.
 

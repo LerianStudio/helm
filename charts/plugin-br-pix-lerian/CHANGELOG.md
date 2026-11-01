@@ -1,5 +1,446 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Raised the probe timeout default to `3s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
+Improvements:
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Set the Pix Lerian chart to default to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Defaulted the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent behavior across environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent behavior in production environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent behavior across environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Defaulted the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+- Default the Pix Lerian chart to production posture to ensure consistent deployment behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
+
+Fixes:
+
+- Default the Pix Lerian chart to production posture to ensure consistent deployment settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.0...plugin-br-pix-lerian-v2.0.1)
+
+---
+
 ## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.1)
 
 Fixes:

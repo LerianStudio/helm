@@ -16,6 +16,11 @@ spec:
       {{- include "schedule.selectorLabels" (dict "context" . "name" .Values.schedule.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/schedule/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.schedule.useExistingSecrets }}
+        checksum/secret: {{ include (print $.Template.BasePath "/schedule/secrets.yaml") . | sha256sum }}
+        {{- end }}
       labels:
         {{- include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | nindent 8 }}
     spec:
@@ -58,7 +63,7 @@ spec:
               port: {{ .Values.schedule.service.port }}
             initialDelaySeconds: {{ .Values.schedule.readinessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.schedule.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.schedule.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.schedule.readinessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.schedule.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.schedule.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -67,7 +72,7 @@ spec:
               port: {{ .Values.schedule.service.port }}
             initialDelaySeconds: {{ .Values.schedule.livenessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.schedule.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.schedule.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.schedule.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.schedule.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.schedule.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.schedule.nodeSelector }}

@@ -32,6 +32,7 @@ worker:
 secrets:
   RABBITMQ_DEFAULT_PASS: "test-only"
   DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+  LICENSE_KEY: "test-only"
 """
 
 
@@ -81,6 +82,7 @@ manager:
 secrets:
   RABBITMQ_DEFAULT_PASS: "test-only"
   DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+  LICENSE_KEY: "test-only"
   IDP_M2M_CLIENT_ID: "test-client"
   IDP_M2M_CLIENT_SECRET: "test-secret"
 """)

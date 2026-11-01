@@ -6,7 +6,7 @@
 - Required secrets: `fees.secrets.CLIENT_SECRET`; multi-tenant API/cache secrets are required when multi-tenancy is enabled. The MongoDB password is **not** an operator-provided secret with the bundled MongoDB: the Bitnami `mongodb` subchart auto-generates it into the `<release>-mongodb` Secret (key `mongodb-root-password`) and the app reads it via `secretKeyRef`. For an external MongoDB (`mongodb.external=true`), supply it via `mongodb.auth.existingSecret` or set `fees.secrets.MONGO_PASSWORD`.
 - Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
 - Production overrides: Provide fees, MongoDB, client, AWS, and multi-tenant credentials through chart secrets or existing Secrets where supported; override API/UI image tags, ingress, resources, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 This Helm chart installs **Plugin Fees** for Midaz, a high-performance ledger.
 

@@ -257,7 +257,7 @@ ledger:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.3.0"
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -538,6 +538,8 @@ ledger:
     # encryption). The RoleID counterpart is not secret and stays in the
     # ConfigMap.
     KMS_VAULT_SECRET_ID: ""
+    # -- Product license key. Required: the ledger refuses to boot when empty.
+    LICENSE_KEY: ""
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
     # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
@@ -806,7 +808,7 @@ tracer:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "4.3.0"
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -988,6 +990,8 @@ tracer:
     DB_PASSWORD: ""
     # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
     API_KEY: ""
+    # -- Product license key. Required: the tracer refuses to boot when empty.
+    LICENSE_KEY: ""
     # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
     # MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Optional Redis password for the tenant connection-pool registry.
@@ -1212,7 +1216,7 @@ otel-collector-lerian:
   enabled: true
 midaz-ledger-migrations:
   image:
-    tag: 4.3.0
+    tag: 4.4.0
 midaz-tracer-migrations:
   image:
-    tag: 4.3.0
+    tag: 4.4.0

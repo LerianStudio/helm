@@ -81,7 +81,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: ghcr.io/lerianstudio/system-facts-worker:1.0.0
+          value: ghcr.io/lerianstudio/system-facts-worker:1.1.0
 
   - it: turns the consumer on and never emits the producer variables or the fixed scope
     template: templates/worker-configmap.yaml

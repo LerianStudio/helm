@@ -1,5 +1,501 @@
 # Plugin-fees Changelog
 
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`, providing detailed instructions for users to upgrade smoothly. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`, ensuring clarity and accuracy. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`, providing users with detailed instructions on how to upgrade to the new version. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`, ensuring clarity and accuracy in the upgrade process. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct flag semantics and rollout instructions in the `v9.0` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`, providing users with detailed instructions on how to upgrade to this version. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`, ensuring clarity and accuracy in the upgrade process. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on flags that default to true in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags, ensuring correct behavior for `plugin-fees`. (@fredcamaral)
+
+Improvements:
+
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for plugin-fees, ensuring accurate configuration behavior. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for updating. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags, ensuring accurate representation of flag states. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4` to assist users in transitioning smoothly to the new version. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags, ensuring correct behavior for boolean flags in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for upgrading. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for `plugin-fees`, ensuring accurate flag representation. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with necessary upgrade instructions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate configuration. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4` to assist users in updating their configurations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags for plugin-fees, ensuring correct behavior. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for plugin-fees `v8.0.4`, providing users with detailed instructions for updating. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in the plugin-fees configuration. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for plugin-fees, ensuring accurate flag representation. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for upgrading. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags, ensuring accurate representation of boolean values in plugin-fees. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for upgrading. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for `plugin-fees`, ensuring accurate flag representation. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4` to assist users in updating their configurations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for plugin-fees. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure correct behavior. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate flag behavior. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags, ensuring correct behavior for these flags. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for upgrading. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
 ## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
 
 Fixes:

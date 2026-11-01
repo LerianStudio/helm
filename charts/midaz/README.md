@@ -255,7 +255,7 @@ Midaz deploys the following core services:
 | `ledger.enabled` | Enable or disable the ledger service. | `true` |
 | `ledger.name` | Service name. | `"ledger"` |
 | `ledger.replicaCount` | Number of replicas for the ledger service. | `2` |
-| `ledger.terminationGracePeriodSeconds` | Seconds Kubernetes waits after SIGTERM before killing the pod; must cover the shutdown drain (HTTP, streaming events, producer flush). `tracer.terminationGracePeriodSeconds` works the same way (default `45`). | `60` |
+| `ledger.terminationGracePeriodSeconds` | Seconds Kubernetes waits after SIGTERM before killing the pod; must cover the shutdown drain (HTTP, streaming events, producer flush). `tracer.terminationGracePeriodSeconds` works the same way (default `55`). | `72` |
 | `ledger.image.repository` | Repository for the ledger service container image. | `"lerianstudio/midaz-ledger"` |
 | `ledger.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
 | `ledger.image.tag` | Image tag used for deployment. | See `values.yaml` |

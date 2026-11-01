@@ -100,6 +100,8 @@ spec:
           - configMapRef:
               name: {{ include "midaz-ledger.fullname" . }}
           env:
+            - name: SHUTDOWN_DRAIN_DELAY
+              value: "15s"
             {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
             {{/* PostgreSQL: single role `midaz` backs both modules, key `password`. The bundled read replica
                  copies the primary's roles, so its replicas use `password` too; an operator Secret for an

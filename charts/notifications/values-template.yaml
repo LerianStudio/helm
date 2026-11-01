@@ -6,9 +6,8 @@
 api:
   replicaCount: 1
   image:
-    repository: docker.io/lerianstudio/notifications
     pullPolicy: Always
-    tag: ""  # set per release (e.g. "0.1.0-rc.1")
+    tag: ""
   ingress:
     enabled: false
     className: "nginx"
@@ -28,7 +27,6 @@ workerEmail:
   enabled: true
   replicaCount: 1
   image:
-    repository: docker.io/lerianstudio/notifications-worker-email
     pullPolicy: Always
     tag: ""
 
@@ -36,7 +34,6 @@ workerSms:
   enabled: true
   replicaCount: 1
   image:
-    repository: docker.io/lerianstudio/notifications-worker-sms
     pullPolicy: Always
     tag: ""
 
@@ -44,7 +41,6 @@ workerWebhook:
   enabled: true
   replicaCount: 1
   image:
-    repository: docker.io/lerianstudio/notifications-worker-webhook
     pullPolicy: Always
     tag: ""
 

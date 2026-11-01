@@ -12,7 +12,7 @@ Returns YAML; the caller reads it with `fromYaml` and places each key:
   {{- $h := include "lerian-common.health" (dict
         "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health
         "port" .Values.ledger.service.port "minImage" "v3.1.0"
-        "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) | fromYaml }}
+        "autoscaling" .Values.ledger.autoscaling) | fromYaml }}
 
   replicas / strategy       Deployment spec (`toYaml`)
   autoscaling               only when the caller's autoscaling is enabled on a non-singleton: its map with
@@ -66,11 +66,8 @@ port, chart-owned), replicas (optional configured count), autoscaling (optional)
 {{- if gt $replicas 1 -}}{{- fail (printf "lerian-common.health: %s: a singleton runs 1 replica, got %v" $n .replicas) -}}{{- end -}}
 {{- if (.autoscaling | default dict).enabled -}}{{- fail (printf "lerian-common.health: %s: a singleton has no autoscaling" $n) -}}{{- end -}}
 {{- end -}}
-{{- range $k := list "drainSeconds" "shutdownSeconds" "startupBudgetSeconds" -}}
-{{- if hasKey $h $k -}}
-{{- if not (regexMatch (ternary "^[0-9]+$" "^[1-9][0-9]*$" (eq $k "drainSeconds")) (toString (index $h $k))) -}}{{- fail (printf "lerian-common.health: %s: health.%s must be an integer number of seconds (drainSeconds >= 0, shutdownSeconds >= 1, startupBudgetSeconds >= 5)" $n $k) -}}{{- end -}}
-{{- if and (eq $k "startupBudgetSeconds") (lt (int $h.startupBudgetSeconds) 5) -}}{{- fail (printf "lerian-common.health: %s: health.startupBudgetSeconds must be >= 5" $n) -}}{{- end -}}
-{{- end -}}
+{{- range $k, $min := dict "drainSeconds" 0 "shutdownSeconds" 1 "startupBudgetSeconds" 5 -}}
+{{- if and (hasKey $h $k) (or (not (regexMatch "^[0-9]+$" (toString (index $h $k)))) (lt (int (index $h $k)) $min)) -}}{{- fail (printf "lerian-common.health: %s: health.%s must be an integer number of seconds >= %d" $n $k $min) -}}{{- end -}}
 {{- end -}}
 {{- $d := 15 -}}{{- if hasKey $h "drainSeconds" -}}{{- $d = int $h.drainSeconds -}}{{- end -}}
 {{- $t := 30 -}}{{- if hasKey $h "shutdownSeconds" -}}{{- $t = int $h.shutdownSeconds -}}{{- end -}}

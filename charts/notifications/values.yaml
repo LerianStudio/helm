@@ -98,7 +98,7 @@ config:
   #    including the default `firmino`, leaves them off.
   ENV_NAME: "firmino"
   LOG_LEVEL: "info"
-  SERVER_ADDRESS: ":8080"
+  SERVER_ADDRESS: "0.0.0.0:8080"
   HTTP_BODY_LIMIT_BYTES: "104857600"
   TLS_TERMINATED_UPSTREAM: "true"
   DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"

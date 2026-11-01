@@ -88,6 +88,22 @@ class StartupContract(unittest.TestCase):
             if d['kind'] == 'HorizontalPodAutoscaler':
                 self.assertGreaterEqual(d['spec']['minReplicas'], 1)
 
+    def test_probes_outwait_checks_and_caradhras_drains(self):
+        docs = self.succeeds({'caradhras': {'ui': {'enabled': True}}})
+        for d in docs:
+            if d['kind'] != 'Deployment':
+                continue
+            name = d['metadata']['name']
+            pod = d['spec']['template']['spec']
+            for c in pod['containers']:
+                for kind in ('readinessProbe', 'livenessProbe', 'startupProbe'):
+                    if kind in c:
+                        floor = 8 if kind == 'readinessProbe' and name.endswith(('-auth', '-identity')) else 3
+                        self.assertGreaterEqual(c[kind]['timeoutSeconds'], floor, f'{name} {kind}')
+            if name.endswith('-caradhras'):
+                self.assertIn('sleep', pod['containers'][0]['lifecycle']['preStop']['exec']['command'])
+                self.assertGreaterEqual(pod['terminationGracePeriodSeconds'], 55)
+
     def test_production_http_is_rejected(self):
         for env in ['production', 'PRODUCTION', 'qa', 'prod']:
             with self.subTest(env=env):

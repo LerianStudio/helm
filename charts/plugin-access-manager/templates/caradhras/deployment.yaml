@@ -29,6 +29,7 @@ spec:
       labels:
         {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: 55
       {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -196,6 +197,11 @@ spec:
           {{ end }}
           resources:
             {{- toYaml .Values.caradhras.resources | nindent 12 }}
+          # Serve 15s before SIGTERM while endpoints deregister; grace = 15 + SHUTDOWN_TIMEOUT_SEC (30) + 10.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "15"]
           readinessProbe:
             httpGet:
               path: {{ .Values.caradhras.readinessProbe.path | default "/api/readyz" }}

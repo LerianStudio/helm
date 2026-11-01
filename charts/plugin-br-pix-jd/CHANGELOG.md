@@ -2,6 +2,25 @@
 
 ## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
 
+Features:
+
+- Added Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Added Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Added Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Corrected the `v0.5.7` upgrade guide to address worker image and license behavior. (@gandalf-at-lerian)
+- Fixed the `v0.5.8` upgrade guide to clarify migration hook behavior. (@gandalf-at-lerian)
+- Updated the `v0.5.6` upgrade guide to include a note on pod roll. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
 Fixes:
 - Stop rendering `IS_DEVELOPMENT` within the plugin, ensuring it does not appear in the output. (@fredcamaral)
 

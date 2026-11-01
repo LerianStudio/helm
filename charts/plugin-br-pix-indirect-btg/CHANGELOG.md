@@ -4,6 +4,16 @@
 
 Fixes:
 
+- Roll pods when a configmap or secret changes to ensure the plugin operates with the latest configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+
 - Roll pods when the configmap or secret changes to ensure the plugin operates with the latest configurations. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)

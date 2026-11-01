@@ -2,6 +2,25 @@
 
 ## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.1)
 
+Features:
+
+- Added a Helm upgrade guide for `system-facts` `v1.0.2`. (@victorlazari)
+
+Fixes:
+
+- Removed the `LICENSE_ENABLED` switch from `system-facts`. (@fredcamaral)
+
+Improvements:
+
+- Reviewed and updated the `system-facts` `v1.1.0` upgrade guide. (@victorlazari, @gandalf-at-lerian)
+- Corrected the `v1.0.2` upgrade guide to address values reuse and migration hook issues. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.0...system-facts-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.1)
+
 Fixes:
 - Remove the `LICENSE_ENABLED` switch from system-facts. (@fredcamaral)
 

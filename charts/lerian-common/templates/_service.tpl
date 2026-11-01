@@ -1,8 +1,8 @@
 {{/*
 ==============================================================================
-lerian-common — Service (ClusterIP, single http port).
+lerian-common — Service (ClusterIP, http port plus the optional internal health port).
 
-Near-identical across charts: a single `http` port with targetPort http. Naming,
+Near-identical across charts: an `http` port with targetPort http, plus the `ports` passed in. Naming,
 labels and selector are passed ALREADY RENDERED by the chart's own helpers, so
 the output is byte-identical and no naming/label contract must be unified. The
 caller owns the enable gate. `namespace` and `annotations` are emitted only when
@@ -47,7 +47,7 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-    {{- if and .ports (eq (toString ($svc.type | default "ClusterIP")) "ClusterIP") }}
+    {{- if and .ports (eq ($svc.type | default "ClusterIP") "ClusterIP") }}
     {{- toYaml .ports | nindent 4 }}
     {{- end }}
   selector:

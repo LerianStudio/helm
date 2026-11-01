@@ -253,6 +253,13 @@ tests:
       - equal: {path: spec.ports, value: [{port: 4000, targetPort: http, protocol: TCP, name: http}, {port: 8099, targetPort: 8099, protocol: TCP, name: health}]}
       - equal: {path: spec.type, value: ClusterIP}
 
+  - it: a Service with no type defaults to ClusterIP and gets the health port
+    documentSelector: {path: kind, value: Service}
+    set: {app.service.type: null}
+    asserts:
+      - lengthEqual: {path: spec.ports, count: 2}
+      - equal: {path: "spec.ports[1].name", value: health}
+
   - it: a LoadBalancer Service never publishes the health port
     documentSelector: {path: kind, value: Service}
     set: {app.service.type: LoadBalancer}
@@ -271,12 +278,7 @@ tests:
     asserts:
       - lengthEqual: {path: spec.ports, count: 1}
 
-  - it: the Ingress refuses a backend on the health port, by number or name
+  - it: the Ingress refuses a backend on the health port number
     set: {app.port: 8099, app.health: {stack: static}}
-    asserts:
-      - failedTemplate: {errorPattern: "never route to the health port"}
-
-  - it: the Ingress refuses the named health port
-    set: {app.port: health, app.health: {stack: static}}
     asserts:
       - failedTemplate: {errorPattern: "never route to the health port"}

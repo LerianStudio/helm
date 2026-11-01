@@ -4,8 +4,10 @@ lerian-common — health preset (probes, drain, grace, rollout, PDB, ALB check).
 
 Liveness is process-only, readiness reports the pod's own state, and a shared
 dependency is only reported: the lib serves /health and /readyz on HEALTH_PORT
-(8099, an internal ClusterIP Service port only: never an Ingress backend). Paths, ports, timings, strategy and grace are not
-values: the preset owns them and the render refuses overrides.
+(8099, an internal ClusterIP Service port only: never an Ingress backend), and
+each multi-tenant app serves /readyz/tenant/:id there too (lib-commons
+commons/health WithTenantChecks). Paths, ports, timings, strategy and grace are
+not values: the preset owns them and the render refuses overrides.
 
 Returns YAML; the caller reads it with `fromYaml` and places each key:
 

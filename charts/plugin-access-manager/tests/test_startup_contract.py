@@ -411,6 +411,14 @@ class StartupContract(unittest.TestCase):
         env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
         self.assertEqual(env['my.var-1_X'], 'ok')
 
+    def test_removed_init_user_job_fails_only_when_enabled(self):
+        self.fails({'auth': {'initUser': {'enabled': True}}}, 'auth.initUser was removed')
+        for init_user in [{'enabled': False, 'adminPassword': 'x'}, {'adminPassword': 'x'}]:
+            with self.subTest(init_user=init_user):
+                docs = self.succeeds({'auth': {'initUser': init_user}})
+                self.assertFalse([d for d in docs if 'init-user' in d['metadata']['name']])
+        self.succeeds({})
+
 
 if __name__ == '__main__':
     unittest.main()

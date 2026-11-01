@@ -2,6 +2,20 @@
 
 ## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
 
+Features:
+
+- State the ledger shutdown grace sum in values to ensure clarity and consistency. (@fredcamaral)
+
+Improvements:
+
+- Document the ledger grace need per lib-commons shutdown model to enhance understanding and implementation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
 Improvements:
 - State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
 - Document the ledger grace requirements per the `lib-commons` shutdown model to improve understanding. (@fredcamaral)

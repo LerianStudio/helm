@@ -12,8 +12,7 @@ import yaml
 
 CHART = Path(__file__).resolve().parents[1]
 BASE = {
-    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'},
-             'initUser': {'enabled': False}},
+    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'}},
     'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'}},
 }
 
@@ -43,14 +42,15 @@ def merge(target, patch):
             target[key] = value
 
 
-def render(patch):
+def render(patch, upgrade=False):
     values = copy.deepcopy(BASE)
     merge(values, patch)
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml') as f:
         yaml.safe_dump(values, f)
         f.flush()
         return subprocess.run(['helm', 'template', 'startup-test', str(CHART),
-                               '-f', f.name], text=True, capture_output=True)
+                               '-f', f.name, *(['--is-upgrade'] if upgrade else [])],
+                              text=True, capture_output=True)
 
 
 def production() -> dict[str, Any]:
@@ -60,8 +60,8 @@ def production() -> dict[str, Any]:
 
 
 class StartupContract(unittest.TestCase):
-    def succeeds(self, patch):
-        result = render(patch)
+    def succeeds(self, patch, upgrade=False):
+        result = render(patch, upgrade)
         self.assertEqual(result.returncode, 0, result.stderr)
         return [d for d in yaml.load_all(result.stdout, Loader=UniqueLoader) if d]
 
@@ -375,14 +375,6 @@ class StartupContract(unittest.TestCase):
         container_ports = {p['name'] for p in deployment['spec']['template']['spec']['containers'][0]['ports']}
         self.assertEqual({p['targetPort'] for p in service['spec']['ports']}, container_ports)
 
-    def test_init_user_post_install_only(self):
-        docs = self.succeeds({'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}}})
-        jobs = [d for d in docs if d['kind'] == 'Job']
-        job = next(d for d in jobs if d['metadata']['name'].endswith('init-user'))
-        self.assertEqual(job['metadata']['annotations']['helm.sh/hook'], 'post-install')
-        self.assertEqual(job['spec']['template']['spec']['containers'][0]['image'],
-                         'ghcr.io/lerianstudio/caradhras-user-init:3.14.0')
-
 
     def migrate_env(self, patch):
         docs = self.succeeds(patch)
@@ -435,6 +427,18 @@ class StartupContract(unittest.TestCase):
         self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}}, pattern)
         env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
         self.assertEqual(env['my.var-1_X'], 'ok')
+
+    def test_removed_init_user_job_fails_only_on_install(self):
+        enabled = {'auth': {'initUser': {'enabled': True}}}
+        self.fails(enabled, 'auth.initUser was removed')
+        # The bundled database subchart refuses an upgrade without its current passwords.
+        db = {'auth-database': {'auth': {'password': 'x', 'postgresPassword': 'x'}}}
+        docs = self.succeeds({**enabled, **db}, upgrade=True)
+        self.assertFalse([d for d in docs if 'init-user' in d['metadata']['name']])
+        for init_user in [{'enabled': False, 'adminPassword': 'x'}, {'adminPassword': 'x'}]:
+            with self.subTest(init_user=init_user):
+                self.succeeds({'auth': {'initUser': init_user}})
+        self.succeeds({})
 
     def caradhras_license(self, secrets=None, **caradhras):
         docs = self.succeeds({'caradhras': {**caradhras, **({'secrets': secrets} if secrets else {})}})

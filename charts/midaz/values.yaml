@@ -751,7 +751,7 @@ tracer:
   revisionHistoryLimit: 10
   # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
   # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
-  terminationGracePeriodSeconds: 45
+  terminationGracePeriodSeconds: 55
   image:
     # -- Repository for the Tracer service container image. In midaz v4 tracer
     # ships from the monorepo (`components/tracer`) and the release pipeline

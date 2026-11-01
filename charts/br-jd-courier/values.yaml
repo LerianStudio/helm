@@ -152,8 +152,9 @@ affinity: {}
 #          (connections bounded by 30 s read/write/idle timeouts).
 #   hooks  run after the HTTP drain, wait for the rail (already done or
 #          finishing by t=80), then 10 s for the workers closed after it.
-#   = 80 + 10 + 10 s margin = 100 s. A collector that does not answer then
+#   SHUTDOWN_DRAIN_DELAY (15 s) runs first: the hooks' budget is 90 s after it.
+#   = 15 + 80 + 10 + 10 s margin = 115 s. A collector that does not answer then
 #   holds the telemetry shutdown ~15 s; a SIGKILL there loses only the last
 #   export. A handler that holds the HTTP drain past t=68 only delays the exit: the rail has stopped and the database is still
 #   open, so a SIGKILL then loses no drained message. Raise with either SPB budget.
-terminationGracePeriodSeconds: 100
+terminationGracePeriodSeconds: 115

@@ -109,6 +109,8 @@ spec:
             - secretRef:
                 name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
           env:
+            - name: SHUTDOWN_DRAIN_DELAY
+              value: "15s"
             {{- $pg := .Values.postgresql | default dict }}
             {{- $pgAuth := $pg.auth | default dict }}
             {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}

@@ -2,6 +2,15 @@
 
 ## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
 
+Improvements:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
 Features:
 - Add Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
 

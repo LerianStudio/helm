@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.1)
+
+Fixes:
+- Widened probe timeouts and ensured Caradhras is drained before stopping the service. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.0...plugin-access-manager-v10.2.1)
+
+---
+
 ## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
 
 Features:  

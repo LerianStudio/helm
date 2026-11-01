@@ -3,6 +3,18 @@
 ## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
 
 Features:
+- Add a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicense the charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
 - Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`, providing detailed instructions on how to upgrade to the new version. (@victorlazari)
 
 Improvements:

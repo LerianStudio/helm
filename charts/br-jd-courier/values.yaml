@@ -144,17 +144,19 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 # The spb-consumer must finish persisting what it read from the vendor before
-# the kubelet kills the pod, or that message is lost. The sequence:
+# the kubelet kills the pod, or that message is lost. The sequence (images on
+# lib-commons v7.21.0-beta.20 or later):
 #   t=0       SIGTERM: the rail stop starts at once; every listener keeps
 #             serving until SHUTDOWN_DRAIN_DELAY (15 s) ends.
 #   t<=80     rail done: one read (SPB_TAKE_BUDGET_SEC 15) + one persist
 #             (SPB_PERSIST_TIMEOUT_SEC 60) + 5 s routing margin.
-#   t=15      the HTTP drain starts and the hooks start ONE shared budget
-#             T = 90 s (SHUTDOWN_TIMEOUT; deadline t=105): the hooks wait for
-#             the rail (done by t=80), then close the rest (10 s).
+#   t=15      the HTTP drain, then the hooks, spend ONE budget T = 90 s
+#             (deadline t=105): the hooks wait for the rail, then close the
+#             rest (10 s).
 #   grace = 15 + 90 + 10 s margin = 115 s. A collector that does not answer then
 #   holds the telemetry shutdown ~15 s; a SIGKILL there loses only the last
 #   export. Raise with either SPB budget.
-# Leave SHUTDOWN_TIMEOUT unset, or at least 90 s: below that the hooks stop
-# waiting for the single writer and close Postgres under an in-flight persist.
+# Leave SHUTDOWN_TIMEOUT unset: the service sets T = SPB_TAKE_BUDGET_SEC +
+# SPB_PERSIST_TIMEOUT_SEC + 15 s. Lower, the hooks stop waiting for the single
+# writer and close Postgres under an in-flight persist.
 terminationGracePeriodSeconds: 115

@@ -3,6 +3,18 @@
 ## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
 
 Features:
+- Set ledger shutdown drain delay to `15s` to improve shutdown handling. (@fredcamaral)
+
+Fixes:
+- Raise ledger grace period to ensure it covers the drain time and update grace documentation for clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.1...midaz-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
+
+Features:
 - Set ledger shutdown drain delay to `15s`. (@fredcamaral)
 
 Fixes:

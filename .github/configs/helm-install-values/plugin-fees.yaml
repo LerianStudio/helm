@@ -6,3 +6,9 @@ fees:
   secrets:
     ORGANIZATION_IDS: "global"
     LICENSE_KEY: "IT_LICENSE_KEY" # CI license placeholder (README)
+  configmap:
+    # /readyz and the /health self-probe (liveness) go down unless midaz_ledger answers
+    # an HTTP request (any status counts); kind runs no Midaz, so the chart default
+    # host never resolves. The bundled MongoDB answers HTTP on its native port and the
+    # app already requires it, so it stands in as the reachable upstream.
+    MIDAZ_ONBOARDING_URL: "http://plugin-fees-mongodb:27017/v1/"

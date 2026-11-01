@@ -77,10 +77,32 @@ data:
   # =============================================================================
   {{- $authEnv := include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST") }}
   {{- $authEnv | nindent 2 }}
-  {{- /* Render-time mirror of the 4.x ledger boot gate (validateBootAuthGates): ENV_NAME=production
-     without PLUGIN_AUTH_ENABLED=true exits at boot, so fail here instead of shipping a CrashLoopBackOff. */}}
-  {{- if and (include "midaz.tagIsV4" (.Values.ledger.image.tag | default .Chart.AppVersion)) (eq (lower (trim $envName)) "production") (not (include "midaz.isTrue" (($authEnv | fromYaml).PLUGIN_AUTH_ENABLED | default "false"))) }}
-  {{- fail "ledger: ENV_NAME=production requires PLUGIN_AUTH_ENABLED=true (the 4.x ledger refuses to boot unauthenticated in production). Set global.auth.enabled / ledger.configmap.PLUGIN_AUTH_ENABLED=\"true\", or a non-production global.env.name / ledger.configmap.ENV_NAME" }}
+  {{- /* Render-time mirror of the 4.x ledger boot gate, so a pair the ledger refuses at boot fails
+     here instead of shipping a CrashLoopBackOff. Every 4.x ledger refuses MULTI_TENANT_ENABLED=true
+     without auth. Up to 4.3.0-beta.53 it also refuses ENV_NAME=production without auth; from
+     4.3.0-beta.54 (midaz#2675) DEPLOYMENT_MODE decides instead: saas refuses, byoc and local boot
+     open with a Warn, ENV_NAME no longer counts, and a PLUGIN_AUTH_ENABLED that is not a boolean
+     refuses in every mode. */}}
+  {{- $ledgerTag := .Values.ledger.image.tag | default .Chart.AppVersion }}
+  {{- if include "midaz.tagIsV4" $ledgerTag }}
+  {{- $authRaw := (($authEnv | fromYaml).PLUGIN_AUTH_ENABLED | default "") | toString }}
+  {{- $authOn := include "midaz.isTrue" $authRaw }}
+  {{- $byMode := include "midaz.ledgerAuthGateByMode" $ledgerTag }}
+  {{- if and $byMode (ne $authRaw "") (not (has $authRaw (list "1" "t" "T" "TRUE" "true" "True" "0" "f" "F" "FALSE" "false" "False"))) }}
+  {{- fail (printf "ledger: PLUGIN_AUTH_ENABLED=%q is not a valid boolean (the ledger refuses to boot on it). Set global.auth.enabled / ledger.configmap.PLUGIN_AUTH_ENABLED to \"true\" or \"false\"" $authRaw) }}
+  {{- end }}
+  {{- if not $authOn }}
+  {{- if include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false") }}
+  {{- fail "ledger: MULTI_TENANT_ENABLED=true requires PLUGIN_AUTH_ENABLED=true (the 4.x ledger refuses to boot multi-tenant without authentication). Set global.auth.enabled / ledger.configmap.PLUGIN_AUTH_ENABLED=\"true\"" }}
+  {{- end }}
+  {{- if $byMode }}
+  {{- if eq (lower (trim ($cm.DEPLOYMENT_MODE | default "local" | toString))) "saas" }}
+  {{- fail "ledger: DEPLOYMENT_MODE=saas requires PLUGIN_AUTH_ENABLED=true (the ledger refuses to boot a saas deployment without authentication). Set global.auth.enabled / ledger.configmap.PLUGIN_AUTH_ENABLED=\"true\", or ledger.configmap.DEPLOYMENT_MODE to byoc or local" }}
+  {{- end }}
+  {{- else if eq (lower (trim $envName)) "production" }}
+  {{- fail "ledger: ENV_NAME=production requires PLUGIN_AUTH_ENABLED=true (this 4.x ledger refuses to boot unauthenticated in production). Set global.auth.enabled / ledger.configmap.PLUGIN_AUTH_ENABLED=\"true\", or a non-production global.env.name / ledger.configmap.ENV_NAME" }}
+  {{- end }}
+  {{- end }}
   {{- end }}
 
   # =============================================================================

@@ -3,6 +3,16 @@
 ## [5.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.1.1)
 
 Improvements:
+
+- Relicense the charts under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.1.0...reporter-v5.1.1)
+
+---
+
+## [5.1.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.1.1)
+
+Improvements:
 - Relicense the charts under Elastic License `2.0`. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.1.0...reporter-v5.1.1)

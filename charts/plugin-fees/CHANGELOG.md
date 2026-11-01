@@ -6,6 +6,18 @@ Features:
 - Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
 
 Fixes:
+- Correct flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
 - Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)

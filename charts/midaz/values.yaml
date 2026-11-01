@@ -250,8 +250,9 @@ ledger:
   revisionHistoryLimit: 10
   # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
   # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
-  # Need 60 = 15s SHUTDOWN_DRAIN_DELAY + 30s shutdown budget (HTTP drain, 10s event wait,
-  # client close) + 5s producer flush; 72 leaves 12s headroom.
+  # Ledger images on lib-commons v7.21.0-beta.20 or later need 60 = 15s SHUTDOWN_DRAIN_DELAY
+  # + 30s shutdown budget (HTTP drain, 10s event wait) + 5s producer flush + 10s margin;
+  # earlier images need ~72 (15s drain + ~47s per-stage shutdown + 10s margin).
   terminationGracePeriodSeconds: 72
   image:
     # -- Repository for the ledger service container image

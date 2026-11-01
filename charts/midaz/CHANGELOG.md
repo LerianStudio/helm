@@ -3,6 +3,15 @@
 ## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
 
 Features:
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
 
 - Pass the license key from a secret to ledger and tracer. (@fredcamaral)
 

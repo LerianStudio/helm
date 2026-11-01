@@ -3,6 +3,20 @@
 ## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
 
 Features:
+
+- Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
 - Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
 
 Improvements:

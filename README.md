@@ -110,7 +110,7 @@ The release bumps `jd-courier.image.tag`, which is the column below.
 
 | Chart Version | Br-Jd-Courier Version |
 | :---: | :---: |
-| `2.1.2` | 1.2.1 |
+| `2.2.0` | 1.2.1 |
 -----------------
 
 ### Plugin BR Pix Lerian

@@ -6,7 +6,7 @@ Consul container image. Both are third-party works with their own licenses.
 
 ## 1. HashiCorp Consul Helm chart (bundled in the package)
 
-- Component: `consul` Helm chart, version `1.6.10` (from `hashicorp/consul-k8s`).
+- Component: `consul` Helm chart, version `2.1.0` (from `hashicorp/consul-k8s`).
 - License: **Mozilla Public License 2.0 (MPL-2.0)** — full text in
   [`licenses/MPL-2.0.txt`](licenses/MPL-2.0.txt).
 - Copyright (c) HashiCorp, Inc.
@@ -16,10 +16,10 @@ Consul container image. Both are third-party works with their own licenses.
 
 ## 2. HashiCorp Consul (the deployed binary/image)
 
-- Component: `hashicorp/consul` image, version `1.20.6`.
+- Component: `hashicorp/consul` image, version `2.1.0`.
 - License: **Business Source License 1.1 (BSL-1.1)** — Change License MPL-2.0,
   Change Date four years after each release.
-- Full text: https://github.com/hashicorp/consul/blob/v1.20.6/LICENSE
+- Full text: https://github.com/hashicorp/consul/blob/v2.1.0/LICENSE
 - This chart does NOT redistribute the image; the cluster pulls it from
   HashiCorp at deploy time. See the "License" section of `README.md` for the
   Additional Use Grant and what it means for Lerian/BYOC use.

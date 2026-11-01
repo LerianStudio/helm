@@ -549,7 +549,8 @@ caradhras:
     # without it). Issued for product `caradhras`; not the auth/identity key.
     LICENSE_KEY: ""
   # -- Set true to manage the caradhras Secret yourself: the chart creates none
-  # and reads keys `redisEndpoint` and `LICENSE_KEY` from existingSecretName.
+  # and reads `LICENSE_KEY` from existingSecretName, plus `redisEndpoint` unless
+  # configmap.redisEndpoint is set.
   useExistingSecret: false
   existingSecretName: ""
   # -- Redis/Valkey AUTH password, injected as the beego config key

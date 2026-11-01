@@ -283,6 +283,8 @@ plugin-br-ted-lerian:
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Multi-tenant Redis password (empty if auth disabled)
     MULTI_TENANT_REDIS_PASSWORD: ""
+    # -- Product license key. Optional here; rendered only when set.
+    LICENSE_KEY: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

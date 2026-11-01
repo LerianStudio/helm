@@ -308,6 +308,53 @@ ledger:
       requests:
         cpu: 50m
         memory: 64Mi
+  # -- Partition runner (`/partition`, shipped in the ledger image). A CronJob
+  # runs `partition ensure` on its schedule, daily by default: it creates the
+  # time partitions of the partitioned transaction tables ahead of the clock
+  # and reports their health through its exit code (0 healthy or
+  # unpartitioned, 1 needs attention, 2 invalid configuration). In
+  # multi-tenant mode it visits every active tenant.
+  partition:
+    # -- (bool) Run the `partition ensure` CronJob. Unset (the default) means
+    # auto: on for stable ledger tags >= 4.5.0, whose image ships the runner,
+    # off below that, for pre-releases and for non-SemVer tags. Set true for a
+    # pre-release that already carries the runner; set false to keep it off.
+    enabled:
+    # -- Cron schedule of the `partition ensure` run, read in `timeZone`. The
+    # default, 06:00 in that zone, stays clear of the early-morning backup and
+    # maintenance windows managed PostgreSQL services often default to; pick a
+    # time outside your database's own windows.
+    schedule: "0 6 * * *"
+    # -- IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses
+    # the time zone of the kube-controller-manager, UTC on most managed
+    # clusters; set it to pin the schedule to a zone.
+    timeZone: ""
+    # -- Hard timeout for one run, in seconds
+    activeDeadlineSeconds: 1800
+    reconcile:
+      # -- Run `partition reconcile-indexes` as a Sync/upgrade hook Job after
+      # the migration Job. It exits 0 on an empty registry, an unpartitioned
+      # table or a database without the partition support migration, so it
+      # never blocks a sync on an older schema.
+      enabled: true
+      # -- Argo CD sync wave of the reconcile Job (after the migration Job's
+      # default wave 0). On plain Helm the hook weight "10" orders it instead.
+      syncWave: "1"
+      # -- Hard timeout for the reconcile Job, in seconds (a concurrent index
+      # build on a large partition can take a while)
+      activeDeadlineSeconds: 1800
+      # -- How long a reconcile Job that stays after finishing, a failed one,
+      # is kept for inspection; a successful hook Job is deleted at once
+      ttlSecondsAfterFinished: 259200
+    resources:
+      # -- CPU and memory limits for the partition runner
+      limits:
+        cpu: 200m
+        memory: 128Mi
+      # -- Minimum CPU and memory requests for the partition runner
+      requests:
+        cpu: 50m
+        memory: 64Mi
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

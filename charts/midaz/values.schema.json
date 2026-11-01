@@ -302,6 +302,95 @@
           },
           "additionalProperties": true
         },
+        "partition": {
+          "type": "object",
+          "description": "Partition runner (`/partition`, shipped in the ledger image). A CronJob",
+          "properties": {
+            "enabled": {
+              "description": "Run the `partition ensure` CronJob. Unset means auto: on for ledger"
+            },
+            "schedule": {
+              "type": "string",
+              "default": "0 6 * * *",
+              "description": "Cron schedule of the `partition ensure` run"
+            },
+            "timeZone": {
+              "type": "string",
+              "default": "",
+              "description": "IANA time zone for `schedule` (e.g. \"America/Sao_Paulo\"). Empty uses"
+            },
+            "activeDeadlineSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1800,
+              "description": "Hard timeout for one run, in seconds"
+            },
+            "reconcile": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Run `partition reconcile-indexes` as a Sync/upgrade hook Job after"
+                },
+                "syncWave": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "default": "1",
+                  "description": "Argo CD sync wave of the reconcile Job (after the migration Job's"
+                },
+                "activeDeadlineSeconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "default": 1800,
+                  "description": "Hard timeout for the reconcile Job, in seconds (a concurrent index"
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "default": 259200,
+                  "description": "How long the finished reconcile Job is kept for inspection"
+                }
+              },
+              "additionalProperties": true
+            },
+            "resources": {
+              "type": "object",
+              "properties": {
+                "limits": {
+                  "type": "object",
+                  "description": "CPU and memory limits for the partition runner",
+                  "properties": {
+                    "cpu": {
+                      "default": "200m"
+                    },
+                    "memory": {
+                      "default": "128Mi"
+                    }
+                  },
+                  "additionalProperties": true
+                },
+                "requests": {
+                  "type": "object",
+                  "description": "Minimum CPU and memory requests for the partition runner",
+                  "properties": {
+                    "cpu": {
+                      "default": "50m"
+                    },
+                    "memory": {
+                      "default": "64Mi"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        },
         "imagePullSecrets": {
           "type": "array",
           "description": "Secrets for pulling images from a private registry"

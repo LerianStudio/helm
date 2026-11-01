@@ -1,0 +1,57 @@
+{{- if and .Values.ledger.enabled (include "midaz.ledgerPartitionEnabled" .) }}
+{{- /*
+Ledger partition runner: `partition ensure --reconcile-indexes`, on a schedule.
+
+The `/partition` binary ships in the ledger image next to `/app`. `ensure`
+creates the time partitions of the partitioned `transaction` and `operation`
+tables ahead of the clock, refreshes their statistics and reports a health
+verdict per table; `--reconcile-indexes` then runs the index reconcile pass
+in the same run, so an index the deploy hook tolerated (unreachable tenant,
+pending entry) is retried daily. It never detaches or drops a partition and runs no DDL on an
+unpartitioned table, so on a database still in the unpartitioned layout (or
+without the partition support objects yet) it exits 0 without changes.
+
+One CronJob per deployment is enough: in multi-tenant mode the runner lists the
+active tenants of this service itself and visits each tenant's transaction
+database; a failing tenant never stops the pass. The exit code is the alert
+signal: 0 healthy / unpartitioned / support missing, 1 at least one database or
+table needs attention, 2 invalid configuration. backoffLimit is 0 on purpose: a
+failed run stays visible as a failed Job and the next schedule repeats the work.
+
+Connection settings come from the ledger's own ConfigMap and Secret (the same
+DB_TRANSACTION_* the app connects with, resolved by the same datastore masks)
+and the PostgreSQL password from the same Secret the migration Job reads.
+*/}}
+{{- $partition := .Values.ledger.partition | default dict }}
+{{- $component := printf "%s-partition" .Values.ledger.name }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  {{- /* A CronJob name is capped at 52 characters (the controller appends an
+     11-character suffix to each Job it spawns). */}}
+  name: {{ printf "%s-partition" (include "midaz-ledger.fullname" . | trunc 42 | trimSuffix "-") }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 4 }}
+spec:
+  schedule: {{ $partition.schedule | default "0 6 * * *" | quote }}
+  {{- with $partition.timeZone }}
+  timeZone: {{ . | quote }}
+  {{- end }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 8 }}
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: {{ $partition.activeDeadlineSeconds | default 1800 }}
+      template:
+        metadata:
+          labels:
+            {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 12 }}
+        spec:
+          {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "ensure" "--reconcile-indexes")) | nindent 10 }}
+{{- end }}

@@ -145,7 +145,8 @@ sisbajud:
     successThreshold: 1
     failureThreshold: 3
 
-  terminationGracePeriodSeconds: 30
+  # SHUTDOWN_DRAIN_DELAY 15s + 90s of shutdown stages (HTTP drain, closeResources, telemetry flush).
+  terminationGracePeriodSeconds: 105
   nodeSelector: {}
   tolerations: []
   affinity: {}

@@ -80,6 +80,8 @@ spec:
           - configMapRef:
               name: {{ include "midaz-tracer.fullname" . }}
           env:
+            - name: SHUTDOWN_DRAIN_DELAY
+              value: "15s"
             {{/* existingSecretName presence is enforced by midaz-tracer.validate; ternary
                  cannot carry `required` because Go templates evaluate both arms. */}}
             {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}

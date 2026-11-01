@@ -16,7 +16,11 @@ This Helm chart installs **Plugin Fees** for Midaz, a high-performance ledger.
 
 ## Moving to Midaz
 
-Fees run inside the Midaz ledger. Install or upgrade the `midaz` chart (see `charts/midaz`), then uninstall this release as below. Do not start new installs of this chart.
+Fees run inside the Midaz ledger. Do not start new installs of this chart. Move an existing install in this order, so no fee data is lost:
+
+1. Copy the fee data to the database the Midaz fees module reads. By default that is the `fees` database on the `midaz-mongodb` Service; `global.datastores.mongoFees` (host, user, name) in the `midaz` chart overrides it. Dump `plugin-fees-db` with `mongodump` and load it there with `mongorestore`. With an external MongoDB (`mongodb.external=true`), you can skip the copy and point `global.datastores.mongoFees` at that MongoDB with `name: plugin-fees-db`.
+2. Install or upgrade the `midaz` chart (see `charts/midaz`) and check that the ledger lists your fee packages.
+3. Uninstall this release as below. With the bundled MongoDB (the default), the uninstall deletes the MongoDB volume and every fee record in it.
 
 ---
 

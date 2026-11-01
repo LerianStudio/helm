@@ -25,7 +25,7 @@ maintainers:
 
 # Seed version only. semantic-release owns the published OCI package version;
 # never hand-bump this field.
-version: 2.0.4
+version: 2.0.5
 
 # Tracks the pinned upstream Alloy binary, not this chart's own release line.
 appVersion: "1.21.3"

@@ -5,7 +5,9 @@ kind: Deployment
 metadata:
   name: app
 spec:
+  {{- if hasKey $h "replicas" }}
   replicas: {{ $h.replicas }}
+  {{- end }}
   strategy: {{- toYaml $h.strategy | nindent 4 }}
   selector: {matchLabels: {app: app}}
   template:

@@ -14,7 +14,7 @@ Returns YAML; the caller reads it with `fromYaml` and places each key:
         "port" .Values.ledger.service.port "minImage" "v3.1.0"
         "autoscaling" .Values.ledger.autoscaling) | fromYaml }}
 
-  replicas / strategy       Deployment spec (`toYaml`)
+  replicas / strategy       Deployment spec (`toYaml`); replicas is absent when autoscaling is returned
   autoscaling               only when the caller's autoscaling is enabled on a non-singleton: its map with
                             minReplicas defaulted to 2 when unset; pass it to lerian-common.hpa
   terminationGracePeriodSeconds, ports, env, startupProbe, livenessProbe,
@@ -73,7 +73,7 @@ port, chart-owned), replicas (optional configured count), autoscaling (optional)
 {{- $t := 30 -}}{{- if hasKey $h "shutdownSeconds" -}}{{- $t = int $h.shutdownSeconds -}}{{- end -}}
 {{- $out := dict "replicas" $replicas "strategy" (dict "type" "Recreate") -}}
 {{- if not $singleton -}}
-{{- if (.autoscaling | default dict).enabled -}}{{- $a := deepCopy .autoscaling -}}{{- if kindIs "invalid" $a.minReplicas -}}{{- $_ := set $a "minReplicas" 2 -}}{{- end -}}{{- $_ := set $out "autoscaling" $a -}}{{- end -}}
+{{- if (.autoscaling | default dict).enabled -}}{{- $a := deepCopy .autoscaling -}}{{- if kindIs "invalid" $a.minReplicas -}}{{- $_ := set $a "minReplicas" 2 -}}{{- end -}}{{- $_ := set $out "autoscaling" $a -}}{{- $_ := unset $out "replicas" -}}{{- end -}}
 {{- $_ := set $out "strategy" (dict "type" "RollingUpdate" "rollingUpdate" (dict "maxSurge" "25%" "maxUnavailable" 0)) -}}
 {{- $_ := set $out "pdb" (dict "maxUnavailable" 1 "unhealthyPodEvictionPolicy" "AlwaysAllow") -}}
 {{- end -}}

@@ -180,7 +180,7 @@ sets `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePerio
 Probe timings are fixed: startup 5s/3s x 60 (300s budget), liveness 10s/3s x 3, readiness 5s/3s x 3.
 Rollout: `RollingUpdate` 25% surge, 0 unavailable; `replicas` is 2 unless the caller passes a count (an
 explicit 0 is honored; pass nothing, not the chart's `replicaCount: 1`, to get 2). With autoscaling
-enabled on a non-singleton, skip `spec.replicas` and pass `$h.autoscaling` to `lerian-common.hpa`: it is the
+enabled on a non-singleton, the preset returns no `replicas` (render `spec.replicas` only when the key exists); pass `$h.autoscaling` to `lerian-common.hpa`: it is the
 caller's map with `minReplicas` defaulted to 2 when unset (an explicit value wins); as with `replicaCount`,
 delete the chart's own `minReplicas: 1` default, since the preset cannot tell a chart default from a client
 value. A singleton refuses autoscaling. The PDB is `maxUnavailable: 1` with `unhealthyPodEvictionPolicy: AlwaysAllow`.

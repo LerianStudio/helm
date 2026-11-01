@@ -235,6 +235,12 @@ tests:
       - equal: {path: spec.minReplicas, value: 2}
       - equal: {path: spec.maxReplicas, value: 5}
 
+  - it: autoscaling leaves spec.replicas to the HPA
+    documentSelector: {path: kind, value: Deployment}
+    set: {app.autoscaling: {enabled: true, maxReplicas: 5}}
+    asserts:
+      - notExists: {path: spec.replicas}
+
   - it: an explicit minReplicas wins over the HPA floor
     documentSelector: {path: kind, value: HorizontalPodAutoscaler}
     set: {app.autoscaling: {enabled: true, minReplicas: 3, maxReplicas: 5}}

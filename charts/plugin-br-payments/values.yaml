@@ -181,6 +181,12 @@ app:
     timeoutSeconds: 3
     successThreshold: 1
     failureThreshold: 2
+  # -- Startup probe: failureThreshold x periodSeconds must cover boot (connect 30s +
+  # MIGRATION_TIMEOUT_SEC, default 300s). Raise it if you raise MIGRATION_TIMEOUT_SEC.
+  startupProbe:
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 40
   # -- Liveness probe configuration. Canonical values from the same guide.
   livenessProbe:
     initialDelaySeconds: 30

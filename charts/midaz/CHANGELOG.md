@@ -1,5 +1,14 @@
 # Midaz Changelog
 
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeout settings for ledger and CRM probes to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
 ## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
 
 Features:

@@ -67,7 +67,6 @@ global:
       # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
       # draining, tainted karpenter.sh/disrupted).
       nodeTaintsPolicy: ""
-
 # Common configuration shared between components
 common:
   # Common secrets and configurations
@@ -139,7 +138,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.14.0"
+    tag: "3.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -323,7 +322,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.14.0"
+    tag: "3.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -373,7 +372,6 @@ auth:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -483,7 +481,8 @@ auth:
   # -- it on.
   initUser:
     enabled: false
-
+    image:
+      tag: 3.15.0
 # -- Caradhras: the auth backend/authorization service, promoted to a
 # top-level component sibling of `identity`/`auth` (formerly nested as
 # `auth.backend`, which ran the legacy Casdoor image). Lerian's Caradhras
@@ -657,7 +656,6 @@ caradhras:
   # -- per component with caradhras.ui.spread / caradhras.ui.topologySpreadConstraints.
   ui:
     enabled: false
-
 auth-database:
   # Database dependency for identity and access management.
   # For more details, refer to the documentation:
@@ -679,7 +677,8 @@ auth-database:
     database: "casdoor"
     # -- Secret with the password. The default points the subchart at the one this chart keeps across
     # uninstall (templates/auth-database/secrets.yaml); this chart's own templates read it as empty.
-    existingSecret: '{{ if eq .Chart.Name "auth-database" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "auth-database" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   primary:
     persistence:
       size: 8Gi

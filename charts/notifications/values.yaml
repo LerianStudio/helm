@@ -317,7 +317,7 @@ api:
   replicaCount: 1
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/notifications
+    repository: ghcr.io/lerianstudio/notifications
     pullPolicy: Always
     tag: ""  # defaults to .Chart.AppVersion
   imagePullSecrets: []
@@ -405,7 +405,7 @@ workerEmail:
   replicaCount: 1
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/notifications-worker-email
+    repository: ghcr.io/lerianstudio/notifications-worker-email
     pullPolicy: Always
     tag: ""  # defaults to .Chart.AppVersion
   imagePullSecrets: []
@@ -489,7 +489,7 @@ workerSms:
   replicaCount: 1
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/notifications-worker-sms
+    repository: ghcr.io/lerianstudio/notifications-worker-sms
     pullPolicy: Always
     tag: ""
   imagePullSecrets: []
@@ -571,7 +571,7 @@ workerWebhook:
   replicaCount: 1
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/notifications-worker-webhook
+    repository: ghcr.io/lerianstudio/notifications-worker-webhook
     pullPolicy: Always
     tag: ""
   imagePullSecrets: []

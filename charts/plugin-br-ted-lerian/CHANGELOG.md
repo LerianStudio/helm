@@ -1,5 +1,15 @@
 # Plugin-br-ted-lerian Changelog
 
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.0)
+
+Features:
+
+- Pass the license key from a secret. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.0.2...plugin-br-ted-lerian-v1.1.0)
+
+---
+
 ## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.0.2)
 
 Fixes:

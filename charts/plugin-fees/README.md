@@ -16,13 +16,11 @@ This Helm chart installs **Plugin Fees** for Midaz, a high-performance ledger.
 
 ## Moving to Midaz
 
-Fees run inside the Midaz ledger. Do not start new installs of this chart. Move an existing install in this order, so no fee data is lost:
+Fees run inside the Midaz ledger. Do not start new installs of this chart. Keep an existing release running until no service calls it:
 
-1. If you run Bank Transfer, pin it to Plugin Fees first (see `charts/plugin-br-bank-transfer/docs/UPGRADE-2.3.md`): set `bankTransfer.configmap.MIDAZ_FEE_MODE: "legacy"` in its chart, run `kubectl rollout restart` on its Deployment (pods read the mode only at start), and check that the log line `midaz: fee mode resolved` carries `feeMode=legacy` (a multi-tenant pod logs it per tenant, on that tenant's first transfer). Under the default `auto`, Bank Transfer stops calling Plugin Fees once Midaz reports 4.1 or later, and its transfers are charged zero fees, with no error, until the fee packages exist in Midaz.
-2. Install or upgrade the `midaz` chart (see `charts/midaz`) and keep this release running: Bank Transfer still calculates fees through it, and a fee call that cannot reach it settles with zero fee.
-3. Move the fee packages with the [Midaz fees migration guide](https://docs.lerian.studio/en/products/midaz/fees/fees-migration-guide). It recreates each package through the Midaz API with the ledger's transaction route IDs and compares fee estimates in both engines before enabling them. Do not copy the database: Plugin Fees stores a route by name, Midaz matches it by ID, so a copied package never matches and the transfer is charged zero fee.
-4. If you run Bank Transfer, switch it to `auto` or `native` (both need every Bank Transfer pod on app 3.1.0), run `kubectl rollout restart` on its Deployment, wait for the rollout, and check that `midaz: fee mode resolved` carries the new mode on every pod or tenant.
-5. Only then uninstall this release as below. With the bundled MongoDB (the default), the uninstall deletes the MongoDB volume and every fee record in it.
+1. **Bank Transfer.** Follow the [Midaz fees migration guide](https://docs.lerian.studio/en/products/midaz/fees/fees-migration-guide) through its last step, "Retire plugin-fees". It recreates the fee packages in Midaz, switches Bank Transfer to `MIDAZ_FEE_MODE=native` and lists the TED INs that still need this release. Keep `native` afterwards: under `auto`, a pod that cannot read the Midaz version starts in `legacy` and calls this release. Do not copy the database instead: Plugin Fees stores a route by name, Midaz matches it by ID, so a copied package never matches and the transfer is charged zero fee.
+2. **Pix Indirect BTG.** With `CASHIN_FEE_CALCULATION_TYPE: "segment"` (the chart default), it asks this release for every cash-in fee at `FEE_SERVICE_URL`, and it has no Midaz fee mode. Keep this release while any Pix Indirect BTG install calls it.
+3. Only then back up the MongoDB database and uninstall this release as below. With the bundled MongoDB (the default), the uninstall deletes the MongoDB volume and every fee record in it.
 
 ---
 

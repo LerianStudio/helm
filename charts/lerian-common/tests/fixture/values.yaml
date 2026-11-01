@@ -1,0 +1,8 @@
+minImage: v1.2.0
+monitoring: {}
+app:
+  port: 4000
+  image: {tag: v1.2.0}
+  health: {stack: go}
+  configmap: {}
+  ingress: {className: alb}

@@ -44,6 +44,8 @@ via `include` by the product charts that declare it as a dependency.
   See [Pod spreading](#pod-spreading-topologyspreadconstraints).
 - **Dependency helpers:** `lerian-common.dependency.fullname`, `.infraSecretRef`.
 - **`lerian-common.deploymentStrategy`.**
+- **Health preset:** `lerian-common.health`, `lerian-common.health.prometheusRule`, plus the `healthcheck`
+  input of `.ingress` and `unhealthyPodEvictionPolicy` in `.pdb`. See [Health preset](#health-preset).
 
 See `values.yaml` for the standard `global.{serviceDiscovery,streaming,multiTenant,idp}` template.
 
@@ -145,6 +147,59 @@ global:
 `global.scheduling` may hold other env-wide scheduling keys (e.g. `nodeSelector`,
 `tolerations` in charts that support them); this helper reads only
 `global.scheduling.spread`.
+
+## Health preset
+
+`lerian-common.health` renders everything the cluster needs to run a component's health contract: the
+container's `health` port (8099, on the main container only, never in a Service), the `HEALTH_PORT`,
+`SHUTDOWN_DRAIN_DELAY` and `SHUTDOWN_TIMEOUT` env, the startup, liveness and readiness probes, the `preStop`
+sleep, `terminationGracePeriodSeconds`, the rollout strategy, replicas and the PDB. Liveness is
+process-only; a shared dependency is reported by `/readyz`, it never takes the pod out of the Service.
+Paths, ports, timings, strategy and grace are **not** values: the render refuses a component that also
+sets `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePeriodSeconds`, or carries
+`SHUTDOWN_DRAIN_DELAY`, `SHUTDOWN_TIMEOUT` or `HEALTH_PORT` in `configmap`.
+
+```yaml
+<component>:
+  health:
+    stack: go            # go | go-worker | next | static | external
+    drainSeconds: 15     # go: SHUTDOWN_DRAIN_DELAY; next/static/external: preStop sleep; go-worker: forced 0
+    shutdownSeconds: 30  # SHUTDOWN_TIMEOUT, the budget after the drain
+    singleton: false     # true: 1 replica, Recreate, no PDB, no autoscaling
+    # external only: livenessPath, readinessPath (required), port, startupBudgetSeconds (300, min 5)
+```
+
+| Stack | Probes | Drain | Grace |
+|---|---|---|---|
+| go | health port `/health`, `/readyz` | app (env) | D + T + 10 |
+| go-worker | as go | D = 0 | T + 10 |
+| next | main port `/api/admin/health/alive`, `/api/admin/health/readyz` | preStop sleep D | D + 15 |
+| static | main port `/healthz` | preStop sleep 5 | 15 |
+| external | the app's paths | preStop sleep D | D + T + 10 |
+
+Probe timings are fixed: startup 5s/3s x 60 (300s budget), liveness 10s/3s x 3, readiness 5s/3s x 3.
+Rollout: `RollingUpdate` 25% surge, 0 unavailable; `replicas` is 2 unless the caller passes a count (an
+explicit 0 is honored; pass nothing, not the chart's `replicaCount: 1`, to get 2). With autoscaling
+enabled on a non-singleton, the preset returns no `replicas` (render `spec.replicas` only when the key exists); pass `$h.autoscaling` to `lerian-common.hpa`: it is the
+caller's map with `minReplicas` defaulted to 2 when unset (an explicit value wins); as with `replicaCount`,
+delete the chart's own `minReplicas: 1` default, since the preset cannot tell a chart default from a client
+value. A singleton refuses autoscaling. The PDB is `maxUnavailable: 1` with `unhealthyPodEvictionPolicy: AlwaysAllow`.
+`drainSeconds` (>= 0), `shutdownSeconds` (>= 1: the lib refuses to boot with `SHUTDOWN_TIMEOUT` <= 0) and
+`startupBudgetSeconds` (>= 5) must be integers (seconds, not `15s`). Keys a stack does not use
+(`drainSeconds` on static and go-worker, `shutdownSeconds` on next and static) are ignored.
+The ALB annotations need `target-type: ip`.
+
+Usage: see the example in the header of `templates/_health.tpl`.
+
+- **`minImage`** is passed by the chart (the first image that serves the health port), never a client value.
+  The render fails when `image.tag` is a semver below it; other tags skip the check.
+- **ALB:** with `className: alb` and `healthcheck`, the Ingress gets the target-group annotations: the
+  stack's main-port liveness path, the container port **number** (never `traffic-port`), success code 200,
+  10s interval, thresholds 2. They win over a same-key annotation.
+- **PrometheusRule:** `monitoring.prometheusRule.enabled` (default false, optional `labels`) renders the
+  health alerts through `lerian-common.health.prometheusRule`. The `health_*` rules need the service's OTLP
+  metrics in the client's Prometheus; the `kube_*` rules work on any kube-prometheus-stack.
+- **Tests:** `helm dependency build charts/lerian-common/tests/fixture && helm unittest charts/lerian-common/tests/fixture`.
 
 ## Permission declaration (IDP_*)
 

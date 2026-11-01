@@ -1,0 +1,44 @@
+{{- $h := include "lerian-common.health" (dict "name" "app" "component" .Values.app "health" .Values.app.health "port" .Values.app.port
+      "minImage" .Values.minImage "replicas" .Values.app.replicas "autoscaling" .Values.app.autoscaling) | fromYaml }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
+  {{- end }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  selector: {matchLabels: {app: app}}
+  template:
+    metadata: {labels: {app: app}}
+    spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
+      containers:
+        - name: app
+          image: app:{{ .Values.app.image.tag }}
+          ports:
+            - {name: http, containerPort: {{ .Values.app.port }}}
+            {{- with $h.ports }}{{ toYaml . | nindent 12 }}{{ end }}
+          {{- with $h.env }}
+          env: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $h.lifecycle }}
+          lifecycle: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
+---
+{{- with $h.pdb }}
+{{ include "lerian-common.pdb" (dict "pdb" . "name" "app" "labels" "app: app" "selector" "app: app") }}
+---
+{{- end }}
+{{ include "lerian-common.ingress" (dict "context" $ "ingress" .Values.app.ingress "name" "app" "labels" "app: app" "svcPort" .Values.app.port
+      "healthcheck" $h.alb "subdomain" "app") }}
+---
+{{ include "lerian-common.health.prometheusRule" (dict "monitoring" .Values.monitoring "name" "app" "labels" "app: app" "namespace" .Release.Namespace) }}
+{{- if $h.autoscaling }}
+---
+{{ include "lerian-common.hpa" (dict "autoscaling" $h.autoscaling "name" "app" "labels" "app: app") }}
+{{- end }}

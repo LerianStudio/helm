@@ -394,6 +394,20 @@ class StartupContract(unittest.TestCase):
         secret = next(d for d in docs if d['metadata']['name'] == ref['name'])
         self.assertNotIn('annotations', secret['metadata'])
 
+    def test_init_user_widens_identity_startup_window(self):
+        def probe(patch):
+            res = render(patch)
+            self.assertEqual(res.returncode, 0, res.stderr)
+            d = next(d for d in yaml.load_all(res.stdout, Loader=UniqueLoader) if d
+                     and d['kind'] == 'Deployment' and d['metadata']['name'].endswith('identity'))
+            return d['spec']['template']['spec']['containers'][0].get('startupProbe')
+        self.assertIsNone(probe({'auth': {'initUser': {'enabled': False}}}))
+        p = probe({'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}}})
+        self.assertGreaterEqual(p['periodSeconds'] * p['failureThreshold'], 130)
+        p = probe({'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}},
+                   'identity': {'startupProbe': {'enabled': True, 'failureThreshold': 30}}})
+        self.assertEqual(p['failureThreshold'], 30)
+
     def test_init_user_existing_secret(self):
         docs, env = self.identity_env({'enabled': True, 'useExistingSecret': True,
                                        'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})

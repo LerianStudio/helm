@@ -88,7 +88,8 @@ spec:
             timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.identity.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold | default 3 }}
-          {{- if .Values.identity.startupProbe.enabled }}
+          {{- /* initUser makes identity retry Caradhras for up to 120s before it listens; the startup window must outlast it. */}}
+          {{- if or .Values.identity.startupProbe.enabled .Values.auth.initUser.enabled }}
           startupProbe:
             httpGet:
               path: {{ .Values.identity.startupProbe.path | default "/health" }}
@@ -97,7 +98,7 @@ spec:
             periodSeconds: {{ .Values.identity.startupProbe.periodSeconds | default 10 }}
             timeoutSeconds: {{ .Values.identity.startupProbe.timeoutSeconds | default 10 }}
             successThreshold: {{ .Values.identity.startupProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.identity.startupProbe.failureThreshold | default 5 }}
+            failureThreshold: {{ .Values.identity.startupProbe.failureThreshold | default (ternary 14 5 .Values.auth.initUser.enabled) }}
           {{- end }}
           {{- $otel := (index .Values "otel-collector-lerian").enabled }}
           {{- $initUser := .Values.auth.initUser.enabled }}

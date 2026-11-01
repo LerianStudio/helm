@@ -150,8 +150,8 @@ system-facts:
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
   # -- Seconds Kubernetes waits after SIGTERM before killing the API pod.
-  # 52 = 12s readiness drain + 30s shutdown budget (lib-commons SHUTDOWN_TIMEOUT default) + 10s margin
-  terminationGracePeriodSeconds: 52
+  # 55 = 15s drain (SHUTDOWN_DRAIN_DELAY) + 30s shutdown budget (lib-commons SHUTDOWN_TIMEOUT default) + 10s margin
+  terminationGracePeriodSeconds: 55
   # -- Deployment update strategy
   deploymentUpdate:
     # -- Type of deployment strategy

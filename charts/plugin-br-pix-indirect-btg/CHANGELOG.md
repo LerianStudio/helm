@@ -1,5 +1,16 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Raise probe `timeoutSeconds` to `3` to improve stability and responsiveness. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
 ## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
 
 Fixes:

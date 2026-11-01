@@ -66,8 +66,8 @@ spec:
           - configMapRef:
               name: {{ include "plugin-br-ted-lerian.fullname" . }}
           env:
-            - name: SHUTDOWN_DRAIN_DELAY
-              value: "15s"
+          - name: SHUTDOWN_DRAIN_DELAY
+            value: "15s"
           {{- if $pgInternal }}
           {{- include "plugin-br-ted-lerian.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
           {{- end }}

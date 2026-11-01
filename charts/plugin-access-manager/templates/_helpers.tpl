@@ -266,11 +266,11 @@ otherwise silently revert to the 1s default on upgrade and start flapping
 into CrashLoopBackOff from probe failures alone.
 */}}
 {{- define "caradhras.readinessProbeTimeoutSeconds" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.readinessProbe.timeoutSeconds "oldVal" (dig "backend" "readinessProbe" "timeoutSeconds" "" .Values.auth) "default" 1) -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.readinessProbe.timeoutSeconds "oldVal" (dig "backend" "readinessProbe" "timeoutSeconds" "" .Values.auth) "default" 3) -}}
 {{- end }}
 
 {{- define "caradhras.livenessProbeTimeoutSeconds" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.livenessProbe.timeoutSeconds "oldVal" (dig "backend" "livenessProbe" "timeoutSeconds" "" .Values.auth) "default" 1) -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.livenessProbe.timeoutSeconds "oldVal" (dig "backend" "livenessProbe" "timeoutSeconds" "" .Values.auth) "default" 3) -}}
 {{- end }}
 
 {{/*

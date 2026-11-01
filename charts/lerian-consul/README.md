@@ -154,10 +154,11 @@ Store each SecretID in that workload's own Secret and pass it as `SD_TOKEN` — 
 **From `lerian-consul` 1.x (Consul 1.20) to this release is a fresh install, not an upgrade.** HashiCorp supports no in-place path from Consul 1.x to 2.x, so do not `helm upgrade` an existing 1.x release. Service discovery is opt-in (`SD_ENABLED=false` by default), so the cost is re-registration, not data loss.
 
 1. `helm uninstall <release> -n <namespace>`.
-2. Delete the server PVCs (`kubectl get pvc -n <namespace>` to list them; they are named `data-<namespace>-<consul-fullname>-server-<n>`). A stale Raft data dir from 1.x prevents the 2.x server from starting.
-3. `helm install` the new version.
-4. With `consul.global.acls.manageSystemACLs=true`, the new install bootstraps a new ACL system: re-mint the per-workload SD tokens (see [ACL tokens](#acl-tokens--bootstrap-is-admin-only)) and update each workload's `SD_TOKEN`.
-5. Restart the consuming workloads if they do not re-register on their own.
+2. With ACLs on, delete the old bootstrap Secret (`kubectl delete secret -n <namespace> <consul-fullname>-bootstrap-acl-token`); an existing one makes the new install skip ACL bootstrap.
+3. Delete the server PVCs (`kubectl get pvc -n <namespace>` to list them; they are named `data-<namespace>-<consul-fullname>-server-<n>`). A stale Raft data dir from 1.x prevents the 2.x server from starting.
+4. `helm install` the new version.
+5. With `consul.global.acls.manageSystemACLs=true`, the new install bootstraps a new ACL system: re-mint the per-workload SD tokens (see [ACL tokens](#acl-tokens--bootstrap-is-admin-only)) and update each workload's `SD_TOKEN`.
+6. Restart the consuming workloads if they do not re-register on their own.
 
 ---
 

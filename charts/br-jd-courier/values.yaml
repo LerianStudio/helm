@@ -145,16 +145,16 @@ tolerations: []
 affinity: {}
 # The spb-consumer must finish persisting what it read from the vendor before
 # the kubelet kills the pod, or that message is lost. The sequence:
-#   t=0    SIGTERM: the rail stop starts at once, apart from HTTP.
-#   t<=80  rail done: one read (SPB_TAKE_BUDGET_SEC 15) + one persist
-#          (SPB_PERSIST_TIMEOUT_SEC 60) + 5 s routing margin.
-#   t=12   readiness drain ends; the HTTP drain runs alongside the rail stop
-#          (connections bounded by 30 s read/write/idle timeouts).
-#   hooks  run after the HTTP drain, wait for the rail (already done or
-#          finishing by t=80), then 10 s for the workers closed after it.
-#   SHUTDOWN_DRAIN_DELAY (15 s) runs first: the hooks' budget is 90 s after it.
-#   = 15 + 80 + 10 + 10 s margin = 115 s. A collector that does not answer then
+#   t=0       SIGTERM: the rail stop starts at once; every listener keeps
+#             serving until SHUTDOWN_DRAIN_DELAY (15 s) ends.
+#   t<=80     rail done: one read (SPB_TAKE_BUDGET_SEC 15) + one persist
+#             (SPB_PERSIST_TIMEOUT_SEC 60) + 5 s routing margin.
+#   t=15      the HTTP drain starts and the hooks start ONE shared budget
+#             T = 90 s (SHUTDOWN_TIMEOUT; deadline t=105): the hooks wait for
+#             the rail (done by t=80), then close the rest (10 s).
+#   grace = 15 + 90 + 10 s margin = 115 s. A collector that does not answer then
 #   holds the telemetry shutdown ~15 s; a SIGKILL there loses only the last
-#   export. A handler that holds the HTTP drain past t=68 only delays the exit: the rail has stopped and the database is still
-#   open, so a SIGKILL then loses no drained message. Raise with either SPB budget.
+#   export. Raise with either SPB budget.
+# Leave SHUTDOWN_TIMEOUT unset, or at least 90 s: below that the hooks stop
+# waiting for the single writer and close Postgres under an in-flight persist.
 terminationGracePeriodSeconds: 115

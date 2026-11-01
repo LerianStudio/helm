@@ -45,7 +45,7 @@ data:
   # ====================================================================
   # CORS
   # ====================================================================
-  ACCESS_CONTROL_ALLOW_ORIGIN: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "ACCESS_CONTROL_ALLOW_ORIGIN" "default" "*") | quote }}
+  ACCESS_CONTROL_ALLOW_ORIGIN: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "ACCESS_CONTROL_ALLOW_ORIGIN" "default" "") | quote }}
   ACCESS_CONTROL_ALLOW_METHODS: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "ACCESS_CONTROL_ALLOW_METHODS" "default" "GET,POST,PUT,PATCH,DELETE,OPTIONS") | quote }}
   ACCESS_CONTROL_ALLOW_HEADERS: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "ACCESS_CONTROL_ALLOW_HEADERS" "default" "Origin,Content-Type,Accept,Authorization,X-Request-ID") | quote }}
   ACCESS_CONTROL_EXPOSE_HEADERS: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "ACCESS_CONTROL_EXPOSE_HEADERS" "default" "") | quote }}

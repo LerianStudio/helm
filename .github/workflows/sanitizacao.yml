@@ -95,7 +95,7 @@ jobs:
       # as assercoes — o comportamento de regex e de funcao pode mudar entre
       # versoes, e a falha seria silenciosa em producao.
       - name: Obter a imagem do agente
-        run: docker pull grafana/alloy@sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33  # v1.18.1
+        run: docker pull grafana/alloy@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4  # v1.21.3
 
       - name: Executar a porta
         run: ./charts/alloy-lerian/sanitizacao/porta-de-entrega.sh

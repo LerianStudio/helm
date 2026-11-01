@@ -15,7 +15,7 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Uma tag aqui validaria as regras contra bits possivelmente diferentes dos que
 # rodam em producao — a porta perderia justamente o que ela existe para garantir.
 # Ao atualizar a versao, trocar NOS DOIS lugares.
-IMAGEM="grafana/alloy@sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33"  # v1.18.1
+IMAGEM="grafana/alloy@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4"  # v1.21.3
 CONTEINER="alloy-verificacao-sanitizacao"
 PORTA="${PORTA:-4318}"
 FALHAS=0

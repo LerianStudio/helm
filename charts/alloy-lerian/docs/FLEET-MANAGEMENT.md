@@ -97,7 +97,7 @@ Ver `COMPONENTES-EXCLUIDOS.md` para o detalhe do privilégio que evitamos.
 nova, no intervalo configurado. **Nada disca para dentro do cluster do cliente** —
 é o que torna isso aceitável em rede de terceiro, sem VPN nem link privado.
 
-Versão mínima do agente: v1.7.2. Usamos 1.18.1.
+Versão mínima do agente: v1.7.2. Usamos 1.21.3.
 
 ## Sanitização não pode ser desligada remotamente
 

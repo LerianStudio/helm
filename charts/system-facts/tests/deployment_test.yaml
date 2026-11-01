@@ -1,0 +1,24 @@
+suite: API deployment shutdown grace
+templates:
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: system-facts
+  namespace: system-facts
+tests:
+  - it: gives the API pod 52s to shut down
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 52
+        template: templates/deployment.yaml
+
+  - it: honours an override
+    set:
+      system-facts.terminationGracePeriodSeconds: 90
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 90
+        template: templates/deployment.yaml

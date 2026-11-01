@@ -195,6 +195,17 @@ data:
   STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.pix.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-indirect-btg" | quote }}
   STREAMING_ENABLED: {{ .Values.pix.configmap.STREAMING_ENABLED | default "false" | quote }}
   STREAMING_TENANT_ID: {{ .Values.pix.configmap.STREAMING_TENANT_ID | default "default" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.pix.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  MIDAZ_CASHIN_DESTINATION_OPERATION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHIN_DESTINATION_OPERATION_ROUTE | default "" | quote }}
+  MIDAZ_CASHIN_REFUND_DESTINATION_OPERATION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHIN_REFUND_DESTINATION_OPERATION_ROUTE | default "" | quote }}
+  MIDAZ_CASHIN_REFUND_TRANSACTION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHIN_REFUND_TRANSACTION_ROUTE | default "" | quote }}
+  MIDAZ_CASHIN_TRANSACTION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHIN_TRANSACTION_ROUTE | default "" | quote }}
+  MIDAZ_CASHOUT_DESTINATION_OPERATION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHOUT_DESTINATION_OPERATION_ROUTE | default "" | quote }}
+  MIDAZ_CASHOUT_REFUND_DESTINATION_OPERATION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHOUT_REFUND_DESTINATION_OPERATION_ROUTE | default "" | quote }}
+  MIDAZ_CASHOUT_REFUND_SOURCE_OPERATION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHOUT_REFUND_SOURCE_OPERATION_ROUTE | default "" | quote }}
+  MIDAZ_CASHOUT_REFUND_TRANSACTION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHOUT_REFUND_TRANSACTION_ROUTE | default "" | quote }}
+  MIDAZ_CASHOUT_SOURCE_OPERATION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHOUT_SOURCE_OPERATION_ROUTE | default "" | quote }}
+  MIDAZ_CASHOUT_TRANSACTION_ROUTE: {{ .Values.pix.configmap.MIDAZ_CASHOUT_TRANSACTION_ROUTE | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

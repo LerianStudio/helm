@@ -14,31 +14,9 @@ This Helm chart installs **Plugin Fees** for Midaz, a high-performance ledger.
 
 ---
 
-## Install Plugin Fees Helm Chart
+## Moving to Midaz
 
-To install Plugin Fees using Helm, run the following command:
-
-```console
-$ helm install plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version <version> -n midaz-plugins --create-namespace
-```
-
-This will create a new namespace called `midaz-plugins` if it doesn't already exist and deploy the Plugin Fees Helm chart.
-
-After installation, you can verify that the release was successful by listing the Helm releases in the `midaz-plugins` namespace:
-
-```console
-$ helm list -n midaz-plugins
-```
-
----
-
-## Upgrading
-
-To upgrade the chart to a new version:
-
-```console
-$ helm upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version <new-version> -n midaz-plugins
-```
+Fees run inside the Midaz ledger. Install or upgrade the `midaz` chart (see `charts/midaz`), then uninstall this release as below. Do not start new installs of this chart.
 
 ---
 

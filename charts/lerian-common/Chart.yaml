@@ -5,11 +5,11 @@ description: >-
   charts into render-equivalent helpers consumed via `include`: env contracts
   (service discovery, streaming, multi-tenant), in-cluster host derivation, and
   (progressively) naming/labels, securityContext, probes and workload
-  boilerplate. Library chart — renders nothing on its own. Adopting a
-  helper is not a breaking change; the health preset is opt-in and adds
-  behavior only for charts that call it.
+  boilerplate. Library chart — renders nothing on its own. Adopting a helper is
+  not a breaking change; the health preset is opt-in and adds behavior only for
+  charts that call it.
 type: library
-version: 2.4.2
+version: 2.5.0
 appVersion: "1.0.0"
 annotations:
   lerian.studio/chart-type: library

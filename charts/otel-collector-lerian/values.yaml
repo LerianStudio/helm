@@ -12,6 +12,11 @@
 #   own value; the chart does not validate it.
 
 opentelemetry-collector:
+  # Keep the component ids as written in this file. The subchart would rewrite
+  # k8sattributes and otlphttp to the 0.144+ names, which images below that
+  # (a pinned tag) cannot load.
+  rewriteDeprecatedComponentNames: false
+
   mode: daemonset # Changed from deployment to daemonset for kubeletstats
 
   # hostNetwork enables the FALLBACK pod identity path of the k8sattributes
@@ -35,7 +40,7 @@ opentelemetry-collector:
   # Contrib image is needed for k8scluster, k8sattributes, transform, and loki exporter.
   image:
     repository: otel/opentelemetry-collector-contrib
-    tag: 0.142.0
+    tag: 0.164.0
 
   # RBAC is required for k8sattributes, k8scluster, and kubeletstats receivers.
   clusterRole:
@@ -454,8 +459,13 @@ opentelemetry-collector:
         logs:
           level: "info"
         metrics:
-          address: "0.0.0.0:8887"
           level: "Basic"
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8887
       pipelines:
         # Accept OTLP-pushed metrics from applications. Required so apps using
         # lib-observability (which emits http.server.request.duration and

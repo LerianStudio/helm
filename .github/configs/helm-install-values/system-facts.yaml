@@ -20,9 +20,6 @@ namespaceOverride: "it-system-facts"
 system-facts:
   env: "development"
   allowInsecureTls: "true"
-  extraEnvVars:
-    - name: LICENSE_ENABLED
-      value: "false"
   # The bundled subcharts own both passwords (the Deployment reads them from the
   # subchart Secrets), and the chart refuses a POSTGRES_PASSWORD it would ignore.
 migrations:

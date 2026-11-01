@@ -21,7 +21,7 @@ maintainers:
 
 # This is the chart version. It should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 1.0.0
+version: 1.1.0
 
 # This is the version number of the application being deployed.
 # It matches the appVersion of the pinned hashicorp/consul subchart (2.1.0 -> Consul 2.1.0).

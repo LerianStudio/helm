@@ -82,8 +82,7 @@ helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
 A licença é obrigatória aqui também. Desde a app 1.2.0 a licença é exigida em todo
 ambiente, `development` incluído (sem bypass de dev). O `values-dev.yaml` traz o
 placeholder `REPLACE_WITH_YOUR_LICENSE_KEY` para o chart renderizar, mas o pod não sobe
-até uma chave real ser configurada. Uma chave emitida pelo gateway de licença dev
-também precisa de `--set brSisbajud.license.isDevelopment=true`.
+até uma chave real ser configurada.
 
 As imagens são públicas, então não é preciso pull secret (o `imagePullSecrets` de topo
 é só para um mirror/registry privado). Com as
@@ -392,7 +391,7 @@ secret real e de um plugin-access-manager acessível.
 | No startup | Uma licença válida sobe, e uma licença em carência também, incluindo a carência de indisponibilidade quando o gateway não consegue responder. Uma recusa 4xx do gateway aborta o boot |
 | Uma chave por produto | Uma chave licencia um único produto. Chave emitida para outro produto é recusada com `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; chave desconhecida ou adulterada, com `(LCS-1002)` |
 | Na recusa | O processo sai e o pod entra em `CrashLoopBackOff`. Num rolling update o pod que já está rodando continua servindo: o rollout trava, mas nada cai |
-| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging foram validadas neste gateway de produção. `brSisbajud.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) troca para `https://license.dev.lerian.io`: use só para chaves emitidas pelo gateway dev |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging foram validadas neste gateway de produção. `IS_DEVELOPMENT` está obsoleta e é ignorada: os produtos validam só no gateway de produção |
 | Refresh e carência | A chave é revalidada a cada 6 h. Quando o gateway não responde (erro de rede ou 5xx) depois de ter confirmado a chave uma vez, o processo segue servindo em janelas de carência decrescentes (2 d, 1 d, 12 h, 6 h, no máximo 3 d 18 h) e depois sai. Um processo que nunca foi confirmado ganha só 6 h. Uma recusa 4xx encerra a carência na hora. As janelas vivem em memória: um pod reiniciado durante uma queda começa sem confirmação |
 | Offline | Não há modo de licença offline nesta versão da app |
 | Gate de render | Todo ambiente falha o render sem `LICENSE_KEY` (valor no Secret, `secretRefs`, `extraEnvVars` ou `useExistingSecret`); `ORGANIZATION_IDS` é obrigatório e precisa ser `global` |

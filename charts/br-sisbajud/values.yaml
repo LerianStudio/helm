@@ -285,8 +285,7 @@ brSisbajud:
   # a bundled subchart is enabled), allowCorsWildcard, allowInsecureOtel,
   # allowWebhookPrivateNetwork.
   security: {}
-  # -- organizationIds (must be "global"), isDevelopment (routes the license SDK
-  # to the dev gateway). LICENSE_KEY is a secret, required in a production-like
+  # -- organizationIds (must be "global"). LICENSE_KEY is a secret, required in a production-like
   # environment (anything but local|development|staging|e2e|test); in those five
   # an empty LICENSE_KEY is the app's dev bypass.
   license: {}

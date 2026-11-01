@@ -22,7 +22,7 @@ Inputs (dict):
   labels    (req)  labels block already rendered (no leading indent)
   selector  (req)  selector labels block already rendered (no leading indent)
   namespace (opt)  metadata.namespace (already rendered); line omitted when empty
-  ports     (opt)  extra ports appended after http (the `servicePorts` key of lerian-common.health)
+  ports     (opt)  extra ports appended after http (the `servicePorts` key of lerian-common.health); rendered only on a ClusterIP Service
 ==============================================================================
 */}}
 {{- define "lerian-common.service" -}}
@@ -47,8 +47,8 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-    {{- with .ports }}
-    {{- toYaml . | nindent 4 }}
+    {{- if and .ports (eq (toString ($svc.type | default "ClusterIP")) "ClusterIP") }}
+    {{- toYaml .ports | nindent 4 }}
     {{- end }}
   selector:
     {{- .selector | nindent 4 }}

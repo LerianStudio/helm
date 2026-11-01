@@ -253,6 +253,12 @@ tests:
       - equal: {path: spec.ports, value: [{port: 4000, targetPort: http, protocol: TCP, name: http}, {port: 8099, targetPort: 8099, protocol: TCP, name: health}]}
       - equal: {path: spec.type, value: ClusterIP}
 
+  - it: a LoadBalancer Service never publishes the health port
+    documentSelector: {path: kind, value: Service}
+    set: {app.service.type: LoadBalancer}
+    asserts:
+      - lengthEqual: {path: spec.ports, count: 1}
+
   - it: go-worker has no Service port to add
     documentSelector: {path: kind, value: Service}
     set: {app.health: {stack: go-worker}}

@@ -193,7 +193,7 @@ Usage: see the example in the header of `templates/_health.tpl`.
 
 - **Service port:** stack `go` also returns `servicePorts`, the named `health` 8099 -> targetPort 8099 port
   (TCP, ClusterIP) for in-cluster callers by DNS name. Pass it as `ports` to `lerian-common.service`; it
-  lands after `http`. `go-worker` returns none (no Service) and `next`, `static` and `external` serve nothing
+  lands after `http`, and only on a ClusterIP Service (a LoadBalancer or NodePort Service keeps `http` alone). `go-worker` returns none (no Service) and `next`, `static` and `external` serve nothing
   on 8099. `lerian-common.ingress` refuses a `svcPort` of 8099 or `health`. The route has no JWT, so only
   in-cluster workloads may reach it.
 

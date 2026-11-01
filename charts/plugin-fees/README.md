@@ -1,5 +1,7 @@
 # Plugin Fees Helm Chart
 
+> **Deprecated.** Plugin Fees no longer ships as a standalone service: fees run inside the Midaz ledger, so install the `midaz` chart instead. This chart and the `plugin-fees` image receive no further releases.
+
 ## Chart Contract
 
 - Chart type: `multi-component`
@@ -12,31 +14,13 @@ This Helm chart installs **Plugin Fees** for Midaz, a high-performance ledger.
 
 ---
 
-## Install Plugin Fees Helm Chart
+## Moving to Midaz
 
-To install Plugin Fees using Helm, run the following command:
+Fees run inside the Midaz ledger. Do not start new installs of this chart. Keep an existing release running until no service calls it:
 
-```console
-$ helm install plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version <version> -n midaz-plugins --create-namespace
-```
-
-This will create a new namespace called `midaz-plugins` if it doesn't already exist and deploy the Plugin Fees Helm chart.
-
-After installation, you can verify that the release was successful by listing the Helm releases in the `midaz-plugins` namespace:
-
-```console
-$ helm list -n midaz-plugins
-```
-
----
-
-## Upgrading
-
-To upgrade the chart to a new version:
-
-```console
-$ helm upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version <new-version> -n midaz-plugins
-```
+1. **Bank Transfer.** Follow the [Midaz fees migration guide](https://docs.lerian.studio/en/products/midaz/fees/fees-migration-guide) up to its last step, "Retire plugin-fees". It recreates the fee packages in Midaz and switches Bank Transfer to `MIDAZ_FEE_MODE=native`. From that last step, run only its query for open `legacy` TED INs, until it returns no rows on every tenant; do not back up or stop this release there, that is step 3. Keep `native` afterwards: under `auto`, a pod that cannot read the Midaz version starts in `legacy` and calls this release. Do not copy the database instead: Plugin Fees stores a route by name, Midaz matches it by ID, so a copied package never matches and the transfer is charged zero fee.
+2. **Pix Indirect BTG.** With `CASHIN_FEE_CALCULATION_TYPE: "segment"` (the chart default), it asks this release for every cash-in fee at `FEE_SERVICE_URL`, and it has no Midaz fee mode. Keep this release while any Pix Indirect BTG install calls it.
+3. Only when both hold (no open `legacy` TED IN, no Pix Indirect BTG install calling this release), back up the MongoDB database and uninstall this release as below. With the bundled MongoDB (the default), the uninstall deletes the MongoDB volume and every fee record in it.
 
 ---
 

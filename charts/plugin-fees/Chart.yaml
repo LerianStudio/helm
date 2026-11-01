@@ -1,7 +1,8 @@
 apiVersion: v2
 name: plugin-fees-helm
-description: A Helm chart for Kubernetes
+description: DEPRECATED - fees run inside the Midaz ledger; install the midaz chart instead
 type: application
+deprecated: true
 annotations:
   lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/helm

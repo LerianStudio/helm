@@ -172,7 +172,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `3.0.1` | 1.0.0 |
+| `3.1.0` | 1.0.0 |
 -----------------
 
 ### Alloy Lerian

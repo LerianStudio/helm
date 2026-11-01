@@ -530,7 +530,7 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
 | `caradhras.secrets.LICENSE_KEY` | Caradhras license key (env `LICENSE_KEY`, by Secret). Required by images with the license gate, which refuse to boot without it. Issued for product `caradhras`, not the auth/identity key | `""` |
 | `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
-| `caradhras.existingSecretName` | Name of that Secret. Must carry the keys `redisEndpoint` and `LICENSE_KEY` | `""` |
+| `caradhras.existingSecretName` | Name of that Secret. Carries `LICENSE_KEY`, plus `redisEndpoint` unless `caradhras.configmap.redisEndpoint` is set | `""` |
 | `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
@@ -608,6 +608,7 @@ To keep the password out of your values file entirely, set
 `caradhras.useExistingSecret=true` and point `caradhras.existingSecretName` at a
 Secret you manage (external-secrets, sealed-secrets, or `kubectl create secret`)
 carrying the keys `redisEndpoint` and `LICENSE_KEY`. The chart then creates no Secret of its own.
+With a bare `host:port` in `caradhras.configmap.redisEndpoint`, that Secret needs only `LICENSE_KEY`.
 
 The config keys are the beego literals in camelCase on purpose: caradhras
 resolves them with `conf.GetConfigString`, which looks the exact key up in the

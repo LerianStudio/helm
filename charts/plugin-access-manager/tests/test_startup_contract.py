@@ -457,6 +457,17 @@ class StartupContract(unittest.TestCase):
         self.assertEqual(env['valueFrom']['secretKeyRef'], {'name': 'operator-secret', 'key': 'LICENSE_KEY', 'optional': True})
         self.assertIsNone(secret)
 
+    def test_caradhras_existing_secret_with_plain_session_endpoint(self):
+        docs = self.succeeds({'caradhras': {'useExistingSecret': True, 'existingSecretName': 'operator-license',
+                                            'configmap': {'redisEndpoint': 'valkey:6379'}}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        env = {e['name']: e for e in deployment['spec']['template']['spec']['containers'][0]['env']}
+        self.assertEqual(env['LICENSE_KEY']['valueFrom']['secretKeyRef']['name'], 'operator-license')
+        self.assertNotIn('redisEndpoint', env)
+        configmap = next(d for d in docs if d['kind'] == 'ConfigMap' and d['metadata']['name'].endswith('-caradhras'))
+        self.assertEqual(configmap['data']['redisEndpoint'], 'valkey:6379')
+
     def test_caradhras_without_license_key_renders_no_env(self):
         env, secret = self.caradhras_license()
         self.assertIsNone(env)

@@ -437,7 +437,7 @@ keys (`redisEndpoint`, `LICENSE_KEY`). Same convention as auth/identity:
 */}}
 {{- define "plugin-caradhras.secretName" -}}
 {{- if .Values.caradhras.useExistingSecret -}}
-{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the redisEndpoint and LICENSE_KEY keys.\n" .Values.caradhras.existingSecretName -}}
+{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the LICENSE_KEY key (and redisEndpoint, unless caradhras.configmap.redisEndpoint is set).\n" .Values.caradhras.existingSecretName -}}
 {{- else -}}
 {{- include "plugin-caradhras.fullname" . -}}
 {{- end -}}
@@ -447,12 +447,13 @@ keys (`redisEndpoint`, `LICENSE_KEY`). Same convention as auth/identity:
 plugin-caradhras.sessionFromSecret — "true" when the session endpoint is
 delivered by Secret: either inline in `caradhras.secrets.redisEndpoint` (the
 chart writes the Secret) or in an operator-managed Secret
-(`caradhras.useExistingSecret` + `existingSecretName`, key `redisEndpoint`).
+(`caradhras.useExistingSecret` + `existingSecretName`, key `redisEndpoint`),
+unless `caradhras.configmap.redisEndpoint` is set: that Secret then carries only LICENSE_KEY.
 */}}
 {{- define "plugin-caradhras.sessionFromSecret" -}}
 {{- $secrets := .Values.caradhras.secrets | default dict -}}
 {{- $inline := $secrets.redisEndpoint | default "" | toString -}}
-{{- $existing := and .Values.caradhras.useExistingSecret (.Values.caradhras.existingSecretName | default "") -}}
+{{- $existing := and .Values.caradhras.useExistingSecret (.Values.caradhras.existingSecretName | default "") (not (include "plugin-caradhras.sessionFromConfigMap" .)) -}}
 {{- if or $inline $existing -}}true{{- end -}}
 {{- end }}
 
@@ -491,7 +492,7 @@ store. Included once, from templates/caradhras/configmap.yaml (always rendered).
 */}}
 {{- define "plugin-caradhras.validateSessionStore" -}}
 {{- if and .Values.caradhras.useExistingSecret (not (.Values.caradhras.existingSecretName | default "")) -}}
-{{- fail "caradhras.useExistingSecret is true but caradhras.existingSecretName is empty. Without a name the chart creates no Secret and wires no endpoint, so caradhras would silently fall back to per-pod file sessions. Name the Secret holding the redisEndpoint key, or set caradhras.useExistingSecret=false." -}}
+{{- fail "caradhras.useExistingSecret is true but caradhras.existingSecretName is empty. Without a name the chart creates no Secret, so caradhras gets no LICENSE_KEY and, unless caradhras.configmap.redisEndpoint is set, no session endpoint. Name the Secret holding LICENSE_KEY (plus redisEndpoint when the ConfigMap has none), or set caradhras.useExistingSecret=false." -}}
 {{- end -}}
 {{- $ccm := .Values.caradhras.configmap | default dict -}}
 {{- $plain := $ccm.redisEndpoint | default "" | toString -}}

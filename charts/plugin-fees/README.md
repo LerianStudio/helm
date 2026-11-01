@@ -18,7 +18,7 @@ This Helm chart installs **Plugin Fees** for Midaz, a high-performance ledger.
 
 Fees run inside the Midaz ledger. Do not start new installs of this chart. Move an existing install in this order, so no fee data is lost:
 
-1. Install or upgrade the `midaz` chart (see `charts/midaz`) and keep this release running. The Midaz fees module reads the `fees` database on the `midaz-mongodb` Service by default; `global.datastores.mongoFees` (host, user, name) overrides it. With an external MongoDB (`mongodb.external=true`), you can point `global.datastores.mongoFees` at that MongoDB with `name: plugin-fees-db` and skip steps 2 and 3.
+1. Install or upgrade the `midaz` chart (see `charts/midaz`) and keep this release running. The Midaz fees module reads the `fees` database on the `midaz-mongodb` Service by default; `global.datastores.mongoFees` (host, user, name) overrides it. With an external MongoDB (`mongodb.external=true`), you can point `global.datastores.mongoFees` at that MongoDB with `name: plugin-fees-db`, set its password in `ledger.secrets.MONGO_FEES_PASSWORD`, and skip steps 2 and 3.
 2. Stop writes to Plugin Fees: scale this release's fees Deployment to 0 replicas. Its MongoDB keeps running. A fee package created after this point would not be copied.
 3. Copy the data: `mongodump --db plugin-fees-db` from this release's MongoDB, then `mongorestore --nsFrom 'plugin-fees-db.*' --nsTo 'fees.*'` into the Midaz fees database (use the database name you set in step 1 if it is not `fees`).
 4. Check that the ledger lists your fee packages, then point every client at Midaz.

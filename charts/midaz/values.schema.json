@@ -175,7 +175,7 @@
         "terminationGracePeriodSeconds": {
           "type": "integer",
           "minimum": 0,
-          "default": 60,
+          "default": 72,
           "description": "Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush."
         },
         "image": {
@@ -1571,7 +1571,7 @@
         "terminationGracePeriodSeconds": {
           "type": "integer",
           "minimum": 0,
-          "default": 45,
+          "default": 55,
           "description": "Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush."
         },
         "image": {

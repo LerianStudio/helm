@@ -250,7 +250,8 @@ ledger:
   revisionHistoryLimit: 10
   # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
   # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
-  terminationGracePeriodSeconds: 60
+  # 72 = 15s SHUTDOWN_DRAIN_DELAY + ~47s ledger shutdown + 10s margin.
+  terminationGracePeriodSeconds: 72
   image:
     # -- Repository for the ledger service container image
     repository: lerianstudio/midaz-ledger

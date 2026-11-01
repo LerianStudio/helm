@@ -36,3 +36,7 @@ spec:
       "healthcheck" $h.alb "subdomain" "app") }}
 ---
 {{ include "lerian-common.health.prometheusRule" (dict "monitoring" .Values.monitoring "name" "app" "labels" "app: app" "namespace" .Release.Namespace) }}
+{{- if $h.autoscaling }}
+---
+{{ include "lerian-common.hpa" (dict "autoscaling" $h.autoscaling "name" "app" "labels" "app: app") }}
+{{- end }}

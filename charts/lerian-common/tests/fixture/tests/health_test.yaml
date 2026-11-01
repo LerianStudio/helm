@@ -104,7 +104,7 @@ tests:
   - it: non-integer drain or shutdown seconds are refused
     set: {app.health: {stack: go, drainSeconds: 15s}}
     asserts:
-      - failedTemplate: {errorPattern: "drainSeconds must be a non-negative integer"}
+      - failedTemplate: {errorPattern: "drainSeconds must be an integer"}
 
   - it: configured replicas win over the default of 2
     documentSelector: {path: kind, value: Deployment}
@@ -217,3 +217,26 @@ tests:
       - lengthEqual: {path: "spec.groups[0].rules", count: 9}
       - equal: {path: "spec.groups[0].rules[0].alert", value: HealthStoreDown}
       - equal: {path: "spec.groups[0].rules[4].expr", value: 'kube_deployment_status_replicas_available{namespace="prod"} == 0 and kube_deployment_spec_replicas{namespace="prod"} > 0'}
+
+  - it: shutdownSeconds 0 is refused
+    set: {app.health: {stack: go, shutdownSeconds: 0}}
+    asserts:
+      - failedTemplate: {errorPattern: "shutdownSeconds"}
+
+  - it: startupBudgetSeconds below 5 is refused
+    set: {app.health: {stack: external, livenessPath: /l, readinessPath: /r, startupBudgetSeconds: 4}}
+    asserts:
+      - failedTemplate: {errorPattern: "startupBudgetSeconds"}
+
+  - it: autoscaling gets an HPA floor of 2 when minReplicas is unset
+    documentSelector: {path: kind, value: HorizontalPodAutoscaler}
+    set: {app.autoscaling: {enabled: true, maxReplicas: 5}}
+    asserts:
+      - equal: {path: spec.minReplicas, value: 2}
+      - equal: {path: spec.maxReplicas, value: 5}
+
+  - it: an explicit minReplicas wins over the HPA floor
+    documentSelector: {path: kind, value: HorizontalPodAutoscaler}
+    set: {app.autoscaling: {enabled: true, minReplicas: 3, maxReplicas: 5}}
+    asserts:
+      - equal: {path: spec.minReplicas, value: 3}

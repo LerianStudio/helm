@@ -15,6 +15,8 @@ Returns YAML; the caller reads it with `fromYaml` and places each key:
         "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) | fromYaml }}
 
   replicas / strategy       Deployment spec (`toYaml`)
+  autoscaling               only when the caller's autoscaling is enabled on a non-singleton: its map with
+                            minReplicas defaulted to 2 when unset; pass it to lerian-common.hpa
   terminationGracePeriodSeconds, ports, env, startupProbe, livenessProbe,
   readinessProbe, lifecycle pod spec / MAIN container (`ports` and `env` are
                             appended to the container's own lists; `lifecycle`
@@ -22,8 +24,10 @@ Returns YAML; the caller reads it with `fromYaml` and places each key:
   pdb                       absent for a singleton; else pass to lerian-common.pdb
   alb                       {path, port} for lerian-common.ingress `healthcheck`
 
-Inputs: name, component (values map: reads image.tag, configmap, extraEnvVars,
-the probe keys), health (the component's `health` map), port (main container
+The preset owns probes, grace and the drain env. shutdownSeconds >= 1 because the
+lib refuses to boot with SHUTDOWN_TIMEOUT <= 0; startupBudgetSeconds >= 5.
+
+Inputs: name, component (values map: reads image.tag, configmap, the probe keys), health (the component's `health` map), port (main container
 port, required unless stack go-worker), minImage (first image serving the health
 port, chart-owned), replicas (optional configured count), autoscaling (optional).
 
@@ -42,17 +46,11 @@ port, chart-owned), replicas (optional configured count), autoscaling (optional)
 {{- range $k := keys $h -}}
 {{- if not (has $k $allowed) -}}{{- fail (printf "lerian-common.health: %s: health.%s is not a value for stack %s (allowed: %s)" $n $k $stack (join ", " $allowed)) -}}{{- end -}}
 {{- end -}}
-{{- /* The preset owns probes, grace and the drain env. */ -}}
 {{- range $k := list "livenessProbe" "readinessProbe" "startupProbe" "terminationGracePeriodSeconds" -}}
 {{- if index $c $k -}}{{- fail (printf "lerian-common.health: %s: %s is owned by the health preset; remove it (tune health.drainSeconds / health.shutdownSeconds)" $n $k) -}}{{- end -}}
 {{- end -}}
-{{- range $src := list "configmap" "extraEnvVars" -}}
-{{- $m := index $c $src -}}
-{{- if kindIs "map" $m -}}
 {{- range $k := list "SHUTDOWN_DRAIN_DELAY" "SHUTDOWN_TIMEOUT" "HEALTH_PORT" -}}
-{{- if hasKey $m $k -}}{{- fail (printf "lerian-common.health: %s: %s.%s is owned by the health preset; use health.drainSeconds / health.shutdownSeconds" $n $src $k) -}}{{- end -}}
-{{- end -}}
-{{- end -}}
+{{- if and (kindIs "map" $c.configmap) (hasKey $c.configmap $k) -}}{{- fail (printf "lerian-common.health: %s: configmap.%s is owned by the health preset; use health.drainSeconds / health.shutdownSeconds" $n $k) -}}{{- end -}}
 {{- end -}}
 {{- if not .minImage -}}{{- fail (printf "lerian-common.health: %s: minImage is required" $n) -}}{{- end -}}
 {{- $tag := toString (($c.image | default dict).tag | default "") -}}
@@ -68,20 +66,22 @@ port, chart-owned), replicas (optional configured count), autoscaling (optional)
 {{- if gt $replicas 1 -}}{{- fail (printf "lerian-common.health: %s: a singleton runs 1 replica, got %v" $n .replicas) -}}{{- end -}}
 {{- if (.autoscaling | default dict).enabled -}}{{- fail (printf "lerian-common.health: %s: a singleton has no autoscaling" $n) -}}{{- end -}}
 {{- end -}}
-{{- range $k := list "drainSeconds" "shutdownSeconds" -}}
-{{- if and (hasKey $h $k) (not (regexMatch "^[0-9]+$" (toString (index $h $k)))) -}}{{- fail (printf "lerian-common.health: %s: health.%s must be a non-negative integer number of seconds" $n $k) -}}{{- end -}}
+{{- range $k := list "drainSeconds" "shutdownSeconds" "startupBudgetSeconds" -}}
+{{- if hasKey $h $k -}}
+{{- if not (regexMatch (ternary "^[0-9]+$" "^[1-9][0-9]*$" (eq $k "drainSeconds")) (toString (index $h $k))) -}}{{- fail (printf "lerian-common.health: %s: health.%s must be an integer number of seconds (drainSeconds >= 0, shutdownSeconds >= 1, startupBudgetSeconds >= 5)" $n $k) -}}{{- end -}}
+{{- if and (eq $k "startupBudgetSeconds") (lt (int $h.startupBudgetSeconds) 5) -}}{{- fail (printf "lerian-common.health: %s: health.startupBudgetSeconds must be >= 5" $n) -}}{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- $d := 15 -}}{{- if hasKey $h "drainSeconds" -}}{{- $d = int $h.drainSeconds -}}{{- end -}}
 {{- $t := 30 -}}{{- if hasKey $h "shutdownSeconds" -}}{{- $t = int $h.shutdownSeconds -}}{{- end -}}
 {{- $out := dict "replicas" $replicas "strategy" (dict "type" "Recreate") -}}
 {{- if not $singleton -}}
+{{- if (.autoscaling | default dict).enabled -}}{{- $a := deepCopy .autoscaling -}}{{- if kindIs "invalid" $a.minReplicas -}}{{- $_ := set $a "minReplicas" 2 -}}{{- end -}}{{- $_ := set $out "autoscaling" $a -}}{{- end -}}
 {{- $_ := set $out "strategy" (dict "type" "RollingUpdate" "rollingUpdate" (dict "maxSurge" "25%" "maxUnavailable" 0)) -}}
 {{- $_ := set $out "pdb" (dict "maxUnavailable" 1 "unhealthyPodEvictionPolicy" "AlwaysAllow") -}}
 {{- end -}}
-{{- $probePort := "health" -}}
-{{- $live := "/health" -}}{{- $ready := "/readyz" -}}
-{{- $sleep := 0 -}}
-{{- $grace := 0 -}}
+{{- $probePort := "health" -}}{{- $live := "/health" -}}{{- $ready := "/readyz" -}}
+{{- $sleep := 0 -}}{{- $grace := 0 -}}
 {{- if or (eq $stack "go") (eq $stack "go-worker") -}}
 {{- if eq $stack "go-worker" -}}{{- $d = 0 -}}{{- end -}}
 {{- $grace = add $d $t 10 -}}
@@ -100,12 +100,12 @@ port, chart-owned), replicas (optional configured count), autoscaling (optional)
 {{- end -}}
 {{- $_ := set $out "lifecycle" (dict "preStop" (dict "exec" (dict "command" (list "sleep" (toString $sleep))))) -}}
 {{- end -}}
-{{- $startThreshold := 60 -}}
-{{- if $h.startupBudgetSeconds -}}{{- $startThreshold = div (add (int $h.startupBudgetSeconds) 4) 5 -}}{{- end -}}
+{{- $startThreshold := 60 -}}{{- if $h.startupBudgetSeconds -}}{{- $startThreshold = div (add (int $h.startupBudgetSeconds) 4) 5 -}}{{- end -}}
 {{- $_ := set $out "terminationGracePeriodSeconds" $grace -}}
-{{- $_ := set $out "startupProbe" (dict "httpGet" (dict "path" $live "port" $probePort) "periodSeconds" 5 "timeoutSeconds" 3 "failureThreshold" $startThreshold) -}}
-{{- $_ := set $out "livenessProbe" (dict "httpGet" (dict "path" $live "port" $probePort) "periodSeconds" 10 "timeoutSeconds" 3 "failureThreshold" 3) -}}
-{{- $_ := set $out "readinessProbe" (dict "httpGet" (dict "path" $ready "port" $probePort) "periodSeconds" 5 "timeoutSeconds" 3 "failureThreshold" 3) -}}
+{{- $get := dict "path" $live "port" $probePort -}}
+{{- $_ := set $out "startupProbe" (dict "httpGet" $get "periodSeconds" 5 "timeoutSeconds" 3 "failureThreshold" $startThreshold) -}}
+{{- $_ := set $out "livenessProbe" (dict "httpGet" $get "periodSeconds" 10 "timeoutSeconds" 3 "failureThreshold" 3) -}}
+{{- $_ := set $out "readinessProbe" (dict "httpGet" (set (deepCopy $get) "path" $ready) "periodSeconds" 5 "timeoutSeconds" 3 "failureThreshold" 3) -}}
 {{- if .port -}}
 {{- $albPort := int .port -}}{{- if and (eq $stack "external") $h.port -}}{{- $albPort = int $h.port -}}{{- end -}}
 {{- $_ := set $out "alb" (dict "path" $live "port" $albPort) -}}

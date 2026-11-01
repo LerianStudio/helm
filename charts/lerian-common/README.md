@@ -157,7 +157,7 @@ sleep, `terminationGracePeriodSeconds`, the rollout strategy, replicas and the P
 process-only; a shared dependency is reported by `/readyz`, it never takes the pod out of the Service.
 Paths, ports, timings, strategy and grace are **not** values: the render refuses a component that also
 sets `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePeriodSeconds`, or carries
-`SHUTDOWN_DRAIN_DELAY`, `SHUTDOWN_TIMEOUT` or `HEALTH_PORT` in `configmap`/`extraEnvVars`.
+`SHUTDOWN_DRAIN_DELAY`, `SHUTDOWN_TIMEOUT` or `HEALTH_PORT` in `configmap`.
 
 ```yaml
 <component>:
@@ -166,7 +166,7 @@ sets `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePerio
     drainSeconds: 15     # go: SHUTDOWN_DRAIN_DELAY; next/static/external: preStop sleep; go-worker: forced 0
     shutdownSeconds: 30  # SHUTDOWN_TIMEOUT, the budget after the drain
     singleton: false     # true: 1 replica, Recreate, no PDB, no autoscaling
-    # external only: livenessPath, readinessPath (required), port, startupBudgetSeconds (300)
+    # external only: livenessPath, readinessPath (required), port, startupBudgetSeconds (300, min 5)
 ```
 
 | Stack | Probes | Drain | Grace |
@@ -179,24 +179,16 @@ sets `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePerio
 
 Probe timings are fixed: startup 5s/3s x 60 (300s budget), liveness 10s/3s x 3, readiness 5s/3s x 3.
 Rollout: `RollingUpdate` 25% surge, 0 unavailable; `replicas` is 2 unless the caller passes a count (an
-explicit 0 is honored; pass nothing, not the chart's `replicaCount: 1`, to get 2, and skip `spec.replicas`
-when autoscaling is on). The PDB is `maxUnavailable: 1` with `unhealthyPodEvictionPolicy: AlwaysAllow`.
-`drainSeconds` and `shutdownSeconds` must be integers (seconds, not `15s`). Keys a stack does not use
+explicit 0 is honored; pass nothing, not the chart's `replicaCount: 1`, to get 2). With autoscaling
+enabled on a non-singleton, skip `spec.replicas` and pass `$h.autoscaling` to `lerian-common.hpa`: it is the
+caller's map with `minReplicas` defaulted to 2 when unset (an explicit value wins); a singleton refuses
+autoscaling. The PDB is `maxUnavailable: 1` with `unhealthyPodEvictionPolicy: AlwaysAllow`.
+`drainSeconds` (>= 0), `shutdownSeconds` (>= 1: the lib refuses to boot with `SHUTDOWN_TIMEOUT` <= 0) and
+`startupBudgetSeconds` (>= 5) must be integers (seconds, not `15s`). Keys a stack does not use
 (`drainSeconds` on static and go-worker, `shutdownSeconds` on next and static) are ignored.
 The ALB annotations need `target-type: ip`.
 
-{% raw %}
-```yaml
-{{- $h := include "lerian-common.health" (dict
-      "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health
-      "port" .Values.ledger.containerPort "minImage" "v3.1.0"
-      "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) | fromYaml }}
-# Deployment: replicas {{ $h.replicas }}, strategy {{ toYaml $h.strategy }}, pod spec
-# terminationGracePeriodSeconds, main container ports/env/lifecycle/probes (append ports and env to the
-# container's own lists). PDB: {{- with $h.pdb }} include "lerian-common.pdb" (dict "pdb" . ...) {{- end }}
-# Ingress: include "lerian-common.ingress" (dict ... "healthcheck" $h.alb)
-```
-{% endraw %}
+Usage: see the example in the header of `templates/_health.tpl`.
 
 - **`minImage`** is passed by the chart (the first image that serves the health port), never a client value.
   The render fails when `image.tag` is a semver below it; other tags skip the check.

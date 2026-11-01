@@ -633,6 +633,13 @@ prometheus.relabel "allowlist_agente" {
     replacement  = sys.env("ALLOY_CLIENT_ID")
   }
 
+  // Every agent scrapes itself at 127.0.0.1:12345; without the pod name all
+  // agents of a client write the same series and overwrite each other.
+  rule {
+    target_label = "instance"
+    replacement  = sys.env("HOSTNAME")
+  }
+
   forward_to = [otelcol.receiver.prometheus.ponte_agente.receiver]
 }
 

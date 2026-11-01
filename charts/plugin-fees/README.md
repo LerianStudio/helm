@@ -1,5 +1,7 @@
 # Plugin Fees Helm Chart
 
+> **Deprecated.** Plugin Fees no longer ships as a standalone service: fees run inside the Midaz ledger, so install the `midaz` chart instead. This chart and the `plugin-fees` image receive no further releases.
+
 ## Chart Contract
 
 - Chart type: `multi-component`

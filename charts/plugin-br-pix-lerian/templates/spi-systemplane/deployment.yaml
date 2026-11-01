@@ -153,7 +153,7 @@ spec:
               port: http
             initialDelaySeconds: {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.readinessProbe "default" 10) }}
             periodSeconds: {{ $values.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ $values.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ $values.readinessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ $values.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ $values.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -162,7 +162,7 @@ spec:
               port: http
             initialDelaySeconds: {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.livenessProbe "default" 5) }}
             periodSeconds: {{ $values.livenessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ $values.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ $values.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ $values.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ $values.livenessProbe.failureThreshold | default 3 }}
       {{- with $values.nodeSelector }}

@@ -22,7 +22,7 @@
         "configmap": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Escape hatch for native env keys. Only the executor's NON-credential keys are accepted; credentials (LICENSE_KEY, *_PASSWORD, *_SECRET*, *_TOKEN, *_CLIENT_ID, *_API_KEY) belong in sisbajud.secrets or an existing Secret.",
+          "description": "Escape hatch for native env keys (IS_DEVELOPMENT is deprecated: still accepted so upgrades keep validating, ignored). Only the executor's NON-credential keys are accepted; credentials (LICENSE_KEY, *_PASSWORD, *_SECRET*, *_TOKEN, *_CLIENT_ID, *_API_KEY) belong in sisbajud.secrets or an existing Secret.",
           "propertyNames": {
             "enum": [
               "ACCESS_CONTROL_ALLOW_CREDENTIALS",

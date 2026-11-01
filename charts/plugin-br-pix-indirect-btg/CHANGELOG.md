@@ -1,5 +1,141 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+- Roll pods when a `ConfigMap` or `Secret` changes to ensure the plugin reflects the latest configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+- Roll pods when a `ConfigMap` or `Secret` changes to ensure the plugin operates with the latest configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+- Ensure pods are rolled when there are changes to the configmap or secret. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+- Roll pods when the configmap or secret changes to ensure the plugin stays up-to-date with the latest configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+
+- Roll pods when the configmap or secret changes to ensure the plugin stays updated with the latest configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+- Roll pods when a configmap or secret changes to ensure the plugin remains up-to-date with the latest configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+- Ensure that pods are rolled when there are changes to the configmap or secret, enhancing the update process reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+
+- Roll pods when a ConfigMap or Secret changes to ensure the plugin operates with the latest configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.1)
+
+Features:
+- Added Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.2.0`. (@guimoreirar)
+- Added Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.1.0`. (@guimoreirar)
+- Added Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.0.0`. (@guimoreirar)
+- Added Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.2.0`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+- Fixed GitHub Pages build issues related to Liquid over Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.0...plugin-br-pix-indirect-btg-v5.2.1)
+
+---
+
+## [5.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.1)
+
+Features:
+- Added Helm upgrade guides for `plugin-br-pix-indirect-btg` versions `v5.2.0`, `v5.1.0`, `v5.0.0`, and `v4.2.0`. (@guimoreirar)
+
+Improvements:
+- Relicensed the charts under the Elastic License 2.0. (@fredcamaral)
+
+Fixes:
+- Resolved issues with the GitHub Pages build by addressing Liquid template conflicts with Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.0...plugin-br-pix-indirect-btg-v5.2.1)
+
+---
+
+## [5.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.1)
+
+Features:
+- Added Helm upgrade guides for `plugin-br-pix-indirect-btg` versions `v5.2.0`, `v5.1.0`, `v5.0.0`, and `v4.2.0`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+Fixes:
+- Resolved issues with the GitHub Pages build by addressing Liquid template conflicts with Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.0...plugin-br-pix-indirect-btg-v5.2.1)
+
+---
+
+## [5.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.2.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.1.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.2.0`. (@guimoreirar)
+
+Improvements:
+- Relicensed the charts under the Elastic License 2.0. (@fredcamaral)
+- Fixed issues with the GitHub Pages build by addressing Liquid template conflicts with Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.0...plugin-br-pix-indirect-btg-v5.2.1)
+
+---
+
 ## [5.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.1)
 
 Features:

@@ -1,5 +1,7 @@
 # install-test.sh grants the GHCR pull secret to the namespace's default ServiceAccount
-# only; the chart's own ServiceAccount would pull the private image anonymously (401).
+# only, and a pod that names its own pull secret never gets the ServiceAccount's; the
+# chart's own ServiceAccount or its ghcr-credential default would pull anonymously (401).
 plugin-br-ted-lerian:
   serviceAccount:
     create: false
+  imagePullSecrets: []

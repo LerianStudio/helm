@@ -16,6 +16,11 @@ spec:
       {{- include "inbound.selectorLabels" (dict "context" . "name" .Values.inbound.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/inbound/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.inbound.useExistingSecrets }}
+        checksum/secret: {{ include (print $.Template.BasePath "/inbound/secrets.yaml") . | sha256sum }}
+        {{- end }}
       labels:
         {{- include "inbound.labels" (dict "context" . "name" .Values.inbound.name ) | nindent 8 }}
     spec:

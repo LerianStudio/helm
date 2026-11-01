@@ -3,6 +3,154 @@
 ## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
 
 Features:
+- Added a Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Add a Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Add a Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+
+- Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+
+- Add a Helm upgrade guide for `br-sta` `v1.0.2`, providing detailed instructions on how to upgrade to the latest version. (@guimoreirar)
+
+Improvements:
+
+- Relicense the charts under the Elastic License 2.0, ensuring compliance with the latest licensing standards. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Relicense the charts under the Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
+- Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
 - Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
 
 Improvements:

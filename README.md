@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `10.0.5` | 4.4.0 | 3.8.4 |
+| `10.1.1` | 4.4.0 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `10.1.4` | 3.14.0 | 3.14.0 | 1.8.6 |
+| `10.2.0` | 3.14.0 | 3.14.0 | 1.8.6 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.5.8` | 1.5.0 | 1.5.0 |
+| `0.5.9` | 1.5.0 | 1.5.0 |
 -----------------
 
 ### BR JD Courier
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.2.1` | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 |
+| `5.2.2` | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 |
 
 -----------------
 
@@ -146,7 +146,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.3` | 1.0.0-beta.9 |
+| `2.0.2` | 1.0.2 |
 -----------------
 
 ### Fetcher
@@ -172,7 +172,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `3.0.1` | 1.0.0 |
+| `3.1.0` | 1.0.0 |
 -----------------
 
 ### Alloy Lerian
@@ -225,7 +225,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `3.0.1` | 1.2.0 |
+| `3.0.2` | 1.2.0 |
 
 -----------------
 
@@ -275,7 +275,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.1` | 1.0.0-beta.33 |
+| `1.1.0` | 1.0.0-beta.64 |
 -----------------
 
 ### BR Consignado GW
@@ -351,7 +351,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | System-Facts Version |
 | :---: | :---: |
-| `1.1.0` | 1.1.0 |
+| `1.1.1` | 1.1.0 |
 -----------------
 
 ## License

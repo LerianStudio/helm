@@ -429,15 +429,15 @@ leftover `replicaCount` is inert and must not be read as intent.
 {{- end }}
 
 {{/*
-plugin-caradhras.sessionSecretName — name of the Secret holding the caradhras
-`redisEndpoint` connection string. Same convention as auth/identity:
+plugin-caradhras.secretName — name of the Secret holding the caradhras secret
+keys (`redisEndpoint`, `LICENSE_KEY`). Same convention as auth/identity:
 `caradhras.useExistingSecret` hands the Secret over to the operator,
 `caradhras.existingSecretName` names it; otherwise the chart owns
 <release>-caradhras (templates/caradhras/secrets.yaml).
 */}}
-{{- define "plugin-caradhras.sessionSecretName" -}}
+{{- define "plugin-caradhras.secretName" -}}
 {{- if .Values.caradhras.useExistingSecret -}}
-{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the redisEndpoint key.\n" .Values.caradhras.existingSecretName -}}
+{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the redisEndpoint and LICENSE_KEY keys.\n" .Values.caradhras.existingSecretName -}}
 {{- else -}}
 {{- include "plugin-caradhras.fullname" . -}}
 {{- end -}}

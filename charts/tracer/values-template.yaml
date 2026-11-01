@@ -71,6 +71,8 @@ tracer:
 
   secrets:
     DB_PASSWORD: ""
+    # Required: the application refuses to boot without a valid license.
+    LICENSE_KEY: ""
 
   useExistingSecret: false
   existingSecretName: ""

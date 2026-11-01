@@ -491,6 +491,8 @@ ledger:
     # encryption). The RoleID counterpart is not secret and stays in the
     # ConfigMap.
     KMS_VAULT_SECRET_ID: ""
+    # -- Product license key. Required: the ledger refuses to boot when empty.
+    LICENSE_KEY: ""
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
     # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
@@ -941,6 +943,8 @@ tracer:
     DB_PASSWORD: ""
     # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
     API_KEY: ""
+    # -- Product license key. Required: the tracer refuses to boot when empty.
+    LICENSE_KEY: ""
     # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
     # MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Optional Redis password for the tenant connection-pool registry.

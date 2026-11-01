@@ -106,7 +106,7 @@ plugin-br-ted-lerian:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0-beta.33" # defaults to appVersion when empty
+    tag: "1.0.0-beta.64" # defaults to appVersion when empty
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: ghcr-credential
@@ -283,6 +283,8 @@ plugin-br-ted-lerian:
     MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Multi-tenant Redis password (empty if auth disabled)
     MULTI_TENANT_REDIS_PASSWORD: ""
+    # -- Product license key. Optional here; rendered only when set.
+    LICENSE_KEY: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""

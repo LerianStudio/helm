@@ -2,6 +2,19 @@
 
 ## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
 
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix the `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
 Features:
 - Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
 

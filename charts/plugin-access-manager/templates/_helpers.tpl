@@ -492,7 +492,7 @@ store. Included once, from templates/caradhras/configmap.yaml (always rendered).
 */}}
 {{- define "plugin-caradhras.validateSessionStore" -}}
 {{- if and .Values.caradhras.useExistingSecret (not (.Values.caradhras.existingSecretName | default "")) -}}
-{{- fail "caradhras.useExistingSecret is true but caradhras.existingSecretName is empty. Without a name the chart creates no Secret and wires no endpoint, so caradhras would silently fall back to per-pod file sessions. Name the Secret holding the redisEndpoint key, or set caradhras.useExistingSecret=false." -}}
+{{- fail "caradhras.useExistingSecret is true but caradhras.existingSecretName is empty. Without a name the chart creates no Secret, so caradhras gets no LICENSE_KEY and, unless caradhras.configmap.redisEndpoint is set, no session endpoint. Name the Secret holding LICENSE_KEY (plus redisEndpoint when the ConfigMap has none), or set caradhras.useExistingSecret=false." -}}
 {{- end -}}
 {{- $ccm := .Values.caradhras.configmap | default dict -}}
 {{- $plain := $ccm.redisEndpoint | default "" | toString -}}

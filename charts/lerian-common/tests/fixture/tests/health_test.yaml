@@ -279,6 +279,6 @@ tests:
       - lengthEqual: {path: spec.ports, count: 1}
 
   - it: the Ingress refuses a backend on the health port number
-    set: {app.port: 8099, app.health: {stack: static}}
+    set: {app.port: 8099}
     asserts:
       - failedTemplate: {errorPattern: "never route to the health port"}

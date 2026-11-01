@@ -2,6 +2,17 @@
 
 ## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
 
+Improvements:
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `plugin-br-pix-lerian` `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.1...plugin-br-pix-lerian-v2.0.2)
+
+---
+
+## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.2)
+
 Features:
 - Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.1`. (@guimoreirar)
 - Add Helm upgrade guide for `plugin-br-pix-lerian` `v2.0.0`. (@guimoreirar)

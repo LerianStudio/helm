@@ -53,6 +53,16 @@ Improvements:
 ## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
 
 Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
 - Linked the license by URL so packaged charts resolve it. (@fredcamaral)
 - Relicensed under Elastic License 2.0. (@fredcamaral)
 

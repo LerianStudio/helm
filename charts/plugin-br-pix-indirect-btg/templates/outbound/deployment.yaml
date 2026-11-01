@@ -71,7 +71,7 @@ spec:
               port: {{ .Values.outbound.service.port }}
             initialDelaySeconds: {{ .Values.outbound.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.outbound.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.outbound.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.outbound.readinessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.outbound.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.outbound.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -80,7 +80,7 @@ spec:
               port: {{ .Values.outbound.service.port }}
             initialDelaySeconds: {{ .Values.outbound.livenessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.outbound.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.outbound.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.outbound.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.outbound.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.outbound.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.outbound.nodeSelector }}

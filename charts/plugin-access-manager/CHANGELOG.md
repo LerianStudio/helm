@@ -2,6 +2,21 @@
 
 ## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
 
+Features:
+
+Fixes:
+- Ensure the Caradhras license is retrieved solely from an existing secret, improving the security and reliability of the license management. (@fredcamaral)
+- Provide clear naming for both endpoint modes in the error message when a secret is missing, enhancing error clarity and troubleshooting. (@fredcamaral)
+
+Improvements:
+- Add tests to verify that the Caradhras configmap retains the session endpoint, ensuring consistent configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
 Fixes:
 - Ensure the Caradhras license is retrieved solely from an existing secret. (@fredcamaral)
 - Name both endpoint modes in the error message when a secret is missing. (@fredcamaral)

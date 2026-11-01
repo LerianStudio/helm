@@ -128,6 +128,7 @@ data:
   {{- include "plugin-br-pix-indirect-btg.mtlsConfig" . | nindent 2 }}
   {{- end }}
 
+  ALLOW_INSECURE_TLS: {{ .Values.reconciliation.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   # Extra Env Vars
   {{- with .Values.reconciliation.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

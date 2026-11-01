@@ -312,6 +312,7 @@ data:
   WEBHOOK_REPORT_TEMPOSTRANSACOES_REQUEST_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_REQUEST_TIMEOUT | default "5s" | quote }}
   WEBHOOK_REPORT_TEMPOSTRANSACOES_URL: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_URL | default "https://client-api/v1/webhooks/tempos-transacoes" | quote }}
   WEBHOOK_REPORT_TEMPOSTRANSACOES_WORKER_COUNT: {{ .Values.outbound.configmap.WEBHOOK_REPORT_TEMPOSTRANSACOES_WORKER_COUNT | default "1" | quote }}
+  ALLOW_INSECURE_TLS: {{ .Values.outbound.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
   # Extra Env Vars
   {{- with .Values.outbound.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

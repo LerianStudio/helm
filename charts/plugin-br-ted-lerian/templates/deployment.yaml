@@ -34,6 +34,7 @@ spec:
       labels:
         {{- include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ (index .Values "plugin-br-ted-lerian").terminationGracePeriodSeconds }}
       {{- with (index .Values "plugin-br-ted-lerian").imagePullSecrets }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
@@ -64,8 +65,9 @@ spec:
               name: {{ if (index .Values "plugin-br-ted-lerian").useExistingSecret }}{{ (index .Values "plugin-br-ted-lerian").existingSecretName }}{{ else }}{{ include "plugin-br-ted-lerian.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-br-ted-lerian.fullname" . }}
-          {{- if or $otelEnabled $rolesAnywhereEnabled $pgInternal $vkInternal }}
           env:
+            - name: SHUTDOWN_DRAIN_DELAY
+              value: "15s"
           {{- if $pgInternal }}
           {{- include "plugin-br-ted-lerian.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
           {{- end }}
@@ -77,7 +79,6 @@ spec:
           {{- end }}
           {{- if $rolesAnywhereEnabled }}
           {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}
-          {{- end }}
           {{- end }}
           ports:
             - name: http

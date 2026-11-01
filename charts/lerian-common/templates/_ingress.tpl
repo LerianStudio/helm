@@ -55,6 +55,9 @@ Inputs (dict):
 {{- $g := .global | default dict -}}
 {{- $name := .name -}}
 {{- $svcPort := .svcPort -}}
+{{- if or (eq (toString $svcPort) "8099") (eq (toString $svcPort) "health") -}}
+{{- fail (printf "lerian-common.ingress: %s: never route to the health port (svcPort %v)" .name $svcPort) -}}
+{{- end -}}
 {{- /* Presence-based (hasKey) so an explicit component className "" (deliberately no
    class) is honored instead of falling back to the global class. */ -}}
 {{- $className := $g.className -}}{{- if hasKey $ing "className" -}}{{- $className = index $ing "className" -}}{{- end -}}

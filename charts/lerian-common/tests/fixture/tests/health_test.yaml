@@ -77,7 +77,7 @@ tests:
         documentSelector: {path: kind, value: Deployment}
       - equal: {path: spec.strategy, value: {type: Recreate}}
         documentSelector: {path: kind, value: Deployment}
-      - hasDocuments: {count: 2}
+      - hasDocuments: {count: 3}
 
   - it: a singleton refuses replicas above 1
     set: {app.health: {stack: go, singleton: true}, app.replicas: 3}
@@ -207,7 +207,7 @@ tests:
 
   - it: no PrometheusRule by default
     asserts:
-      - hasDocuments: {count: 3}
+      - hasDocuments: {count: 4}
   - it: monitoring.prometheusRule.enabled renders the health rules for the release namespace
     documentSelector: {path: kind, value: PrometheusRule}
     release: {namespace: prod}
@@ -246,3 +246,31 @@ tests:
     set: {app.autoscaling: {enabled: true, minReplicas: 3, maxReplicas: 5}}
     asserts:
       - equal: {path: spec.minReplicas, value: 3}
+
+  - it: go adds the internal health port to the Service, after http
+    documentSelector: {path: kind, value: Service}
+    asserts:
+      - equal: {path: spec.ports, value: [{port: 4000, targetPort: http, protocol: TCP, name: http}, {port: 8099, targetPort: 8099, protocol: TCP, name: health}]}
+      - equal: {path: spec.type, value: ClusterIP}
+
+  - it: go-worker has no Service port to add
+    documentSelector: {path: kind, value: Service}
+    set: {app.health: {stack: go-worker}}
+    asserts:
+      - lengthEqual: {path: spec.ports, count: 1}
+
+  - it: stacks that do not serve the health port get no Service port
+    documentSelector: {path: kind, value: Service}
+    set: {app.health: {stack: next}}
+    asserts:
+      - lengthEqual: {path: spec.ports, count: 1}
+
+  - it: the Ingress refuses a backend on the health port, by number or name
+    set: {app.port: 8099, app.health: {stack: static}}
+    asserts:
+      - failedTemplate: {errorPattern: "never route to the health port"}
+
+  - it: the Ingress refuses the named health port
+    set: {app.port: health, app.health: {stack: static}}
+    asserts:
+      - failedTemplate: {errorPattern: "never route to the health port"}

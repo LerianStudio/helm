@@ -151,7 +151,7 @@ global:
 ## Health preset
 
 `lerian-common.health` renders everything the cluster needs to run a component's health contract: the
-container's `health` port (8099, on the main container only, never in a Service), the `HEALTH_PORT`,
+container's `health` port (8099, on the main container only; an internal ClusterIP Service port, never an Ingress backend), the `HEALTH_PORT`,
 `SHUTDOWN_DRAIN_DELAY` and `SHUTDOWN_TIMEOUT` env, the startup, liveness and readiness probes, the `preStop`
 sleep, `terminationGracePeriodSeconds`, the rollout strategy, replicas and the PDB. Liveness is
 process-only; a shared dependency is reported by `/readyz`, it never takes the pod out of the Service.
@@ -190,6 +190,12 @@ value. A singleton refuses autoscaling. The PDB is `maxUnavailable: 1` with `unh
 The ALB annotations need `target-type: ip`.
 
 Usage: see the example in the header of `templates/_health.tpl`.
+
+- **Service port:** stack `go` also returns `servicePorts`, the named `health` 8099 -> targetPort 8099 port
+  (TCP, ClusterIP) for in-cluster callers by DNS name. Pass it as `ports` to `lerian-common.service`; it
+  lands after `http`. `go-worker` returns none (no Service) and `next`, `static` and `external` serve nothing
+  on 8099. `lerian-common.ingress` refuses a `svcPort` of 8099 or `health`. The route has no JWT, so only
+  in-cluster workloads may reach it.
 
 - **`minImage`** is passed by the chart (the first image that serves the health port), never a client value.
   The render fails when `image.tag` is a semver below it; other tags skip the check.

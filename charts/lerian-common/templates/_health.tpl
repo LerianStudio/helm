@@ -4,7 +4,7 @@ lerian-common — health preset (probes, drain, grace, rollout, PDB, ALB check).
 
 Liveness is process-only, readiness reports the pod's own state, and a shared
 dependency is only reported: the lib serves /health and /readyz on HEALTH_PORT
-(8099, never a Service port). Paths, ports, timings, strategy and grace are not
+(8099, an internal ClusterIP Service port only: never an Ingress backend). Paths, ports, timings, strategy and grace are not
 values: the preset owns them and the render refuses overrides.
 
 Returns YAML; the caller reads it with `fromYaml` and places each key:
@@ -21,6 +21,8 @@ Returns YAML; the caller reads it with `fromYaml` and places each key:
   readinessProbe, lifecycle pod spec / MAIN container (`ports` and `env` are
                             appended to the container's own lists; `lifecycle`
                             only for next/static/external)
+  servicePorts              stack go only: the named `health` 8099 Service port; pass it as `ports` to
+                            lerian-common.service (go-worker has no Service, the other stacks serve nothing on 8099)
   pdb                       absent for a singleton; else pass to lerian-common.pdb
   alb                       {path, port} for lerian-common.ingress `healthcheck`
 
@@ -83,6 +85,7 @@ port, chart-owned), replicas (optional configured count), autoscaling (optional)
 {{- if eq $stack "go-worker" -}}{{- $d = 0 -}}{{- end -}}
 {{- $grace = add $d $t 10 -}}
 {{- $_ := set $out "ports" (list (dict "name" "health" "containerPort" 8099)) -}}
+{{- if eq $stack "go" -}}{{- $_ := set $out "servicePorts" (list (dict "name" "health" "port" 8099 "targetPort" 8099 "protocol" "TCP")) -}}{{- end -}}
 {{- $_ := set $out "env" (list (dict "name" "HEALTH_PORT" "value" "8099") (dict "name" "SHUTDOWN_DRAIN_DELAY" "value" (printf "%ds" $d)) (dict "name" "SHUTDOWN_TIMEOUT" "value" (printf "%ds" $t))) -}}
 {{- else -}}
 {{- $probePort = int .port -}}

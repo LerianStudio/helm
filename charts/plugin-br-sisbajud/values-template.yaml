@@ -68,6 +68,15 @@ sisbajud:
     heartbeatEvery: "1m"
     # SAME value as the Sisbajud Mensageria.
     responseDeadlineMargin: "2h"
+    # Direct-channel knobs (app defaults shown; every executor mode).
+    # resultMaxAttempts: "12"
+    # direct:
+    #   drainerInfraAlarmThreshold: "3"
+    #   purgeEligibleAlarmAfter: "168h"
+    # DIRECT-only alternative (no Mensageria): leave sisbajud.mensageria.baseUrl
+    # empty, set enabled: "true" and drop transport/webhook/streamingHubTenantId
+    # and the MENSAGERIA_CLIENT_* / EXECUTOR_HUB_WEBHOOK_SECRET secrets.
+    # enabled: "true"
     transport: "webhook"
     webhook:
       # TLS terminated (and validated) by the ingress in front of the listener.
@@ -83,6 +92,10 @@ sisbajud:
         tls:
           - hosts: ["<sisbajud-webhook-host>"]
             secretName: "<tls-secret>"
+
+  # Direct channel: permanent blocks stay refused (422 SBJ-0027) unless decided.
+  direct:
+    permanentBlockEnabled: false
 
   # Production: an external Secret carrying the keys below.
   useExistingSecret: true

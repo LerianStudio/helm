@@ -1,7 +1,12 @@
 plugin-br-sisbajud {{ .Values.sisbajud.image.tag | default .Chart.AppVersion }} (SISBAJUD executor) deployed to namespace {{ include "global.namespace" . }}.
+{{- if eq (include "plugin-br-sisbajud.executorMode" .) "direct" }}
+
+  Executor:    DIRECT-only (EXECUTOR_ENABLED=true, no Mensageria): no Hub webhook or SQS intake; permanent block {{ ternary "ENABLED" "disabled" (eq (include "plugin-br-sisbajud.isTrue" (include "plugin-br-sisbajud.val" (dict "cm" (.Values.sisbajud.configmap | default dict) "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.direct | default dict) "f" "permanentBlockEnabled" "d" "false"))) "true") }}
+{{- else }}
 
   Mensageria:  {{ .Values.sisbajud.mensageria.baseUrl }} {{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml }} ({{ ternary "mTLS" "one-way TLS" (eq $mt.mtls "true") }}; server CA: {{ $mt.caSecret | default "system trust store" }}{{ if eq $mt.mtls "true" }}; client pair: {{ $mt.tlsSecret | default "set via configmap" }}{{ end }})
   Transport:   {{ include "plugin-br-sisbajud.transport" . }}{{ if eq (include "plugin-br-sisbajud.webhookEnabled" .) "true" }} (listener {{ include "plugin-br-sisbajud.webhookFullname" . }}:{{ .Values.sisbajud.executor.webhook.service.port }}{{ .Values.sisbajud.executor.webhook.path }}){{ end }}
+{{- end }}
   KMS:         {{ include "plugin-br-sisbajud.kmsProvider" . }}
 
 Verify:

@@ -226,8 +226,35 @@ Resolved value of one key (same precedence as kv), for gates.
 {{- include "plugin-br-sisbajud.val" (dict "cm" (.Values.sisbajud.configmap | default dict) "k" "EXECUTOR_TRANSPORT" "p" .Values.sisbajud.executor "f" "transport" "d" "webhook") -}}
 {{- end -}}
 
+{{/*
+executorEnabled — EXECUTOR_ENABLED as the app reads it: trimmed, case-sensitive
+(config_executor.go validateExecutorEnabledSwitch). "" = absent = the legacy
+signal. Source: sisbajud.executor.enabled (string or boolean) or the configmap.
+*/}}
+{{- define "plugin-br-sisbajud.executorEnabled" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- $ex := .Values.sisbajud.executor | default dict -}}
+{{- $raw := ternary (toString (index $cm "EXECUTOR_ENABLED")) (ternary (toString $ex.enabled) "" (hasKey $ex "enabled")) (hasKey $cm "EXECUTOR_ENABLED") -}}
+{{- if eq $raw "<nil>" }}{{ $raw = "" }}{{ end -}}
+{{- trim $raw -}}
+{{- end -}}
+
+{{/*
+executorMode — the app's executor mode (extensions_executor.go ExecutorEnabled /
+MensageriaConfigured): "mensageria" when MENSAGERIA_BASE_URL is non-blank
+(EXECUTOR_ENABLED=false never turns it off), "direct" when EXECUTOR_ENABLED=true
+without it (DIRECT-only, DR-07), "" otherwise (the chart refuses that render).
+*/}}
+{{- define "plugin-br-sisbajud.executorMode" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- $base := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "MENSAGERIA_BASE_URL" "p" .Values.sisbajud.mensageria "f" "baseUrl" "d" "") | trim -}}
+{{- if $base -}}mensageria
+{{- else if eq (include "plugin-br-sisbajud.executorEnabled" .) "true" -}}direct
+{{- end -}}
+{{- end -}}
+
 {{- define "plugin-br-sisbajud.webhookEnabled" -}}
-{{- ternary "true" "" (eq (include "plugin-br-sisbajud.transport" .) "webhook") -}}
+{{- ternary "true" "" (and (eq (include "plugin-br-sisbajud.executorMode" .) "mensageria") (eq (include "plugin-br-sisbajud.transport" .) "webhook")) -}}
 {{- end -}}
 
 {{/*

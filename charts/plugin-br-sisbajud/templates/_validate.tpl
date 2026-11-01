@@ -64,11 +64,23 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- include $f (dict "msg" "LICENSE_KEY is required in every environment (the app has no unlicensed mode)." "set" "sisbajud.secrets.LICENSE_KEY (or sisbajud.useExistingSecret)") -}}
 {{- end -}}
 
+{{- /* --- executor switches (closed sets, trimmed, case-sensitive) ----------- */ -}}
+{{- $exOn := include "plugin-br-sisbajud.executorEnabled" . -}}
+{{- if not (has $exOn (list "" "true" "false")) -}}
+{{- include $f (dict "msg" (printf "EXECUTOR_ENABLED must be true or false (or unset), got %q." $exOn) "set" "sisbajud.executor.enabled") -}}
+{{- end -}}
+{{- $pb := include $val (dict "cm" $cm "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" ($s.direct | default dict) "f" "permanentBlockEnabled" "d" "false") | trim -}}
+{{- if not (has $pb (list "" "true" "false")) -}}
+{{- include $f (dict "msg" (printf "DIRECT_PERMANENT_BLOCK_ENABLED must be true or false, got %q." $pb) "set" "sisbajud.direct.permanentBlockEnabled") -}}
+{{- end -}}
+{{- $mode := include "plugin-br-sisbajud.executorMode" . -}}
+{{- if not $mode -}}
+{{- include $f (dict "msg" "MENSAGERIA_BASE_URL is required, or EXECUTOR_ENABLED=true for a DIRECT-only executor: one of them is what runs the process as the executor (without both the binary boots the retired monolith and refuses STA_INBOUND_BUCKET)." "set" "sisbajud.mensageria.baseUrl=https://<mensageria-host> (or sisbajud.executor.enabled=true)") -}}
+{{- end -}}
+
+{{- if eq $mode "mensageria" -}}
 {{- /* --- Sisbajud Mensageria (executor mode) -------------------------------- */ -}}
 {{- $base := include $val (dict "cm" $cm "k" "MENSAGERIA_BASE_URL" "p" $s.mensageria "f" "baseUrl" "d" "") | trim -}}
-{{- if not $base -}}
-{{- include $f (dict "msg" "MENSAGERIA_BASE_URL is required: it is what runs the process as the executor (without it the binary boots the retired monolith and refuses STA_INBOUND_BUCKET)." "set" "sisbajud.mensageria.baseUrl=https://<mensageria-host>") -}}
-{{- end -}}
 {{- if and (not (include "plugin-br-sisbajud.isAvpPlaceholder" $base)) (not (regexMatch "^(?i)https://[^/?#]+" $base)) -}}
 {{- include $f (dict "msg" (printf "MENSAGERIA_BASE_URL must be an https URL with a host (TLS in every deployment mode), got %q." $base) "set" "sisbajud.mensageria.baseUrl") -}}
 {{- end -}}
@@ -94,11 +106,26 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- end -}}
 {{- end -}}
 {{- end -}}
-{{- range $row := list (list "m2mSubject" "EXECUTOR_M2M_SUBJECT" "the `sub` of the executor's M2M token (execution_owner)") (list "heartbeatEvery" "EXECUTOR_HEARTBEAT_EVERY" "the INDETERMINATE heartbeat period, a Go duration > 0 (e.g. 1m)") (list "responseDeadlineMargin" "RESPONSE_DEADLINE_MARGIN" "a Go duration > 0, the SAME value as the Sisbajud Mensageria (e.g. 2h)") (list "streamingHubTenantId" "STREAMING_HUB_TENANT_ID" "the Streaming Hub tenant the probe answerer accepts (the hub deployment's own STREAMING_HUB_TENANT_ID)") -}}
+{{- end -}}
+{{- /* Executor-common keys. DIRECT-only requires only the first three plus the tick
+   (config_executor.go validateExecutorDirectConfig); STREAMING_HUB_TENANT_ID is a
+   Mensageria-mode key. */ -}}
+{{- $req := list (list "m2mSubject" "EXECUTOR_M2M_SUBJECT" "the `sub` of the executor's M2M token (execution_owner)") (list "heartbeatEvery" "EXECUTOR_HEARTBEAT_EVERY" "the INDETERMINATE heartbeat period, a Go duration > 0 (e.g. 1m)") (list "responseDeadlineMargin" "RESPONSE_DEADLINE_MARGIN" "a Go duration > 0, the SAME value as the Sisbajud Mensageria (e.g. 2h)") -}}
+{{- if eq $mode "mensageria" -}}
+{{- $req = append $req (list "streamingHubTenantId" "STREAMING_HUB_TENANT_ID" "the Streaming Hub tenant the probe answerer accepts (the hub deployment's own STREAMING_HUB_TENANT_ID)") -}}
+{{- else -}}
+{{- $req = append $req (list "tickEvery" "EXECUTOR_TICK_EVERY" "the runner tick, a Go duration > 0 (default 30s)") -}}
+{{- $mha := include $val (dict "cm" $cm "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "p" $wh "f" "maxHandleAttempts" "d" "5") | trim -}}
+{{- if not (regexMatch "^[1-9][0-9]*$" $mha) -}}
+{{- include $f (dict "msg" (printf "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS is the direct drainer's attempt cap in a DIRECT-only executor: an integer >= 1, got %q." $mha) "set" "sisbajud.executor.webhook.maxHandleAttempts") -}}
+{{- end -}}
+{{- end -}}
+{{- range $row := $req -}}
 {{- if not (include $val (dict "cm" $cm "k" (index $row 1) "p" $ex "f" (index $row 0) "d" "") | trim) -}}
 {{- include $f (dict "msg" (printf "%s is required in executor mode: %s." (index $row 1) (index $row 2)) "set" (printf "sisbajud.executor.%s" (index $row 0))) -}}
 {{- end -}}
 {{- end -}}
+{{- if eq $mode "mensageria" -}}
 {{- range $k := list "MENSAGERIA_CLIENT_ID" "MENSAGERIA_CLIENT_SECRET" -}}
 {{- if not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" $k)) -}}
 {{- include $f (dict "msg" (printf "%s is required: the executor's own M2M client at the Mensageria (minted at PLUGIN_AUTH_HOST)." $k) "set" (printf "sisbajud.secrets.%s (or sisbajud.useExistingSecret)" $k)) -}}
@@ -107,10 +134,21 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "")) -}}
 {{- include $f (dict "msg" "PLUGIN_AUTH_HOST is required: the executor mints its Mensageria token there (even with PLUGIN_AUTH_ENABLED=false)." "set" "global.auth.host (or sisbajud.configmap.PLUGIN_AUTH_HOST)") -}}
 {{- end -}}
+{{- else -}}
+{{- if not (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "host" "nativeKey" "PLUGIN_AUTH_HOST" "default" "")) -}}
+{{- include $f (dict "msg" "PLUGIN_AUTH_HOST is required: the direct channel is served only with inbound auth on (config_validation.go requires the host with PLUGIN_AUTH_ENABLED=true)." "set" "global.auth.host (or sisbajud.configmap.PLUGIN_AUTH_HOST)") -}}
+{{- end -}}
+{{- $authOn := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") -}}
+{{- if ne (include "plugin-br-sisbajud.isTrue" $authOn) "true" -}}
+{{- include $f (dict "msg" (printf "PLUGIN_AUTH_ENABLED must be true in a DIRECT-only executor, got %q: the direct channel is served only with inbound auth on (with auth off every direct route answers 501)." (toString $authOn)) "set" "global.auth.enabled=true (or sisbajud.configmap.PLUGIN_AUTH_ENABLED=\"true\")") -}}
+{{- end -}}
+{{- end -}}
 
 {{- /* --- notice transport --------------------------------------------------- */ -}}
 {{- $transport := include "plugin-br-sisbajud.transport" . -}}
-{{- if eq $transport "webhook" -}}
+{{- if eq $mode "direct" -}}
+{{- /* DIRECT-only: no intake transport is read (no Hub webhook, no SQS). */ -}}
+{{- else if eq $transport "webhook" -}}
 {{- if not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" "EXECUTOR_HUB_WEBHOOK_SECRET")) -}}
 {{- include $f (dict "msg" "EXECUTOR_HUB_WEBHOOK_SECRET is required with EXECUTOR_TRANSPORT=webhook (the Streaming Hub subscription signing secret)." "set" "sisbajud.secrets.EXECUTOR_HUB_WEBHOOK_SECRET (or sisbajud.useExistingSecret)") -}}
 {{- end -}}

@@ -45,7 +45,8 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 
 | Values | Env | Notes |
 |---|---|---|
-| `sisbajud.mensageria.baseUrl` | `MENSAGERIA_BASE_URL` | https; turns the process into the executor |
+| `sisbajud.mensageria.baseUrl` | `MENSAGERIA_BASE_URL` | https; turns the process into the executor (Mensageria mode) |
+| `sisbajud.executor.enabled` | `EXECUTOR_ENABLED` | `""` (default, not emitted) \| `true` \| `false`. `true` without `mensageria.baseUrl` = DIRECT-only executor (see below); `false` never turns a configured Mensageria off |
 | `sisbajud.mensageria.mtlsEnabled` | `MENSAGERIA_MTLS_ENABLED` | `false` (one-way TLS). `true` requires the CA and the client pair. Must match the Mensageria |
 | `sisbajud.mensageria.ca.existingSecret` (+ `key`, `mountPath`) | `MENSAGERIA_TLS_CA_FILE` | server CA, mounted at `<mountPath>/ca.crt`. Optional in one-way TLS (empty = system trust store); empty falls back to `tls.existingSecret` + `tls.caKey` |
 | `sisbajud.mensageria.tls.existingSecret` (+ `certKey`, `keyKey`, `mountPath`) | `MENSAGERIA_TLS_CLIENT_CERT_FILE`, `MENSAGERIA_TLS_CLIENT_KEY_FILE` | client pair, mounted (at `<mountPath>/tls.crt`, `tls.key`) and emitted **only with mTLS** |
@@ -57,6 +58,11 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.executor.transport` | `EXECUTOR_TRANSPORT` | `webhook` (default) or `sqs` |
 | `sisbajud.executor.webhook.*` | `EXECUTOR_HUB_WEBHOOK_*` | outside `DEPLOYMENT_MODE=local`: `tls.existingSecret` or `upstreamTlsValidated: true` |
 | `sisbajud.executor.sqs.*` | `EXECUTOR_SQS_*` | needs AWS credentials (IRSA annotation or `aws.rolesAnywhere`) |
+| `sisbajud.executor.webhook.maxHandleAttempts` | `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` | `5`; also the direct drainer's attempt cap in every executor mode (>= 1 + ceil(settleWindow / tickEvery)) |
+| `sisbajud.executor.resultMaxAttempts` | `EXECUTOR_RESULT_MAX_ATTEMPTS` | `12`; result drainer cap per row (`0` = app default) |
+| `sisbajud.executor.direct.drainerInfraAlarmThreshold` | `EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD` | `3`; integer >= 1 |
+| `sisbajud.executor.direct.purgeEligibleAlarmAfter` | `EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER` | `168h`; Go duration > 0. The plugin never purges the direct intake |
+| `sisbajud.direct.permanentBlockEnabled` | `DIRECT_PERMANENT_BLOCK_ENABLED` | **`false`** (keep it): the direct POST refuses permanent blocks with 422 SBJ-0027. Only `true`/`false` |
 | `global.kms.*` | `KMS_PROVIDER`, `VAULT_*`, `AWS_REGION`, `KMS_AWS_KEY_MODE`, `KMS_AWS_KEY_ARN`, `KMS_AWS_CREDENTIALS_KEY_ARN` | `vault` or `aws`; the app has no in-memory provider. With `aws`: `awsRegion`, `awsKeyMode`, `awsKeyArn`, `awsCredentialsKeyArn` |
 | `sisbajud.kms.awsKeyMode` | `KMS_AWS_KEY_MODE` | `managed` or `provided`; required with `KMS_PROVIDER=aws` |
 | `sisbajud.kms.awsKeyArn` | `KMS_AWS_KEY_ARN` | `provided`: required; `managed`: must be empty |
@@ -88,6 +94,23 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 - This is the first gate in this repo that treats `@` as a signal: other charts' minimum-version gates strip the digest or fail open on it. The deviation is deliberate (DR-04).
 - Residual: a mutable SemVer tag re-pushed in a mirror is still only a label; the chart cannot detect it.
 - AWS credentials come via IRSA (`serviceAccount` annotations) or this chart's `aws.rolesAnywhere` block; this chart has no `secretRefs`.
+
+## DIRECT-only executor (no Mensageria)
+
+`sisbajud.executor.enabled: "true"` with an empty `sisbajud.mensageria.baseUrl` boots the executor without the Sisbajud Mensageria. The chart then requires only `executor.m2mSubject`, `responseDeadlineMargin`, `heartbeatEvery`, `tickEvery` (plus the license, KMS, PostgreSQL, Redis, `PLUGIN_AUTH_HOST` and `global.auth.enabled: true`: the direct channel is served only with inbound auth on, and the render fails without it). It emits no `EXECUTOR_TRANSPORT` / Hub webhook / SQS keys except `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` (the direct drainer cap), renders no webhook Service, Ingress or container port, and does not require `MENSAGERIA_CLIENT_ID/SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` or `STREAMING_HUB_TENANT_ID`. Direct orders arrive on `POST /v1/institutions/{institutionId}/executor/...` (opt-in per institution). Operations: the application's `docs/runbooks/direct-channel-operations.md`.
+
+Existing Mensageria installs are unchanged: with `executor.enabled` unset the `EXECUTOR_ENABLED` key is not emitted; the chart adds only the four direct-channel knobs above at the app defaults.
+
+## Midaz CRM mode
+
+`sisbajud.midaz.crmMode` (`MIDAZ_CRM_MODE`) must match the Midaz the institutions use; set it explicitly. The default stays `legacy` so an upgrade never changes an existing install.
+
+| Midaz | `crmMode` |
+|-------|-----------|
+| v4 (CRM embedded in the ledger, no legacy `/v1/holders`) | `embedded` |
+| v3 | `legacy` |
+
+With the wrong mode every holder read fails.
 
 ## Known limitation: object-store readiness probe (app, B1)
 

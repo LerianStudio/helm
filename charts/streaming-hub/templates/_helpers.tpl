@@ -220,13 +220,11 @@ Input: none. Caller: nindent 12.
 
 {{/*
 streaming-hub.licenseGuard — render-time mirror of the app's license config
-gate (lib-license-go, GLOBAL mode). Fails the render for the two combinations
-the license-gated app refuses at boot, so the operator reads the fix in the
-`helm` output instead of a CrashLoopBackOff:
+gate (lib-license-go, GLOBAL mode). Fails the render for the combination the
+license-gated app refuses at boot, so the operator reads the fix in the `helm`
+output instead of a CrashLoopBackOff:
   - ORGANIZATION_IDS not EXACTLY "global" (trimmed, case-sensitive: the app
-    compares the literal, so "GLOBAL" or a comma list is refused);
-  - IS_DEVELOPMENT exactly "true" (the dev license server) while
-    STREAMING_HUB_ENV is "production".
+    compares the literal, so "GLOBAL" or a comma list is refused).
 The EFFECTIVE value is judged: streamingHub.extraEnvVars is explicit env and
 WINS over the ConfigMap (envFrom), so it is read first.
 LICENSE_KEY is deliberately NOT `required` here: like the DSN and the cursor
@@ -247,10 +245,5 @@ Input: root context (.).
 {{- $org := trim (toString (ternary (get $x "ORGANIZATION_IDS") (get $cm "ORGANIZATION_IDS" | default "global") (hasKey $x "ORGANIZATION_IDS"))) -}}
 {{- if ne $org "global" -}}
 {{- fail (printf "\n\nERROR: ORGANIZATION_IDS must be exactly \"global\" (got %q): streaming-hub supports GLOBAL license mode only, and the app refuses any other value at boot (ErrLicenseOrganizationIDsInvalid). Leave streamingHub.configmap.ORGANIZATION_IDS unset (the chart default is \"global\")." $org) -}}
-{{- end -}}
-{{- $isDev := toString (ternary (get $x "IS_DEVELOPMENT") (get $cm "IS_DEVELOPMENT" | default "") (hasKey $x "IS_DEVELOPMENT")) -}}
-{{- $env := trim (toString (ternary (get $x "STREAMING_HUB_ENV") (get $cm "STREAMING_HUB_ENV" | default "production") (hasKey $x "STREAMING_HUB_ENV"))) -}}
-{{- if and (eq $isDev "true") (eq $env "production") -}}
-{{- fail "\n\nERROR: IS_DEVELOPMENT=\"true\" points license validation at the DEVELOPMENT license server, which the app refuses when STREAMING_HUB_ENV=production (ErrLicenseDevServerInProduction). Unset streamingHub.configmap.IS_DEVELOPMENT, or set STREAMING_HUB_ENV to a non-production environment." -}}
 {{- end -}}
 {{- end -}}

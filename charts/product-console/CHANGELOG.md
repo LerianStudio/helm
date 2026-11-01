@@ -4,6 +4,16 @@
 
 Improvements:
 
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
 - Relicense charts under the Elastic License 2.0. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)

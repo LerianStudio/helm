@@ -4,6 +4,16 @@
 
 Improvements:
 
+- Relicense streaming-hub under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v2.0.0...streaming-hub-v2.0.1)
+
+---
+
+## [2.0.1](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.0.1)
+
+Improvements:
+
 - Relicense streaming-hub under Elastic License 2.0. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v2.0.0...streaming-hub-v2.0.1)

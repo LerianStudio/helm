@@ -1332,6 +1332,10 @@ var allowedDanglingSecrets = map[string]bool{
 	// Job read one operator-provisioned Secret, named by secrets.existingSecret or
 	// the release fullname, which this gate's release name makes br-jd-courier.
 	"br-jd-courier": true,
+	// lerian-consul bundles the hashicorp/consul 2.x subchart, whose
+	// feature-gate-set Job mounts the bootstrap ACL token that the server-acl-init
+	// Job creates at runtime. No Helm chart renders it.
+	"lerian-consul-consul-bootstrap-acl-token": true,
 }
 
 // danglingSecretRefMessage parses rendered multi-document Helm output, collects

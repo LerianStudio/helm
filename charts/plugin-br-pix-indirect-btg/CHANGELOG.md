@@ -3,6 +3,22 @@
 ## [5.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.1)
 
 Features:
+- Added Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.2.0`. (@guimoreirar)
+- Added Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.1.0`. (@guimoreirar)
+- Added Helm upgrade guide for `plugin-br-pix-indirect-btg` `v5.0.0`. (@guimoreirar)
+- Added Helm upgrade guide for `plugin-br-pix-indirect-btg` `v4.2.0`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+- Fixed GitHub Pages build issues related to Liquid over Helm templates. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.0...plugin-br-pix-indirect-btg-v5.2.1)
+
+---
+
+## [5.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.1)
+
+Features:
 - Added Helm upgrade guides for `plugin-br-pix-indirect-btg` versions `v5.2.0`, `v5.1.0`, `v5.0.0`, and `v4.2.0`. (@guimoreirar)
 
 Improvements:

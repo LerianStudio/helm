@@ -3,6 +3,20 @@
 ## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
 
 Features:
+
+- Add a Helm upgrade guide for `br-sta` `v1.0.2`, providing detailed instructions on how to upgrade to the latest version. (@guimoreirar)
+
+Improvements:
+
+- Relicense the charts under the Elastic License 2.0, ensuring compliance with the latest licensing standards. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.2...br-sta-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
+
+Features:
 - Add Helm upgrade guide for `br-sta` `v1.0.2`. (@guimoreirar)
 
 Improvements:

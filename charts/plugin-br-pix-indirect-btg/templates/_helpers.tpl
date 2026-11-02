@@ -8,6 +8,27 @@ Unified from helpers.tpl and _helpers.tpl
 */}}
 
 {{/*
+Health preset (probes, ports, env, grace, strategy, replicas, PDB, HPA floor). minImage is
+the first image that serves /readyz on the health port.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.minImage" -}}1.14.0-beta.6{{- end }}
+{{- define "plugin-br-pix-indirect-btg.health" -}}
+{{- include "lerian-common.health" (dict "name" (include "plugin-br-pix-indirect-btg.fullname" .) "component" .Values.pix "health" .Values.pix.health "port" .Values.pix.service.port "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.pix.replicaCount "autoscaling" .Values.pix.autoscaling) -}}
+{{- end }}
+{{- define "inbound.health" -}}
+{{- include "lerian-common.health" (dict "name" (include "inbound.fullname" .) "component" .Values.inbound "health" .Values.inbound.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.inbound.replicaCount "autoscaling" .Values.inbound.autoscaling) -}}
+{{- end }}
+{{- define "outbound.health" -}}
+{{- include "lerian-common.health" (dict "name" (include "outbound.fullname" .) "component" .Values.outbound "health" .Values.outbound.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.outbound.replicaCount "autoscaling" .Values.outbound.autoscaling) -}}
+{{- end }}
+{{- define "reconciliation.health" -}}
+{{- include "lerian-common.health" (dict "name" (include "reconciliation.fullname" .) "component" .Values.reconciliation "health" .Values.reconciliation.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.reconciliation.replicaCount "autoscaling" .Values.reconciliation.autoscaling) -}}
+{{- end }}
+{{- define "schedule.health" -}}
+{{- include "lerian-common.health" (dict "name" (include "schedule.fullname" .) "component" .Values.schedule "health" .Values.schedule.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.schedule.replicaCount "autoscaling" .Values.schedule.autoscaling) -}}
+{{- end }}
+
+{{/*
 ================================================================================
 NAME HELPERS
 ================================================================================

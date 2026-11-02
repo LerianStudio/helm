@@ -8,7 +8,6 @@ data:
   ENV_NAME: {{ .Values.schedule.configmap.ENV_NAME | default "development" | quote }}
   VERSION: {{ .Values.schedule.image.tag | default .Chart.AppVersion | quote }}
   LOG_LEVEL: {{ .Values.schedule.configmap.LOG_LEVEL | default "info" | quote }}
-  WORKER_PORT: {{ .Values.schedule.configmap.WORKER_PORT | default "4018" | quote }}
 
   # Schedule Worker Loop Configuration
   # Chart declares explicit defaults: worker runs active with a 15m polling loop.

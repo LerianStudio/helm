@@ -1,4 +1,5 @@
-{{- if .Values.schedule.autoscaling.enabled }}
+{{- $h := include "schedule.health" . | fromYaml }}
+{{- if $h.autoscaling }}
 {{- if not (or .Values.schedule.autoscaling.targetCPUUtilizationPercentage .Values.schedule.autoscaling.targetMemoryUtilizationPercentage) }}
 {{- fail "At least one of targetCPUUtilizationPercentage or targetMemoryUtilizationPercentage must be set when autoscaling is enabled" }}
 {{- end }}
@@ -13,7 +14,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "schedule.fullname" . }}
-  minReplicas: {{ .Values.schedule.autoscaling.minReplicas }}
+  minReplicas: {{ $h.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.schedule.autoscaling.maxReplicas }}
   metrics:
     {{- if .Values.schedule.autoscaling.targetCPUUtilizationPercentage }}

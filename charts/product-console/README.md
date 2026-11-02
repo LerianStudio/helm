@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: None for default render.
+- Required secrets: `secrets.NEXTAUTH_SECRET` and `secrets.LICENSE_KEY`. The console refuses to boot without either; the chart renders without them, and writes `LICENSE_KEY` into the Secret only when it is non-empty.
 - Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured. Also depends on `lerian-common-helm` (shared library chart) for the HPA/PDB/Service/Ingress templates and the `global.*` config masks below.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
@@ -76,6 +76,7 @@ empty — set a key there only to override its shipped default).
 | `topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret. Required: the published console image exits at startup when it is empty | `""` |
+| `secrets.LICENSE_KEY` | Lerian license key. Required: the console refuses to boot without it. Goes to the Secret, never the ConfigMap; with `useExistingSecret`, add a `LICENSE_KEY` key to your Secret | `""` |
 | `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the password this chart keeps for it, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
 | `secrets.PLUGIN_AUTH_CLIENT_ID` | Alternative to `configmap.PLUGIN_AUTH_CLIENT_ID` when the client_id shouldn't sit in a ConfigMap; when set, the ConfigMap key is omitted | `""` |
 

@@ -1,6 +1,7 @@
 {{- if .Values.api.enabled }}
 {{- include "lerian-common.service" (dict
       "service" (fromYaml (include "plugin-br-pix-jd.withCommonAnnotations" (dict "root" $ "block" .Values.api.service)))
+      "ports" (ternary (fromYaml (include "plugin-br-pix-jd.api.health" .)).servicePorts (list) (eq (.Values.api.service.type | default "ClusterIP") "ClusterIP"))
       "name" (include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api"))
       "namespace" (include "plugin-br-pix-jd.namespace" $)
       "labels" (include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "api"))

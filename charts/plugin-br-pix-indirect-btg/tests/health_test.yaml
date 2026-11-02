@@ -1,0 +1,51 @@
+suite: health preset
+templates:
+  - templates/pix/deployment.yaml
+  - templates/inbound/deployment.yaml
+  - templates/schedule/deployment.yaml
+  - templates/pix/configmap.yaml
+  - templates/pix/secrets.yaml
+  - templates/inbound/configmap.yaml
+  - templates/inbound/secrets.yaml
+  - templates/schedule/configmap.yaml
+  - templates/schedule/secrets.yaml
+set:
+  pix.configmap.BTG_BASE_URL: https://btg.example.test
+  pix.configmap.PIX_ISPB: "12345678"
+  pix.configmap.MIDAZ_ORGANIZATION_ID: org
+  pix.configmap.MIDAZ_LEDGER_ID: ledger
+  pix.secrets.BTG_CLIENT_ID: x
+  pix.secrets.BTG_CLIENT_SECRET: x
+  pix.secrets.INTERNAL_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef"
+  pix.secrets.MIDAZ_CLIENT_ID: x
+  pix.secrets.MIDAZ_CLIENT_SECRET: x
+  pix.secrets.LICENSE_KEY: x
+tests:
+  - it: serves the pix API probes on the health port beside the main port
+    template: templates/pix/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 55
+  - it: gives a worker only the health port and never a Service
+    template: templates/inbound/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value: [{name: health, containerPort: 8099}]
+      - equal:
+          path: spec.strategy.rollingUpdate.maxUnavailable
+          value: 0
+  - it: refuses an image that does not serve the health port
+    template: templates/schedule/deployment.yaml
+    set:
+      schedule.image.tag: 1.14.0-beta.5
+    asserts:
+      - failedTemplate:
+          errorPattern: below 1.14.0-beta.6

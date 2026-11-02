@@ -1,3 +1,4 @@
+{{- $h := include "outbound.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,10 +7,9 @@ metadata:
     {{- include "outbound.labels" (dict "context" . "name" .Values.outbound.name ) | nindent 4 }} 
 spec:
   revisionHistoryLimit: {{ .Values.outbound.revisionHistoryLimit | default 10 }}
-  strategy:
-    {{- toYaml .Values.outbound.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.outbound.autoscaling.enabled }}
-  replicas: {{ .Values.outbound.replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -24,6 +24,7 @@ spec:
       labels:
         {{- include "outbound.labels" (dict "context" . "name" .Values.outbound.name ) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.outbound.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -37,9 +38,7 @@ spec:
           image: {{ .Values.outbound.image.repository }}:{{ .Values.outbound.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.outbound.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.outbound.service.port }}
-              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
               name: {{ if .Values.outbound.useExistingSecrets }}{{ .Values.outbound.existingSecretName }}{{ else }}{{ include "outbound.fullname" . }}{{ end }}
@@ -51,8 +50,8 @@ spec:
           {{- include "plugin-br-pix-indirect-btg.mongoHostRequired" (dict "context" . "component" "outbound") }}
           {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "outbound" "secretName" (include "outbound.fullname" .)) }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
-          {{- if or (trim $infraEnv) $otelEnabled }}
           env:
+          {{- toYaml $h.env | nindent 10 }}
           {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
           {{- if $otelEnabled }}
           - name: "HOST_IP"
@@ -62,27 +61,11 @@ spec:
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
           {{- end }}
-          {{- end }}
           resources:
             {{- toYaml .Values.outbound.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.outbound.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.outbound.service.port }}
-            initialDelaySeconds: {{ .Values.outbound.readinessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.outbound.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.outbound.readinessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.outbound.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.outbound.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.outbound.livenessProbe.path | default "/health" }}
-              port: {{ .Values.outbound.service.port }}
-            initialDelaySeconds: {{ .Values.outbound.livenessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.outbound.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.outbound.livenessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.outbound.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.outbound.livenessProbe.failureThreshold | default 3 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
       {{- with .Values.outbound.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -10,7 +10,6 @@ data:
 
   # APP
   VERSION: {{ .Values.outbound.image.tag | default .Chart.AppVersion | quote }}
-  WORKER_PORT: {{ .Values.outbound.configmap.WORKER_PORT | default "4015" | quote }}
 
 
   # AUTH PLUGIN
@@ -62,7 +61,6 @@ data:
   WEBHOOK_DEFAULT_URL: {{ .Values.outbound.configmap.WEBHOOK_DEFAULT_URL | default "" | quote }}
   WEBHOOK_WORKER_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_WORKER_TIMEOUT | default "10s" | quote }}
   WEBHOOK_WORKER_BACKOFF_MULTIPLIER: {{ .Values.outbound.configmap.WEBHOOK_WORKER_BACKOFF_MULTIPLIER | default "2" | quote }}
-  WEBHOOK_ORCHESTRATOR_SHUTDOWN_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_ORCHESTRATOR_SHUTDOWN_TIMEOUT | default "30s" | quote }}
   WEBHOOK_ORCHESTRATOR_RECOVERY_TIMEOUT: {{ .Values.outbound.configmap.WEBHOOK_ORCHESTRATOR_RECOVERY_TIMEOUT | default "2m" | quote }}
   WEBHOOK_HEALTH_CHECK_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_HEALTH_CHECK_INTERVAL | default "30s" | quote }}
   WEBHOOK_RECOVERY_INTERVAL: {{ .Values.outbound.configmap.WEBHOOK_RECOVERY_INTERVAL | default "5m" | quote }}

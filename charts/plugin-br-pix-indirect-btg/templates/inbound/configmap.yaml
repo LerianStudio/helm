@@ -10,7 +10,6 @@ data:
 
   # APP
   VERSION: {{ .Values.inbound.image.tag | default .Chart.AppVersion | quote }}
-  WORKER_PORT: {{ .Values.inbound.configmap.WORKER_PORT | default "4016" | quote }}
 
   # AUTH PLUGIN
   PLUGIN_AUTH_ENABLED: {{ .Values.inbound.configmap.PLUGIN_AUTH_ENABLED | default "false" | quote }}

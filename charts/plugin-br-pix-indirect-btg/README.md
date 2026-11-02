@@ -88,6 +88,8 @@ The Plugin BR PIX Indirect BTG system consists of three main components:
 | `pix.name` | Service name. | `"plugin-br-pix-indirect-btg"` |
 | `pix.replicaCount` | Number of replicas for the deployment. | `2` |
 | `<component>.health.stack` | Health preset stack (`go` for pix, `go-worker` for workers). It derives probes on the internal health port 8099, grace period, rollout strategy and PodDisruptionBudget. | see `values.yaml` |
+| `<component>.pdb`, `<component>.deploymentStrategy` | Owned by the health preset (PDB `maxUnavailable: 1`, RollingUpdate); the render fails if set. | not set |
+| `<worker>.service`, `<worker>.ingress` | Workers (inbound, outbound, reconciliation, schedule) expose no Service or Ingress; the render fails if set. | not set |
 | `pix.image.repository` | Repository for the container image. | `"ghcr.io/lerianstudio/plugin-br-pix-indirect-btg"` |
 | `pix.image.pullPolicy` | Image pull policy. | `"Always"` |
 | `pix.image.tag` | Image tag used for deployment. | `"1.6.0"` |

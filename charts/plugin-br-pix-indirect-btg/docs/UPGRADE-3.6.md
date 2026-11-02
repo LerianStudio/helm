@@ -43,6 +43,8 @@ spec:
 **After (v3.6.0):**
 
 ```yaml
+
+> Current charts: `<component>.deploymentStrategy` is owned by the health preset (RollingUpdate) and the render fails if it is set; remove it.
 spec:
   revisionHistoryLimit: {{ .Values.pix.revisionHistoryLimit | default 10 }}
   strategy:

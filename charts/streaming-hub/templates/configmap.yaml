@@ -94,13 +94,6 @@ data:
   # ORGANIZATION_IDS must be EXACTLY "global" — the app refuses any other value at
   # boot, and streaming-hub.licenseGuard refuses it at render.
   ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
-  # IS_DEVELOPMENT is read by the LIBRARY: exactly "true" selects the development
-  # license server (license.dev.lerian.io), anything else the production one.
-  # EMIT-WHEN-SET: unset means the production license server. Refused (render and
-  # boot) together with STREAMING_HUB_ENV=production.
-  {{- with $cm.IS_DEVELOPMENT }}
-  IS_DEVELOPMENT: {{ . | quote }}
-  {{- end }}
   # --- kafka / redpanda (external; SCRAM password + CA cert live in the Secret) ---
   STREAMING_HUB_KAFKA_BROKERS: {{ $cm.STREAMING_HUB_KAFKA_BROKERS | default "localhost:19092" | quote }}
   STREAMING_HUB_KAFKA_SCRAM_MECHANISM: {{ $cm.STREAMING_HUB_KAFKA_SCRAM_MECHANISM | default "" | quote }}
@@ -205,6 +198,7 @@ data:
       STREAMING_HUB_PULL_BURST is deliberately ABSENT from the list: it has no
       line above any more, so leaving it enumerated would make this hatch skip it
       and an operator who set it would get nothing, silently. */ -}}
+  {{- /* IS_DEVELOPMENT is deprecated and ignored: kept here so the hatch below never emits it. */ -}}
   {{- $enumerated := dict
       "POSTGRES_HOST" 1 "POSTGRES_PORT" 1 "POSTGRES_USER" 1 "POSTGRES_DB" 1 "POSTGRES_SSLMODE" 1
       "PLUGIN_AUTH_ENABLED" 1 "PLUGIN_AUTH_ADDRESS" 1
@@ -212,7 +206,8 @@ data:
       "STREAMING_HUB_ENV" 1 "STREAMING_HUB_LOG_LEVEL" 1 "STREAMING_HUB_HTTP_LISTEN_ADDR" 1
       "STREAMING_HUB_METRICS_ENABLED" 1 "STREAMING_HUB_SWAGGER_ENABLED" 1
       "STREAMING_HUB_SHUTDOWN_TIMEOUT" 1 "STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT" 1
-      "ORGANIZATION_IDS" 1 "IS_DEVELOPMENT" 1
+      "ORGANIZATION_IDS" 1
+      "IS_DEVELOPMENT" 1
       "STREAMING_HUB_KAFKA_BROKERS" 1 "STREAMING_HUB_KAFKA_SCRAM_MECHANISM" 1
       "STREAMING_HUB_KAFKA_SCRAM_USERNAME" 1 "STREAMING_HUB_KAFKA_TLS_ENABLED" 1
       "STREAMING_HUB_ALLOW_INSECURE_KAFKA" 1 "STREAMING_HUB_ALLOW_PRIVATE_SINKS" 1

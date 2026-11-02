@@ -585,8 +585,8 @@ creates carries this key.
 {{- define "plugin-caradhras.builtInAdminPasswordEnv" -}}
 {{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
 {{- $tag := include "caradhras.imageTag" . -}}
-{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare ">=1.9.0-0" $tag)) -}}
-{{- fail (printf "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but the Caradhras image tag %q does not read it.\n   Caradhras reads builtInAdminPassword from 1.9.0 on; older images seed the public default password.\n   Set caradhras.image.tag to a semver tag and pin a Caradhras tag >= 1.9.0 (a digest or latest cannot be checked).\n" $tag) -}}
+{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare ">=1.9.0-beta.25" $tag)) -}}
+{{- fail (printf "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but the Caradhras image tag %q does not read it.\n   Caradhras reads builtInAdminPassword from 1.9.0-beta.25 on; older images seed the public default password.\n   Set caradhras.image.tag to a semver tag and pin a Caradhras tag >= 1.9.0-beta.25 (a digest or latest cannot be checked).\n" $tag) -}}
 {{- end -}}
 - name: builtInAdminPassword
   valueFrom:

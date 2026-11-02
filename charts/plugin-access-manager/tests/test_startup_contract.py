@@ -384,13 +384,13 @@ class StartupContract(unittest.TestCase):
         self.assertEqual(env(self.succeeds(on))[0]['valueFrom']['secretKeyRef'], {'name': '0123', 'key': '123'})
 
     def test_builtin_admin_password_needs_a_caradhras_that_reads_it(self):
-        for tag in ('1.8.6', 'latest', 'sha256:abc'):
+        for tag in ('1.8.6', '1.9.0-beta.24', 'latest', 'sha256:abc'):
             on = {'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
                 'enabled': True, 'secretName': 'operator-admin'}}}
-            self.fails(on, 'pin a Caradhras tag >= 1.9.0')
+            self.fails(on, 'pin a Caradhras tag >= 1.9.0-beta.25')
         self.fails({'caradhras': {'builtInAdminPassword': {'enabled': True, 'secretName': 'x'}}},
-                   'pin a Caradhras tag >= 1.9.0')
-        for tag in ('1.9.0-rc.1', '2.0.0'):
+                   'pin a Caradhras tag >= 1.9.0-beta.25')
+        for tag in ('1.9.0-beta.25', '1.9.0-rc.1', '2.0.0'):
             self.succeeds({'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
                 'enabled': True, 'secretName': 'operator-admin'}}})
 

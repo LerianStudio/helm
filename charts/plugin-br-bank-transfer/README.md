@@ -320,7 +320,6 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `JD_BASE_URL` | JD SPB SOAP API URL | **Required** (unless `JD_SANDBOX_MODE=true`) |
 | `JD_LEGACY_CODE` | JD legacy code; `JD_USER_CODE`, `JD_PASSWORD`, `JD_PRIVATE_KEY_KEYINFO` and, in `local_pem` signing, `JD_PRIVATE_KEY_PEM` go in `bankTransfer.secrets`. The origin ISPB is the systemplane key `tenancy.ispb_organization_bindings`, not env | **Required** single-tenant (unless `JD_SANDBOX_MODE=true`) |
 | `ORGANIZATION_IDS` | Organizations the licence is validated for (or set it under `bankTransfer.secrets`) | **Required** by newer app images, in every environment |
-| `IS_DEVELOPMENT` | Exactly `"true"` points lib-license-go at the development licence gateway, which a development licence key needs | Not rendered |
 | `COURIER_ACCOUNT_CLAIMS_ENABLED` | App v3.2.0+: sweep that claims this engine's CRM accounts on the Courier. When `"true"`, single-tenant also needs `COURIER_BASE_URL`, the `COURIER_CLIENT_ID`/`COURIER_CLIENT_SECRET` pair and `ORGANIZATION_ID` (the render fails without the URL or the organization) | `false` |
 
 For a complete list, see `values.yaml`.
@@ -352,7 +351,6 @@ For local development/testing, you can disable authentication and use sandbox mo
 bankTransfer:
   configmap:
     ENVIRONMENT_NAME: "development"
-    IS_DEVELOPMENT: "true"   # development licence gateway, for a development licence key
     PLUGIN_AUTH_ENABLED: "false"
     JD_SANDBOX_MODE: "true"  # Uses fake JD adapter (no real bank calls)
 ```

@@ -1,5 +1,21 @@
 # Fetcher Changelog
 
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health check capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace period overrides to ensure proper configuration handling, and update the README to reflect these changes. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to maintain compatibility with current configurations. (@fredcamaral)
+
+Improvements:
+- Document which health keys are refused by the render process to provide clearer guidance on configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
 ## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
 
 Features:

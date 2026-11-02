@@ -187,6 +187,9 @@ spec:
           {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
           {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}
           {{- end }}
+          {{- if include "plugin-caradhras.builtInAdminPasswordEnabled" . }}
+          {{- include "plugin-caradhras.builtInAdminPasswordEnv" . | nindent 10 }}
+          {{- end }}
           # Readyz answers 503 for this long after SIGTERM while the listener still serves.
           - name: SHUTDOWN_DRAIN_DELAY
             value: "5s"

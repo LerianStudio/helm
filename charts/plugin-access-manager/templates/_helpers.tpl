@@ -569,6 +569,33 @@ never has to be spliced into a connection string.
 {{- end }}
 
 {{/*
+plugin-caradhras.builtInAdminPasswordEnabled — "true" when the operator opted in
+to giving a new built-in/admin its password from a Secret.
+*/}}
+{{- define "plugin-caradhras.builtInAdminPasswordEnabled" -}}
+{{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
+{{- if $bp.enabled -}}true{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.builtInAdminPasswordEnv — the `builtInAdminPassword` container
+env, by secretKeyRef. secretName has no default: neither Secret this chart
+creates carries this key.
+*/}}
+{{- define "plugin-caradhras.builtInAdminPasswordEnv" -}}
+{{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
+{{- $tag := include "caradhras.imageTag" . -}}
+{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare ">=1.9.0-beta.25" $tag)) -}}
+{{- fail (printf "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but the Caradhras image tag %q does not read it.\n   Caradhras reads builtInAdminPassword from 1.9.0-beta.25 on; older images seed the public default password.\n   Set caradhras.image.tag to a semver tag and pin a Caradhras tag >= 1.9.0-beta.25 (a digest or latest cannot be checked).\n" $tag) -}}
+{{- end -}}
+- name: builtInAdminPassword
+  valueFrom:
+    secretKeyRef:
+      name: {{ required "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but caradhras.builtInAdminPassword.secretName is empty.\n   No Secret this chart creates carries the built-in/admin password.\n   Name the Secret holding it in caradhras.builtInAdminPassword.secretName (key: caradhras.builtInAdminPassword.secretKey).\n" $bp.secretName | quote }}
+      key: {{ $bp.secretKey | default "builtInAdminPassword" | quote }}
+{{- end }}
+
+{{/*
 plugin-access-manager.ssoCallbackPath — the console route the identity provider
 sends the browser back to. This path is OUR contract, not the operator's: it is
 the Next.js route src/app/(auth-routes)/signin/sso/callback in product-console.

@@ -95,6 +95,8 @@ $ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --versio
 
 Replace `<version>` with the desired chart version. This creates a namespace called `midaz` if it doesn't already exist and deploys the Midaz Helm chart.
 
+The default ledger image is `4.5.0-beta.94`, the first release that serves the health port. Pin `ledger.image.tag` explicitly in production values; the default moves to the stable release when 4.5.0 ships.
+
 After installation, you can verify that the release was successful by listing the Helm releases in the midaz namespace:
 
 ```console

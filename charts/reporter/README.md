@@ -580,8 +580,9 @@ Then access: http://localhost:4005
 
 The lerian-common health preset (`manager.health`, `worker.health`) owns the probes, grace period,
 drain, rollout strategy and PodDisruptionBudget: do not set `livenessProbe`, `readinessProbe`,
-`terminationGracePeriodSeconds`, `deploymentStrategy` or `pdb.minAvailable/maxUnavailable`, and do not set
-`HEALTH_PORT`, `SHUTDOWN_DRAIN_DELAY` or `SHUTDOWN_TIMEOUT` in a configmap; the render refuses them. Tune only
+`terminationGracePeriodSeconds`, `HEALTH_PORT`, `SHUTDOWN_DRAIN_DELAY` or `SHUTDOWN_TIMEOUT` (the render refuses
+them); `deploymentStrategy` and `pdb.*` are ignored. `common.configmap.RABBITMQ_HEALTH_CHECK_URL` no longer
+exists: remove it from values files or the render fails. Tune only
 `health.drainSeconds` (default 15) and `health.shutdownSeconds` (default 30).
 
 | Component | Main port | Health port (`health`, internal) | Probes |

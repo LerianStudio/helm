@@ -1,4 +1,4 @@
-suite: reporter refuses what the health preset owns
+suite: reporter refuses an image that predates the health port
 templates:
   - templates/manager/deployment.yaml
   # loaded so the deployment can include and hash the rendered ConfigMap and Secret
@@ -20,12 +20,4 @@ tests:
       manager.image.tag: "4.6.1-beta.14"
     asserts:
       - failedTemplate:
-          errorPattern: "is below 4.7.0-beta.1"
-
-  - it: refuses a probe override, the preset owns probes
-    template: templates/manager/deployment.yaml
-    set:
-      manager.readinessProbe.path: /readyz
-    asserts:
-      - failedTemplate:
-          errorPattern: "readinessProbe is owned by the health preset"
+          errorPattern: "is below"

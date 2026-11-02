@@ -324,7 +324,7 @@ manager:
   keda:
     scaledObject:
       enabled: true
-      minReplicaCount: 1
+      minReplicaCount: 2
       maxReplicaCount: 10
       pollingInterval: 30
       cooldownPeriod: 300

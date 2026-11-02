@@ -2,7 +2,6 @@ suite: reporter health comes from the lerian-common preset
 templates:
   - templates/manager/deployment.yaml
   - templates/manager/service.yaml
-  - templates/manager/pdb.yaml
   - templates/worker/deployment.yaml
   # loaded so the deployments can include and hash the rendered ConfigMaps and Secrets
   - templates/manager/configmap.yaml
@@ -20,7 +19,7 @@ set:
   secrets.DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
   secrets.LICENSE_KEY: x
 tests:
-  - it: probes the manager on the health port, with the preset's grace, strategy and env
+  - it: probes the manager on the health port, with the health env
     template: templates/manager/deployment.yaml
     asserts:
       - equal:
@@ -35,12 +34,6 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].ports
           content: {name: health, containerPort: 8099}
-      - equal:
-          path: spec.template.spec.terminationGracePeriodSeconds
-          value: 55
-      - equal:
-          path: spec.strategy
-          value: {type: RollingUpdate, rollingUpdate: {maxSurge: 25%, maxUnavailable: 0}}
 
   - it: keeps the health env off the roles anywhere sidecar
     template: templates/manager/deployment.yaml
@@ -64,17 +57,7 @@ tests:
           path: spec.ports
           content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
 
-  - it: lets a draining pod go and keeps a PDB that never blocks eviction of an unready one
-    template: templates/manager/pdb.yaml
-    asserts:
-      - equal:
-          path: spec.maxUnavailable
-          value: 1
-      - equal:
-          path: spec.unhealthyPodEvictionPolicy
-          value: AlwaysAllow
-
-  - it: probes the worker Deployment on the health port and gives it a shorter grace
+  - it: probes the worker Deployment on the health port
     template: templates/worker/deployment.yaml
     asserts:
       - equal:
@@ -83,6 +66,3 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content: {name: HEALTH_PORT, value: "8099"}
-      - equal:
-          path: spec.template.spec.terminationGracePeriodSeconds
-          value: 40

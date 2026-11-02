@@ -339,6 +339,10 @@ secrets:
   # mongodb.auth.rootPassword, or the password inside the Secret named by
   # mongodb.auth.existingSecret whenever you set that instead.
   MONGODB_PASS: ""
+  # -- Lerian license key. Required: the console refuses to boot without a
+  # valid one. Rendered into the Secret only when non-empty; with
+  # useExistingSecret, put LICENSE_KEY in your own Secret.
+  LICENSE_KEY: ""
 # -- Use existing secret instead of creating one
 useExistingSecret: false
 # -- Name of the existing secret to use

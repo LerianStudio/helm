@@ -73,6 +73,26 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not (has $pb (list "" "true" "false")) -}}
 {{- include $f (dict "msg" (printf "DIRECT_PERMANENT_BLOCK_ENABLED must be true or false, got %q." $pb) "set" "sisbajud.direct.permanentBlockEnabled") -}}
 {{- end -}}
+{{- /* --- streaming (the balance-change stream of the permanent block) ------- */ -}}
+{{- $se := include "plugin-br-sisbajud.streamingEnabled" . -}}
+{{- $sb := include "plugin-br-sisbajud.streamingBrokers" . -}}
+{{- if and (eq $pb "true") (or (ne $se "true") (not $sb)) -}}
+{{- include $f (dict "msg" "DIRECT_PERMANENT_BLOCK_ENABLED=true needs STREAMING_ENABLED=true and STREAMING_BROKERS (the permanent block reads the balance-change stream; the app refuses the boot otherwise)." "set" "global.streaming.enabled=true and global.streaming.brokers (or sisbajud.configmap.STREAMING_ENABLED / STREAMING_BROKERS)") -}}
+{{- end -}}
+{{- if eq $se "true" -}}
+{{- if not $sb -}}
+{{- include $f (dict "msg" "STREAMING_BROKERS is required with STREAMING_ENABLED=true (lib-streaming refuses the boot without a broker)." "set" "global.streaming.brokers (or sisbajud.configmap.STREAMING_BROKERS)") -}}
+{{- end -}}
+{{- $gs := (.Values.global | default dict).streaming | default dict -}}
+{{- $tls := hasKey $cm "STREAMING_TLS_ENABLED" | ternary (index $cm "STREAMING_TLS_ENABLED") ($gs.tlsEnabled | default false) | toString -}}
+{{- if and (not (include "plugin-br-sisbajud.nonProduction" .)) (not (has $tls (list "1" "t" "T" "TRUE" "true" "True"))) -}}
+{{- include $f (dict "msg" "STREAMING_TLS_ENABLED=true is required with STREAMING_ENABLED=true in a production-like environment (the app refuses the boot)." "set" "global.streaming.tlsEnabled=true (+ sisbajud.secrets.STREAMING_TLS_CA_CERT for a private CA)") -}}
+{{- end -}}
+{{- $mech := hasKey $cm "STREAMING_SASL_MECHANISM" | ternary (index $cm "STREAMING_SASL_MECHANISM") ($gs.saslMechanism | default "") | toString | trim -}}
+{{- if and $mech (not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" "STREAMING_SASL_PASSWORD"))) -}}
+{{- include $f (dict "msg" (printf "STREAMING_SASL_PASSWORD is required with STREAMING_SASL_MECHANISM=%s." $mech) "set" "sisbajud.secrets.STREAMING_SASL_PASSWORD (or sisbajud.useExistingSecret)") -}}
+{{- end -}}
+{{- end -}}
 {{- $sweep := include $val (dict "cm" $cm "k" "EXECUTOR_ORDER_SWEEP_ENABLED" "p" ($s.executor | default dict) "f" "orderSweepEnabled" "d" "false") | trim -}}
 {{- if not (has $sweep (list "" "true" "false")) -}}
 {{- include $f (dict "msg" (printf "EXECUTOR_ORDER_SWEEP_ENABLED must be true or false, got %q." $sweep) "set" "sisbajud.executor.orderSweepEnabled") -}}

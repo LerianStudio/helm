@@ -217,6 +217,21 @@ Resolved value of one key (same precedence as kv), for gates.
 {{- include "lerian-common.cfgValue" (dict "configmap" .cm "nativeKey" .k "params" .p "field" .f "default" (toString (.d | default ""))) -}}
 {{- end -}}
 
+{{- /* streamingEnabled — STREAMING_ENABLED resolved configmap › global.streaming.enabled
+   › "false", trimmed. */ -}}
+{{- define "plugin-br-sisbajud.streamingEnabled" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "streaming" "field" "enabled" "nativeKey" "STREAMING_ENABLED" "default" "false") | toString | trim -}}
+{{- end -}}
+
+{{- /* streamingBrokers — STREAMING_BROKERS resolved configmap › global.streaming.brokers
+   (the same precedence as lerian-common.streaming.env), trimmed. */ -}}
+{{- define "plugin-br-sisbajud.streamingBrokers" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- $gs := (.Values.global | default dict).streaming | default dict -}}
+{{- (hasKey $cm "STREAMING_BROKERS" | ternary (index $cm "STREAMING_BROKERS") ($gs.brokers | default "")) | toString | trim -}}
+{{- end -}}
+
 {{- define "plugin-br-sisbajud.multiTenantEnabled" -}}
 {{- $cm := .Values.sisbajud.configmap | default dict -}}
 {{- include "plugin-br-sisbajud.isTrue" (include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false")) -}}

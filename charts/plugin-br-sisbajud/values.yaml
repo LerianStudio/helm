@@ -50,6 +50,12 @@ global:
   #    plugin-br-sisbajud also reads awsKeyMode, awsKeyArn and awsCredentialsKeyArn
   #    here when vendor=aws (precedence: sisbajud.kms > global.kms; see sisbajud.kms).
   kms: {}
+  # -- Streaming (lib-streaming / RedPanda): enabled | brokers | tlsEnabled |
+  #    saslMechanism | saslUsername (+ compression, requiredAcks, ...; see
+  #    lerian-common.streaming.env). Off by default; required by
+  #    sisbajud.direct.permanentBlockEnabled (the balance-change stream).
+  #    STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT go in sisbajud.secrets.
+  streaming: {}
 
 # =============================================================================
 # sisbajud — the executor service.

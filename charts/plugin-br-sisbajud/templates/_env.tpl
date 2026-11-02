@@ -204,11 +204,17 @@ KMS_AWS_CREDENTIALS_KEY_ARN: {{ $awsCredArn | quote }}
 # --- Envelope encryption + blind index ---------------------------------------------
 {{- include $kv (dict "cm" $cm "p" $s.crypto "f" "dekCacheTtl" "k" "SISBAJUD_DEK_CACHE_TTL" "d" "5m") }}
 {{- include $kv (dict "cm" $cm "p" $s.crypto "f" "hmacCoexistenceWindow" "k" "SISBAJUD_HMAC_COEXISTENCE_WINDOW" "d" "720h") }}
-# --- Streaming: OFF in executor mode ------------------------------------------------
-{{- /* Executor mode starts no producer or consumer (no outbox dispatcher, no balance
-   consumer, no Midaz translator), so the chart renders it off explicitly (same as the
-   app default) and an enabled value would only demand brokers the executor never uses. */}}
-STREAMING_ENABLED: {{ (hasKey $cm "STREAMING_ENABLED" | ternary (index $cm "STREAMING_ENABLED") "false") | quote }}
+# --- Streaming (lerian-common.streaming.env; SASL password/CA via sisbajud.secrets) --
+{{- /* Off by default (the app default): a DIRECT executor without the permanent block
+   starts no producer or consumer. The permanent block reads the balance-change stream,
+   so turning it on needs STREAMING_ENABLED=true and brokers (_validate.tpl). The
+   ce-source is pinned to the roster name: lib-streaming refuses an enabled stream
+   without one and the app refuses any other (extensions_streaming.go). */}}
+{{- $streamingRaw := include "plugin-br-sisbajud.streamingEnabled" . }}
+STREAMING_ENABLED: {{ $streamingRaw | quote }}
+{{- with include "lerian-common.streaming.env" (dict "context" $ "enabled" (eq $streamingRaw "true") "configmap" $cm "cloudeventsSource" "plugin-br-sisbajud") | trim }}
+{{ . }}
+{{- end }}
 # --- OpenTelemetry (lerian-common.otel.env) ------------------------------------------
 {{ include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "false" "endpointDefault" "localhost:4317" "deploymentEnvironmentDefault" $envName) }}
 {{- include $kv (dict "cm" $cm "p" $s.observability "f" "serviceName" "k" "OTEL_RESOURCE_SERVICE_NAME" "d" "plugin-br-sisbajud") }}

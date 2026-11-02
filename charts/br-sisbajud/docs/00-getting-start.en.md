@@ -82,8 +82,7 @@ helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
 A license is required here too. Since app 1.2.0 the license is mandatory in every
 environment, `development` included (no dev bypass). `values-dev.yaml` ships the
 placeholder `REPLACE_WITH_YOUR_LICENSE_KEY` so the chart renders, but the pod does not
-boot until a real key is set. A key issued by the license dev gateway also needs
-`--set brSisbajud.license.isDevelopment=true`.
+boot until a real key is set.
 
 The images are public, so no pull secret is needed (top-level `imagePullSecrets` is
 only for a private mirror/registry). With
@@ -391,7 +390,7 @@ need the real client secret and a reachable plugin-access-manager.
 | At startup | A valid license boots, and so does a license in grace, including the outage grace when the gateway cannot answer. A 4xx refusal from the gateway aborts the boot |
 | One key per product | A key licenses a single product. A key issued for another product is refused with `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; an unknown or altered key with `(LCS-1002)` |
 | On refusal | The process exits and the pod goes to `CrashLoopBackOff`. In a rolling update the pod that is already running keeps serving, so the rollout stalls but nothing goes down |
-| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging were validated on this production gateway. `brSisbajud.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) switches to `https://license.dev.lerian.io`: use it only for keys issued by the dev gateway |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging were validated on this production gateway. `IS_DEVELOPMENT` is deprecated and ignored: products validate only on the production gateway |
 | Refresh and grace | The key is re-validated every 6 h. When the gateway does not answer (network error or 5xx) after it has confirmed the key once, the process keeps serving through decaying grace windows (2 d, 1 d, 12 h, 6 h, so at most 3 d 18 h) and then exits. A process that was never confirmed gets 6 h only. A 4xx refusal ends the grace at once. The windows live in memory: a pod restarted during an outage starts unconfirmed |
 | Offline | No offline license mode in this app version |
 | Render gate | Every environment fails the render without `LICENSE_KEY` (a Secret value, `secretRefs`, `extraEnvVars` or `useExistingSecret`); `ORGANIZATION_IDS` is required and must be `global` |

@@ -45,7 +45,7 @@ Application 1.2.0 has no unlicensed mode. The boot fails closed in **every** `EN
 - A license in its grace period still boots, including the outage grace the license SDK opens when the gateway cannot answer at startup. A refusal from the gateway (a 4xx: unknown key, a key for another product) aborts the boot.
 - The non-production environments keep relaxing everything else (CRM/fake connector, plaintext Postgres and broker). Only the license relaxation is gone.
 - The chart mirrors this: the render fails without `brSisbajud.secrets.LICENSE_KEY` (or a `brSisbajud.secretRefs` / `brSisbajud.extraEnvVars` entry, or `useExistingSecret`) and without `ORGANIZATION_IDS=global` (the `brSisbajud.license.organizationIds` default), whatever `global.env.name` says.
-- `values-dev.yaml` and `values-dev-with-br-sta.yaml` carry the placeholder `LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"`, so they render, but the pod does not boot until a real key is set. A key issued by the license dev gateway also needs `brSisbajud.license.isDevelopment: "true"`.
+- `values-dev.yaml` and `values-dev-with-br-sta.yaml` carry the placeholder `LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"`, so they render, but the pod does not boot until a real key is set.
 
 Before upgrading a dev, staging or e2e release that ran without a license, give it this product's key (and allow egress to the license gateway).
 
@@ -164,7 +164,7 @@ The 1.1.x native keys keep working. Move to the right-hand column to use the pro
 | `SERVER_ADDRESS`, `HTTP_BODY_LIMIT_BYTES`, `TLS_TERMINATED_UPSTREAM` | `brSisbajud.server.{address,bodyLimitBytes,tlsTerminatedUpstream}` |
 | `CORS_ALLOWED_ORIGINS` / `METHODS` / `HEADERS` | `brSisbajud.cors.{allowedOrigins,allowedMethods,allowedHeaders}` (also rendered as `ACCESS_CONTROL_*`) |
 | `ALLOW_INSECURE_TLS` | `brSisbajud.security.allowInsecureTls` |
-| `ORGANIZATION_IDS`, `IS_DEVELOPMENT` | `brSisbajud.license.{organizationIds,isDevelopment}` |
+| `ORGANIZATION_IDS` | `brSisbajud.license.organizationIds` |
 | `STA_CONSUMER_ENABLED`, `STA_TRANSFERS_ENABLED`, `STA_TRANSFERS_BASE_URL`, `STA_EXPECTED_TENANT_ST`, `STA_BACEN_SYSTEM_CODE`, `STA_SOURCE_PRODUCT`, `STA_CLIENT_ID` | `brSisbajud.sta.{consumerEnabled,transfersEnabled,transfersBaseUrl,expectedTenantSt,bacenSystemCode,sourceProduct,clientId}` |
 | `STA_CLIENT_SECRET` (extraEnvVars) | `brSisbajud.secrets.STA_CLIENT_SECRET` |
 | `EXECUTION_ENABLED` | `brSisbajud.workers.execution.enabled` |

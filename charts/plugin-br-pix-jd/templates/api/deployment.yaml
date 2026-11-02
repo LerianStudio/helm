@@ -91,6 +91,15 @@ spec:
             {{- with .Values.api.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+            {{- /* Node-local OTLP collector (HOST_IP + endpoint + ALLOW_INSECURE_OTEL), the same
+               wiring every other Lerian plugin gets. AFTER extraEnvVars on purpose:
+               Kubernetes expands $(HOST_IP) only against a variable defined EARLIER in
+               the list, so an operator-supplied HOST_IP has to come first. Empty (and
+               therefore no blank line) when telemetry is off or an endpoint is already
+               configured — see plugin-br-pix-jd.otelPodEnv for the precedence. */}}
+            {{- with (include "plugin-br-pix-jd.otelPodEnv" (dict "root" $ "comp" .Values.api) | trim) }}
+            {{- . | nindent 12 }}
+            {{- end }}
           {{- include "lerian-common.httpProbe" (dict
                 "kind" "readinessProbe" "probe" .Values.api.readinessProbe
                 "port" 8080

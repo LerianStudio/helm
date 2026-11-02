@@ -126,9 +126,9 @@ so there is nothing to migrate onto that mask.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `manager.name` | Manager component name | `fetcher-manager` |
-| `manager.replicaCount` | Number of manager replicas | `1` |
+| `manager.replicaCount` | Number of manager replicas | `2` |
 | `manager.image.repository` | Manager image repository | `lerianstudio/fetcher-manager` |
-| `manager.image.tag` | Manager image tag | `1.3.0` |
+| `manager.image.tag` | Manager image tag (not below `fetcher.minImage`) | `4.1.0-beta.1` |
 | `manager.image.pullPolicy` | Manager image pull policy | `IfNotPresent` |
 | `manager.service.type` | Kubernetes Service type | `ClusterIP` |
 | `manager.service.port` | Service HTTP port | `4006` |
@@ -138,21 +138,33 @@ so there is nothing to migrate onto that mask.
 | `manager.resources.limits.memory` | Memory limit | `512Mi` |
 | `manager.autoscaling.enabled` | Enable HPA | `false` |
 | `manager.ingress.enabled` | Enable ingress | `false` |
-| `manager.pdb.enabled` | Enable PodDisruptionBudget | `false` |
+| `manager.health.stack` | Health preset stack, `go` | `go` |
+| `manager.health.drainSeconds`, `manager.health.shutdownSeconds` | `SHUTDOWN_DRAIN_DELAY` and `SHUTDOWN_TIMEOUT` of the pod | `15`, `30` |
 
 ### Worker Settings
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `worker.name` | Worker component name | `fetcher-worker` |
-| `worker.replicaCount` | Number of worker replicas | `1` |
+| `worker.replicaCount` | Number of worker replicas | `2` |
 | `worker.image.repository` | Worker image repository | `lerianstudio/fetcher-worker` |
-| `worker.image.tag` | Worker image tag | `1.3.0` |
+| `worker.image.tag` | Worker image tag (not below `fetcher.minImage`) | `4.1.0-beta.1` |
+| `worker.health.stack` | Health preset stack, `go-worker` (no Service, no main port) | `go-worker` |
+| `worker.health.shutdownSeconds` | `SHUTDOWN_TIMEOUT` of the pod (the worker drain is 0) | `30` |
 | `worker.image.pullPolicy` | Worker image pull policy | `IfNotPresent` |
 | `worker.resources.requests.cpu` | CPU request | `100m` |
 | `worker.resources.requests.memory` | Memory request | `256Mi` |
 | `worker.resources.limits.cpu` | CPU limit | `200m` |
 | `worker.resources.limits.memory` | Memory limit | `512Mi` |
+
+### Health and rollout
+
+Both deployables render probes, `terminationGracePeriodSeconds`, the drain env (`HEALTH_PORT=8099`, `SHUTDOWN_DRAIN_DELAY`, `SHUTDOWN_TIMEOUT`), rolling-update strategy (`maxUnavailable: 0`), PodDisruptionBudget and the HPA floor from the `lerian-common.health` preset. Readiness fails only on the pod's own state; shared dependencies only report.
+
+- `/health` and `/readyz` are served on port 8099. On the manager it is a ClusterIP-only Service port named `health`; the Ingress never routes `/readyz` or `/metrics`. The worker has no Service.
+- The render refuses `manager.readinessProbe`, `manager.livenessProbe`, `manager.pdb`, `manager.deploymentStrategy`, any `*.terminationGracePeriodSeconds` and `SHUTDOWN_*` or `HEALTH_PORT` under a component `configmap`. Tune only `*.health.drainSeconds` and `*.health.shutdownSeconds`.
+- The render refuses an image older than `fetcher.minImage` (`templates/_helpers.tpl`), the first image that serves 8099. An image-only rollback below it fails the render; roll back the chart instead.
+- BYOC: the kubelet probes the pod IP on 8099, so the node-to-pod path must allow it.
 
 ### Common Settings
 

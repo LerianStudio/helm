@@ -234,3 +234,41 @@ MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+fetcher.minImage — the first image that serves HEALTH_PORT. THE line to set once
+the first beta carrying the health port is cut: the render refuses an older tag.
+Chart.yaml appVersion and both default image tags move with it.
+*/}}
+{{- define "fetcher.minImage" -}}
+4.1.0-beta.1
+{{- end }}
+
+{{/*
+Health preset (lerian-common.health) of the manager: probes, drain env, grace,
+rollout, PDB and the HPA floor. The Service carries the internal health port.
+*/}}
+{{- define "fetcher-manager.health" -}}
+{{- include "lerian-common.health" (dict
+      "name" "fetcher-manager"
+      "component" .Values.manager
+      "health" .Values.manager.health
+      "port" .Values.manager.service.port
+      "minImage" (include "fetcher.minImage" .)
+      "replicas" .Values.manager.replicaCount
+      "autoscaling" .Values.manager.autoscaling
+    ) -}}
+{{- end }}
+
+{{/*
+Health preset of the worker: no Service and no main port, HEALTH_PORT is its only listener.
+*/}}
+{{- define "fetcher-worker.health" -}}
+{{- include "lerian-common.health" (dict
+      "name" "fetcher-worker"
+      "component" .Values.worker
+      "health" .Values.worker.health
+      "minImage" (include "fetcher.minImage" .)
+      "replicas" .Values.worker.replicaCount
+    ) -}}
+{{- end }}

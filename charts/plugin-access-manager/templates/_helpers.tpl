@@ -940,3 +940,38 @@ here would only let a guaranteed crash render.
 {{- fail (printf "\n\nERROR: plugin-access-manager: %s would crash-loop at startup: the Caradhras JWKS URL is not https in an environment the application treats as production.%s\n   Since application 3.3.0, auth and identity fetch the JWKS over https whenever ENV_NAME is not development, staging or local, and no setting relaxes this. The process exits before its telemetry flushes, so the reason shows only in `kubectl logs --previous` and helm reports a timeout.\n   Fix: Caradhras serves plain http, so terminate TLS in front of it with caradhras.ingress, using a certificate from a public CA (the chart cannot mount a private CA), and set auth.configmap.AUTHORIZER_ADDRESS and identity.configmap.AUTHORIZER_ADDRESS to the SAME https URL: identity also pins that address as the issuer of M2M tokens.\n   Only if this environment really is not production, set global.env.name to development, staging or local instead; that also switches off the application's production-only behavior.\n   See docs/UPGRADE-9.5.8.md.\n" (join " and " $failing) $details) -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Health preset (lerian-common.health) for plugin-auth and plugin-identity: probes, ports, env, grace,
+strategy, PDB and the internal health Service port. Read it with fromYaml. Caradhras is another repo's
+image and keeps its own probes.
+minImage is the first plugin-access-manager image that serves HEALTH_PORT; it moves with values image.tag and Chart appVersion.
+The guard compares one semver (rc sorts above beta): an rc tier must bump to an rc that serves the port.
+*/}}
+{{- define "plugin-access-manager.minImage" -}}3.16.0-beta.5{{- end -}}
+
+{{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "plugin-access-manager.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "plugin-access-manager: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- if $.component.deploymentStrategy -}}{{- fail (printf "plugin-access-manager: %s.deploymentStrategy is owned by the health preset (RollingUpdate); remove it" $.name) -}}{{- end -}}
+{{- end -}}
+
+{{- define "plugin-auth.health" -}}
+{{- include "plugin-access-manager.presetOwned" (dict "name" "auth" "component" .Values.auth) -}}
+{{- include "lerian-common.health" (dict
+      "name" "auth" "component" .Values.auth "health" .Values.auth.health
+      "port" .Values.auth.service.port "minImage" (include "plugin-access-manager.minImage" .)
+      "replicas" .Values.auth.replicaCount "autoscaling" .Values.auth.autoscaling) -}}
+{{- end -}}
+
+{{- define "plugin-identity.health" -}}
+{{- include "plugin-access-manager.presetOwned" (dict "name" "identity" "component" .Values.identity) -}}
+{{- include "lerian-common.health" (dict
+      "name" "identity" "component" .Values.identity "health" .Values.identity.health
+      "port" .Values.identity.service.port "minImage" (include "plugin-access-manager.minImage" .)
+      "replicas" .Values.identity.replicaCount "autoscaling" .Values.identity.autoscaling) -}}
+{{- end -}}

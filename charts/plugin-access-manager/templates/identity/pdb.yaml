@@ -1,6 +1,7 @@
 {{- if .Values.identity.pdb.enabled }}
+{{- $h := include "plugin-identity.health" . | fromYaml }}
 {{- include "lerian-common.pdb" (dict
-      "pdb" .Values.identity.pdb
+      "pdb" (merge (deepCopy $h.pdb) (pick .Values.identity.pdb "annotations"))
       "name" (include "plugin-identity.fullname" .)
       "labels" (include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name))
       "selector" (include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name))

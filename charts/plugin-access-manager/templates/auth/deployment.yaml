@@ -1,3 +1,4 @@
+{{- $h := include "plugin-auth.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,9 +8,9 @@ metadata:
 spec:
   revisionHistoryLimit: {{ .Values.auth.revisionHistoryLimit | default 10 }}
   strategy:
-    {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.auth.autoscaling.enabled }}
-  replicas: {{ .Values.auth.replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -22,33 +23,13 @@ spec:
       labels:
         {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       securityContext:
         {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
-      initContainers:
-        - name: wait-for-dependencies
-          securityContext:
-            {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          # curl, not busybox wget: busybox's wget cannot complete a TLS
-          # handshake against SNI-routed endpoints (alert 40), so an https
-          # AUTHORIZER_ADDRESS -- required by the 3.3.0 JWKS TLS gate outside
-          # dev/staging/local ENV_NAME -- wedged this init forever.
-          image: curlimages/curl:8.10.1
-          envFrom:
-          - configMapRef:
-              name: {{ include "plugin-auth.fullname" . }}
-          command:
-            - /bin/sh
-            - -c
-            - |
-              until curl -sf -o /dev/null "$AUTHORIZER_ADDRESS/api/health"; do
-                echo "Wait for backend...";
-                sleep 5;
-              done;
-              echo "Backend is up!";
       containers:
         - name: {{ include "plugin-auth.fullname" . }}
           securityContext:
@@ -59,51 +40,30 @@ spec:
             - name: http
               containerPort: {{ .Values.auth.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
               name: {{ if .Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding the auth environment (AUTHORIZER_CLIENT_SECRET, LICENSE_KEY, ORGANIZATION_IDS, ...), or set auth.useExistingSecret=false.\n" .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-auth.fullname" . }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
           env:
-          - name: "HOST_IP"
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value: "$(HOST_IP):4317"
-          {{ end }}              
+            {{- toYaml $h.env | nindent 12 }}
+          {{- if (index .Values "otel-collector-lerian").enabled }}
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+          {{- end }}
           resources:
             {{- toYaml .Values.auth.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.auth.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: {{ .Values.auth.readinessProbe.initialDelaySeconds | default 25 }}
-            periodSeconds: {{ .Values.auth.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.auth.readinessProbe.timeoutSeconds | default 8 }}
-            successThreshold: {{ .Values.auth.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.auth.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.auth.livenessProbe.path | default "/health" }}
-              port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: {{ .Values.auth.livenessProbe.initialDelaySeconds | default 30 }}
-            periodSeconds: {{ .Values.auth.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.auth.livenessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.auth.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.auth.livenessProbe.failureThreshold | default 3 }}
-          {{- if .Values.auth.startupProbe.enabled }}
           startupProbe:
-            httpGet:
-              path: {{ .Values.auth.startupProbe.path | default "/health" }}
-              port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: {{ .Values.auth.startupProbe.initialDelaySeconds | default 0 }}
-            periodSeconds: {{ .Values.auth.startupProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.auth.startupProbe.timeoutSeconds | default 10 }}
-            successThreshold: {{ .Values.auth.startupProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.auth.startupProbe.failureThreshold | default 5 }}
-          {{- end }}
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, auth.spread, auth.topologySpreadConstraints).
              selectorLabels MUST equal spec.selector.matchLabels above. */}}

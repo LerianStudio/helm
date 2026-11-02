@@ -2,6 +2,7 @@ suite: reporter health comes from the lerian-common preset
 templates:
   - templates/manager/deployment.yaml
   - templates/manager/service.yaml
+  - templates/manager/pdb.yaml
   - templates/worker/deployment.yaml
   # loaded so the deployments can include and hash the rendered ConfigMaps and Secrets
   - templates/manager/configmap.yaml
@@ -66,3 +67,13 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content: {name: HEALTH_PORT, value: "8099"}
+
+  - it: renders no manager PDB when the preset returns none (singleton, one replica, no autoscaling)
+    template: templates/manager/pdb.yaml
+    set:
+      manager.health.singleton: true
+      manager.replicaCount: 1
+      manager.autoscaling.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

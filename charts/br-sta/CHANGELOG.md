@@ -1,5 +1,14 @@
 # Br-sta Changelog
 
+## [1.0.4](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.4)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sta` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.3...br-sta-v1.0.4)
+
+---
+
 ## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.3)
 
 Features:

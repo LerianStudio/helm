@@ -79,7 +79,7 @@ brSisbajud:
     deploymentMode: "byoc"             # saas | byoc | local (saas also forces TLS on Postgres/Redis)
   streaming:
     topicAutoProvision: "true"         # the app creates its own topics at boot; "false" if IaC provisions them
-    closeTimeoutS: "20"                # drain window on shutdown; must stay below terminationGracePeriodSeconds (30s)
+    closeTimeoutS: "20"                # drain window on shutdown; must stay below the 30s shutdown budget (inside terminationGracePeriodSeconds)
   ingress:
     enabled: false
     className: "nginx"

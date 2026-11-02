@@ -130,6 +130,8 @@ securityContext:
 brSisbajud:
   enabled: true
   replicaCount: 1
+  # -- 55 = 15s SHUTDOWN_DRAIN_DELAY + 30s shutdown budget + 10s margin; never lower it.
+  terminationGracePeriodSeconds: 55
   revisionHistoryLimit: 10
   image:
     repository: ghcr.io/lerianstudio/br-sisbajud
@@ -349,8 +351,8 @@ brSisbajud:
   # topics are pre-provisioned by IaC), topicPartitions / topicReplicationFactor
   # (STREAMING_TOPIC_PARTITIONS / _REPLICATION_FACTOR for that auto-creation;
   # unset = broker default), closeTimeoutS (STREAMING_CLOSE_TIMEOUT_S,
-  # default "20": must stay below the pod terminationGracePeriodSeconds, Kubernetes
-  # default 30s, which this chart does not override). Brokers/TLS/SASL come from
+  # default "20": must stay below the 30s shutdown budget that runs inside
+  # terminationGracePeriodSeconds). Brokers/TLS/SASL come from
   # global.streaming.
   streaming: {}
   # -- Inbound auth extras. enabled/host come from global.auth.

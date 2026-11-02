@@ -187,6 +187,9 @@ spec:
           {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
           {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}
           {{- end }}
+          # Readyz answers 503 for this long after SIGTERM while the listener still serves.
+          - name: SHUTDOWN_DRAIN_DELAY
+            value: "5s"
           {{ if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:
@@ -197,7 +200,7 @@ spec:
           {{ end }}
           resources:
             {{- toYaml .Values.caradhras.resources | nindent 12 }}
-          # Serve 15s before SIGTERM while endpoints deregister; grace = 15 + SHUTDOWN_TIMEOUT_SEC (30) + 10.
+          # Serve 15s before SIGTERM while endpoints deregister; grace = 15 + SHUTDOWN_DRAIN_DELAY (5) + SHUTDOWN_TIMEOUT_SEC (30) + 5.
           lifecycle:
             preStop:
               exec:

@@ -728,7 +728,6 @@ If your RabbitMQ server requires TLS/SSL, update the client environment variable
 ledger:
   configmap:
     RABBITMQ_URI: "amqps"      # was "amqp"
-    RABBITMQ_PROTOCOL: "https" # was "http"
 ```
 
 ### OpenTelemetry Collector wiring

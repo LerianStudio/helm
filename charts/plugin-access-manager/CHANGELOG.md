@@ -3,6 +3,19 @@
 ## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.3.0)
 
 Features:
+- Add opt-in for Caradhras built-in admin password from a secret. (@fredcamaral)
+
+Fixes:
+- Raise the admin password floor to Caradhras `1.9.0-beta.25`. (@fredcamaral)
+- Require Caradhras `>= 1.9.0` for the built-in admin password opt-in. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.3...plugin-access-manager-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.3.0)
+
+Features:
 - Add an opt-in feature for Caradhras built-in admin password from a secret. (@fredcamaral)
 
 Fixes:

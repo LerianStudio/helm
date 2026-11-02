@@ -3,6 +3,18 @@
 ## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.0)
 
 Features:
+- Render `LICENSE_KEY` into the Secret, allowing the product-console to utilize it during boot. (@fredcamaral)
+
+Improvements:
+- List both secrets required for the product-console to boot, ensuring clarity in the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.8...product-console-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.0)
+
+Features:
 - Render `LICENSE_KEY` into the Secret, enabling the product-console to use it during startup. (@fredcamaral)
 
 Improvements:

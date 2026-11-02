@@ -1,5 +1,22 @@
 # Midaz Changelog
 
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved health management. (@fredcamaral)
+
+Fixes:
+- Fail the render process when `ledger/tracer` overrides preset-owned `pdb` or `deploymentUpdate` settings to prevent conflicts. (@fredcamaral)
+- Remove orphan `rabbitmq` protocol and port keys from the ledger `configmap` to clean up configuration. (@fredcamaral)
+- Eliminate orphan `rabbitmq` health URL and duplicate minimum image entries to streamline the configuration. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release, providing clarity on default configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
 ## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
 
 Improvements:

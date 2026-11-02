@@ -70,8 +70,7 @@ helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
 ```
 
 `values-dev.yaml` only carries placeholder license values: the manager and the worker
-do not boot until a real key and organization id are set (a key issued by the dev
-license gateway also needs `common.license.isDevelopment: "true"`).
+do not boot until a real key and organization id are set.
 
 All images are public, so no pull secret is needed. For a private mirror, set
 `imagePullSecrets` (root key): the manager, worker, migrations Job and mock STA server
@@ -237,7 +236,7 @@ verifier/export generator).
 |---|---|
 | One key per product | A key licenses a single product. A key issued for another product is refused with `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; an unknown or altered key with `(LCS-1002)` |
 | On refusal | The process exits and the pod goes to `CrashLoopBackOff`. In a rolling update the pod that is already running keeps serving, so the rollout stalls but nothing goes down |
-| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging are validated on this production gateway too. `common.license.isDevelopment: "true"` (`IS_DEVELOPMENT`) switches to `https://license.dev.lerian.io`: use it only for keys issued by the dev gateway |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging are validated on this production gateway too. `IS_DEVELOPMENT` is deprecated and ignored: products validate only on the production gateway |
 | Refresh and grace | The key is re-validated every 6 h. When the gateway does not answer (network error or 5xx) after it has confirmed the key once, the process keeps serving through decaying grace windows (2 d, 1 d, 12 h, 6 h, so at most 3 d 18 h) and then exits. A process that was never confirmed gets 6 h only. A 4xx refusal ends the grace at once. The windows live in memory: a pod restarted during an outage starts unconfirmed |
 | Offline | No offline license mode in this app version |
 | Render gate | In every environment the render fails without `LICENSE_KEY` and `ORGANIZATION_IDS` (the app refuses to boot without a license; there is no unlicensed mode) |

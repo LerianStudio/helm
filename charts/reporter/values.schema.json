@@ -196,51 +196,7 @@
           "description": "Annotations for the manager pods"
         },
         "replicaCount": {
-          "default": 1
-        },
-        "readinessProbe": {
-          "type": "object",
-          "description": "Readiness probe configuration",
-          "properties": {
-            "initialDelaySeconds": {
-              "default": 25
-            },
-            "periodSeconds": {
-              "default": 5
-            },
-            "timeoutSeconds": {
-              "default": 3
-            },
-            "successThreshold": {
-              "default": 1
-            },
-            "failureThreshold": {
-              "default": 3
-            }
-          },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "description": "Liveness probe configuration",
-          "properties": {
-            "initialDelaySeconds": {
-              "default": 30
-            },
-            "periodSeconds": {
-              "default": 5
-            },
-            "timeoutSeconds": {
-              "default": 3
-            },
-            "successThreshold": {
-              "default": 1
-            },
-            "failureThreshold": {
-              "default": 3
-            }
-          },
-          "additionalProperties": true
+          "default": 2
         },
         "image": {
           "type": "object",
@@ -254,7 +210,7 @@
               "description": "Image pull policy"
             },
             "tag": {
-              "default": "2.4.0",
+              "default": "4.7.0-beta.1",
               "description": "Image tag used for deployment"
             }
           },
@@ -313,27 +269,6 @@
               "type": "object",
               "additionalProperties": true,
               "description": "Annotations for the service"
-            }
-          },
-          "additionalProperties": true
-        },
-        "deploymentStrategy": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "default": "RollingUpdate"
-            },
-            "rollingUpdate": {
-              "type": "object",
-              "properties": {
-                "maxSurge": {
-                  "default": 1
-                },
-                "maxUnavailable": {
-                  "default": 0
-                }
-              },
-              "additionalProperties": true
             }
           },
           "additionalProperties": true
@@ -487,14 +422,6 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "maxUnavailable": {
-              "default": 1,
-              "description": "Maximum number of unavailable pods"
-            },
-            "minAvailable": {
-              "default": 0,
-              "description": "Minimum number of available pods"
-            },
             "annotations": {
               "type": "object",
               "additionalProperties": true,
@@ -583,7 +510,6 @@
                   "FETCHER_STORAGE_BUCKET",
                   "FETCHER_URL",
                   "GOOGLE_APPLICATION_CREDENTIALS",
-                  "HEALTH_PORT",
                   "IDP_DECLARATION_ENABLED",
                   "IDP_HOST",
                   "LOG_LEVEL",
@@ -638,7 +564,6 @@
                   "RABBITMQ_EXCHANGE",
                   "RABBITMQ_GENERATE_REPORT_KEY",
                   "RABBITMQ_GENERATE_REPORT_QUEUE",
-                  "RABBITMQ_HEALTH_CHECK_URL",
                   "RABBITMQ_HOST",
                   "RABBITMQ_MULTI_TENANT_DISCOVERY_TIMEOUT",
                   "RABBITMQ_MULTI_TENANT_SYNC_INTERVAL",
@@ -717,7 +642,7 @@
               "default": true
             },
             "minReplicas": {
-              "default": 1
+              "default": 2
             },
             "maxReplicas": {
               "default": 10
@@ -737,6 +662,23 @@
         "keda": {
           "type": "object",
           "additionalProperties": true
+        },
+        "health": {
+          "type": "object",
+          "description": "Health preset (lerian-common.health): probes, grace, strategy and PDB are owned by it; tune only drainSeconds and shutdownSeconds",
+          "properties": {
+            "stack": {
+              "default": "go"
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
         }
       },
       "additionalProperties": true
@@ -768,7 +710,7 @@
               "description": "Image pull policy"
             },
             "tag": {
-              "default": "2.4.0",
+              "default": "4.7.0-beta.1",
               "description": "Image tag used for deployment"
             }
           },
@@ -785,25 +727,6 @@
         "fullnameOverride": {
           "default": "",
           "description": "Overrides the full name generated by Helm"
-        },
-        "service": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "default": "ClusterIP",
-              "description": "Kubernetes service type"
-            },
-            "port": {
-              "default": 80,
-              "description": "Service port"
-            },
-            "annotations": {
-              "type": "object",
-              "additionalProperties": true,
-              "description": "Annotations for the service"
-            }
-          },
-          "additionalProperties": true
         },
         "resources": {
           "type": "object",
@@ -1017,7 +940,6 @@
                   "FETCHER_STORAGE_BUCKET",
                   "FETCHER_URL",
                   "GOOGLE_APPLICATION_CREDENTIALS",
-                  "HEALTH_PORT",
                   "IDP_DECLARATION_ENABLED",
                   "IDP_HOST",
                   "LOG_LEVEL",
@@ -1072,7 +994,6 @@
                   "RABBITMQ_EXCHANGE",
                   "RABBITMQ_GENERATE_REPORT_KEY",
                   "RABBITMQ_GENERATE_REPORT_QUEUE",
-                  "RABBITMQ_HEALTH_CHECK_URL",
                   "RABBITMQ_HOST",
                   "RABBITMQ_MULTI_TENANT_DISCOVERY_TIMEOUT",
                   "RABBITMQ_MULTI_TENANT_SYNC_INTERVAL",
@@ -1144,72 +1065,6 @@
           "additionalProperties": true,
           "description": "Pod annotations for the worker deployment (used when KEDA is disabled)"
         },
-        "deploymentStrategy": {
-          "type": "object",
-          "description": "Deployment strategy (used when KEDA is disabled)",
-          "properties": {
-            "type": {
-              "default": "RollingUpdate"
-            },
-            "rollingUpdate": {
-              "type": "object",
-              "properties": {
-                "maxSurge": {
-                  "default": 1
-                },
-                "maxUnavailable": {
-                  "default": 0
-                }
-              },
-              "additionalProperties": true
-            }
-          },
-          "additionalProperties": true
-        },
-        "readinessProbe": {
-          "type": "object",
-          "description": "Readiness probe configuration (used when KEDA is disabled)",
-          "properties": {
-            "initialDelaySeconds": {
-              "default": 15
-            },
-            "periodSeconds": {
-              "default": 5
-            },
-            "timeoutSeconds": {
-              "default": 3
-            },
-            "successThreshold": {
-              "default": 1
-            },
-            "failureThreshold": {
-              "default": 3
-            }
-          },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "description": "Liveness probe configuration (used when KEDA is disabled)",
-          "properties": {
-            "initialDelaySeconds": {
-              "default": 20
-            },
-            "periodSeconds": {
-              "default": 5
-            },
-            "timeoutSeconds": {
-              "default": 3
-            },
-            "successThreshold": {
-              "default": 1
-            },
-            "failureThreshold": {
-              "default": 3
-            }
-          },
-          "additionalProperties": true
-        },
         "autoscaling": {
           "type": "object",
           "description": "HPA configuration (used when KEDA is disabled)",
@@ -1243,6 +1098,23 @@
           "type": "object",
           "additionalProperties": true,
           "description": "KEDA configuration for worker auto-scaling (default mode)"
+        },
+        "health": {
+          "type": "object",
+          "description": "Health preset for the worker Deployment (used when KEDA is disabled)",
+          "properties": {
+            "stack": {
+              "default": "go-worker"
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
         }
       },
       "additionalProperties": true
@@ -1299,7 +1171,6 @@
                   "FETCHER_STORAGE_BUCKET",
                   "FETCHER_URL",
                   "GOOGLE_APPLICATION_CREDENTIALS",
-                  "HEALTH_PORT",
                   "IDP_DECLARATION_ENABLED",
                   "IDP_HOST",
                   "LOG_LEVEL",
@@ -1354,7 +1225,6 @@
                   "RABBITMQ_EXCHANGE",
                   "RABBITMQ_GENERATE_REPORT_KEY",
                   "RABBITMQ_GENERATE_REPORT_QUEUE",
-                  "RABBITMQ_HEALTH_CHECK_URL",
                   "RABBITMQ_HOST",
                   "RABBITMQ_MULTI_TENANT_DISCOVERY_TIMEOUT",
                   "RABBITMQ_MULTI_TENANT_SYNC_INTERVAL",

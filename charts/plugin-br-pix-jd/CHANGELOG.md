@@ -1,5 +1,422 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health management of the plugin. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure compatibility with the updated health management system. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB, ensuring smoother integration with the health management system. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health management. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure compatibility and stability. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB for improved reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance health check configurations. (@fredcamaral)
+
+Fixes:
+- Refuse retired `pdb` and rollout overrides to ensure stability and compliance with updated standards. (@fredcamaral)
+- Pass the `alb` health check and allow the preset to manage the `pdb` for improved reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+- Pass the ALB health check and let the preset own the PDB. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health management of the plugin. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure compatibility and stability. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB for improved health check integration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved health management. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure stability and compliance with new standards. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB, enhancing the plugin's robustness. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in `plugin-br-pix-jd`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Correct the `v0.5.7` upgrade guide to address worker image and license behavior. (@gandalf-at-lerian)
+- Correct the `v0.5.8` upgrade guide to address migration hook behavior. (@gandalf-at-lerian)
+- Correct the `v0.5.6` upgrade guide to include a note on pod roll. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide to correct worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide to address migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide to clarify pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix the `v0.5.7` upgrade guide by correcting the worker image and license behavior. (@gandalf-at-lerian)
+- Fix the `v0.5.8` upgrade guide by addressing migration hook behavior. (@gandalf-at-lerian)
+- Correct the `v0.5.6` upgrade guide by updating the pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide to correct worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide to correct migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide to correct pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Prevent rendering of `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add a Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Correct the `v0.5.7` upgrade guide regarding worker image and license behavior. (@gandalf-at-lerian)
+- Correct the `v0.5.8` upgrade guide concerning migration hook behavior. (@gandalf-at-lerian)
+- Fix the `v0.5.6` upgrade guide to clarify pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide to correct worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide to address migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide to clarify pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` to prevent unnecessary exposure of development flags. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Correct the `v0.5.7` upgrade guide by updating the worker image and clarifying license behavior. (@gandalf-at-lerian)
+- Fix the migration hook behavior in the `v0.5.8` upgrade guide. (@gandalf-at-lerian)
+- Update the `v0.5.6` upgrade guide to clarify the pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Correct `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Correct `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Correct the `v0.5.7` upgrade guide with accurate worker image and license behavior. (@gandalf-at-lerian)
+- Fix the `v0.5.8` upgrade guide to accurately describe migration hook behavior. (@gandalf-at-lerian)
+- Update the `v0.5.6` upgrade guide to include a note on pod roll. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Added Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Added Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Added Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Corrected the `v0.5.7` upgrade guide to address worker image and license behavior. (@gandalf-at-lerian)
+- Fixed the `v0.5.8` upgrade guide to clarify migration hook behavior. (@gandalf-at-lerian)
+- Amended the `v0.5.6` upgrade guide to include a note on pod roll. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
 ## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
 
 Fixes:

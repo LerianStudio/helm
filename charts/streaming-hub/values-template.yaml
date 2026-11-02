@@ -26,7 +26,6 @@ streamingHub:
     STREAMING_HUB_TENANT_ID: default
     # License (lib-license-go, GLOBAL mode). The key is a secret (below).
     ORGANIZATION_IDS: global                # must be EXACTLY "global" (the chart default)
-    # IS_DEVELOPMENT: "true"                # dev license server; refused with STREAMING_HUB_ENV=production
     # Multi-tenant: the switch plus the values it REQUIRES when true. The hub
     # refuses to boot with an empty or "local" ENV_NAME, and the credential sweep
     # fails without a region the AWS SDK chain can resolve.

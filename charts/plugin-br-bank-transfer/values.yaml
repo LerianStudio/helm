@@ -486,11 +486,8 @@ bankTransfer:
     # =================================================================
     # License gateway — newer app images refuse to boot without LICENSE_KEY
     # (bankTransfer.secrets) and ORGANIZATION_IDS (below), in every
-    # environment. lib-license-go picks the gateway itself: IS_DEVELOPMENT
-    # "true" (exactly) selects the development gateway, which a development
-    # licence key needs. Rendered only when set.
+    # environment. Products validate only on the production licence gateway.
     # =================================================================
-    # IS_DEVELOPMENT: "true"
 
     # =================================================================
     # OpenTelemetry

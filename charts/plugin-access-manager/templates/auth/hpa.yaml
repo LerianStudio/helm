@@ -1,6 +1,7 @@
-{{- if .Values.auth.autoscaling.enabled }}
+{{- $h := include "plugin-auth.health" . | fromYaml }}
+{{- if hasKey $h "autoscaling" }}
 {{- include "lerian-common.hpa" (dict
-      "autoscaling" .Values.auth.autoscaling
+      "autoscaling" $h.autoscaling
       "name" (include "plugin-auth.fullname" .)
       "labels" (printf "%s " (include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name)))
     ) }}

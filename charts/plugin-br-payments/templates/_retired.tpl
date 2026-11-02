@@ -24,4 +24,7 @@
 {{- if hasKey $sec "BTG_CLIENT_ID" }}{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_ID was RENAMED to app.secrets.PROVIDER_CLIENT_ID.\n   Rename the key in your values overlay.\n" }}{{- end }}
 {{- if hasKey $sec "BTG_CLIENT_SECRET" }}{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_SECRET was RENAMED to app.secrets.PROVIDER_CLIENT_SECRET.\n   Rename the key in your values overlay.\n" }}{{- end }}
 {{- if hasKey $sec "BTG_WEBHOOK_SECRET" }}{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_SECRET was RENAMED to app.secrets.BTG_WEBHOOK_HMAC_SECRET (the bearer mechanism was retired; the HMAC secret authenticates the webhook).\n   Rename the key in your values overlay.\n" }}{{- end }}
+{{- $app := .Values.app -}}
+{{- if hasKey $app "pdb" }}{{- fail "\n\nERROR: app.pdb is owned by the health preset (PDB maxUnavailable 1; the preset pdb.yaml reads no app.pdb key).\n   Remove it from your values overlay.\n" }}{{- end }}
+{{- if hasKey $app "deploymentStrategy" }}{{- fail "\n\nERROR: app.deploymentStrategy is owned by the health preset (RollingUpdate).\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- end -}}

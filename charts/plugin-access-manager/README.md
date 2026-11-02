@@ -6,7 +6,7 @@
 - Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
-- Initial admin: with `auth.initUser.enabled`, the identity service creates the first Console admin (`lerian/admin`, in `lerian/admin-group`) at boot through the Caradhras API, from `auth.initUser.*`, and only while organization `lerian` has no users: upgrades, restarts and later values changes never reset the password or recreate a deleted admin. It needs a `plugin-access-manager` identity image that has this boot step (the chart's default `identity.image.tag` does from the release that introduces it; with a pinned older tag no admin is created, silently). The former `caradhras-user-init` post-install Job and `auth.initUser.image` and its timeout and resource keys are gone; leftover keys are ignored. The `-init-user` Secret is no longer a hook, so it stays after install. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow.
+- Initial admin: with `auth.initUser.enabled`, the identity service creates the first Console admin (`lerian/admin`, in `lerian/admin-group`) at boot through the Caradhras API, from `auth.initUser.*`, and only while organization `lerian` has no users: a populated organization is left untouched, but an organization that later becomes empty can bootstrap again on a subsequent start. It needs a `plugin-access-manager` identity image that has this boot step (use identity v3.16.0 or later; an older image cannot create the admin). The former `caradhras-user-init` post-install Job and `auth.initUser.image` and its timeout and resource keys are gone; leftover keys are ignored. The `-init-user` Secret is no longer a hook, so it stays after install. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 > **Uninstall keeps the identity data.** `helm uninstall` leaves the bundled database volume (`data-<release>-auth-database-0`) and its password Secret (`<release>-auth-database`), so a reinstall under the same release name opens the same users, organizations and applications with the same password. This chart, not the Bitnami subchart, owns that Secret: it takes `auth-database.auth.password` when set, else the Secret already in the namespace, else a new random password. Deleting the data is a separate, manual step: delete that PVC and that Secret together (the Valkey volume `valkey-data-<release>-valkey-primary-0`, sessions and cached tokens only, is left too). Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned.
@@ -283,10 +283,11 @@ required. To keep the previous pod template exactly, set
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `replicaCount` | Number of replicas for the deployment | `1` |
+| `replicaCount` | Number of replicas for the deployment | `2` |
 | `image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-identity` |
 | `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag used for deployment | `3.14.0` |
+| `image.tag` | Image tag used for deployment | `3.16.0-beta.5` |
+| `health.stack` | Health preset (lerian-common.health): probes, `HEALTH_PORT` 8099, drain and shutdown env, grace, rollout and PDB; tune only `health.drainSeconds` and `health.shutdownSeconds` | `go` |
 | `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `nameOverride` | Overrides the default generated name by Helm | `""` |
 | `fullnameOverride` | Overrides the full name generated by Helm | `""` |
@@ -297,16 +298,13 @@ required. To keep the previous pod template exactly, set
 | `ingress.tls` | TLS configuration for ingress | `[]` |
 | `service.type` | Kubernetes service type | `ClusterIP` |
 | `service.port` | Service port | `4001` |
-| `deploymentStrategy` | Deployment strategy | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1}}` |
 | `podSecurityContext` | Pod security context | `{}` |
 | `securityContext` | Security context for the container | See `values.yaml` |
 | `pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
-| `pdb.maxUnavailable` | Maximum number of unavailable pods | `1` |
-| `pdb.minAvailable` | Minimum number of available pods | `0` |
 | `pdb.annotations` | Annotations for PodDisruptionBudget | `{}` |
 | `resources` | CPU and memory limits for pods | See `values.yaml` |
 | `autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
-| `autoscaling.minReplicas` | Minimum number of replicas | `1` |
+| `autoscaling.minReplicas` | Minimum number of replicas | `2` |
 | `autoscaling.maxReplicas` | Maximum number of replicas | `3` |
 | `autoscaling.targetCPUUtilizationPercentage` | Target CPU utilization percentage for autoscaling | `80` |
 | `autoscaling.targetMemoryUtilizationPercentage` | Target memory utilization percentage for autoscaling | `80` |
@@ -332,7 +330,8 @@ required. To keep the previous pod template exactly, set
 | `replicaCount` | Number of replicas for the deployment | `3` |
 | `image.repository` | Repository for the console service container image | `ghcr.io/lerianstudio/plugin-auth` |
 | `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag used for deployment | `3.14.0` |
+| `image.tag` | Image tag used for deployment | `3.16.0-beta.5` |
+| `health.stack` | Health preset (lerian-common.health): probes, `HEALTH_PORT` 8099, drain and shutdown env, grace, rollout and PDB; tune only `health.drainSeconds` and `health.shutdownSeconds` | `go` |
 | `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `nameOverride` | Overrides the default generated name by Helm | `""` |
 | `fullnameOverride` | Overrides the full name generated by Helm | `""` |
@@ -344,12 +343,9 @@ required. To keep the previous pod template exactly, set
 | `ingress.tls` | TLS configuration for ingress | `[]` |
 | `service.type` | Kubernetes service type | `ClusterIP` |
 | `service.port` | Service port | `4000` |
-| `deploymentStrategy` | Deployment strategy of auth; caradhras always rolls with `maxSurge: 1`, `maxUnavailable: 0` | `{"type": "RollingUpdate", "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 1}}` |
 | `podSecurityContext` | Pod security context | `{}` |
 | `securityContext` | Security context for every auth-side container: auth, caradhras (including its migrate init container) and its UI, and their init containers | See `values.yaml` |
 | `pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
-| `pdb.maxUnavailable` | Maximum number of unavailable pods | `1` |
-| `pdb.minAvailable` | Minimum number of available pods | `0` |
 | `pdb.annotations` | Annotations for PodDisruptionBudget | `{}` |
 | `resources` | CPU and memory limits for pods | See `values.yaml` |
 | `autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
@@ -534,6 +530,9 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
+| `caradhras.builtInAdminPassword.enabled` | Inject the `built-in/admin` password as the `builtInAdminPassword` config key, by `secretKeyRef`. Read only when the built-in organization is first created (fresh database); it never changes an existing admin. Unset, a new admin gets the public default `123` and Caradhras warns every hour; over 72 bytes fails the boot before seeding. Needs Caradhras >= 1.9.0-beta.25: the render fails unless `caradhras.image.tag` is a semver tag >= 1.9.0-beta.25 (the default 1.8.6 ignores the key) | `false` |
+| `caradhras.builtInAdminPassword.secretName` | Secret holding that password. Required when enabled | `""` |
+| `caradhras.builtInAdminPassword.secretKey` | Key inside that Secret | `builtInAdminPassword` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
 
 #### Production: reach Caradhras over HTTPS
@@ -651,11 +650,7 @@ caradhras both.
 | --- | --- | --- |
 | `otel-collector-lerian.enabled` | Inject `HOST_IP` (node IP) and `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` into the auth, identity and caradhras containers, so telemetry goes to a node-local OTLP collector. This chart declares no collector dependency and deploys none: install `otel-collector-lerian` (or any collector listening on the node IP, port 4317) separately. Set `false` to omit the two variables | `true` |
 
-| `auth.deploymentStrategy.rollingUpdate.maxSurge` | Maximum number of pods that can be created over the desired number of pods.              | `1`                                            |
-| `auth.deploymentStrategy.rollingUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during the update.                        | `1`                                            |
 | `auth.pdb.enabled`                            | Specifies whether PodDisruptionBudget is enabled.                                         | `true`                                         |
-| `auth.pdb.minAvailable`                       | Minimum number of available pods.                                                        | `0`                                            |
-| `auth.pdb.maxUnavailable`                     | Maximum number of unavailable pods.                                                      | `1`                                            |
 | `auth.pdb.annotations`                        | Annotations for the PodDisruptionBudget.                                                 | `{}`                                           |
 | `auth.resources.limits.cpu`                   | CPU limit allocated for the pods.                                                        | `1`                                            |
 | `auth.resources.limits.memory`                | Memory limit allocated for the pods.                                                     | `"756Mi"`                                      |

@@ -3,6 +3,312 @@
 ## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
 
 Features:
+
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Add a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Add Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Improvements:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Add a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for the agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Improvements:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Chore:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:  
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:  
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Improvements:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Chores:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Improvements:
+- Relicense the charts under the Elastic License 2.0. (@fredcamaral)
+- Add a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Improvements:
+- Added a Helm upgrade guide for agent `v1.0.2`, providing detailed instructions for users upgrading to this version. (@guimoreirar)
+
+Chore:
+- Relicensed the charts under the Elastic License 2.0, ensuring compliance with the updated licensing terms. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Add a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Add a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Add Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
+- Added a Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.2...agent-v1.0.3)
+
+---
+
+## [1.0.3](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.3)
+
+Features:
 - Add Helm upgrade guide for agent `v1.0.2`. (@guimoreirar)
 
 Improvements:

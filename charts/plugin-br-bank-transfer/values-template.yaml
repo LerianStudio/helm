@@ -119,7 +119,6 @@ bankTransfer:
 
     # Licence
     ORGANIZATION_IDS: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment
-    # IS_DEVELOPMENT: "true"  # set only with a development licence key (development licence gateway)
 
   secrets:
     # PostgreSQL / Redis / MongoDB — REQUIRED (bundled subcharts read these too)
@@ -132,7 +131,7 @@ bankTransfer:
     RECIPIENT_DETAILS_ENCRYPTION_KEY: ""  # REQUIRED
 
     # Licence
-    LICENSE_KEY: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment; a development key also needs configmap.IS_DEVELOPMENT: "true"
+    LICENSE_KEY: ""  # REQUIRED - newer engine images refuse to boot without it, in every environment
 
     # MULTI_TENANT_SERVICE_API_KEY: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
 

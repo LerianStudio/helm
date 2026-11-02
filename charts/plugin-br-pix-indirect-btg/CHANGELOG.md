@@ -1,5 +1,299 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health management capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDBs and implement rollout overrides to ensure compatibility and stability. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values for better clarity and maintenance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health checks. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDBs and implement rollout overrides to ensure stability and compliance. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values for better clarity and maintenance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for enhanced health checks and monitoring. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values to improve test coverage and documentation clarity. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure stability and compliance with updated standards. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health management capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDBs and implement rollout overrides to ensure compatibility and stability. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values to streamline the testing process and improve documentation clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved health management. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and implement rollout overrides to enhance stability and compatibility. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values for better clarity and maintenance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Raise probe `timeoutSeconds` to 3 to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Increase the probe `timeoutSeconds` to `3` to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+- Render `LICENSE_KEY` in the worker secrets. (@fredcamaral)
+- Raise probe `timeoutSeconds` to 3. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Increase the probe `timeoutSeconds` to 3 to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Increase the probe `timeoutSeconds` to 3 to improve timeout handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Raise the probe `timeoutSeconds` to 3 to improve reliability and performance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Raise probe `timeoutSeconds` to `3` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper handling of license information. (@fredcamaral)
+- Increase the probe `timeoutSeconds` to `3` to improve the reliability of the health checks. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Raise probe `timeoutSeconds` to `3` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper handling of license information. (@fredcamaral)
+- Increase the probe `timeoutSeconds` to `3` to allow more time for the probe to complete successfully. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Raise probe `timeoutSeconds` to `3` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Increase the probe `timeoutSeconds` to 3 to enhance the reliability of health checks. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Raise probe `timeoutSeconds` to 3 to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.3)
+
+Fixes:
+
+- Render `LICENSE_KEY` in the worker secrets to ensure proper configuration. (@fredcamaral)
+- Raise probe `timeoutSeconds` to `3` to improve stability and responsiveness. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.2...plugin-br-pix-indirect-btg-v5.2.3)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+
+- Roll pods when the configmap or secret changes to ensure the plugin operates with the latest configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+- Roll pods when a ConfigMap or Secret changes to ensure updates are applied without manual intervention. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+
+- Roll pods when a ConfigMap or Secret changes to ensure the plugin stays up-to-date with the latest configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
+## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
+
+Fixes:
+- Ensure pods are rolled when a ConfigMap or Secret changes, improving the update process for the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.1...plugin-br-pix-indirect-btg-v5.2.2)
+
+---
+
 ## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
 
 Fixes:

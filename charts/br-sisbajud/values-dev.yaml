@@ -79,8 +79,6 @@ brSisbajud:
   # GLOBAL license mode: the only value the app accepts.
   license:
     organizationIds: "global"
-    # A key issued by the license dev gateway also needs:
-    # isDevelopment: "true"
   # No LICENSE_KEY: with ENVIRONMENT_NAME=development an empty key is the app's
   # dev bypass. To validate a real one, create a Secret from a file and point
   # brSisbajud.secretRefs.LICENSE_KEY at it. Never commit a real key.

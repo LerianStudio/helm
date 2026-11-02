@@ -5,10 +5,6 @@
 
 api:
   replicaCount: 1
-  image:
-    repository: docker.io/lerianstudio/notifications
-    pullPolicy: Always
-    tag: ""  # set per release (e.g. "0.1.0-rc.1")
   ingress:
     enabled: false
     className: "nginx"
@@ -27,26 +23,14 @@ api:
 workerEmail:
   enabled: true
   replicaCount: 1
-  image:
-    repository: docker.io/lerianstudio/notifications-worker-email
-    pullPolicy: Always
-    tag: ""
 
 workerSms:
   enabled: true
   replicaCount: 1
-  image:
-    repository: docker.io/lerianstudio/notifications-worker-sms
-    pullPolicy: Always
-    tag: ""
 
 workerWebhook:
   enabled: true
   replicaCount: 1
-  image:
-    repository: docker.io/lerianstudio/notifications-worker-webhook
-    pullPolicy: Always
-    tag: ""
 
 migrations:
   enabled: true
@@ -71,10 +55,11 @@ config:
   RABBITMQ_HOST: ""
   RABBITMQ_PORT_AMQP: "5672"
 
-# Required: the application will not boot without the two encryption keys, and
+# Required: LICENSE_KEY, the two encryption keys (the application will not boot without them), and
 # the migrations Job needs DATABASE_URL while `migrations.enabled` is true.
 # Generate keys with `openssl rand -base64 32`.
 secrets:
+  LICENSE_KEY: ""                          # required: render fails without it (unless secretRef.name is set)
   DATABASE_URL: ""                          # postgres://USER:PASSWORD@HOST:PORT/DB?sslmode=require (URL-escaped)
   NOTIFICATION_ENCRYPTION_KEY: ""           # base64, 32 bytes
   NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY: ""  # base64, 32 bytes

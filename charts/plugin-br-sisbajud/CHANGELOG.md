@@ -1,5 +1,298 @@
 # Plugin-br-sisbajud Changelog
 
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin-br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin-br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`, providing detailed instructions for users on how to upgrade to the new version. (@victorlazari)
+
+Improvements:
+- Relicensed the charts under the Elastic License 2.0, ensuring compliance with the new licensing terms. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicensed charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+- Added a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`. (@victorlazari)
+
+Improvements:
+
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.1.0`, providing users with detailed instructions on how to upgrade to the new version. (@victorlazari)
+
+Improvements:
+
+- Relicense the charts under Elastic License 2.0, ensuring compliance with the updated licensing terms. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.0...plugin-br-sisbajud-v1.1.1)
+
+---
+
 ## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
 
 Features:

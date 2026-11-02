@@ -30,6 +30,7 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "notifications.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       {{- with (concat .Values.imagePullSecrets .Values.workerWebhook.imagePullSecrets) }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

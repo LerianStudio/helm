@@ -17,8 +17,8 @@ with SERVICE_TYPE={{ .Values.app.configmap.SERVICE_TYPE | default "both" }}.
 HTTP API + reconciliation worker + outbox dispatcher run as goroutines in one process.
 
   Service: {{ include "plugin-br-payments.fullname" . }}.{{ include "global.namespace" . }}.svc.cluster.local:{{ .Values.app.service.port }}
-  Liveness:  /health
-  Readiness: /readyz (deep dependency checks)
+  Liveness:  /health (health port 8099)
+  Readiness: /readyz (health port 8099)
   {{- if eq (include "plugin-br-payments.multiTenantEnabled" .) "true" }}
   Tenant readiness: /readyz/tenant/:id (multi-tenant mode)
   {{- end }}

@@ -56,6 +56,14 @@ Sanitize tag for use in app.kubernetes.io/version label.
 {{- end -}}
 
 {{/*
+Health preset (probes, ports, env, grace, strategy, replicas, PDB). minImage is
+the first image that serves /readyz on the health port.
+*/}}
+{{- define "plugin-br-payments.health" -}}
+{{- include "lerian-common.health" (dict "name" (include "plugin-br-payments.fullname" .) "component" .Values.app "health" .Values.app.health "port" .Values.app.service.port "minImage" "1.2.0-beta.1" "replicas" .Values.app.replicaCount "autoscaling" .Values.app.autoscaling) -}}
+{{- end }}
+
+{{/*
 ================================================================================
 LABEL HELPERS
 ================================================================================

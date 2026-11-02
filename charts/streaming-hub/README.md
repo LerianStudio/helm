@@ -57,7 +57,7 @@ lib-license-go convention, so a `STREAMING_HUB_`-prefixed spelling reads empty.
 |----------|-------|---------|--------------------|
 | **`LICENSE_KEY`** | Secret: `secrets.LICENSE_KEY` (always emitted, even empty), or the Secret named by `existingSecretName`, where the Deployments pin it via `secretKeyRef` | `""` | The app refuses to start (`ErrMissingLicenseKey`). On the `useExistingSecret` path a Secret without the key fails container creation (`CreateContainerConfigError`, "couldn't find key LICENSE_KEY"). Supply it through Vault/ExternalSecret, never in a values file in git. |
 | **`ORGANIZATION_IDS`** | ConfigMap: `configmap.ORGANIZATION_IDS` | `global` | Must be **exactly** `global`: the hub supports global license mode only. Any other value (`GLOBAL`, an organization id, a comma list) **fails the render**, and the app would refuse it at boot (`ErrLicenseOrganizationIDsInvalid`). |
-| `IS_DEVELOPMENT` | ConfigMap: `configmap.IS_DEVELOPMENT` (emit-when-set) | unset | Read by the library. Exactly `"true"` validates against the development license server (`license.dev.lerian.io`), which a development license key needs; anything else uses the production server. `"true"` together with `STREAMING_HUB_ENV=production` **fails the render**, and the app would refuse it at boot (`ErrLicenseDevServerInProduction`). |
+| `IS_DEVELOPMENT` | ConfigMap: `configmap.IS_DEVELOPMENT` | unset | Deprecated and ignored: still accepted so an upgrade that sets it keeps validating, never rendered. Products validate licenses only on the production license server. |
 
 `streamingHub.extraEnvVars` wins over the ConfigMap, so the render guard judges
 the effective value there too. It also refuses `extraEnvVars.LICENSE_KEY`,
@@ -238,8 +238,8 @@ so a bare render succeeds and their non-credential-shaped names are still counte
 by the coverage check; plus `STREAMING_HUB_KAFKA_SCRAM_PASSWORD`,
 `STREAMING_HUB_REDIS_PASSWORD` (rate-limiter AUTH; may legitimately stay empty)
 and `POSTGRES_PASSWORD` (migration-toolchain parity; no in-cluster consumer), all
-emit-when-set. Not secrets (live in the ConfigMap): `ORGANIZATION_IDS` /
-`IS_DEVELOPMENT` (the license mode and server selector), `STREAMING_HUB_KAFKA_SCRAM_USERNAME`
+emit-when-set. Not secrets (live in the ConfigMap): `ORGANIZATION_IDS`
+(the license mode), `STREAMING_HUB_KAFKA_SCRAM_USERNAME`
 (username, not a credential — and **emit-when-set there too**: the Deployment reads
 the Secret first and the ConfigMap second, so an unconditional empty value here
 would overwrite a username projected from Vault into the same key; set it in one
@@ -411,7 +411,7 @@ and a stale value earns one WARN per boot.
 | `streamingHub.secrets.STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` | `""` | Dashboard cursor signing key, 32 bytes base64. Mandatory from `appVersion 2.x`; always emitted and pinned via `secretKeyRef`. |
 | `streamingHub.secrets.LICENSE_KEY` | `""` | Lerian license key (lib-license-go, GLOBAL mode). Mandatory in every environment on a license-gated image; always emitted and pinned via `secretKeyRef`. See [License](#license-lib-license-go-global-mode). |
 | `streamingHub.configmap.ORGANIZATION_IDS` | `global` (template default) | License mode. Must be exactly `global`; any other value fails the render. |
-| `streamingHub.configmap.IS_DEVELOPMENT` | unset | Emit-when-set. `"true"` selects the development license server; refused with `STREAMING_HUB_ENV=production`. |
+| `streamingHub.configmap.IS_DEVELOPMENT` | unset | Deprecated and ignored: accepted, never rendered. |
 | `streamingHub.secrets.STREAMING_HUB_REDIS_PASSWORD` | `""` | Rate-limiter Redis AUTH password. Emit-when-set; may stay empty. |
 | `streamingHub.<role>.replicaCount` | `1` | Per role: `all` / `ingest` / `delivery`. |
 | `streamingHub.<role>.poolMaxOpenConns` | all `25` / ingest `8` / delivery `16` | Postgres pool (connection-budget invariant). |

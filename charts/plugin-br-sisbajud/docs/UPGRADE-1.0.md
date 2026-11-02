@@ -309,7 +309,6 @@ sisbajud:
 sisbajud:
   license:
     organizationIds: "global"
-    isDevelopment: ""  # Set to "true" for dev-issued license keys
   
   secrets:
     LICENSE_KEY: "your-license-key-here"
@@ -458,9 +457,6 @@ sisbajud:
     heartbeatEvery: "30s"
     responseDeadlineMargin: "1h"
     transport: "webhook"
-  
-  license:
-    isDevelopment: "true"
   
   secrets:
     LICENSE_KEY: "dev-license-key"

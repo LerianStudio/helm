@@ -1,5 +1,261 @@
 # Br-sisbajud Changelog
 
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` to prevent unnecessary exposure of development flags. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component to prevent unnecessary development-specific code from being included in production builds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` to prevent unnecessary development-specific code from being included in production builds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Adjusted the shutdown drain delay and increased the pod grace period to 55 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Adjusted the shutdown drain delay and increased the pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to ensure proper shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+
+- Relicense the charts under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+
+- Add a Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+
+- Relicense the charts under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+
+- Add a Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+- Add Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+- Relicense the charts under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+- Relicense the project under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+
+- Add Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+
+- Relicense the charts under Elastic License 2.0. (@fredcamaral)
+
+Improvements:
+
+- Add a Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
+## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
+
+Features:
+- Add Helm upgrade guide for `br-sisbajud` `v1.4.0`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.0...br-sisbajud-v1.4.1)
+
+---
+
 ## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
 
 Features:

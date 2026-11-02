@@ -1,0 +1,4 @@
+# CI-ONLY render fixture for charts/notifications; a placeholder, never a credential.
+# Satisfies the chart's required secrets.LICENSE_KEY gate (templates/secrets.yaml).
+secrets:
+  LICENSE_KEY: "sample"

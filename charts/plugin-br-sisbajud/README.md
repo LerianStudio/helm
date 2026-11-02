@@ -49,7 +49,6 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.mensageria.mtlsEnabled` | `MENSAGERIA_MTLS_ENABLED` | `false` (one-way TLS). `true` requires the CA and the client pair. Must match the Mensageria |
 | `sisbajud.mensageria.ca.existingSecret` (+ `key`, `mountPath`) | `MENSAGERIA_TLS_CA_FILE` | server CA, mounted at `<mountPath>/ca.crt`. Optional in one-way TLS (empty = system trust store); empty falls back to `tls.existingSecret` + `tls.caKey` |
 | `sisbajud.mensageria.tls.existingSecret` (+ `certKey`, `keyKey`, `mountPath`) | `MENSAGERIA_TLS_CLIENT_CERT_FILE`, `MENSAGERIA_TLS_CLIENT_KEY_FILE` | client pair, mounted (at `<mountPath>/tls.crt`, `tls.key`) and emitted **only with mTLS** |
-| `sisbajud.license.isDevelopment` | `IS_DEVELOPMENT` | `"true"` routes the license check to the dev gateway (dev-issued keys) |
 | `sisbajud.executor.m2mSubject` | `EXECUTOR_M2M_SUBJECT` | `sub` of the executor M2M token |
 | `sisbajud.executor.streamingHubTenantId` | `STREAMING_HUB_TENANT_ID` | required; same value as the Streaming Hub deployment |
 | `sisbajud.secrets.MENSAGERIA_CLIENT_ID/SECRET` | same | minted at `PLUGIN_AUTH_HOST` |

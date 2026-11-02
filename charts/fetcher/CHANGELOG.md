@@ -1,5 +1,327 @@
 # Fetcher Changelog
 
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health check capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace overrides to prevent incorrect configurations, and update the README accordingly. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to ensure deprecated settings are not used. (@fredcamaral)
+
+Improvements:
+- Document which health keys the render process refuses, providing clearer guidance for users. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health monitoring capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace overrides to prevent misconfigurations, and update the README to reflect these changes. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to ensure compatibility with the latest configurations. (@fredcamaral)
+
+Improvements:
+- Document which health keys the render process refuses, providing better clarity for users. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health check capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace period overrides to ensure proper configuration handling, and update the README to reflect these changes. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to maintain compatibility with current configurations. (@fredcamaral)
+
+Improvements:
+- Document which health keys are refused by the render process to provide clearer guidance on configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+Improvements:
+
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+Features:
+- Add Helm upgrade guide for fetcher `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for fetcher `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+Improvements:
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+
+Fixes:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+Improvements:
+
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+
+Fixes:
+
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+Features:
+- Add Helm upgrade guide for fetcher `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for fetcher `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+Improvements:
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+
+Fixes:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Linked the license by URL to ensure packaged charts resolve it correctly. (@fredcamaral)
+- Relicensed the project under Elastic License 2.0. (@fredcamaral)
+
+Docs:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Linked the license by URL so packaged charts can resolve it. (@fredcamaral)
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+Features:
+- Added a Helm upgrade guide for fetcher `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for fetcher `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
 ## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
 
 Improvements:

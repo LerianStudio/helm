@@ -70,8 +70,7 @@ managed PostgreSQL / Valkey / S3 in production (global.datastores / global.objec
 {{- if eq (toString (index (.Values.brSisbajud.secrets | default dict) "LICENSE_KEY")) "REPLACE_WITH_YOUR_LICENSE_KEY" }}
 
 WARNING: LICENSE_KEY is still the old values-dev placeholder: the license gateway
-refuses it and the pod will not boot. Set a real key (a dev-gateway key also
-needs brSisbajud.license.isDevelopment: "true"), or leave it EMPTY in
+refuses it and the pod will not boot. Set a real key, or leave it EMPTY in
 local|development|staging|e2e|test (the app's dev bypass).
 {{- end }}
 {{- if eq (include "br-sisbajud.openbaoEnabled" .) "true" }}

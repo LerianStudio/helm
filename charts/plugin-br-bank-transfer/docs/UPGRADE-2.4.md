@@ -13,7 +13,7 @@
 
 Version 2.4.0 needs no change to your values, unless an install left its environment name blank (see [ENVIRONMENT_NAME replaces ENV_NAME](#1-environment_name-replaces-env_name)). Newer app images read `ENVIRONMENT_NAME` and older ones read `ENV_NAME`; the chart renders both with one value, so every image reads the right environment.
 
-The licence settings change too: `LICENSE_SERVICE_ADDRESS` is no longer rendered, and `IS_DEVELOPMENT` can be set to reach the development licence gateway.
+The licence settings change too: `LICENSE_SERVICE_ADDRESS` is no longer rendered.
 
 ## Features
 
@@ -63,13 +63,7 @@ The chart keeps emitting `ENV_NAME` until the app drops the fallback.
 **What changed:**
 
 - `LICENSE_SERVICE_ADDRESS` is no longer rendered. The app never passed it to the licence client, which picks its gateway itself, and newer app images no longer read it. Delete `bankTransfer.configmap.LICENSE_SERVICE_ADDRESS` from your values; a leftover entry is ignored.
-- `IS_DEVELOPMENT` is rendered again (charts before 2.0 rendered it), as an optional key in both tenancy modes only when set. lib-license-go reads it: exactly `"true"` selects the development licence gateway, which a development licence key needs.
-
-```yaml
-bankTransfer:
-  configmap:
-    IS_DEVELOPMENT: "true"   # only with a development licence key
-```
+- `IS_DEVELOPMENT` is deprecated and ignored: the chart does not render it, and products validate licences only on the production gateway.
 
 > **Important:** Newer app images refuse to boot without `bankTransfer.secrets.LICENSE_KEY` and `ORGANIZATION_IDS` in every environment, not only in production. Set both in development, staging and homologation before moving those environments to such an image. The chart does not check either value.
 

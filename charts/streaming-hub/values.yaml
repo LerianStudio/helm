@@ -313,9 +313,9 @@ streamingHub:
   # Secret (secrets.LICENSE_KEY). Two non-secret companions are allowlisted here:
   #   ORGANIZATION_IDS — chart default "global"; must stay EXACTLY "global" (the
   #     app and the render both refuse any other value).
-  #   IS_DEVELOPMENT   — emit-when-set; exactly "true" selects the development
-  #     license server (license.dev.lerian.io), which a dev license key needs.
-  #     Refused (render and boot) when STREAMING_HUB_ENV=production.
+  #   IS_DEVELOPMENT   — deprecated: still accepted so upgrades keep validating,
+  #     never rendered, no effect. Products validate only on the production
+  #     license server.
   # ===========================================================================
   # -- Operator ConfigMap overrides (key -> value). Ships empty; the built-in
   #    defaults live in templates/configmap.yaml.
@@ -370,7 +370,7 @@ streamingHub:
     #    it. ALWAYS emitted (even empty, so a bare render succeeds), and pinned via
     #    secretKeyRef on the useExistingSecret path. Never a literal in a values
     #    file in git: supply it through useExistingSecret (Vault/ExternalSecret).
-    #    ORGANIZATION_IDS / IS_DEVELOPMENT are non-secret and live in `configmap`.
+    #    ORGANIZATION_IDS is non-secret and lives in `configmap`.
     LICENSE_KEY: ""
     # -- SASL/SCRAM password (emit-when-set; required when KAFKA_SCRAM_MECHANISM is set).
     #    The SCRAM username is non-sensitive and lives in the ConfigMap.

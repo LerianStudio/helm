@@ -1,4 +1,5 @@
 {{- include "plugin-br-pix-indirect-btg.validateRequired" . }}
+{{- $h := include "plugin-br-pix-indirect-btg.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,10 +8,9 @@ metadata:
     {{- include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" .Values.pix.name ) | nindent 4 }} 
 spec:
   revisionHistoryLimit: {{ .Values.pix.revisionHistoryLimit | default 10 }}
-  strategy:
-    {{- toYaml .Values.pix.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.pix.autoscaling.enabled }}
-  replicas: {{ .Values.pix.replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -29,6 +29,7 @@ spec:
       labels:
         {{- include "plugin-br-pix-indirect-btg.labels" (dict "context" . "name" .Values.pix.name ) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.pix.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -49,6 +50,7 @@ spec:
             - name: http
               containerPort: {{ .Values.pix.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
               name: {{ if .Values.pix.useExistingSecrets }}{{ .Values.pix.existingSecretName }}{{ else }}{{ include "plugin-br-pix-indirect-btg.fullname" . }}{{ end }}
@@ -60,8 +62,8 @@ spec:
           {{- include "plugin-br-pix-indirect-btg.mongoHostRequired" (dict "context" . "component" "pix") }}
           {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "pix" "secretName" (include "plugin-br-pix-indirect-btg.fullname" .)) }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
-          {{- if or (trim $infraEnv) $otelEnabled }}
           env:
+          {{- toYaml $h.env | nindent 10 }}
           {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
           {{- if $otelEnabled }}
           - name: "HOST_IP"
@@ -71,27 +73,11 @@ spec:
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
           {{- end }}
-          {{- end }}
           resources:
             {{- toYaml .Values.pix.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.pix.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.pix.service.port }}
-            initialDelaySeconds: {{ .Values.pix.readinessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.pix.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.pix.readinessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.pix.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.pix.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.pix.livenessProbe.path | default "/health" }}
-              port: {{ .Values.pix.service.port }}
-            initialDelaySeconds: {{ .Values.pix.livenessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.pix.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.pix.livenessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.pix.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.pix.livenessProbe.failureThreshold | default 3 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
           {{- if .Values.mtls.enabled }}
           volumeMounts:
             {{- include "plugin-br-pix-indirect-btg.mtlsVolumeMount" . | nindent 12 }}

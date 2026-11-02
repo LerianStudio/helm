@@ -1,5 +1,324 @@
 # Midaz Changelog
 
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Fail the render when ledger/tracer override preset-owned `pdb` or `deploymentUpdate`. (@fredcamaral)
+- Drop orphan RabbitMQ protocol and port keys from the ledger configmap. (@fredcamaral)
+- Remove orphan RabbitMQ health URL and duplicate minimum image. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first health-port release. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved configuration and consistency. (@fredcamaral)
+
+Fixes:
+- Fail the render process when `ledger/tracer` overrides preset-owned `pdb` or `deploymentUpdate`, ensuring correct configuration enforcement. (@fredcamaral)
+- Remove orphan `rabbitmq` protocol and port keys from the ledger configmap to clean up unused configurations. (@fredcamaral)
+- Eliminate orphan `rabbitmq` health URL and duplicate minimum image references to streamline configuration. (@fredcamaral)
+
+Improvements:
+- Document that the default image for `midaz` is the first `health-port` release, providing clarity on default settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset, enhancing the health configuration for `midaz`. (@fredcamaral)
+
+Fixes:
+- Fail the render process when `ledger/tracer` override preset-owned `pdb` or `deploymentUpdate`, ensuring proper configuration integrity. (@fredcamaral)
+- Remove orphan `rabbitmq` protocol and port keys from the `ledger` configmap to clean up unnecessary configurations. (@fredcamaral)
+- Eliminate orphan `rabbitmq` health URL and duplicate minimum image entries to streamline the configuration. (@fredcamaral)
+
+Improvements:
+- Document that the default image is the first `health-port` release, clarifying the image versioning for `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved health management. (@fredcamaral)
+
+Fixes:
+- Fail the render process when `ledger/tracer` overrides preset-owned `pdb` or `deploymentUpdate` settings to ensure configuration integrity. (@fredcamaral)
+- Remove orphan `rabbitmq` protocol and port keys from the ledger configmap to clean up unused configurations. (@fredcamaral)
+- Eliminate orphan `rabbitmq` health URL and duplicate minimum image entries to streamline the configuration. (@fredcamaral)
+
+Improvements:
+- Document that the default image is the first `health-port` release to clarify the image selection process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved health management. (@fredcamaral)
+
+Fixes:
+- Fail the render process when ledger/tracer override preset-owned `pdb` or `deploymentUpdate`, ensuring configuration integrity. (@fredcamaral)
+- Remove orphaned RabbitMQ protocol and port keys from the ledger configmap to clean up unused configurations. (@fredcamaral)
+- Eliminate orphaned RabbitMQ health URL and duplicate minimum image references to streamline configuration. (@fredcamaral)
+
+Improvements:
+- Document that the default image is the first `health-port` release, providing clarity on default settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved functionality. (@fredcamaral)
+
+Fixes:
+- Fail the render when ledger/tracer overrides preset-owned `pdb` or `deploymentUpdate` to ensure proper configuration. (@fredcamaral)
+- Remove orphan RabbitMQ protocol and port keys from the ledger configmap to clean up unused configurations. (@fredcamaral)
+- Eliminate orphan RabbitMQ health URL and duplicate minimum image to streamline the setup. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release, providing clarity on the image version used. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved health management. (@fredcamaral)
+
+Fixes:
+- Fail the render process when `ledger/tracer` override preset-owned `pdb` or `deploymentUpdate` settings, ensuring configuration integrity. (@fredcamaral)
+- Remove orphan `rabbitmq` protocol and port keys from the ledger `configmap` to clean up unnecessary configurations. (@fredcamaral)
+- Eliminate orphan `rabbitmq` health URL and duplicate minimum image entries to streamline the configuration. (@fredcamaral)
+
+Improvements:
+- Document that the default image is the first `health-port` release, providing clarity on the image version used. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for `midaz`. (@fredcamaral)
+
+Fixes:
+- Fail the render when ledger/tracer overrides preset-owned `pdb` or `deploymentUpdate`. (@fredcamaral)
+- Remove orphan `rabbitmq` protocol and port keys from the ledger configmap. (@fredcamaral)
+- Eliminate orphan `rabbitmq` health URL and duplicate minimum image. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Fail the render when ledger/tracer override preset-owned pdb or deploymentUpdate. (@fredcamaral)
+- Drop orphan RabbitMQ protocol and port keys from the ledger configmap. (@fredcamaral)
+- Remove orphan RabbitMQ health URL and duplicate minimum image. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved health management. (@fredcamaral)
+
+Fixes:
+- Fail the render process when `ledger/tracer` overrides preset-owned `pdb` or `deploymentUpdate` settings to prevent conflicts. (@fredcamaral)
+- Remove orphan `rabbitmq` protocol and port keys from the ledger `configmap` to clean up configuration. (@fredcamaral)
+- Eliminate orphan `rabbitmq` health URL and duplicate minimum image entries to streamline the configuration. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release, providing clarity on default configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace need per lib-commons shutdown model for better understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values, ensuring clarity in the presentation of numerical data. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model to provide better guidance and understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace need per lib-commons shutdown model for better understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to improve clarity. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model for better understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity and consistency. (@fredcamaral)
+- Document the ledger grace need per lib-commons shutdown model to provide better guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirements per the `lib-commons` shutdown model for better understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model to provide better guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity in the codebase. (@fredcamaral)
+- Document the ledger grace requirement per the lib-commons shutdown model to improve understanding and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Features:
+
+- State the ledger shutdown grace sum in values to ensure clarity and consistency. (@fredcamaral)
+
+Improvements:
+
+- Document the ledger grace need per lib-commons shutdown model to enhance understanding and implementation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirements per the `lib-commons` shutdown model to improve understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model to provide better guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model to improve understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+
+- Stated the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Documented the ledger grace requirement per the `lib-commons` shutdown model to provide better guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
+
+Features:
+- Set ledger shutdown drain delay to `15s` to improve shutdown behavior. (@fredcamaral)
+
+Fixes:
+- Raise ledger grace period to cover the drain time and update grace documentation for clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.1...midaz-v10.2.0)
+
+---
+
 ## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
 
 Features:

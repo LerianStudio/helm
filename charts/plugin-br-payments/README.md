@@ -382,7 +382,7 @@ The `lerian-common.health` preset owns probes, ports, grace period, rollout stra
 |-------|------------------|-------|
 | Startup | `/health` | Covers boot, including the migrations that now run behind readiness. |
 | Liveness | `/health` | Process only. |
-| Readiness | `/readyz` | The pod's own state (schema, boot credential, Tenant Manager). Postgres and the provider are reported, never pull the pod. |
+| Readiness | `/readyz` | The pod's own state: Postgres at boot, schema, boot credential, Tenant Manager. The provider and Midaz are not checks, and a later Postgres outage never pulls the pod. |
 | Tenant readiness | `/readyz/tenant/:id` | Multi-tenant only, no JWT. Exposed on the Service as the internal `health` port. |
 
 `app.health.shutdownSeconds` (default 35) is SHUTDOWN_TIMEOUT, one total budget; the grace period is drain (15s) + that + 10s. The preset refuses an image below `minImage`, the first one that serves the health port.
@@ -409,7 +409,7 @@ app:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```
 
-When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.PROVIDER_CLIENT_ID` or `app.secrets.PROVIDER_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record. The control-plane migrations Job (`app.controlplaneMigrations.enabled`, required for multi-tenant) runs before each install and upgrade; the render fails if it cannot (bundled Postgres, or the Job disabled).
+When enabled, `/readyz/tenant/:id` becomes available and the provider credential is read per tenant, so use the per-tenant probe for it. Do not set `app.secrets.PROVIDER_CLIENT_ID` or `app.secrets.PROVIDER_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record. The control-plane migrations Job (`app.controlplaneMigrations.enabled`, required for multi-tenant) runs before each install and upgrade; the render fails if it cannot (bundled Postgres, or the Job disabled).
 
 ### AWS credentials for Secrets Manager (`aws.rolesAnywhere`)
 

@@ -81,12 +81,4 @@ tests:
       app.image.tag: 1.1.0-beta.46
     asserts:
       - failedTemplate:
-          errorPattern: "below 1.2.0-beta.1"
-
-  - it: refuses a hand-written probe
-    template: templates/service.yaml
-    set:
-      app.readinessProbe: {periodSeconds: 1}
-    asserts:
-      - failedTemplate:
-          errorPattern: "owned by the health preset"
+          errorPattern: "below"

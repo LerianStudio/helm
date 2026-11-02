@@ -23,18 +23,12 @@ tests:
     template: templates/deployment.yaml
     asserts:
       - isKind: {of: Deployment}
-  - it: refuses app.pdb.minAvailable
-    set: {app.pdb.minAvailable: 1}
+  - it: refuses any app.pdb key
     template: templates/deployment.yaml
+    set: {app.pdb.enabled: false}
     asserts:
       - failedTemplate:
-          errorPattern: "app.pdb.minAvailable is owned by the health preset"
-  - it: refuses app.pdb.maxUnavailable
-    set: {app.pdb.maxUnavailable: 0}
-    template: templates/deployment.yaml
-    asserts:
-      - failedTemplate:
-          errorPattern: "app.pdb.maxUnavailable is owned by the health preset"
+          errorPattern: "app.pdb is owned by the health preset"
   - it: refuses app.deploymentStrategy
     set: {app.deploymentStrategy.type: Recreate}
     template: templates/deployment.yaml

@@ -44,6 +44,16 @@ Features:
 
 Features:
 
+- Set shutdown drain delay and grace on go services. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.1.1...reporter-v5.2.0)
+
+---
+
+## [5.2.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.2.0)
+
+Features:
+
 - No changes specific to reporter.
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.1.1...reporter-v5.2.0)

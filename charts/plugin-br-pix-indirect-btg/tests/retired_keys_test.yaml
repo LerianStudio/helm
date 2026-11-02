@@ -1,0 +1,229 @@
+suite: retired preset-owned keys
+templates:
+  - templates/pix/deployment.yaml
+  - templates/pix/configmap.yaml
+  - templates/pix/secrets.yaml
+  - templates/inbound/deployment.yaml
+  - templates/inbound/configmap.yaml
+  - templates/inbound/secrets.yaml
+  - templates/outbound/deployment.yaml
+  - templates/outbound/configmap.yaml
+  - templates/outbound/secrets.yaml
+  - templates/reconciliation/deployment.yaml
+  - templates/reconciliation/configmap.yaml
+  - templates/reconciliation/secrets.yaml
+  - templates/schedule/deployment.yaml
+  - templates/schedule/configmap.yaml
+  - templates/schedule/secrets.yaml
+set:
+  pix.configmap.BTG_BASE_URL: https://btg.example.test
+  pix.configmap.PIX_ISPB: "12345678"
+  pix.configmap.MIDAZ_ORGANIZATION_ID: org
+  pix.configmap.MIDAZ_LEDGER_ID: ledger
+  pix.secrets.BTG_CLIENT_ID: x
+  pix.secrets.BTG_CLIENT_SECRET: x
+  pix.secrets.INTERNAL_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef"
+  pix.secrets.MIDAZ_CLIENT_ID: x
+  pix.secrets.MIDAZ_CLIENT_SECRET: x
+  pix.secrets.LICENSE_KEY: x
+tests:
+  - it: renders with defaults
+    template: templates/pix/deployment.yaml
+    asserts:
+      - isKind: {of: Deployment}
+  - it: refuses pix.pdb.minAvailable
+    template: templates/pix/deployment.yaml
+    set:
+      pix.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: pix.pdb is owned by the health preset"
+  - it: refuses pix.pdb.maxUnavailable
+    template: templates/pix/deployment.yaml
+    set:
+      pix.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: pix.pdb is owned by the health preset"
+  - it: refuses pix.pdb.enabled
+    template: templates/pix/deployment.yaml
+    set:
+      pix.pdb.enabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: pix.pdb is owned by the health preset"
+  - it: refuses pix.deploymentStrategy.type
+    template: templates/pix/deployment.yaml
+    set:
+      pix.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: pix.deploymentStrategy is owned by the health preset"
+  - it: refuses inbound.pdb.minAvailable
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.pdb is owned by the health preset"
+  - it: refuses inbound.pdb.maxUnavailable
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.pdb is owned by the health preset"
+  - it: refuses inbound.pdb.enabled
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.pdb.enabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.pdb is owned by the health preset"
+  - it: refuses inbound.deploymentStrategy.type
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.deploymentStrategy is owned by the health preset"
+  - it: refuses inbound.ingress.enabled
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.ingress.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.ingress is owned by the health preset"
+  - it: refuses inbound.service.port
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.service.port: 4016
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.service is owned by the health preset"
+  - it: refuses outbound.pdb.minAvailable
+    template: templates/outbound/deployment.yaml
+    set:
+      outbound.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: outbound.pdb is owned by the health preset"
+  - it: refuses outbound.pdb.maxUnavailable
+    template: templates/outbound/deployment.yaml
+    set:
+      outbound.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: outbound.pdb is owned by the health preset"
+  - it: refuses outbound.pdb.enabled
+    template: templates/outbound/deployment.yaml
+    set:
+      outbound.pdb.enabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: outbound.pdb is owned by the health preset"
+  - it: refuses outbound.deploymentStrategy.type
+    template: templates/outbound/deployment.yaml
+    set:
+      outbound.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: outbound.deploymentStrategy is owned by the health preset"
+  - it: refuses outbound.ingress.enabled
+    template: templates/outbound/deployment.yaml
+    set:
+      outbound.ingress.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: outbound.ingress is owned by the health preset"
+  - it: refuses outbound.service.port
+    template: templates/outbound/deployment.yaml
+    set:
+      outbound.service.port: 4016
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: outbound.service is owned by the health preset"
+  - it: refuses reconciliation.pdb.minAvailable
+    template: templates/reconciliation/deployment.yaml
+    set:
+      reconciliation.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: reconciliation.pdb is owned by the health preset"
+  - it: refuses reconciliation.pdb.maxUnavailable
+    template: templates/reconciliation/deployment.yaml
+    set:
+      reconciliation.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: reconciliation.pdb is owned by the health preset"
+  - it: refuses reconciliation.pdb.enabled
+    template: templates/reconciliation/deployment.yaml
+    set:
+      reconciliation.pdb.enabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: reconciliation.pdb is owned by the health preset"
+  - it: refuses reconciliation.deploymentStrategy.type
+    template: templates/reconciliation/deployment.yaml
+    set:
+      reconciliation.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: reconciliation.deploymentStrategy is owned by the health preset"
+  - it: refuses reconciliation.ingress.enabled
+    template: templates/reconciliation/deployment.yaml
+    set:
+      reconciliation.ingress.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: reconciliation.ingress is owned by the health preset"
+  - it: refuses reconciliation.service.port
+    template: templates/reconciliation/deployment.yaml
+    set:
+      reconciliation.service.port: 4016
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: reconciliation.service is owned by the health preset"
+  - it: refuses schedule.pdb.minAvailable
+    template: templates/schedule/deployment.yaml
+    set:
+      schedule.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: schedule.pdb is owned by the health preset"
+  - it: refuses schedule.pdb.maxUnavailable
+    template: templates/schedule/deployment.yaml
+    set:
+      schedule.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: schedule.pdb is owned by the health preset"
+  - it: refuses schedule.pdb.enabled
+    template: templates/schedule/deployment.yaml
+    set:
+      schedule.pdb.enabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: schedule.pdb is owned by the health preset"
+  - it: refuses schedule.deploymentStrategy.type
+    template: templates/schedule/deployment.yaml
+    set:
+      schedule.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: schedule.deploymentStrategy is owned by the health preset"
+  - it: refuses schedule.ingress.enabled
+    template: templates/schedule/deployment.yaml
+    set:
+      schedule.ingress.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: schedule.ingress is owned by the health preset"
+  - it: refuses schedule.service.port
+    template: templates/schedule/deployment.yaml
+    set:
+      schedule.service.port: 4016
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: schedule.service is owned by the health preset"

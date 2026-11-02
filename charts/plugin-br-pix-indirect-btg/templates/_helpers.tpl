@@ -11,20 +11,34 @@ Unified from helpers.tpl and _helpers.tpl
 Health preset (probes, ports, env, grace, strategy, replicas, PDB, HPA floor). minImage is
 the first image that serves /readyz on the health port.
 */}}
+{{/*
+PDB and rollout strategy come from the health preset, and workers have no Service or Ingress; an
+operator override of any of them fails the render instead of being silently ignored.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.presetOwned" -}}
+{{- range $k := .keys -}}
+{{- if hasKey $.component $k -}}{{- fail (printf "plugin-br-pix-indirect-btg: %s.%s is owned by the health preset (PDB maxUnavailable 1, RollingUpdate, workers expose no Service or Ingress); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- define "plugin-br-pix-indirect-btg.minImage" -}}1.14.0-beta.6{{- end }}
 {{- define "plugin-br-pix-indirect-btg.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "pix" "component" .Values.pix "keys" (list "pdb" "deploymentStrategy")) -}}
 {{- include "lerian-common.health" (dict "name" (include "plugin-br-pix-indirect-btg.fullname" .) "component" .Values.pix "health" .Values.pix.health "port" .Values.pix.service.port "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.pix.replicaCount "autoscaling" .Values.pix.autoscaling) -}}
 {{- end }}
 {{- define "inbound.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "inbound" "component" .Values.inbound "keys" (list "pdb" "deploymentStrategy" "service" "ingress")) -}}
 {{- include "lerian-common.health" (dict "name" (include "inbound.fullname" .) "component" .Values.inbound "health" .Values.inbound.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.inbound.replicaCount "autoscaling" .Values.inbound.autoscaling) -}}
 {{- end }}
 {{- define "outbound.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "outbound" "component" .Values.outbound "keys" (list "pdb" "deploymentStrategy" "service" "ingress")) -}}
 {{- include "lerian-common.health" (dict "name" (include "outbound.fullname" .) "component" .Values.outbound "health" .Values.outbound.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.outbound.replicaCount "autoscaling" .Values.outbound.autoscaling) -}}
 {{- end }}
 {{- define "reconciliation.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "reconciliation" "component" .Values.reconciliation "keys" (list "pdb" "deploymentStrategy" "service" "ingress")) -}}
 {{- include "lerian-common.health" (dict "name" (include "reconciliation.fullname" .) "component" .Values.reconciliation "health" .Values.reconciliation.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.reconciliation.replicaCount "autoscaling" .Values.reconciliation.autoscaling) -}}
 {{- end }}
 {{- define "schedule.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "schedule" "component" .Values.schedule "keys" (list "pdb" "deploymentStrategy" "service" "ingress")) -}}
 {{- include "lerian-common.health" (dict "name" (include "schedule.fullname" .) "component" .Values.schedule "health" .Values.schedule.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.schedule.replicaCount "autoscaling" .Values.schedule.autoscaling) -}}
 {{- end }}
 

@@ -180,7 +180,7 @@ identity:
     seccompProfile:
       type: RuntimeDefault
   pdb:
-    # -- Enable or disable PodDisruptionBudget (maxUnavailable 1 comes from the health preset)
+    # -- Enable or disable PodDisruptionBudget (maxUnavailable 1 comes from the health preset; setting pdb.minAvailable/maxUnavailable or deploymentStrategy fails the render)
     enabled: true
     # -- Annotations for PodDisruptionBudget
     annotations: {}
@@ -347,7 +347,7 @@ auth:
       type: RuntimeDefault
 
   pdb:
-    # -- Enable or disable PodDisruptionBudget (maxUnavailable 1 comes from the health preset)
+    # -- Enable or disable PodDisruptionBudget (maxUnavailable 1 comes from the health preset; setting pdb.minAvailable/maxUnavailable or deploymentStrategy fails the render)
     enabled: true
     # -- Annotations for PodDisruptionBudget
     annotations: {}

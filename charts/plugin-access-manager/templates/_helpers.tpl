@@ -950,7 +950,18 @@ The guard compares one semver (rc sorts above beta): an rc tier must bump to an 
 */}}
 {{- define "plugin-access-manager.minImage" -}}3.16.0-beta.5{{- end -}}
 
+{{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "plugin-access-manager.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "plugin-access-manager: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- if $.component.deploymentStrategy -}}{{- fail (printf "plugin-access-manager: %s.deploymentStrategy is owned by the health preset (RollingUpdate); remove it" $.name) -}}{{- end -}}
+{{- end -}}
+
 {{- define "plugin-auth.health" -}}
+{{- include "plugin-access-manager.presetOwned" (dict "name" "auth" "component" .Values.auth) -}}
 {{- include "lerian-common.health" (dict
       "name" "auth" "component" .Values.auth "health" .Values.auth.health
       "port" .Values.auth.service.port "minImage" (include "plugin-access-manager.minImage" .)
@@ -958,6 +969,7 @@ The guard compares one semver (rc sorts above beta): an rc tier must bump to an 
 {{- end -}}
 
 {{- define "plugin-identity.health" -}}
+{{- include "plugin-access-manager.presetOwned" (dict "name" "identity" "component" .Values.identity) -}}
 {{- include "lerian-common.health" (dict
       "name" "identity" "component" .Values.identity "health" .Values.identity.health
       "port" .Values.identity.service.port "minImage" (include "plugin-access-manager.minImage" .)

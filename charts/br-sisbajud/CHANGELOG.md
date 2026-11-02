@@ -1,5 +1,14 @@
 # Br-sisbajud Changelog
 
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
 ## [1.4.1](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.1)
 
 Features:

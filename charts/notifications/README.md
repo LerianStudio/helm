@@ -3,7 +3,8 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: none are enforced at render time, so the default render succeeds, but the application will not start without `secrets.NOTIFICATION_ENCRYPTION_KEY` and `secrets.NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY` (each a base64-encoded 32-byte key), and `secrets.POSTGRES_PASSWORD` is required when `config.ENV_NAME` is `production`. `secrets.DATABASE_URL` is required by the migrations Job while `migrations.enabled` is `true`. See [Required secrets](#required-secrets).
+- Images: ghcr `notifications` 1.1.0; the api binds `0.0.0.0:8080`.
+- Required secrets: `secrets.LICENSE_KEY` is enforced at render time (the render refuses without it, unless `secretRef.name` points at an existing Secret). The application will not start without `secrets.NOTIFICATION_ENCRYPTION_KEY` and `secrets.NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY` (each a base64-encoded 32-byte key), and `secrets.POSTGRES_PASSWORD` is required when `config.ENV_NAME` is `production`. `secrets.DATABASE_URL` is required by the migrations Job while `migrations.enabled` is `true`. See [Required secrets](#required-secrets).
 - Dependency notes: No local dependency charts are bundled. PostgreSQL, Redis, and RabbitMQ are external (provided by the target environment); migrations run as a Helm pre-install/pre-upgrade Job against the external PostgreSQL. External notification providers are configured through values.
 - Production overrides: Provide provider credentials through chart secrets or existing Secrets where supported; override API/worker image tags, ingress, resources, and provider endpoints.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
@@ -42,10 +43,11 @@ Two modes:
 
 ## Required secrets
 
-The chart does not fail the render when these are empty (the defaults are empty strings), so a missing value surfaces at runtime, not at `helm template`. Set them via `.Values.secrets.*` or, with `secretRef.name`, as keys in the external Secret.
+The chart refuses to render without `LICENSE_KEY` (unless `secretRef.name` is set); the other keys are not enforced at render time, so a missing value surfaces at runtime, not at `helm template`. Set them via `.Values.secrets.*` or, with `secretRef.name`, as keys in the external Secret.
 
 | Key | Consumed by | Notes |
 |-----|-------------|-------|
+| `LICENSE_KEY` | API and workers | Licence key; every component refuses to boot without it. Render fails if it is empty and `secretRef.name` is unset. With `secretRef.name`, the external Secret must contain a `LICENSE_KEY` key. |
 | `NOTIFICATION_ENCRYPTION_KEY` | API and workers | Base64-encoded 32-byte key (AES-256) that encrypts delivery-profile credentials at rest. The application refuses to boot in every environment if it is empty or malformed. Not declared in the chart's default `secrets` map; add it under `secrets` (or `extraSecrets`, or in the external Secret). |
 | `NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY` | API and workers | Base64-encoded 32-byte key for the destination auth cache stored in Redis. Required in every environment; boot fails if empty or malformed. |
 | `DATABASE_URL` | Migrations Job | Pre-built, URL-escaped Postgres DSN (`postgres://USER:PASSWORD@HOST:PORT/DB?sslmode=...`). Required while `migrations.enabled` is `true`. If it is empty the render still succeeds and the Job receives an empty `-database` argument and fails at run time. With `secretRef.name`, the external Secret must contain a `DATABASE_URL` key. |
@@ -87,6 +89,7 @@ helm install notifications ./charts/notifications \
 | `config.POSTGRES_HOST`             | External Postgres host                           |
 | `config.REDIS_HOST`                | External Redis host                              |
 | `config.RABBITMQ_HOST`             | External RabbitMQ host                           |
+| `secrets.LICENSE_KEY`              | Required: render fails without it (unless `secretRef.name` is set) |
 | `secrets.POSTGRES_PASSWORD`        | Required by the app when `ENV_NAME=production`   |
 | `secrets.DATABASE_URL`             | Required by the migrations Job (pre-built DSN)   |
 | `secrets.NOTIFICATION_ENCRYPTION_KEY` | Required: app will not boot without it (base64, 32 bytes) |

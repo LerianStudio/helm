@@ -1,3 +1,5 @@
 # The pre-install migration Job needs a PostgreSQL this kind cluster does not run.
 migrations:
   enabled: false
+secrets:
+  LICENSE_KEY: dummy-license-key-for-kind-install

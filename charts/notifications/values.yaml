@@ -253,12 +253,18 @@ config:
 # Extra non-sensitive env vars merged into the ConfigMap.
 extraConfig: {}
 
+# -- Pod termination grace, api and workers. Api sets the max; workers need 40s.
+# 52 = 12s drain + 30s shutdown budget + 10s margin
+terminationGracePeriodSeconds: 52
+
 #==============================================================================
 # Shared environment (Secret)
 #==============================================================================
 # Sensitive env vars. Leave empty here; populate per-env via gitops + AVP, or
 # point `secretRef.name` at an externally-managed Secret to skip this entirely.
 secrets:
+  # -- REQUIRED: licence key; the api and every worker refuse to boot without it.
+  LICENSE_KEY: ""
   # -- DATABASE_URL is the pre-built, URL-escaped Postgres DSN consumed
   # by the migrations Job (templates/migrations-job.yaml). Required when
   # `migrations.enabled` is true: an empty value still renders, but the Job

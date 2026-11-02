@@ -3,6 +3,24 @@
 ## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.0)
 
 Features:
+- Adopt the `lerian-common` health preset to enhance the reporter's functionality. (@fredcamaral)
+
+Fixes:
+- Render the manager PDB only when the health preset returns one, ensuring proper configuration. 
+- Default the API to two replicas and remove the job drain to optimize performance. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release, providing clarity on the image versioning. (@fredcamaral)
+- Pin test fixtures to the image serving the `health-port` for consistency in testing. (@fredcamaral)
+- Drop the redundant `LICENSE_KEY` from CRM secrets fixture to streamline test setup. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.2.0...reporter-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.0)
+
+Features:
 - Adopt the `lerian-common` health preset, enhancing the reporter's health management capabilities. (@fredcamaral)
 
 Fixes:

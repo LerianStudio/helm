@@ -264,14 +264,16 @@ kubectl -n reporter port-forward svc/reporter-manager 4005:4005 &
 # aguarde o forward ficar pronto antes do curl (evita um connection-refused transitório):
 until curl -fsS http://localhost:4005/health >/dev/null 2>&1; do sleep 1; done
 curl -fsS http://localhost:4005/health     # liveness
-curl -fsS http://localhost:4005/readyz     # readiness
+curl -fsS http://localhost:4005/version    # build identity
 # Docs da API: http://localhost:4005/swagger/index.html
+# a readiness fica na porta interna de health, acesse por um pod:
+#   kubectl -n reporter port-forward pod/<pod-do-manager> 8099:8099 & curl -fsS http://localhost:8099/readyz
 ```
 
 | Check | Comando/URL | Esperado | Se não bater, checar primeiro |
 |---|---|---|---|
 | Pod do manager | `kubectl get pods -n reporter` | `Running`, `1/1` | `CreateContainerConfigError` → Secret ausente; erro de render/boot citando `DATASOURCE_CRED_ENC_KEY` → setar (seção 5) |
-| Liveness / Readiness | `curl …:4005/health` e `/readyz` | `200` | Não fica Ready → manager não alcança Mongo/RabbitMQ; conferir `ALLOW_INSECURE_TLS` vs sua infra |
+| Liveness / Readiness | `curl …:4005/health`; `/readyz` na porta de health 8099 | `200` | Não fica Ready → um check de startup não passou (ver `checks` do `/readyz`); conferir `ALLOW_INSECURE_TLS` vs sua infra |
 | Wiring do KEDA | `kubectl get scaledjob,triggerauthentication -n reporter` | presentes | Ausentes → CRDs do KEDA faltando (operador não instalado); worker nunca escala |
 | Worker escala | enfileirar um relatório, depois `kubectl get jobs -n reporter` | Jobs surgem e completam | Sem Jobs → trigger/fila do KEDA inalcançável; conferir RabbitMQ + TriggerAuthentication |
 | Saída do relatório | gerar um relatório, checar o object storage | arquivo gravado no bucket | Ausente → endpoint ou credenciais do SeaweedFS/S3 errados |

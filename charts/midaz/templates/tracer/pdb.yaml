@@ -12,12 +12,8 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- if .Values.tracer.pdb.minAvailable }}
-  minAvailable: {{ .Values.tracer.pdb.minAvailable }}
-  {{- else if kindIs "invalid" .Values.tracer.pdb.maxUnavailable }}
-  maxUnavailable: 1
-  {{- else }}
-  maxUnavailable: {{ .Values.tracer.pdb.maxUnavailable }}
+  {{- with (include "midaz-tracer.health" . | fromYaml).pdb }}
+  {{- toYaml . | nindent 2 }}
   {{- end }}
   selector:
     matchLabels:

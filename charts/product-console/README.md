@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `secrets.LICENSE_KEY` (rendered into the Secret only when non-empty; the console refuses to boot without a valid license). None else for default render.
+- Required secrets: `secrets.NEXTAUTH_SECRET` and `secrets.LICENSE_KEY`. The console refuses to boot without either; the chart renders without them, and writes `LICENSE_KEY` into the Secret only when it is non-empty.
 - Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured. Also depends on `lerian-common-helm` (shared library chart) for the HPA/PDB/Service/Ingress templates and the `global.*` config masks below.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.

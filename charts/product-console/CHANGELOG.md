@@ -1,5 +1,17 @@
 # Product-console Changelog
 
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.0)
+
+Features:
+- Render `LICENSE_KEY` into the Secret required for the console to function. (@fredcamaral)
+
+Improvements:
+- List both secrets necessary for the product-console to boot. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.8...product-console-v4.5.0)
+
+---
+
 ## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
 
 Improvements:

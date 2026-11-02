@@ -2,3 +2,12 @@
 # One chart directory name per line; the release leg fails for any other chart
 # whose appVersion or image tag carries -alpha, -beta or -rc.
 plugin-br-ted-lerian
+# Health-port charts (Wave 3): pin the first app image that serves the health port, still a beta.
+# Decided by Fred Amaral on 2026-11-02. Each line leaves when the stable app-sync bumps appVersion.
+reporter
+# midaz stays until the ledger team cuts 4.5.0.
+midaz
+plugin-br-payments
+plugin-access-manager
+plugin-br-pix-indirect-btg
+plugin-br-pix-jd

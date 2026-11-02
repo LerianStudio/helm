@@ -332,7 +332,7 @@ ledger:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration (the spec comes from the health preset)
+  # -- PodDisruptionBudget configuration (the spec comes from the health preset; setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -824,7 +824,7 @@ tracer:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration (the spec comes from the health preset)
+  # -- PodDisruptionBudget configuration (the spec comes from the health preset; setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true

@@ -1,0 +1,69 @@
+suite: health preset owns PDB and rollout
+templates:
+  - templates/ledger/pdb.yaml
+  - templates/tracer/pdb.yaml
+release:
+  name: midaz
+  namespace: midaz
+tests:
+  - it: renders with the defaults
+    set:
+      tracer.enabled: true
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+        template: templates/ledger/pdb.yaml
+      - isKind:
+          of: PodDisruptionBudget
+        template: templates/tracer/pdb.yaml
+
+  - it: refuses ledger.pdb.maxUnavailable
+    set:
+      ledger.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "midaz: ledger.pdb.maxUnavailable is owned by the health preset"
+        template: templates/ledger/pdb.yaml
+
+  - it: refuses ledger.pdb.minAvailable
+    set:
+      ledger.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "midaz: ledger.pdb.minAvailable is owned by the health preset"
+        template: templates/ledger/pdb.yaml
+
+  - it: refuses ledger.deploymentUpdate
+    set:
+      ledger.deploymentUpdate.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "midaz: ledger.deploymentUpdate is owned by the health preset"
+        template: templates/ledger/pdb.yaml
+
+  - it: refuses tracer.pdb.maxUnavailable
+    set:
+      tracer.enabled: true
+      tracer.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "midaz: tracer.pdb.maxUnavailable is owned by the health preset"
+        template: templates/tracer/pdb.yaml
+
+  - it: refuses tracer.pdb.minAvailable
+    set:
+      tracer.enabled: true
+      tracer.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "midaz: tracer.pdb.minAvailable is owned by the health preset"
+        template: templates/tracer/pdb.yaml
+
+  - it: refuses tracer.deploymentUpdate
+    set:
+      tracer.enabled: true
+      tracer.deploymentUpdate.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "midaz: tracer.deploymentUpdate is owned by the health preset"
+        template: templates/tracer/pdb.yaml

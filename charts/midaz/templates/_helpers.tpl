@@ -560,10 +560,22 @@ Health preset inputs per component. minImage is the first Midaz image that serve
 */}}
 {{- define "midaz.healthMinImage" -}}4.5.0-beta.94{{- end -}}
 
+{{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "midaz.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "midaz: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- if $.component.deploymentUpdate -}}{{- fail (printf "midaz: %s.deploymentUpdate is owned by the health preset (RollingUpdate); remove it" $.name) -}}{{- end -}}
+{{- end -}}
+
 {{- define "midaz-ledger.health" -}}
+{{- include "midaz.presetOwned" (dict "name" "ledger" "component" .Values.ledger) -}}
 {{- include "lerian-common.health" (dict "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health "port" (int .Values.ledger.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) -}}
 {{- end -}}
 
 {{- define "midaz-tracer.health" -}}
+{{- include "midaz.presetOwned" (dict "name" "tracer" "component" .Values.tracer) -}}
 {{- include "lerian-common.health" (dict "name" "tracer" "component" .Values.tracer "health" .Values.tracer.health "port" (int .Values.tracer.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.tracer.replicaCount "autoscaling" .Values.tracer.autoscaling) -}}
 {{- end -}}

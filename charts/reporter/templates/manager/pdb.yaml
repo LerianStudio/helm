@@ -12,11 +12,7 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- with .Values.manager.pdb.maxUnavailable }}
-  maxUnavailable: {{ . }}
-  {{- else }}
-  minAvailable: {{ .Values.manager.pdb.minAvailable | default 0 }}
-  {{- end }}
+  {{- toYaml (include "reporter.manager.health" . | fromYaml).pdb | nindent 2 }}
   selector:
     matchLabels:
       {{- include "plugin-manager.selectorLabels" (dict "context" . "name" .Values.manager.name) | nindent 6 }}

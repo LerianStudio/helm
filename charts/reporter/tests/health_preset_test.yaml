@@ -1,0 +1,88 @@
+suite: reporter health comes from the lerian-common preset
+templates:
+  - templates/manager/deployment.yaml
+  - templates/manager/service.yaml
+  - templates/manager/pdb.yaml
+  - templates/worker/deployment.yaml
+  # loaded so the deployments can include and hash the rendered ConfigMaps and Secrets
+  - templates/manager/configmap.yaml
+  - templates/manager/secrets.yaml
+  - templates/worker/configmap.yaml
+  - templates/worker/secrets.yaml
+release:
+  name: reporter
+  namespace: reporter
+set:
+  rabbitmq.enabled: false
+  keda.enabled: false
+  secrets.RABBITMQ_DEFAULT_PASS: x
+  secrets.DATASOURCE_ONBOARDING_PASSWORD: x
+  secrets.DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+  secrets.LICENSE_KEY: x
+tests:
+  - it: probes the manager on the health port, with the preset's grace, strategy and env
+    template: templates/manager/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: health}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 55
+      - equal:
+          path: spec.strategy
+          value: {type: RollingUpdate, rollingUpdate: {maxSurge: 25%, maxUnavailable: 0}}
+
+  - it: keeps the health env off the roles anywhere sidecar
+    template: templates/manager/deployment.yaml
+    set:
+      aws.rolesAnywhere.enabled: true
+      aws.rolesAnywhere.trustAnchorArn: arn:aws:rolesanywhere:us-east-2:1:trust-anchor/x
+      aws.rolesAnywhere.profileArn: arn:aws:rolesanywhere:us-east-2:1:profile/x
+      aws.rolesAnywhere.roleArn: arn:aws:iam::1:role/x
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[1].ports
+          content: {name: health, containerPort: 8099}
+      - notContains:
+          path: spec.template.spec.containers[1].env
+          content: {name: HEALTH_PORT, value: "8099"}
+
+  - it: exposes the health port only as an internal Service port
+    template: templates/manager/service.yaml
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
+
+  - it: lets a draining pod go and keeps a PDB that never blocks eviction of an unready one
+    template: templates/manager/pdb.yaml
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+      - equal:
+          path: spec.unhealthyPodEvictionPolicy
+          value: AlwaysAllow
+
+  - it: probes the worker Deployment on the health port and gives it a shorter grace
+    template: templates/worker/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 40

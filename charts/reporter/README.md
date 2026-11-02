@@ -48,7 +48,7 @@ The Reporter plugin provides a flexible document templating system that enables 
 
 The in-cluster defaults for the bundled dependencies are fixed strings in
 `<svc>.reporter.svc.cluster.local` form: `MONGO_HOST`, `RABBITMQ_HOST`,
-`RABBITMQ_HEALTH_CHECK_URL`, `REDIS_HOST` and `OBJECT_STORAGE_ENDPOINT` in the
+`REDIS_HOST` and `OBJECT_STORAGE_ENDPOINT` in the
 ConfigMaps, and the RabbitMQ host the KEDA `ScaledJob` trigger uses. The bundled
 MongoDB, RabbitMQ and Valkey Services are named after the release
 (`<release>-mongodb`, `<release>-rabbitmq`, `<release>-valkey`), while the
@@ -130,7 +130,7 @@ render-equivalent for the bundled dev topology (no override needed) unless noted
 | `common.configmap.MONGO_PARAMETERS` | `""` | `"maxIdleTimeMS=60000"` | Bounds idle MongoDB connections instead of holding them open indefinitely; a sensible production-safe default, not required by the OTEL/TLS fix but bundled here as part of the same "sensible chart defaults" pass. Override with `common.configmap.MONGO_PARAMETERS: ""` to restore the old (unbounded) behavior. |
 | `seaweedfs.global.serviceAccountName` | *(unset — subchart default `"seaweedfs"`)* | `"reporter-seaweedfs"` | **Upgrade note:** paired with `seaweedfs.global.createClusterRole: false` (also new) to avoid a fixed-name cluster-scoped `ClusterRole`/`ClusterRoleBinding` collision when more than one release runs on the same cluster. Because `createClusterRole` defaults to `false`, the ClusterRole itself is not created either way — but this **does rename the SeaweedFS `ServiceAccount`** object referenced by the master/volume/filer StatefulSets on any existing install that had `seaweedfs.enabled: true` before this change (old name `seaweedfs` → new name `reporter-seaweedfs`). Expect a one-time rolling restart of the SeaweedFS pods on upgrade; if you have IRSA/IAM-role annotations or RoleBindings pinned to the old ServiceAccount name, update them to `reporter-seaweedfs` before upgrading. |
 
-`MONGO_MAX_POOL_SIZE` (`100`) and `MONGO_HOST`/`RABBITMQ_HOST`/`RABBITMQ_HEALTH_CHECK_URL`/`REDIS_HOST`/`OBJECT_STORAGE_ENDPOINT`
+`MONGO_MAX_POOL_SIZE` (`100`) and `MONGO_HOST`/`RABBITMQ_HOST`/`REDIS_HOST`/`OBJECT_STORAGE_ENDPOINT`
 (FQDN `<svc>.reporter.svc.cluster.local` form, restored in this PR after an
 unintentional short-name drift was caught in review) are unchanged from the
 pre-adoption defaults — kept byte-identical for existing installs.
@@ -236,8 +236,6 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 | `worker.image.repository` | Worker image repository | `ghcr.io/lerianstudio/reporter-worker` |
 | `worker.image.tag` | Worker image tag | `4.5.0` |
 | `worker.image.pullPolicy` | Worker image pull policy | `IfNotPresent` |
-| `worker.service.port` | Service port. It forwards to the worker health server (`worker.configmap.HEALTH_PORT`). The Service has endpoints only when the worker runs as a Deployment (`keda.enabled=false` and `keda.external=false`); the default KEDA `ScaledJob` has no Service endpoints | `80` |
-| `worker.configmap.HEALTH_PORT` | Worker health server port: container port, Service target and probe port | `4006` |
 | `worker.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `worker.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `worker.existingSecretName` | Name of the existing secret to use | `""` |
@@ -580,15 +578,23 @@ Then access: http://localhost:4005
 
 ### Health Endpoints
 
-| Component | Port | Liveness probe | Readiness probe | Also |
-|-----------|------|----------------|-----------------|------|
-| Manager | `manager.service.port` (`4005`) | `/health` | `/readyz` | `/version` |
-| Worker | `worker.configmap.HEALTH_PORT` (`4006`) | `/health` | `/readyz` | `/version` |
+The lerian-common health preset (`manager.health`, `worker.health`) owns the probes, grace period,
+drain, rollout strategy and PodDisruptionBudget: do not set `livenessProbe`, `readinessProbe`,
+`terminationGracePeriodSeconds`, `deploymentStrategy` or `pdb.minAvailable/maxUnavailable`, and do not set
+`HEALTH_PORT`, `SHUTDOWN_DRAIN_DELAY` or `SHUTDOWN_TIMEOUT` in a configmap; the render refuses them. Tune only
+`health.drainSeconds` (default 15) and `health.shutdownSeconds` (default 30).
 
-`/readyz` reports non-200 while a dependency is down. The probe paths are set with
-`<component>.livenessProbe.path` and `<component>.readinessProbe.path`. The
-default worker is a KEDA `ScaledJob`, which defines no probes; the probes above
-apply to the worker Deployment (`keda.enabled=false` and `keda.external=false`).
+| Component | Main port | Health port (`health`, internal) | Probes |
+|-----------|-----------|----------------------------------|--------|
+| Manager | `manager.service.port` (`4005`): `/health`, `/version` | `8099`: `/health`, `/readyz`, `/readyz/tenant/:id` (multi-tenant) | startup and liveness `/health`, readiness `/readyz` |
+| Worker | none | `8099`: `/health`, `/readyz`, `/version` | same |
+
+`/readyz` fails only on the pod's own state (a startup check that never passed); a shared dependency (Mongo,
+RabbitMQ, Valkey, storage) is reported in the body and never pulls the pod. The health port is an internal
+ClusterIP Service port on the manager (never an Ingress backend) and there is no worker Service. The default worker
+is a KEDA `ScaledJob`, which defines no probes; the probes above apply to the worker Deployment
+(`keda.enabled=false` and `keda.external=false`). `reporter.minImage` (templates/_helpers.tpl) is the first image
+that serves the health port; a lower `image.tag` refuses to render.
 
 ## API Documentation
 

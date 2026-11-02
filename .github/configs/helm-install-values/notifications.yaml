@@ -1,0 +1,3 @@
+# The pre-install migration Job needs a PostgreSQL this kind cluster does not run.
+migrations:
+  enabled: false

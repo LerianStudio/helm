@@ -1,5 +1,69 @@
 # System-facts Changelog
 
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay. (@fredcamaral)
+- Increased the API pod shutdown grace period to `52s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.1)
+
+Fixes:
+- Removed the `LICENSE_ENABLED` switch from system-facts. (@fredcamaral)
+
+Improvements:
+- Added a Helm upgrade guide for system-facts `v1.0.2`. (@victorlazari)
+- Reviewed and updated the system-facts `v1.1.0` upgrade guide. (@victorlazari, @gandalf-at-lerian)
+- Corrected values reuse and migration hook in the system-facts `v1.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.0...system-facts-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.1)
+
+Fixes:
+- Removed the `LICENSE_ENABLED` switch from system-facts. (@fredcamaral)
+
+Improvements:
+- Added a Helm upgrade guide for system-facts `v1.0.2`. (@victorlazari)
+- Reviewed the system-facts `v1.1.0` upgrade guide. (@victorlazari, @gandalf-at-lerian)
+- Corrected values reuse and migration hook in the system-facts `v1.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.0...system-facts-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.1)
+
+Fixes:
+- Remove the `LICENSE_ENABLED` switch from system-facts. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for system-facts `v1.0.2`. (@victorlazari)
+- Review and update the system-facts `v1.1.0` upgrade guide. (@victorlazari, @gandalf-at-lerian)
+- Correct the values reuse and migration hook in the system-facts `v1.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.0...system-facts-v1.1.1)
+
+---
+
 ## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.1)
 
 Fixes:

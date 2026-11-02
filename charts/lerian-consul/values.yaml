@@ -1,6 +1,6 @@
 # =============================================================================
 # Lerian Consul wrapper — curated overrides for the official hashicorp/consul
-# chart (pinned at 1.6.10 -> Consul 1.20.6 in Chart.yaml).
+# chart (pinned at 2.1.0 -> Consul 2.1.0 in Chart.yaml).
 #
 # WHY THIS CHART EXISTS
 # ---------------------
@@ -35,17 +35,17 @@ consul:
     # name: consul
 
     # ---- Container image (BYOC-exposed knob) --------------------------------
-    # Pinned by DIGEST (not just the mutable :1.20.6 tag) so the deployed binary
+    # Pinned by DIGEST (not just the mutable :2.1.0 tag) so the deployed binary
     # is reproducible — the "reproducible" promise the Chart.lock makes for the
     # chart, extended to the image. Bump BOTH the tag and the digest together
     # (docker buildx imagetools inspect hashicorp/consul:<tag>) to change Consul.
-    image: "hashicorp/consul:1.20.6@sha256:200471c74bc0965cd20c81eacc31a209873d5d9e599fe637ceb856b0cbbc518d"
+    image: "hashicorp/consul:2.1.0@sha256:259fd02f2544fe1aa03fa49efd3b105c8dd67106d710a72f5e898110266356f7"
 
     # ---- Control-plane image (ACL / TLS / gossip Jobs) ----------------------
     # The server-acl-init, tls-init and gossip-key Jobs run this image. They
     # manage Secrets and carry RBAC, so pin it by DIGEST too — not just the
-    # mutable :1.6.10 tag. Bump together with the chart dependency.
-    imageK8S: "hashicorp/consul-k8s-control-plane:1.6.10@sha256:9be63ef67b2271f090f26d56e4984604605c10265b91cac97a169e65acba0af7"
+    # mutable :2.1.0 tag. Bump together with the chart dependency.
+    imageK8S: "hashicorp/consul-k8s-control-plane:2.1.0@sha256:5e60f8a69442efe73b909c1b94277496fed0c8a881a586be825c3c88b9a58f2c"
 
     # ---- ACL system ---------------------------------------------------------
     # Kept ON: the upstream chart bootstraps the ACL system (server-acl-init

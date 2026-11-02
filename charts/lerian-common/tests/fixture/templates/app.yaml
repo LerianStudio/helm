@@ -34,6 +34,8 @@ spec:
 {{ include "lerian-common.pdb" (dict "pdb" . "name" "app" "labels" "app: app" "selector" "app: app") }}
 ---
 {{- end }}
+{{ include "lerian-common.service" (dict "service" .Values.app.service "name" "app" "labels" "app: app" "selector" "app: app" "ports" $h.servicePorts) }}
+---
 {{ include "lerian-common.ingress" (dict "context" $ "ingress" .Values.app.ingress "name" "app" "labels" "app: app" "svcPort" .Values.app.port
       "healthcheck" $h.alb "subdomain" "app") }}
 ---

@@ -583,7 +583,7 @@ otelcol.receiver.prometheus "ponte_consumo" {
 }
 {{- end }}
 {{- if (.Values.collection).selfMetrics }}
-{{ include "alloy-lerian.config.selfMetrics" . }}
+{{ include "alloy-lerian.config.selfMetrics" (dict "ctx" . "role" "node") }}
 {{- end }}
 {{- end }}
 {{- end -}}
@@ -617,14 +617,14 @@ prometheus.scrape "metricas_do_agente" {
 
   // Same 60s floor as every other collection: cost at the destination is series
   // x writes per minute, and these are the agent's own series.
-  scrape_interval = {{ include "alloy-lerian.interval" . | quote }}
+  scrape_interval = {{ include "alloy-lerian.interval" .ctx | quote }}
   forward_to      = [prometheus.relabel.allowlist_agente.receiver]
 }
 
 prometheus.relabel "allowlist_agente" {
   rule {
     source_labels = ["__name__"]
-    regex         = {{ join "|" ((.Values.collection).selfMetricsAllowlist | default list) | quote }}
+    regex         = {{ join "|" ((.ctx.Values.collection).selfMetricsAllowlist | default list) | quote }}
     action        = "keep"
   }
 
@@ -633,11 +633,12 @@ prometheus.relabel "allowlist_agente" {
     replacement  = sys.env("ALLOY_CLIENT_ID")
   }
 
-  // Every agent scrapes itself at 127.0.0.1:12345; without the pod name all
-  // agents of a client write the same series and overwrite each other.
+  // Every agent scrapes itself at 127.0.0.1:12345, so without an identity all
+  // agents of a client write one series. HOSTNAME is the node name (the pod
+  // name is not in the sanitised env), and one node hosts one agent per role.
   rule {
     target_label = "instance"
-    replacement  = sys.env("HOSTNAME")
+    replacement  = sys.env("HOSTNAME") + {{ printf "-%s" .role | quote }}
   }
 
   forward_to = [otelcol.receiver.prometheus.ponte_agente.receiver]
@@ -967,6 +968,6 @@ replays the cluster's event history on startup, and it was here that a queue
 overflow lost 256 records in the first seconds — measured on benedita. Without
 these metrics that loss is invisible.
 */}}
-{{ include "alloy-lerian.config.selfMetrics" . }}
+{{ include "alloy-lerian.config.selfMetrics" (dict "ctx" . "role" "singleton") }}
 {{- end }}
 {{- end -}}

@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.2.2` | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 |
+| `5.2.3` | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 |
 
 -----------------
 
@@ -185,7 +185,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Alloy Version |
 | :---: | :---: |
-| `2.0.5` | 1.18.1 |
+| `2.0.6` | 1.18.1 |
 -----------------
 
 ### Otel Collector Lerian
@@ -275,7 +275,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0` | 1.0.0-beta.64 |
+| `1.1.1` | 1.0.0-beta.64 |
 -----------------
 
 ### BR Consignado GW
@@ -351,7 +351,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | System-Facts Version |
 | :---: | :---: |
-| `1.1.1` | 1.1.0 |
+| `1.1.2` | 1.1.0 |
 -----------------
 
 ## License

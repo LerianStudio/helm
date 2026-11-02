@@ -5,4 +5,5 @@ app:
   image: {tag: v1.2.0}
   health: {stack: go}
   configmap: {}
+  service: {type: ClusterIP, port: 4000}
   ingress: {className: alb}

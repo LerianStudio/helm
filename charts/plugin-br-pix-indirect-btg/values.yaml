@@ -430,6 +430,8 @@ inbound:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
+    # Falls back to pix.secrets.LICENSE_KEY when empty.
+    LICENSE_KEY: ""
     DB_PASSWORD: ""
     DB_REPLICA_PASSWORD: ""
     MONGO_PASSWORD: ""
@@ -588,6 +590,8 @@ outbound:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
+    # Falls back to pix.secrets.LICENSE_KEY when empty.
+    LICENSE_KEY: ""
     DB_PASSWORD: ""
     DB_REPLICA_PASSWORD: ""
     MONGO_PASSWORD: ""
@@ -736,6 +740,8 @@ reconciliation:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
+    # Falls back to pix.secrets.LICENSE_KEY when empty.
+    LICENSE_KEY: ""
     DB_PASSWORD: ""
     DB_REPLICA_PASSWORD: ""
     REDIS_PASSWORD: ""
@@ -856,6 +862,8 @@ schedule:
   # -- All secrets are declared in the templates/schedule/secrets.yaml
   # @default -- templates/schedule/secrets.yaml
   secrets:
+    # Falls back to pix.secrets.LICENSE_KEY when empty.
+    LICENSE_KEY: ""
     # PIX BTG service credentials (operator/Vault-provided).
     PLUGIN_PIX_BTG_CLIENT_ID: ""
     PLUGIN_PIX_BTG_CLIENT_SECRET: ""

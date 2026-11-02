@@ -1277,20 +1277,20 @@ true
 ------------------------------------------------------------------------------
 Health preset (lerian-common.health) per component: probes, ports, env, grace,
 strategy, PDB and the internal health Service port. Read each with fromYaml.
-minImage is the first image that serves HEALTH_PORT (the release bumps it with
-values image.tag and Chart appVersion). The guard compares one semver, so a tier on a
-different line (rc, v2.0.0-*) must pin an image that serves the port.
+The minImage guard compares one semver: a tier on another line (rc, v2.0.0-*) must pin an image that serves the port.
 ------------------------------------------------------------------------------
 */}}
+{{/* First image that serves HEALTH_PORT; set it to the app PR's beta tag, with values image.tag and Chart appVersion. */}}
+{{- define "plugin-br-pix-jd.minImage" -}}1.6.0-beta.3{{- end -}}
 {{- define "plugin-br-pix-jd.api.health" -}}
 {{- include "lerian-common.health" (dict
       "name" "plugin-br-pix-jd-api" "component" .Values.api "health" .Values.api.health
-      "port" 8080 "minImage" "1.6.0-beta.3"
+      "port" 8080 "minImage" (include "plugin-br-pix-jd.minImage" .)
       "replicas" .Values.api.replicaCount "autoscaling" .Values.api.autoscaling) -}}
 {{- end -}}
 
 {{- define "plugin-br-pix-jd.worker.health" -}}
 {{- include "lerian-common.health" (dict
       "name" "plugin-br-pix-jd-worker" "component" .Values.worker "health" .Values.worker.health
-      "minImage" "1.6.0-beta.3" "replicas" .Values.worker.replicaCount) -}}
+      "minImage" (include "plugin-br-pix-jd.minImage" .) "replicas" .Values.worker.replicaCount) -}}
 {{- end -}}

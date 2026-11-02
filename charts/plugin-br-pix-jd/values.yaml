@@ -174,10 +174,6 @@ api:
     maxReplicas: 12
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 85
-  pdb:
-    # -- Enable PodDisruptionBudget (budget: the health preset's maxUnavailable 1)
-    enabled: true
-    annotations: {}
   # -- Node selector for scheduling
   nodeSelector: {}
   # -- Tolerations for tainted nodes

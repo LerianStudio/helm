@@ -110,10 +110,13 @@ app:
   nameOverride: ""
   # -- Override of the fully qualified resource name
   fullnameOverride: ""
-  # -- Termination grace period.
-  # The /readyz contract requires this to be 60 (drain grace + App.Shutdown budget).
-  # See applications/plugins/plugin-br-payments/docs/readyz-guide.md
-  terminationGracePeriodSeconds: 60
+  # -- Health preset (lerian-common.health). The preset owns the probes, the grace
+  # period, the rollout strategy, the PDB and HEALTH_PORT / SHUTDOWN_* (refused as
+  # values). The app serves /readyz and /readyz/tenant/:id on the internal port 8099.
+  health:
+    stack: go
+    # -- SHUTDOWN_TIMEOUT: one total budget for the graceful stop (grace = drain 15s + this + 10s)
+    shutdownSeconds: 35
   # -- Pod security context
   podSecurityContext: {}
   # -- Container security context (Distroless nonroot UID/GID is 65532)
@@ -128,18 +131,6 @@ app:
     readOnlyRootFilesystem: true
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration
-  pdb:
-    enabled: true
-    minAvailable: 1
-    maxUnavailable: ""
-    annotations: {}
-  # -- Deployment strategy
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   # -- Service configuration
   service:
     type: ClusterIP
@@ -173,27 +164,6 @@ app:
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
     scaleDownStabilizationSeconds: 300
-  # -- Readiness probe configuration. Canonical values from
-  # applications/plugins/plugin-br-payments/docs/readyz-guide.md
-  readinessProbe:
-    initialDelaySeconds: 5
-    periodSeconds: 5
-    timeoutSeconds: 3
-    successThreshold: 1
-    failureThreshold: 2
-  # -- Startup probe: failureThreshold x periodSeconds must cover boot (connect 30s +
-  # MIGRATION_TIMEOUT_SEC, default 300s). Raise it if you raise MIGRATION_TIMEOUT_SEC.
-  startupProbe:
-    periodSeconds: 10
-    timeoutSeconds: 3
-    failureThreshold: 40
-  # -- Liveness probe configuration. Canonical values from the same guide.
-  livenessProbe:
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 3
-    successThreshold: 1
-    failureThreshold: 3
   # -- Node selector for scheduling pods on specific nodes
   nodeSelector: {}
   # -- Tolerations for scheduling on tainted nodes

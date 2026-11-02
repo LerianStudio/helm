@@ -376,29 +376,16 @@ The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collec
 
 ## Probes
 
-| Probe | Path | Notes |
-|-------|------|-------|
-| Startup | `/health` | Covers boot (connect 30s + migrations up to `MIGRATION_TIMEOUT_SEC`, default 300s) before liveness and readiness start. Default 40 x 10s = 400s. |
-| Liveness | `/health` | Lightweight startup self-probe. Returns 200 once startup completes. |
-| Readiness | `/readyz` | Deep per-dependency checks (Postgres, Provider, Midaz, Tenant Manager). Returns 503 if any dep is `down`/`degraded`. |
-| Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANT_ENABLED=true`. Anti-enumeration uniform shape. |
+The `lerian-common.health` preset owns probes, ports, grace period, rollout strategy and PodDisruptionBudget; none is a value (the render refuses `readinessProbe`, `livenessProbe`, `startupProbe`, `terminationGracePeriodSeconds`, `HEALTH_PORT` and `SHUTDOWN_*` overrides). The app serves them on the internal port 8099 (`HEALTH_PORT`), never through the Ingress.
 
-Default probe values match the canonical Lerian readiness contract documented in [`plugin-br-payments/docs/readyz-guide.md`](https://github.com/LerianStudio/plugin-br-payments/blob/main/docs/readyz-guide.md):
+| Probe | Path (port 8099) | Notes |
+|-------|------------------|-------|
+| Startup | `/health` | Covers boot, including the migrations that now run behind readiness. |
+| Liveness | `/health` | Process only. |
+| Readiness | `/readyz` | The pod's own state (schema, boot credential, Tenant Manager). Postgres and the provider are reported, never pull the pod. |
+| Tenant readiness | `/readyz/tenant/:id` | Multi-tenant only, no JWT. Exposed on the Service as the internal `health` port. |
 
-```yaml
-readinessProbe:
-  initialDelaySeconds: 5
-  periodSeconds: 5
-  timeoutSeconds: 3
-  failureThreshold: 2
-livenessProbe:
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 3
-  failureThreshold: 3
-```
-
-`terminationGracePeriodSeconds` is set to **60** to match the service's drain + shutdown budget. Setting it lower will cause `SIGKILL` mid-shutdown.
+`app.health.shutdownSeconds` (default 35) is SHUTDOWN_TIMEOUT, one total budget; the grace period is drain (15s) + that + 10s. The preset refuses an image below `minImage`, the first one that serves the health port.
 
 ## Multi-tenancy
 
@@ -482,7 +469,7 @@ If you also disable the routes cache (`ACCOUNTING_ROUTES_CACHE_TTL_SEC` `<= 0`),
 | `app.service.port` | `8080` | Service port. |
 | `app.ingress.enabled` | `false` | Expose via Ingress. |
 | `app.autoscaling.enabled` | `true` | Enable HPA. |
-| `app.terminationGracePeriodSeconds` | `60` | Required by the readyz contract. |
+| `app.health.shutdownSeconds` | `35` | SHUTDOWN_TIMEOUT; the grace period is derived (drain 15s + this + 10s). |
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.MULTI_TENANT_ENABLED` | unset (app default `false`) | Toggle multi-tenant mode; env-wide via `global.multiTenant.enabled`. The deprecated `MULTI_TENANCY_ENABLED` is refused at render with the rename named. |
 | `app.controlplaneMigrations.enabled` | `false` | Enable the control-plane migrations `PreSync` Job. Renders with `MULTI_TENANT_ENABLED=true` and the bundled PostgreSQL disabled; it does not require database bootstrap. |

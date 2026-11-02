@@ -1,0 +1,92 @@
+suite: health preset
+templates:
+  - templates/deployment.yaml
+  - templates/service.yaml
+  - templates/pdb.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+set:
+  postgresql.enabled: true
+  app.configmap.BTG_API_BASE_URL: https://btg.example.test
+  app.configmap.BTG_AUTH_URL: https://btg.example.test/token
+  app.configmap.MIDAZ_LEDGER_URL: http://midaz:3000
+  app.configmap.ORGANIZATION_IDS: 00000000-0000-0000-0000-000000000001
+  app.secrets.PROVIDER_CLIENT_ID: x
+  app.secrets.PROVIDER_CLIENT_SECRET: x
+  app.secrets.PLUGIN_AUTH_CLIENT_ID: x
+  app.secrets.PLUGIN_AUTH_CLIENT_SECRET: x
+  app.secrets.LICENSE_KEY: x
+  app.secrets.CONSULT_AUDIT_HMAC_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.BTG_WEBHOOK_HMAC_SECRET: "0123456789abcdef0123456789abcdef"
+  app.secrets.INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+tests:
+  - it: serves the probes on the internal health port and derives the grace period
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: health}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 60
+      - equal:
+          path: spec.strategy.rollingUpdate.maxUnavailable
+          value: 0
+
+  - it: gives the PodDisruptionBudget maxUnavailable 1
+    template: templates/pdb.yaml
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+
+  - it: leaves the health port off the Service in single-tenant mode
+    template: templates/service.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 1
+
+  - it: exposes the health port on the Service in multi-tenant mode
+    template: templates/service.yaml
+    set:
+      app.configmap.MULTI_TENANT_ENABLED: "true"
+      app.configmap.MULTI_TENANT_URL: http://tm:4003
+      app.configmap.AWS_REGION: us-east-2
+      app.configmap.WEBHOOK_PUBLIC_BASE_URL: https://pay.example.test
+      app.secrets.MULTI_TENANT_SERVICE_API_KEY: x
+      app.secrets.PROVIDER_CLIENT_ID: null
+      app.secrets.PROVIDER_CLIENT_SECRET: null
+      app.controlplaneMigrations.enabled: true
+      postgresql.enabled: false
+      app.configmap.POSTGRES_HOST: db.example.test
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
+
+  - it: refuses an image below the first one that serves the health port
+    template: templates/service.yaml
+    set:
+      app.image.tag: 1.1.0-beta.46
+    asserts:
+      - failedTemplate:
+          errorPattern: "below 1.2.0-beta.1"
+
+  - it: refuses a hand-written probe
+    template: templates/service.yaml
+    set:
+      app.readinessProbe: {periodSeconds: 1}
+    asserts:
+      - failedTemplate:
+          errorPattern: "owned by the health preset"

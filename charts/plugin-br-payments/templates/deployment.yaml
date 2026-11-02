@@ -1,4 +1,5 @@
 {{- include "plugin-br-payments.validateRequired" . }}
+{{- $h := include "plugin-br-payments.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,12 +15,9 @@ metadata:
   {{- end }}
 spec:
   revisionHistoryLimit: {{ .Values.app.revisionHistoryLimit | default 10 }}
-  {{- with .Values.app.deploymentStrategy }}
-  strategy:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  {{- if not .Values.app.autoscaling.enabled }}
-  replicas: {{ .Values.app.replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -44,7 +42,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "plugin-br-payments.serviceAccountName" . }}
-      terminationGracePeriodSeconds: {{ .Values.app.terminationGracePeriodSeconds | default 60 }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
       securityContext:
         {{/* fsGroup: 65532 wins over any operator-configured fsGroup — the
@@ -103,14 +101,14 @@ spec:
             - name: http
               containerPort: {{ .Values.app.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
             - configMapRef:
                 name: {{ include "plugin-br-payments.fullname" . }}
             - secretRef:
                 name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
           env:
-            - name: SHUTDOWN_DRAIN_DELAY
-              value: "15s"
+            {{- toYaml $h.env | nindent 12 }}
             {{- $pg := .Values.postgresql | default dict }}
             {{- $pgAuth := $pg.auth | default dict }}
             {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
@@ -141,32 +139,9 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.app.resources | nindent 12 }}
-          # Canonical Lerian readiness contract — see plugin docs/readyz-guide.md
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: http
-            initialDelaySeconds: {{ .Values.app.readinessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.app.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.app.readinessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.app.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.app.readinessProbe.failureThreshold | default 2 }}
-          startupProbe:
-            httpGet:
-              path: /health
-              port: http
-            periodSeconds: {{ ($.Values.app.startupProbe | default dict).periodSeconds | default 10 }}
-            timeoutSeconds: {{ ($.Values.app.startupProbe | default dict).timeoutSeconds | default 3 }}
-            failureThreshold: {{ ($.Values.app.startupProbe | default dict).failureThreshold | default 40 }}
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds | default 30 }}
-            periodSeconds: {{ .Values.app.livenessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.app.livenessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.app.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.app.livenessProbe.failureThreshold | default 3 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
         {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
         - name: aws-signing-helper
           image: "{{ .Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ .Values.aws.rolesAnywhere.sidecar.image.tag }}"

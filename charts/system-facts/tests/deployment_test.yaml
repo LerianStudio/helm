@@ -1,0 +1,31 @@
+suite: API deployment shutdown grace
+templates:
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: system-facts
+  namespace: system-facts
+tests:
+  - it: gives the API pod 55s to shut down
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 55
+        template: templates/deployment.yaml
+
+  - it: honours an override
+    set:
+      system-facts.terminationGracePeriodSeconds: 90
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 90
+        template: templates/deployment.yaml
+
+  - it: sets a 15s drain delay on the API pod
+    asserts:
+      - equal:
+          path: data.SHUTDOWN_DRAIN_DELAY
+          value: "15s"
+        template: templates/configmap.yaml

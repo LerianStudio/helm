@@ -573,6 +573,8 @@ caradhras:
   # database) and never changes an existing admin. Unset, a new built-in/admin
   # gets the public default `123` and caradhras WARNs every hour until it is
   # changed; a value over 72 bytes (bcrypt's limit) fails the boot before seeding.
+  # Needs Caradhras >= 1.9.0 (the chart default image 1.8.6 ignores the key):
+  # the render fails unless caradhras.image.tag is a semver tag >= 1.9.0.
   builtInAdminPassword:
     # -- Opt-in. Off by default.
     enabled: false

@@ -16,17 +16,13 @@ Complete. `tracer.migrations.deploymentSyncWave: ""` opts out.
   annotations:
     argocd.argoproj.io/sync-wave: {{ $migrationSyncWave | quote }}
 {{- end }}
+{{- $h := include "midaz-tracer.health" . | fromYaml }}
 spec:
   revisionHistoryLimit: {{ .Values.tracer.revisionHistoryLimit | default 10 }}
   strategy:
-    type: {{ .Values.tracer.deploymentUpdate.type }}
-    {{- if eq .Values.tracer.deploymentUpdate.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.tracer.deploymentUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.tracer.deploymentUpdate.maxUnavailable }}
-    {{- end }}
-  {{- if not .Values.tracer.autoscaling.enabled }}
-  replicas: {{ .Values.tracer.replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -46,7 +42,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-      terminationGracePeriodSeconds: {{ .Values.tracer.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- with .Values.tracer.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -69,6 +65,7 @@ spec:
             - name: grpc
               containerPort: {{ include "midaz-tracer.grpcPort" . }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           {{- if not .Values.tracer.useExistingSecret }}
           - secretRef:
@@ -80,8 +77,7 @@ spec:
           - configMapRef:
               name: {{ include "midaz-tracer.fullname" . }}
           env:
-            - name: SHUTDOWN_DRAIN_DELAY
-              value: "15s"
+            {{- toYaml $h.env | nindent 12 }}
             {{/* existingSecretName presence is enforced by midaz-tracer.validate; ternary
                  cannot carry `required` because Go templates evaluate both arms. */}}
             {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
@@ -113,24 +109,12 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.tracer.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.tracer.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.tracer.service.port }}
-            initialDelaySeconds: {{ .Values.tracer.readinessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.tracer.readinessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.tracer.readinessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ .Values.tracer.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.tracer.readinessProbe.failureThreshold | default 3 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
           livenessProbe:
-            httpGet:
-              path: {{ .Values.tracer.livenessProbe.path | default "/health" }}
-              port: {{ .Values.tracer.service.port }}
-            initialDelaySeconds: {{ .Values.tracer.livenessProbe.initialDelaySeconds | default 15 }}
-            periodSeconds: {{ .Values.tracer.livenessProbe.periodSeconds | default 20 }}
-            timeoutSeconds: {{ .Values.tracer.livenessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ .Values.tracer.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.tracer.livenessProbe.failureThreshold | default 3 }}
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, tracer.spread, tracer.topologySpreadConstraints).
              selectorLabels MUST equal spec.selector.matchLabels above. */}}

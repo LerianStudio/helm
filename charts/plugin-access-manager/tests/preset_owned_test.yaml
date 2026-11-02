@@ -1,0 +1,64 @@
+suite: health preset owns PDB and rollout
+templates:
+  - templates/auth/pdb.yaml
+  - templates/identity/pdb.yaml
+release:
+  name: pam
+  namespace: pam
+tests:
+  - it: renders with the defaults
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+        template: templates/auth/pdb.yaml
+      - isKind:
+          of: PodDisruptionBudget
+        template: templates/identity/pdb.yaml
+
+  - it: refuses auth.pdb.minAvailable
+    set:
+      auth.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-access-manager: auth.pdb.minAvailable is owned by the health preset"
+        template: templates/auth/pdb.yaml
+
+  - it: refuses auth.pdb.maxUnavailable
+    set:
+      auth.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-access-manager: auth.pdb.maxUnavailable is owned by the health preset"
+        template: templates/auth/pdb.yaml
+
+  - it: refuses auth.deploymentStrategy
+    set:
+      auth.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-access-manager: auth.deploymentStrategy is owned by the health preset"
+        template: templates/auth/pdb.yaml
+
+  - it: refuses identity.pdb.minAvailable
+    set:
+      identity.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-access-manager: identity.pdb.minAvailable is owned by the health preset"
+        template: templates/identity/pdb.yaml
+
+  - it: refuses identity.pdb.maxUnavailable
+    set:
+      identity.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-access-manager: identity.pdb.maxUnavailable is owned by the health preset"
+        template: templates/identity/pdb.yaml
+
+  - it: refuses identity.deploymentStrategy
+    set:
+      identity.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-access-manager: identity.deploymentStrategy is owned by the health preset"
+        template: templates/identity/pdb.yaml

@@ -1,3 +1,4 @@
+{{- $h := include "reconciliation.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,10 +7,9 @@ metadata:
     {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 4 }} 
 spec:
   revisionHistoryLimit: {{ .Values.reconciliation.revisionHistoryLimit | default 10 }}
-  strategy:
-    {{- toYaml .Values.reconciliation.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.reconciliation.autoscaling.enabled }}
-  replicas: {{ .Values.reconciliation.replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -28,6 +28,7 @@ spec:
       labels:
         {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.reconciliation.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -45,9 +46,7 @@ spec:
           image: {{ .Values.reconciliation.image.repository }}:{{ .Values.reconciliation.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.reconciliation.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.reconciliation.service.port }}
-              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
               name: {{ if .Values.reconciliation.useExistingSecrets }}{{ .Values.reconciliation.existingSecretName }}{{ else }}{{ include "reconciliation.fullname" . }}{{ end }}
@@ -57,8 +56,8 @@ spec:
           {{- include "plugin-br-pix-indirect-btg.dbHostRequired" (dict "context" . "component" "reconciliation") }}
           {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "reconciliation" "secretName" (include "reconciliation.fullname" .)) }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
-          {{- if or (trim $infraEnv) $otelEnabled }}
           env:
+          {{- toYaml $h.env | nindent 10 }}
           {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
           {{- if $otelEnabled }}
           - name: "HOST_IP"
@@ -68,27 +67,11 @@ spec:
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
           {{- end }}
-          {{- end }}
           resources:
             {{- toYaml .Values.reconciliation.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.reconciliation.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.reconciliation.service.port }}
-            initialDelaySeconds: {{ .Values.reconciliation.readinessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.reconciliation.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.reconciliation.readinessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.reconciliation.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.reconciliation.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.reconciliation.livenessProbe.path | default "/health" }}
-              port: {{ .Values.reconciliation.service.port }}
-            initialDelaySeconds: {{ .Values.reconciliation.livenessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.reconciliation.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.reconciliation.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.reconciliation.livenessProbe.failureThreshold | default 3 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
           {{- if .Values.mtls.enabled }}
           volumeMounts:
             {{- include "plugin-br-pix-indirect-btg.mtlsVolumeMount" . | nindent 12 }}

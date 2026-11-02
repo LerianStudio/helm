@@ -1,4 +1,5 @@
 {{- if .Values.api.enabled }}
+{{- $h := include "plugin-br-pix-jd.api.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -11,16 +12,14 @@ metadata:
     {{- . | nindent 4 }}
   {{- end }}
 spec:
-  {{- /* Omit replicas entirely when the HPA owns the count: leaving it set makes
+  {{- /* The preset drops replicas when the HPA owns the count: leaving it set makes
      every `helm upgrade` reset the scale the autoscaler just decided. */ -}}
-  {{- if not .Values.api.autoscaling.enabled }}
-  replicas: {{ .Values.api.replicaCount }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   revisionHistoryLimit: {{ .Values.api.revisionHistoryLimit }}
-  {{- include "lerian-common.deploymentStrategy" (dict
-        "type" .Values.api.deploymentStrategy.type
-        "maxSurge" .Values.api.deploymentStrategy.rollingUpdate.maxSurge
-        "maxUnavailable" .Values.api.deploymentStrategy.rollingUpdate.maxUnavailable) | nindent 2 }}
+  strategy:
+    {{- toYaml $h.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "plugin-br-pix-jd.componentSelectorLabels" (dict "root" $ "name" "api") | nindent 6 }}
@@ -50,7 +49,7 @@ spec:
       {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" .Values.podSecurityContext) | nindent 6 }}
       {{- /* Above the lib-streaming close timeout so an in-flight CloudEvent flush
          completes instead of being cut off mid-close. */}}
-      terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- /* Migrations are NOT run from this pod. They are a segregated Job
          (templates/common/migrations-job.yaml), which is the repository convention —
          see plugin-br-bank-transfer, notifications, plugin-access-manager,
@@ -66,12 +65,14 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
             - configMapRef:
                 name: {{ include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api") }}
             - secretRef:
                 name: {{ include "plugin-br-pix-jd.componentSecretName" (dict "root" $ "name" "api" "comp" .Values.api) }}
           env:
+            {{- toYaml $h.env | nindent 12 }}
             {{- /* Single-sourced Postgres password: read straight from the bundled
                subchart's own Secret (or the operator's existingSecret), never
                duplicated into this chart's Secret. */ -}}
@@ -91,20 +92,12 @@ spec:
             {{- with .Values.api.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "readinessProbe" "probe" .Values.api.readinessProbe
-                "port" 8080
-                "path" "/readyz" "initialDelay" 5 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "livenessProbe" "probe" .Values.api.livenessProbe
-                "port" 8080
-                "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
-          {{- if .Values.api.startupProbe.enabled }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "startupProbe" "probe" .Values.api.startupProbe
-                "port" 8080
-                "path" "/readyz" "initialDelay" 10 "period" 5 "timeout" 5 "success" 1 "failure" 30) | nindent 10 }}
-          {{- end }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
           {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}

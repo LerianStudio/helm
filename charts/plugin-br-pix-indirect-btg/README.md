@@ -86,7 +86,10 @@ The Plugin BR PIX Indirect BTG system consists of three main components:
 | Parameter | Description | Default Value |
 |---|---|---|
 | `pix.name` | Service name. | `"plugin-br-pix-indirect-btg"` |
-| `pix.replicaCount` | Number of replicas for the deployment. | `1` |
+| `pix.replicaCount` | Number of replicas for the deployment. | `2` |
+| `<component>.health.stack` | Health preset stack (`go` for pix, `go-worker` for workers). It derives probes on the internal health port 8099, grace period, rollout strategy and PodDisruptionBudget. | see `values.yaml` |
+| `<component>.pdb`, `<component>.deploymentStrategy` | Owned by the health preset (PDB `maxUnavailable: 1`, RollingUpdate); the render fails if set. | not set |
+| `<worker>.service`, `<worker>.ingress` | Workers (inbound, outbound, reconciliation, schedule) expose no Service or Ingress; the render fails if set. | not set |
 | `pix.image.repository` | Repository for the container image. | `"ghcr.io/lerianstudio/plugin-br-pix-indirect-btg"` |
 | `pix.image.pullPolicy` | Image pull policy. | `"Always"` |
 | `pix.image.tag` | Image tag used for deployment. | `"1.6.0"` |
@@ -96,10 +99,6 @@ The Plugin BR PIX Indirect BTG system consists of three main components:
 | `pix.podAnnotations` | Pod annotations for additional metadata. | `{}` |
 | `pix.podSecurityContext` | Security context applied at the pod level. | `{}` |
 | `pix.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
-| `pix.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
-| `pix.pdb.minAvailable` | Minimum number of available pods. | `1` |
-| `pix.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
-| `pix.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
 | `pix.service.type` | Kubernetes service type. | `"ClusterIP"` |
 | `pix.service.port` | Port for the HTTP API. | `4014` |
 | `pix.service.annotations` | Annotations for the service. | `{}` |
@@ -166,18 +165,6 @@ pix:
 | `inbound.podAnnotations` | Pod annotations for additional metadata. | `{}` |
 | `inbound.podSecurityContext` | Security context for the pod. | `{}` |
 | `inbound.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
-| `inbound.pdb.enabled` | Enable or disable PodDisruptionBudget. | `true` |
-| `inbound.pdb.minAvailable` | Minimum number of available pods. | `1` |
-| `inbound.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
-| `inbound.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
-| `inbound.service.type` | Kubernetes service type. | `"ClusterIP"` |
-| `inbound.service.port` | Port for the HTTP API. | `4016` |
-| `inbound.service.annotations` | Annotations for the service. | `{}` |
-| `inbound.ingress.enabled` | Enable or disable ingress. | `false` |
-| `inbound.ingress.className` | Ingress class name. | `""` |
-| `inbound.ingress.annotations` | Additional ingress annotations. | `{}` |
-| `inbound.ingress.hosts` | Configured hosts for ingress and associated paths. | `[]` |
-| `inbound.ingress.tls` | TLS configuration for ingress. | `[]` |
 | `inbound.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
 | `inbound.autoscaling.enabled` | Enable or disable horizontal pod autoscaling. | `true` |
 | `inbound.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `1` |
@@ -227,18 +214,6 @@ inbound:
 | `outbound.podAnnotations` | Pod annotations for additional metadata. | `{}` |
 | `outbound.podSecurityContext` | Security context for the pod. | `{}` |
 | `outbound.securityContext.*` | Defines security context settings for the container. | See `values.yaml` |
-| `outbound.pdb.enabled` | Enable or disable PodDisruptionBudget. | `true` |
-| `outbound.pdb.minAvailable` | Minimum number of available pods. | `1` |
-| `outbound.pdb.maxUnavailable` | Maximum number of unavailable pods. | `1` |
-| `outbound.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
-| `outbound.service.type` | Kubernetes service type. | `"ClusterIP"` |
-| `outbound.service.port` | Port for the HTTP API. | `4015` |
-| `outbound.service.annotations` | Annotations for the service. | `{}` |
-| `outbound.ingress.enabled` | Enable or disable ingress. | `false` |
-| `outbound.ingress.className` | Ingress class name. | `""` |
-| `outbound.ingress.annotations` | Additional ingress annotations. | `{}` |
-| `outbound.ingress.hosts` | Configured hosts for ingress and associated paths. | `[]` |
-| `outbound.ingress.tls` | TLS configuration for ingress. | `[]` |
 | `outbound.resources.*` | CPU/Memory resource requests/limits. | See `values.yaml` |
 | `outbound.autoscaling.enabled` | Enable or disable horizontal pod autoscaling. | `true` |
 | `outbound.autoscaling.minReplicas` | Minimum number of replicas for autoscaling. | `1` |
@@ -279,7 +254,7 @@ outbound:
 
 ## Configuring Ingress for Different Controllers
 
-The Plugin BR PIX Indirect BTG Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. It is possible to enable Ingress for the following services: PIX, Inbound Worker, and Outbound Worker. Below are the configurations for commonly used controllers.
+The Plugin BR PIX Indirect BTG Helm Chart optionally supports different Ingress Controllers for exposing services when necessary. It is possible to enable Ingress for the PIX API service. Workers serve nothing on the main port. Below are the configurations for commonly used controllers.
 
 - **Note:** Before configuring Ingress, ensure that you have an Ingress Controller installed in your cluster. The Ingress Controller is responsible for managing external access to the services. Examples of popular Ingress Controllers include NGINX, AWS ALB, and Traefik.
 
@@ -317,7 +292,7 @@ pix:
       alb.ingress.kubernetes.io/scheme: internal
       alb.ingress.kubernetes.io/target-type: ip
       alb.ingress.kubernetes.io/group.name: "plugin-pix"
-      alb.ingress.kubernetes.io/healthcheck-path: "/healthz"
+      alb.ingress.kubernetes.io/healthcheck-path: "/health"
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     hosts:
       - host: pix.example.com

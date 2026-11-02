@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `10.2.1` | 4.4.0 | 3.8.4 |
+| `10.3.0` | 4.5.0-beta.94 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `10.2.2` | 3.14.0 | 3.14.0 | 1.8.6 |
+| `10.4.0` | 3.16.0-beta.5 | 3.16.0-beta.5 | 1.8.6 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `5.2.0` | 4.6.0 | 4.6.0 |
+| `5.3.0` | 4.7.0-beta.1 | 4.7.0-beta.1 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.5.9` | 1.5.0 | 1.5.0 |
+| `0.6.0` | 1.6.0-beta.3 | 1.6.0-beta.3 |
 -----------------
 
 ### BR JD Courier
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.2.3` | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 | 1.12.0 |
+| `5.3.0` | 1.14.0-beta.6 | 1.14.0-beta.6 | 1.14.0-beta.6 | 1.14.0-beta.6 | 1.14.0-beta.6 |
 
 -----------------
 
@@ -146,7 +146,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.1.0` | 1.0.2 |
+| `2.2.0` | 1.2.0-beta.1 |
 -----------------
 
 ### Fetcher
@@ -237,7 +237,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0-beta.4` | 0.1.0 |
+| `1.0.0` | 1.1.0 |
 -----------------
 
 ### BR SISBAJUD

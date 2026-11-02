@@ -20,6 +20,11 @@ spec:
       targetPort: grpc
       protocol: TCP
       name: grpc
+    {{- if eq .Values.tracer.service.type "ClusterIP" }}
+    {{- with (include "midaz-tracer.health" . | fromYaml).servicePorts }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- end }}
   selector:
     {{- include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 4 }}
 {{- end }}

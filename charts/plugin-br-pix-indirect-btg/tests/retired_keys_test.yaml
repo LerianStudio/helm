@@ -1,0 +1,61 @@
+suite: retired preset-owned keys
+templates:
+  - templates/pix/deployment.yaml
+  - templates/pix/configmap.yaml
+  - templates/pix/secrets.yaml
+  - templates/inbound/deployment.yaml
+  - templates/inbound/configmap.yaml
+  - templates/inbound/secrets.yaml
+  - templates/outbound/deployment.yaml
+  - templates/outbound/configmap.yaml
+  - templates/outbound/secrets.yaml
+  - templates/reconciliation/deployment.yaml
+  - templates/reconciliation/configmap.yaml
+  - templates/reconciliation/secrets.yaml
+  - templates/schedule/deployment.yaml
+  - templates/schedule/configmap.yaml
+  - templates/schedule/secrets.yaml
+set:
+  pix.configmap.BTG_BASE_URL: https://btg.example.test
+  pix.configmap.PIX_ISPB: "12345678"
+  pix.configmap.MIDAZ_ORGANIZATION_ID: org
+  pix.configmap.MIDAZ_LEDGER_ID: ledger
+  pix.secrets.BTG_CLIENT_ID: x
+  pix.secrets.BTG_CLIENT_SECRET: x
+  pix.secrets.INTERNAL_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef"
+  pix.secrets.MIDAZ_CLIENT_ID: x
+  pix.secrets.MIDAZ_CLIENT_SECRET: x
+  pix.secrets.LICENSE_KEY: x
+tests:
+  - it: renders with defaults
+    template: templates/pix/deployment.yaml
+    asserts:
+      - isKind: {of: Deployment}
+  - it: refuses pix.pdb.minAvailable
+    template: templates/pix/deployment.yaml
+    set:
+      pix.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: pix.pdb is owned by the health preset"
+  - it: refuses inbound.deploymentStrategy.type
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.deploymentStrategy is owned by the health preset"
+  - it: refuses inbound.ingress.enabled
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.ingress.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.ingress is owned by the health preset"
+  - it: refuses inbound.service.port
+    template: templates/inbound/deployment.yaml
+    set:
+      inbound.service.port: 4016
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-indirect-btg: inbound.service is owned by the health preset"

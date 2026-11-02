@@ -19,17 +19,13 @@ against the unmigrated schema until the Job finishes, then starts.
   annotations:
     argocd.argoproj.io/sync-wave: {{ $migrationSyncWave | quote }}
 {{- end }}
+{{- $h := include "midaz-ledger.health" . | fromYaml }}
 spec:
   revisionHistoryLimit: {{ .Values.ledger.revisionHistoryLimit | default 10 }}
   strategy:
-    type: {{ .Values.ledger.deploymentUpdate.type }}
-    {{- if eq .Values.ledger.deploymentUpdate.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.ledger.deploymentUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.ledger.deploymentUpdate.maxUnavailable }}
-    {{- end }}
-  {{- if not .Values.ledger.autoscaling.enabled }}
-  replicas: {{ .Values.ledger.replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -50,7 +46,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "midaz-ledger.serviceAccountName" . }}
-      terminationGracePeriodSeconds: {{ .Values.ledger.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- /* The helper owns both branches: fsGroup 65532 when Roles Anywhere is on, so
          the sidecar (runAsUser 65532) can read the 0440 cert volume; otherwise
          ledger.podSecurityContext. Called unguarded on purpose. */}}
@@ -100,8 +96,7 @@ spec:
           - configMapRef:
               name: {{ include "midaz-ledger.fullname" . }}
           env:
-            - name: SHUTDOWN_DRAIN_DELAY
-              value: "15s"
+            {{- toYaml $h.env | nindent 12 }}
             {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
             {{/* PostgreSQL: single role `midaz` backs both modules, key `password`. The bundled read replica
                  copies the primary's roles, so its replicas use `password` too; an operator Secret for an
@@ -218,24 +213,13 @@ spec:
             - name: http
               containerPort: {{ .Values.ledger.service.port | default 3002 }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
           livenessProbe:
-            httpGet:
-              path: {{ .Values.ledger.livenessProbe.path | default "/health" }}
-              port: http
-            initialDelaySeconds: {{ .Values.ledger.livenessProbe.initialDelaySeconds | default 0 }}
-            periodSeconds: {{ .Values.ledger.livenessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.ledger.livenessProbe.timeoutSeconds | default 3 }}
-            successThreshold: {{ .Values.ledger.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.ledger.livenessProbe.failureThreshold | default 3 }}
+            {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:
-            httpGet:
-              path: {{ .Values.ledger.readinessProbe.path | default "/readyz" }}
-              port: http
-            initialDelaySeconds: {{ .Values.ledger.readinessProbe.initialDelaySeconds | default 0 }}
-            periodSeconds: {{ .Values.ledger.readinessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.ledger.readinessProbe.timeoutSeconds | default 16 }}
-            successThreshold: {{ .Values.ledger.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.ledger.readinessProbe.failureThreshold | default 3 }}
+            {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.ledger.resources | nindent 12 }}
         {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}

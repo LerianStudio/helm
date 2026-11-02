@@ -569,6 +569,33 @@ never has to be spliced into a connection string.
 {{- end }}
 
 {{/*
+plugin-caradhras.builtInAdminPasswordEnabled — "true" when the operator opted in
+to giving a new built-in/admin its password from a Secret.
+*/}}
+{{- define "plugin-caradhras.builtInAdminPasswordEnabled" -}}
+{{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
+{{- if $bp.enabled -}}true{{- end -}}
+{{- end }}
+
+{{/*
+plugin-caradhras.builtInAdminPasswordEnv — the `builtInAdminPassword` container
+env, by secretKeyRef. secretName has no default: neither Secret this chart
+creates carries this key.
+*/}}
+{{- define "plugin-caradhras.builtInAdminPasswordEnv" -}}
+{{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
+{{- $tag := include "caradhras.imageTag" . -}}
+{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare ">=1.9.0-beta.25" $tag)) -}}
+{{- fail (printf "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but the Caradhras image tag %q does not read it.\n   Caradhras reads builtInAdminPassword from 1.9.0-beta.25 on; older images seed the public default password.\n   Set caradhras.image.tag to a semver tag and pin a Caradhras tag >= 1.9.0-beta.25 (a digest or latest cannot be checked).\n" $tag) -}}
+{{- end -}}
+- name: builtInAdminPassword
+  valueFrom:
+    secretKeyRef:
+      name: {{ required "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but caradhras.builtInAdminPassword.secretName is empty.\n   No Secret this chart creates carries the built-in/admin password.\n   Name the Secret holding it in caradhras.builtInAdminPassword.secretName (key: caradhras.builtInAdminPassword.secretKey).\n" $bp.secretName | quote }}
+      key: {{ $bp.secretKey | default "builtInAdminPassword" | quote }}
+{{- end }}
+
+{{/*
 plugin-access-manager.ssoCallbackPath — the console route the identity provider
 sends the browser back to. This path is OUR contract, not the operator's: it is
 the Next.js route src/app/(auth-routes)/signin/sso/callback in product-console.
@@ -913,3 +940,38 @@ here would only let a guaranteed crash render.
 {{- fail (printf "\n\nERROR: plugin-access-manager: %s would crash-loop at startup: the Caradhras JWKS URL is not https in an environment the application treats as production.%s\n   Since application 3.3.0, auth and identity fetch the JWKS over https whenever ENV_NAME is not development, staging or local, and no setting relaxes this. The process exits before its telemetry flushes, so the reason shows only in `kubectl logs --previous` and helm reports a timeout.\n   Fix: Caradhras serves plain http, so terminate TLS in front of it with caradhras.ingress, using a certificate from a public CA (the chart cannot mount a private CA), and set auth.configmap.AUTHORIZER_ADDRESS and identity.configmap.AUTHORIZER_ADDRESS to the SAME https URL: identity also pins that address as the issuer of M2M tokens.\n   Only if this environment really is not production, set global.env.name to development, staging or local instead; that also switches off the application's production-only behavior.\n   See docs/UPGRADE-9.5.8.md.\n" (join " and " $failing) $details) -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Health preset (lerian-common.health) for plugin-auth and plugin-identity: probes, ports, env, grace,
+strategy, PDB and the internal health Service port. Read it with fromYaml. Caradhras is another repo's
+image and keeps its own probes.
+minImage is the first plugin-access-manager image that serves HEALTH_PORT; it moves with values image.tag and Chart appVersion.
+The guard compares one semver (rc sorts above beta): an rc tier must bump to an rc that serves the port.
+*/}}
+{{- define "plugin-access-manager.minImage" -}}3.16.0-beta.5{{- end -}}
+
+{{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "plugin-access-manager.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "plugin-access-manager: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- if $.component.deploymentStrategy -}}{{- fail (printf "plugin-access-manager: %s.deploymentStrategy is owned by the health preset (RollingUpdate); remove it" $.name) -}}{{- end -}}
+{{- end -}}
+
+{{- define "plugin-auth.health" -}}
+{{- include "plugin-access-manager.presetOwned" (dict "name" "auth" "component" .Values.auth) -}}
+{{- include "lerian-common.health" (dict
+      "name" "auth" "component" .Values.auth "health" .Values.auth.health
+      "port" .Values.auth.service.port "minImage" (include "plugin-access-manager.minImage" .)
+      "replicas" .Values.auth.replicaCount "autoscaling" .Values.auth.autoscaling) -}}
+{{- end -}}
+
+{{- define "plugin-identity.health" -}}
+{{- include "plugin-access-manager.presetOwned" (dict "name" "identity" "component" .Values.identity) -}}
+{{- include "lerian-common.health" (dict
+      "name" "identity" "component" .Values.identity "health" .Values.identity.health
+      "port" .Values.identity.service.port "minImage" (include "plugin-access-manager.minImage" .)
+      "replicas" .Values.identity.replicaCount "autoscaling" .Values.identity.autoscaling) -}}
+{{- end -}}

@@ -3,6 +3,16 @@
 ## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.1)
 
 Fixes:
+- Set shutdown drain delay and raise pod grace to `55s`. (@fredcamaral)
+- Align shutdown drain environment indentation with included entries. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.0...plugin-br-ted-lerian-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.1)
+
+Fixes:
 
 - Set shutdown drain delay and raise pod grace period to `55s`. (@fredcamaral)
 - Align shutdown drain environment indentation with included entries. (@fredcamaral)

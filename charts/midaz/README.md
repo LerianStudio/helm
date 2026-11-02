@@ -255,7 +255,7 @@ Midaz deploys the following core services:
 | `ledger.enabled` | Enable or disable the ledger service. | `true` |
 | `ledger.name` | Service name. | `"ledger"` |
 | `ledger.health.stack`, `tracer.health.stack` | Runtime stack for the health preset. Probes, `HEALTH_PORT` 8099 (`/health`, `/readyz`, internal `health` Service port only), drain, grace, rollout strategy and PDB are owned by the chart; the render refuses probe, grace, `SHUTDOWN_*` and `HEALTH_PORT` overrides. | `go` |
-| `ledger.health.shutdownSeconds` | `SHUTDOWN_TIMEOUT` in seconds, the one shutdown budget after the 15s drain; pod grace is drain + this + 10s. | `35` |
+| `ledger.health.shutdownSeconds` | `SHUTDOWN_TIMEOUT` in seconds, the one shutdown budget after the 15s drain; pod grace is drain + this + 10s. | unset (preset: `30`) |
 | `ledger.replicaCount` | Number of replicas for the ledger service. | `2` |
 | `ledger.image.repository` | Repository for the ledger service container image. | `"lerianstudio/midaz-ledger"` |
 | `ledger.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |

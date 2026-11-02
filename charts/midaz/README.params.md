@@ -60,7 +60,7 @@
 | `ledger.name` | string | `ledger` | Service name |
 | `ledger.enabled` | bool | `true` | NOTE: migration.allowAllServices is not in the public values.yaml - set it in your override values for internal testing |
 | `ledger.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it |
-| `ledger.health.shutdownSeconds` | int | `35` | `SHUTDOWN_TIMEOUT`: the one shutdown budget after the drain; pod grace is drain + this + 10s |
+| `ledger.health.shutdownSeconds` | int | unset (preset: `30`) | `SHUTDOWN_TIMEOUT`: the one shutdown budget after the drain; pod grace is drain + this + 10s |
 | `ledger.replicaCount` | int | `2` | Number of replicas for the ledger service |
 | `ledger.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
 | `ledger.image.repository` | string | `lerianstudio/midaz-ledger` | Repository for the ledger service container image |

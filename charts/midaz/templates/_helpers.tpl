@@ -558,10 +558,12 @@ behavior unchanged).
 Health preset inputs per component. minImage is the first Midaz image that serves
 /health and /readyz on HEALTH_PORT 8099; a lower image.tag fails the render.
 */}}
+{{- define "midaz.healthMinImage" -}}4.5.0-beta.94{{- end -}}
+
 {{- define "midaz-ledger.health" -}}
-{{- include "lerian-common.health" (dict "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health "port" (int .Values.ledger.service.port) "minImage" "4.5.0-beta.94" "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) -}}
+{{- include "lerian-common.health" (dict "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health "port" (int .Values.ledger.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) -}}
 {{- end -}}
 
 {{- define "midaz-tracer.health" -}}
-{{- include "lerian-common.health" (dict "name" "tracer" "component" .Values.tracer "health" .Values.tracer.health "port" (int .Values.tracer.service.port) "minImage" "4.5.0-beta.94" "replicas" .Values.tracer.replicaCount "autoscaling" .Values.tracer.autoscaling) -}}
+{{- include "lerian-common.health" (dict "name" "tracer" "component" .Values.tracer "health" .Values.tracer.health "port" (int .Values.tracer.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.tracer.replicaCount "autoscaling" .Values.tracer.autoscaling) -}}
 {{- end -}}

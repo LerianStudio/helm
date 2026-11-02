@@ -239,9 +239,6 @@ ledger:
   health:
     # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
     stack: go
-    # -- SHUTDOWN_TIMEOUT in seconds: the one budget after the drain; the pod grace is drain + this + 10s
-    # (the ledger flushes the streaming producer for up to 5s on top of the 30s default)
-    shutdownSeconds: 35
   # -- Service name
   name: ledger
   # -- Enable or disable the ledger service (unified onboarding + transaction)

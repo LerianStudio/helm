@@ -28,14 +28,6 @@
 {{- $rabbitProtocol := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "protocol" "nativeKey" "RABBITMQ_PROTOCOL" "default" "http") }}
 {{- $rabbitAmqpPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "15672") }}
 
-{{- $rabbitHealthCheckURL := "" }}
-
-{{- if eq $rabbitProtocol "http" }}
-  {{- $rabbitHealthCheckURL = printf "%s://%s:%s" $rabbitProtocol $rabbitHost $rabbitAmqpPort }}
-{{- else if eq $rabbitProtocol "https" }}
-  {{- $rabbitHealthCheckURL = printf "%s://%s" $rabbitProtocol $rabbitHost }}
-{{- end }}
-
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -364,7 +356,6 @@ data:
   RABBITMQ_CONSUMER_USER: {{ $cm.RABBITMQ_CONSUMER_USER | default "consumer" | quote }}
   RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | quote }}
   RABBITMQ_NUMBERS_OF_PREFETCH: {{ $cm.RABBITMQ_NUMBERS_OF_PREFETCH | default "10" | quote }}
-  RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
   RABBITMQ_BALANCE_CREATE_QUEUE: {{ $cm.RABBITMQ_BALANCE_CREATE_QUEUE | default "transaction.balance_create.queue" | quote }}
   RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE: {{ $cm.RABBITMQ_TRANSACTION_BALANCE_OPERATION_EXCHANGE | default "transaction.transaction_balance_operation.exchange" | quote }}
   RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY: {{ $cm.RABBITMQ_TRANSACTION_BALANCE_OPERATION_KEY | default "transaction.transaction_balance_operation.key" | quote }}

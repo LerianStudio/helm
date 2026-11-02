@@ -19,7 +19,7 @@
 
 ## Overview
 
-This guide covers the `notifications` chart (published as `notifications-helm`; formerly `lerian-notification` / `lerian-notification-helm`) upgrade from `0.1.0` to `1.0.0-beta.4`. The changes described below were introduced up to `1.0.0-beta.3`. The application image (`appVersion: 0.1.0`) is unchanged, but the chart is now production-shaped: the migrations Job is rewritten for distroless, the security context defaults align with the Kubernetes Pod Security Standards restricted profile, and several rendering bugs (HPA, PDB, Redis defaults) are fixed.
+This guide covers the `notifications` chart (published as `notifications-helm`; formerly `lerian-notification` / `lerian-notification-helm`) upgrade from `0.1.0` to `1.0.0-beta.4`. The changes described below were introduced up to `1.0.0-beta.3`. The chart now deploys the ghcr `notifications` images at `1.1.0` (`appVersion: "1.1.0"`), the api binds `0.0.0.0:8080`, and `secrets.LICENSE_KEY` is required (the render refuses without it unless `secretRef.name` points at an existing Secret carrying `LICENSE_KEY`). The chart is now production-shaped: the migrations Job is rewritten for distroless, the security context defaults align with the Kubernetes Pod Security Standards restricted profile, and several rendering bugs (HPA, PDB, Redis defaults) are fixed.
 
 This is a **breaking** chart upgrade. A new value, `secrets.DATABASE_URL`, is required when `migrations.enabled` is true. Read [Migration Steps](#migration-steps) before upgrading.
 

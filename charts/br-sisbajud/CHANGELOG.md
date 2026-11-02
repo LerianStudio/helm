@@ -1,5 +1,15 @@
 # Br-sisbajud Changelog
 
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` to prevent unnecessary development-specific code from being included in production builds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
 ## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
 
 Fixes:

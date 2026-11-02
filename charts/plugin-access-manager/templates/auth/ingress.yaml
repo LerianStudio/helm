@@ -1,4 +1,5 @@
 {{- if .Values.auth.ingress.enabled -}}
+{{- $h := include "plugin-auth.health" . | fromYaml -}}
 {{- include "lerian-common.ingress" (dict
       "context" .
       "ingress" .Values.auth.ingress
@@ -7,5 +8,6 @@
       "name" (include "plugin-auth.fullname" .)
       "labels" (printf "%s " (include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name)))
       "svcPort" .Values.auth.service.port
+      "healthcheck" $h.alb
     ) }}
 {{- end }}

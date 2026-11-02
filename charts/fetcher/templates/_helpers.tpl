@@ -245,10 +245,21 @@ Chart.yaml appVersion and both default image tags move with it.
 {{- end }}
 
 {{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "fetcher.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "fetcher: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- if $.component.deploymentStrategy -}}{{- fail (printf "fetcher: %s.deploymentStrategy is owned by the health preset (RollingUpdate, maxUnavailable 0); remove it" $.name) -}}{{- end -}}
+{{- end }}
+
+{{/*
 Health preset (lerian-common.health) of the manager: probes, drain env, grace,
 rollout, PDB and the HPA floor. The Service carries the internal health port.
 */}}
 {{- define "fetcher-manager.health" -}}
+{{- include "fetcher.presetOwned" (dict "name" "manager" "component" .Values.manager) -}}
 {{- include "lerian-common.health" (dict
       "name" "fetcher-manager"
       "component" .Values.manager
@@ -264,6 +275,7 @@ rollout, PDB and the HPA floor. The Service carries the internal health port.
 Health preset of the worker: no Service and no main port, HEALTH_PORT is its only listener.
 */}}
 {{- define "fetcher-worker.health" -}}
+{{- include "fetcher.presetOwned" (dict "name" "worker" "component" .Values.worker) -}}
 {{- include "lerian-common.health" (dict
       "name" "fetcher-worker"
       "component" .Values.worker

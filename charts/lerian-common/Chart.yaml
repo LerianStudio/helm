@@ -9,7 +9,7 @@ description: >-
   not a breaking change; the health preset is opt-in and adds behavior only for
   charts that call it.
 type: library
-version: 2.5.0
+version: 2.6.0
 appVersion: "1.0.0"
 annotations:
   lerian.studio/chart-type: library

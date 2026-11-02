@@ -72,6 +72,8 @@ To install with a custom values file:
 helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version <version> -n reporter -f my-values.yaml
 ```
 
+The default image is `4.7.0-beta.1`, the first release that serves the health port. Pin `manager.image.tag` and `worker.image.tag` explicitly in production values; the default moves to the stable release when it ships.
+
 ## Uninstalling the Chart
 
 ```bash

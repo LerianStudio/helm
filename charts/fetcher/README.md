@@ -162,7 +162,7 @@ so there is nothing to migrate onto that mask.
 Both deployables render probes, `terminationGracePeriodSeconds`, the drain env (`HEALTH_PORT=8099`, `SHUTDOWN_DRAIN_DELAY`, `SHUTDOWN_TIMEOUT`), rolling-update strategy (`maxUnavailable: 0`), PodDisruptionBudget and the HPA floor from the `lerian-common.health` preset. Readiness fails only on the pod's own state; shared dependencies only report.
 
 - `/health` and `/readyz` are served on port 8099. On the manager it is a ClusterIP-only Service port named `health`; the Ingress never routes `/readyz` or `/metrics`. The worker has no Service.
-- The render refuses `manager.readinessProbe`, `manager.livenessProbe`, `manager.pdb`, `manager.deploymentStrategy`, any `*.terminationGracePeriodSeconds` and `SHUTDOWN_*` or `HEALTH_PORT` under a component `configmap`. Tune only `*.health.drainSeconds` and `*.health.shutdownSeconds`.
+- The render refuses any `*.livenessProbe`, `*.readinessProbe`, `*.startupProbe`, any `*.terminationGracePeriodSeconds` and `SHUTDOWN_*` or `HEALTH_PORT` under a component `configmap`. `manager.pdb` and `manager.deploymentStrategy` are ignored, not refused: delete them from values. Tune only `*.health.drainSeconds` and `*.health.shutdownSeconds`.
 - The render refuses an image older than `fetcher.minImage` (`templates/_helpers.tpl`), the first image that serves 8099. An image-only rollback below it fails the render; roll back the chart instead.
 - BYOC: the kubelet probes the pod IP on 8099, so the node-to-pod path must allow it.
 

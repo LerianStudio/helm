@@ -1,0 +1,43 @@
+suite: retired pdb and rollout keys
+templates:
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+set:
+  postgresql.enabled: true
+  app.configmap.BTG_API_BASE_URL: https://btg.example.test
+  app.configmap.BTG_AUTH_URL: https://btg.example.test/token
+  app.configmap.MIDAZ_LEDGER_URL: http://midaz:3000
+  app.configmap.ORGANIZATION_IDS: 00000000-0000-0000-0000-000000000001
+  app.secrets.PROVIDER_CLIENT_ID: x
+  app.secrets.PROVIDER_CLIENT_SECRET: x
+  app.secrets.PLUGIN_AUTH_CLIENT_ID: x
+  app.secrets.PLUGIN_AUTH_CLIENT_SECRET: x
+  app.secrets.LICENSE_KEY: x
+  app.secrets.CONSULT_AUDIT_HMAC_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.BTG_WEBHOOK_HMAC_SECRET: "0123456789abcdef0123456789abcdef"
+  app.secrets.INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+tests:
+  - it: renders with defaults
+    template: templates/deployment.yaml
+    asserts:
+      - isKind: {of: Deployment}
+  - it: refuses app.pdb.minAvailable
+    set: {app.pdb.minAvailable: 1}
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorPattern: "app.pdb.minAvailable is owned by the health preset"
+  - it: refuses app.pdb.maxUnavailable
+    set: {app.pdb.maxUnavailable: 0}
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorPattern: "app.pdb.maxUnavailable is owned by the health preset"
+  - it: refuses app.deploymentStrategy
+    set: {app.deploymentStrategy.type: Recreate}
+    template: templates/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorPattern: "app.deploymentStrategy is owned by the health preset"

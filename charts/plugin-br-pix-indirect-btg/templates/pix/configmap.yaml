@@ -195,6 +195,8 @@ data:
   STREAMING_CLOUDEVENTS_SOURCE: {{ .Values.pix.configmap.STREAMING_CLOUDEVENTS_SOURCE | default "plugin-br-pix-indirect-btg" | quote }}
   STREAMING_ENABLED: {{ .Values.pix.configmap.STREAMING_ENABLED | default "false" | quote }}
   STREAMING_TENANT_ID: {{ .Values.pix.configmap.STREAMING_TENANT_ID | default "default" | quote }}
+  HEALTH_PORT: {{ .Values.pix.configmap.HEALTH_PORT | default "8099" | quote }}
+  REQUEST_TIMEOUT_SEC: {{ .Values.pix.configmap.REQUEST_TIMEOUT_SEC | default "60" | quote }}
   # Extra Env Vars
   {{- with .Values.pix.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -83,7 +83,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0-beta.6"
+    tag: "1.14.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -293,7 +293,7 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0-beta.6"
+    tag: "1.14.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -405,7 +405,7 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0-beta.6"
+    tag: "1.14.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -530,7 +530,7 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0-beta.6"
+    tag: "1.14.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -650,7 +650,7 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0-beta.6"
+    tag: "1.14.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

@@ -127,6 +127,7 @@ data:
   {{- include "plugin-br-pix-indirect-btg.mtlsConfig" . | nindent 2 }}
   {{- end }}
 
+  HEALTH_PORT: {{ .Values.reconciliation.configmap.HEALTH_PORT | default "4017" | quote }}
   # Extra Env Vars
   {{- with .Values.reconciliation.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

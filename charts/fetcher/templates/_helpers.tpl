@@ -234,3 +234,54 @@ MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+fetcher.minImage — the first image that serves HEALTH_PORT. THE line to set once
+the first beta carrying the health port is cut: the render refuses an older tag.
+Chart.yaml appVersion and both default image tags move with it.
+*/}}
+{{- define "fetcher.minImage" -}}
+4.1.0-beta.1
+{{- end }}
+
+{{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "fetcher.presetOwned" -}}
+{{- range $k := list "enabled" "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "fetcher: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- if hasKey $.component "terminationGracePeriodSeconds" -}}{{- fail (printf "fetcher: %s.terminationGracePeriodSeconds is owned by the health preset (tune health.shutdownSeconds); remove it" $.name) -}}{{- end -}}
+{{- if $.component.deploymentStrategy -}}{{- fail (printf "fetcher: %s.deploymentStrategy is owned by the health preset (RollingUpdate, maxUnavailable 0); remove it" $.name) -}}{{- end -}}
+{{- end }}
+
+{{/*
+Health preset (lerian-common.health) of the manager: probes, drain env, grace,
+rollout, PDB and the HPA floor. The Service carries the internal health port.
+*/}}
+{{- define "fetcher-manager.health" -}}
+{{- include "fetcher.presetOwned" (dict "name" "manager" "component" .Values.manager) -}}
+{{- include "lerian-common.health" (dict
+      "name" "fetcher-manager"
+      "component" .Values.manager
+      "health" .Values.manager.health
+      "port" .Values.manager.service.port
+      "minImage" (include "fetcher.minImage" .)
+      "replicas" .Values.manager.replicaCount
+      "autoscaling" .Values.manager.autoscaling
+    ) -}}
+{{- end }}
+
+{{/*
+Health preset of the worker: no Service and no main port, HEALTH_PORT is its only listener.
+*/}}
+{{- define "fetcher-worker.health" -}}
+{{- include "fetcher.presetOwned" (dict "name" "worker" "component" .Values.worker) -}}
+{{- include "lerian-common.health" (dict
+      "name" "fetcher-worker"
+      "component" .Values.worker
+      "health" .Values.worker.health
+      "minImage" (include "fetcher.minImage" .)
+      "replicas" .Values.worker.replicaCount
+    ) -}}
+{{- end }}

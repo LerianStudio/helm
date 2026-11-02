@@ -11,3 +11,4 @@ plugin-br-payments
 plugin-access-manager
 plugin-br-pix-indirect-btg
 plugin-br-pix-jd
+fetcher

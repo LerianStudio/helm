@@ -1,6 +1,6 @@
 manager:
   name: "fetcher-manager"
-  replicaCount: 1
+  replicaCount: 2
 
   image:
     repository: lerianstudio/fetcher-manager
@@ -56,7 +56,7 @@ manager:
 
 worker:
   name: "fetcher-worker"
-  replicaCount: 1
+  replicaCount: 2
 
   image:
     repository: lerianstudio/fetcher-worker

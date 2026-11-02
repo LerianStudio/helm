@@ -1,0 +1,70 @@
+suite: fetcher refuses pdb and rollout overrides owned by the health preset
+templates:
+  - templates/manager/pdb.yaml
+  - templates/worker/deployment.yaml
+  # loaded so the deployments can include and hash them
+  - templates/manager/configmap.yaml
+  - templates/manager/secrets.yaml
+  - templates/worker/configmap.yaml
+  - templates/worker/secrets.yaml
+  - templates/common/configmap.yaml
+  - templates/common/secrets.yaml
+release:
+  name: fetcher
+  namespace: fetcher
+tests:
+  - it: default render succeeds
+    template: templates/manager/pdb.yaml
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+  - it: refuses manager.pdb.minAvailable
+    template: templates/manager/pdb.yaml
+    set: {manager.pdb.minAvailable: 1}
+    asserts:
+      - failedTemplate: {errorPattern: "manager.pdb.minAvailable is owned by the health preset"}
+  - it: refuses manager.pdb.maxUnavailable
+    template: templates/manager/pdb.yaml
+    set: {manager.pdb.maxUnavailable: 0}
+    asserts:
+      - failedTemplate: {errorPattern: "manager.pdb.maxUnavailable is owned by the health preset"}
+  - it: refuses manager.deploymentStrategy
+    template: templates/manager/pdb.yaml
+    set: {manager.deploymentStrategy.type: Recreate}
+    asserts:
+      - failedTemplate: {errorPattern: "manager.deploymentStrategy is owned by the health preset"}
+  - it: refuses worker.pdb.minAvailable
+    template: templates/worker/deployment.yaml
+    set: {worker.pdb.minAvailable: 1}
+    asserts:
+      - failedTemplate: {errorPattern: "worker.pdb.minAvailable is owned by the health preset"}
+  - it: refuses worker.pdb.maxUnavailable
+    template: templates/worker/deployment.yaml
+    set: {worker.pdb.maxUnavailable: 0}
+    asserts:
+      - failedTemplate: {errorPattern: "worker.pdb.maxUnavailable is owned by the health preset"}
+  - it: refuses worker.deploymentStrategy
+    template: templates/worker/deployment.yaml
+    set: {worker.deploymentStrategy.type: Recreate}
+    asserts:
+      - failedTemplate: {errorPattern: "worker.deploymentStrategy is owned by the health preset"}
+  - it: refuses manager.pdb.enabled
+    template: templates/manager/pdb.yaml
+    set: {manager.pdb.enabled: false}
+    asserts:
+      - failedTemplate: {errorPattern: "manager.pdb.enabled is owned by the health preset"}
+  - it: refuses worker.pdb.enabled
+    template: templates/worker/deployment.yaml
+    set: {worker.pdb.enabled: false}
+    asserts:
+      - failedTemplate: {errorPattern: "worker.pdb.enabled is owned by the health preset"}
+  - it: refuses manager.terminationGracePeriodSeconds even when 0
+    template: templates/manager/pdb.yaml
+    set: {manager.terminationGracePeriodSeconds: 0}
+    asserts:
+      - failedTemplate: {errorPattern: "manager.terminationGracePeriodSeconds is owned by the health preset"}
+  - it: refuses worker.terminationGracePeriodSeconds even when 0
+    template: templates/worker/deployment.yaml
+    set: {worker.terminationGracePeriodSeconds: 0}
+    asserts:
+      - failedTemplate: {errorPattern: "worker.terminationGracePeriodSeconds is owned by the health preset"}

@@ -1,3 +1,4 @@
+{{- $h := include "fetcher-manager.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,16 +7,11 @@ metadata:
     {{- include "fetcher-manager.labels" . | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.manager.revisionHistoryLimit | default 10 }}
-  {{- if not .Values.manager.autoscaling.enabled }}
-  replicas: {{ .Values.manager.replicaCount }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   strategy:
-    type: {{ .Values.manager.deploymentStrategy.type }}
-    {{- if eq .Values.manager.deploymentStrategy.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.manager.deploymentStrategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.manager.deploymentStrategy.rollingUpdate.maxUnavailable }}
-    {{- end }}
+    {{- toYaml $h.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "fetcher-manager.selectorLabels" . | nindent 6 }}
@@ -32,6 +28,7 @@ spec:
       labels:
         {{- include "fetcher-manager.labels" . | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- with .Values.manager.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -68,8 +65,8 @@ spec:
                  $(HOST_IP) default, so a configured endpoint is kept. */}}
           {{- $commonData := include "fetcher.commonConfigmapData" . | fromYaml | default dict }}
           {{- $otelHostIP := or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and (eq (toString (index $commonData "ENABLE_TELEMETRY")) "true") (eq (toString (index $commonData "OTEL_EXPORTER_OTLP_ENDPOINT")) "http://$(HOST_IP):4317")) }}
-          {{- if or $otelHostIP (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
           env:
+            {{- toYaml $h.env | nindent 12 }}
           {{- if $otelHostIP }}
             - name: "HOST_IP"
               valueFrom:
@@ -84,29 +81,17 @@ spec:
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
               value: "IPv4"
           {{- end }}
-          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.manager.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
           livenessProbe:
-            httpGet:
-              path: {{ .Values.manager.livenessProbe.path | default "/health" }}
-              port: http
-            initialDelaySeconds: {{ .Values.manager.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.manager.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.manager.livenessProbe.timeoutSeconds }}
-            successThreshold: {{ .Values.manager.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.manager.livenessProbe.failureThreshold }}
+            {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:
-            httpGet:
-              path: {{ .Values.manager.readinessProbe.path | default "/readyz" }}
-              port: http
-            initialDelaySeconds: {{ .Values.manager.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.manager.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.manager.readinessProbe.timeoutSeconds }}
-            successThreshold: {{ .Values.manager.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.manager.readinessProbe.failureThreshold }}
+            {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.manager.resources | nindent 12 }}
         {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}

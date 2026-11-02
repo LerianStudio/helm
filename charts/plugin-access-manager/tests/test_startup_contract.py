@@ -380,6 +380,32 @@ class StartupContract(unittest.TestCase):
                         if 'secretRef' in e]
                 self.assertEqual(refs, ['operator-secret'])
 
+    def test_builtin_admin_password_opt_in(self):
+        def env(docs):
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-caradhras'))
+            return [e for e in deployment['spec']['template']['spec']['containers'][0]['env']
+                    if e['name'] == 'builtInAdminPassword']
+        self.assertEqual(env(self.succeeds({})), [])
+        on = {'caradhras': {'image': {'tag': '2.0.0'}, 'builtInAdminPassword': {'enabled': True}}}
+        self.fails(on, 'caradhras.builtInAdminPassword.secretName is empty')
+        on['caradhras']['builtInAdminPassword']['secretName'] = 'operator-admin'
+        self.assertEqual(env(self.succeeds(on)), [{'name': 'builtInAdminPassword', 'valueFrom': {
+            'secretKeyRef': {'name': 'operator-admin', 'key': 'builtInAdminPassword'}}}])
+        on['caradhras']['builtInAdminPassword'].update(secretName='0123', secretKey='123')
+        self.assertEqual(env(self.succeeds(on))[0]['valueFrom']['secretKeyRef'], {'name': '0123', 'key': '123'})
+
+    def test_builtin_admin_password_needs_a_caradhras_that_reads_it(self):
+        for tag in ('1.8.6', '1.9.0-beta.24', 'latest', 'sha256:abc'):
+            on = {'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
+                'enabled': True, 'secretName': 'operator-admin'}}}
+            self.fails(on, 'pin a Caradhras tag >= 1.9.0-beta.25')
+        self.fails({'caradhras': {'builtInAdminPassword': {'enabled': True, 'secretName': 'x'}}},
+                   'pin a Caradhras tag >= 1.9.0-beta.25')
+        for tag in ('1.9.0-beta.25', '1.9.0-rc.1', '2.0.0'):
+            self.succeeds({'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
+                'enabled': True, 'secretName': 'operator-admin'}}})
+
     def test_auth_service_exposes_only_ports_the_container_serves(self):
         docs = self.succeeds({})
         service = next(d for d in docs if d['kind'] == 'Service' and d['metadata']['name'].endswith('-auth'))

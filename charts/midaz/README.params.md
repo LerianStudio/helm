@@ -57,13 +57,12 @@
 | `global.scheduling.spread.maxSkew` | int | `1` | Max allowed pod-count difference between topology domains (integer >= 1). |
 | `global.scheduling.spread.minDomains` | int | `0` | Minimum eligible domains for `DoNotSchedule` constraints (0 = off). With fewer domains the scheduler treats the global minimum as 0, so a hard hostname spread never stacks replicas on one node. |
 | `global.scheduling.spread.nodeTaintsPolicy` | string | `""` | `Honor` \| `Ignore` \| `""` (omitted = Kubernetes default `Ignore`). `Honor` counts only nodes whose taints the pod tolerates. |
-| `ledger.readinessProbe` | object | `{}` | Readiness probe configuration. All fields override chart defaults. |
-| `ledger.livenessProbe` | object | `{}` | Liveness probe configuration. All fields override chart defaults. |
 | `ledger.name` | string | `ledger` | Service name |
 | `ledger.enabled` | bool | `true` | NOTE: migration.allowAllServices is not in the public values.yaml - set it in your override values for internal testing |
+| `ledger.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it |
+| `ledger.health.shutdownSeconds` | int | unset (preset: `30`) | `SHUTDOWN_TIMEOUT`: the one shutdown budget after the drain; pod grace is drain + this + 10s |
 | `ledger.replicaCount` | int | `2` | Number of replicas for the ledger service |
 | `ledger.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
-| `ledger.terminationGracePeriodSeconds` | int | `72` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `ledger.image.repository` | string | `lerianstudio/midaz-ledger` | Repository for the ledger service container image |
 | `ledger.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
 | `ledger.image.tag` | string | See `values.yaml` | Image tag used for deployment |
@@ -93,12 +92,7 @@
 | `ledger.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `ledger.pdb` | object | `{}` | PodDisruptionBudget configuration |
 | `ledger.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `ledger.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `ledger.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
-| `ledger.deploymentUpdate` | object | `{}` | Deployment update strategy |
-| `ledger.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
-| `ledger.deploymentUpdate.maxSurge` | string | `100%` | Maximum number of pods that can be created over the desired number of pods |
-| `ledger.deploymentUpdate.maxUnavailable` | int | `0` | Maximum number of pods that can be unavailable during the update |
 | `ledger.service.type` | string | `ClusterIP` | Kubernetes service type |
 | `ledger.service.port` | int | `3002` | Port for the HTTP API (all APIs on single port) |
 | `ledger.ingress.enabled` | bool | `false` | Enable or disable ingress |
@@ -194,13 +188,11 @@
 | `crm.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Rendered into the CRM Secret. |
 | `crm.secrets.STREAMING_SASL_PASSWORD` | string | `""` | Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set when the streaming backend uses SASL auth and/or a private TLS CA. When set, they are rendered into the CRM Secret (never the ConfigMap). |
 | `crm.useExistingSecret` | bool | `false` | Existing secrets name |
-| `tracer.readinessProbe` | object | `{}` | Readiness probe configuration. All fields override chart defaults. |
-| `tracer.livenessProbe` | object | `{}` | Liveness probe configuration. All fields override chart defaults. |
 | `tracer.name` | string | `tracer` | Service name |
 | `tracer.enabled` | bool | `false` | Enable or disable the Tracer service (disabled by default; opt-in per env) |
+| `tracer.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it |
 | `tracer.replicaCount` | int | `1` | Number of replicas for the Tracer service |
 | `tracer.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
-| `tracer.terminationGracePeriodSeconds` | int | `55` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `tracer.image.repository` | string | `lerianstudio/midaz-tracer` | Repository for the Tracer service container image. In midaz v4 tracer ships from the monorepo (`components/tracer`) and the release pipeline publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates the configuration contract this chart renders. |
 | `tracer.image.pullPolicy` | string | `Always` | Image pull policy |
 | `tracer.image.tag` | string | See `values.yaml` | Image tag used for deployment |
@@ -230,12 +222,7 @@
 | `tracer.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `tracer.pdb` | object | `{}` | PodDisruptionBudget configuration |
 | `tracer.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `tracer.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `tracer.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
-| `tracer.deploymentUpdate` | object | `{}` | Deployment update strategy |
-| `tracer.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
-| `tracer.deploymentUpdate.maxSurge` | int | `1` | Maximum number of pods that can be created over the desired number of pods |
-| `tracer.deploymentUpdate.maxUnavailable` | int | `0` | Maximum number of pods that can be unavailable during the update |
 | `tracer.service.type` | string | `ClusterIP` | Kubernetes service type |
 | `tracer.service.port` | int | `4020` | Service port (HTTP API) |
 | `tracer.service.grpcPort` | int | `4021` | gRPC reservation seam port, always published on the container and Service. The tracer always listens on gRPC (":4021" when TRACER_GRPC_PORT is unset). When `tracer.configmap.TRACER_GRPC_PORT` is set, its numeric tail takes precedence over this value. |

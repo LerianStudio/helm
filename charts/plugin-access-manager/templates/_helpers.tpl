@@ -919,6 +919,7 @@ Health preset (lerian-common.health) for plugin-auth and plugin-identity: probes
 strategy, PDB and the internal health Service port. Read it with fromYaml. Caradhras is another repo's
 image and keeps its own probes.
 minImage is the first plugin-access-manager image that serves HEALTH_PORT; it moves with values image.tag and Chart appVersion.
+PLACEHOLDER (the next beta): set every occurrence to the tag the app PR really cut before this chart PR opens.
 The guard compares one semver (rc sorts above beta): an rc tier must bump to an rc that serves the port.
 */}}
 {{- define "plugin-access-manager.minImage" -}}3.16.0-beta.5{{- end -}}

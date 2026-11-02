@@ -129,6 +129,9 @@ plugin-br-ted-lerian:
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
   # ----- Workload · availability & rollout -----------------------------------
+  # -- Seconds Kubernetes waits after SIGTERM before killing the pod
+  # 55 = 15s drain + 30s shutdown budget + 10s margin
+  terminationGracePeriodSeconds: 55
   # -- PodDisruptionBudget configuration
   pdb:
     # -- Enable or disable PodDisruptionBudget

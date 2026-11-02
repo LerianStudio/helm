@@ -1,5 +1,27 @@
 # Plugin-access-manager Changelog
 
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.3.0)
+
+Features:
+- Add opt-in for Caradhras built-in admin password from a secret. (@fredcamaral)
+
+Fixes:
+- Raise the admin password floor to Caradhras `1.9.0-beta.25`. (@fredcamaral)
+- Require Caradhras `>= 1.9.0` for the built-in admin password opt-in. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.3...plugin-access-manager-v10.3.0)
+
+---
+
+## [10.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.3)
+
+Fixes:
+- Set the Caradhras shutdown drain delay to 5 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.2...plugin-access-manager-v10.2.3)
+
+---
+
 ## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
 
 Fixes:

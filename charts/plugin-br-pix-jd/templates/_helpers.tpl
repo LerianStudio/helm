@@ -1282,7 +1282,15 @@ The minImage guard compares one semver: a tier on another line (rc, v2.0.0-*) mu
 */}}
 {{/* First image that serves HEALTH_PORT; set it to the app PR's beta tag, with values image.tag and Chart appVersion. */}}
 {{- define "plugin-br-pix-jd.minImage" -}}1.6.0-beta.3{{- end -}}
+{{/* The preset owns PDB and rollout; a values file still setting the retired overrides fails the render. */}}
+{{- define "plugin-br-pix-jd.presetOwned" -}}
+{{- range $k := keys ($.component.pdb | default dict) | sortAlpha -}}
+{{- fail (printf "plugin-br-pix-jd: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1, AlwaysAllow); remove it" $.name $k) -}}
+{{- end -}}
+{{- if $.component.deploymentStrategy -}}{{- fail (printf "plugin-br-pix-jd: %s.deploymentStrategy is owned by the health preset (api RollingUpdate maxUnavailable 0, worker Recreate); remove it" $.name) -}}{{- end -}}
+{{- end -}}
 {{- define "plugin-br-pix-jd.api.health" -}}
+{{- include "plugin-br-pix-jd.presetOwned" (dict "name" "api" "component" .Values.api) -}}
 {{- include "lerian-common.health" (dict
       "name" "plugin-br-pix-jd-api" "component" .Values.api "health" .Values.api.health
       "port" 8080 "minImage" (include "plugin-br-pix-jd.minImage" .)
@@ -1290,6 +1298,7 @@ The minImage guard compares one semver: a tier on another line (rc, v2.0.0-*) mu
 {{- end -}}
 
 {{- define "plugin-br-pix-jd.worker.health" -}}
+{{- include "plugin-br-pix-jd.presetOwned" (dict "name" "worker" "component" .Values.worker) -}}
 {{- include "lerian-common.health" (dict
       "name" "plugin-br-pix-jd-worker" "component" .Values.worker "health" .Values.worker.health
       "minImage" (include "plugin-br-pix-jd.minImage" .) "replicas" .Values.worker.replicaCount) -}}

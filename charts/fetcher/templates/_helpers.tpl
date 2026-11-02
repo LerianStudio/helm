@@ -248,9 +248,10 @@ Chart.yaml appVersion and both default image tags move with it.
 PDB spec and rollout strategy come from the health preset; an operator override fails the render.
 */}}
 {{- define "fetcher.presetOwned" -}}
-{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- range $k := list "enabled" "minAvailable" "maxUnavailable" -}}
 {{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "fetcher: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
 {{- end -}}
+{{- if hasKey $.component "terminationGracePeriodSeconds" -}}{{- fail (printf "fetcher: %s.terminationGracePeriodSeconds is owned by the health preset (tune health.shutdownSeconds); remove it" $.name) -}}{{- end -}}
 {{- if $.component.deploymentStrategy -}}{{- fail (printf "fetcher: %s.deploymentStrategy is owned by the health preset (RollingUpdate, maxUnavailable 0); remove it" $.name) -}}{{- end -}}
 {{- end }}
 

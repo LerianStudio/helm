@@ -6,6 +6,7 @@
 - Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
+- External bootstrap Secret: create it before identity starts; changes or late creation require an identity rollout restart.
 - Initial admin: with `auth.initUser.enabled`, the identity service creates the first Console admin (`lerian/admin`, in `lerian/admin-group`) at boot through the Caradhras API, from `auth.initUser.*`, and only while organization `lerian` has no users: a populated organization is left untouched, but an organization that later becomes empty can bootstrap again on a subsequent start. It needs a `plugin-access-manager` identity image that has this boot step (use identity v3.16.0 or later; an older image cannot create the admin). The former `caradhras-user-init` post-install Job and `auth.initUser.image` and its timeout and resource keys are gone; leftover keys are ignored. The `-init-user` Secret is no longer a hook, so it stays after install. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
@@ -286,7 +287,7 @@ required. To keep the previous pod template exactly, set
 | `replicaCount` | Number of replicas for the deployment | `2` |
 | `image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-identity` |
 | `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag used for deployment | `3.16.0-beta.5` |
+| `image.tag` | Image tag used for deployment | `3.16.0` |
 | `health.stack` | Health preset (lerian-common.health): probes, `HEALTH_PORT` 8099, drain and shutdown env, grace, rollout and PDB; tune only `health.drainSeconds` and `health.shutdownSeconds` | `go` |
 | `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `nameOverride` | Overrides the default generated name by Helm | `""` |
@@ -330,7 +331,7 @@ required. To keep the previous pod template exactly, set
 | `replicaCount` | Number of replicas for the deployment | `3` |
 | `image.repository` | Repository for the console service container image | `ghcr.io/lerianstudio/plugin-auth` |
 | `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag used for deployment | `3.16.0-beta.5` |
+| `image.tag` | Image tag used for deployment | `3.16.0` |
 | `health.stack` | Health preset (lerian-common.health): probes, `HEALTH_PORT` 8099, drain and shutdown env, grace, rollout and PDB; tune only `health.drainSeconds` and `health.shutdownSeconds` | `go` |
 | `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `nameOverride` | Overrides the default generated name by Helm | `""` |

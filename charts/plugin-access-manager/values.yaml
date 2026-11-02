@@ -438,11 +438,9 @@ auth:
     SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
-  # -- First Console admin: when enabled, identity creates lerian/admin at boot
-  # -- through the Caradhras API, only while organization lerian has no users
-  # -- (a later empty organization can bootstrap again). Needs a PAM identity image
-  # -- with that boot step. Set enabled=true and adminPassword (or useExistingSecret
-  # -- + adminPasswordSecretName); adminEmail and adminDisplayName are optional.
+  # -- Identity creates the first Console admin only while lerian has no users, including on later starts.
+  # -- Requires an identity image with this boot step; set adminPassword or useExistingSecret + adminPasswordSecretName.
+  # -- adminEmail and adminDisplayName are optional.
   initUser:
     enabled: false
 # -- Caradhras: the auth backend/authorization service, promoted to a

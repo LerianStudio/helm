@@ -447,6 +447,27 @@ class StartupContract(unittest.TestCase):
         secret = next(d for d in docs if d['metadata']['name'] == ref['name'])
         self.assertNotIn('annotations', secret['metadata'])
 
+    def test_init_user_managed_secret_uses_selected_key(self):
+        for name, key in (('bootstrap', 'password'), ('123', '456')):
+            with self.subTest(name=name, key=key):
+                docs, env = self.identity_env({'enabled': True, 'adminPassword': 'render-only',
+                                               'adminPasswordSecretName': name,
+                                               'adminPasswordSecretKey': key})
+                ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+                self.assertEqual((ref['name'], ref['key']), (name, key))
+                secret = next(d for d in docs if d['kind'] == 'Secret'
+                              and d['metadata']['name'] == name)
+                self.assertEqual(base64.b64decode(secret['data'][key]).decode(), 'render-only')
+
+    def test_init_user_password_change_rolls_identity(self):
+        annotations = []
+        for password in ('x' * 73, 'render-only'):
+            docs, _ = self.identity_env({'enabled': True, 'adminPassword': password})
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-identity'))
+            annotations.append(deployment['spec']['template']['metadata']['annotations'])
+        self.assertNotEqual(annotations[0], annotations[1])
+
     def test_init_user_preserves_health_preset(self):
         containers = []
         for init in ({'enabled': False}, {'enabled': True, 'adminPassword': 'render-only'}):

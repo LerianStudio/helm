@@ -8,10 +8,10 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ include "plugin-access-manager.initUserSecretName" . }}
+  name: {{ include "plugin-access-manager.initUserSecretName" . | quote }}
   labels:
     {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name) | nindent 4 }}
 type: Opaque
 data:
-  ADMIN_PASSWORD: {{ required "\n\nERROR: auth.initUser is enabled with a generated secret but auth.initUser.adminPassword is empty.\n   Set auth.initUser.adminPassword, or set auth.initUser.useExistingSecret=true and point auth.initUser.adminPasswordSecretName at an existing Secret.\n" .Values.auth.initUser.adminPassword | b64enc | quote }}
+  {{ .Values.auth.initUser.adminPasswordSecretKey | default "ADMIN_PASSWORD" | quote }}: {{ required "\n\nERROR: auth.initUser is enabled with a generated secret but auth.initUser.adminPassword is empty.\n   Set auth.initUser.adminPassword, or set auth.initUser.useExistingSecret=true and point auth.initUser.adminPasswordSecretName at an existing Secret.\n" .Values.auth.initUser.adminPassword | b64enc | quote }}
 {{- end }}

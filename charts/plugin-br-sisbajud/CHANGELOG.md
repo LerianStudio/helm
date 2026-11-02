@@ -1,5 +1,14 @@
 # Plugin-br-sisbajud Changelog
 
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
 ## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.1.1)
 
 Features:

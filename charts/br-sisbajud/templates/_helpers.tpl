@@ -818,8 +818,9 @@ STREAMING_ENABLED: {{ $streamingRaw | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "clientId" "k" "STREAMING_CLIENT_ID" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "healthCheckTimeout" "k" "STREAMING_HEALTH_CHECK_TIMEOUT" "d" "2s") }}
 {{- /* lib-streaming knobs outside lerian-common.streaming.env. closeTimeoutS must stay
-   below the pod's terminationGracePeriodSeconds (not set by this chart: Kubernetes
-   default 30s), or SIGKILL cuts the producer drain/flush short. */}}
+   below the 30s shutdown budget (SHUTDOWN_TIMEOUT), which runs inside the pod's
+   terminationGracePeriodSeconds, or SIGKILL cuts the producer drain/flush short. */}}
+{{ include $kv (dict "cm" $cm "p" (dict) "f" "shutdownDrainDelay" "k" "SHUTDOWN_DRAIN_DELAY" "d" "15s") }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "topicAutoProvision" "k" "STREAMING_TOPIC_AUTO_PROVISION" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "closeTimeoutS" "k" "STREAMING_CLOSE_TIMEOUT_S" "d" "20") }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "topicPartitions" "k" "STREAMING_TOPIC_PARTITIONS" "opt" true) }}
@@ -1061,7 +1062,7 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- end -}}
 {{- $closeS := toString (index $data "STREAMING_CLOSE_TIMEOUT_S") -}}
 {{- if or (not (regexMatch "^[0-9]+$" $closeS)) (ge (atoi $closeS) 30) -}}
-{{- fail (printf "\n\nERROR: br-sisbajud: STREAMING_CLOSE_TIMEOUT_S must be a whole number of seconds below the pod terminationGracePeriodSeconds (Kubernetes default 30; this chart does not override it), got %q.\n  set: brSisbajud.streaming.closeTimeoutS (default \"20\")\n" $closeS) -}}
+{{- fail (printf "\n\nERROR: br-sisbajud: STREAMING_CLOSE_TIMEOUT_S must be a whole number of seconds below the 30s shutdown budget that runs inside terminationGracePeriodSeconds, got %q.\n  set: brSisbajud.streaming.closeTimeoutS (default \"20\")\n" $closeS) -}}
 {{- end -}}
 {{- else if or (index $data "STREAMING_BROKERS") (index $cm "STREAMING_BROKERS") -}}
 {{- /* The app refuses STREAMING_BROKERS with STREAMING_ENABLED=false (validateStreamingEnablement). */ -}}

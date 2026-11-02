@@ -169,7 +169,7 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `streaming.clientId` / `healthCheckTimeout` | `STREAMING_CLIENT_ID` / `STREAMING_HEALTH_CHECK_TIMEOUT` | unset / `2s` |
 | `streaming.topicAutoProvision` | `STREAMING_TOPIC_AUTO_PROVISION` | `true` (lib-streaming creates `lerian.streaming.br-sisbajud` + `.dlq` at boot; `false` when IaC provisions them) |
 | `streaming.topicPartitions` / `topicReplicationFactor` | `STREAMING_TOPIC_PARTITIONS` / `STREAMING_TOPIC_REPLICATION_FACTOR` | unset (broker default) |
-| `streaming.closeTimeoutS` | `STREAMING_CLOSE_TIMEOUT_S` | `20` (must stay below the pod `terminationGracePeriodSeconds`: Kubernetes default 30s, not overridden by this chart) |
+| `streaming.closeTimeoutS` | `STREAMING_CLOSE_TIMEOUT_S` | `20` (must stay below the 30s shutdown budget, which runs inside the pod `terminationGracePeriodSeconds`, 55s here) |
 | (global.streaming.enabled) | `STREAMING_ENABLED` | `true` (mandatory: the app refuses `false`; needs brokers and `OUTBOX_ENABLED=true`) |
 | `auth.trustedProxies` / `productName` | `TRUSTED_PROXIES` / `AUTH_PRODUCT_NAME` | `""` / unset |
 | `auth.jwtIssuer` | `AUTH_JWT_ISSUER` | unset (required unless auth on + `DEPLOYMENT_MODE=local` + `ENV_NAME=local`) |

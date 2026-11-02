@@ -422,13 +422,9 @@ Input: the root context ($).
 {{- $dv := "lerian-common.datastore.value" -}}
 {{- $osv := "lerian-common.objectStorage.value" -}}
 {{- /* Broker host+mgmt-port resolved once (via the datastore mask) — reused by RABBITMQ_HOST,
-   RABBITMQ_PORT_HOST and the derived RABBITMQ_HEALTH_CHECK_URL (single-source). */ -}}
+   RABBITMQ_PORT_HOST (single-source). */ -}}
 {{- $rmqHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "reporter-rabbitmq.reporter.svc.cluster.local") -}}
 {{- $rmqMgmtPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_HOST" "default" "15672") -}}
-{{- /* Management API scheme mirrors the AMQP scheme (amqp→http, amqps→https) — a managed
-   broker (TLS AMQP) also serves its management API over HTTPS. */ -}}
-{{- $rmqScheme := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") -}}
-{{- $rmqMgmtScheme := ternary "https" "http" (eq $rmqScheme "amqps") -}}
 {{- $streamingRaw := (($.Values.global | default dict).streaming | default dict).enabled -}}
 {{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
 {{- $streamingEnabled := eq (include "reporter.isTrue" ($streamingRaw | default "false")) "true" -}}
@@ -446,7 +442,7 @@ Input: the root context ($).
     "ENV_NAME" "ALLOW_INSECURE_TLS" "LOG_LEVEL"
     "RABBITMQ_URI" "RABBITMQ_HOST" "RABBITMQ_PORT_HOST" "RABBITMQ_PORT_AMQP"
     "RABBITMQ_NUMBERS_OF_WORKERS" "RABBITMQ_EXCHANGE" "RABBITMQ_GENERATE_REPORT_QUEUE"
-    "RABBITMQ_GENERATE_REPORT_KEY" "RABBITMQ_HEALTH_CHECK_URL" "RABBITMQ_REPORT_EVENTS_EXCHANGE"
+    "RABBITMQ_GENERATE_REPORT_KEY" "RABBITMQ_REPORT_EVENTS_EXCHANGE"
     "REDIS_HOST" "REDIS_USER" "REDIS_MASTER_NAME" "REDIS_DB" "REDIS_PROTOCOL" "REDIS_TLS" "REDIS_CA_CERT"
     "GOOGLE_APPLICATION_CREDENTIALS" "REDIS_SERVICE_ACCOUNT"
     "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_USE_PATH_STYLE"
@@ -500,8 +496,6 @@ RABBITMQ_NUMBERS_OF_WORKERS: {{ $cm.RABBITMQ_NUMBERS_OF_WORKERS | default "5" | 
 RABBITMQ_EXCHANGE: {{ $cm.RABBITMQ_EXCHANGE | default "reporter.generate-report.exchange" | quote }}
 RABBITMQ_GENERATE_REPORT_QUEUE: {{ $cm.RABBITMQ_GENERATE_REPORT_QUEUE | default "reporter.generate-report.queue" | quote }}
 RABBITMQ_GENERATE_REPORT_KEY: {{ $cm.RABBITMQ_GENERATE_REPORT_KEY | default "reporter.generate-report.key" | quote }}
-{{- /* Health-check URL single-sourced from the broker mask (host:mgmt-port); configmap override still wins. */}}
-RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "%s://%s:%s" $rmqMgmtScheme $rmqHost $rmqMgmtPort) | quote }}
 {{- /* Redis/Valkey connection via datastore mask (host carries host:port). */}}
 REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "reporter-valkey.reporter.svc.cluster.local:6379") | quote }}
 REDIS_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "user" "nativeKey" "REDIS_USER" "default" "") | quote }}
@@ -605,4 +599,27 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Health preset (lerian-common.health) for the reporter components: probes, ports, env,
+grace, strategy, PDB and the manager's internal health Service port. Read each with fromYaml.
+minImage is the first reporter image that serves HEALTH_PORT: set it to the first develop beta
+that carries the app change. It moves with values image.tag and Chart appVersion.
+The guard compares one semver (rc sorts above beta): an rc tier must bump to an rc that serves the port.
+*/}}
+{{- define "reporter.minImage" -}}4.7.0-beta.1{{- end -}}
+
+{{- define "reporter.manager.health" -}}
+{{- include "lerian-common.health" (dict
+      "name" "reporter-manager" "component" .Values.manager "health" .Values.manager.health
+      "port" .Values.manager.service.port "minImage" (include "reporter.minImage" .)
+      "replicas" .Values.manager.replicaCount "autoscaling" .Values.manager.autoscaling) -}}
+{{- end -}}
+
+{{- define "reporter.worker.health" -}}
+{{- include "lerian-common.health" (dict
+      "name" "reporter-worker" "component" .Values.worker "health" .Values.worker.health
+      "minImage" (include "reporter.minImage" .)
+      "replicas" .Values.worker.replicaCount "autoscaling" .Values.worker.autoscaling) -}}
 {{- end -}}

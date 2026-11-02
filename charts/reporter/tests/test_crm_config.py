@@ -25,13 +25,14 @@ otel-collector-lerian:
   enabled: false
 manager:
   image:
-    tag: "3.0.1"
+    tag: "4.7.0-beta.1"
 worker:
   image:
-    tag: "3.0.1"
+    tag: "4.7.0-beta.1"
 secrets:
   RABBITMQ_DEFAULT_PASS: "test-only"
   DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+  LICENSE_KEY: "test-only"
 """
 CRM_CONFIG = """
 common:
@@ -48,6 +49,7 @@ CRM_SECRETS = """
 secrets:
   RABBITMQ_DEFAULT_PASS: "test-only"
   DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+  LICENSE_KEY: "test-only"
   DATASOURCE_CRM_PASSWORD: "test-only-crm-password"
   CRYPTO_HASH_SECRET_KEY_CRM: "test-only-hash-key"
   CRYPTO_ENCRYPT_SECRET_KEY_CRM: "test-only-encrypt-key"

@@ -253,7 +253,7 @@ config:
 # Extra non-sensitive env vars merged into the ConfigMap.
 extraConfig: {}
 
-# -- Pod termination grace, api and workers. Api sets the max; workers need 40s.
+# -- Pod termination grace, api and workers. Api sets the max.
 # 52 = 42s native-TLS api (12s drain + 30s shutdown) + 10s margin; workers need 40s
 terminationGracePeriodSeconds: 52
 

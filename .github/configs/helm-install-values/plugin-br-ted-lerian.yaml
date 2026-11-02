@@ -5,3 +5,8 @@ plugin-br-ted-lerian:
   serviceAccount:
     create: false
   imagePullSecrets: []
+  # The app refuses to boot single-tenant without the Access Manager M2M pair
+  # (CRM_CLIENT_ID/CRM_CLIENT_SECRET). kind runs no Access Manager: placeholders only.
+  secrets:
+    CRM_CLIENT_ID: "ci-client-id"
+    CRM_CLIENT_SECRET: "ci-client-secret"

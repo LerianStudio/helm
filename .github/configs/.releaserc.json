@@ -82,14 +82,13 @@
       "semantic-release-helm3",
       {
         "chartPath": ".",
-        "registry": "oci://registry-1.docker.io/lerianstudio",
         "onlyUpdateVersion": true
       }
     ],
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "PACKAGE_DIR=$(mktemp -d) && helm package . --destination \"$PACKAGE_DIR\" && set -- \"$PACKAGE_DIR\"/*.tgz && [ \"$#\" -eq 1 ] && helm push \"$1\" oci://ghcr.io/lerianstudio"
+        "prepareCmd": "PACKAGE_DIR=$(mktemp -d) && helm package . --destination \"$PACKAGE_DIR\" && set -- \"$PACKAGE_DIR\"/*.tgz && [ \"$#\" -eq 1 ] && helm push \"$1\" oci://ghcr.io/lerianstudio && helm push \"$1\" oci://registry-1.docker.io/lerianstudio"
       }
     ],
     [

@@ -28,7 +28,8 @@ API
   Ingress host:
     {{ if $hosts }}{{ (first $hosts).host }}{{ else if $gi.domain }}pix-jd.{{ $gi.domain }}{{ else }}(no host configured — set api.ingress.hosts or global.ingress.domain){{ end }}
 {{ end -}}
-  Operational endpoints (auth-exempt): GET /health  GET /readyz  GET /metrics  GET /version
+  Operational endpoints: GET /health  GET /version (main port 8080)
+  Health port 8099 (internal Service port, never an Ingress backend): GET /health  GET /readyz  GET /readyz/tenant/:id
 {{ end -}}
 
 {{ if .Values.worker.enabled -}}

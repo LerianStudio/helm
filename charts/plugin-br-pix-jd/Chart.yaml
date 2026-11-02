@@ -18,7 +18,7 @@ maintainers:
 version: 0.5.9
 # Registry tags have no leading `v`. Pin api.image.tag explicitly in production.
 # Migrations are independently versioned; see migrations.image.tag in values.yaml.
-appVersion: "1.5.0"
+appVersion: "1.6.0-beta.3"
 keywords:
   - midaz
   - lerian
@@ -33,7 +33,7 @@ dependencies:
   # contracts (multi-tenant, otel, rate-limit, auth, streaming) and the workload
   # helpers (service, ingress, hpa, pdb, probes, scheduling, serviceAccount).
   - name: lerian-common-helm
-    version: "2.1.2"
+    version: "2.6.0"
     repository: "oci://ghcr.io/lerianstudio"
   # Bundled by default; `postgresql.external: true` or `postgresql.enabled: false`
   # switches the chart to an operator-provided Postgres. Exact pin (no ~/^) per

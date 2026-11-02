@@ -29,6 +29,7 @@ spec:
       labels:
         {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: 55
       {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -169,8 +170,19 @@ spec:
           - name: redisEndpoint
             valueFrom:
               secretKeyRef:
-                name: {{ include "plugin-caradhras.sessionSecretName" . }}
+                name: {{ include "plugin-caradhras.secretName" . }}
                 key: redisEndpoint
+          {{- end }}
+          {{- if or (.Values.caradhras.secrets | default dict).LICENSE_KEY .Values.caradhras.useExistingSecret }}
+          # Caradhras refuses to boot without its own license key (product
+          # `caradhras`, not the auth/identity key). optional: a Secret lacking
+          # the key renders no env, so older images keep booting on upgrade.
+          - name: LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "plugin-caradhras.secretName" . }}
+                key: LICENSE_KEY
+                optional: true
           {{- end }}
           {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
           {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}
@@ -185,6 +197,11 @@ spec:
           {{ end }}
           resources:
             {{- toYaml .Values.caradhras.resources | nindent 12 }}
+          # Serve 15s before SIGTERM while endpoints deregister; grace = 15 + SHUTDOWN_TIMEOUT_SEC (30) + 10.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "15"]
           readinessProbe:
             httpGet:
               path: {{ .Values.caradhras.readinessProbe.path | default "/api/readyz" }}

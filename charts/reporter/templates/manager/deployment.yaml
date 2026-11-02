@@ -40,6 +40,8 @@ spec:
       securityContext:
         fsGroup: 65532
       {{- end }}
+      # SHUTDOWN_DRAIN_DELAY 15s + the app's 30s shutdown budget + 10s.
+      terminationGracePeriodSeconds: 55
       initContainers:
         - name: wait-for-dependencies
           securityContext:
@@ -77,6 +79,8 @@ spec:
           - configMapRef:
               name: {{ include "plugin-manager.fullname" . }}
           env:
+          - name: SHUTDOWN_DRAIN_DELAY
+            value: "15s"
           {{- include "reporter.mongoPasswordEnv" (dict "context" $ "secretName" (ternary .Values.manager.existingSecretName (include "plugin-manager.fullname" .) .Values.manager.useExistingSecret)) | nindent 10 }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"

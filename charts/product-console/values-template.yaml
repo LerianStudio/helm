@@ -175,6 +175,8 @@ secrets:
   PLUGIN_AUTH_CLIENT_SECRET: ""
   NEXTAUTH_SECRET: ""
   MONGODB_PASS: ""
+  # Required: the console refuses to boot without a valid license.
+  LICENSE_KEY: ""
 
 # -- Use existing secret instead of creating one
 useExistingSecret: false

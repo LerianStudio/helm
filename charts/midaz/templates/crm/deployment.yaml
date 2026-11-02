@@ -98,7 +98,7 @@ spec:
               port: {{ .Values.crm.service.port }}
             initialDelaySeconds: {{ .Values.crm.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.crm.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.crm.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.crm.readinessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.crm.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.crm.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -107,7 +107,7 @@ spec:
               port: {{ .Values.crm.service.port }}
             initialDelaySeconds: {{ .Values.crm.livenessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.crm.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.crm.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.crm.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.crm.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.crm.livenessProbe.failureThreshold | default 3 }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints

@@ -6,7 +6,7 @@
 - Required secrets: `OTEL_API_KEY` must be supplied by the referenced `otel-api-key` Kubernetes Secret for telemetry export.
 - Dependency notes: Wraps the upstream OpenTelemetry Collector chart and intentionally has no local application templates.
 - Production overrides: Override collector endpoints, resource limits, RBAC scope, and the Secret referenced by `extraEnvs` for the target cluster.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 This Helm chart installs the [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) configured for Lerian's observability stack. It collects traces, logs, and metrics from Kubernetes workloads and exports them to Lerian's central telemetry backend.
 
@@ -89,7 +89,7 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 | --- | --- | --- |
 | `opentelemetry-collector.mode` | Deployment mode (daemonset required for kubeletstats) | `daemonset` |
 | `opentelemetry-collector.image.repository` | Container image repository | `otel/opentelemetry-collector-contrib` |
-| `opentelemetry-collector.image.tag` | Container image tag | `0.142.0` |
+| `opentelemetry-collector.image.tag` | Container image tag | `0.164.0` |
 
 ### Resource Configuration
 
@@ -262,7 +262,7 @@ The chart automatically creates the necessary ClusterRole with permissions to:
 
 | Dependency | Version | Repository |
 | --- | --- | --- |
-| opentelemetry-collector | 0.142.0 | https://open-telemetry.github.io/opentelemetry-helm-charts |
+| opentelemetry-collector | 0.178.1 | https://open-telemetry.github.io/opentelemetry-helm-charts |
 
 ---
 

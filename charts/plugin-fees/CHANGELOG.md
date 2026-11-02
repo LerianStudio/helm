@@ -1,5 +1,713 @@
 # Plugin-fees Changelog
 
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide. (@fredcamaral)
+- Moved fee packages with the `midaz` migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Named the password `midaz` reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to `midaz` to ensure no fee is lost. (@fredcamaral)
+- Ensured fee data is retained when moving to `midaz`. (@fredcamaral)
+- Replaced install and upgrade steps with the move to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide. (@fredcamaral)
+- Moved fee packages with the `midaz` migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Named the password `midaz` reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to `midaz` to ensure no fee is lost. (@fredcamaral)
+- Maintained fee data when moving to `midaz`. (@fredcamaral)
+- Replaced install and upgrade steps with the move to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide. (@fredcamaral)
+- Moved fee packages with the `midaz` migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Named the password `midaz` reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to `midaz` to ensure no fee is lost. (@fredcamaral)
+- Ensured fee data is retained when moving to `midaz`. (@fredcamaral)
+- Replaced install and upgrade steps with the move to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide. (@fredcamaral)
+- Moved fee packages with the `midaz` migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Named the password `midaz` reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to `midaz` to ensure no fee is lost. (@fredcamaral)
+- Ensured fee data is retained when moving to `midaz`. (@fredcamaral)
+- Replaced install and upgrade steps with the move to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide. (@fredcamaral)
+- Moved fee packages with the `midaz` migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Named the password `midaz` reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to `midaz` to ensure no fee is lost. (@fredcamaral)
+- Ensured fee data is retained when moving to `midaz`. (@fredcamaral)
+- Replaced install and upgrade steps with the move to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after all callers are removed. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide. (@fredcamaral)
+- Moved fee packages with the `midaz` migration guide. (@fredcamaral)
+- Kept fee calculation active until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Specified the password `midaz` reads for an external MongoDB. (@fredcamaral)
+- Ordered the transition to `midaz` to ensure no fees are lost. (@fredcamaral)
+- Preserved fee data during the transition to `midaz`. (@fredcamaral)
+- Replaced installation and upgrade steps with the move to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide. (@fredcamaral)
+- Moved fee packages with the `midaz` migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Named the password `midaz` reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to `midaz` to ensure no fee is lost. (@fredcamaral)
+- Ensured fee data is retained when moving to `midaz`. (@fredcamaral)
+- Replaced install and upgrade steps with the move to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the Midaz ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the Midaz fees migration guide. (@fredcamaral)
+- Moved fee packages with the Midaz migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the Midaz upgrade. (@fredcamaral)
+- Named the password Midaz reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to Midaz to ensure no fee is lost. (@fredcamaral)
+- Preserved fee data when transitioning to Midaz. (@fredcamaral)
+- Replaced install and upgrade steps with the move to Midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the Midaz ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the Midaz fees migration guide. (@fredcamaral)
+- Moved fee packages with the Midaz migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the Midaz upgrade. (@fredcamaral)
+- Named the password Midaz reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to Midaz to ensure no fee is lost. (@fredcamaral)
+- Ensured fee data is retained when moving to Midaz. (@fredcamaral)
+- Replaced install and upgrade steps with the move to Midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after all callers have transitioned. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide. (@fredcamaral)
+- Moved fee packages in alignment with the `midaz` migration guide. (@fredcamaral)
+- Maintained fee calculation until bank transfer operations run natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Specified the password `midaz` uses for an external MongoDB. (@fredcamaral)
+- Ordered the transition to `midaz` to ensure no fee data is lost. (@fredcamaral)
+- Preserved fee data during the transition to `midaz`. (@fredcamaral)
+- Replaced install and upgrade steps with instructions for moving to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Mark the chart as deprecated in favor of the Midaz ledger. (@fredcamaral)
+
+Improvements:
+- Update documentation to stop `plugin-fees` only after every caller has been removed. (@fredcamaral)
+- Defer the move to the Midaz fees migration guide. (@fredcamaral)
+- Move fee packages in alignment with the Midaz migration guide. (@fredcamaral)
+- Maintain fee calculation until bank transfer functionality is fully native. (@fredcamaral)
+- Pin bank transfer to legacy fees before upgrading to Midaz. (@fredcamaral)
+- Specify the password Midaz reads for an external MongoDB. (@fredcamaral)
+- Order the transition to Midaz to ensure no fee data is lost. (@fredcamaral)
+- Preserve fee data during the transition to Midaz. (@fredcamaral)
+- Replace installation and upgrade steps with instructions for the move to Midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart deprecated in favor of the Midaz ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the Midaz fees migration guide. (@fredcamaral)
+- Moved fee packages with the Midaz migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the Midaz upgrade. (@fredcamaral)
+- Named the password Midaz reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to Midaz to ensure no fee is lost. (@fredcamaral)
+- Ensured fee data is retained when moving to Midaz. (@fredcamaral)
+- Replaced install and upgrade steps with the move to Midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Mark the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Update documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Defer the move to the `midaz` fees migration guide in the documentation. (@fredcamaral)
+- Move fee packages with the `midaz` migration guide in the documentation. (@fredcamaral)
+- Keep fee calculation up until bank transfer runs natively, as noted in the documentation. (@fredcamaral)
+- Pin bank transfer to legacy fees before the `midaz` upgrade, according to the documentation. (@fredcamaral)
+- Specify the password `midaz` reads for an external MongoDB in the documentation. (@fredcamaral)
+- Order the move to `midaz` in the documentation to ensure no fee is lost. (@fredcamaral)
+- Ensure fee data is retained when moving to `midaz`, as documented. (@fredcamaral)
+- Replace install and upgrade steps with the move to `midaz` in the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to ensure plugin-fees is stopped only after all callers are removed. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide in the documentation. (@fredcamaral)
+- Moved fee packages in alignment with the `midaz` migration guide. (@fredcamaral)
+- Maintained fee calculation until bank transfer operations run natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade. (@fredcamaral)
+- Documented the password `midaz` reads for an external MongoDB. (@fredcamaral)
+- Ordered the transition to `midaz` to prevent any loss of fees. (@fredcamaral)
+- Ensured fee data retention during the transition to `midaz`. (@fredcamaral)
+- Replaced installation and upgrade steps with the transition to `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
+
+Improvements:
+- Stopped `plugin-fees` only after every caller is gone to ensure a smooth transition. (@fredcamaral)
+- Deferred the move to the `midaz` fees migration guide to provide a more comprehensive transition plan. (@fredcamaral)
+- Moved fee packages with the `midaz` migration guide to streamline the process. (@fredcamaral)
+- Maintained fee calculation up until bank transfer runs natively to ensure consistency. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the `midaz` upgrade to prevent disruptions. (@fredcamaral)
+- Named the password `midaz` reads for an external MongoDB to enhance clarity. (@fredcamaral)
+- Ordered the move to `midaz` to ensure no fee is lost during the transition. (@fredcamaral)
+- Kept fee data intact when moving to `midaz` to preserve historical records. (@fredcamaral)
+- Replaced install and upgrade steps with the move to `midaz` to simplify the process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
+- Marked the chart as deprecated in favor of the Midaz ledger. (@fredcamaral)
+
+Improvements:
+- Updated documentation to stop `plugin-fees` only after every caller is gone. (@fredcamaral)
+- Deferred the move to the Midaz fees migration guide. (@fredcamaral)
+- Moved fee packages with the Midaz migration guide. (@fredcamaral)
+- Kept fee calculation up until bank transfer runs natively. (@fredcamaral)
+- Pinned bank transfer to legacy fees before the Midaz upgrade. (@fredcamaral)
+- Named the password Midaz reads for an external MongoDB. (@fredcamaral)
+- Ordered the move to Midaz to ensure no fee is lost. (@fredcamaral)
+- Ensured fee data is retained when moving to Midaz. (@fredcamaral)
+- Replaced install and upgrade steps with the move to Midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`, providing users with detailed instructions on how to upgrade to the new version. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`, ensuring clarity and accuracy for users following the upgrade process. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`, providing detailed instructions for users to upgrade smoothly. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`, ensuring clarity and accuracy. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`, providing users with detailed instructions on how to upgrade to the new version. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`, ensuring clarity and accuracy in the upgrade process. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct flag semantics and rollout instructions in the `v9.0` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout details in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`, providing users with detailed instructions on how to upgrade to this version. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`, ensuring clarity and accuracy in the upgrade process. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add a Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct the flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.1)
+
+Features:
+- Add Helm upgrade guide for `plugin-fees` `v9.0.0`. (@victorlazari)
+
+Fixes:
+- Correct flag semantics and rollout instructions in the `v9.0` upgrade guide for `plugin-fees`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.0...plugin-fees-v9.0.1)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on flags that default to true in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags, ensuring correct behavior for `plugin-fees`. (@fredcamaral)
+
+Improvements:
+
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for plugin-fees, ensuring accurate configuration behavior. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for updating. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags, ensuring accurate representation of flag states. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4` to assist users in transitioning smoothly to the new version. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags, ensuring correct behavior for boolean flags in `plugin-fees`. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with detailed instructions for upgrading. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags for `plugin-fees`, ensuring accurate flag representation. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`, providing users with necessary upgrade instructions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags to ensure accurate configuration. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-fees` `v8.0.4` to assist users in updating their configurations. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean `false` on default-true flags for plugin-fees, ensuring correct behavior. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for plugin-fees `v8.0.4`, providing users with detailed instructions for updating. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
+
+Fixes:
+- Render boolean false on default-true flags in the plugin-fees configuration. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-fees` `v8.0.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v8.0.4...plugin-fees-v9.0.0)
+
+---
+
 ## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.0)
 
 Fixes:

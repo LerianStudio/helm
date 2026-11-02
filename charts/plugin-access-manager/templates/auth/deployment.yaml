@@ -81,7 +81,7 @@ spec:
               port: {{ .Values.auth.service.port }}
             initialDelaySeconds: {{ .Values.auth.readinessProbe.initialDelaySeconds | default 25 }}
             periodSeconds: {{ .Values.auth.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.auth.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.auth.readinessProbe.timeoutSeconds | default 8 }}
             successThreshold: {{ .Values.auth.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.auth.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -90,7 +90,7 @@ spec:
               port: {{ .Values.auth.service.port }}
             initialDelaySeconds: {{ .Values.auth.livenessProbe.initialDelaySeconds | default 30 }}
             periodSeconds: {{ .Values.auth.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.auth.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.auth.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.auth.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.auth.livenessProbe.failureThreshold | default 3 }}
           {{- if .Values.auth.startupProbe.enabled }}

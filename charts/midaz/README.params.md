@@ -63,7 +63,7 @@
 | `ledger.enabled` | bool | `true` | NOTE: migration.allowAllServices is not in the public values.yaml - set it in your override values for internal testing |
 | `ledger.replicaCount` | int | `2` | Number of replicas for the ledger service |
 | `ledger.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
-| `ledger.terminationGracePeriodSeconds` | int | `60` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
+| `ledger.terminationGracePeriodSeconds` | int | `72` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `ledger.image.repository` | string | `lerianstudio/midaz-ledger` | Repository for the ledger service container image |
 | `ledger.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
 | `ledger.image.tag` | string | See `values.yaml` | Image tag used for deployment |
@@ -126,6 +126,7 @@
 | `ledger.secrets.MONGO_CRM_PASSWORD` | string | `""` | CRM and Fees module passwords. The unified ledger binary (midaz v4) opens these Mongo databases in-process; same single-source rule as the modules above. Rendered into the ledger Secret, never the ConfigMap. |
 | `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` | string | `""` | CRM holder-field crypto (lib-crypto). Operator-provided key material protecting PII at rest. Required when the ledger serves CRM and KMS_VENDOR is unset or "none" (legacy mode, local symmetric keys). |
 | `ledger.secrets.KMS_VAULT_SECRET_ID` | string | `""` | Vault AppRole SecretID, the credential half of the KMS auth pair. Only set when ledger.configmap.KMS_VENDOR="hashicorp-vault" (envelope encryption). The RoleID counterpart is not secret and stays in the ConfigMap. |
+| `ledger.secrets.LICENSE_KEY` | string | `""` | Product license key. Required: the ledger refuses to boot when empty. |
 | `ledger.secrets.REDIS_PASSWORD` | string | `""` | Shared passwords. REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an existingSecret override. RABBITMQ_* remain operator-provided (see README "Known limitation" — RabbitMQ is not yet single-sourced). |
 | `ledger.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Rendered into the ledger Secret. |
 | `ledger.secrets.STREAMING_SASL_PASSWORD` | string | `""` | Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set when the streaming backend uses SASL auth and/or a private TLS CA. When set, they are rendered into the ledger Secret (never the ConfigMap). |
@@ -199,7 +200,7 @@
 | `tracer.enabled` | bool | `false` | Enable or disable the Tracer service (disabled by default; opt-in per env) |
 | `tracer.replicaCount` | int | `1` | Number of replicas for the Tracer service |
 | `tracer.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
-| `tracer.terminationGracePeriodSeconds` | int | `45` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
+| `tracer.terminationGracePeriodSeconds` | int | `55` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `tracer.image.repository` | string | `lerianstudio/midaz-tracer` | Repository for the Tracer service container image. In midaz v4 tracer ships from the monorepo (`components/tracer`) and the release pipeline publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates the configuration contract this chart renders. |
 | `tracer.image.pullPolicy` | string | `Always` | Image pull policy |
 | `tracer.image.tag` | string | See `values.yaml` | Image tag used for deployment |
@@ -259,6 +260,7 @@
 | `tracer.secrets` | object | `templates/tracer/secrets.yaml` | Secrets for storing sensitive data |
 | `tracer.secrets.DB_PASSWORD` | string | `""` | PostgreSQL password. Single-sourced from the Bitnami postgresql subchart Secret (key `password`) when internal; only set for an EXTERNAL PostgreSQL (subchart disabled / .external=true) without an existingSecret override. |
 | `tracer.secrets.API_KEY` | string | `""` | API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true). |
+| `tracer.secrets.LICENSE_KEY` | string | `""` | Product license key. Required: the tracer refuses to boot when empty. |
 | `tracer.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set. |
 | `otel-collector-lerian` | object | `{}` | OTEL exporter configuration for midaz services. When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES are injected into the `ledger` and `crm` deployments only. Port is fixed at 4317. If you need a different collector endpoint, leave enabled=false and configure OTEL env vars directly in the application configmap (ledger.configmap / crm.configmap). |
 | `otel-collector-lerian.enabled` | bool | `true` | Inject OTEL env vars into the midaz ledger and crm deployments |

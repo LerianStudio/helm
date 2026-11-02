@@ -6,7 +6,7 @@
 - Required secrets: `agent.secrets.AGENT_TOKEN` (and `agent.secrets.AGENT_ID` with a per-agent token) from the control plane's agent registration, or `agent.useExistingSecret` with a Secret carrying the same keys. `agent.configmap.CONTROL_PLANE_URL` is required as well.
 - Dependency notes: Depends on the `lerian-common-helm` library chart (2.2.0) for its Service, ServiceAccount, HPA, PDB, deployment strategy, probes, scheduling and OTel collector env; it renders nothing on its own. No application dependency is bundled. The agent only makes outbound requests: to the Lerian control plane, and to the registries it is allowed to pull from.
 - Production overrides: `agent.managedNamespaces` (every namespace the agent may install into), `agent.useExistingSecret`, the registry allowlists, `agent.networkPolicy` CIDRs, resources, and `agent.image.digest` once the agent has moved itself to a newer build.
-- Source/license: The chart is in `github.com/LerianStudio/helm` (Apache-2.0); the agent application is in `github.com/LerianStudio/agent`.
+- Source/license: The chart is in `github.com/LerianStudio/helm` (Elastic License 2.0); the agent application is in `github.com/LerianStudio/agent`.
 
 Installs the Lerian BYOC agent: it runs in your Kubernetes cluster, polls the
 Lerian control plane over an outbound-only connection (no inbound ports, no

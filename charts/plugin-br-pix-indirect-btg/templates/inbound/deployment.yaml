@@ -16,6 +16,11 @@ spec:
       {{- include "inbound.selectorLabels" (dict "context" . "name" .Values.inbound.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/inbound/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.inbound.useExistingSecrets }}
+        checksum/secret: {{ include (print $.Template.BasePath "/inbound/secrets.yaml") . | sha256sum }}
+        {{- end }}
       labels:
         {{- include "inbound.labels" (dict "context" . "name" .Values.inbound.name ) | nindent 8 }}
     spec:
@@ -66,7 +71,7 @@ spec:
               port: {{ .Values.inbound.service.port }}
             initialDelaySeconds: {{ .Values.inbound.readinessProbe.initialDelaySeconds | default 10 }}
             periodSeconds: {{ .Values.inbound.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.inbound.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.inbound.readinessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.inbound.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.inbound.readinessProbe.failureThreshold | default 3 }}
           livenessProbe:
@@ -75,7 +80,7 @@ spec:
               port: {{ .Values.inbound.service.port }}
             initialDelaySeconds: {{ .Values.inbound.livenessProbe.initialDelaySeconds | default 5 }}
             periodSeconds: {{ .Values.inbound.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.inbound.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.inbound.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.inbound.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.inbound.livenessProbe.failureThreshold | default 3 }}
       {{- with .Values.inbound.nodeSelector }}

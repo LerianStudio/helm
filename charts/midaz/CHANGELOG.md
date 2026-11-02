@@ -1,5 +1,601 @@
 # Midaz Changelog
 
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to improve clarity. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model for better understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity and consistency. (@fredcamaral)
+- Document the ledger grace need per lib-commons shutdown model to provide better guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirements per the `lib-commons` shutdown model for better understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model to provide better guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity in the codebase. (@fredcamaral)
+- Document the ledger grace requirement per the lib-commons shutdown model to improve understanding and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Features:
+
+- State the ledger shutdown grace sum in values to ensure clarity and consistency. (@fredcamaral)
+
+Improvements:
+
+- Document the ledger grace need per lib-commons shutdown model to enhance understanding and implementation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirements per the `lib-commons` shutdown model to improve understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model to provide better guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace requirement per the `lib-commons` shutdown model to improve understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+
+- Stated the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Documented the ledger grace requirement per the `lib-commons` shutdown model to provide better guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
+
+Features:
+- Set ledger shutdown drain delay to `15s` to improve shutdown behavior. (@fredcamaral)
+
+Fixes:
+- Raise ledger grace period to cover the drain time and update grace documentation for clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.1...midaz-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
+
+Features:
+- Set ledger shutdown drain delay to `15s`. (@fredcamaral)
+
+Fixes:
+- Raise ledger grace period to cover the drain time and align grace documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.1...midaz-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
+
+Features:
+- Set ledger shutdown drain delay to `15s` to improve shutdown handling. (@fredcamaral)
+
+Fixes:
+- Raise ledger grace period to ensure it covers the drain time and update grace documentation for clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.1...midaz-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
+
+Features:
+- Set ledger shutdown drain delay to `15s`. (@fredcamaral)
+
+Fixes:
+- Raise ledger grace period to cover the drain and align grace documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.1...midaz-v10.2.0)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeout settings for both ledger and CRM probes to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+
+- Increased the timeouts for ledger and CRM probes to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeouts for ledger and CRM probes to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+
+- Increased the timeouts for ledger and CRM probes to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeouts for ledger and CRM probes to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeout settings for ledger and CRM probes to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeouts for ledger and CRM probes to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeout settings for ledger and CRM probes to improve system reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeout settings for ledger and CRM probes to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
+
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
+
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
+
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
+
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+
+- Add a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+
+- Relicense charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicensed charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicensed charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicensed under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicensed charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicensed charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicensed the charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Added a Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+
+Fixes:
+- Updated `midaz-ledger` to `4.4.0`, `midaz-tracer` to `4.4.0`, `midaz-ledger-migrations` to `4.4.0`, and `midaz-tracer-migrations` to `4.4.0`. (@lerian-studio)
+- Fixed the `v10.0.2` upgrade guide to describe the schema fix. (@gandalf-at-lerian)
+
+Improvements:
+- Rewrote the `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Added a Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+
+Fixes:
+- Updated `midaz-ledger` to `4.4.0`, `midaz-tracer` to `4.4.0`, `midaz-ledger-migrations` to `4.4.0`, and `midaz-tracer-migrations` to `4.4.0`. (@lerian-studio)
+- Fixed the `v10.0.2` upgrade guide to accurately describe the schema fix. (@gandalf-at-lerian)
+
+Improvements:
+- Rewrote the `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
+Fixes:
+- Update `midaz-ledger` to `4.4.0`, `midaz-tracer` to `4.4.0`, `midaz-ledger-migrations` to `4.4.0`, and `midaz-tracer-migrations` to `4.4.0`. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Add a Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+- Rewrite the `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+- Fix the `v10.0.2` upgrade guide to describe the schema fix. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Add Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+
+Fixes:
+- Update `midaz-ledger` `@4.4.0`, `midaz-tracer` `@4.4.0`, `midaz-ledger-migrations` `@4.4.0`, and `midaz-tracer-migrations` `@4.4.0`. (@lerian-studio)
+- Rewrite `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+- Fix `v10.0.2` upgrade guide to describe the schema fix. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
+Features:
+
+- Add a Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Add a Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+
+Fixes:
+
+- Update `midaz-ledger` `@4.4.0`, `midaz-tracer` `@4.4.0`, `midaz-ledger-migrations` `@4.4.0`, and `midaz-tracer-migrations` `@4.4.0`. (@lerian-studio)
+- Rewrite the `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+- Correct the `v10.0.2` upgrade guide to describe the schema fix. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
 ## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
 
 Features:

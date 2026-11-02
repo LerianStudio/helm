@@ -250,7 +250,10 @@ ledger:
   revisionHistoryLimit: 10
   # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
   # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
-  terminationGracePeriodSeconds: 60
+  # Ledger images on lib-commons v7.21.0-beta.20 or later need 60 = 15s SHUTDOWN_DRAIN_DELAY
+  # + 30s shutdown budget (HTTP drain, 10s event wait) + 5s producer flush + 10s margin;
+  # earlier images need ~72 (15s drain + ~47s per-stage shutdown + 10s margin).
+  terminationGracePeriodSeconds: 72
   image:
     # -- Repository for the ledger service container image
     repository: lerianstudio/midaz-ledger
@@ -491,6 +494,8 @@ ledger:
     # encryption). The RoleID counterpart is not secret and stays in the
     # ConfigMap.
     KMS_VAULT_SECRET_ID: ""
+    # -- Product license key. Required: the ledger refuses to boot when empty.
+    LICENSE_KEY: ""
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
     # (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an
@@ -749,7 +754,7 @@ tracer:
   revisionHistoryLimit: 10
   # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
   # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
-  terminationGracePeriodSeconds: 45
+  terminationGracePeriodSeconds: 55
   image:
     # -- Repository for the Tracer service container image. In midaz v4 tracer
     # ships from the monorepo (`components/tracer`) and the release pipeline
@@ -941,6 +946,8 @@ tracer:
     DB_PASSWORD: ""
     # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
     API_KEY: ""
+    # -- Product license key. Required: the tracer refuses to boot when empty.
+    LICENSE_KEY: ""
     # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
     # MULTI_TENANT_SERVICE_API_KEY: ""
     # -- Optional Redis password for the tenant connection-pool registry.

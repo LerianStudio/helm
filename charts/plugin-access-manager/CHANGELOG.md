@@ -1,5 +1,751 @@
 # Plugin-access-manager Changelog
 
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+
+- Ensure the caradhras license is retrieved solely from an existing secret. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Improvements:
+
+- Verify that the caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the Caradhras license is retrieved solely from an existing secret to prevent misconfigurations. (@fredcamaral)
+- Provide clear naming for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Improvements:
+- Verify that the Caradhras configmap consistently retains the session endpoint during testing. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Features:
+
+Fixes:
+- Ensure the caradhras license is retrieved solely from an existing secret to maintain consistency and security. (@fredcamaral)
+- Provide clear identification of both endpoint modes in the error message when a secret is missing, improving error diagnostics. (@fredcamaral)
+
+Improvements:
+- Validate that the caradhras configmap consistently retains the session endpoint, ensuring stability and reliability in configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the caradhras license is retrieved solely from an existing secret to prevent configuration errors. (@fredcamaral)
+- Provide clear naming for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Tests:
+- Verify that the caradhras configmap retains the session endpoint configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+
+- Ensure the caradhras license is retrieved exclusively from an existing secret, avoiding any other sources. (@fredcamaral)
+- Provide clear naming for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Improvements:
+
+- Verify that the caradhras configmap consistently retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the caradhras license is retrieved solely from an existing secret. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Improvements:
+- Verify that the caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the caradhras license is obtained solely from an existing secret. (@fredcamaral)
+- Name both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Tests:
+- Verify that the caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+
+- Ensure the Caradhras license is retrieved solely from an existing secret to prevent configuration issues. (@fredcamaral)
+- Provide clear naming for both endpoint modes in the error message when a secret is missing, improving error clarity. (@fredcamaral)
+
+Improvements:
+
+- Add tests to verify that the Caradhras configmap retains the session endpoint, ensuring consistent configuration behavior. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the caradhras license is taken from an existing secret only. (@fredcamaral)
+- Name both endpoint modes in the missing secret error message. (@fredcamaral)
+
+Tests:
+- Assert that the caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Features:
+
+Fixes:
+- Ensure the Caradhras license is obtained solely from an existing secret. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Improvements:
+- Add a test to verify that the Caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Features:
+
+Fixes:
+- Ensure the caradhras license is obtained solely from an existing secret to prevent configuration errors. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing, improving clarity. (@fredcamaral)
+
+Improvements:
+- Add a test to verify that the caradhras configmap retains the session endpoint configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the Caradhras license is retrieved solely from an existing secret. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Tests:
+- Verify that the Caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the Caradhras license is retrieved exclusively from an existing secret. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Improvements:
+- Verify that the Caradhras configmap maintains the session endpoint during testing. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the caradhras license is retrieved solely from an existing secret. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Tests:
+- Verify that the caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the Caradhras license is retrieved solely from an existing secret. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Improvements:
+- Verify that the Caradhras configmap retains the session endpoint during tests. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the Caradhras license is retrieved solely from an existing secret, improving security and consistency. (@fredcamaral)
+- Provide clearer error messages by naming both endpoint modes when a secret is missing. (@fredcamaral)
+
+Improvements:
+- Add tests to verify that the Caradhras configmap retains the session endpoint, ensuring stability and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Features:
+
+Fixes:
+- Ensure the Caradhras license is obtained solely from an existing secret. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Improvements:
+- Add tests to verify that the Caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Features:
+
+Fixes:
+- Ensure the caradhras license is taken from an existing secret alone, addressing potential configuration issues. (@fredcamaral)
+- Provide names for both endpoint modes in the error message when a secret is missing, improving error clarity. (@fredcamaral)
+
+Improvements:
+- Verify that the caradhras configmap retains the session endpoint, enhancing test coverage and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Features:
+
+Fixes:
+- Ensure the Caradhras license is retrieved solely from an existing secret, improving the security and reliability of the license management. (@fredcamaral)
+- Provide clear naming for both endpoint modes in the error message when a secret is missing, enhancing error clarity and troubleshooting. (@fredcamaral)
+
+Improvements:
+- Add tests to verify that the Caradhras configmap retains the session endpoint, ensuring consistent configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
+
+Fixes:
+- Ensure the Caradhras license is retrieved solely from an existing secret. (@fredcamaral)
+- Name both endpoint modes in the error message when a secret is missing. (@fredcamaral)
+
+Tests:
+- Verify that the Caradhras configmap retains the session endpoint. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.1...plugin-access-manager-v10.2.2)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.1)
+
+Fixes:
+- Widened probe timeouts and ensured Caradhras is drained before stopping the service. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.0...plugin-access-manager-v10.2.1)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:  
+- Pass the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:  
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:
+- Allow passing the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:
+- Allow passing the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:  
+- Pass the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:  
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:
+- Pass the Caradhras license key from a secret, allowing for secure handling of sensitive information. (@fredcamaral)
+
+Fixes:
+- Make the Caradhras license key secret reference optional, providing flexibility in configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:  
+- Pass the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:  
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:
+- Pass the Caradhras license key from a secret, allowing for more secure handling of sensitive information. (@fredcamaral)
+
+Fixes:
+- Make the Caradhras license key secret reference optional, providing flexibility in configurations where the key is not required. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:  
+- Pass the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:  
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:
+- Pass the Caradhras license key from a secret, allowing for more secure handling of the key. (@fredcamaral)
+
+Fixes:
+- Make the Caradhras license key secret reference optional, providing flexibility in configurations where the key may not be necessary. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:  
+- Allow passing the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:  
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.0)
+
+Features:  
+- Pass the Caradhras license key from a secret. (@fredcamaral)
+
+Fixes:  
+- Make the Caradhras license key secret reference optional. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.4...plugin-access-manager-v10.2.0)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+- Add Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Correct the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Fix pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Fix pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fix pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Correct rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fix image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Correct init-user text and add app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fix upgrade guide for the `v10.1.1` caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Fix upgrade guide for `v10.1.0` regarding `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Correct timeout wording and pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+
+- Add Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+
+- Correct the pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Adjust timeout wording and add pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Fix pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Update init-user text and add application notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Amend rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Correct information for `skipRBACChain` and `extraEnvVars` in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fix pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Address the `caradhras` `1.5.1` to `1.8.5` jump in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Correct image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Fix scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+- Add Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Correct the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Adjust the pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Adjust the pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Adjust the pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Correct the rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fix image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Correct the init-user text and add app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Update the `v10.1.1` upgrade guide for the Caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Update the `v10.1.0` upgrade guide for `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Refine timeout wording and add a pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+- Added Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Corrected the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Adjusted the pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Adjusted the pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Adjusted the pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Corrected the rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fixed image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Revised init-user text and added app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Updated the `v10.1.1` upgrade guide for the Caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Fixed the `v10.1.0` upgrade guide for `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Clarified timeout wording and pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+
+- Added Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+
+- Corrected the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed the pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Fixed the pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed the pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Corrected the rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fixed image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Updated init-user text and added app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed the `v10.1.1` upgrade guide for the Caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Corrected the `v10.1.0` upgrade guide for `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Improved timeout wording and added pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+- Added Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Corrected the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Corrected rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fixed image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Corrected init-user text and added app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed the `v10.1.1` upgrade guide for the Caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Fixed the `v10.1.0` upgrade guide for `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Corrected timeout wording and pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+- Add Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Add Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Correct `v10.1.3` upgrade guide scope and pod roll note. (@gandalf-at-lerian)
+- Correct `v10.0.2` upgrade guide pod roll scope. (@gandalf-at-lerian)
+- Correct `v10.0.3` upgrade guide pod roll scope. (@gandalf-at-lerian)
+- Correct `v10.1.1` upgrade guide pod roll scope. (@gandalf-at-lerian)
+- Correct `v10.1.0` upgrade guide rendered diff claim. (@gandalf-at-lerian)
+- Correct `v10.1.2` upgrade guide image names and service credentials. (@gandalf-at-lerian)
+- Correct `v10.0.3` upgrade guide init-user text and add app notes. (@gandalf-at-lerian)
+- Correct `v10.1.1` upgrade guide for the caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Correct `v10.1.0` upgrade guide for `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Correct `v10.0.2` upgrade guide timeout wording and pod restart note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+- Added Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Corrected the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Adjusted pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Adjusted pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Adjusted pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Corrected rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fixed image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Revised init-user text and added app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Updated the `v10.1.1` upgrade guide for the Caradhras `1.5.1` to `1.8.5` transition. (@gandalf-at-lerian)
+- Fixed `v10.1.0` upgrade guide for `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Modified timeout wording and added a pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+- Added Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Corrected the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Corrected the rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fixed image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Corrected init-user text and added app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed the `v10.1.1` upgrade guide for the Caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Fixed the `v10.1.0` upgrade guide for `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Corrected timeout wording and pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.4)
+
+Features:
+- Added Helm upgrade guide for `v10.0.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.0.3`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.0`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.1`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.2`. (@victorlazari)
+- Added Helm upgrade guide for `v10.1.3`. (@victorlazari)
+
+Fixes:
+- Corrected the scope and pod roll note in the `v10.1.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed pod roll scope in the `v10.1.1` upgrade guide. (@gandalf-at-lerian)
+- Corrected rendered diff claim in the `v10.1.0` upgrade guide. (@gandalf-at-lerian)
+- Fixed image names and service credentials in the `v10.1.2` upgrade guide. (@gandalf-at-lerian)
+- Updated init-user text and added app notes in the `v10.0.3` upgrade guide. (@gandalf-at-lerian)
+- Fixed the `v10.1.1` upgrade guide for the Caradhras `1.5.1` to `1.8.5` jump. (@gandalf-at-lerian)
+- Corrected `v10.1.0` upgrade guide for `skipRBACChain` and `extraEnvVars`. (@gandalf-at-lerian)
+- Updated timeout wording and pod restart note in the `v10.0.2` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.3...plugin-access-manager-v10.1.4)
+
+---
+
+## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
+
+Improvements:
+- Keep the Caradhras ingress internal. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)
+
+---
+
+## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
+
+Improvements:
+- Keep the Caradhras ingress internal to enhance security and reduce external exposure. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)
+
+---
+
+## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
+
+Improvements:
+- Keep the caradhras ingress internal. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)
+
+---
+
+## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
+
+Improvements:
+- Keep the caradhras ingress internal. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)
+
+---
+
+## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
+
+Improvements:
+- Ensure the Caradhras ingress remains internal to enhance security and privacy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)
+
+---
+
+## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
+
+Improvements:
+- Keep the Caradhras ingress internal. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)
+
+---
+
+## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
+
+Improvements:
+- Updated documentation to specify that the Caradhras ingress should remain internal. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.1.2...plugin-access-manager-v10.1.3)
+
+---
+
 ## [10.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.1.3)
 
 Improvements:

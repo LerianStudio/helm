@@ -7,7 +7,7 @@
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - Initial admin: `auth.initUser.enabled` controls a `post-install` bootstrap Job only. It never runs on upgrades, so upgrades and later values changes do not reset the password or recreate a deleted admin account. The init-user binary (since v3.9.0) preserves existing users instead of resetting their credentials. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow; do not assume `auth.initUser.adminPassword` overwrites them. For a new account, supply that value or the key selected by `auth.initUser.adminPasswordSecretName` / `adminPasswordSecretKey`.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 > **Uninstall keeps the identity data.** `helm uninstall` leaves the bundled database volume (`data-<release>-auth-database-0`) and its password Secret (`<release>-auth-database`), so a reinstall under the same release name opens the same users, organizations and applications with the same password. This chart, not the Bitnami subchart, owns that Secret: it takes `auth-database.auth.password` when set, else the Secret already in the namespace, else a new random password. Deleting the data is a separate, manual step: delete that PVC and that Secret together (the Valkey volume `valkey-data-<release>-valkey-primary-0`, sessions and cached tokens only, is left too). Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned.
 
@@ -528,8 +528,9 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.ui.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | unset (`[]`) |
 | `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |
 | `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
+| `caradhras.secrets.LICENSE_KEY` | Caradhras license key (env `LICENSE_KEY`, by Secret). Required by images with the license gate, which refuse to boot without it. Issued for product `caradhras`, not the auth/identity key | `""` |
 | `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
-| `caradhras.existingSecretName` | Name of that Secret. Must carry the key `redisEndpoint` | `""` |
+| `caradhras.existingSecretName` | Name of that Secret. Carries `LICENSE_KEY`, plus `redisEndpoint` unless `caradhras.configmap.redisEndpoint` is set | `""` |
 | `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
@@ -606,7 +607,8 @@ wrong on its own. Set one or the other, never a mix.
 To keep the password out of your values file entirely, set
 `caradhras.useExistingSecret=true` and point `caradhras.existingSecretName` at a
 Secret you manage (external-secrets, sealed-secrets, or `kubectl create secret`)
-carrying the key `redisEndpoint`. The chart then creates no Secret of its own.
+carrying the keys `redisEndpoint` and `LICENSE_KEY`. The chart then creates no Secret of its own.
+With a bare `host:port` in `caradhras.configmap.redisEndpoint`, that Secret needs only `LICENSE_KEY`.
 
 The config keys are the beego literals in camelCase on purpose: caradhras
 resolves them with `conf.GetConfigString`, which looks the exact key up in the

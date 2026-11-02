@@ -3,6 +3,8 @@ secrets:
   RABBITMQ_ERLANG_COOKIE: "sample-stable-cookie"
   DATASOURCE_ONBOARDING_PASSWORD: "sample"
   DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+  # reporter.licenseKeyRequired fails the render for app >= 4.6.0 without a license.
+  LICENSE_KEY: "sample"
 
 # The reporter Job that applies the RabbitMQ topology (exchanges/queues/bindings) to an
 # EXTERNAL broker is off by default, so the render gate never exercised it. Enable it

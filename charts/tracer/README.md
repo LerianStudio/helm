@@ -3,10 +3,10 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: None for default render.
+- Required secrets: `tracer.secrets.LICENSE_KEY` (rendered into the Secret only when non-empty; the application refuses to boot without a valid license). None else for default render.
 - Dependency notes: No local dependency chart is bundled. PostgreSQL is external; when `global.externalPostgresDefinitions.enabled=true` a bootstrap Job provisions and initializes the database and role on the external PostgreSQL.
 - Production overrides: Provide production PostgreSQL credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 A Helm chart for deploying Tracer - Real-time transaction validation and fraud prevention API.
 

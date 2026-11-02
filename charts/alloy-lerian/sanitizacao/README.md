@@ -1,7 +1,7 @@
 # Arcabouço de verificação de sanitização
 
 **Executado e validado:** 2026-08-08 · **Subtarefa:** ST-003-02
-**Agente:** `grafana/alloy:v1.18.1`
+**Agente:** `grafana/alloy:v1.21.3`
 
 ## Por que existe
 

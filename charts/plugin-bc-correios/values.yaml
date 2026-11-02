@@ -178,7 +178,7 @@ bc-correios:
   hostAliases: []
   # -- Liveness probe configuration
   livenessProbe:
-    path: "/health/live"
+    path: "/health"
     initialDelaySeconds: 15
     periodSeconds: 20
     timeoutSeconds: 5
@@ -186,7 +186,7 @@ bc-correios:
     failureThreshold: 3
   # -- Readiness probe configuration
   readinessProbe:
-    path: "/health/ready"
+    path: "/readyz"
     initialDelaySeconds: 5
     periodSeconds: 10
     timeoutSeconds: 5
@@ -194,7 +194,7 @@ bc-correios:
     failureThreshold: 3
   # -- Startup probe configuration
   startupProbe:
-    path: "/health/live"
+    path: "/health"
     initialDelaySeconds: 0
     periodSeconds: 10
     timeoutSeconds: 1

@@ -179,6 +179,8 @@ spec:
           image: {{ include "br-jd-courier.image" $ctx | quote }}
           imagePullPolicy: {{ (index $ctx.Values "jd-courier" "image").pullPolicy }}
           env:
+            - name: SHUTDOWN_DRAIN_DELAY
+              value: "15s"
             - name: COURIER_ROLES
               value: {{ .role | quote }}
             # The SPB drain's lease holder: a restarted container carries the

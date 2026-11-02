@@ -663,7 +663,7 @@ node:
   # entregaria o mesmo binário ao custo de build, varredura e republicação a cada
   # CVE do upstream — e faria perder a proveniência que o cliente pode verificar.
   #
-  # DIGEST, não tag. Tag é mutável: `v1.18.1` pode ser republicada apontando para
+  # DIGEST, não tag. Tag é mutável: `v1.21.3` pode ser republicada apontando para
   # outros bits, e num cluster de instituição financeira "qual bit exatamente está
   # rodando" precisa ter resposta. O chart oficial já fixa por digest a imagem do
   # config-reloader e NÃO fixa a do agente — corrigimos essa assimetria.
@@ -682,8 +682,8 @@ node:
   image:
     registry: docker.io
     repository: grafana/alloy
-    tag: v1.18.1
-    digest: sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
+    tag: v1.21.3
+    digest: sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
 
   enabled: true
   alloy:
@@ -759,7 +759,7 @@ node:
     #   Error: Failed to evaluate service: updating service: unavailable: ...
     #   Error: could not perform the initial load successfully
     #
-    # MEDIDO no agente v1.18.1, tanto para Fleet inalcancavel quanto para token
+    # MEDIDO no agente v1.21.3, tanto para Fleet inalcancavel quanto para token
     # invalido. Ou seja: uma indisponibilidade do Fleet nao derruba a frota, mas
     # derruba qualquer pod que reiniciar durante ela (OOM, drain, autoscaler).
     #
@@ -936,7 +936,7 @@ singleton:
   # entregaria o mesmo binário ao custo de build, varredura e republicação a cada
   # CVE do upstream — e faria perder a proveniência que o cliente pode verificar.
   #
-  # DIGEST, não tag. Tag é mutável: `v1.18.1` pode ser republicada apontando para
+  # DIGEST, não tag. Tag é mutável: `v1.21.3` pode ser republicada apontando para
   # outros bits, e num cluster de instituição financeira "qual bit exatamente está
   # rodando" precisa ter resposta. O chart oficial já fixa por digest a imagem do
   # config-reloader e NÃO fixa a do agente — corrigimos essa assimetria.
@@ -955,8 +955,8 @@ singleton:
   image:
     registry: docker.io
     repository: grafana/alloy
-    tag: v1.18.1
-    digest: sha256:0f4434c92b3e6cdac38bb129b344e1790c246f7b6e2eaffcc16a5fa363240e33
+    tag: v1.21.3
+    digest: sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
 
   enabled: true
   alloy:
@@ -1016,7 +1016,7 @@ singleton:
     #   Error: Failed to evaluate service: updating service: unavailable: ...
     #   Error: could not perform the initial load successfully
     #
-    # MEDIDO no agente v1.18.1, tanto para Fleet inalcancavel quanto para token
+    # MEDIDO no agente v1.21.3, tanto para Fleet inalcancavel quanto para token
     # invalido. Ou seja: uma indisponibilidade do Fleet nao derruba a frota, mas
     # derruba qualquer pod que reiniciar durante ela (OOM, drain, autoscaler).
     #

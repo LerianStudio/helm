@@ -102,16 +102,15 @@ system-facts:
   # override: a key listed here with "" renders "" instead of the global or bundled
   # endpoint. Add a key only to diverge from global.* for this service.
   configmap:
-    # Required while the license gate is on (the application default).
+    # Required: the application refuses to boot without a valid license.
     ORGANIZATION_IDS: ""
-  #   LICENSE_ENABLED: "false"              # turns the license gate off
   #   POSTGRES_HOST: "my-rds.example.com"   # only to override global.datastores.postgres
   #   REDIS_HOST: "my-elasticache.example.com:6379"
 
   secrets:
     POSTGRES_PASSWORD: ""
     REDIS_PASSWORD: ""
-    # Required while the license gate is on (the application default).
+    # Required: the application refuses to boot without a valid license.
     LICENSE_KEY: ""
 
   useExistingSecret: false

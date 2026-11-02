@@ -215,13 +215,8 @@ so an operator sees the failure before a wall of unrelated output.
 ------------------------------------------------------------------------------
 effectiveConfig — configmap + extraConfigmap, na mesma precedência do render.
 
-IS_DEVELOPMENT é deliberadamente NÃO modelada: é um bypass de stack local, e dar a
-ela um campo de primeira classe faria parecer knob suportado. Quem precisa dela usa
-`api.extraConfigmap.IS_DEVELOPMENT`.
-
-Mas os GATES têm de continuar enxergando-a, senão removê-la abriria um buraco: o
-gate de produção deixaria de barrar o bypass. Por isso todo gate resolve contra esta visão mesclada, e
-não contra `.configmap` sozinho — a mesma precedência que o ConfigMap renderiza.
+Todo gate resolve contra esta visão mesclada, e não contra `.configmap` sozinho:
+a mesma precedência que o ConfigMap renderiza.
 
 Input: root context ($).
 ------------------------------------------------------------------------------
@@ -244,21 +239,18 @@ Input: root context ($).
 {{- $isProduction := eq (index $cfg "ENVIRONMENT_NAME" | default "" | toString) "production" -}}
 {{- /* The app keeps THREE vars in productionForbiddenBypassEnvVars
    (internal/bootstrap/config_validation.go) and refuses to boot when any is truthy
-   under production: ALLOW_CORS_WILDCARD, ALLOW_RATELIMIT_FAIL_OPEN and IS_DEVELOPMENT.
-   Each disables a safe default — a wildcard CORS origin, a fail-OPEN money-path rate
-   limiter, and (IS_DEVELOPMENT) the production licence gateway, which it swaps for
-   the development one. Catching them at render beats a
-   CrashLoop. ALLOW_INSECURE_TLS is deliberately NOT here: the app treats it as the one
+   under production: ALLOW_CORS_WILDCARD and ALLOW_RATELIMIT_FAIL_OPEN.
+   Each disables a safe default — a wildcard CORS origin and a fail-OPEN money-path
+   rate limiter. Catching them at render beats a CrashLoop. ALLOW_INSECURE_TLS is deliberately NOT here: the app treats it as the one
    sovereign switch for plaintext datastores and http upstreams in any environment. */ -}}
 {{- if $isProduction -}}
 {{- $rl := .Values.api.rateLimit | default dict -}}
 {{- $bypasses := dict
       "ALLOW_CORS_WILDCARD" (index $cfg "ALLOW_CORS_WILDCARD" | default "")
-      "ALLOW_RATELIMIT_FAIL_OPEN" ($rl.allowFailOpen | default (index $cfg "ALLOW_RATELIMIT_FAIL_OPEN" | default ""))
-      "IS_DEVELOPMENT" (index $cfg "IS_DEVELOPMENT" | default "") -}}
+      "ALLOW_RATELIMIT_FAIL_OPEN" ($rl.allowFailOpen | default (index $cfg "ALLOW_RATELIMIT_FAIL_OPEN" | default "")) -}}
 {{- range $name, $value := $bypasses -}}
 {{- if and $value (ne ($value | toString) "false") -}}
-{{- fail (printf "\n\nERROR: %s must not be set under ENVIRONMENT_NAME=production.\nThe app lists it in productionForbiddenBypassEnvVars and refuses to boot with it truthy,\nso this deploy would CrashLoop. It also disables a safe default: a wildcard CORS origin,\na fail-OPEN money-path rate limiter, or the production licence gateway.\n" $name) -}}
+{{- fail (printf "\n\nERROR: %s must not be set under ENVIRONMENT_NAME=production.\nThe app lists it in productionForbiddenBypassEnvVars and refuses to boot with it truthy,\nso this deploy would CrashLoop. It also disables a safe default: a wildcard CORS origin\nor a fail-OPEN money-path rate limiter.\n" $name) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -504,8 +496,8 @@ each component can still override any shared key), serviceName (OTel identity).
    ability to override any single key. For the api itself the merge is idempotent. */ -}}
 {{- $cm := mergeOverwrite (deepCopy ($root.Values.api.configmap | default dict)) (.configmap | default dict) -}}
 {{- /* Runtime + server. ENVIRONMENT_NAME=production arms the app's security gates
-   (auth forced on, Postgres password + SSL required, every ALLOW_* bypass and
-   IS_DEVELOPMENT=true rejected at boot). */ -}}
+   (auth forced on, Postgres password + SSL required, every ALLOW_* bypass
+   rejected at boot). */ -}}
 ENVIRONMENT_NAME: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "ENVIRONMENT_NAME" "default" "") | quote }}
 {{- $deploymentMode := include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "DEPLOYMENT_MODE" "default" "") | trim -}}
 {{- if and $deploymentMode (not (has (lower $deploymentMode) (list "saas" "byoc" "local"))) -}}

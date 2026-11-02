@@ -121,12 +121,12 @@ When the chart renders the API Secret itself (no `api.existingSecret.name`), the
 ```
 ERROR: api.secrets.LICENSE_KEY is required.
 The api and the worker validate the license at boot in every mode and do not start
-without it; IS_DEVELOPMENT only selects the development license gateway.
+without it.
 ```
 
 **Why this matters:**
 
-Per the chart's error message, the API and the worker validate the license at boot and do not start without it. `IS_DEVELOPMENT` no longer makes the key optional: it only selects the development license gateway. A development stack that set `IS_DEVELOPMENT=true` with no key and the worker enabled rendered in v0.5.6 and fails to render in v0.5.7.
+Per the chart's error message, the API and the worker validate the license at boot and do not start without it. `IS_DEVELOPMENT` does not make the key optional, and it is deprecated and ignored. A development stack that set `IS_DEVELOPMENT=true` with no key and the worker enabled rendered in v0.5.6 and fails to render in v0.5.7.
 
 **Migration required:** Yes, see [Step 2](#step-2-set-license_key-in-api-secrets).
 

@@ -1,5 +1,646 @@
 # Product-console Changelog
 
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.0)
+
+Features:
+- Render `LICENSE_KEY` into the Secret required for product-console. (@fredcamaral)
+
+Improvements:
+- List both secrets necessary for product-console to boot. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.8...product-console-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.0)
+
+Features:
+- Render `LICENSE_KEY` into the Secret required for product-console to function. (@fredcamaral)
+
+Improvements:
+- List both secrets necessary for product-console to boot, enhancing documentation clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.8...product-console-v4.5.0)
+
+---
+
+## [4.5.0](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.0)
+
+Features:
+- Render `LICENSE_KEY` into the Secret required for the console to function. (@fredcamaral)
+
+Improvements:
+- List both secrets necessary for the product-console to boot. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.8...product-console-v4.5.0)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense product-console under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense product-console under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense product-console under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense the charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense the charts under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense the charts under the Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense the charts under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense product-console under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense the product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense the product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense the charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Features:
+
+- Relicense product-console under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense the product-console under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense the product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense charts under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense product-console under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense the charts under the Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense product-console under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+- Relicense the charts under Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense product-console under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.8](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.8)
+
+Improvements:
+
+- Relicense the charts under the Elastic License `2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.7...product-console-v4.4.8)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+Fixes:
+- Correct image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+- Correct the image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add a Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Improvements:
+
+- Add Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+Fixes:
+
+- Correct image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+
+- Update `product-console` to `3.0.0`. (@lerian-studio)
+
+Fixes:
+
+- Correct the image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+
+- Add a Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add a Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+
+- Correct the image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+
+- Add a Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add a Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Improvements:
+
+- Add Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+Fixes:
+
+- Correct image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+
+- Correct the image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+
+- Add a Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add a Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+
+- Correct image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+
+- Add Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+- Correct the image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add a Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+- Correct image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+- Update `product-console` to `3.0.0`. (@lerian-studio)
+
+Fixes:
+- Correct the image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Address unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+- Add a Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add a Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+
+- Correct the image tag and rollout claims in the upgrade guide for `v4.4.5`. (@gandalf-at-lerian)
+- Address unverified app claims in the upgrade guide for `v4.4.6`. (@gandalf-at-lerian)
+
+Improvements:
+
+- Add a Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add a Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Fixes:
+
+- Correct the image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Address unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+Improvements:
+
+- Add a Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add a Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.7](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.7)
+
+Features:
+- Update `product-console` to `@3.0.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `product-console` `v4.4.5`. (@victorlazari)
+- Add Helm upgrade guide for `product-console` `v4.4.6`. (@victorlazari)
+
+Fixes:
+- Correct image tag and rollout claims in the `v4.4.5` upgrade guide. (@gandalf-at-lerian)
+- Fix unverified app claims in the `v4.4.6` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.6...product-console-v4.4.7)
+
+---
+
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+
+- Update `product-console` to `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
+## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
+
+Fixes:
+- Update `product-console` to `2.16.4`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.4.5...product-console-v4.4.6)
+
+---
+
 ## [4.4.6](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.4.6)
 
 Fixes:

@@ -1,5 +1,614 @@
 # Br-jd-courier Changelog
 
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Updated the shutdown budget comment to align with the SPB budgets. (@fredcamaral)
+- Corrected the shutdown timeline in values. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Fixes:
+- Tied the shutdown budget comment to the SPB budgets to ensure clarity and consistency. (@fredcamaral)
+- Corrected the shutdown timeline in values to match the updated schedule. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Tied the shutdown budget comment to the SPB budgets to enhance clarity. (@fredcamaral)
+- Corrected the shutdown timeline in values to ensure accuracy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Tied the shutdown budget comment to the SPB budgets to enhance clarity and alignment. (@fredcamaral)
+- Corrected the shutdown timeline in values to reflect accurate scheduling information. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Updated the shutdown budget comment to align with the SPB budgets. (@fredcamaral)
+- Corrected the shutdown timeline in the values documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Tied the shutdown budget comment to the SPB budgets to ensure clarity and consistency. (@fredcamaral)
+- Corrected the shutdown timeline in values to reflect accurate scheduling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Tied the shutdown budget comment to the SPB budgets. (@fredcamaral)
+- Corrected the shutdown timeline in values. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Tied the shutdown budget comment to the SPB budgets to ensure clarity and consistency. (@fredcamaral)
+- Corrected the shutdown timeline in values to reflect the accurate schedule. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Tied the shutdown budget comment to the SPB budgets to ensure consistency in documentation. (@fredcamaral)
+- Corrected the shutdown timeline in values to reflect the accurate schedule. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Tied the shutdown budget comment to the SPB budgets. (@fredcamaral)
+- Corrected the shutdown timeline in values. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
+Improvements:
+- Tied the shutdown budget comment to the SPB budgets to improve clarity. (@fredcamaral)
+- Corrected the shutdown timeline in values for accuracy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.0)
+
+Features:
+- Added a Helm upgrade guide for `br-jd-courier` `v2.1.2`, providing detailed instructions for users on how to upgrade to the latest version. (@victorlazari)
+
+Fixes:
+- Corrected the release notes and registry note in the `v2.1.2` upgrade guide for `br-jd-courier`, ensuring accurate and clear documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.2...br-jd-courier-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.0)
+
+Features:
+- Added a Helm upgrade guide for `br-jd-courier` `v2.1.2`. (@victorlazari)
+
+Fixes:
+- Corrected the `v2.1.2` upgrade guide release notes and registry note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.2...br-jd-courier-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.0)
+
+Features:
+- Added a Helm upgrade guide for `br-jd-courier` `v2.1.2`. (@victorlazari)
+
+Fixes:
+- Corrected the `v2.1.2` upgrade guide release notes and registry note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.2...br-jd-courier-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.0)
+
+Features:
+- Added a Helm upgrade guide for `br-jd-courier` `v2.1.2`. (@victorlazari)
+
+Fixes:
+- Corrected the `v2.1.2` upgrade guide release notes and registry note for `br-jd-courier`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.2...br-jd-courier-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.0)
+
+Features:
+- Added a Helm upgrade guide for `br-jd-courier` `v2.1.2`. (@victorlazari)
+
+Fixes:
+- Corrected the `v2.1.2` upgrade guide release notes and registry note for `br-jd-courier`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.2...br-jd-courier-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.0)
+
+Features:
+- Added a Helm upgrade guide for `br-jd-courier` `v2.1.2`. (@victorlazari)
+
+Fixes:
+- Corrected the `v2.1.2` upgrade guide release notes and registry note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.2...br-jd-courier-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.0)
+
+Features:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.2`. (@victorlazari)
+
+Fixes:
+- Correct the `v2.1.2` upgrade guide release notes and registry note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.2...br-jd-courier-v2.2.0)
+
+---
+
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.0)
+
+Features:
+- Added a Helm upgrade guide for `br-jd-courier` `v2.1.2`. (@victorlazari)
+
+Fixes:
+- Corrected the `v2.1.2` upgrade guide release notes and registry note for `br-jd-courier`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.2...br-jd-courier-v2.2.0)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier@1.2.1` to address existing issues. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix the `v2.1.1` upgrade guide to accommodate breaking changes in Courier `1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier@1.2.1` to address issues in the previous version. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.1`, providing detailed instructions for users. (@victorlazari)
+- Correct the `v2.1.1` upgrade guide to address breaking changes introduced in `Courier 1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to version `1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix the `v2.1.1` upgrade guide to address breaking changes introduced in Courier `1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix upgrade guide for `v2.1.1` to address breaking changes in Courier `1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix the `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Features:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+- Correct the `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide to address `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide to address `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix upgrade guide for `v2.1.1` to address breaking changes in Courier `1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier@1.2.1` to address unspecified issues. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix the `v2.1.1` upgrade guide to address breaking changes introduced in `Courier` `1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix upgrade guide for `v2.1.1` to address `Courier 1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix upgrade guide for `v2.1.1` to address `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix upgrade guide for `v2.1.1` to address breaking changes in `Courier 1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix the `v2.1.1` upgrade guide to address breaking changes introduced in `Courier 1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide to address `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix upgrade guide for `v2.1.1` to address `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier@1.2.1` to address unspecified issues. (@lerian-studio)
+
+Improvements:
+- Add a Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Correct the `v2.1.1` upgrade guide to account for breaking changes introduced in Courier `1.2.0`. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix upgrade guide for `v2.1.1` to address `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
+## [2.1.2](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.2)
+
+Fixes:
+- Update `br-jd-courier` to `@1.2.1`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `br-jd-courier` `v2.1.1`. (@victorlazari)
+- Fix `v2.1.1` upgrade guide for `Courier` `1.2.0` breaking changes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.1.1...br-jd-courier-v2.1.2)
+
+---
+
 ## [2.1.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.1.1)
 
 Fixes:

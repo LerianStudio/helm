@@ -25,10 +25,10 @@ maintainers:
 
 # Seed version only. semantic-release owns the published OCI package version;
 # never hand-bump this field.
-version: 2.0.3
+version: 2.0.6
 
 # Tracks the pinned upstream Alloy binary, not this chart's own release line.
-appVersion: "1.18.1"
+appVersion: "1.21.3"
 
 keywords:
   - alloy
@@ -59,7 +59,7 @@ dependencies:
   # duplicate, so replication per node is safe.
   - name: alloy
     alias: node
-    version: "1.11.1"
+    version: "1.15.0"
     repository: "https://grafana.github.io/helm-charts"
     condition: node.enabled
 
@@ -67,7 +67,7 @@ dependencies:
   # duplicates every series with nothing distinguishing the writers.
   - name: alloy
     alias: singleton
-    version: "1.11.1"
+    version: "1.15.0"
     repository: "https://grafana.github.io/helm-charts"
     condition: singleton.enabled
 

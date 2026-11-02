@@ -26,9 +26,9 @@ Your release is named {{ .Release.Name }}.
   {{- end }}
 
   Health check:
-    Liveness:   GET /health/live
-    Readiness:  GET /health/ready
-    Startup:    GET /health/live (30 retries / 10s)
+    Liveness:   GET /health
+    Readiness:  GET /readyz
+    Startup:    GET /health (30 retries / 10s)
 
 {{- end }}
 

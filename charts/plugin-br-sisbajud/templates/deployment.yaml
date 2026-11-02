@@ -104,8 +104,9 @@ spec:
                 name: {{ $secretName }}
           {{- $pgRef := and (eq (include "plugin-br-sisbajud.postgresPasswordFromRef" .) "true") (not (hasKey $extra "POSTGRES_PASSWORD")) }}
           {{- $vkRef := and (eq (include "plugin-br-sisbajud.redisPasswordFromRef" .) "true") (not (hasKey $extra "REDIS_PASSWORD")) }}
-          {{- if or $pgRef $vkRef (and $telemetry (not $explicitEndpoint)) $raOn $extra }}
           env:
+            - name: SHUTDOWN_DRAIN_DELAY
+              value: "15s"
             {{- if $pgRef }}
             {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
             {{- end }}
@@ -121,7 +122,6 @@ spec:
             {{- with (include "plugin-br-sisbajud.extraEnv" . | trim) }}
             {{- . | nindent 12 }}
             {{- end }}
-          {{- end }}
           {{- include "lerian-common.httpProbe" (dict "kind" "livenessProbe" "probe" $s.livenessProbe "port" "http" "path" "/version" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
           {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "http" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
           resources:

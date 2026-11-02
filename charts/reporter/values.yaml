@@ -155,7 +155,7 @@ manager:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.5.1"
+    tag: "4.6.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -319,6 +319,17 @@ manager:
     # lerian-common.idp.env: manager.configmap > manager.extraEnvVars > common.configmap > global.idp.
     # IDP_DECLARATION_ENABLED: "false"
     # IDP_HOST: ""   # e.g. http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001
+    # -- Regulatory catalog (app >= 4.6.0). The GitHub settings are read by the manager only.
+    # Off while unset: the regulatory surface answers RPT-0147 and everything else works.
+    # Every release read from GitHub must carry the catalog's Sigstore attestation, verified
+    # offline by the app against the root it embeds; no key or token is configured for that.
+    # REGULATORY_CATALOG_GITHUB_REPO: "LerianStudio/lerian-regulatory-catalog"   # public, no token
+    # REGULATORY_CATALOG_CHANNEL: "stable"   # stable (production) | rc (staging, never a beta) | beta (development)
+    # REGULATORY_CATALOG_GITHUB_TOKEN goes under `secrets`, never here (see there)
+    # REGULATORY_CATALOG_GITHUB_URL: ""      # GitHub Enterprise API root; empty = github.com
+    # REGULATORY_CATALOG_DIR: ""             # a mounted catalog tree, for development; not verified.
+    #                                        # The WORKER reads it too: set it in common.configmap
+    #                                        # (or both components) and mount the tree in both pods.
   # Extra Env Vars
   extraEnvVars: {}
   # -- HPA configuration (used when KEDA is disabled)
@@ -360,7 +371,7 @@ worker:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "4.5.1"
+    tag: "4.6.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -605,6 +616,8 @@ secrets:
   #   - MONGO_PASSWORD                                  (external MongoDB only; bundled is single-sourced)
   #   - APP_ENC_KEY                                     (fetcher integration; base64 32-byte key)
   #   - DATASOURCE_CRED_ENC_KEY                         (app >= 3.0.0 only; hex AES key)
+  #   - LICENSE_KEY                                     (app >= 4.6.0: manager AND worker refuse to boot without it)
+  #   - ORGANIZATION_IDS                                (optional; per-organization license, "global" when unset)
   #
   # Chart-managed path (default): leave `useExistingSecret: false` and set the values
   # below; the chart renders them into the `<manager.name>` Secret.
@@ -635,6 +648,15 @@ secrets:
   SD_TOKEN: ""
   OBJECT_STORAGE_ACCESS_KEY_ID: ""
   OBJECT_STORAGE_SECRET_KEY: ""
+  # -- Product license. REQUIRED for app >= 4.6.0: the manager AND the worker refuse to boot
+  # without it, and the chart refuses to render it for those tags (reporter.licenseKeyRequired).
+  # Rendered into both Secrets from here. Left commented so a release still on 4.5.x renders
+  # exactly as before; set it (or carry it in the existing Secret) before moving to 4.6.0.
+  # LICENSE_KEY: ""
+  # ORGANIZATION_IDS: ""   # per-organization license; "global" when unset
+  # -- Regulatory catalog token: only for a PRIVATE catalog mirror (the public catalog needs
+  # none). A credential, so it lives here and never in a configmap.
+  # REGULATORY_CATALOG_GITHUB_TOKEN: ""
   # Fetcher Integration - Base64 encoded 32-byte encryption key
   APP_ENC_KEY: ""
   # -- At-rest encryption key for registered data-source credentials. REQUIRED by the

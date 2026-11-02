@@ -6,7 +6,7 @@
 - Required secrets: `LICENSE_KEY`, `MENSAGERIA_CLIENT_ID`, `MENSAGERIA_CLIENT_SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` (webhook transport), the KMS credential (`VAULT_TOKEN` or `VAULT_APPROLE_SECRET_ID`; none for AWS KMS), `POSTGRES_PASSWORD` / `REDIS_PASSWORD` for external infra, plus, as existing Secrets, the Mensageria server CA (`ca.crt`; optional in one-way TLS) and, with mTLS only, the executor client pair (`tls.crt`, `tls.key`). The default render fails on purpose and names the first missing value.
 - Dependency notes: PostgreSQL and Valkey ship as Bitnami subcharts, **disabled by default** and development-only. Production uses external, managed PostgreSQL and Redis/Valkey, a Vault Transit or AWS KMS, plugin-access-manager and the Sisbajud Mensageria (br-sfn).
 - Production overrides: `global.datastores`, `global.kms`, `global.auth.host`, `sisbajud.mensageria.*`, `sisbajud.executor.*`, and `sisbajud.useExistingSecret` + `existingSecretName` (an existing Secret **replaces** the chart Secret; it is not merged).
-- Source/license: chart source in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm) (Apache-2.0); application in [LerianStudio/plugin-br-sisbajud](https://github.com/LerianStudio/plugin-br-sisbajud).
+- Source/license: chart source in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm) (Elastic License 2.0); application in [LerianStudio/plugin-br-sisbajud](https://github.com/LerianStudio/plugin-br-sisbajud).
 
 ## Overview
 

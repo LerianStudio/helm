@@ -100,6 +100,8 @@ spec:
           - configMapRef:
               name: {{ include "midaz-ledger.fullname" . }}
           env:
+            - name: SHUTDOWN_DRAIN_DELAY
+              value: "15s"
             {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
             {{/* PostgreSQL: single role `midaz` backs both modules, key `password`. The bundled read replica
                  copies the primary's roles, so its replicas use `password` too; an operator Secret for an
@@ -222,7 +224,7 @@ spec:
               port: http
             initialDelaySeconds: {{ .Values.ledger.livenessProbe.initialDelaySeconds | default 0 }}
             periodSeconds: {{ .Values.ledger.livenessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.ledger.livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.ledger.livenessProbe.timeoutSeconds | default 3 }}
             successThreshold: {{ .Values.ledger.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.ledger.livenessProbe.failureThreshold | default 3 }}
           readinessProbe:
@@ -231,7 +233,7 @@ spec:
               port: http
             initialDelaySeconds: {{ .Values.ledger.readinessProbe.initialDelaySeconds | default 0 }}
             periodSeconds: {{ .Values.ledger.readinessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.ledger.readinessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ .Values.ledger.readinessProbe.timeoutSeconds | default 16 }}
             successThreshold: {{ .Values.ledger.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.ledger.readinessProbe.failureThreshold | default 3 }}
           resources:

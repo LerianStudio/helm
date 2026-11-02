@@ -89,7 +89,6 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "CHART=$(basename \"$PWD\") && cd ../.. && ./.github/scripts/update-chart-version-readme-bin --chart \"$CHART\" --version ${nextRelease.version}",
         "publishCmd": "PACKAGE_DIR=$(mktemp -d) && helm package . --destination \"$PACKAGE_DIR\" && set -- \"$PACKAGE_DIR\"/*.tgz && [ \"$#\" -eq 1 ] && helm push \"$1\" oci://ghcr.io/lerianstudio"
       }
     ],
@@ -98,8 +97,7 @@
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
         "assets": [
-          "Chart.yaml",
-          "../../README.md"
+          "Chart.yaml"
         ]
       }
     ]

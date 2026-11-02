@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [10.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.3)
+
+Fixes:
+- Set the Caradhras shutdown drain delay to 5 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.2...plugin-access-manager-v10.2.3)
+
+---
+
 ## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
 
 Fixes:

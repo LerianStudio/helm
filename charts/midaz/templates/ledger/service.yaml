@@ -16,6 +16,11 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    {{- if eq .Values.ledger.service.type "ClusterIP" }}
+    {{- with (include "midaz-ledger.health" . | fromYaml).servicePorts }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- end }}
   selector:
     {{- include "midaz.selectorLabels" (dict "context" . "name" .Values.ledger.name) | nindent 4 }}
 {{- end }}

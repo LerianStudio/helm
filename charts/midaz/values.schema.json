@@ -146,16 +146,6 @@
     "ledger": {
       "type": "object",
       "properties": {
-        "readinessProbe": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Readiness probe configuration. All fields override chart defaults."
-        },
-        "livenessProbe": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Liveness probe configuration. All fields override chart defaults."
-        },
         "name": {
           "default": "ledger",
           "description": "Service name"
@@ -171,12 +161,6 @@
         "revisionHistoryLimit": {
           "default": 10,
           "description": "Number of old ReplicaSets to retain for deployment rollback"
-        },
-        "terminationGracePeriodSeconds": {
-          "type": "integer",
-          "minimum": 0,
-          "default": 72,
-          "description": "Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush."
         },
         "image": {
           "type": "object",
@@ -374,33 +358,10 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "maxUnavailable": {
-              "default": 1,
-              "description": "Maximum number of unavailable pods; ignored when minAvailable is set."
-            },
             "annotations": {
               "type": "object",
               "additionalProperties": true,
               "description": "Annotations for the PodDisruptionBudget"
-            }
-          },
-          "additionalProperties": true
-        },
-        "deploymentUpdate": {
-          "type": "object",
-          "description": "Deployment update strategy",
-          "properties": {
-            "type": {
-              "default": "RollingUpdate",
-              "description": "Type of deployment strategy"
-            },
-            "maxSurge": {
-              "default": "100%",
-              "description": "Maximum number of pods that can be created over the desired number of pods"
-            },
-            "maxUnavailable": {
-              "default": 0,
-              "description": "Maximum number of pods that can be unavailable during the update"
             }
           },
           "additionalProperties": true
@@ -902,6 +863,25 @@
           "type": "object",
           "additionalProperties": true,
           "description": "AWS credential source (IAM Roles Anywhere sidecar) for the multi-tenant ledger's Secrets Manager reads"
+        },
+        "health": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stack": {
+              "type": "string",
+              "enum": [
+                "go"
+              ],
+              "description": "Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)"
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "SHUTDOWN_TIMEOUT in seconds: the one budget after the drain; the pod grace is drain + this + 10s"
+            }
+          },
+          "description": "Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout strategy and PDB are owned by the chart"
         }
       },
       "additionalProperties": true
@@ -1542,16 +1522,6 @@
     "tracer": {
       "type": "object",
       "properties": {
-        "readinessProbe": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Readiness probe configuration. All fields override chart defaults."
-        },
-        "livenessProbe": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Liveness probe configuration. All fields override chart defaults."
-        },
         "name": {
           "default": "tracer",
           "description": "Service name"
@@ -1567,12 +1537,6 @@
         "revisionHistoryLimit": {
           "default": 10,
           "description": "Number of old ReplicaSets to retain for deployment rollback"
-        },
-        "terminationGracePeriodSeconds": {
-          "type": "integer",
-          "minimum": 0,
-          "default": 55,
-          "description": "Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush."
         },
         "image": {
           "type": "object",
@@ -1771,33 +1735,10 @@
               "default": true,
               "description": "Enable or disable PodDisruptionBudget"
             },
-            "maxUnavailable": {
-              "default": 1,
-              "description": "Maximum number of unavailable pods; ignored when minAvailable is set."
-            },
             "annotations": {
               "type": "object",
               "additionalProperties": true,
               "description": "Annotations for the PodDisruptionBudget"
-            }
-          },
-          "additionalProperties": true
-        },
-        "deploymentUpdate": {
-          "type": "object",
-          "description": "Deployment update strategy",
-          "properties": {
-            "type": {
-              "default": "RollingUpdate",
-              "description": "Type of deployment strategy"
-            },
-            "maxSurge": {
-              "default": 1,
-              "description": "Maximum number of pods that can be created over the desired number of pods"
-            },
-            "maxUnavailable": {
-              "default": 1,
-              "description": "Maximum number of pods that can be unavailable during the update"
             }
           },
           "additionalProperties": true
@@ -2272,6 +2213,20 @@
         },
         "existingSecretName": {
           "default": ""
+        },
+        "health": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stack": {
+              "type": "string",
+              "enum": [
+                "go"
+              ],
+              "description": "Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)"
+            }
+          },
+          "description": "Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout strategy and PDB are owned by the chart"
         }
       },
       "additionalProperties": true

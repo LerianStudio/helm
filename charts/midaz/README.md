@@ -145,7 +145,7 @@ ledger:
       alb.ingress.kubernetes.io/scheme: internal  # Use "internet-facing" for public ALB
       alb.ingress.kubernetes.io/target-type: ip   # Use "instance" if targeting EC2 instances
       alb.ingress.kubernetes.io/group.name: "midaz"  # Group ALB resources under this name
-      alb.ingress.kubernetes.io/healthcheck-path: "/health"  # Health check path (the ledger serves /health and /readyz)
+      alb.ingress.kubernetes.io/healthcheck-path: "/health"  # Health check path (constant /health on the main port; /readyz is served on the internal health port 8099)
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'  # Listen on HTTP and HTTPS
     hosts:
       - host: midaz.example.com
@@ -254,8 +254,9 @@ Midaz deploys the following core services:
 |---|---|---|
 | `ledger.enabled` | Enable or disable the ledger service. | `true` |
 | `ledger.name` | Service name. | `"ledger"` |
+| `ledger.health.stack`, `tracer.health.stack` | Runtime stack for the health preset. Probes, `HEALTH_PORT` 8099 (`/health`, `/readyz`, internal `health` Service port only), drain, grace, rollout strategy and PDB are owned by the chart; the render refuses probe, grace, `SHUTDOWN_*` and `HEALTH_PORT` overrides. | `go` |
+| `ledger.health.shutdownSeconds` | `SHUTDOWN_TIMEOUT` in seconds, the one shutdown budget after the 15s drain; pod grace is drain + this + 10s. | `35` |
 | `ledger.replicaCount` | Number of replicas for the ledger service. | `2` |
-| `ledger.terminationGracePeriodSeconds` | Seconds Kubernetes waits after SIGTERM before killing the pod; must cover the shutdown drain (HTTP, streaming events, producer flush). `tracer.terminationGracePeriodSeconds` works the same way (default `55`). | `72` |
 | `ledger.image.repository` | Repository for the ledger service container image. | `"lerianstudio/midaz-ledger"` |
 | `ledger.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
 | `ledger.image.tag` | Image tag used for deployment. | See `values.yaml` |
@@ -266,9 +267,7 @@ Midaz deploys the following core services:
 | `ledger.podSecurityContext` | Security context applied at the pod level. | `{}` |
 | `ledger.securityContext.*` | Security context for every ledger container: the application, its `wait-for-dependencies` init container and the migration Job. | See `values.yaml` |
 | `ledger.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
-| `ledger.pdb.maxUnavailable` | Maximum number of unavailable pods; ignored when `minAvailable` is set. | `1` |
 | `ledger.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
-| `ledger.deploymentUpdate.*` | Deployment update strategy. | See `values.yaml` |
 | `ledger.service.type` | Kubernetes service type. | `"ClusterIP"` |
 | `ledger.service.port` | Port for the HTTP API. | `3002` |
 | `ledger.service.annotations` | Annotations for the service. | `{}` |

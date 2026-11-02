@@ -553,3 +553,15 @@ behavior unchanged).
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Health preset inputs per component. minImage is the first Midaz image that serves
+/health and /readyz on HEALTH_PORT 8099; a lower image.tag fails the render.
+*/}}
+{{- define "midaz-ledger.health" -}}
+{{- include "lerian-common.health" (dict "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health "port" (int .Values.ledger.service.port) "minImage" "4.5.0-beta.94" "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) -}}
+{{- end -}}
+
+{{- define "midaz-tracer.health" -}}
+{{- include "lerian-common.health" (dict "name" "tracer" "component" .Values.tracer "health" .Values.tracer.health "port" (int .Values.tracer.service.port) "minImage" "4.5.0-beta.94" "replicas" .Values.tracer.replicaCount "autoscaling" .Values.tracer.autoscaling) -}}
+{{- end -}}

@@ -19,7 +19,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "midaz-ledger.fullname" . }}
-  minReplicas: {{ .Values.ledger.autoscaling.minReplicas }}
+  minReplicas: {{ (include "midaz-ledger.health" . | fromYaml).autoscaling.minReplicas }}
   maxReplicas: {{ .Values.ledger.autoscaling.maxReplicas }}
   metrics:
     {{- if .Values.ledger.autoscaling.targetCPUUtilizationPercentage }}

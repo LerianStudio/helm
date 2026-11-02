@@ -41,6 +41,22 @@ Fixes:
 - Refuse retired PDB and rollout overrides. (@fredcamaral)
 
 Improvements:
+- Drop the `minImage` placeholder note from documentation. (@fredcamaral)
+- Mark the health `minImage` as a placeholder in documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
 - Drop the `minImage` placeholder note. (@fredcamaral)
 - Mark the health `minImage` as a placeholder. (@fredcamaral)
 

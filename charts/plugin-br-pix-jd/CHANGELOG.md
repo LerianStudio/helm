@@ -3,6 +3,19 @@
 ## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
 
 Features:
+- Adopt the `lerian-common` health preset to enhance the health management of the plugin. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure compatibility with the updated health management system. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB, ensuring smoother integration with the health management system. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
 - Adopt the `lerian-common` health preset to enhance the plugin's health management. (@fredcamaral)
 
 Fixes:

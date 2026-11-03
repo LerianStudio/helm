@@ -52,7 +52,7 @@ habilitar os workloads do seu caso de uso, apontar Postgres, e definir `LICENSE_
 | Vault / gerenciador de segredo | Recomendado em produção | `useExistingSecret: true` + `existingSecretName` por componente — o Secret externo precisa conter o conjunto completo de chaves daquele workload |
 | Streaming Hub (callbacks) | Componente externo a este chart | Este chart publica eventos no broker via `lib-streaming`; o Streaming Hub resolve as subscrições e faz o callback HTTP — nenhuma URL de callback é configurada aqui |
 
-Para desenvolvimento/homologação sem um provider real, use `adapterProviderMock` (seção 5).
+Para desenvolvimento/homologação sem um provider real, use `adapterProviderMock` (seção 5); a imagem dele não é pública: peça acesso de leitura à Lerian e nomeie um pull secret do ghcr.io em `global.imagePullSecrets`.
 As databases precisam existir com o role de conexão correto antes de as migrações
 rodarem: provisione-as você mesmo ou habilite os Jobs opcionais de bootstrap do chart (ver
 [Database bootstrap and migrations](../README.md#database-bootstrap-and-migrations)).

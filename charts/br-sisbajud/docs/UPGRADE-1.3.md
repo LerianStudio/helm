@@ -53,9 +53,6 @@ The br-sisbajud application has been architecturally split. Version 1.3.0 deploy
 # Chart.yaml
 description: A Helm chart for br-sisbajud — the Lerian SISBAJUD plugin (judicial
   asset blocking/unblocking integration with BACEN SISBAJUD)
-
-sources:
-  - https://github.com/LerianStudio/br-sisbajud
 ```
 
 **After (v1.3.0):**
@@ -65,9 +62,6 @@ sources:
 description: A Helm chart for br-sisbajud — the Lerian Sisbajud Mensageria (the
   regulatory side of SISBAJUD judicial asset blocking with BACEN, plus the
   execution API plugin-br-sisbajud calls)
-
-sources:
-  - https://github.com/LerianStudio/br-sfn/tree/develop/services/sisbajud
 ```
 
 > **Important:** The Mensageria is a **single-tenant only** service. Multi-tenant deployments are not supported in v1.3.0. The STA consumer and transfers client operate in single-tenant mode.

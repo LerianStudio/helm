@@ -183,7 +183,7 @@ spec:
   ports:
     - name: http
       port: 8080
-      targetPort: 8080
+      targetPort: http
     - name: health
       port: 8099
       targetPort: 8099
@@ -199,12 +199,7 @@ The preset injects `HEALTH_PORT=8099` into the container environment. The applic
 
 The worker component now has **health probes** enabled, served on the same dedicated port 8099.
 
-**Before (v0.5.9):**
-
-```yaml
-worker:
-  # No ports and no probes: cmd/worker exposes no HTTP surface
-```
+In v0.5.9 the worker had no ports and no probes.
 
 **After (v0.6.0):**
 
@@ -453,3 +448,5 @@ helm diff upgrade <pix-release> oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm
 ```bash
 helm upgrade <pix-release> oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.0 -n midaz-plugins -f my-values.yaml
 ```
+
+If you set the payment signing key and certificate with `--set-file`, add the same two `--set-file` flags to these commands. Otherwise the upgrade drops them and payment orders go out unsigned.

@@ -26,7 +26,7 @@ This is a **patch release** that updates the `plugin-br-pix-jd` chart from versi
 
 ### Application Version Update
 
-The chart's `appVersion` has been updated from `1.6.0-beta.3` to `1.6.0`, marking the transition from beta to stable release. This is a production-ready release with no breaking changes from the beta version.
+The chart's `appVersion` has been updated from `1.6.0-beta.3` to `1.6.0`, marking the transition from beta to stable release. App 1.6.0 also serves `/metrics` on the health port 8099, which 1.6.0-beta.3 did not.
 
 **Chart.yaml change:**
 
@@ -119,12 +119,12 @@ worker:
     tag: "1.6.0"
 ```
 
-> **Note:** The upgrade follows standard rolling update behavior. With the default deployment strategy (`RollingUpdate` with `maxUnavailable: 0`), the API will maintain availability throughout the rollout.
+> **Note:** The API rolls with `RollingUpdate` and `maxUnavailable: 0`, so it keeps serving throughout the rollout. The worker uses `Recreate`: the old worker stops before the new one starts.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade <pix-release> oci://registry-1.docker.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.1 -n midaz-plugins
+helm diff upgrade <pix-release> oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.1 -n midaz-plugins -f my-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -132,7 +132,9 @@ helm diff upgrade <pix-release> oci://registry-1.docker.io/lerianstudio/plugin-b
 ## Command to upgrade
 
 ```bash
-helm upgrade <pix-release> oci://registry-1.docker.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.1 -n midaz-plugins
+helm upgrade <pix-release> oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.1 -n midaz-plugins -f my-values.yaml
 ```
 
 Replace `<pix-release>` with your release name.
+
+If you set the payment signing key and certificate with `--set-file`, add the same two `--set-file` flags to these commands. Otherwise the upgrade drops them and payment orders go out unsigned.

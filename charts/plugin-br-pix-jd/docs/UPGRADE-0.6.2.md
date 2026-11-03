@@ -110,12 +110,12 @@ This is a documentation-only change with no functional impact. The comment now p
 The upgrade will:
 
 1. **Trigger a rolling update** of the API deployment with the new `1.6.1` image
-2. **Trigger a rolling update** of the worker deployment (if enabled) with the new `1.6.1` image
+2. **Recreate** the worker deployment (if enabled) with the new `1.6.1` image: the old worker stops before the new one starts
 3. **Run the migrations Job** (if `migrations.enabled=true` and `MULTI_TENANT_ENABLED` is not `true`) with the `1.6.1` migrations image
 
-> **Important:** The migrations Job will run during the upgrade hook phase. If using bundled PostgreSQL, the Job runs in the `post-upgrade` phase (after the API starts rolling). If using external PostgreSQL, it runs in the `pre-upgrade` phase (before the API rolls). Monitor the Job to ensure schema changes complete successfully:
+> **Important:** The migrations Job will run during the upgrade hook phase. If using bundled PostgreSQL, the Job runs in the `post-upgrade` phase (after the API starts rolling). If using external PostgreSQL, it runs in the `pre-upgrade` phase (before the API rolls). Follow the Job while it runs. Helm deletes it once it succeeds:
 > ```bash
-> kubectl -n midaz-plugins logs job/plugin-br-pix-jd-migrations
+> kubectl -n midaz-plugins logs -f job/plugin-br-pix-jd-migrations
 > ```
 
 > **Note:** Since this is a patch version bump (1.6.0 → 1.6.1), breaking schema changes are not expected.
@@ -123,7 +123,7 @@ The upgrade will:
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.2 -n midaz-plugins
+helm diff upgrade <pix-release> oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.2 -n midaz-plugins -f my-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -131,5 +131,9 @@ helm diff upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-h
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.2 -n midaz-plugins
+helm upgrade <pix-release> oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.6.2 -n midaz-plugins -f my-values.yaml
 ```
+
+Replace `<pix-release>` with your release name.
+
+If you set the payment signing key and certificate with `--set-file`, add the same two `--set-file` flags to these commands. Otherwise the upgrade drops them and payment orders go out unsigned.

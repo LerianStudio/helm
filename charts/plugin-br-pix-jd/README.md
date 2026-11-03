@@ -7,7 +7,7 @@ This README is the reference for installing and configuring the chart. The Pix p
 ## What the chart installs
 
 - **API**: the payment service — a Deployment, a Service, a ConfigMap, a Secret and a PodDisruptionBudget, plus an optional HorizontalPodAutoscaler (`api.autoscaling.enabled`) and an optional Ingress (`api.ingress.enabled`). It listens on port `8080`, where `/health` and `/version` answer without authentication. `/readyz` and `/readyz/tenant/:id` answer on the internal health port `8099` (Service port `health`, ClusterIP only).
-- **Worker**: a Deployment that runs the scheduled jobs — transaction reconciliation and the MED pollers. It has no Service and no Ingress. **Disabled by default**; without it, those jobs do not run. To run it, set `worker.enabled: true`; it runs the `ghcr.io/lerianstudio/plugin-br-pix-jd-worker` image.
+- **Worker**: a Deployment that runs the scheduled jobs — transaction reconciliation, the MED pollers and the relay that registers async credit validation results with JD. It has no Service and no Ingress. **Disabled by default**; without it, those jobs do not run. To run it, set `worker.enabled: true`; it runs the `ghcr.io/lerianstudio/plugin-br-pix-jd-worker` image.
 - **Migrations Job**: applies the database schema with the `ghcr.io/lerianstudio/plugin-br-pix-jd-migrations` image, before the API rolls out (`pre-install` / `pre-upgrade`). The service does not migrate the database on its own.
 - **PostgreSQL and Valkey subcharts**: bundled, and **both disabled by default**. The chart expects an external PostgreSQL and an external Valkey or Redis. With the bundled PostgreSQL the migrations run after the release syncs, so `api.configmap.SYSTEMPLANE_ENABLED` defaults to `"false"` there and every Pix flow answers `503` until you set it to `"true"` after the first sync.
 
@@ -152,6 +152,8 @@ helm upgrade <pix-release> \
   oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm \
   --version <new-version> -n midaz-plugins -f my-values.yaml
 ```
+
+If you set the payment signing key and certificate with `--set-file`, add the same two `--set-file` flags to this command. Otherwise the upgrade drops them and payment orders go out unsigned.
 
 ```bash
 helm uninstall <pix-release> -n midaz-plugins

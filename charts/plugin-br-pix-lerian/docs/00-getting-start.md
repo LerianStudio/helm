@@ -46,7 +46,7 @@ habilitar os workloads do seu caso de uso, apontar Postgres, e definir `LICENSE_
 | PostgreSQL | Por domínio habilitado — até 5 databases possíveis: `pix-spi`, `pix-dict`, `pix-cob`, `pix-adapter-lerian`, `pix-pixauto` | `DATABASE_URL` / `SYSTEMPLANE_POSTGRES_DSN` em `secrets`, ou Secret externo via `useExistingSecret` |
 | Valkey/Redis | Obrigatório em `dictHubVsync` e em `adapterLerian` quando habilitado; opcional (com degradação de cache) em `spi`/`dictHub`/`cobHub`/`pixauto` | Mask `global.datastores.redis` (host/port/user/db/tls) — seção 4 |
 | RabbitMQ | Obrigatório quando `dictHubVsync` está habilitado; publish-only opcional em `dictHub` | `RABBITMQ_URI` em `secrets` |
-| Streaming (Kafka/Redpanda) | Opcional — `spi`, `dictHub`, `cobHub`, `pixauto` podem emitir CloudEvents | Mask `global.streaming` — seção 4. Deixe `STREAMING_CLOUDEVENTS_SOURCE` vazio |
+| Streaming (Kafka/Redpanda) | Opcional — `spi`, `dictHub`, `cobHub`, `pixauto` podem emitir CloudEvents | Mask `global.streaming` — seção 4. Deixe `STREAMING_CLOUDEVENTS_SOURCE` vazio, exceto em `pixauto` com streaming habilitado: ali defina `plugin-br-pix-lerian`, ou `pixauto` não sobe |
 | MongoDB | Não utilizado por este chart | — |
 | `plugin-access-manager` (auth) | Recomendado em qualquer ambiente exposto — ver seção 5 | Mask `global.auth` (`PLUGIN_AUTH_ENABLED` + `PLUGIN_AUTH_HOST`) |
 | Vault / gerenciador de segredo | Recomendado em produção | `useExistingSecret: true` + `existingSecretName` por componente — o Secret externo precisa conter o conjunto completo de chaves daquele workload |
@@ -138,7 +138,7 @@ não são validados um contra o outro no boot.
 | `PLUGIN_AUTH_ENABLED` | Controla autenticação nas rotas de negócio e M2M; default é `false` | Habilitar explicitamente (via mask `global.auth.enabled`) em qualquer ambiente exposto — recomendado em todos os 14 componentes. Obrigatório em `pixauto` sempre que `ENV_NAME` não for `local` ou `development` (em single-tenant, também em `pixautoSystemplane`): sem isso, `pixauto` não sobe. |
 | Tier proxy (`dictProxy`/`cobProxy`) | Nesta versão, atende apenas `health`, `readyz` e um OpenAPI sem operações de negócio | Não rotear tráfego de negócio para o proxy; usar o hub do domínio para tráfego real. Validar com uma transação de negócio, não só o probe |
 | Desabilitar um hub (`dictHub`/`cobHub`/`spi`) | O Job de migração daquele domínio só é renderizado para um hub habilitado | Se o hub ficar desabilitado, aplicar o schema daquele domínio por outro meio antes de subir os demais workloads |
-| `STREAMING_CLOUDEVENTS_SOURCE` | Precisa bater com o source interno da aplicação, streaming habilitado ou não | Deixar vazio |
+| `STREAMING_CLOUDEVENTS_SOURCE` | Precisa bater com o source interno da aplicação, streaming habilitado ou não | Deixar vazio, exceto em `pixauto` com streaming habilitado: o chart não define source ali, e um source vazio impede o boot. Definir `plugin-br-pix-lerian` |
 | `adapterLerian` | Espera `DEPLOYMENT_MODE=local`; é o adapter usado em desenvolvimento | Manter desabilitado (default) fora de ambiente local |
 | `adapterProviderMock` | Suas rotas não têm autorização própria, independente de `PLUGIN_AUTH_ENABLED` | Habilitar somente em ambiente controlado, nunca em ingress compartilhado com callers não confiáveis |
 | `ORGANIZATION_ID` em `pixauto` (single-tenant) | A app lê primeiro da Systemplane store, cai para este valor se a store estiver vazia | Definir `ORGANIZATION_ID` (ou seedar a store) antes de enviar tráfego — sem isso, requests retornam `403 TENANT_CONFIG_NOT_FOUND` |

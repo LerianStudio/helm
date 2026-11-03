@@ -3,16 +3,16 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `tracer.secrets.LICENSE_KEY` (rendered into the Secret only when non-empty; the application refuses to boot without a valid license). None else for default render.
+- Required secrets: None for default render. `tracer.secrets.LICENSE_KEY` is rendered into the Secret only when non-empty.
 - Dependency notes: No local dependency chart is bundled. PostgreSQL is external; when `global.externalPostgresDefinitions.enabled=true` a bootstrap Job provisions and initializes the database and role on the external PostgreSQL.
-- Production overrides: Provide production PostgreSQL credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
+- Production overrides: Provide production PostgreSQL credentials through chart secrets; override image tags, ingress, resources, and namespace.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 A Helm chart for deploying Tracer - Real-time transaction validation and fraud prevention API.
 
 ## Prerequisites
 
-- Kubernetes 1.19+
+- Kubernetes 1.23+
 - Helm 3.2.0+
 - PostgreSQL database (external or managed)
 
@@ -21,6 +21,8 @@ A Helm chart for deploying Tracer - Real-time transaction validation and fraud p
 ```bash
 helm install tracer ./charts/tracer -n tracer --create-namespace
 ```
+
+Before you install, set `tracer.configmap.DB_HOST` to your PostgreSQL host and `tracer.secrets.DB_PASSWORD` to the password of the `tracer` role. The bootstrap Job does not set them.
 
 ## Configuration
 

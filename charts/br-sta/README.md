@@ -18,7 +18,7 @@ Deploys **br-sta**, the Lerian BACEN STA (Sistema de Transferência de Arquivos)
 | `worker` | `ghcr.io/lerianstudio/br-sta-worker` | Background process (probe server `:4029`): the BACEN outbound scheduler (the **only** path that uploads to BACEN), inbound polling, audit publisher/consumer, business-event delivery, partition manager, verifier, export generator, reporter bridge. Exactly one replica, `Recreate` |
 | migrations | `ghcr.io/lerianstudio/br-sta-migrations` | Applies the SQL schema (single-tenant) |
 
-The chart tracks application **1.0.0** (`appVersion`); the three images follow `appVersion` unless pinned.
+The chart tracks application **1.2.0** (`appVersion`); the three images follow `appVersion` unless pinned.
 
 ---
 

@@ -22,7 +22,7 @@ version: 1.0.5
 # NOTE: appVersion is the default image tag for the manager, the worker and the
 # migrations Job (the three images are released together under one tag). Override
 # via manager.image.tag / worker.image.tag / migrations.image.tag when needed.
-appVersion: "1.0.0"
+appVersion: "1.2.0"
 
 keywords:
   - br-sta

@@ -374,7 +374,7 @@ and a stale value earns one WARN per boot.
 |-----|---------|-------------|
 | `streamingHub.mode` | `all` | Topology switch: `all` \| `split`. Schema-enforced enum. |
 | `streamingHub.image.repository` | `ghcr.io/lerianstudio/streaming-hub` | Image repo. |
-| `streamingHub.image.tag` | `"3.0.0"` | Empty falls back to `Chart.appVersion`. |
+| `streamingHub.image.tag` | `"3.1.0"` | Empty falls back to `Chart.appVersion`. |
 | `streamingHub.image.pullPolicy` | `IfNotPresent` | |
 | `streamingHub.imagePullSecrets` | `[]` | Private registry pull secrets. |
 | `streamingHub.service.type` | `ClusterIP` | Lerian convention (Ingress fronts external). |

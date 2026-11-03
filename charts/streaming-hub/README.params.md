@@ -34,7 +34,7 @@
 | `streamingHub.mode` | enum: all\|split | `all` | Deployment topology switch. One of: all or split. all   (default) -> ONE Deployment with STREAMING_HUB_ROLE=all (ingest + delivery co-resident; the single-instance setup). Byte-equivalent to the historical single binary. split           -> TWO Deployments: ingest (role=ingest) and delivery (role=delivery), each scaled independently.  !!! NEVER run both an `all` Deployment AND ingest/delivery against the same Kafka cluster: they join ONE consumer group and DOUBLE-CONSUME every event. The mode switch enforces either/or — do not work around it. !!! The values.schema.json constrains this to the enum ["all","split"]. |
 | `streamingHub.image.repository` | string | `ghcr.io/lerianstudio/streaming-hub` | Container image repository. |
 | `streamingHub.image.pullPolicy` | string | `IfNotPresent` | Image pull policy. |
-| `streamingHub.image.tag` | string | `"3.0.0"` | Image tag. Empty falls back to Chart.appVersion via the defaultTag helper. |
+| `streamingHub.image.tag` | string | `"3.1.0"` | Image tag. Empty falls back to Chart.appVersion via the defaultTag helper. |
 | `streamingHub.imagePullSecrets` | list | `[]` | Secrets for pulling the image from a private registry. |
 | `streamingHub.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for rollback. |
 | `streamingHub.annotations` | object | `{}` | Annotations applied to every Deployment resource. |

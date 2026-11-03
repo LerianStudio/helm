@@ -79,7 +79,7 @@ helm install notifications ./charts/notifications \
 
 | Key                                | Notes                                            |
 |------------------------------------|--------------------------------------------------|
-| `api.image.tag`                    | Image tag for the API and the migrations Job; workers do not inherit it (set each `workerX.image.tag`) |
+| `api.image.tag`                    | Image tag for the API, and for the migrations Job while `migrations.image.tag` is empty; workers do not inherit it (set each `workerX.image.tag`) |
 | `workerEmail.image.tag`            | Override per worker if independently versioned   |
 | `workerSms.image.tag`              | ditto                                            |
 | `workerWebhook.image.tag`          | ditto                                            |

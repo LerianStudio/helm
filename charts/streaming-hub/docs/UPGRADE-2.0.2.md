@@ -172,6 +172,6 @@ helm diff upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --
 ## Command to upgrade
 
 ```bash
-helm upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version 2.0.2 -n streaming-hub
+helm upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version 2.0.2 -n streaming-hub -f values.yaml
 ```
 <!-- {% endraw %} -->

@@ -24,7 +24,7 @@ The `appVersion` field in `Chart.yaml` has been updated from `1.2.0-beta.1` to `
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plugin-br-payments-helm --version 2.2.1 -n plugin-br-payments
+helm diff upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.2.1 -n plugin-br-payments -f <your-values>.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -32,5 +32,5 @@ helm diff upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plu
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plugin-br-payments-helm --version 2.2.1 -n plugin-br-payments
+helm upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.2.1 -n plugin-br-payments -f <your-values>.yaml
 ```

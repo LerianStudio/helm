@@ -88,7 +88,7 @@ The preset calculates the termination grace period as `drain (15s) + shutdownSec
 **Operational impact:**
 
 - The termination grace period remains `60s` if you set `shutdownSeconds: 35` (the default). If you previously set `terminationGracePeriodSeconds` to a different value, calculate the equivalent `shutdownSeconds` as `terminationGracePeriodSeconds - 25` (drain 15s + buffer 10s).
-- The PDB now uses `maxUnavailable: 1` instead of `minAvailable: 1`. For deployments with 2 replicas, this is equivalent. For deployments with 3+ replicas, `maxUnavailable: 1` allows fewer pods to be disrupted simultaneously than `minAvailable: 1` would.
+- The PDB now uses `maxUnavailable: 1` instead of `minAvailable: 1`. For deployments with 2 replicas, this is equivalent. For deployments with 3+ replicas, `maxUnavailable: 1` allows fewer pods to be disrupted simultaneously than `minAvailable: 1` would. With 1 replica, `minAvailable: 1` blocked eviction of the only pod, but `maxUnavailable: 1` allows it, so a node drain stops the service; run 2 or more replicas (the chart default is 2) to stay available during drains.
 - The deployment strategy remains `RollingUpdate` with `maxUnavailable: 0`; `maxSurge` changes from `1` to `25%`.
 
 ### 2. Probes now target health port 8099
@@ -314,7 +314,7 @@ helm rollback plugin-br-payments -n <namespace>
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plugin-br-payments-helm --version 2.2.0 -n plugin-br-payments
+helm diff upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.2.0 -n plugin-br-payments -f <your-values>.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -322,5 +322,5 @@ helm diff upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plu
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plugin-br-payments-helm --version 2.2.0 -n plugin-br-payments
+helm upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.2.0 -n plugin-br-payments -f <your-values>.yaml
 ```

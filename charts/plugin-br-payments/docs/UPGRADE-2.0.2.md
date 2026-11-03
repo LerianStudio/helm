@@ -33,16 +33,16 @@ No startup probe was configured. The deployment relied solely on `readinessProbe
 
 **After (v2.0.2):**
 
-The deployment template includes a startup probe with configurable period, timeout, and failure threshold:
+The Deployment renders this startup probe with the chart defaults; `app.startupProbe` sets the period, timeout, and failure threshold:
 
 ```yaml
 startupProbe:
   httpGet:
     path: /health
     port: http
-  periodSeconds: {{ ($.Values.app.startupProbe | default dict).periodSeconds | default 10 }}
-  timeoutSeconds: {{ ($.Values.app.startupProbe | default dict).timeoutSeconds | default 3 }}
-  failureThreshold: {{ ($.Values.app.startupProbe | default dict).failureThreshold | default 40 }}
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 40
 ```
 
 The corresponding `values.yaml` section:
@@ -122,7 +122,7 @@ No other configuration values were added, removed, or changed. The readiness and
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plugin-br-payments-helm --version 2.0.2 -n plugin-br-payments
+helm diff upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.0.2 -n plugin-br-payments -f <your-values>.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -130,6 +130,6 @@ helm diff upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plu
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plugin-br-payments-helm --version 2.0.2 -n plugin-br-payments
+helm upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.0.2 -n plugin-br-payments -f <your-values>.yaml
 ```
 <!-- {% endraw %} -->

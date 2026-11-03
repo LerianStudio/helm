@@ -146,7 +146,9 @@ app:
     BTG_CLIENT_ID: "your-client-id"
     BTG_CLIENT_SECRET: "your-client-secret"
     BTG_WEBHOOK_SECRET: "your-webhook-secret"
+```
 
+```yaml
 # After (v2.0.0)
 global:
   multiTenant:
@@ -246,7 +248,7 @@ v2.0.0 introduces new required secrets for all deployments:
 | `CONSULT_AUDIT_HMAC_KEY` | `SERVICE_TYPE` serves the API ("both"/"api") | >= 32 chars, no leading/trailing whitespace; HMAC key for bill consult audit line fingerprint |
 | `BTG_WEBHOOK_HMAC_SECRET` | API is served (`SERVICE_TYPE` "both"/"api"), or `ENV_NAME` is production | >= 32 chars; renamed from `BTG_WEBHOOK_SECRET` |
 | `CREDENTIAL_ENCRYPTION_KEY` | `SERVICE_TYPE` runs the worker ("both"/"worker"), multi-tenant serves the API, or `ENV_NAME` is production | Base64-encoded AES-256 key (32 random bytes) |
-| `INTERNAL_API_KEY` | `SERVICE_TYPE` runs the worker ("both"/"worker") | >= 32 chars |
+| `INTERNAL_API_KEY` | Every `SERVICE_TYPE` ("both", "worker" or "api") | >= 32 chars |
 | `POSTGRES_PASSWORD` | External PostgreSQL without `postgresql.auth.existingSecret` | Not required with bundled subchart or when `postgresql.auth.existingSecret` is set |
 | `PROVIDER_CLIENT_ID` | Single-tenant mode | Not required in multi-tenant mode (resolved per tenant) |
 | `PROVIDER_CLIENT_SECRET` | Single-tenant mode | Not required in multi-tenant mode (resolved per tenant) |

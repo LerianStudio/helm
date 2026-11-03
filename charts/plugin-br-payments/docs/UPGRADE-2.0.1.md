@@ -72,23 +72,11 @@ postgresql:
 
 The chart default for `app.configmap.ACCESS_CONTROL_ALLOW_ORIGIN` changed from `"*"` to `""`. The application rejects the `"*"` wildcard and denies every browser origin for both values, so CORS behavior does not change.
 
-**Before (v2.0.0):**
-
-```yaml
-ACCESS_CONTROL_ALLOW_ORIGIN: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "ACCESS_CONTROL_ALLOW_ORIGIN" "default" "*") | quote }}
-```
-
-**After (v2.0.1):**
-
-```yaml
-ACCESS_CONTROL_ALLOW_ORIGIN: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "ACCESS_CONTROL_ALLOW_ORIGIN" "default" "") | quote }}
-```
-
 **Operational impact:**
 
 - Deployments that did not explicitly set `app.configmap.ACCESS_CONTROL_ALLOW_ORIGIN` in their values overlay will now render an empty `ACCESS_CONTROL_ALLOW_ORIGIN` environment variable.
-- The application will not send `Access-Control-Allow-Origin` response headers when the value is empty, effectively disabling CORS.
-- Browser-based clients that make cross-origin requests to the API will receive CORS errors unless you explicitly configure the allowed origins.
+- The application denies every browser origin for an empty value, as it already did for `"*"` in v2.0.0.
+- Browser-based clients that make cross-origin requests to the API need an explicit list of allowed origins, in both versions.
 
 **Migration options:**
 
@@ -170,7 +158,7 @@ kubectl logs -n <namespace> <postgresql-pod-name> -c copy-certs
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plugin-br-payments-helm --version 2.0.1 -n plugin-br-payments
+helm diff upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.0.1 -n plugin-br-payments -f <your-values>.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -178,6 +166,6 @@ helm diff upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plu
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-payments oci://registry-1.docker.io/lerianstudio/plugin-br-payments-helm --version 2.0.1 -n plugin-br-payments
+helm upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.0.1 -n plugin-br-payments -f <your-values>.yaml
 ```
 <!-- {% endraw %} -->

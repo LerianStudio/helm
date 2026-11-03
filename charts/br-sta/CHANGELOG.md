@@ -3,6 +3,16 @@
 ## [1.0.4](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.4)
 
 Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` in the `br-sta` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.3...br-sta-v1.0.4)
+
+---
+
+## [1.0.4](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.4)
+
+Fixes:
 - Prevent the `IS_DEVELOPMENT` flag from being rendered in the output. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.3...br-sta-v1.0.4)

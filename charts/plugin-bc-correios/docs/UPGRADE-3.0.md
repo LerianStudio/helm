@@ -12,7 +12,7 @@
   - [5. Bundled RabbitMQ no longer creates default user credentials](#5-bundled-rabbitmq-no-longer-creates-default-user-credentials)
   - [6. RabbitMQ bootstrap job no longer creates users or permissions](#6-rabbitmq-bootstrap-job-no-longer-creates-users-or-permissions)
   - [7. Valkey password handling changed for bundled instances](#7-valkey-password-handling-changed-for-bundled-instances)
-  - [8. PostgreSQL role creation now uses secure password handling](#8-postgresql-role-creation-now-uses-secure-password-handling)
+  - [8. PostgreSQL bootstrap job now validates the role password](#8-postgresql-bootstrap-job-now-validates-the-role-password)
 - **[Features](#features)**
   - [1. New helper for boolean flags with true defaults](#1-new-helper-for-boolean-flags-with-true-defaults)
   - [2. Improved documentation for configuration values](#2-improved-documentation-for-configuration-values)
@@ -169,7 +169,6 @@ postgresql:
 **Operational impact:**
 
 - The image tags remain the same (`8.0.2` for Valkey, `17.4.0` for PostgreSQL), so the data format is unchanged
-- The `bitnamilegacy` registry serves the same images as `bitnami` but without the signature verification requirements
 - Existing PersistentVolumeClaims will continue to work without data migration
 - If you have custom image pull policies or registry mirrors configured, verify they support the `bitnamilegacy` repository
 
@@ -237,15 +236,9 @@ The `CACHE_PASSWORD` was always read from the application Secret, regardless of 
 
 > **Note:** The new `bc-correios.valkeyPasswordFromSubchart` helper determines whether to read the password from the Valkey Secret or the application Secret. The deployment template includes a conditional `secretKeyRef` block that is only rendered when this helper returns `"true"`.
 
-### 8. PostgreSQL role creation now uses secure password handling
+### 8. PostgreSQL bootstrap job now validates the role password
 
-The PostgreSQL bootstrap job now uses `\password` inside a transaction to set the `plugin-bc-correios` role password, ensuring the plaintext password is never sent to the server or logged. The job also validates that `DB_PASSWORD_BC_CORREIOS` is non-empty and contains no carriage return or line feed characters.
-
-**Before (v2.2.0):**
-
-```bash
-PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_BC_CORREIOS" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE \"plugin-bc-correios\" LOGIN PASSWORD :'pw'"
-```
+The PostgreSQL bootstrap job now validates that `DB_PASSWORD_BC_CORREIOS` is non-empty and contains no carriage return or line feed characters.
 
 **After (v3.0.0):**
 
@@ -258,7 +251,6 @@ printf '%s\n' 'BEGIN;' 'CREATE ROLE "plugin-bc-correios" LOGIN;' '\password "plu
 
 - The bootstrap job will fail if `DB_PASSWORD_BC_CORREIOS` is empty or contains a carriage return or line feed character
 - If you create the Secret manually (e.g., with `kubectl create secret` or `echo`), ensure the password value does not include a trailing newline
-- The password is now hashed inside `psql` before being sent to the server, improving security
 
 > **Warning:** If your Secret was created with `echo` without the `-n` flag, it likely contains a trailing newline. The bootstrap job will fail with the error: "DB_PASSWORD_BC_CORREIOS is empty or contains a carriage return or line feed." Recreate the Secret without the trailing newline.
 
@@ -601,6 +593,4 @@ Verify the plugin can connect to RabbitMQ, PostgreSQL, and Valkey:
 ```bash
 kubectl exec -n <namespace> -it <pod-name> -- wget -qO- http://localhost:9090/health/ready
 ```
-
-> **Warning:** The upgrade
 <!-- {% endraw %} -->

@@ -44,19 +44,28 @@ The chart version is part of the `helm.sh/chart` label on the agent pod template
 
 This upgrade requires no manual migration steps.
 
-If the control plane has moved the agent to a newer build, set `agent.image.digest` to the digest the Deployment runs before you upgrade. Otherwise the upgrade re-renders the `1.0.2` tag and walks the agent back.
+If the control plane has moved the agent to a newer build, record the digest the Deployment runs in `agent.image.digest` before you upgrade. Otherwise the upgrade re-renders the `1.0.2` tag and walks the agent back.
 
 **To upgrade:**
 
-1. Review your current values file (if you have one):
+1. Save your current values:
 
 ```bash
-helm get values lerian-agent -n lerian-system > current-values.yaml
+helm get values lerian-agent -n lerian-system -o yaml > current-values.yaml
 ```
 
-2. Run the upgrade command (see below)
+2. Read the image the Deployment runs:
 
-3. Verify the release was updated:
+```bash
+kubectl -n lerian-system get deploy lerian-agent \
+  -o jsonpath='{.spec.template.spec.containers[0].image}'
+```
+
+If it ends in `@sha256:...`, set `agent.image.digest` to that `sha256:...` value in `current-values.yaml`.
+
+3. Run the upgrade command (see below) with `-f current-values.yaml`
+
+4. Verify the release was updated:
 
 ```bash
 helm list -n lerian-system
@@ -67,7 +76,7 @@ The chart version should show `1.0.3`, while the app version remains `1.0.2`.
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade lerian-agent oci://registry-1.docker.io/lerianstudio/agent-helm --version 1.0.3 -n lerian-system
+helm diff upgrade lerian-agent oci://registry-1.docker.io/lerianstudio/agent-helm --version 1.0.3 -n lerian-system -f current-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -75,5 +84,5 @@ helm diff upgrade lerian-agent oci://registry-1.docker.io/lerianstudio/agent-hel
 ## Command to upgrade
 
 ```bash
-helm upgrade lerian-agent oci://registry-1.docker.io/lerianstudio/agent-helm --version 1.0.3 -n lerian-system
+helm upgrade lerian-agent oci://registry-1.docker.io/lerianstudio/agent-helm --version 1.0.3 -n lerian-system -f current-values.yaml
 ```

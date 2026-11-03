@@ -78,8 +78,8 @@ class StartupContract(unittest.TestCase):
         docs = self.succeeds({})
         images = [c['image'] for d in docs if d['kind'] == 'Deployment'
                   for c in d['spec']['template']['spec']['containers']]
-        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.16.0-beta.5', images)
-        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.16.0-beta.5', images)
+        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.16.1', images)
+        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.16.1', images)
         self.assertIn('ghcr.io/lerianstudio/caradhras:1.8.6', images)
         init_images = [c['image'] for d in docs if d['kind'] == 'Deployment'
                        for c in d['spec']['template']['spec'].get('initContainers', [])]

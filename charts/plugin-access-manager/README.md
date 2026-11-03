@@ -112,11 +112,17 @@ valkey:
 # instances' credentials explicitly (or set auth.useExistingSecret and
 # identity.useExistingSecret to true and point auth.existingSecretName and
 # identity.existingSecretName at pre-created Secrets with the same keys):
+# ENV_NAME "production" also needs an https AUTHORIZER_ADDRESS, or the render
+# fails (see "Production: reach Caradhras over HTTPS" below):
 auth:
+  configmap:
+    AUTHORIZER_ADDRESS: "https://caradhras.example.com"
   secrets:
     DB_PASSWORD: "CHANGE_ME"
     REDIS_PASSWORD: "CHANGE_ME"
 identity:
+  configmap:
+    AUTHORIZER_ADDRESS: "https://caradhras.example.com"
   secrets:
     REDIS_PASSWORD: "CHANGE_ME"
 ```
@@ -503,7 +509,8 @@ auth:
 Caradhras is a top-level component, sibling to `identity`/`auth` (formerly the
 nested `auth.backend`, which ran the legacy Casdoor image). A legacy
 `auth.backend.*` override in your OWN values file is still honored as a
-fallback for `service.port`/`replicaCount` — see `docs/UPGRADE-8.6-to-9.2.md`.
+fallback for `name`, `service.port`, `replicaCount`, `migrations.image.*` and the
+probe `timeoutSeconds` (see `docs/UPGRADE-8.6-to-9.2.md`).
 
 | Parameter | Description | Default |
 | --- | --- | --- |

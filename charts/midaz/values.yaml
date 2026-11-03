@@ -306,6 +306,44 @@ ledger:
       requests:
         cpu: 50m
         memory: 64Mi
+  # -- Partition runner creates transaction partitions ahead of time and reports
+  # health via exit codes (0 healthy/unpartitioned, 1 attention, 2 invalid).
+  # It visits every active tenant in multi-tenant mode.
+  partition:
+    # -- Run the scheduled runner. Unset enables stable tags >= 4.5.0 only;
+    # pre-release, older and non-SemVer tags default off. Set true or false to override.
+    enabled:
+    # -- Cron schedule in `timeZone`, defaulting to 06:00 outside common managed
+    # PostgreSQL maintenance windows; choose a time outside your database's windows.
+    schedule: "0 6 * * *"
+    # -- IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses
+    # the time zone of the kube-controller-manager, UTC on most managed
+    # clusters; set it to pin the schedule to a zone.
+    timeZone: ""
+    # -- Hard timeout for one run, in seconds
+    activeDeadlineSeconds: 1800
+    reconcile:
+      # -- Run reconcile-indexes after migration as a Sync/upgrade hook. Empty
+      # registries, unpartitioned tables and older schemas exit 0 without blocking sync.
+      enabled: true
+      # -- Argo CD sync wave of the reconcile Job (after the migration Job's
+      # default wave 0). On plain Helm the hook weight "10" orders it instead.
+      syncWave: "1"
+      # -- Hard timeout for the reconcile Job, in seconds (a concurrent index
+      # build on a large partition can take a while)
+      activeDeadlineSeconds: 1800
+      # -- How long a reconcile Job that stays after finishing, a failed one,
+      # is kept for inspection; a successful hook Job is deleted at once
+      ttlSecondsAfterFinished: 259200
+    resources:
+      # -- CPU and memory limits for the partition runner
+      limits:
+        cpu: 200m
+        memory: 128Mi
+      # -- Minimum CPU and memory requests for the partition runner
+      requests:
+        cpu: 50m
+        memory: 64Mi
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

@@ -2,6 +2,8 @@
 
 This is a patch release with no functional changes: templates, values and the default image tag (appVersion 1.0.0) are unchanged. The chart is now licensed under the Elastic License 2.0 (previously Apache-2.0).
 
+The manager and worker pods still restart on upgrade: their `checksum/config` and `checksum/secret` annotations hash the shared ConfigMap and Secret, which carry the chart version label.
+
 ## Preview changes before upgrading
 
 ```bash

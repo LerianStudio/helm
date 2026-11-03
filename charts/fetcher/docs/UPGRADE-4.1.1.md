@@ -60,7 +60,7 @@ worker:
 | `manager.image.tag` | `"4.1.0-beta.1"` | `"4.1.0"` |
 | `worker.image.tag` | `"4.1.0-beta.1"` | `"4.1.0"` |
 
-> **Note:** If you have explicitly overridden `manager.image.tag` or `worker.image.tag` in your `values.yaml` to pin to `4.1.0-beta.1`, you can remove those overrides to adopt the new stable default, or update them to `"4.1.0"` explicitly.
+> **Note:** If you have explicitly overridden `manager.image.tag` or `worker.image.tag` in your `values.yaml` to pin to `4.1.0-beta.1`, you can remove those overrides to adopt the new stable default, or update them to `"4.1.0"` explicitly. Then pass the edited values file with `-f` in the upgrade command: without `-f` or `--set`, Helm reuses the values of the previous release and keeps the beta pin.
 
 ## Configuration Changes
 

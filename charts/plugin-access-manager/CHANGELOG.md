@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
 ## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
 
 Features:

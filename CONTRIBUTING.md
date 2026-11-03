@@ -1,19 +1,13 @@
-# Contributing to Midaz
+# Contributing to Lerian Helm Charts
 
-At Midaz, we believe in the power of collaboration and the incredible impact that each individual can make. Whether you're fixing a bug, proposing a new feature, improving documentation, or offering your unique perspective, your contributions are highly valued and play a crucial role in the evolution of Midaz.
-
-#### Why Contribute?
-
-* **Impact**: Your work will directly impact and improve a project used by organizations around the world, making their operations smoother and more efficient.
-* **Learn and Grow**: Contributing to Midaz offers you a unique opportunity to learn from a community of talented developers, enhancing your skills and knowledge in architecture design, CQRS, Ports & Adapters, and more.
-* **Community**: Join a welcoming and supportive community of developers who share your passion for creating high-quality software.
+This repository holds the Helm charts that install Lerian products on Kubernetes. We welcome bug fixes, chart improvements, and documentation changes.
 
 #### How Can You Contribute?
 
-* **Code Contributions**: From minor fixes to major features, your code contributions are always welcome. Our architecture and minimal dependencies make it easy for you to understand and enhance Midaz.
-* **Documentation**: Help us improve our documentation to make Midaz more accessible and understandable for everyone.
-* **Feedback and Ideas**: Share your insights, suggestions, and innovative ideas to help us shape the future of Midaz.
-* **Testing**: Assist in testing new releases or features, providing valuable feedback to ensure stability and usability.
+* **Chart changes**: Fix or improve templates, values, and chart tests.
+* **Documentation**: Improve chart READMEs and upgrade guides.
+* **Feedback and Ideas**: Open an issue to report a bug or propose a change.
+* **Testing**: Install new chart releases and report what breaks.
 
 ## Our Workflow
 
@@ -108,11 +102,11 @@ Use your real name (sorry, no pseudonyms or anonymous contributions.)
 
 If you set your user.name and user.email git configs, you can sign your commit automatically with git commit -s.
 
-By following these guidelines, you help ensure Midaz is a welcoming, efficient, and valuable project for everyone. Thank you for your contributions and for being a part of our community!
+By following these guidelines, you help keep this repository welcoming, efficient, and valuable for everyone. Thank you for your contributions and for being a part of our community!
 
 Before sending us a pull request, please ensure that,
 
-- Fork the midaz repo on GitHub, clone it on your machine.
+- Fork the [helm repo](https://github.com/LerianStudio/helm) on GitHub, clone it on your machine.
 - Create a feature or fix branch with your changes.
 - You are working against the latest source on the `main` branch.
 - Modify the source; please focus only on the specific change you are contributing.

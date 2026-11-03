@@ -35,7 +35,7 @@ This patch release changes no templates, no `values.yaml` defaults and no applic
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-ted-lerian oci://registry-1.docker.io/lerianstudio/plugin-br-ted-lerian-helm --version 1.1.2 -n plugin-br-ted-lerian
+helm diff upgrade plugin-br-ted-lerian oci://ghcr.io/lerianstudio/plugin-br-ted-lerian-helm --version 1.1.2 -n plugin-br-ted-lerian
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -45,5 +45,5 @@ helm diff upgrade plugin-br-ted-lerian oci://registry-1.docker.io/lerianstudio/p
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-ted-lerian oci://registry-1.docker.io/lerianstudio/plugin-br-ted-lerian-helm --version 1.1.2 -n plugin-br-ted-lerian
+helm upgrade plugin-br-ted-lerian oci://ghcr.io/lerianstudio/plugin-br-ted-lerian-helm --version 1.1.2 -n plugin-br-ted-lerian
 ```

@@ -35,6 +35,8 @@ The 55-second grace period is calculated as:
 - 30s shutdown budget (complete in-flight requests and close connections)
 - 10s safety margin (prevent premature SIGKILL)
 
+App `1.0.0-beta.64`, the image this chart deploys, does not read `SHUTDOWN_DRAIN_DELAY`: its shutdown budget is a fixed 30s. With that image the 15s drain share has no effect.
+
 **Configuration:**
 
 **After (v1.1.1):**
@@ -47,48 +49,6 @@ plugin-br-ted-lerian:
 
 **New environment variable:**
 - `SHUTDOWN_DRAIN_DELAY`: set to `15s` in the container `env` by the chart template (not a values key).
-
-**Template changes:**
-
-**Before (v1.1.0):**
-```yaml
-spec:
-  template:
-    spec:
-      containers:
-        - name: plugin-br-ted-lerian
-          envFrom:
-          - secretRef:
-              name: {{ if (index .Values "plugin-br-ted-lerian").useExistingSecret }}{{ (index .Values "plugin-br-ted-lerian").existingSecretName }}{{ else }}{{ include "plugin-br-ted-lerian.fullname" . }}{{ end }}
-          - configMapRef:
-              name: {{ include "plugin-br-ted-lerian.fullname" . }}
-          {{- if or $otelEnabled $rolesAnywhereEnabled $pgInternal $vkInternal }}
-          env:
-          {{- if $pgInternal }}
-          {{- include "plugin-br-ted-lerian.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
-          {{- end }}
-```
-
-**After (v1.1.1):**
-```yaml
-spec:
-  template:
-    spec:
-      terminationGracePeriodSeconds: {{ (index .Values "plugin-br-ted-lerian").terminationGracePeriodSeconds }}
-      containers:
-        - name: plugin-br-ted-lerian
-          envFrom:
-          - secretRef:
-              name: {{ if (index .Values "plugin-br-ted-lerian").useExistingSecret }}{{ (index .Values "plugin-br-ted-lerian").existingSecretName }}{{ else }}{{ include "plugin-br-ted-lerian.fullname" . }}{{ end }}
-          - configMapRef:
-              name: {{ include "plugin-br-ted-lerian.fullname" . }}
-          env:
-          - name: SHUTDOWN_DRAIN_DELAY
-            value: "15s"
-          {{- if $pgInternal }}
-          {{- include "plugin-br-ted-lerian.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
-          {{- end }}
-```
 
 **Impact:**
 

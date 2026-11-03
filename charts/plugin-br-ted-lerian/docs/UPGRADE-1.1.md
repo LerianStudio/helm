@@ -36,28 +36,6 @@ plugin-br-ted-lerian:
 - When `LICENSE_KEY` is empty (`""`), the key is **not rendered** in the Secret resource
 - When `LICENSE_KEY` is set to a non-empty value, it is included in the Secret and exposed as an environment variable to the application
 
-**Template logic change:**
-
-**Before (v1.0.2):**
-```yaml
-stringData:
-  {{- range $key, $value := (index .Values "plugin-br-ted-lerian").secrets }}
-  {{- if not (or (and $pgInternal (eq $key "POSTGRES_PASSWORD")) (and $vkInternal (eq $key "REDIS_PASSWORD"))) }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
-  {{- end }}
-```
-
-**After (v1.1.0):**
-```yaml
-stringData:
-  {{- range $key, $value := (index .Values "plugin-br-ted-lerian").secrets }}
-  {{- if not (or (and $pgInternal (eq $key "POSTGRES_PASSWORD")) (and $vkInternal (eq $key "REDIS_PASSWORD")) (and (eq $key "LICENSE_KEY") (not $value))) }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
-  {{- end }}
-```
-
 **Impact:** The template now excludes `LICENSE_KEY` from the Secret when its value is empty, preventing the creation of an empty environment variable. This is consistent with the existing behavior for `POSTGRES_PASSWORD` and `REDIS_PASSWORD` when using bundled subcharts.
 
 **New environment variable (when set):**

@@ -29,7 +29,7 @@ This is a patch release. No configuration changes, template modifications, or br
 
 **Impact:** This upgrade requires no configuration changes or migration steps. Existing values files are fully compatible.
 
-> **Note:** No application behavior, deployment manifests, or configuration options have changed.
+> **Note:** No application behavior or configuration options have changed. The rendered manifests differ only in the `helm.sh/chart` label, which the Deployment also sets on its pod template, so the upgrade rolls the pods.
 
 ---
 

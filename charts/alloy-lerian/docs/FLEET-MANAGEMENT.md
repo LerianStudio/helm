@@ -73,7 +73,7 @@ Versão mínima do agente: v1.7.2. Usamos 1.21.3.
 
 Com `fleetManagement.enabled: true` (o padrão), a configuração local do papel `node` tem só os blocos `logging` e `remotecfg`. A cadeia de coleta desse papel, com as regras de sanitização e o exportador, vem da configuração publicada no Fleet. O papel `singleton` não recebe pipeline do Fleet: a cadeia dele, com as mesmas regras de sanitização, fica na configuração local.
 
-A configuração publicada é o render deste chart. `sanitizacao/publicar-fleet.sh` a publica, e `sanitizacao/verificar-fleet.sh` compara o publicado com o template. Quem tem acesso à console do Fleet pode publicar por fora desse caminho; o verificador é o que torna isso visível.
+A configuração publicada é o render deste chart. `sanitizacao/publicar-fleet.sh` a publica, e `sanitizacao/verificar-fleet.sh` compara o publicado com o template. Quem tem acesso à console do Fleet pode publicar por fora desse caminho. O verificador compara a configuração inteira com o render só quando `CLIENT_ID` está definido; sem `CLIENT_ID`, ele confere apenas as regras de PII das pipelines que as têm.
 
 ## Identidade do collector
 

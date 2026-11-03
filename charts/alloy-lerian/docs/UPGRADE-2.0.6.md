@@ -89,7 +89,7 @@ prometheus.relabel "allowlist_agente" {
 
 **Migration Steps:**
 
-1. On upgrade, new series with the `-node` and `-singleton` suffixes will be created
+1. On upgrade, the singleton writes new series with the `-singleton` suffix. With `fleetManagement.enabled: true` (the default), the node agents load their collection chain from Fleet Management, so the `-node` series appear only after the 2.0.6 render is published to Fleet with the "Publicar config no Fleet" workflow. Until then, the node agents keep the series without a suffix. With `fleetManagement.enabled: false`, both suffixes appear on upgrade.
 2. Old series without the suffix will stop receiving updates and age out according to your retention policy
 3. If you have dashboards or alerts that query self-metrics by `instance` label, update them to match the new pattern:
 

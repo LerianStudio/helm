@@ -32,7 +32,7 @@ rule {
 
 **Migration Steps:**
 
-No action required. The change is applied automatically on upgrade.
+With `fleetManagement.enabled: true` (the default), the node agents load their collection chain, self-metrics included, from the configuration published to Fleet Management. `helm upgrade` changes the singleton only. The node agents get the fix when the 2.0.5 render is published to Fleet with the "Publicar config no Fleet" workflow. With `fleetManagement.enabled: false`, `helm upgrade` applies the change to both roles.
 
 ---
 

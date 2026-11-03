@@ -3,6 +3,15 @@
 ## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
 
 Fixes:
+- Preserve the partition runner to ensure consistent behavior during execution. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
 - Preserve the partition runner functionality to ensure consistent behavior in `midaz`. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)

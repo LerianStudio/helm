@@ -3,50 +3,23 @@
 ## Topics
 
 - **[Overview](#overview)**
-- **[Fixes](#fixes)**
-  - [1. Secure PostgreSQL role password handling](#1-secure-postgresql-role-password-handling)
+- **[Changes](#changes)**
+  - [1. PostgreSQL role password validation](#1-postgresql-role-password-validation)
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
 
-This guide covers the `plugin-br-payments` chart upgrade from `1.1.1` to `1.1.2`. The application version remains `1.0.0-beta.9`; the chart bump to `1.1.2` is a patch release that fixes a security issue in the PostgreSQL bootstrap job. The job now validates the `plugin_br_payments` role password and uses PostgreSQL's `\password` command to hash the password client-side before transmission, ensuring the plaintext password never appears in server logs or transaction history.
+This guide covers the `plugin-br-payments` chart upgrade from `1.1.1` to `1.1.2`. The application version remains `1.0.0-beta.9`; the chart bump to `1.1.2` is a patch release that updates the PostgreSQL bootstrap job. The job now checks the `plugin_br_payments` role password secret before it creates the role.
 
 No configuration changes are required. The upgrade will trigger a new bootstrap job run if the job is still present in your cluster.
 
-## Fixes
+## Changes
 
-### 1. Secure PostgreSQL role password handling
+### 1. PostgreSQL role password validation
 
-The `bootstrap-postgres` job template was updated to prevent the `plugin_br_payments` role password from being transmitted or logged in plaintext during role creation.
-
-**Before (v1.1.1):**
-
-```yaml
-PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -v pw="$DB_PASSWORD_PLUGIN_BR_PAYMENTS" -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE" -c "CREATE ROLE plugin_br_payments LOGIN PASSWORD :'pw'"
-```
-
-**After (v1.1.2):**
-
-```yaml
-[ -n "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" ] && [ "$(printf '%s' "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" | tr -d '\r\n')" = "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" ] || { echo "DB_PASSWORD_PLUGIN_BR_PAYMENTS is empty or contains a carriage return or line feed (often a trailing one from a Secret made with echo or on Windows); the plugin_br_payments role password must be a non-empty single line." >&2; exit 1; }
-# \password hashes the password inside psql, so the server only receives its
-# verifier, never the plaintext; the transaction never leaves a passwordless role.
-printf '%s\n' 'BEGIN;' 'CREATE ROLE plugin_br_payments LOGIN;' '\password plugin_br_payments' "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" "$DB_PASSWORD_PLUGIN_BR_PAYMENTS" 'COMMIT;' | PGPASSWORD="$DB_ADMIN_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER_ADMIN" -d "$DB_DATABASE"
-```
-
-#### What changed
-
-1. **Password validation**: The job now checks that `DB_PASSWORD_PLUGIN_BR_PAYMENTS` is non-empty and does not contain carriage return (`\r`) or line feed (`\n`) characters. Secrets created with `echo` (without `-n`) or on Windows systems often have trailing newlines that break the `\password` command.
-
-2. **Client-side hashing**: The new implementation uses PostgreSQL's `\password` meta-command, which hashes the password inside the `psql` client. The server receives only the SCRAM-SHA-256 verifier, never the plaintext password. This prevents the password from appearing in:
-   - PostgreSQL server logs (even with `log_statement = 'all'`)
-   - `pg_stat_activity` views
-   - Replication streams
-   - Point-in-time recovery archives
-
-3. **Transactional safety**: The role creation and password assignment are wrapped in a `BEGIN; ... COMMIT;` transaction, so the role is never left in a passwordless state if the `\password` command fails.
+The `bootstrap-postgres` job now checks that `DB_PASSWORD_PLUGIN_BR_PAYMENTS` is non-empty and does not contain carriage return (`\r`) or line feed (`\n`) characters. Secrets created with `echo` (without `-n`) or on Windows systems often have trailing newlines. The job stops with an error message when it finds one.
 
 #### Operational impact
 
@@ -68,7 +41,7 @@ printf '%s' 'your-password-here' | kubectl create secret generic plugin-br-payme
 
 > **Warning:** If your `DB_PASSWORD_PLUGIN_BR_PAYMENTS` secret was created with `echo` or `kubectl create secret --from-literal=password="$(echo ...)"`, it likely contains a trailing newline. The v1.1.2 bootstrap job will reject it with an explicit error message. Recreate the secret without the trailing newline before running the job.
 
-> **Note:** The bootstrap job is typically a one-time operation. If your cluster already has the `plugin_br_payments` role, this change will not affect your upgrade. The new validation and hashing logic only runs when creating the role for the first time.
+> **Note:** The bootstrap job is typically a one-time operation. If your cluster already has the `plugin_br_payments` role, this change will not affect your upgrade. The new validation only runs when creating the role for the first time.
 
 ## Migration Steps
 

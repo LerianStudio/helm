@@ -30,6 +30,31 @@ Improvements:
 Features:
 - Require the single-use first-admin contract. (@fredcamaral)
 - Create the first console admin from identity at boot. (@fredcamaral)
+- Document the ArgoCD and Helmfile effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0`, `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
 - Document the `argocd` and `helmfile` effect of removing init-user. (@fredcamaral)
 
 Fixes:

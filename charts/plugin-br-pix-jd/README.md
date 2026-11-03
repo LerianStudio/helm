@@ -6,8 +6,8 @@ This README is the reference for installing and configuring the chart. The Pix p
 
 ## What the chart installs
 
-- **API**: the payment service — a Deployment, a Service, a ConfigMap, a Secret and a PodDisruptionBudget, plus an optional HorizontalPodAutoscaler (`api.autoscaling.enabled`) and an optional Ingress (`api.ingress.enabled`). It listens on port `8080`, where `/health` and `/version` answer without authentication. `/readyz` and `/readyz/tenant/:id` answer on the internal health port `8099` (Service port `health`, ClusterIP only); there is no `/metrics`.
-- **Worker**: a Deployment that runs the scheduled jobs — transaction reconciliation, the MED pollers and the delivery to indirect participants. It has no Service and no Ingress. **Disabled by default**; without it, those jobs do not run. To run it, set `worker.enabled: true`; it runs the `ghcr.io/lerianstudio/plugin-br-pix-jd-worker` image.
+- **API**: the payment service — a Deployment, a Service, a ConfigMap, a Secret and a PodDisruptionBudget, plus an optional HorizontalPodAutoscaler (`api.autoscaling.enabled`) and an optional Ingress (`api.ingress.enabled`). It listens on port `8080`, where `/health` and `/version` answer without authentication. `/readyz` and `/readyz/tenant/:id` answer on the internal health port `8099` (Service port `health`, ClusterIP only).
+- **Worker**: a Deployment that runs the scheduled jobs — transaction reconciliation and the MED pollers. It has no Service and no Ingress. **Disabled by default**; without it, those jobs do not run. To run it, set `worker.enabled: true`; it runs the `ghcr.io/lerianstudio/plugin-br-pix-jd-worker` image.
 - **Migrations Job**: applies the database schema with the `ghcr.io/lerianstudio/plugin-br-pix-jd-migrations` image, before the API rolls out (`pre-install` / `pre-upgrade`). The service does not migrate the database on its own.
 - **PostgreSQL and Valkey subcharts**: bundled, and **both disabled by default**. The chart expects an external PostgreSQL and an external Valkey or Redis. With the bundled PostgreSQL the migrations run after the release syncs, so `api.configmap.SYSTEMPLANE_ENABLED` defaults to `"false"` there and every Pix flow answers `503` until you set it to `"true"` after the first sync.
 
@@ -29,7 +29,7 @@ The chart **refuses to render** without these:
 | `api.configmap.POSTGRES_HOST` | host of the external PostgreSQL | empty | the render fails |
 | `api.secrets.POSTGRES_PASSWORD` | password of the external PostgreSQL | empty | the render fails. Or supply it through `api.existingSecret.name` |
 | `api.configmap.REDIS_HOST` | `host:port` of the Valkey or Redis | empty | the render fails. The rate limiter is fail-closed: without Redis it refuses every request |
-| `api.secrets.LICENSE_KEY` | your license key | empty | the render fails. The API and the worker validate it at startup in every mode. Or supply it through `api.existingSecret.name` |
+| `api.secrets.LICENSE_KEY` | your license key | empty | the render fails. The API and the worker validate it at startup in every mode. Or supply it through `api.existingSecret.name`, and `worker.existingSecret.name` when the worker runs |
 
 The chart **renders** without the values below, but the service does not work without them:
 
@@ -59,9 +59,7 @@ Set these only when your institution needs them.
 
 | Key | When | Format | Default |
 | :-- | :--- | :----- | :------ |
-| `api.configmap.ORGANIZATION_IDS` | only for a per-organization license. Empty stops the service from starting | comma-separated organization IDs | `global` |
 | `api.configmap.MIDAZ_URL_TRACER` | only if the Tracer screens inbound credits | Tracer base URL | empty: no credit is screened |
-| `api.configmap.APPLICATION_NAME` | only if your license names another application; the API and the worker must agree, so set it here only | application name | empty, read as `plugin-br-pix-jd` |
 | `api.secrets.REDIS_PASSWORD` | only if your Valkey or Redis requires a password | password | empty |
 | `api.cors.allowedOrigins` | only if a browser calls the API directly | list of origins | empty: every browser cross-origin call is refused |
 | `api.rateLimit.*` | only to change the rate-limit defaults | see `values.yaml` | chart defaults |
@@ -85,7 +83,7 @@ Set these only when your institution needs them.
 
 Every value under `api.secrets` is sensitive. Keep it in a Kubernetes Secret, never in a values file in version control.
 
-To use a Secret that you manage, set `api.existingSecret.name`. The chart then renders no Secret of its own and reads every secret key — `LICENSE_KEY`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, the JD/Midaz/CRM credentials and the optional keys above — from that Secret. The chart does not check that Secret's content: to sign payment orders, it must carry both signing keys.
+To use a Secret that you manage, set `api.existingSecret.name`. The chart then renders no Secret for the API and reads every secret key — `LICENSE_KEY`, `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, the JD/Midaz/CRM credentials and the optional keys above — from that Secret. With the worker enabled, also set `worker.existingSecret.name` to the same Secret: otherwise the chart renders a Secret for the worker, and the render fails without `api.secrets.LICENSE_KEY`. The chart does not check that Secret's content: to sign payment orders, it must carry both signing keys.
 
 If you use argocd-vault-plugin, a `<path:...>` placeholder skips the chart's format checks, because the plugin substitutes it after Helm runs. The value in your vault must then hold the key in the right format — for a PEM, with real line breaks.
 
@@ -98,7 +96,7 @@ A values file with the values above. Every value is a placeholder:
 ```yaml
 api:
   image:
-    tag: "1.3.0"
+    tag: "1.6.1"
   configmap:
     ENVIRONMENT_NAME: "production"
     QRCODE_PUBLIC_BASE_URL: "pix.example.com"
@@ -145,6 +143,8 @@ Before you upgrade to app 1.1.0 or later (chart 0.4.8 or later), upgrade the Acc
 
 When you upgrade to app 1.2.1, `MULTI_TENANT_ALLOW_INSECURE_HTTP` is no longer read. If `MULTI_TENANT_URL` uses `http://`, set `api.configmap.ALLOW_INSECURE_TLS: "true"` instead.
 
+When you upgrade to chart 0.6.0 or later, the chart sets the probes, the rollout strategy, the grace period and the PodDisruptionBudget itself. Remove `livenessProbe`, `readinessProbe`, `startupProbe`, `pdb`, `deploymentStrategy` and `terminationGracePeriodSeconds` from the `api` and `worker` blocks of your values file, and set `api.image.tag` and `worker.image.tag` to `1.6.0` or later. Otherwise the render fails.
+
 Replace `<pix-release>` with your release name. A new install uses `plugin-br-pix-jd`; an existing install keeps its own name, such as `plugin-br-pix-direct-jd`. An install of the earlier `plugin-br-pix-direct-jd-helm` chart keeps its settings in a `pix:` block, which this chart rejects: rewrite that values file into the `api` and `worker` blocks before you use it with this chart.
 
 ```bash
@@ -157,12 +157,12 @@ helm upgrade <pix-release> \
 helm uninstall <pix-release> -n midaz-plugins
 ```
 
-Per-version notes: [0.1](docs/UPGRADE-0.1.md) · [0.2](docs/UPGRADE-0.2.md) · [0.3](docs/UPGRADE-0.3.md) · [0.4](docs/UPGRADE-0.4.md) · [0.4.1](docs/UPGRADE-0.4.1.md) · [0.4.2](docs/UPGRADE-0.4.2.md) · [0.4.3](docs/UPGRADE-0.4.3.md) · [0.4.4](docs/UPGRADE-0.4.4.md) · [0.4.5](docs/UPGRADE-0.4.5.md) · [0.4.6](docs/UPGRADE-0.4.6.md) · [0.4.7](docs/UPGRADE-0.4.7.md) · [0.4.8](docs/UPGRADE-0.4.8.md) · [0.5.0](docs/UPGRADE-0.5.0.md).
+Per-version notes: [0.1](docs/UPGRADE-0.1.md) · [0.2](docs/UPGRADE-0.2.md) · [0.3](docs/UPGRADE-0.3.md) · [0.4](docs/UPGRADE-0.4.md) · [0.4.1](docs/UPGRADE-0.4.1.md) · [0.4.2](docs/UPGRADE-0.4.2.md) · [0.4.3](docs/UPGRADE-0.4.3.md) · [0.4.4](docs/UPGRADE-0.4.4.md) · [0.4.5](docs/UPGRADE-0.4.5.md) · [0.4.6](docs/UPGRADE-0.4.6.md) · [0.4.7](docs/UPGRADE-0.4.7.md) · [0.4.8](docs/UPGRADE-0.4.8.md) · [0.5.0](docs/UPGRADE-0.5.0.md) · [0.5.1](docs/UPGRADE-0.5.1.md) · [0.5.2](docs/UPGRADE-0.5.2.md) · [0.5.3](docs/UPGRADE-0.5.3.md) · [0.5.4](docs/UPGRADE-0.5.4.md) · [0.5.5](docs/UPGRADE-0.5.5.md) · [0.5.6](docs/UPGRADE-0.5.6.md) · [0.5.7](docs/UPGRADE-0.5.7.md) · [0.5.8](docs/UPGRADE-0.5.8.md).
 
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name`, all of them come from that Secret.
+- Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name` (and `worker.existingSecret.name` when the worker runs), all of them come from that Secret.
 - Dependency notes: `lerian-common-helm` (library chart, renders nothing); `postgresql` (Bitnami `16.3.5`) and `valkey` (Bitnami `2.4.7`), both disabled by default — the chart expects an external PostgreSQL and Valkey or Redis.
 - Production overrides: `api.image.tag`, `worker.image.tag`, `migrations.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE`, `api.configmap.PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `api.configmap.REDIS_HOST`, `api.existingSecret.name`, and `api.ingress.*`.
 - Source/license: the plugin is closed source and requires an Enterprise license; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).

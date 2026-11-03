@@ -4,7 +4,7 @@ Chart **9.5.8** selects Access Manager **3.9.0**. Treat this as an application u
 
 > **Warning:** Read [Production-like `ENV_NAME`: reach Caradhras over HTTPS](#production-like-env_name-reach-caradhras-over-https) before upgrading any install whose `ENV_NAME` is not `development`, `staging` or `local`, including environments that are not production but run with a production `ENV_NAME`. With the chart's default Caradhras address, auth and identity **fail to start** after this upgrade.
 
-Application behavior below is checked against [v3.9.0](https://github.com/LerianStudio/plugin-access-manager/tree/v3.9.0), resolved to commit `fe633e3c1939a51c09c5d3809160c51f5809ade1`. Source links use that immutable commit. Chart behavior is defined by this chart's [values](../values.yaml) and templates, not by the application's development branch.
+Application behavior below is checked against v3.9.0, resolved to commit `fe633e3c1939a51c09c5d3809160c51f5809ade1`. Chart behavior is defined by this chart's [values](../values.yaml) and templates, not by the application's development branch.
 
 ## 1. Confirm images and upgrade scope
 
@@ -144,8 +144,6 @@ Optional tuning (Go duration syntax; omitted, invalid or non-positive values fal
 | `auth.configmap.AUTH_JWKS_CACHE_TTL` | Auth's upstream JWKS cache freshness |
 | `identity.configmap.AUTH_M2M_JWKS_REFRESH_INTERVAL` | Identity's dynamic JWKS refresh interval |
 
-Sources: [Auth bootstrap](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/auth/internal/bootstrap/config.go), [Identity bootstrap](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/internal/bootstrap/config.go), [Auth SaaS TLS gate](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/auth/internal/bootstrap/tls_enforcement.go), [Identity SaaS TLS gate](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/internal/bootstrap/tls_enforcement.go).
-
 ### MFA and existing users
 
 `auth.configmap.MFA_ENABLED: "true"` is a deployment assertion that MFA is used; Auth refuses startup without a non-empty **`MFA_SECRET`**. Supply it through `auth.secrets.MFA_SECRET`, or key `MFA_SECRET` in the Secret selected by `auth.useExistingSecret` / `auth.existingSecretName`. Keep the existing secret stable across replicas and upgrades; do not rotate it casually during this change. Chart releases after 9.5.8 refuse to render `MFA_ENABLED` true without that secret reference, and refuse `MFA_SECRET` in `auth.extraEnvVars` (a ConfigMap).
@@ -153,8 +151,6 @@ Sources: [Auth bootstrap](https://github.com/LerianStudio/plugin-access-manager/
 The application defaults this assertion to false when omitted, but MFA enrollment is per user. Omitting the flag does not prove there are no enrolled users. Inventory actual enrollment, preserve MFA policy, and supply the secret rather than suppressing the assertion to make startup pass.
 
 **SMS MFA is retired in 3.9.0.** Supported channels are `app` (TOTP) and `email`. Identify SMS-only users and complete an approved transition to a supported factor before rollout. Legacy SMS enrollment can be cleared through the authorized per-channel recovery flow, but cannot be re-enrolled or used for a login challenge. Clearing it can leave a password-only account; it is not a substitute for completing re-enrollment under the organization's security policy.
-
-Sources: [MFA startup validation](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/auth/internal/bootstrap/config.go), [supported and clearable MFA channels](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/pkg/constant/mfa.go).
 
 ### SSO and password recovery
 
@@ -166,8 +162,6 @@ Sources: [MFA startup validation](https://github.com/LerianStudio/plugin-access-
 | `identity.configmap.ENABLE_FORGOT_PASSWORD` | Default `"false"`; enabling exposes public self-service password-recovery routes. Confirm the intended email-provider/application configuration, rate limiting and end-to-end reset flow before opting in. |
 
 For SSO, Auth and Identity must receive the same browser-facing `PLUGIN_AUTH_SSO_CALLBACK_URL`, matching the Caradhras application's redirect allow-list. Use `common.sso.callbackUrl` for the full URL (or the chart's `common.sso.baseUrl` derivation); inspect per-component overrides, which take precedence. Do not use the internal `PLUGIN_AUTH_ADDRESS` as a browser callback. Test provider preflight, login, callback and code exchange with the actual IdP.
-
-Sources: [Identity SSO settings](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/pkg/config/config.go), [preflight transport policy](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/internal/services/sso_provider_preflight.go), [Auth single-tenant SSO validation](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/auth/pkg/config/config.go), [password recovery](https://github.com/LerianStudio/plugin-access-manager/blob/fe633e3c1939a51c09c5d3809160c51f5809ade1/components/identity/internal/services/forgot_password.go).
 
 ## 3. Verify Secret references without exposing values
 

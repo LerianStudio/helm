@@ -54,7 +54,7 @@ A new boolean value, `caradhras.migrations.skipRBACChain`, skips the RBAC migrat
 
 **Why this matters:**
 
-An install that takes its permissions through RI manifests does not need the RBAC chain. RI stands for Responsibility Inversion: each Lerian product declares its own permissions to Identity. The internal `cross` Caradhras install works this way, and it boots from an RBAC-free seed (`/cross/init_data.json`). On such an install:
+An install that takes its permissions through RI manifests does not need the RBAC chain. RI stands for Responsibility Inversion: each Lerian product declares its own permissions to Identity. On such an install:
 
 - The RBAC chain adds the permissions, roles and groups of Lerian products under organization `lerian`, which this install does not take
 - The boot schema check expects the RBAC chain at its head, and fails if the chain was never applied
@@ -226,7 +226,7 @@ caradhras:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `skipRBACChain` | boolean | `false` | Skip the RBAC migration chain (Lerian product permissions, roles and groups under organization `lerian`) in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only through RI manifests, such as the internal `cross` install. Needs Caradhras and caradhras-migrations `1.9.0-rc.1` or later. |
+| `skipRBACChain` | boolean | `false` | Skip the RBAC migration chain (Lerian product permissions, roles and groups under organization `lerian`) in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only through RI manifests. Needs Caradhras and caradhras-migrations `1.9.0-rc.1` or later. |
 | `extraEnvVars` | map | `{}` | Extra environment variables for the migrate init container only, as `NAME: value` pairs. Values are rendered as quoted strings. Names must match `^[-._a-zA-Z][-._a-zA-Z0-9]*$`. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused. Not for secrets: values are visible in the pod spec. |
 
 **Environment variable set by skipRBACChain:**
@@ -249,7 +249,7 @@ If your permissions, roles and groups come from the Caradhras RBAC migrations, *
 
 #### Option 2: Permissions Through RI Manifests (Enable skipRBACChain)
 
-If your Caradhras install takes no RBAC migrations and its permissions arrive through RI manifests, enable `skipRBACChain`. The internal `cross` Caradhras install is the case this option was built for.
+If your Caradhras install takes no RBAC migrations and its permissions arrive through RI manifests, enable `skipRBACChain`.
 
 **Action:** Set the option and use image tags that read it (see [Step 3](#step-3-check-the-image-versions)):
 

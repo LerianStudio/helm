@@ -25,7 +25,7 @@ This guide covers the `tracer` chart upgrade from `3.0.0` to `3.0.1`. This is a 
 
 This upgrade requires no configuration changes or manual intervention. All existing values files and configurations remain valid.
 
-> **Note:** This is a metadata-only release. You can safely upgrade without reviewing configuration or preparing migration steps.
+> **Note:** No configuration or migration steps are needed. The chart version is part of the `helm.sh/chart` label on the pod template, so `helm upgrade` rolls the tracer pods.
 
 ## Preview changes before upgrading
 

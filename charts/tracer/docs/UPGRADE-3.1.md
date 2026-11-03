@@ -24,7 +24,7 @@ This guide covers the `tracer` chart upgrade from `3.0.1` to `3.1.0`. This minor
 
 ### 1. Lerian license key support
 
-The chart now supports a `LICENSE_KEY` secret value. When set, the license key is rendered into the tracer Secret and passed to the application.
+The chart now supports a `LICENSE_KEY` secret value. When set, the license key is rendered into the tracer Secret and passed to the application. The tracer `1.0.0` image this chart deploys does not read `LICENSE_KEY`.
 
 **New secret field:**
 
@@ -44,31 +44,9 @@ tracer:
 
 The `secrets.yaml` template now conditionally renders each secret key. The `LICENSE_KEY` is only rendered when non-empty; all other keys are rendered unconditionally (preserving backward compatibility).
 
-**Before (v3.0.1):**
-
-```yaml
-type: Opaque
-stringData:
-  {{- range $key, $value := .Values.tracer.secrets }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
-```
-
-**After (v3.1.0):**
-
-```yaml
-type: Opaque
-stringData:
-  {{- range $key, $value := .Values.tracer.secrets }}
-  {{- if or $value (ne $key "LICENSE_KEY") }}
-  {{ $key }}: {{ $value | quote }}
-  {{- end }}
-  {{- end }}
-```
-
 **How to set the license key:**
 
-Add the license key to your custom values file:
+Add the license key to your custom values file, and pass that file with `-f` to the preview and upgrade commands:
 
 ```yaml
 tracer:
@@ -82,17 +60,22 @@ Or pass it via `--set` during upgrade:
 helm upgrade tracer oci://registry-1.docker.io/lerianstudio/tracer-helm \
   --version 3.1.0 \
   -n tracer \
+  --reset-then-reuse-values \
   --set tracer.secrets.LICENSE_KEY="your-lerian-license-key-here"
 ```
+
+Without `--reset-then-reuse-values` (Helm 3.14 or later), `--set` alone resets every value you set on the previous release to the chart default.
+
+With `tracer.useExistingSecret: true` the chart renders no Secret and `tracer.secrets.LICENSE_KEY` has no effect. Add the `LICENSE_KEY` key to the existing Secret named in `tracer.existingSecretName` instead.
 
 > **Note:** Store the license key in a secure secret management system (e.g., HashiCorp Vault, AWS Secrets Manager, Azure Key Vault) and inject it into your Helm values at deployment time. Do not commit the license key to version control.
 
 **Validation:**
 
-After upgrading, verify the license key is present in the Secret:
+After upgrading, verify the `LICENSE_KEY` key is present in the Secret. `kubectl describe` lists key names and sizes, not values:
 
 ```bash
-kubectl get secret tracer -n tracer -o jsonpath='{.data.LICENSE_KEY}' | base64 -d
+kubectl describe secret tracer -n tracer
 ```
 
 ## Configuration Changes

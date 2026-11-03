@@ -175,9 +175,9 @@ otelcol.processor.transform "procedencia" {
       // POR QUE IMPORTA: 75 regras de alerta consultam `http_status_code` e
       // ZERO consultam `http_response_status_code`. Um servico ja migrado para
       // lib-observability emite so a forma canonica e SOME dessas 75 regras,
-      // sem erro nenhum. MEDIDO 2026-10-06 em calls_total: Banqi-Prd,
-      // Cappta-Prd e Cappta-Stg tem apenas `http_status_code`; so voluti-prd e
-      // voluti-stg tem as duas formas.
+      // sem erro nenhum. MEDIDO 2026-10-06 em calls_total: cliente C (prd),
+      // cliente A (prd) e cliente A (stg) tem apenas `http_status_code`; so cliente B (prd) e
+      // cliente B (stg) tem as duas formas.
       //
       // `_OTHER` e excluido de proposito: e o valor que o SDK usa para metodo
       // HTTP nao reconhecido, e propagar isso para a forma antiga poluiria a
@@ -407,7 +407,7 @@ otelcol.exporter.otlphttp "destino" {
     //   level=error "Exporting failed. Rejecting data." error="sending queue is full"
     //
     // Quanto a fila aguenta, com linha media de 909 bytes medida em producao:
-    // ~17 min em aws-devops, ~18 s em Cappta-Prd, ~1,7 s em Voluti-prd.
+    // ~17 min em aws-devops, ~18 s em cliente A (prd), ~1,7 s em cliente B (prd).
     //
     // ⚠️ Logo a fila NAO e a protecao para cliente de alto volume. O que torna
     // essa perda percebida e o ALERTA de saturacao (`otelcol_exporter_queue_size`
@@ -776,7 +776,7 @@ prometheus.relabel "allowlist_objetos" {
   // recebe argumento de namespace; sem esta regra a allowlist acima filtra só a
   // FAMÍLIA, e cada pod, deployment e PVC do cliente sai do cluster dele.
   //
-  // MEDIDO em voluti-stg (2026-10-20), primeiro BYOC migrado: 1.109 séries
+  // MEDIDO em cliente B (stg), em 2026-10-20, primeiro BYOC migrado: 1.109 séries
   // `kube_*`, das quais 647 (58%) eram de kube-system, observability e security
   // do cliente. O agente anterior entregava só os namespaces da Lerian.
   //
@@ -792,7 +792,7 @@ prometheus.relabel "allowlist_objetos" {
   // Só o `include` vira regra. O `exclude` do perfil `own` fica de fora: lá o
   // cluster é nosso, e aplicá-lo aqui tiraria os `kube_*` de kube-system dos
   // ambientes internos — mudança que esta correção não pediu nem mediu.
-  // VERIFICADO: com `examples/values-benedita.yaml` o render sai idêntico ao
+  // VERIFICADO: com os values de um ambiente interno o render sai idêntico ao
   // anterior, fora este comentário.
 {{- $nsIncludeObj := include "alloy-lerian.namespaceInclude" . }}
 {{- if $nsIncludeObj }}

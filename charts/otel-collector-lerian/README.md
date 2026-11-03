@@ -115,32 +115,32 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `config.receivers.otlp.protocols.grpc.endpoint` | OTLP gRPC endpoint | `0.0.0.0:4317` |
-| `config.receivers.otlp.protocols.http.endpoint` | OTLP HTTP endpoint | `0.0.0.0:4318` |
-| `config.receivers.k8s_cluster.collection_interval` | Cluster metrics collection interval | `60s` |
-| `config.receivers.kubeletstats.collection_interval` | Kubelet stats collection interval | `60s` |
+| `opentelemetry-collector.config.receivers.otlp.protocols.grpc.endpoint` | OTLP gRPC endpoint | `0.0.0.0:4317` |
+| `opentelemetry-collector.config.receivers.otlp.protocols.http.endpoint` | OTLP HTTP endpoint | `0.0.0.0:4318` |
+| `opentelemetry-collector.config.receivers.k8s_cluster.collection_interval` | Cluster metrics collection interval | `60s` |
+| `opentelemetry-collector.config.receivers.kubeletstats.collection_interval` | Kubelet stats collection interval | `60s` |
 
 ### Processor Configuration
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `config.processors.memory_limiter.limit_percentage` | Memory limit percentage | `80` |
-| `config.processors.memory_limiter.spike_limit_percentage` | Spike limit percentage | `20` |
-| `config.processors.batch.timeout` | Batch timeout | `200ms` |
-| `config.processors.batch.send_batch_size` | Batch size | `512` |
-| `config.processors.batch.send_batch_max_size` | Maximum batch size | `1024` |
+| `opentelemetry-collector.config.processors.memory_limiter.limit_percentage` | Memory limit percentage | `80` |
+| `opentelemetry-collector.config.processors.memory_limiter.spike_limit_percentage` | Spike limit percentage | `20` |
+| `opentelemetry-collector.config.processors.batch.timeout` | Batch timeout | `200ms` |
+| `opentelemetry-collector.config.processors.batch.send_batch_size` | Batch size | `512` |
+| `opentelemetry-collector.config.processors.batch.send_batch_max_size` | Maximum batch size | `1024` |
 
 ### Exporter Configuration
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `config.exporters.otlphttp/server.endpoint` | Central telemetry endpoint | `https://telemetry.lerian.io:443` |
+| `opentelemetry-collector.config.exporters.otlphttp/server.endpoint` | Central telemetry endpoint | `https://telemetry.lerian.io:443` |
 
 ### Client Configuration
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `config.processors.resource/add_client_id.attributes[0].value` | Client ID for multi-tenancy. **Placeholder default: set your own value.** The chart does not validate it. | `Firmino` |
+| `opentelemetry-collector.config.processors.resource/add_client_id.attributes[0].value` | Client ID for multi-tenancy. **Placeholder default: set your own value.** The chart does not validate it. | `Firmino` |
 
 ---
 
@@ -195,7 +195,7 @@ Two-tier `pod_association`:
 1. **Primary**: `from: resource_attribute, name: k8s.pod.ip` — works for any pod, no hostNetwork required. Apps need to emit `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)` (the `midaz` chart's `ledger`, `crm` and `tracer` templates set this automatically when `otel-collector-lerian.enabled=true`).
 2. **Fallback**: `from: connection` — kicks in for apps that don't emit `k8s.pod.ip` (e.g. apps still on `lib-commons v2`). Requires the collector's `hostNetwork: true` to be honored by the cluster's Pod Security policy.
 
-If your cluster's Pod Security Standards forbid `hostNetwork: true` you can still run the chart in a restricted mode by setting `hostNetwork: false` and ensuring **every** application emits the `k8s.pod.ip` resource attribute — the primary path is enough on its own.
+If your cluster's Pod Security Standards forbid `hostNetwork: true` you can still run the chart in a restricted mode by setting `opentelemetry-collector.hostNetwork: false` and ensuring **every** application emits the `k8s.pod.ip` resource attribute — the primary path is enough on its own for pod identity. With `hostNetwork: false` the OTLP ports are not open on the node IP, and the `midaz` chart sends telemetry to the node IP (`$(HOST_IP):4317`). Point every application at an OTLP endpoint that reaches the collector pod. Pod Security Standards that forbid `hostNetwork` also forbid `hostPort`, so also disable the Jaeger and Zipkin ports as shown in [Node ports](#node-ports). The `restricted` profile also needs `opentelemetry-collector.podSecurityContext` and `opentelemetry-collector.securityContext` set to values it accepts. The chart sets neither.
 
 ### Node ports
 
@@ -235,11 +235,11 @@ opentelemetry-collector:
 
 ## Sensitive Data Masking
 
-The chart includes comprehensive PII masking for logs, including:
+The chart masks part of the value of PII fields in JSON log bodies. A value is masked only when its field name and its format match a rule. Before the rules run, the first masking processor (`transform/mask_body_sensitive_data_replace_1`) removes every backslash from every string log body, PII or not. The rules cover:
 
 - **Documents**: CPF, CNPJ, tax IDs, national registration numbers
 - **Names**: Customer names, sender/recipient names
-- **Emails**: All email addresses
+- **Emails**: email fields
 - **Addresses**: Street addresses, shipping/billing addresses
 - **Phone numbers**: Cell phones, landlines, contact numbers
 - **PIX keys**: EVP, dict values, UUIDs

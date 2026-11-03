@@ -14,9 +14,9 @@ infra, and OTEL is env-wired (see [External dependencies](#external-dependencies
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `secrets.STREAMING_HUB_POSTGRES_DSN` (the DSN carries the DB password); `secrets.STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` (32 bytes base64, mandatory in every mode from `appVersion 2.x` on — see [Requirements of the 2.x line](#requirements-of-the-2x-line)); `secrets.LICENSE_KEY` (the Lerian license, mandatory in every environment on a license-gated image — see [License](#license-lib-license-go-global-mode)); `secrets.STREAMING_HUB_KAFKA_SCRAM_PASSWORD` (when the broker requires SASL/SCRAM; the matching `configmap.STREAMING_HUB_KAFKA_SCRAM_USERNAME` is NOT a credential and lives in the ConfigMap); `secrets.STREAMING_HUB_DEV_KEK` (dev-only KEK material — the pointer `configmap.STREAMING_HUB_KEK_REF` names it); `secrets.STREAMING_HUB_REDIS_PASSWORD` (when the rate-limiter Redis/Valkey requires AUTH — the endpoint itself is not a credential and lives in `configmap.STREAMING_HUB_REDIS_ADDRESS`). Multi-tenant needs exactly one extra secret: `secrets.MULTI_TENANT_SERVICE_API_KEY`, which authenticates the hub to the tenant-manager it reads the control-plane allowlist from — from the 2.x line on, an empty one refuses the boot alongside a missing `configmap.MULTI_TENANT_URL`. Each TENANT's own credentials still need no secret here: the hub sweeps them from AWS Secrets Manager with its own IAM identity. All blank by default; the DSN is always emitted (an empty DSN fails the app fast at boot rather than failing the render). Provide sensitive values inline through a protected values source or set `streamingHub.useExistingSecret` + `streamingHub.existingSecretName` (the path GitOps uses, with a Vault-injected Secret).
-- Dependency notes: **No bundled subcharts.** Kafka/Redpanda, PostgreSQL and Redis/Valkey are shared external infra — supply `configmap.STREAMING_HUB_KAFKA_BROKERS`, `secrets.STREAMING_HUB_POSTGRES_DSN` and, for control-plane rate limiting, `configmap.STREAMING_HUB_REDIS_ADDRESS` (see [Rate limiting](#rate-limiting)). OTEL is env-wired to a node-local collector (`HOST_IP:4317`, gated on `streamingHub.telemetry.enabled`) — there is no OTEL collector subchart. The optional `bootstrap-postgres` Job provisions the hub's single database when `global.externalPostgresDefinitions.enabled=true`.
-- Migrations: the hub applies its schema **out of band** (the app never migrates itself). Enable the migration Job with `streamingHub.migrations.enabled=true` (default off). It is a PreSync hook that runs the stock `migrate/migrate` toolchain (image `ghcr.io/lerianstudio/streaming-hub-migrations`) BEFORE the app rolls out. The hook chain is **`bootstrap-postgres` (sync-wave -10, role+db) → `migration-secret` (-5, the DSN) → `migrations` Job (-1, the schema) → app Deployment (main Sync)**. The Job's only env is `STREAMING_HUB_POSTGRES_DSN` (from the migration-secret, or `migrations.existingSecretName` when `migrations.useExistingSecret=true`). Without it, ingest/dispatcher/partition workers crash on `relation "event_inbox"/"delivery_jobs" does not exist (42P01)`. **When `migrations.useExistingSecret=true`, the named secret must already exist in the namespace before the PreSync phase runs** — do not point it at the chart-managed application Secret (`streamingHub.existingSecretName` / inline `secrets.*`), which is created later in the main Sync phase and is therefore absent when the hook fires; the chart provisions its own PreSync `migration-secret` precisely to close that ordering gap.
+- Required secrets: `secrets.STREAMING_HUB_POSTGRES_DSN` (the DSN carries the DB password); `secrets.STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` (32 bytes base64, mandatory in every mode from `appVersion 2.x` on — see [Requirements of the 2.x line](#requirements-of-the-2x-line)); `secrets.LICENSE_KEY` (the Lerian license, mandatory in every environment on a license-gated image — see [License](#license-lib-license-go-global-mode)); `secrets.STREAMING_HUB_KAFKA_SCRAM_PASSWORD` (when the broker requires SASL/SCRAM; the matching `configmap.STREAMING_HUB_KAFKA_SCRAM_USERNAME` is NOT a credential and lives in the ConfigMap); `secrets.STREAMING_HUB_DEV_KEK` (dev-only KEK material — the pointer `configmap.STREAMING_HUB_KEK_REF` names it; in staging and production, including the chart default `STREAMING_HUB_ENV=production`, the hub refuses to start unless `STREAMING_HUB_KEK_REF` names another variable in the Secret that carries the KEK); `secrets.STREAMING_HUB_REDIS_PASSWORD` (when the rate-limiter Redis/Valkey requires AUTH — the endpoint itself is not a credential and lives in `configmap.STREAMING_HUB_REDIS_ADDRESS`). Multi-tenant needs exactly one extra secret: `secrets.MULTI_TENANT_SERVICE_API_KEY`, which authenticates the hub to the tenant-manager it reads the control-plane allowlist from — from the 2.x line on, an empty one refuses the boot alongside a missing `configmap.MULTI_TENANT_URL`. It also needs `ENV_NAME` (`global.observability.deploymentEnvironment` or `configmap.ENV_NAME`) set to the environment name; empty or `local` refuses the boot. Each TENANT's own credentials still need no secret here: the hub sweeps them from AWS Secrets Manager with its own IAM identity. All blank by default; the DSN is always emitted (an empty DSN fails the app fast at boot rather than failing the render). Provide sensitive values inline through a protected values source or set `streamingHub.useExistingSecret` + `streamingHub.existingSecretName` (the path GitOps uses, with a Vault-injected Secret).
+- Dependency notes: **No bundled subcharts.** Kafka/Redpanda, PostgreSQL and Redis/Valkey are shared external infra — supply `configmap.STREAMING_HUB_KAFKA_BROKERS`, `secrets.STREAMING_HUB_POSTGRES_DSN` and `configmap.STREAMING_HUB_REDIS_ADDRESS` (every role refuses to start without it; see [Rate limiting](#rate-limiting)). OTEL is env-wired to a node-local collector (`HOST_IP:4317`, gated on `streamingHub.telemetry.enabled`) — there is no OTEL collector subchart. The optional `bootstrap-postgres` Job provisions the hub's single database when `global.externalPostgresDefinitions.enabled=true`.
+- Migrations: the hub applies its schema **out of band** (the app never migrates itself). Enable the migration Job with `streamingHub.migrations.enabled=true` (default off). It is a PreSync hook that runs the stock `migrate/migrate` toolchain (image `ghcr.io/lerianstudio/streaming-hub-migrations`) BEFORE the app rolls out. The hook chain is **`bootstrap-postgres` (sync-wave -10, role+db) → `migration-secret` (-5, the DSN) → `migrations` Job (-1, the schema) → app Deployment (main Sync)**. The Job's only env is `STREAMING_HUB_POSTGRES_DSN` (from the migration-secret, or `migrations.existingSecretName` when `migrations.useExistingSecret=true`). Without it, the app refuses to boot because the database schema is older than the version it requires. **When `migrations.useExistingSecret=true`, the named secret must already exist in the namespace before the PreSync phase runs** — do not point it at the chart-managed application Secret (`streamingHub.existingSecretName` / inline `secrets.*`), which is created later in the main Sync phase and is therefore absent when the hook fires; the chart provisions its own PreSync `migration-secret` precisely to close that ordering gap.
 - Production overrides: choose `streamingHub.mode` (`all` vs `split`); size per-role `replicaCount` / `autoscaling` / `resources` and the Postgres pool (`poolMaxOpenConns` / `poolMaxIdleConns`) honoring **Σ(replicas × poolMaxOpenConns) ≤ Postgres `max_connections`**; set `image.tag`, `ingress`, and the secrets (inline or `useExistingSecret`).
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
@@ -26,8 +26,7 @@ infra, and OTEL is env-wired (see [External dependencies](#external-dependencies
 
 `appVersion 2.1.0` asks for four things the 1.x line did not. They do **not**
 all behave the same way when missing, and the difference matters when you are
-reading a pod that will not start — or one that started and is enforcing
-nothing. All four are environment wiring the chart exposes but does not invent.
+reading a pod that will not start — or one that started against the wrong Redis. All four are environment wiring the chart exposes but does not invent.
 
 ### Refuse the boot
 
@@ -35,20 +34,19 @@ nothing. All four are environment wiring the chart exposes but does not invent.
 |-------------|-------|------------|
 | **`STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY`**, 32 bytes, base64 | Secret (always emitted; pinned via `secretKeyRef`) | Mandatory in EVERY mode. Absent or short, the app refuses to start. The value is never echoed — supply it through the gitops/Vault path (`useExistingSecret`), never in a values file in git. |
 | **A DSN that verifies the server certificate**: `sslmode=verify-full` plus `sslrootcert=/etc/streaming-hub/postgres-ca/bundle.pem` | Secret (the DSN) + `postgres.caBundle` (the file) | In staging and production the hardened boot rejects `sslmode=require` with no CA. Turn on `postgres.caBundle.enabled` so the bundle exists at that path — see [Postgres TLS and the CA bundle](#postgres-tls-and-the-ca-bundle). |
-| **`RATE_LIMIT_ENABLED=true`** together with a Redis address that works | ConfigMap (`streamingHub.rateLimit` / `configmap.RATE_LIMIT_ENABLED`) | With enforcement asked for and an address **set**, the connection is validated at boot: an address the hub cannot use stops it rather than serving unlimited. |
+| **`STREAMING_HUB_REDIS_ADDRESS`** and **`RATE_LIMIT_ENABLED=true`** | ConfigMap (`streamingHub.datastores.redis` / `streamingHub.rateLimit` / `configmap.<KEY>`) | Every role refuses to start when the address is empty or `RATE_LIMIT_ENABLED` is not `true`. The connection is also checked at boot: an address the hub cannot reach stops it. |
 
 ### Degrade instead
 
 | Situation | What actually happens |
 |-----------|-----------------------|
-| `STREAMING_HUB_REDIS_ADDRESS` left **empty** | No crash. `lib-commons` builds a pass-through limiter and every request is served **unlimited, silently** — see [Rate limiting](#rate-limiting). This is the failure mode to watch for, because the pod looks healthy. |
 | The address points at the **tenant-manager's** Redis | Also no crash: **nothing at boot detects this.** Giving the hub its own instance is a Lerian decision about blast radius and quota, not something the app enforces — the control-plane store is a different tenant of the same technology, not a shared cache. Getting it wrong is silent, so it is the operator's job to point `STREAMING_HUB_REDIS_ADDRESS` at an instance dedicated to the hub. |
 
 ---
 
 ## License (lib-license-go, GLOBAL mode)
 
-The license-gated streaming-hub release (streaming-hub#153 and later) refuses to
+streaming-hub `3.0.0` and later refuses to
 boot without a valid Lerian license, in **every** environment. Three
 **unprefixed** variables carry the contract. They follow the platform's
 lib-license-go convention, so a `STREAMING_HUB_`-prefixed spelling reads empty.
@@ -100,16 +98,14 @@ existing nodes, so a single eligible node would otherwise take both replicas.
 ## Installing the Chart
 
 ```bash
-helm install streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version <version> -n streaming-hub --create-namespace
+helm install streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version <version> -n streaming-hub --create-namespace
 ```
 
 With a custom values file:
 
 ```bash
-helm install streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version <version> -n streaming-hub -f my-values.yaml
+helm install streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version <version> -n streaming-hub -f my-values.yaml
 ```
-
-The chart is mirrored to `oci://ghcr.io/lerianstudio/streaming-hub-helm` as well.
 
 ## Uninstalling the Chart
 
@@ -194,8 +190,6 @@ Worked example (`max_connections = 100`, `mode: split`):
 
 Adding an `all` pod (25) → `88 + 25 = 113 > 100` ❌. The `mode` either/or already
 forbids that combination; the budget math is why it also matters operationally.
-See `streaming-hub/.env.reference` (`STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS`) for
-the per-role rationale (all 25/12, ingest 8/4, delivery 16/10).
 
 ---
 
@@ -207,14 +201,14 @@ the per-role rationale (all 25/12, ingest 8/4, delivery 16/10).
 - **No `preStop` hook.** The hub **self-drains on SIGTERM**: the exec-form
   ENTRYPOINT delivers SIGTERM straight to PID 1, and the lib-commons Launcher
   runs the HTTP → consumer → dispatcher teardown.
-- **`terminationGracePeriodSeconds` defaults to `80` — the hub's derived SIGTERM
-  drain ceiling — and MUST stay at or above it.** At the shipped
-  `STREAMING_HUB_SHUTDOWN_TIMEOUT=30s` + `STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s`
-  the ceiling is `30s` (HTTP) + `5s` (consumer final-commit) + `30s` (dispatcher,
-  `min(ShutdownTimeout, 55s)`) + `10s` slack = `75s`, plus the `5s` pre-stop wait
-  = **`80s`**. If you tune those knobs up, recompute and raise this knob to match,
-  or the orchestrator SIGKILLs a still-draining replica (risking a duplicate
-  delivery). See `.env.reference`.
+- **`terminationGracePeriodSeconds` MUST stay at or above the hub's derived SIGTERM
+  drain ceiling.** At the shipped `STREAMING_HUB_SHUTDOWN_TIMEOUT=30s` +
+  `STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s` the ceiling is `5s` (pre-stop) +
+  `30s` (HTTP) + `5s` (consumer) + `30s` (dispatcher, `min(ShutdownTimeout, 40s)`) +
+  `7s` (runtime-config close) + `10s` slack = **`87s`**. The chart default is
+  `80`, so set at least `87`. If you tune those knobs up, recompute and raise this
+  knob to match, or the orchestrator SIGKILLs a still-draining replica (risking a
+  duplicate delivery).
 
 ---
 
@@ -256,7 +250,9 @@ This chart provisions **none** of the following — they live outside it:
 
 - **Kafka / Redpanda** — the CloudEvents bus the hub consumes. Point
   `STREAMING_HUB_KAFKA_BROKERS` at the cluster; supply SASL/SCRAM creds via the
-  Secret when `STREAMING_HUB_KAFKA_SCRAM_MECHANISM` is set.
+  Secret when `STREAMING_HUB_KAFKA_SCRAM_MECHANISM` is set. In staging and
+  production (the chart default `STREAMING_HUB_ENV=production`) the hub refuses
+  plaintext Kafka: set `configmap.STREAMING_HUB_KAFKA_TLS_ENABLED="true"`.
 - **PostgreSQL** — the single hub-owned database (`tenant_id` is a column, not a
   per-tenant DB). Either point `STREAMING_HUB_POSTGRES_DSN` at a pre-provisioned
   managed host, **or** enable `global.externalPostgresDefinitions.enabled` to run
@@ -265,8 +261,7 @@ This chart provisions **none** of the following — they live outside it:
   limiting (`lib-commons` ratelimit, fixed window). Point
   `configmap.STREAMING_HUB_REDIS_ADDRESS` at it (`host:port`) and put its
   password, if it takes one, in `secrets.STREAMING_HUB_REDIS_PASSWORD`. See
-  [Rate limiting](#rate-limiting) — **the chart ships no default address, so an
-  unconfigured control plane enforces nothing.**
+  [Rate limiting](#rate-limiting) — **the chart ships no default address, and every role refuses to start without one.**
 - **OTEL collector** — **not** a subchart (deliberate; declaring it would force
   an OCI pull on `helm lint`/`template`). When `streamingHub.telemetry.enabled=true`
   (a chart-level toggle, not an app env var), the Deployment injects `HOST_IP` via
@@ -320,31 +315,26 @@ it at the end of wave -5, before the Job at wave -1 mounts it).
 
 ## Rate limiting
 
-> **Live from the 2.x line.** `appVersion 2.1.0` reads
-> `STREAMING_HUB_REDIS_ADDRESS` and expects `RATE_LIMIT_ENABLED=true`. The store
+> **Live from the 2.x line.** `appVersion 2.1.0` requires
+> `STREAMING_HUB_REDIS_ADDRESS` and `RATE_LIMIT_ENABLED=true`: without either, every role refuses to start. The store
 > has to be an instance **dedicated to the hub**, and nothing at boot checks
-> that — point it at the tenant-manager's Redis and it just works, wrongly. An
-> empty address does not crash either; it serves every request unlimited. See
+> that — point it at the tenant-manager's Redis and it just works, wrongly. See
 > [Requirements of the 2.x line](#requirements-of-the-2x-line).
 > (On `1.7.0` and earlier these keys were inert.)
 
-The control plane rate-limits its HTTP API through the `lib-commons` three-tier
-contract, backed by **Redis/Valkey**, which this chart does not provision. The
-whole contract is rendered by `lerian-common.rateLimit.env`, so streaming-hub
-exposes the same keys, defaults and productized knobs as every other Lerian
-product. The ConfigMap is shared by all roles, so the keys reach every pod.
+The control plane rate-limits its HTTP API per tenant through the `lib-commons` limiter, backed by **Redis/Valkey**, which this chart does not provision. The chart renders the shared `lerian-common.rateLimit.env` keys; of those, the hub reads only `RATE_LIMIT_ENABLED`, `ALLOW_RATELIMIT_FAIL_OPEN` and `RATE_LIMIT_REDIS_TIMEOUT_MS`. The ConfigMap is shared by all roles, so the keys reach every pod.
 
 **The connection** (`streamingHub.datastores.redis`, or `global.datastores.redis`
 for the shared tier; `configmap.<KEY>` overrides either):
 
 | Key | Mask field | Default | What it does |
 |-----|-----------|---------|--------------|
-| `STREAMING_HUB_REDIS_ADDRESS` | `host` | `""` | Full `host:port`. **Required for enforcement.** |
+| `STREAMING_HUB_REDIS_ADDRESS` | `host` | `""` | Full `host:port`. **Required:** every role refuses to start without it. |
 | `STREAMING_HUB_REDIS_TLS` | `tls` | `"true"` | TLS to Redis. |
 | `STREAMING_HUB_REDIS_CA_CERT` | `caCert` | `""` | Base64 PEM CA bundle. Empty trusts the container's system roots. |
 | `STREAMING_HUB_REDIS_PASSWORD` | — (`secrets`) | `""` | AUTH password. Emit-when-set — leave empty for an instance that takes none. |
 
-**The limits** (`streamingHub.rateLimit.<field>`; `configmap.<KEY>` overrides):
+**The shared keys** (`streamingHub.rateLimit.<field>`; `configmap.<KEY>` overrides). The hub does not read `ALLOW_RATELIMIT_DISABLED` or the `*_MAX` / `*_WINDOW_SEC` keys. It sizes its limits from `STREAMING_HUB_PULL_RATE` (requests per second on `GET /v1/events`), `STREAMING_HUB_DASHBOARD_RATE` and `STREAMING_HUB_READ_RATE` (requests per minute; set these two through `extraEnvVars`):
 
 | Key | Field | Default |
 |-----|-------|---------|
@@ -364,13 +354,6 @@ for the shared tier; `configmap.<KEY>` overrides either):
 > control plane down. Unset it for fail-closed, where an unreachable limiter
 > refuses the request.
 
-> **Three reasonable defaults compose into silent allow-all.** An empty
-> `STREAMING_HUB_REDIS_ADDRESS` makes `lib-commons` build a pass-through limiter;
-> so does `TLS="true"` against a private-CA Redis with no `CA_CERT`, because the
-> handshake fails and fail-open then allows everything. Neither fails the render
-> nor crashes the pod. If an environment must actually enforce a limit, set the
-> address, and set the CA when the chain is private.
-
 This Redis is **not** the multi-tenant registry, and the two must be **separate
 instances**. `MULTI_TENANT_REDIS_*` points at the *tenant-manager's* Valkey, which
 the hub subscribes to for tenant-lifecycle events; `STREAMING_HUB_REDIS_*` is the
@@ -378,8 +361,7 @@ hub's own rate-limiter store. Nothing at boot checks that they differ, so pointi
 one at the other just works, wrongly. Enabling rate limiting does not turn on the
 tenant-lifecycle bus, and vice versa.
 
-`STREAMING_HUB_PULL_RATE` is **unrelated** and unchanged: it is the app's own
-inbound pull gate on `GET /v1/events`, not part of this contract.
+`STREAMING_HUB_PULL_RATE` sets the pull limit: requests per second per tenant on `GET /v1/events`, counted in this Redis.
 `STREAMING_HUB_PULL_BURST` was its burst half and is **retired on 2.x** — the
 fixed window has no separate burst allowance, so the chart ships no default for it
 and a stale value earns one WARN per boot.
@@ -392,14 +374,14 @@ and a stale value earns one WARN per boot.
 |-----|---------|-------------|
 | `streamingHub.mode` | `all` | Topology switch: `all` \| `split`. Schema-enforced enum. |
 | `streamingHub.image.repository` | `ghcr.io/lerianstudio/streaming-hub` | Image repo. |
-| `streamingHub.image.tag` | `""` | Empty falls back to `Chart.appVersion`. |
+| `streamingHub.image.tag` | `"3.0.0"` | Empty falls back to `Chart.appVersion`. |
 | `streamingHub.image.pullPolicy` | `IfNotPresent` | |
 | `streamingHub.imagePullSecrets` | `[]` | Private registry pull secrets. |
 | `streamingHub.service.type` | `ClusterIP` | Lerian convention (Ingress fronts external). |
 | `streamingHub.service.port` | `8080` | Control-plane HTTP port. |
 | `streamingHub.ingress.enabled` | `false` | Control-plane API ingress (opt-in per env). |
 | `streamingHub.serviceAccount.create` | `true` | |
-| `streamingHub.terminationGracePeriodSeconds` | `80` | Defaults to the ~80s drain ceiling; keep at or above it. |
+| `streamingHub.terminationGracePeriodSeconds` | `80` | Set at least `87` (the drain ceiling at the shipped timeouts); keep at or above it. |
 | `streamingHub.securityContext` | nonroot 65532, drop ALL, RO rootfs, RuntimeDefault | Distroless:nonroot. |
 | `streamingHub.useExistingSecret` | `false` | `true` = Vault/gitops path. |
 | `streamingHub.existingSecretName` | `""` | Required when `useExistingSecret`. |
@@ -431,8 +413,5 @@ and a stale value earns one WARN per boot.
 | `postgres.caBundle.enabled` | `false` | Project the Postgres server CA at `/etc/streaming-hub/postgres-ca/bundle.pem` in all three roles and the migrations Job. See [Postgres TLS and the CA bundle](#postgres-tls-and-the-ca-bundle). |
 | `postgres.caBundle.pem` | `""` | The PEM itself; the chart renders the ConfigMap holding it. |
 | `postgres.caBundle.existingConfigMap` | `""` | Mount an operator-managed ConfigMap instead. Must carry the key `bundle.pem`. |
-
-For the full env contract (defaults, required-in-SaaS markers, the F4 tenant
-caution, KEK source vars), see `streaming-hub/.env.reference`.
 
 See [`docs/TOPOLOGY.md`](docs/TOPOLOGY.md) for the role model in depth.

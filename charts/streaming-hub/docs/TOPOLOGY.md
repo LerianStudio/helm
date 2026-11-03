@@ -51,6 +51,3 @@ to pin them to a single replica.
 > **Never overlap `mode: all` with `mode: split` on the same Kafka cluster.**
 > `all` and `ingest` join the same consumer group → double-consume. See the
 > README's double-consume hazard callout.
-
-For the full architecture, see the app repo's
-[docs/architecture.md](https://github.com/LerianStudio/streaming-hub/blob/develop/docs/architecture.md).

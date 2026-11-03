@@ -34,12 +34,12 @@
 | `streamingHub.mode` | enum: all\|split | `all` | Deployment topology switch. One of: all or split. all   (default) -> ONE Deployment with STREAMING_HUB_ROLE=all (ingest + delivery co-resident; the single-instance setup). Byte-equivalent to the historical single binary. split           -> TWO Deployments: ingest (role=ingest) and delivery (role=delivery), each scaled independently.  !!! NEVER run both an `all` Deployment AND ingest/delivery against the same Kafka cluster: they join ONE consumer group and DOUBLE-CONSUME every event. The mode switch enforces either/or — do not work around it. !!! The values.schema.json constrains this to the enum ["all","split"]. |
 | `streamingHub.image.repository` | string | `ghcr.io/lerianstudio/streaming-hub` | Container image repository. |
 | `streamingHub.image.pullPolicy` | string | `IfNotPresent` | Image pull policy. |
-| `streamingHub.image.tag` | string | `""` | Image tag. Empty falls back to Chart.appVersion via the defaultTag helper. |
+| `streamingHub.image.tag` | string | `"3.0.0"` | Image tag. Empty falls back to Chart.appVersion via the defaultTag helper. |
 | `streamingHub.imagePullSecrets` | list | `[]` | Secrets for pulling the image from a private registry. |
 | `streamingHub.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for rollback. |
 | `streamingHub.annotations` | object | `{}` | Annotations applied to every Deployment resource. |
 | `streamingHub.podAnnotations` | object | `{}` | Annotations applied to every pod. |
-| `streamingHub.deploymentStrategy` | object | `{}` | Deployment update strategy (shared by all roles). |
+| `streamingHub.deploymentStrategy` | object | `{type: RollingUpdate, rollingUpdate: {maxSurge: 1, maxUnavailable: 0}}` | Deployment update strategy (shared by all roles). |
 | `streamingHub.podSecurityContext` | object | `{}` | Pod-level security context. Empty by default (the hub needs no fsGroup). |
 | `streamingHub.securityContext` | object | `{}` | Container-level security context (distroless:nonroot, uid/gid 65532). |
 | `streamingHub.securityContext.runAsGroup` | int | `65532` | Group ID for the process inside the container. |
@@ -58,9 +58,9 @@
 | `streamingHub.serviceAccount.annotations` | object | `{}` | Annotations for the ServiceAccount (e.g. AWS IRSA role-arn). |
 | `streamingHub.serviceAccount.name` | string | `""` | ServiceAccount name. Empty defaults to the chart fullname. |
 | `streamingHub.serviceAccount.automountServiceAccountToken` | bool | `false` | Mount the SA API token into pods. Default false — the hub makes no in-cluster Kubernetes API calls. (IRSA's projected token is injected by the EKS webhook independently of this, so it stays functional.) |
-| `streamingHub.terminationGracePeriodSeconds` | int | `80` | Graceful-shutdown window. Defaults to the hub's derived SIGTERM drain ceiling (80s) at STREAMING_HUB_SHUTDOWN_TIMEOUT=30s + STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s: 30s HTTP + 5s consumer-commit + 30s dispatcher + 10s slack = 75s, + 5s pre-stop = 80s (see .env.reference). If you tune those knobs up, recompute and keep this AT OR ABOVE the new ceiling so the orchestrator never SIGKILLs a still-draining replica. NO preStop hook is used — the hub self-drains on SIGTERM (PID 1 receives it directly; exec-form ENTRYPOINT). |
-| `streamingHub.livenessProbe` | object | `{}` | Liveness probe tuning (GET /healthz on the http port; stays 200 during drain). |
-| `streamingHub.readinessProbe` | object | `{}` | Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM). |
+| `streamingHub.terminationGracePeriodSeconds` | int | `80` | Graceful-shutdown window. Keep it AT OR ABOVE the hub's derived SIGTERM drain ceiling: 87s at STREAMING_HUB_SHUTDOWN_TIMEOUT=30s + STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s (5s pre-stop + 30s HTTP + 5s consumer + 30s dispatcher + 7s runtime-config close + 10s slack). The default 80 is below it. If you tune those knobs up, recompute and keep this AT OR ABOVE the new ceiling so the orchestrator never SIGKILLs a still-draining replica. NO preStop hook is used — the hub self-drains on SIGTERM (PID 1 receives it directly; exec-form ENTRYPOINT). |
+| `streamingHub.livenessProbe` | object | `{initialDelaySeconds: 15, periodSeconds: 20, timeoutSeconds: 5, successThreshold: 1, failureThreshold: 3}` | Liveness probe tuning (GET /healthz on the http port; stays 200 during drain). |
+| `streamingHub.readinessProbe` | object | `{initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5, successThreshold: 1, failureThreshold: 3}` | Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM). |
 | `streamingHub.nodeSelector` | object | `{}` | Shared default scheduling (per-role blocks may override). |
 | `streamingHub.extraEnvVars` | object | `{}` | Extra non-sensitive env vars injected on every Deployment (key -> value map). The un-enumerated escape hatch; NEVER put credentials here (use secrets). |
 | `streamingHub.telemetry.enabled` | bool | `false` | Inject the per-pod OTLP endpoint override (HOST_IP downward API). |
@@ -87,7 +87,7 @@
 | `streamingHub.migrations.ttlSecondsAfterFinished` | int | `600` | TTL after which a finished Job is garbage-collected (seconds). |
 | `streamingHub.migrations.annotations` | object | `{}` | Extra annotations on the Job (merged after the hook annotations). |
 | `streamingHub.migrations.podAnnotations` | object | `{}` | Extra annotations on the migration pod. |
-| `streamingHub.migrations.resources` | object | `{}` | Resource requests/limits for the migration container. |
+| `streamingHub.migrations.resources` | object | `{limits: {cpu: 250m, memory: 256Mi}, requests: {cpu: 50m, memory: 64Mi}}` | Resource requests/limits for the migration container. |
 | `streamingHub.all.autoscaling.enabled` | bool | `false` | HPA off by default; replicaCount governs. maxReplicas × poolMaxOpenConns must respect the connection-budget invariant above. |
 | `streamingHub.ingest.autoscaling.maxReplicas` | int | `4` | maxReplicas × 8 (poolMaxOpenConns) must fit the connection budget. |
 | `streamingHub.delivery.autoscaling.maxReplicas` | int | `4` | maxReplicas × 16 (poolMaxOpenConns) must fit the connection budget. |

@@ -20,6 +20,7 @@ spec:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/identity/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
+        checksum/init-user: {{ include (print $.Template.BasePath "/auth/init_user.yaml") . | sha256sum }}
       labels:
        {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 8 }} 
     spec:
@@ -55,6 +56,18 @@ spec:
                   fieldPath: status.hostIP
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
               value: "$(HOST_IP):4317"
+          {{- end }}
+          {{- if .Values.auth.initUser.enabled }}
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plugin-access-manager.initUserSecretName" . | quote }}
+                  key: {{ .Values.auth.initUser.adminPasswordSecretKey | default "ADMIN_PASSWORD" | quote }}
+                  optional: true
+            - name: ADMIN_EMAIL
+              value: {{ .Values.auth.initUser.adminEmail | default "admin@midaz.tech" | quote }}
+            - name: ADMIN_DISPLAY_NAME
+              value: {{ .Values.auth.initUser.adminDisplayName | default "Admin" | quote }}
           {{- end }}
           resources:
             {{- toYaml .Values.identity.resources | nindent 12 }}

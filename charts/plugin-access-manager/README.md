@@ -3,13 +3,24 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` while `auth.initUser.enabled` is true (or `auth.initUser.useExistingSecret=true` with `auth.initUser.adminPasswordSecretName` pointing at an existing Secret). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
+- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` when `auth.initUser.enabled` uses a generated Secret (or select an external Secret with `auth.initUser.useExistingSecret=true` and `auth.initUser.adminPasswordSecretName`). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
-- Initial admin: `auth.initUser.enabled` controls a `post-install` bootstrap Job only. It never runs on upgrades, so upgrades and later values changes do not reset the password or recreate a deleted admin account. The init-user binary (since v3.9.0) preserves existing users instead of resetting their credentials. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow; do not assume `auth.initUser.adminPassword` overwrites them. For a new account, supply that value or the key selected by `auth.initUser.adminPasswordSecretName` / `adminPasswordSecretKey`.
+- External bootstrap Secret: needed only for an organization Caradhras has never initialized; create it before identity starts (changes or late creation require an identity rollout restart). An initialized organization needs no password.
+- Initial admin: with `auth.initUser.enabled` in single-tenant mode, identity >= 3.17.0 calls Caradhras >= 2.1.0 `ensure-first-admin`. Caradhras creates the first Console admin (`admin`, in `admin-group`) only for an organization never initialized: one that did not exist when migration 000029 ran and never had a non-internal user. Deleting every user never re-seeds it. The render refuses `auth.initUser.enabled` with older tags. One upgrade can roll all three: identity keeps retrying, unready, until Caradhras 2.1.0 answers. Caradhras must trust the application behind identity's `AUTHORIZER_CLIENT_ID` (a `trustedServiceApplications` entry `admin/<app>:<organization>`); the default `app-lerian` client is trusted. For another client, set `caradhras.extraEnvVars.trustedServiceApplications` to the full comma-separated list: it replaces the image default `admin/app-lerian:lerian,admin/app-built-in:built-in`, so keep those entries. Without the entry, identity gets 403 and stays unready. The former `caradhras-user-init` post-install Job and its image, timeout and resource keys are gone; leftover keys are ignored. The `-init-user` Secret is no longer a hook, so it stays after install. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow.
+- Legacy upgrade: if a failed legacy install left its generated bootstrap Secret behind, inspect the namespace, release, Secret name and `helm.sh/hook` metadata to confirm it is that obsolete hook resource. Remove only that generated bootstrap Secret before upgrading, and provide the intended password or external Secret selection. Never remove an external Secret, database Secret or account data for this step.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 > **Uninstall keeps the identity data.** `helm uninstall` leaves the bundled database volume (`data-<release>-auth-database-0`) and its password Secret (`<release>-auth-database`), so a reinstall under the same release name opens the same users, organizations and applications with the same password. This chart, not the Bitnami subchart, owns that Secret: it takes `auth-database.auth.password` when set, else the Secret already in the namespace, else a new random password. Deleting the data is a separate, manual step: delete that PVC and that Secret together (the Valkey volume `valkey-data-<release>-valkey-primary-0`, sessions and cached tokens only, is left too). Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned.
+
+### Retire the initial admin credential
+
+1. Rotate the initial admin password through the authenticated password-change flow. Verify a new login succeeds with the replacement and a new login with the old password is refused before proceeding.
+2. Set `auth.initUser.enabled: false`, clear `auth.initUser.adminPassword` from desired values, and remove all independent `ADMIN_PASSWORD`, `ADMIN_EMAIL` and `ADMIN_DISPLAY_NAME` injections, including from Secrets and ConfigMaps supplied through `envFrom`. Disabling the chart setting alone does not remove those independent injections.
+3. Apply the change through the existing deployment process. A Helm upgrade removes the formerly generated Secret when it is absent from the new release manifest; a render alone does not prove live removal. With Argo CD `prune: false`, removing that generated resource requires a separately authorized, targeted prune. Never prune an external or database Secret, or delete account data.
+4. Confirm the identity rollout, a new login with the replacement password, and absence of the formerly generated Secret. An externally managed bootstrap Secret remains client-owned and is never rendered or deleted by this chart.
+
+This retires the chart's bootstrap inputs, not the account. Leaving only `ADMIN_EMAIL` or `ADMIN_DISPLAY_NAME` keeps the startup check enabled; on Caradhras >= 2.1.0 identity stays ready for an initialized organization and stays unready only for a never-initialized organization without a password; on an older Caradhras any leftover `ADMIN_*` keeps identity 3.17.0 unready (404), and the render does not check them. Helm release history and backups may retain old values; this procedure does not purge them.
 
 This helm chart installs [Plugin Access Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance ledger.
 
@@ -269,7 +280,7 @@ ReplicaSet (`matchLabelKeys: [pod-template-hash]`), so a rolling update is never
 blocked by the old ReplicaSet's pods, even with `DoNotSchedule`. Requires
 Kubernetes >= 1.27 (`matchLabelKeys`). Use `DoNotSchedule` only when the cluster
 can always provide enough distinct nodes/zones for the replica count (a hard
-constraint leaves extra pods `Pending` otherwise). Caradhras keeps taking `nodeSelector` / `affinity` / `tolerations` from `auth.*` (unchanged), but is spread on its own pods via `caradhras.spread` / `caradhras.topologySpreadConstraints`. The init-user Job is not spread.
+constraint leaves extra pods `Pending` otherwise). Caradhras keeps taking `nodeSelector` / `affinity` / `tolerations` from `auth.*` (unchanged), but is spread on its own pods via `caradhras.spread` / `caradhras.topologySpreadConstraints`.
 
 **Upgrade note:** the preset is on by default, so upgrading to the chart version
 that introduces it adds `topologySpreadConstraints` to the pod template of every
@@ -286,7 +297,7 @@ required. To keep the previous pod template exactly, set
 | `replicaCount` | Number of replicas for the deployment | `2` |
 | `image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-identity` |
 | `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag used for deployment | `3.16.0-beta.5` |
+| `image.tag` | Image tag used for deployment | `3.17.0` |
 | `health.stack` | Health preset (lerian-common.health): probes, `HEALTH_PORT` 8099, drain and shutdown env, grace, rollout and PDB; tune only `health.drainSeconds` and `health.shutdownSeconds` | `go` |
 | `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `nameOverride` | Overrides the default generated name by Helm | `""` |
@@ -330,7 +341,7 @@ required. To keep the previous pod template exactly, set
 | `replicaCount` | Number of replicas for the deployment | `3` |
 | `image.repository` | Repository for the console service container image | `ghcr.io/lerianstudio/plugin-auth` |
 | `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag used for deployment | `3.16.0-beta.5` |
+| `image.tag` | Image tag used for deployment | `3.17.0` |
 | `health.stack` | Health preset (lerian-common.health): probes, `HEALTH_PORT` 8099, drain and shutdown env, grace, rollout and PDB; tune only `health.drainSeconds` and `health.shutdownSeconds` | `go` |
 | `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `nameOverride` | Overrides the default generated name by Helm | `""` |
@@ -344,7 +355,7 @@ required. To keep the previous pod template exactly, set
 | `service.type` | Kubernetes service type | `ClusterIP` |
 | `service.port` | Service port | `4000` |
 | `podSecurityContext` | Pod security context | `{}` |
-| `securityContext` | Security context for every auth-side container: auth, caradhras (including its migrate init container) and its UI, the init-user Job, and their init containers | See `values.yaml` |
+| `securityContext` | Security context for every auth-side container: auth, caradhras (including its migrate init container) and its UI, and their init containers | See `values.yaml` |
 | `pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
 | `pdb.annotations` | Annotations for PodDisruptionBudget | `{}` |
 | `resources` | CPU and memory limits for pods | See `values.yaml` |
@@ -512,7 +523,7 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). `nodeSelector` / `affinity` / `tolerations` for caradhras still come from `auth.*` | `{}` |
 | `caradhras.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
-| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions | `1.8.6` |
+| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions. `auth.initUser` needs both Caradhras tags >= 2.1.0 (the default 1.8.6 is refused) | `1.8.6` |
 | `caradhras.migrations.skipRBACChain` | Render `MIGRATIONS_SKIP_RBAC_CHAIN=true` on the migrate init container and on the caradhras container: the migrate applies the schema chain and skips the `migrations-rbac` chain (Lerian product permissions/roles/groups under owner `lerian`), and the caradhras boot schema check skips the same chain. For installs whose permissions arrive only via RI manifests (e.g. cross). Needs caradhras and caradhras-migrations images that understand the variable; `false` renders nothing | `false` |
 | `caradhras.migrations.extraEnvVars` | Extra `NAME: value` env vars for the migrate init container only, rendered as name/value pairs. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused; names must be valid env var names (`[-._a-zA-Z][-._a-zA-Z0-9]*`); not for secrets | `{}` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |

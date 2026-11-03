@@ -1,5 +1,14 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.6.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.1)
+
+Fixes:
+- Updated the plugin to use stable images to ensure reliability and consistency in deployments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.0...plugin-br-pix-jd-v0.6.1)
+
+---
+
 ## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
 
 Features:

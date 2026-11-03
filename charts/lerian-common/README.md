@@ -36,7 +36,7 @@ via `include` by the product charts that declare it as a dependency.
   is a zero-diff refactor, before optionally migrating to the derivation helpers above.
 - **Access Manager permission declaration:** `lerian-common.idp.env`,
   `lerian-common.idp.secret`, `lerian-common.idp.keys` — the four env keys lib-auth's
-  `declaration.WireFromEnv` reads. See [Permission declaration](#permission-declaration-idp).
+  `declaration.WireFromEnv` reads. See [Permission declaration](#permission-declaration-idp_).
 - **In-cluster host primitives:** `lerian-common.internalHost`, `lerian-common.internalURL`.
 - **Resource helpers:** `lerian-common.hpa`, `.service`, `.serviceAccount`, `.pdb`, `.ingress`.
 - **Deployment pod-spec fragments:** `lerian-common.scheduling`, `.topologySpreadConstraints`,
@@ -163,7 +163,7 @@ sets `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePerio
 <component>:
   health:
     stack: go            # go | go-worker | next | static | external
-    drainSeconds: 15     # go: SHUTDOWN_DRAIN_DELAY; next/static/external: preStop sleep; go-worker: forced 0
+    drainSeconds: 15     # go: SHUTDOWN_DRAIN_DELAY; next/external: preStop sleep; go-worker: forced 0
     shutdownSeconds: 30  # SHUTDOWN_TIMEOUT, the budget after the drain
     singleton: false     # true: 1 replica, Recreate, no PDB, no autoscaling
     # external only: livenessPath, readinessPath (required), port, startupBudgetSeconds (300, min 5)
@@ -195,8 +195,8 @@ Usage: see the example in the header of `templates/_health.tpl`.
   (TCP, ClusterIP) for in-cluster callers by DNS name. Pass it as `ports` to `lerian-common.service`; it
   lands after `http`, and only on a ClusterIP Service (a LoadBalancer or NodePort Service keeps `http`
   alone). `go-worker` returns none (no Service) and `next`, `static` and `external` serve nothing on 8099.
-  `lerian-common.ingress` refuses a `svcPort` of 8099. Each multi-tenant app serves `GET /readyz/tenant/:id`
-  on this port (lib-commons `commons/health` `WithTenantChecks`), with no JWT, so only in-cluster workloads
+  `lerian-common.ingress` refuses a `svcPort` of 8099. A multi-tenant app that registers lib-commons `commons/health`
+  `WithTenantChecks` also serves `GET /readyz/tenant/:id` on this port, with no JWT, so only in-cluster workloads
   may reach it.
 
 - **`minImage`** is passed by the chart (the first image that serves the health port), never a client value.
@@ -257,9 +257,9 @@ keys the helpers own, or the key is emitted twice:
 ```yaml
 # consumer Chart.yaml
 dependencies:
-  - name: lerian-common
-    version: "0.1.0"
-    repository: "file://../lerian-common"
+  - name: lerian-common-helm
+    version: "2.6.0"
+    repository: "oci://ghcr.io/lerianstudio"
 ```
 
 <!-- {% raw %} -->
@@ -277,10 +277,10 @@ dependencies:
 
 - Chart type: `library`
 - **Required secrets:** none — this is a library chart; it declares and manages no secrets.
-- **Dependency notes:** no subchart dependencies of its own. Consumers reference it via
-  `repository: "file://../lerian-common"` (monorepo) and vendor it at
+- **Dependency notes:** no subchart dependencies of its own. Consumers declare it as
+  `lerian-common-helm` from `repository: "oci://ghcr.io/lerianstudio"` and vendor it at
   `helm dependency build`; packaged consumer charts embed it in their `.tgz`.
 - **Production overrides:** set `global.serviceDiscovery`, `global.streaming`,
-  `global.multiTenant` and `global.idp` once per environment (umbrella/GitOps). Helpers stay inert until set
+  `global.multiTenant` and `global.idp` once per environment (umbrella/GitOps). Helpers stay inert until enabled
   (`idp.env` always emits `IDP_DECLARATION_ENABLED: "false"` while unset).
 - **Source/License:** https://github.com/LerianStudio/helm — © Lerian Studio.

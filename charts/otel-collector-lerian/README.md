@@ -235,7 +235,7 @@ opentelemetry-collector:
 
 ## Sensitive Data Masking
 
-The chart masks part of the value of PII fields in JSON log bodies. A value is masked only when its field name and its format match a rule. The rules cover:
+The chart masks part of the value of PII fields in JSON log bodies. A value is masked only when its field name and its format match a rule. Before the rules run, the first masking processor (`transform/mask_body_sensitive_data_replace_1`) removes every backslash from every string log body, PII or not. The rules cover:
 
 - **Documents**: CPF, CNPJ, tax IDs, national registration numbers
 - **Names**: Customer names, sender/recipient names

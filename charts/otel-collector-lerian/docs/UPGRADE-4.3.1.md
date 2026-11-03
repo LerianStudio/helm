@@ -143,6 +143,8 @@ opentelemetry-collector:
 
 > **Note:** This is an existing configuration option, not a new requirement introduced in `4.3.1`. The documentation update simply makes this configuration more visible to operators.
 
+If you set it, add `-f` with your values file to the upgrade command below. Without `-f` or `--set`, Helm reuses the values of the previous release and the new `client.id` is not applied.
+
 ## Preview changes before upgrading
 
 ```bash

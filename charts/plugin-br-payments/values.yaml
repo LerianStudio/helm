@@ -12,7 +12,6 @@ nameOverride: "plugin-br-payments"
 fullnameOverride: ""
 # -- Override the namespace used by templates
 namespaceOverride: ""
-
 global:
   # ============================================================================
   # ENV-WIDE CONTRACT (lerian-common masks). Set a connection ONCE here; the
@@ -41,7 +40,6 @@ global:
   #   url: "http://tenant-manager.tenant-manager.svc.cluster.local:4003"
   # -- Managed-cloud topology preset (aws | gcp | azure): TLS/SSL defaults for the masks.
   cloud: ""
-
   # -- Bootstrap job for external PostgreSQL: creates database and role
   externalPostgresDefinitions:
     # -- Enable or disable the PostgreSQL bootstrap job
@@ -75,7 +73,6 @@ global:
         name: ""
       # -- Password for plugin_br_payments role (ignored if useExistingSecret.name is set)
       password: ""
-
 # -- Datastore masks for THIS chart only (override global.datastores). Same fields.
 datastores: {}
 #   postgres: { host: "payments-db.internal", ssl: "require" }
@@ -103,7 +100,7 @@ app:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag (defaults to Chart.appVersion if empty)
-    tag: ""
+    tag: "1.2.0"
   # -- Image pull secrets for private registries
   imagePullSecrets: []
   # -- Override of the resource name
@@ -187,16 +184,16 @@ app:
   # UUIDs the license covers). With MULTI_TENANT_ENABLED=true also MULTI_TENANT_URL,
   # AWS_REGION and WEBHOOK_PUBLIC_BASE_URL, and an external Postgres.
   configmap: {}
-    # BTG_API_BASE_URL: "https://api.btgpactual.com"
-    # BTG_AUTH_URL: "https://id.btgpactual.com/oauth2/token"
-    # MIDAZ_LEDGER_URL: "https://midaz-ledger.example.com/v1"
-    # ORGANIZATION_IDS: "global"
-    # MULTI_TENANT_ENABLED: "true"
-    # AWS_REGION: "us-east-2"
-    # Bill consult route limit per (tenantId, sub), in-process. Not the AGGRESSIVE_*
-    # tier; RATE_LIMIT_ENABLED does not turn it off. Unset = app default (100 / 60s).
-    # CONSULT_RATE_LIMIT_MAX: "100"
-    # CONSULT_RATE_LIMIT_WINDOW_SEC: "60"
+  # BTG_API_BASE_URL: "https://api.btgpactual.com"
+  # BTG_AUTH_URL: "https://id.btgpactual.com/oauth2/token"
+  # MIDAZ_LEDGER_URL: "https://midaz-ledger.example.com/v1"
+  # ORGANIZATION_IDS: "global"
+  # MULTI_TENANT_ENABLED: "true"
+  # AWS_REGION: "us-east-2"
+  # Bill consult route limit per (tenantId, sub), in-process. Not the AGGRESSIVE_*
+  # tier; RATE_LIMIT_ENABLED does not turn it off. Unset = app default (100 / 60s).
+  # CONSULT_RATE_LIMIT_MAX: "100"
+  # CONSULT_RATE_LIMIT_WINDOW_SEC: "60"
 
   # -- Per-key Secret values, each rendered only when set (templates/secrets.yaml).
   # Required: LICENSE_KEY; POSTGRES_PASSWORD and INTERNAL_API_KEY (>= 32 chars) when
@@ -211,19 +208,19 @@ app:
   # MIDAZ_AUTH_ENABLED is true (the default). Not checked with useExistingSecret.
   # Also accepted: POSTGRES_REPLICA_PASSWORD, INTERNAL_API_KEY_PREVIOUS, CREDENTIAL_ENCRYPTION_KEY_PREVIOUS.
   secrets: {}
-    # POSTGRES_PASSWORD: ""
-    # PROVIDER_CLIENT_ID: ""
-    # PROVIDER_CLIENT_SECRET: ""
-    # INTERNAL_API_KEY: ""            # openssl rand -hex 32
-    # CREDENTIAL_ENCRYPTION_KEY: ""   # openssl rand -base64 32
-    # BTG_WEBHOOK_HMAC_SECRET: ""     # openssl rand -hex 32 (>= 32 chars)
-    # Bill consult audit: HMAC key of the line fingerprint (line_fp). REQUIRED for
-    # SERVICE_TYPE "both"/"api": the app refuses to boot without it. >= 32 chars, no
-    # leading/trailing whitespace; production refuses the published example
-    # placeholders. Outside local, source it from the platform secret manager.
-    # Rotating it is a restart, but older line_fp values stop correlating (there is
-    # no _PREVIOUS key).
-    # CONSULT_AUDIT_HMAC_KEY: ""      # openssl rand -hex 32
+  # POSTGRES_PASSWORD: ""
+  # PROVIDER_CLIENT_ID: ""
+  # PROVIDER_CLIENT_SECRET: ""
+  # INTERNAL_API_KEY: ""            # openssl rand -hex 32
+  # CREDENTIAL_ENCRYPTION_KEY: ""   # openssl rand -base64 32
+  # BTG_WEBHOOK_HMAC_SECRET: ""     # openssl rand -hex 32 (>= 32 chars)
+  # Bill consult audit: HMAC key of the line fingerprint (line_fp). REQUIRED for
+  # SERVICE_TYPE "both"/"api": the app refuses to boot without it. >= 32 chars, no
+  # leading/trailing whitespace; production refuses the published example
+  # placeholders. Outside local, source it from the platform secret manager.
+  # Rotating it is a restart, but older line_fp values stop correlating (there is
+  # no _PREVIOUS key).
+  # CONSULT_AUDIT_HMAC_KEY: ""      # openssl rand -hex 32
 
   # -- Use an externally managed Secret instead of generating one
   useExistingSecret: false
@@ -256,7 +253,6 @@ app:
       limits:
         cpu: 250m
         memory: 256Mi
-
 # ==============================================================================
 # POSTGRESQL SUB-CHART (Bitnami)
 # Default: enabled with replication for in-cluster development/staging.
@@ -343,7 +339,6 @@ postgresql:
         value: "10"
       - name: POSTGRESQL_TCP_KEEPALIVES_COUNT
         value: "5"
-
 # ==============================================================================
 # OPTIONAL OTEL COLLECTOR INTEGRATION
 # Setting otel-collector-lerian.enabled=true causes the deployment to inject
@@ -352,7 +347,6 @@ postgresql:
 # ==============================================================================
 otel-collector-lerian:
   enabled: false
-
 # ==============================================================================
 # AWS AUTHENTICATION - IAM Roles Anywhere for non-AWS clusters (e.g. Proxmox)
 # Enable when the deployment target has no native AWS credential mechanism
@@ -393,6 +387,4 @@ aws:
         requests:
           cpu: 10m
           memory: 64Mi
-
-
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

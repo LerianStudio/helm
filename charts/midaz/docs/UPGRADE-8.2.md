@@ -51,7 +51,7 @@ This is a straightforward version bump with no breaking changes, configuration m
 2. Perform a rolling update of the ledger deployment
 3. Maintain all existing configuration and data
 
-> **Note:** For detailed application-level changes in version 3.7.7, refer to the [midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+> **Note:** For detailed application-level changes in version 3.7.7, refer to the midaz application changelog.
 
 #### No configuration changes required
 

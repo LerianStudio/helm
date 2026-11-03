@@ -40,7 +40,7 @@ tracer:
 
 > **Note:** This is a patch-level application update. No configuration changes or data migrations are required. The upgrade will perform a rolling update of the affected deployments.
 
-For detailed application-level changes, refer to the [midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+For detailed application-level changes, refer to the midaz application changelog.
 
 ### 2. Tracer secrets formatting correction
 

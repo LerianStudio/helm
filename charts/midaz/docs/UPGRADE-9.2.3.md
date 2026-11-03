@@ -58,7 +58,7 @@ This update ensures you're running the latest stable patch release of the Midaz 
 - Expect a brief service interruption during pod rollout (typically 30-60 seconds depending on your readiness probe configuration)
 - No database migrations or configuration changes are required for this update
 
-> **Note:** For detailed application-level changes between 4.0.3 and 4.0.5, refer to the [Midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+> **Note:** For detailed application-level changes between 4.0.3 and 4.0.5, refer to the Midaz application changelog.
 
 ## Preview changes before upgrading
 

@@ -10,7 +10,10 @@ on:
       - 'maintenance/*.x'
       - 'hotfix/*.x'
     paths-ignore:
-      - 'README.md'
+      # A README edit publishes no chart version: charts.lerian.studio serves main,
+      # and the packaged README catches up at the chart's next release.
+      - '**/README.md'
+      - '**/README.params.md'
       - '**/CHANGELOG.md'
       - '.github/workflows/**'
       - '.github/configs/**'

@@ -1,5 +1,59 @@
 # Plugin-access-manager Changelog
 
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images to enhance reliability and performance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images to enhance reliability and consistency in deployments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
 ## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
 
 Features:

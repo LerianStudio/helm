@@ -1,5 +1,80 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.1)
+
+Fixes:
+
+- Updated to use stable images for improved reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.3.0...plugin-br-pix-indirect-btg-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.1)
+
+Fixes:
+
+- Use stable images to enhance the reliability of the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.3.0...plugin-br-pix-indirect-btg-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.1)
+
+Fixes:
+
+- Updated to use stable images for improved reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.3.0...plugin-br-pix-indirect-btg-v5.3.1)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health checks. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDBs and implement rollout overrides to ensure compatibility and stability. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values for better clarity and maintenance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health monitoring capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDBs and implement rollout overrides to ensure better stability and compatibility. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values to maintain clarity and consistency in the plugin's configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health configuration. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDBs and implement rollout overrides to ensure compatibility and stability. (@fredcamaral)
+
+Improvements:
+- Trim retired-key cases and document preset-owned values to maintain clarity and accuracy in the plugin's documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.3.0)
+
+---
+
 ## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.0)
 
 Features:

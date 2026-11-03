@@ -15,10 +15,10 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 0.6.0
+version: 0.6.1
 # Registry tags have no leading `v`. Pin api.image.tag explicitly in production.
 # Migrations are independently versioned; see migrations.image.tag in values.yaml.
-appVersion: "1.6.0-beta.3"
+appVersion: "1.6.0"
 keywords:
   - midaz
   - lerian

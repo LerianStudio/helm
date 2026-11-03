@@ -1,5 +1,67 @@
 # Fetcher Changelog
 
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in the fetcher component to improve reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+
+- Use stable images in fetcher to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in fetcher to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in the fetcher component to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in the fetcher component to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health configuration. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace overrides to prevent incorrect configurations, and update the README to reflect these changes. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to ensure deprecated settings are not used. (@fredcamaral)
+
+Improvements:
+- Document which health keys are refused by the render to clarify configuration options. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
 ## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
 
 Features:

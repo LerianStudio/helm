@@ -7,8 +7,3 @@ plugin-br-ted-lerian
 reporter
 # midaz stays until the ledger team cuts 4.5.0.
 midaz
-plugin-br-payments
-plugin-access-manager
-plugin-br-pix-indirect-btg
-plugin-br-pix-jd
-fetcher

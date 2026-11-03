@@ -19,7 +19,7 @@ helm install my-payments lerian/plugin-br-payments-helm \
   -f values-prod.yaml
 ```
 
-The default image is `1.2.0-beta.1`, the first release that serves the health port. Pin `app.image.tag` explicitly in production values; the default moves to the stable release when it ships.
+The default image is the stable `1.2.0` release. The health-port compatibility floor remains `1.2.0-beta.1`. Pin `app.image.tag` explicitly in production values.
 
 ## Prerequisites
 

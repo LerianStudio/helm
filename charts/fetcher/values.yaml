@@ -135,7 +135,7 @@ manager:
     repository: lerianstudio/fetcher-manager
     pullPolicy: IfNotPresent
     # -- Moves with `fetcher.minImage` (templates/_helpers.tpl) and Chart.yaml appVersion.
-    tag: "4.1.0-beta.1"
+    tag: "4.1.0"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}
@@ -254,7 +254,7 @@ worker:
     repository: lerianstudio/fetcher-worker
     pullPolicy: IfNotPresent
     # -- Moves with `fetcher.minImage` (templates/_helpers.tpl) and Chart.yaml appVersion.
-    tag: "4.1.0-beta.1"
+    tag: "4.1.0"
   imagePullSecrets: []
   podAnnotations: {}
   podSecurityContext: {}

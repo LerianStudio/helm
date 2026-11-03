@@ -3,6 +3,62 @@
 ## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.0)
 
 Features:
+- Bump the collector to version `0.164.0` and the subchart to version `0.178.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.1...otel-collector-lerian-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.0)
+
+Features:
+
+- Bump the collector to version `0.164.0` and the subchart to version `0.178.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.1...otel-collector-lerian-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.0)
+
+Features:
+
+- Bump otel-collector to version `0.164.0` and subchart to version `0.178.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.1...otel-collector-lerian-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.0)
+
+Features:
+- Update otel-collector-lerian to use collector version `0.164.0` and subchart version `0.178.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.1...otel-collector-lerian-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.0)
+
+Features:
+- Bump otel-collector-lerian to use collector version `0.164.0` and subchart version `0.178.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.1...otel-collector-lerian-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.0)
+
+Features:
+- Bump otel-collector to version `0.164.0` and subchart to version `0.178.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.1...otel-collector-lerian-v5.0.0)
+
+---
+
+## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.0)
+
+Features:
 - Bump collector to version `0.164.0` and subchart to version `0.178.1`. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v4.3.1...otel-collector-lerian-v5.0.0)

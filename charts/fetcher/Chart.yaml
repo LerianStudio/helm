@@ -8,8 +8,8 @@ home: https://github.com/LerianStudio/fetcher
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 4.1.0
-appVersion: "4.1.0-beta.1"
+version: 4.1.1
+appVersion: "4.1.0"
 keywords:
   - midaz
   - lerian

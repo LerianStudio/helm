@@ -12,6 +12,60 @@ Fixes:
 ## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
 
 Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin-br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin-br-sisbajud. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin, ensuring it does not appear in the output. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin-br-sisbajud. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin-br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)
+
+---
+
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.2.0)
+
+Fixes:
 - Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.1.1...plugin-br-sisbajud-v1.2.0)

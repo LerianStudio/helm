@@ -12,7 +12,7 @@
 |---|---|
 | Product / Chart | `br-sta-helm` (first release **1.0.0**) / app **1.0.0** |
 | Components | `manager` (HTTP API, `:4028`), `worker` (background process, probe server `:4029`, exactly one replica), migrations Job |
-| Images | `ghcr.io/lerianstudio/br-sta-manager`, `br-sta-worker`, `br-sta-migrations` (all public on GHCR); dev only: `mock-sta-server` (public) |
+| Images | `ghcr.io/lerianstudio/br-sta-manager`, `br-sta-worker`, `br-sta-migrations` (all public on GHCR); dev only: `mock-sta-server` (not public: ask Lerian for read access) |
 | Last review of this runbook | 2026-10-01 |
 | Escalation contact | `@LerianStudio/G_Github_Devops` (see `.github/CODEOWNERS`) |
 
@@ -73,9 +73,10 @@ helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
 `values-dev.yaml` only carries placeholder license values: the manager and the worker
 do not boot until a real key and organization id are set.
 
-All images are public, so no pull secret is needed. For a private mirror, set
+The app images are public, so no pull secret is needed. For a private mirror, set
 `imagePullSecrets` (root key): the manager, worker, migrations Job and mock STA server
-use it.
+use it. The mock STA image is not public: to enable `mockSta`, ask Lerian for read
+access and name a ghcr.io pull secret there (or in `mockSta.imagePullSecrets`).
 
 Expected on a fresh namespace:
 
@@ -131,7 +132,8 @@ kubectl delete namespace sta-dev
 3. Create the app Secret out of band (`common.useExistingSecret: true` +
    `existingSecretName`), reference single keys of it with `common.secretRefs.<KEY>:
    {name, key}`, or fill `common.secrets` with `<path:...>` placeholders.
-4. Optional, only when pulling from a private mirror or registry: the GHCR images are
+4. Optional, only when pulling from a private mirror or registry (or the non-public mock
+   STA image): the GHCR app images are
    public and the chart default is `imagePullSecrets: []`. Create the registry Secret
    and point the root list at it (the manager, worker, migrations Job and mock STA use
    it):
@@ -229,7 +231,7 @@ verifier/export generator).
 | CORS | lib-commons' middleware reads `ACCESS_CONTROL_*`; the chart renders `ACCESS_CONTROL_ALLOW_ORIGIN` from `common.cors.allowedOrigins`. Empty = deny-all | Production: explicit origins only |
 | Master key | Replacing `MASTER_KEYS` makes every stored BACEN credential undecryptable | Add a new version (`v1:...,v2:...`) and switch `MASTER_KEY_VERSION` |
 | Filing sweep | `worker.scheduler.filingSweepEnabled` (default `false`) auto-closes stranded reporter filings; `filingSweepAgeMinutes` is a safety knob | Enable deliberately; do not tune the age down |
-| Images | All app images are public on GHCR | A pull secret (`imagePullSecrets`) only for a private mirror/registry |
+| Images | All app images are public on GHCR; the mock STA image is not | A pull secret (`imagePullSecrets`) for a private mirror/registry or the mock STA image |
 
 ### License
 

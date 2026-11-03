@@ -12,7 +12,7 @@
 |---|---|
 | Produto / Chart | `br-sta-helm` (primeiro release **1.0.0**) / app **1.0.0** |
 | Componentes | `manager` (API HTTP, `:4028`), `worker` (processo de background, probe server `:4029`, exatamente uma réplica), Job de migrations |
-| Imagens | `ghcr.io/lerianstudio/br-sta-manager`, `br-sta-worker`, `br-sta-migrations` (todas públicas no GHCR); só dev: `mock-sta-server` (pública) |
+| Imagens | `ghcr.io/lerianstudio/br-sta-manager`, `br-sta-worker`, `br-sta-migrations` (todas públicas no GHCR); só dev: `mock-sta-server` (não pública: peça acesso de leitura à Lerian) |
 | Última revisão deste runbook | 2026-10-01 |
 | Contato de escalação | `@LerianStudio/G_Github_Devops` (ver `.github/CODEOWNERS`) |
 
@@ -73,9 +73,10 @@ helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
 O `values-dev.yaml` traz só valores de licença placeholder: o manager e o worker não
 sobem até você setar uma chave e um organization id reais.
 
-Todas as imagens são públicas, então não é preciso pull secret. Para um mirror
+As imagens da app são públicas, então não é preciso pull secret. Para um mirror
 privado, sete `imagePullSecrets` (chave raiz): manager, worker, Job de migrations e mock
-STA server o usam.
+STA server o usam. A imagem do mock STA não é pública: para habilitar `mockSta`, peça
+acesso de leitura à Lerian e nomeie um pull secret do ghcr.io ali (ou em `mockSta.imagePullSecrets`).
 
 Esperado num namespace limpo:
 
@@ -131,7 +132,8 @@ kubectl delete namespace sta-dev
 3. Crie o Secret da app fora do chart (`common.useExistingSecret: true` +
    `existingSecretName`), referencie chaves avulsas dele com `common.secretRefs.<KEY>:
    {name, key}`, ou preencha `common.secrets` com placeholders `<path:...>`.
-4. Opcional, só ao puxar de um mirror ou registry privado: as imagens no GHCR são
+4. Opcional, só ao puxar de um mirror ou registry privado (ou da imagem não pública do
+   mock STA): as imagens da app no GHCR são
    públicas e o default do chart é `imagePullSecrets: []`. Crie o Secret do registry e
    aponte a lista raiz para ele (manager, worker, Job de migrations e mock STA a usam):
 
@@ -228,7 +230,7 @@ export generator).
 | CORS | O middleware do lib-commons lê `ACCESS_CONTROL_*`; o chart renderiza `ACCESS_CONTROL_ALLOW_ORIGIN` a partir de `common.cors.allowedOrigins`. Vazio = nega tudo | Produção: só origens explícitas |
 | Master key | Substituir `MASTER_KEYS` torna indecifráveis todas as credenciais BACEN guardadas | Adicione uma versão nova (`v1:...,v2:...`) e troque `MASTER_KEY_VERSION` |
 | Filing sweep | `worker.scheduler.filingSweepEnabled` (default `false`) fecha filings encalhados do reporter; `filingSweepAgeMinutes` é knob de segurança | Ligue por decisão; não reduza a idade |
-| Imagens | Todas as imagens da app são públicas no GHCR | Pull secret (`imagePullSecrets`) só para mirror/registry privado |
+| Imagens | Todas as imagens da app são públicas no GHCR; a do mock STA não é | Pull secret (`imagePullSecrets`) para mirror/registry privado ou para a imagem do mock STA |
 
 ### Licença
 

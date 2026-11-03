@@ -178,8 +178,8 @@
 | `crm.ingress.className` | string | `""` | Ingress class name |
 | `crm.ingress.annotations` | object | `{}` | Additional ingress annotations |
 | `crm.ingress.tls` | list | `[]` | TLS configuration for ingress |
-| `crm.resources.limits` | string | See `values.yaml` | CPU and memory limits for pods |
-| `crm.resources.requests` | string | See `values.yaml` | Minimum CPU and memory requests |
+| `crm.resources.limits` | object | See `values.yaml` | CPU and memory limits for pods |
+| `crm.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests |
 | `crm.autoscaling.enabled` | bool | `true` | Enable or disable horizontal pod autoscaling |
 | `crm.autoscaling.minReplicas` | int | `1` | Minimum number of replicas |
 | `crm.autoscaling.maxReplicas` | int | `3` | Maximum number of replicas |

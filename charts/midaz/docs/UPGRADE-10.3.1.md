@@ -61,7 +61,7 @@ In single-tenant mode, the runner uses the same PostgreSQL password as migration
 
 #### Operational impact
 
-- The CronJob is created automatically on upgrade when `ledger.enabled: true` and the image tag is a stable version >= 4.5.0 (e.g. `4.5.0`, `4.5.1`, `4.6.0`).
+- The CronJob is created automatically on upgrade when `ledger.enabled: true` and the image tag is a stable version >= 4.5.0 (a SemVer tag without a pre-release suffix).
 - Pre-release tags (e.g. `4.5.0-beta.94`) default to disabled; set `ledger.partition.enabled: true` to enable explicitly.
 - The chart's default ledger image tag, `4.5.0-beta.94`, is a pre-release, so with default values neither the CronJob nor the reconcile Job is created. If your transaction database uses the partitioned layout, set `ledger.partition.enabled: true` (Scenario 4): without the runner, new rows eventually land in the DEFAULT partition.
 - The default schedule (`0 6 * * *`) runs at 06:00 in the configured time zone, chosen to avoid common managed PostgreSQL maintenance windows.

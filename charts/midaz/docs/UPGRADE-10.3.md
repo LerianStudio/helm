@@ -19,6 +19,7 @@
   - [5. Removed RabbitMQ management API configuration](#5-removed-rabbitmq-management-api-configuration)
   - [6. Removed tracer readiness drain grace configuration](#6-removed-tracer-readiness-drain-grace-configuration)
   - [7. `/readyz` no longer served on the main ports](#7-readyz-no-longer-served-on-the-main-ports)
+  - [8. Ledger and tracer require `LICENSE_KEY`](#8-ledger-and-tracer-require-license_key)
 - **[Configuration Reference](#configuration-reference)**
   - [1. New health preset configuration](#1-new-health-preset-configuration)
   - [2. Minimum image version requirement](#2-minimum-image-version-requirement)
@@ -29,6 +30,7 @@
   - [4. Remove deprecated RabbitMQ management API configuration](#4-remove-deprecated-rabbitmq-management-api-configuration)
   - [5. Remove deprecated tracer readiness configuration](#5-remove-deprecated-tracer-readiness-configuration)
   - [6. Verify image tags meet minimum requirements](#6-verify-image-tags-meet-minimum-requirements)
+  - [7. Set the license key](#7-set-the-license-key)
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
 
@@ -111,7 +113,7 @@ The preset automatically derives:
 - **Shutdown drain:** `SHUTDOWN_DRAIN_DELAY` environment variable (15 seconds for Go services)
 - **Termination grace period:** calculated based on drain delay and shutdown budget
 - **Rollout strategy:** `RollingUpdate` with `maxSurge: 25%` and `maxUnavailable: 0` for zero-downtime deployments
-- **PodDisruptionBudget:** `maxUnavailable: 1` to maintain availability during voluntary disruptions
+- **PodDisruptionBudget:** `maxUnavailable: 1` to maintain availability during voluntary disruptions, plus `unhealthyPodEvictionPolicy: AlwaysAllow`
 
 > **Note:** The health preset owns these configuration fields. Manual overrides via `readinessProbe`, `livenessProbe`, `terminationGracePeriodSeconds`, `deploymentUpdate`, or `pdb.maxUnavailable`/`pdb.minAvailable` will cause the chart to fail rendering with a clear error message.
 
@@ -422,11 +424,28 @@ If you set `READYZ_DRAIN_GRACE_SECONDS` in `tracer.configmap`, v10.3.0 fails sch
 
 The ledger and tracer images no longer serve `/readyz` on their main ports (`3002`, `4020`); `/readyz` is served only on the internal health port `8099`. If an Ingress or load-balancer health check (for example `alb.ingress.kubernetes.io/healthcheck-path`) or a monitor uses `/readyz` on the main port, change it to `/health`.
 
+### 8. Ledger and tracer require `LICENSE_KEY`
+
+The `4.5.0-beta.94` ledger and tracer images refuse to boot when `LICENSE_KEY` is empty; the `4.4.0` images did not read it. The chart does not check the value: it writes `LICENSE_KEY` into the service Secret only when `ledger.secrets.LICENSE_KEY` or `tracer.secrets.LICENSE_KEY` is set, so a release without it renders and the pods fail at boot. Set it before you upgrade (the tracer key only when `tracer.enabled` is true):
+
+```yaml
+ledger:
+  secrets:
+    LICENSE_KEY: "<your-license-key>"
+
+tracer:
+  secrets:
+    LICENSE_KEY: "<your-license-key>"
+```
+
+With `useExistingSecret: true`, add the `LICENSE_KEY` key to the existing Secret instead.
+
 ## Configuration Reference
 
 ### 1. New health preset configuration
 
-The health preset is configured via a new `health` block under each component. 
+The health preset is configured via a new `health` block under each component.
+
 ```yaml
 ledger:
   health:
@@ -606,6 +625,10 @@ ledger:
   image:
     tag: "4.5.0-beta.94"
 ```
+
+### 7. Set the license key
+
+Set `ledger.secrets.LICENSE_KEY`, and `tracer.secrets.LICENSE_KEY` when the tracer is enabled, as described in [Breaking change 8](#8-ledger-and-tracer-require-license_key). Without it the new images refuse to boot.
 
 ## Preview changes before upgrading
 

@@ -53,7 +53,7 @@ The ledger service's graceful shutdown process changed in `lib-commons` v7.21.0-
 
 #### Operator Impact
 
-This is a **documentation-only change**. The default value of `terminationGracePeriodSeconds` remains `72` seconds, which is safe for all ledger image versions.
+This is a **documentation-only change**. The default value of `terminationGracePeriodSeconds` remains `72` seconds, which is safe for all ledger image versions. Pods still roll once: the chart version is part of the `helm.sh/chart` label in the pod templates.
 
 **No action is required** for existing deployments. The current setting of 72 seconds provides sufficient time for both older and newer ledger images to shut down gracefully.
 

@@ -48,9 +48,11 @@ consumers of your library:
 5. _footers_ other than `BREAKING CHANGE: <description>` may be provided and follow a convention similar to
    [git trailer format](https://git-scm.com/docs/git-interpret-trailers).
 
-Additional types are not mandated by the Conventional Commits specification, and have no implicit effect in Semantic Versioning (unless they include a BREAKING CHANGE).
+In this repository the type also sets the chart release (see `.github/configs/.releaserc.json`): `feat`, `perf` and `build` release a minor version, and `fix`, `chore`, `ci`, `test`, `refactor` and `docs` release a patch. A merge that changes only README files, `CHANGELOG.md` or files under `docs/` publishes no chart version.
 `<br /><br />`
 A scope may be provided to a commit's type, to provide additional contextual information and is contained within parenthesis, e.g., `feat(parser): add ability to parse arrays`.
+
+The pull request title must follow this format and carry a scope from the list in `.github/workflows/pr-title.yml`, which CI checks. Pull requests merge with a merge commit that takes the pull request title.
 
 ## How to Submit a Pull Request
 

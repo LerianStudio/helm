@@ -331,7 +331,7 @@ Any root user, writable root filesystem, or privilege escalation exception must 
 
 ## values.schema.json
 
-Every application chart ships a `values.schema.json` so operator typos at the top level fail Helm's schema validation at render time. The generator below writes the base schema. Many charts add hand-written rules on top of it, such as descriptions, enums and patterns, and `alloy-lerian` keeps its rules in `values.schema.overlay.json`. The generator rewrites every chart's schema and keeps none of these rules, so restore them before you commit. Regenerate after any change to a chart's top-level `values.yaml` keys or its `Chart.yaml` dependencies:
+Every application chart ships a `values.schema.json` so operator typos at the top level fail Helm's schema validation at render time. The generator below writes the base schema. Many charts add hand-written rules on top of it, such as descriptions, enums and patterns, and `alloy-lerian` keeps its rules in `values.schema.overlay.json`. The generator rewrites every chart's schema and keeps none of these rules, so restore them before you commit. It also writes a schema for the `lerian-common` library chart, which ships none, so delete that file. Regenerate after any change to a chart's top-level `values.yaml` keys or its `Chart.yaml` dependencies:
 
 ```sh
 cd .github/scripts

@@ -27,6 +27,10 @@ sisbajud:
     m2mSubject: "render-fixture-subject"
     heartbeatEvery: "1m"
     responseDeadlineMargin: "2h"
+  # No brokers in CI: the permanent block (on by default) needs the
+  # balance-change stream, so it is turned off here.
+  direct:
+    permanentBlockEnabled: false
   secrets:
     LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
     MENSAGERIA_CLIENT_ID: "render-fixture-only"

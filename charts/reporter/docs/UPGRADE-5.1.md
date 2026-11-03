@@ -45,10 +45,10 @@ Starting with application version `4.6.0`, both the manager and worker component
 **Error message when license is missing:**
 
 ```
-ERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (manager.image.tag is "4.6.0").
+ERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (worker.image.tag is "4.6.0").
    The manager AND the worker refuse to boot without a license.
    Set secrets.LICENSE_KEY (and secrets.ORGANIZATION_IDS for a per-organization license),
-   or point manager.useExistingSecret at a Secret that carries them.
+   or point worker.useExistingSecret at a Secret that carries them.
    See charts/reporter/docs/UPGRADE-5.1.md.
 ```
 
@@ -150,7 +150,7 @@ helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm \
   -f values.yaml
 ```
 
-> **Warning:** The upgrade will trigger a rolling restart of both manager and worker deployments. If `LICENSE_KEY` is not set, the chart will fail at render time with a descriptive error message.
+> **Warning:** The upgrade rolls the manager Deployment (and the worker Deployment when KEDA is disabled; with the default KEDA ScaledJob, new worker Jobs start on the new image). If `LICENSE_KEY` is not set, the chart will fail at render time with a descriptive error message.
 
 ### Step 4: Verify deployment health
 
@@ -164,19 +164,23 @@ Verify manager and worker logs to confirm successful license validation:
 
 ```bash
 kubectl logs -n reporter -l app.kubernetes.io/name=reporter-manager --tail=50
-kubectl logs -n reporter -l app.kubernetes.io/name=reporter-worker --tail=50
+# Default KEDA ScaledJob: Job pods carry only the scaledjob.keda.sh/name label.
+# With KEDA disabled, use -l app.kubernetes.io/name=reporter-worker instead.
+kubectl logs -n reporter -l scaledjob.keda.sh/name=reporter-worker --tail=50
 ```
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter
+helm diff upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
+Pass the values file that carries `secrets.LICENSE_KEY`. Without `-f`, Helm reuses the release's stored values, and the render fails if they have no license.
+
 ```bash
-helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter
+helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.1.0 -n reporter -f values.yaml
 ```

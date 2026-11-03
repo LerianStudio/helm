@@ -15,7 +15,8 @@ This is a patch release with no functional changes. The chart version has been i
 | Chart version | `5.1.0` | `5.1.1` |
 | App version | `4.6.0` | `4.6.0` |
 
-No configuration changes, template updates, or migration steps are required.
+No configuration changes, template updates, or migration steps are required. The manager pods still roll on upgrade, because the pod template carries the `helm.sh/chart: reporter-helm-5.1.1` label.
+
 ## Preview changes before upgrading
 
 ```bash

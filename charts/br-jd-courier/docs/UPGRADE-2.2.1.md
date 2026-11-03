@@ -28,7 +28,7 @@ This is a **documentation-only change** with no operational impact on existing d
 
 None required. This is a documentation clarification only.
 
-> **Note:** If you are running application images older than lib-commons v7.21.0-beta.20, the previous shutdown behavior still applies. The documentation update prepares you for newer images but does not change the behavior of older ones.
+> **Note:** If you are running application images older than lib-commons v7.21.0-beta.20, the previous shutdown behavior still applies. The chart's default image `1.2.1` is one of them: it is built on lib-commons v7.19.0. The documentation update prepares you for newer images but does not change the behavior of older ones.
 
 ---
 

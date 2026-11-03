@@ -28,7 +28,7 @@ The lerian-consul chart now ships **Consul 2.1.0** (a major version bump from 1.
 
 ### No in-place upgrade path
 
-According to the Chart.yaml comment in the diff:
+The chart's `Chart.yaml` states:
 
 > There is no supported in-place path from Consul 1.x, so the 1.x → 2.x move is a fresh install (see README, "Upgrading from 1.x").
 
@@ -38,7 +38,7 @@ You **cannot** perform a rolling upgrade from v1.0.0 to v1.1.0 while preserving 
 
 #### Fresh install
 
-This is the only supported path. HashiCorp supports no in-place upgrade from Consul 1.x to 2.x.
+This is the only supported path for this chart. HashiCorp documents no direct upgrade from Consul 1.20 to 2.1 (its 2.0.x instructions start at 1.21.x), and this chart ships no intermediate Consul version.
 
 1. Uninstall the existing v1.0.0 release:
 
@@ -63,6 +63,8 @@ kubectl delete pvc -n lerian-consul <pvc-name>
 ```bash
 helm install lerian-consul oci://ghcr.io/lerianstudio/lerian-consul --version 1.1.0 -n lerian-consul
 ```
+
+The 1.1.0 subchart adds two hook Jobs that 1.0.0 did not render: `<consul-fullname>-feature-gate-set` (post-install and post-upgrade; with ACLs on it mounts the bootstrap ACL token Secret) and `<consul-fullname>-ai-cleanup` (pre-upgrade and pre-delete).
 
 5. With `consul.global.acls.manageSystemACLs=true`, the new install bootstraps a new ACL system. Re-mint the per-workload SD tokens (see the chart README, "ACL tokens"), update each workload's `SD_TOKEN`, and restart the consuming workloads if they do not re-register on their own.
 
@@ -105,7 +107,7 @@ consul:
 
 ### 2. Consul control-plane image
 
-The consul-k8s control-plane image (used by ACL init, TLS init, and gossip-key jobs) has been updated to version 2.1.0.
+The consul-k8s control-plane image (used by the server pod's `locality-init` init container and by the ACL init, TLS init, gossip-key and feature-gate Jobs) has been updated to version 2.1.0.
 
 **Before (v1.0.0):**
 

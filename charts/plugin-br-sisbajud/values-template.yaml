@@ -93,7 +93,9 @@ sisbajud:
           - hosts: ["<sisbajud-webhook-host>"]
             secretName: "<tls-secret>"
 
-  # Direct channel: permanent blocks stay refused (422 SBJ-0027) unless decided.
+  # Direct channel: the permanent block is ON by default and needs
+  # global.streaming.brokers. This example has no brokers, so it turns it off
+  # (permanent blocks refused with 422 SBJ-0027); with brokers, drop these lines.
   direct:
     permanentBlockEnabled: false
 

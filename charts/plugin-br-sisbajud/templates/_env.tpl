@@ -87,9 +87,12 @@ EXECUTOR_ENABLED: {{ $exOn | quote }}
 {{- include $kv (dict "cm" $cm "p" $exDirect "f" "drainerInfraAlarmThreshold" "k" "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD" "d" "3") }}
 {{- include $kv (dict "cm" $cm "p" $exDirect "f" "purgeEligibleAlarmAfter" "k" "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER" "d" "168h") }}
 {{- include $kv (dict "cm" $cm "p" $exDirect "f" "purgeRefreshEvery" "k" "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY" "d" "15m") }}
-{{- include $kv (dict "cm" $cm "p" $direct "f" "permanentBlockEnabled" "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "d" "false") }}
+{{- include $kv (dict "cm" $cm "p" $direct "f" "permanentBlockEnabled" "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "d" "true") }}
 {{- include $kv (dict "cm" $cm "p" $direct "f" "permanentRefreshEvery" "k" "DIRECT_PERMANENT_REFRESH_EVERY" "d" "15m") }}
-{{- include $kv (dict "cm" $cm "p" $direct "f" "permanentResultEmitterEnabled" "k" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED" "d" "false") }}
+{{- /* The emitter follows the permanent block unless set: blank means "same as permanentBlockEnabled". */}}
+{{- $pbOn := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" $direct "f" "permanentBlockEnabled" "d" "true") | trim }}
+{{- $emitter := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED" "p" $direct "f" "permanentResultEmitterEnabled" "d" "") | trim | default $pbOn }}
+EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED: {{ $emitter | quote }}
 # --- Direct drainer attempt cap (every executor mode; also the webhook's) ----------
 {{- include $kv (dict "cm" $cm "p" $wh "f" "maxHandleAttempts" "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "d" "5") }}
 {{- if ne $mode "direct" }}

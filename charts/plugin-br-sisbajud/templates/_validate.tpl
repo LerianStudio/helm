@@ -69,7 +69,7 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not (has $exOn (list "" "true" "false")) -}}
 {{- include $f (dict "msg" (printf "EXECUTOR_ENABLED must be true or false (or unset), got %q." $exOn) "set" "sisbajud.executor.enabled") -}}
 {{- end -}}
-{{- $pb := include $val (dict "cm" $cm "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" ($s.direct | default dict) "f" "permanentBlockEnabled" "d" "false") | trim -}}
+{{- $pb := include $val (dict "cm" $cm "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" ($s.direct | default dict) "f" "permanentBlockEnabled" "d" "true") | trim -}}
 {{- if not (has $pb (list "" "true" "false")) -}}
 {{- include $f (dict "msg" (printf "DIRECT_PERMANENT_BLOCK_ENABLED must be true or false, got %q." $pb) "set" "sisbajud.direct.permanentBlockEnabled") -}}
 {{- end -}}
@@ -77,7 +77,7 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- $se := include "plugin-br-sisbajud.streamingEnabled" . -}}
 {{- $sb := include "plugin-br-sisbajud.streamingBrokers" . -}}
 {{- if and (eq $pb "true") (or (ne $se "true") (not $sb)) -}}
-{{- include $f (dict "msg" "DIRECT_PERMANENT_BLOCK_ENABLED=true needs STREAMING_ENABLED=true and STREAMING_BROKERS (the permanent block reads the balance-change stream; the app refuses the boot otherwise)." "set" "global.streaming.enabled=true and global.streaming.brokers (or sisbajud.configmap.STREAMING_ENABLED / STREAMING_BROKERS)") -}}
+{{- include $f (dict "msg" "sisbajud.direct.permanentBlockEnabled is true (the chart default) and needs STREAMING_ENABLED=true and STREAMING_BROKERS: the permanent block reads the balance-change stream (the app refuses the boot otherwise)." "set" "global.streaming.brokers (+ global.streaming.tlsEnabled/SASL in production), or sisbajud.direct.permanentBlockEnabled=false for an install without brokers (e.g. Mensageria-only)") -}}
 {{- end -}}
 {{- if eq $se "true" -}}
 {{- if not $sb -}}
@@ -97,9 +97,12 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not (has $sweep (list "" "true" "false")) -}}
 {{- include $f (dict "msg" (printf "EXECUTOR_ORDER_SWEEP_ENABLED must be true or false, got %q." $sweep) "set" "sisbajud.executor.orderSweepEnabled") -}}
 {{- end -}}
-{{- $emit := include $val (dict "cm" $cm "k" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED" "p" ($s.direct | default dict) "f" "permanentResultEmitterEnabled" "d" "false") | trim -}}
+{{- $emit := include $val (dict "cm" $cm "k" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED" "p" ($s.direct | default dict) "f" "permanentResultEmitterEnabled" "d" "") | trim | default $pb -}}
 {{- if not (has $emit (list "" "true" "false")) -}}
 {{- include $f (dict "msg" (printf "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED must be true or false, got %q." $emit) "set" "sisbajud.direct.permanentResultEmitterEnabled") -}}
+{{- end -}}
+{{- if and (eq $emit "true") (ne $pb "true") -}}
+{{- include $f (dict "msg" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED=true needs DIRECT_PERMANENT_BLOCK_ENABLED=true (the app refuses the boot otherwise)." "set" "sisbajud.direct.permanentResultEmitterEnabled=\"\" (follows the permanent block) or \"false\"") -}}
 {{- end -}}
 {{- $mode := include "plugin-br-sisbajud.executorMode" . -}}
 {{- if not $mode -}}

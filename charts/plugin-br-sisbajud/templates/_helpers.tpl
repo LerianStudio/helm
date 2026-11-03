@@ -217,18 +217,20 @@ Resolved value of one key (same precedence as kv), for gates.
 {{- include "lerian-common.cfgValue" (dict "configmap" .cm "nativeKey" .k "params" .p "field" .f "default" (toString (.d | default ""))) -}}
 {{- end -}}
 
-{{- /* streamingEnabled — STREAMING_ENABLED resolved configmap › (global.streaming.enabled
-   AND the DIRECT permanent block on) › "false", trimmed. An env-wide streaming block
-   alone never turns the executor's stream on: a DIRECT executor without the permanent
-   block has no use for it, and an upgrade must not start one silently. */ -}}
+{{- /* streamingEnabled — STREAMING_ENABLED resolved configmap › the DIRECT permanent
+   block (on by default) › "false", trimmed. The stream follows the permanent block: on
+   with it unless global.streaming.enabled is explicitly false (then the render fails,
+   _validate.tpl), off without it. An env-wide streaming block alone never turns the
+   executor's stream on: a DIRECT executor without the permanent block has no use for it. */ -}}
 {{- define "plugin-br-sisbajud.streamingEnabled" -}}
 {{- $cm := .Values.sisbajud.configmap | default dict -}}
 {{- if hasKey $cm "STREAMING_ENABLED" -}}
 {{- index $cm "STREAMING_ENABLED" | toString | trim -}}
 {{- else -}}
 {{- $gs := (.Values.global | default dict).streaming | default dict -}}
-{{- $pb := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.direct | default dict) "f" "permanentBlockEnabled" "d" "false") | trim -}}
-{{- ternary "true" "false" (and (eq (toString ($gs.enabled | default false)) "true") (eq $pb "true")) -}}
+{{- $pb := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.direct | default dict) "f" "permanentBlockEnabled" "d" "true") | trim -}}
+{{- $off := and (hasKey $gs "enabled") (ne (toString $gs.enabled) "true") -}}
+{{- ternary "true" "false" (and (eq $pb "true") (not $off)) -}}
 {{- end -}}
 {{- end -}}
 

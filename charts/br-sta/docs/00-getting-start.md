@@ -64,6 +64,7 @@ kubectl create namespace sta-dev
 # a chave de licença fica num arquivo: nunca vai para o histórico do shell nem para os args do processo
 kubectl create secret generic br-sta-license -n sta-dev \
   --from-file=LICENSE_KEY=./br-sta.license
+helm dependency update charts/br-sta
 helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
   --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}' \
   --set common.license.organizationIds=<seu-organization-id>
@@ -146,7 +147,7 @@ kubectl delete namespace sta-dev
    `pre-install`/`pre-upgrade` do Helm e como hook PreSync do ArgoCD (o Secret do hook no
    weight -2, o Job no -1), então a app nunca sobe sem schema em nenhuma das duas.
 6. Cadastre as credenciais de operador do BACEN (`POST /v1/credentials`) e as configs de
-   tipo de documento / inbound pela API antes de os transfers rodarem.
+   inbound-source pela API antes de os transfers rodarem.
 
 ### RabbitMQ com CA privada (produção)
 
@@ -223,7 +224,7 @@ export generator).
 | Guarda de produção | `redpandaBundle` e `mockSta` são recusados fora da classe dev | `helm template ... --set global.env.name=staging` falha citando os dois |
 | Worker de réplica única | Não há leader election para todos os loops: exatamente uma réplica, `Recreate` | Não escale o worker; escale o manager |
 | Scheduler de transfer | `TRANSFER_SCHEDULER_ENABLED` (default `true`) é o único caminho que envia ao BACEN | Log do worker `Transfers outbound fanout started` |
-| Perfil mock | Qualquer `STA_SCHEME` / `STA_FILE_HOST` / `STA_PASSWORD_HOST` desvia o cliente STA do BACEN e relaxa o gate de trust-store do readiness | Nunca sete em produção |
+| Perfil mock | Qualquer `STA_SCHEME` / `STA_FILE_HOST` / `STA_PASSWORD_HOST` desvia o cliente STA do BACEN | Nunca sete em produção |
 | CORS | O middleware do lib-commons lê `ACCESS_CONTROL_*`; o chart renderiza `ACCESS_CONTROL_ALLOW_ORIGIN` a partir de `common.cors.allowedOrigins`. Vazio = nega tudo | Produção: só origens explícitas |
 | Master key | Substituir `MASTER_KEYS` torna indecifráveis todas as credenciais BACEN guardadas | Adicione uma versão nova (`v1:...,v2:...`) e troque `MASTER_KEY_VERSION` |
 | Filing sweep | `worker.scheduler.filingSweepEnabled` (default `false`) fecha filings encalhados do reporter; `filingSweepAgeMinutes` é knob de segurança | Ligue por decisão; não reduza a idade |
@@ -235,7 +236,7 @@ export generator).
 |---|---|
 | Uma chave por produto | Uma chave licencia um único produto. Chave emitida para outro produto é recusada com `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; chave desconhecida ou adulterada, com `(LCS-1002)` |
 | Na recusa | O processo sai e o pod entra em `CrashLoopBackOff`. Num rolling update o pod que já está rodando continua servindo: o rollout trava, mas nada cai |
-| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging também são validadas neste gateway de produção. `IS_DEVELOPMENT` está obsoleta e é ignorada: os produtos validam só no gateway de produção |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging também são validadas neste gateway de produção. |
 | Refresh e carência | A chave é revalidada a cada 6 h. Quando o gateway não responde (erro de rede ou 5xx) depois de ter confirmado a chave uma vez, o processo segue servindo em janelas de carência decrescentes (2 d, 1 d, 12 h, 6 h, no máximo 3 d 18 h) e depois sai. Um processo que nunca foi confirmado ganha só 6 h. Uma recusa 4xx encerra a carência na hora. As janelas vivem em memória: um pod reiniciado durante uma queda começa sem confirmação |
 | Offline | Não há modo de licença offline nesta versão da app |
 | Gate de render | Em todos os ambientes o render falha sem `LICENSE_KEY` e `ORGANIZATION_IDS` (a app recusa o boot sem licença; não há modo sem licença) |
@@ -247,7 +248,7 @@ export generator).
 
 ```bash
 kubectl -n <ns> get pods
-kubectl -n <ns> get jobs                          # migrations (e, em dev, buckets/topics) Complete
+kubectl -n <ns> get jobs                          # dev bundle: migrations, buckets e topics Complete
 kubectl -n <ns> port-forward svc/<service-do-manager> 14028:<porta-da-service>
 curl -s localhost:14028/readyz                    # readiness (probe do manager e do worker)
 curl -s localhost:14028/health                    # liveness
@@ -256,7 +257,7 @@ curl -s localhost:14028/health                    # liveness
 | Checagem | Comando/URL | Esperado | Se não bater, verifique primeiro |
 |---|---|---|---|
 | Pods | `kubectl get pods` | manager e worker `1/1 Running`, 0 restarts | `CrashLoopBackOff`: a última linha do log diz a dependência que falhou (seção 7) |
-| Migrations | `kubectl get jobs` | `br-sta-migrations-<hash>` `Complete` | Host/senha do Postgres, `ALLOW_INSECURE_TLS` para Postgres sem TLS |
+| Migrations | `kubectl get jobs` | `br-sta-migrations-<hash>` `Complete` com Postgres embutido; com Postgres externo o Job do hook é apagado quando termina com sucesso | Host/senha do Postgres, `ALLOW_INSECURE_TLS` para Postgres sem TLS |
 | Readiness | `GET /readyz` | `200`, `status: healthy`; `postgres`, `redis`, `rabbitmq`, `storage_transfer`, `license` `up` (`storage_audit_exports` `skipped` no manager) | Um check `down` diz a dependência; bucket inexistente aparece como `storage_transfer` down |
 | Liveness | `GET /health` | `200 {"status":"available"}` | — |
 | Loops do worker | `kubectl logs deploy/<fullname>-worker` | audit publisher/consumer, business publisher, outbound fanout, `scheduler: starting leader campaign`, `poll outcome` periódico | Loop ausente: o toggle dele em `worker.*` / `common.transfer.*` |
@@ -277,7 +278,6 @@ curl -s localhost:14028/health                    # liveness
 | `Failed to connect to plugin-auth` no boot | O plugin-access-manager não está instalado ou ainda não está acessível | Informativo: os pods ficam Ready mesmo assim. Chamadas autenticadas precisam do plugin-access-manager |
 | `PLUGIN_AUTH_ENABLED=false is only accepted in a development-class environment` | Auth desligado em `staging`/`production` | Ligue `global.auth` ou use um `global.env.name` da classe dev |
 | `MASTER_KEYS is malformed` / `must reference a key present` | Formato `versão:hex` errado ou `MASTER_KEY_VERSION` divergente | `v1:<64 chars hex>` e `common.credentials.masterKeyVersion: v1` |
-| `sta_consumer` degraded no br-sisbajud depois de um fato do br-sta | Comportamento conhecido do br-sisbajud: um fato de um transfer que ele não criou é reprocessado e bloqueia a partição | Monitore `sta_consumer` no `/readyz` do br-sisbajud; ver o runbook do br-sisbajud |
 
 ---
 
@@ -292,13 +292,11 @@ Com ArgoCD, reverta o commit de values/versão do chart no Git; um rollback manu
 desfeito no próximo sync.
 
 - **Migrations só andam para frente.** O rollback reimplanta o chart e a imagem
-  anteriores, mas não reverte o schema: o Job de migrations só aplica migrations `up`, e
-  o hook pre-upgrade/PreSync da revisão antiga as roda de novo sem efeito. Uma imagem
-  antiga da app pode recusar um schema mais novo do que o que ela traz (por exemplo, um
-  build cuja última migration é menor que a versão do banco falha a checagem de
-  migrations no boot). Volte para uma imagem que conheça a versão atual do schema, ou
-  restaure o banco de um backup feito antes do upgrade. Faça esse backup antes de todo
-  upgrade que traga migrations.
+  anteriores, mas não reverte o schema: o Job de migrations só aplica migrations `up`.
+  Com ArgoCD, o Job de migrations PreSync da revisão antiga falha quando o banco está à
+  frente das migrations que a imagem dele traz. Volte para uma imagem que conheça a
+  versão atual do schema, ou restaure o banco de um backup feito antes do upgrade. Faça
+  esse backup antes de todo upgrade que traga migrations.
 - **`MASTER_KEYS` precisa sobreviver a todo rollback e reinstalação.** As credenciais de
   operador gravadas via `POST /v1/credentials` são cifradas por envelope, e cada texto
   cifrado fica preso à versão da master key que o cifrou. A app decifra por essa versão

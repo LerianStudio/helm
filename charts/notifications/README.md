@@ -5,9 +5,9 @@
 - Chart type: `multi-component`
 - Images: ghcr `notifications` 1.1.0; the api binds `0.0.0.0:8080`.
 - Required secrets: `secrets.LICENSE_KEY` is enforced at render time (the render refuses without it, unless `secretRef.name` points at an existing Secret). The application will not start without `secrets.NOTIFICATION_ENCRYPTION_KEY` and `secrets.NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY` (each a base64-encoded 32-byte key), and `secrets.POSTGRES_PASSWORD` is required when `config.ENV_NAME` is `production`. `secrets.DATABASE_URL` is required by the migrations Job while `migrations.enabled` is `true`. See [Required secrets](#required-secrets).
-- Dependency notes: No local dependency charts are bundled. PostgreSQL, Redis, and RabbitMQ are external (provided by the target environment); migrations run as a Helm pre-install/pre-upgrade Job against the external PostgreSQL. External notification providers are configured through values.
-- Production overrides: Provide provider credentials through chart secrets or existing Secrets where supported; override API/worker image tags, ingress, resources, and provider endpoints.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Dependency notes: No local dependency charts are bundled. PostgreSQL, Redis, and RabbitMQ are external (provided by the target environment); migrations run as a Helm pre-install/pre-upgrade Job against the external PostgreSQL.
+- Production overrides: Override API/worker image tags, ingress, and resources.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
 Helm chart for the Notifications service — multi-channel delivery (email, SMS, webhook) for the Lerian platform.
 
@@ -57,7 +57,7 @@ With `config.ENV_NAME: production` the application also refuses the dev-only enc
 
 ## Environment name
 
-The chart default is `config.ENV_NAME: "firmino"`. The application only applies its production safeguards when `ENV_NAME` is exactly `production`: Swagger is forced off, rate limiting is forced on, stack traces are suppressed, `POSTGRES_PASSWORD` is required, `POSTGRES_SSLMODE=disable` and insecure RabbitMQ TLS/health-check settings are rejected, and the dev-only encryption keys are refused. Any other value, including the default, leaves these checks off. Set `config.ENV_NAME: production` (and `config.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`, which is independent) for production installs.
+The chart default for `config.ENV_NAME` is not `production`. The application only applies its production safeguards when `ENV_NAME` is exactly `production`: Swagger is forced off, rate limiting is forced on, stack traces are suppressed, `POSTGRES_PASSWORD` is required, `POSTGRES_SSLMODE=disable` and insecure RabbitMQ TLS/health-check settings are rejected, and the dev-only encryption keys are refused. Any other value, including the default, leaves these checks off. Set `config.ENV_NAME: production` (and `config.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`, which is independent) for production installs.
 
 ## Autoscaling and PodDisruptionBudgets
 
@@ -72,20 +72,20 @@ Resource names come from `api.name` (default `notifications`) and the `workerX.n
 ```sh
 helm install notifications ./charts/notifications \
   -n notifications --create-namespace \
-  -f values-firmino.yaml
+  -f my-values.yaml
 ```
 
 ## Key values (per-env overrides)
 
 | Key                                | Notes                                            |
 |------------------------------------|--------------------------------------------------|
-| `api.image.tag`                    | Image tag for the API and (by default) workers   |
+| `api.image.tag`                    | Image tag for the API, and for the migrations Job while `migrations.image.tag` is empty; workers do not inherit it (set each `workerX.image.tag`) |
 | `workerEmail.image.tag`            | Override per worker if independently versioned   |
 | `workerSms.image.tag`              | ditto                                            |
 | `workerWebhook.image.tag`          | ditto                                            |
 | `api.ingress.enabled`              | `false` by default                               |
 | `api.ingress.hosts[].host`         | Per-env host                                     |
-| `config.ENV_NAME`                  | `production` enables the app's production checks; any other value (default `firmino`) leaves them off |
+| `config.ENV_NAME`                  | `production` enables the app's production checks; any other value, including the chart default, leaves them off |
 | `config.POSTGRES_HOST`             | External Postgres host                           |
 | `config.REDIS_HOST`                | External Redis host                              |
 | `config.RABBITMQ_HOST`             | External RabbitMQ host                           |

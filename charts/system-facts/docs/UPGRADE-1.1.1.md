@@ -49,31 +49,6 @@ The values schema itself is unchanged — you can still set `system-facts.config
 
 The `LICENSE_ENABLED` environment variable has been removed from the ConfigMap template. Previously, operators could set `system-facts.configmap.LICENSE_ENABLED` to control license enforcement behavior. This option is no longer supported by the chart.
 
-**Template change:**
-
-**Before (v1.1.0):**
-
-```yaml
-  {{- /* License gate inputs (README: system-facts.configmap.ORGANIZATION_IDS / LICENSE_ENABLED).
-         Rendered only when set, so an install that leaves them out keeps the app defaults. */}}
-  {{- with (index .Values "system-facts").configmap.ORGANIZATION_IDS }}
-  ORGANIZATION_IDS: {{ . | toString | quote }}
-  {{- end }}
-  {{- if hasKey ((index .Values "system-facts").configmap | default dict) "LICENSE_ENABLED" }}
-  LICENSE_ENABLED: {{ (index .Values "system-facts").configmap.LICENSE_ENABLED | toString | quote }}
-  {{- end }}
-```
-
-**After (v1.1.1):**
-
-```yaml
-  {{- /* License gate inputs (README: system-facts.configmap.ORGANIZATION_IDS).
-         Rendered only when set, so an install that leaves it out keeps the app default. */}}
-  {{- with (index .Values "system-facts").configmap.ORGANIZATION_IDS }}
-  ORGANIZATION_IDS: {{ . | toString | quote }}
-  {{- end }}
-```
-
 **Operational impact:**
 
 If you have `system-facts.configmap.LICENSE_ENABLED` set in your values file, the chart will no longer render it into the ConfigMap. The license gate is on, and the application refuses to boot without a valid license.

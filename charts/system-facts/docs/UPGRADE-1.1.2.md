@@ -50,6 +50,8 @@ The upgrade will trigger a rolling restart of the System Facts pods because the 
 
 A new environment variable `SHUTDOWN_DRAIN_DELAY` (default `"15s"`) has been added to the ConfigMap.
 
+> **Note:** The application image `1.1.0` that this chart deploys does not read `SHUTDOWN_DRAIN_DELAY` or `SHUTDOWN_TIMEOUT`: it is built on lib-commons `v7.19.0`, and both variables arrive in lib-commons `v7.21.0`. With image `1.1.0`, the variable has no effect and the new grace period is what changes shutdown behavior.
+
 **ConfigMap change:**
 
 The new variable is added to the `system-facts` ConfigMap using the standard `lerian-common.cfgValue` helper pattern.

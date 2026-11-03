@@ -11,6 +11,7 @@ import unittest
 import yaml
 
 CHART = Path(__file__).resolve().parents[1]
+CARADHRAS_2_1 = {'image': {'tag': '2.1.0'}, 'migrations': {'image': {'tag': '2.1.0'}}}
 BASE = {
     'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'},
              'initUser': {'enabled': False}},
@@ -429,7 +430,7 @@ class StartupContract(unittest.TestCase):
         self.assertEqual(by_name['health'], 8099)
 
     def identity_env(self, init_user):
-        docs = self.succeeds({'auth': {'initUser': init_user}})
+        docs = self.succeeds({'auth': {'initUser': init_user}, 'caradhras': CARADHRAS_2_1})
         deployment = next(d for d in docs if d['kind'] == 'Deployment'
                           and d['metadata']['name'].endswith('identity'))
         env = deployment['spec']['template']['spec']['containers'][0].get('env', [])
@@ -499,8 +500,27 @@ class StartupContract(unittest.TestCase):
         disabled, _ = self.identity_env({'enabled': False, 'useExistingSecret': True,
                                          'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})
         self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == 'mine' for d in disabled))
-        self.fails({'auth': {'initUser': {'enabled': True, 'useExistingSecret': True}}},
+        self.fails({'auth': {'initUser': {'enabled': True, 'useExistingSecret': True}}, 'caradhras': CARADHRAS_2_1},
                    'adminPasswordSecretName must be specified')
+
+    def test_init_user_needs_the_ensure_first_admin_contract(self):
+        def init(identity='3.17.0', server='2.1.0', migrations='2.1.0', **extra):
+            return {'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}},
+                    'identity': {'image': {'tag': identity}},
+                    'caradhras': {'image': {'tag': server}, 'migrations': {'image': {'tag': migrations}}},
+                    **extra}
+        refused = [dict(server='1.8.6', migrations='1.8.6'), dict(migrations='1.8.6'), dict(server='1.8.6'),
+                   dict(identity='3.16.1'), dict(identity='3.17.0-beta.1')]
+        refused += [{k: tag} for tag in ('2.1.0-rc.2', '2.0.2', 'latest', '2.1.0@sha256:abc')
+                    for k in ('server', 'migrations')]
+        for case in refused:
+            with self.subTest(case=case):
+                self.fails(init(**case), 'auth.initUser.enabled needs identity >= 3.17.0')
+        self.succeeds(init())
+        self.succeeds(init(server='v2.1.0', migrations='v2.1.0'))
+        # Multi-tenant identity never calls ensure-first-admin.
+        self.succeeds(init(identity='3.16.1', server='1.8.6', migrations='1.8.6',
+                           **{'global': {'multiTenant': {'enabled': True}}}))
 
     def migrate_env(self, patch):
         docs = self.succeeds(patch)

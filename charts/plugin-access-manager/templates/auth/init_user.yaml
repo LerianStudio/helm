@@ -3,6 +3,18 @@
 {{- if and .Values.auth.initUser.useExistingSecret (not .Values.auth.initUser.adminPasswordSecretName) }}
 {{- fail "ERROR: When auth.initUser.useExistingSecret is true, auth.initUser.adminPasswordSecretName must be specified" }}
 {{- end }}
+{{- /* identity >= 3.17.0 calls Caradhras ensure-first-admin (204 or it stays unready; 404 before 2.1.0).
+       Multi-tenant identity never calls it. Plain semver is checked first so latest and digests get this message. */ -}}
+{{- $multiTenant := include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.identity.configmap "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") }}
+{{- if ne (lower $multiTenant) "true" }}
+{{- $idTag := .Values.identity.image.tag | default (include "plugin.version" .) }}
+{{- $srvTag := include "caradhras.imageTag" . }}
+{{- $migTag := include "caradhras.migrationsImageTag" . }}
+{{- $plain := `^v?[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$` }}
+{{- if not (and (regexMatch $plain $idTag) (semverCompare ">=3.17.0" $idTag) (regexMatch $plain $srvTag) (semverCompare ">=2.1.0" $srvTag) (regexMatch $plain $migTag) (semverCompare ">=2.1.0" $migTag)) }}
+{{- fail (printf "\n\nERROR: auth.initUser.enabled needs identity >= 3.17.0 and Caradhras server and migrations >= 2.1.0 (plain semver tags, no prereleases or digests); got identity %s, caradhras server %s, caradhras migrations %s.\n   Pin identity.image.tag=3.17.0 and caradhras.image.tag / caradhras.migrations.image.tag=2.1.0, or set auth.initUser.enabled=false once the first admin exists.\n   Caradhras 2.x also needs caradhras.secrets.LICENSE_KEY or caradhras.useExistingSecret.\n" $idTag $srvTag $migTag) }}
+{{- end }}
+{{- end }}
 {{- end }}
 {{- if and .Values.auth.initUser.enabled (not .Values.auth.initUser.useExistingSecret) }}
 apiVersion: v1

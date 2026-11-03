@@ -436,7 +436,7 @@ class StartupContract(unittest.TestCase):
         return docs, {e['name']: e for e in env}
 
     def test_init_user_feeds_identity_boot(self):
-        docs, env = self.identity_env({'enabled': False})
+        disabled_docs, env = self.identity_env({'enabled': False})
         self.assertFalse({'ADMIN_PASSWORD', 'ADMIN_EMAIL', 'ADMIN_DISPLAY_NAME'} & env.keys())
         docs, env = self.identity_env({'enabled': True, 'adminPassword': 'render-only'})
         ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
@@ -444,8 +444,10 @@ class StartupContract(unittest.TestCase):
         self.assertEqual(env['ADMIN_EMAIL']['value'], 'admin@midaz.tech')
         self.assertEqual(env['ADMIN_DISPLAY_NAME']['value'], 'Admin')
         self.assertEqual([d['kind'] for d in docs if d['kind'] == 'Job'], [])
-        secret = next(d for d in docs if d['metadata']['name'] == ref['name'])
+        secret = next(d for d in docs if d['kind'] == 'Secret' and d['metadata']['name'] == ref['name'])
         self.assertNotIn('annotations', secret['metadata'])
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == ref['name']
+                             for d in disabled_docs))
 
     def test_init_user_managed_secret_uses_selected_key(self):
         for name, key in (('bootstrap', 'password'), ('123', '456')):
@@ -493,6 +495,10 @@ class StartupContract(unittest.TestCase):
         ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
         self.assertEqual((ref['name'], ref['key'], ref['optional']), ('mine', 'pw', True))
         self.assertFalse([d for d in docs if d['metadata']['name'].endswith('init-user')])
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == 'mine' for d in docs))
+        disabled, _ = self.identity_env({'enabled': False, 'useExistingSecret': True,
+                                         'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == 'mine' for d in disabled))
         self.fails({'auth': {'initUser': {'enabled': True, 'useExistingSecret': True}}},
                    'adminPasswordSecretName must be specified')
 

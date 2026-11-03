@@ -13,6 +13,15 @@
 
 > **Uninstall keeps the identity data.** `helm uninstall` leaves the bundled database volume (`data-<release>-auth-database-0`) and its password Secret (`<release>-auth-database`), so a reinstall under the same release name opens the same users, organizations and applications with the same password. This chart, not the Bitnami subchart, owns that Secret: it takes `auth-database.auth.password` when set, else the Secret already in the namespace, else a new random password. Deleting the data is a separate, manual step: delete that PVC and that Secret together (the Valkey volume `valkey-data-<release>-valkey-primary-0`, sessions and cached tokens only, is left too). Deleting only the Secret resets nothing: a reinstall generates a new password that the kept data never learned.
 
+### Retire the initial admin credential
+
+1. Rotate the initial admin password through the authenticated password-change flow. Verify a new login succeeds with the replacement and a new login with the old password is refused before proceeding.
+2. Set `auth.initUser.enabled: false`, clear `auth.initUser.adminPassword` from desired values, and remove all independent `ADMIN_PASSWORD`, `ADMIN_EMAIL` and `ADMIN_DISPLAY_NAME` injections, including from Secrets and ConfigMaps supplied through `envFrom`. Disabling the chart setting alone does not remove those independent injections.
+3. Apply the change through the existing deployment process. A Helm upgrade removes the formerly generated Secret when it is absent from the new release manifest; a render alone does not prove live removal. With Argo CD `prune: false`, removing that generated resource requires a separately authorized, targeted prune. Never prune an external or database Secret, or delete account data.
+4. Confirm the identity rollout, a new login with the replacement password, and absence of the formerly generated Secret. An externally managed bootstrap Secret remains client-owned and is never rendered or deleted by this chart.
+
+This retires the chart's bootstrap inputs, not the account. Current images can recreate the admin on a later start if the organization becomes empty and `ADMIN_PASSWORD` remains configured. Leaving only `ADMIN_EMAIL` or `ADMIN_DISPLAY_NAME` keeps the startup check enabled and can leave an empty organization unready. Helm release history and backups may retain old values; this procedure does not purge them.
+
 This helm chart installs [Plugin Access Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance ledger.
 
 ---

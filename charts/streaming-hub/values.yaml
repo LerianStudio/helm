@@ -137,7 +137,7 @@ streamingHub:
     # -- Image pull policy.
     pullPolicy: IfNotPresent
     # -- Image tag. Empty falls back to Chart.appVersion via the defaultTag helper.
-    tag: "3.0.0"
+    tag: "3.1.0"
   # -- Secrets for pulling the image from a private registry. The published
   # images are public, so none is needed by default.
   imagePullSecrets: []

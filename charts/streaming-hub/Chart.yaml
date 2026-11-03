@@ -9,7 +9,7 @@ type: application
 # chart version on merge — do NOT hand-pick a final number here.
 
 version: 2.0.2
-appVersion: "3.0.0"
+appVersion: "3.1.0"
 annotations:
   lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/streaming-hub

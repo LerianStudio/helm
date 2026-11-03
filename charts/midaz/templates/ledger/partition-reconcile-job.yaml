@@ -1,0 +1,28 @@
+{{- $reconcile := dig "partition" "reconcile" dict (.Values.ledger | default dict) }}
+{{- if and .Values.ledger.enabled (include "midaz.ledgerPartitionEnabled" .) (ne (toString (dig "enabled" true $reconcile)) "false") }}
+{{- /* Run after migrations; the daily pass retries unavailable databases or indexes. */}}
+{{- $component := printf "%s-partition-reconcile" .Values.ledger.name }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "midaz-ledger.partitionReconcileJobName" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: {{ dig "syncWave" "1" $reconcile | toString | quote }}
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: {{ dig "activeDeadlineSeconds" 1800 $reconcile }}
+  ttlSecondsAfterFinished: {{ dig "ttlSecondsAfterFinished" 259200 $reconcile }}
+  template:
+    metadata:
+      labels:
+        {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 8 }}
+    spec:
+      {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "reconcile-indexes" "--tolerate-unavailable")) | nindent 6 }}
+{{- end }}

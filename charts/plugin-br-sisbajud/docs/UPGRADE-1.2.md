@@ -67,6 +67,8 @@ sisbajud:
 - The `env` block is now unconditionally rendered (previously conditional on `$pgRef`, `$vkRef`, `$telemetry`, `$raOn`, or `$extra`)
 - Pods will take up to 105 seconds to terminate gracefully during rolling updates or scale-down operations
 
+> **Note:** The application image `1.1.0` that this chart deploys does not read `SHUTDOWN_DRAIN_DELAY`: it is built on lib-commons `v7.19.0`, and the variable arrives in lib-commons `v7.21.0`. Image `1.1.0` keeps its own fixed shutdown timings (a 12-second readiness drain and a 30-second HTTP shutdown budget), so with that image only the longer grace period changes.
+
 > **Important:** If your deployment uses a custom `terminationGracePeriodSeconds` value, ensure it is at least 105 seconds to accommodate the shutdown stages. Values below 105 seconds may cause the pod to be forcefully terminated before completing graceful shutdown.
 
 ### 2. Deprecated License Development Flag Removal
@@ -96,46 +98,6 @@ sisbajud:
   license:
     organizationIds: "global"
     # isDevelopment field removed
-```
-
-**Template changes (_env.tpl):**
-
-**Before (v1.1.1):**
-
-```yaml
-# --- License (LICENSE_KEY lives in the Secret) ---------------------------------
-{{- include $kv (dict "cm" $cm "p" $s.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "d" "global") }}
-{{- include $kv (dict "cm" $cm "p" $s.license "f" "isDevelopment" "k" "IS_DEVELOPMENT" "opt" true) }}
-```
-
-**After (v1.2.0):**
-
-```yaml
-# --- License (LICENSE_KEY lives in the Secret) ---------------------------------
-{{- include $kv (dict "cm" $cm "p" $s.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "d" "global") }}
-```
-
-**Template changes (configmap.yaml):**
-
-**Before (v1.1.1):**
-
-```yaml
-{{- range $k, $v := (.Values.sisbajud.configmap | default dict) }}
-{{- if not (hasKey $emitted $k) }}
-{{- $extra = append $extra $k }}
-{{- end }}
-{{- end }}
-```
-
-**After (v1.2.0):**
-
-```yaml
-{{- range $k, $v := (.Values.sisbajud.configmap | default dict) }}
-{{- /* IS_DEVELOPMENT is deprecated and ignored: accepted by the schema, never emitted. */ -}}
-{{- if and (ne $k "IS_DEVELOPMENT") (not (hasKey $emitted $k)) }}
-{{- $extra = append $extra $k }}
-{{- end }}
-{{- end }}
 ```
 
 **Operational impact:**
@@ -214,12 +176,12 @@ The following environment variable is removed in v1.2.0:
 
 ### For all deployments
 
-No action required unless you set `sisbajud.license.isDevelopment` or `sisbajud.configmap.IS_DEVELOPMENT` to `"true"` (see below). The new termination grace period and the `SHUTDOWN_DRAIN_DELAY` variable are applied automatically during the upgrade.
+No action required unless you set `sisbajud.license.isDevelopment` or `sisbajud.configmap.IS_DEVELOPMENT` to `"true"` (see below). The `SHUTDOWN_DRAIN_DELAY` variable is applied automatically during the upgrade, and so is the new termination grace period unless you set `sisbajud.terminationGracePeriodSeconds` yourself (see [For deployments with custom termination grace period](#for-deployments-with-custom-termination-grace-period)).
 
 **Upgrade command:**
 
 ```bash
-helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n plugin-br-sisbajud
+helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n sisbajud
 ```
 
 **Post-upgrade verification:**
@@ -227,7 +189,7 @@ helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-he
 1. Verify the pod has the new termination grace period:
 
 ```bash
-kubectl get pod -n plugin-br-sisbajud -l app.kubernetes.io/name=plugin-br-sisbajud -o jsonpath='{.items[0].spec.terminationGracePeriodSeconds}'
+kubectl get pod -n sisbajud -l app.kubernetes.io/name=plugin-br-sisbajud,app.kubernetes.io/component=sisbajud -o jsonpath='{.items[0].spec.terminationGracePeriodSeconds}'
 ```
 
 Expected output: `105`
@@ -235,7 +197,7 @@ Expected output: `105`
 2. Verify the `SHUTDOWN_DRAIN_DELAY` environment variable is set:
 
 ```bash
-kubectl get pod -n plugin-br-sisbajud -l app.kubernetes.io/name=plugin-br-sisbajud -o jsonpath='{.items[0].spec.containers[0].env[?(@.name=="SHUTDOWN_DRAIN_DELAY")].value}'
+kubectl get pod -n sisbajud -l app.kubernetes.io/name=plugin-br-sisbajud,app.kubernetes.io/component=sisbajud -o jsonpath='{.items[0].spec.containers[0].env[?(@.name=="SHUTDOWN_DRAIN_DELAY")].value}'
 ```
 
 Expected output: `15s`
@@ -248,7 +210,7 @@ If your deployment previously set `sisbajud.license.isDevelopment: "true"` or `s
 
 1. Obtain a production license key from Lerian Studio support.
 
-2. Update your values file to remove the `isDevelopment` field and set the production license key:
+2. Update your values file to remove the `isDevelopment` field and set the production license key. With `sisbajud.useExistingSecret: true`, the chart renders no Secret: put the new `LICENSE_KEY` in the Secret named by `sisbajud.existingSecretName` instead.
 
 **Before (v1.1.1):**
 
@@ -276,10 +238,10 @@ sisbajud:
 3. Upgrade the chart with the updated values:
 
 ```bash
-helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n plugin-br-sisbajud -f values.yaml
+helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n sisbajud -f values.yaml
 ```
 
-> **Important:** The application will fail to start if the license key is invalid or expired. Verify the license key with Lerian Studio support before upgrading.
+> **Important:** The application will fail to start if the license key is invalid or expired and not in an active grace period. Verify the license key with Lerian Studio support before upgrading.
 
 ### For deployments with custom termination grace period
 
@@ -306,7 +268,7 @@ sisbajud:
 2. Upgrade the chart with the updated values:
 
 ```bash
-helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n plugin-br-sisbajud -f values.yaml
+helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n sisbajud -f values.yaml
 ```
 
 > **Warning:** Values below 105 seconds may cause the pod to be forcefully terminated before completing graceful shutdown, resulting in incomplete telemetry flush, unclosed database connections, or lost in-flight requests.
@@ -314,7 +276,7 @@ helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-he
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n plugin-br-sisbajud
+helm diff upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n sisbajud
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -322,6 +284,6 @@ helm diff upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbaj
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n plugin-br-sisbajud
+helm upgrade plugin-br-sisbajud oci://ghcr.io/lerianstudio/plugin-br-sisbajud-helm --version 1.2.0 -n sisbajud
 ```
 <!-- {% endraw %} -->

@@ -3,13 +3,13 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `system-facts.secrets.POSTGRES_PASSWORD` (no default). `system-facts.secrets.LICENSE_KEY` (with `system-facts.configmap.ORGANIZATION_IDS`): the application refuses to boot without a valid key. `REDIS_PASSWORD` only when Redis/Valkey auth is on, `MULTI_TENANT_SERVICE_API_KEY` and `MULTI_TENANT_REDIS_PASSWORD` only when `system-facts.multiTenant.enabled=true`. When the bootstrap Job runs, `global.externalPostgresDefinitions.postgresAdminLogin.password` and `.boilerplateCredentials.password` are required too — or point both at an existing Secret.
+- Required secrets: `system-facts.secrets.POSTGRES_PASSWORD` (no default). `system-facts.secrets.LICENSE_KEY` (with `system-facts.configmap.ORGANIZATION_IDS`): the application refuses to boot without a valid key. `system-facts.secrets.FACTS_REFERENCE_HASH_KEY` (at least 32 bytes) and `system-facts.secrets.FACTS_REFERENCE_ENCRYPTION_KEY` (exactly 64 hex characters), no default: the application refuses to boot without them unless `system-facts.env` is `local`, `development` or `test`. `REDIS_PASSWORD` only when Redis/Valkey auth is on, `MULTI_TENANT_SERVICE_API_KEY` and `MULTI_TENANT_REDIS_PASSWORD` only when `system-facts.multiTenant.enabled=true`. When the bootstrap Job runs, `global.externalPostgresDefinitions.postgresAdminLogin.password` and `.boilerplateCredentials.password` are required too — or point both at an existing Secret.
 - Dependency notes: `lerian-common-helm` (library, no objects of its own) plus PostgreSQL and Valkey, both declared with exact pins, condition-gated and **disabled by default** — the target environments provide them externally. Archives are not vendored in git; `helm dependency update` resolves them from `Chart.lock`.
-- Access Manager prerequisite: `plugin-access-manager` app **3.11.2 or later** (it catalogs the `system-facts` and `internal-facts-worker` applications), plus `AUTH_M2M_INVERSION_ENABLED` and `AUTH_M2M_PRODUCT_FORWARD_ENABLED` set to `"true"` on the service when authorization is on. See [Access Manager](#access-manager).
-- Production overrides: image tag and pull secrets, ingress host/TLS, resources, autoscaling, `system-facts.configmap.POSTGRES_HOST` / `REDIS_HOST`, and every credential above. Never ship a published default as a production secret.
+- Access Manager prerequisite: `plugin-access-manager` app **3.13.0 or later** (it catalogs the `system-facts` and `internal-facts-worker` applications and issues single-tenant service credentials), plus `AUTH_M2M_INVERSION_ENABLED` and `AUTH_M2M_PRODUCT_FORWARD_ENABLED` set to `"true"` on the service when authorization is on. See [Access Manager](#access-manager).
+- Production overrides: image tag and pull secrets, ingress host/TLS, resources, autoscaling, `system-facts.configmap.POSTGRES_HOST` / `REDIS_HOST`, and every credential above. `POSTGRES_SSLMODE` too: the chart renders `disable` unless `global.cloud` or `global.datastores.postgres.ssl` sets it, and with the default `system-facts.env` (`production`) the application refuses to boot on `disable`. Never ship a published default as a production secret.
 - Source/license: Source is in `github.com/LerianStudio/helm/tree/main/charts/system-facts`. The application is distributed under the Lerian Studio General License; running it requires a Lerian license.
 
-Helm chart for [`LerianStudio/system-facts`](https://github.com/LerianStudio/system-facts) — the Lerian fact registry, with an optional `internal-facts-worker` workload.
+Helm chart for System Facts — the Lerian fact registry, with an optional `internal-facts-worker` workload.
 
 ## Install
 
@@ -35,14 +35,15 @@ helm upgrade --install system-facts ./charts/system-facts \
 
 ## Access Manager
 
-With authorization on (`global.auth.enabled=true`, which renders `PLUGIN_AUTH_ENABLED=true`), System Facts authorizes every call through the Access Manager. The chart does not install it and does not declare it as a dependency. It must already be running at `global.auth.host`, at a version that knows both applications.
+With authorization on (`global.auth.enabled=true`, which renders `PLUGIN_AUTH_ENABLED=true`), System Facts authorizes every call through the Access Manager. Authorization is required: with `PLUGIN_AUTH_ENABLED=false` and the default `system-facts.env` (`production`), the application refuses to boot. The chart does not install it and does not declare it as a dependency. It must already be running at `global.auth.host`, at a version that knows both applications.
 
 | Access Manager app | What it adds |
 |--------------------|--------------|
 | `3.11.0` | Catalogs the `system-facts` application, the target of every producer credential. |
-| `3.11.2` | Catalogs the `internal-facts-worker` application, the source of the worker credential. **Minimum for this chart.** |
+| `3.11.2` | Catalogs the `internal-facts-worker` application, the source of the worker credential. |
+| `3.13.0` | Issues single-tenant service credentials, the only credentials that hold `catalog:reserved` with app `1.1.0`. **Minimum for this chart.** |
 
-Earlier versions do not catalog these applications. The Access Manager requires a credential's source to be catalogued, so a worker credential cannot declare `internal-facts-worker` as its source before `3.11.2`. At the time of writing the `plugin-access-manager` chart (`9.8.2`) still ships app `3.11.1`: until a chart release carries `3.11.2`, set the Access Manager image tags to `3.11.2` or later.
+Earlier versions do not catalog these applications. The Access Manager requires a credential's source to be catalogued, so a worker credential cannot declare `internal-facts-worker` as its source before `3.11.2`.
 
 System Facts also refuses to boot with authorization on unless both M2M flags are the exact string `true`. Set them on the System Facts service, not on the callers:
 
@@ -60,7 +61,7 @@ system-facts:
       value: "true"
 ```
 
-`1`, `TRUE` and a leading space all count as off. Without inversion, every M2M producer gets `401` `SF-0013` on a service that boots and reports healthy. Without the product forward, every M2M token is denied with a `403`.
+`1`, `TRUE` and a leading space all count as off.
 
 ## Database credentials
 
@@ -112,21 +113,21 @@ hardcoded default — so an install that sets none of this renders unchanged.
 
 ```yaml
 global:
-  cloud: "aws"   # aws | gcp | azure — topology preset (TLS/SSL mode); leave unset for the bundled dev topology
+  cloud: "aws"   # aws | gcp | azure — topology preset (PostgreSQL SSL mode); leave unset for the bundled dev topology
   datastores:
     postgres: { host: "my-rds.example.com", user: "system-facts" }
-    redis: { host: "my-elasticache.example.com", port: "6379" }
+    redis: { host: "my-elasticache.example.com:6379" }
   observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   auth: { host: "http://plugin-access-manager-auth:4000" }
   idp: { host: "http://plugin-access-manager-identity:4001" }
   multiTenant: { url: "http://tenant-manager:8080", redisHost: "my-elasticache.example.com" }
-  serviceDiscovery: { address: "consul.internal:8500" }
   streaming: { brokers: "redpanda:9092" }
 ```
 
-- `cloud` sets the connection TOPOLOGY (TLS, SSL mode) for `global.datastores`;
-  only the ENDPOINTS (host/port/user) come from `global.datastores` itself — a
-  cloud preset can't know your RDS host.
+- `cloud` sets only the PostgreSQL SSL mode here; the ENDPOINTS (host/port/user)
+  come from `global.datastores` — a cloud preset can't know your RDS host. This
+  chart renders no `REDIS_TLS`: for a TLS-only Redis, set `REDIS_TLS: "true"`
+  through `system-facts.extraEnvVars`.
 - `datastores` only declares `postgres`/`redis` sub-keys — this chart has no
   Mongo or message-broker datastore, so `mongo`/`broker` sub-keys are not
   applicable here (don't set them, they're inert).
@@ -147,7 +148,6 @@ for the enabled ones comes from the matching `global.*` mask above:
 system-facts:
   multiTenant: {enabled: true}       # requires global.multiTenant.url and .redisHost (or configmap.MULTI_TENANT_*)
   streaming: {enabled: true}         # requires global.streaming.brokers
-  serviceDiscovery: {enabled: true}
   otel: {enabled: true}              # also gates the OTLP podEnv (local-collector sidecar via HOST_IP); global.observability.enabled independently controls ENABLE_TELEMETRY/endpoint
 ```
 
@@ -159,7 +159,7 @@ system-facts:
 never the application image: the Job refuses to render without a runner image.
 
 Nothing else applies the root (control-plane) migration sequence. The service
-image is `gcr.io/distroless/static-debian12` (`ENTRYPOINT /service`): it ships the
+image is `gcr.io/distroless/static-debian13` (`ENTRYPOINT /service`): it ships the
 SQL at `/migrations` but has no `migrate` binary and no shell. Without the Job the
 control-plane tables (`fact_contracts`, `reference_types`, `outbox_events`,
 `systemplane_entries`, `namespace_bindings`) are never created, and `/v1/contracts`
@@ -177,7 +177,7 @@ migrations:
   with the service: boot in single-tenant mode, the `tenant-added` event in
   multi-tenant mode, into `schema_migrations_tenant`. `golang-migrate` does not
   recurse, so the runner never touches it.
-- **Multi-tenant.** The contract catalog is environment-global (ADR-004), so the
+- **Multi-tenant.** The control-plane tables are environment-global, so the
   Job is **not** refused when multi-tenant is enabled, unlike charts whose database
   is per tenant.
 - **Hook.** `argocd.argoproj.io/hook: Sync` with `BeforeHookCreation,HookSucceeded`.
@@ -202,7 +202,7 @@ It renders a Deployment, ConfigMap, Secret and ServiceAccount, and **no** Servic
 | `worker.streaming.brokers` | `STREAMING_CONSUMER_BROKERS` | required. Consumer variables only: `STREAMING_ENABLED` / `STREAMING_BROKERS` do nothing for the worker |
 | `worker.streaming.saslMechanism`, `.saslUsername` | `STREAMING_SASL_*` | password in `worker.secrets.STREAMING_SASL_PASSWORD` |
 | `worker.streaming.requireSecurity` | `REQUIRE_BROKER_SECURITY` | default `true`: refuses to boot without TLS+SASL, and on a missing or ungranted topic |
-| `worker.secrets.SYSTEM_FACTS_CLIENT_ID/_SECRET` | same | required. An M2M Application targeting system-facts that may register the reserved `lerian` prefix (`catalog:reserved`); the reconciler grants every such Application all roles today |
+| `worker.secrets.SYSTEM_FACTS_CLIENT_ID/_SECRET` | same | required. A service credential with source `internal-facts-worker` and target `system-facts`. Only a service credential holds `catalog:reserved`, which registers the reserved `lerian` prefix. A plain M2M Application gets `403` SF-0014 on that registration. In single-tenant mode the Access Manager issues it only after System Facts publishes its declaration (`IDP_DECLARATION_ENABLED`, see [Permission declaration (RI)](#permission-declaration-ri)) |
 | `worker.multiTenant.enabled`, `.env` | `MULTI_TENANT_ENABLED`, `ENV_NAME` | `env` required when enabled |
 | `worker.products` | `WORKER_PRODUCTS` | default `[]`: every product. System Facts producer names `midaz`, `plugin-br-pix-jd`; `plugin-br-pix-jd` requires `midaz`. Rendered comma-joined in the given order |
 | `worker.systemFacts.allowInsecureHttp` | `SYSTEM_FACTS_ALLOW_INSECURE_HTTP` | default `false`, always rendered. `true` admits plain `http://` for `url` and `authUrl`; only inside a namespace whose pod-to-pod traffic is already encrypted (istio ambient). The worker logs a WARN at every boot |
@@ -226,7 +226,7 @@ The image tag tracks `appVersion` when `worker.image.tag` is empty; the app rele
 
 `worker.systemFacts.allowInsecureHttp` is for cluster-local URLs inside a namespace whose pod-to-pod traffic is already encrypted (for example `istio.io/dataplane-mode: ambient`) only. The worker logs it as a WARN at every boot, production included.
 
-Both values need a worker image that carries the matching binary change (system-facts #65 and #71). An older image ignores the unknown variables: it still refuses to boot on a plain `http://` URL and still consumes every product.
+Both values need a worker image that carries the matching binary change. An older image ignores the unknown variables: it still refuses to boot on a plain `http://` URL and still consumes every product.
 
 ## Permission declaration (RI)
 
@@ -256,7 +256,7 @@ system-facts:
 
 ## Environment variables
 
-Non-secret values live in the ConfigMap, credentials in the Secret. Any value can be overridden natively through `system-facts.configmap.<ENV_VAR_NAME>`, which wins over the productized parameter.
+Non-secret values live in the ConfigMap, credentials in the Secret. Any key the chart renders can be overridden natively through `system-facts.configmap.<ENV_VAR_NAME>`, which wins over the productized parameter. A key the chart does not render goes in `system-facts.extraEnvVars`.
 
 ## A typo in your values is not an error
 

@@ -436,7 +436,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -642,7 +642,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -848,7 +848,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -1054,7 +1054,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -1260,7 +1260,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -1466,7 +1466,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -1672,7 +1672,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -1878,7 +1878,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -2084,7 +2084,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -2290,7 +2290,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -2496,7 +2496,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -2702,7 +2702,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -2908,7 +2908,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",
@@ -3114,7 +3114,7 @@
           "properties": {
             "stack": {
               "type": "string",
-              "enum": ["go", "go-worker"]
+              "enum": ["go"]
             },
             "drainSeconds": {
               "type": "integer",

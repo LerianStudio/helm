@@ -671,14 +671,10 @@ dictHubVsync:
     minReplicas: 1
     maxReplicas: 1   # vsync is a singleton worker
 
-  # -- Health preset (lerian-common.health), worker profile: probes on HEALTH_PORT 8099
-  # (/health, /readyz), no drain. Grace = shutdownSeconds 45 + 10 = 55, the same as
-  # the go components (15 drain + 30 shutdown + 10). Paths, ports, timings and grace
-  # are owned by the preset; the render refuses livenessProbe, readinessProbe,
-  # terminationGracePeriodSeconds and HEALTH_PORT / SHUTDOWN_* keys set here.
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099, 15 s drain,
+  # 30 s shutdown, grace 55. Owned by the preset.
   health:
-    stack: go-worker
-    shutdownSeconds: 45
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1355,10 +1351,8 @@ appsIngress:
     # notification-outbox reprocess endpoint, and the streaming manifest, which
     # the app mounts at {prefix}/v1/streaming/manifest.
     #
-    # /pixauto/health is kept as an Exact route because the gethomepage.dev/href
-    # dashboard annotation targets it. Exact, so it cannot widen into a prefix.
-    # The main port keeps a constant {prefix}/health; /readyz is on the health port
-    # only (8099, never an Ingress backend).
+    # /pixauto/health: Exact liveness route on the main port; readiness is on 8099,
+    # which no Ingress routes to.
     #
     # /pixauto/internal/v1/* is deliberately absent and must stay absent.
     # templates/ingress-apps.yaml fails the render if a route reintroduces it.

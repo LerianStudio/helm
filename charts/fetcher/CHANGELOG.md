@@ -3,6 +3,16 @@
 ## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
 
 Fixes:
+
+- Use stable images for fetcher to ensure reliability and consistency in deployments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
 - Use stable images in the fetcher component to improve reliability and consistency. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)

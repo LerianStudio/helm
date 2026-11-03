@@ -55,7 +55,8 @@ workloads for your use case, pointing at Postgres, and setting `LICENSE_KEY` +
 | Streaming Hub (callbacks) | External to this chart | This chart publishes events to the broker via `lib-streaming`; the Streaming Hub resolves subscriptions and performs the HTTP callback — no callback URL is configured here |
 
 For development/homologation without a real provider, use `adapterProviderMock`
-(section 5). Databases must exist with the correct connection role before the
+(section 5); its image is not public: ask Lerian for read access and name a ghcr.io pull
+secret in `global.imagePullSecrets`. Databases must exist with the correct connection role before the
 migrations run: provision them yourself, or enable the chart's optional bootstrap Jobs
 (see [Database bootstrap and migrations](../README.md#database-bootstrap-and-migrations)).
 

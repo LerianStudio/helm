@@ -130,7 +130,7 @@ The single list; later sections link here instead of restating it.
 | Requirement | When |
 |---|---|
 | **Kubernetes 1.23+** and **Helm 3.10+** | Always |
-| **GHCR access** — a credential that can pull the chart and the 14 `ghcr.io/lerianstudio/plugin-br-pix-lerian-*` images | Always |
+| **GHCR access** — a credential that can pull the chart and the 14 `ghcr.io/lerianstudio/plugin-br-pix-lerian-*` images (the `adapterProviderMock` image is not public: ask Lerian for read access before enabling it) | Always |
 | **A namespace**, created before install, plus an image pull secret in it named in `global.imagePullSecrets` | Always |
 | **PostgreSQL** reachable from the cluster, with the databases and role from [Database bootstrap and migrations](#database-bootstrap-and-migrations) | Always |
 | **Permission to create Jobs** — bootstrap and migrations both run as Jobs | Always |
@@ -217,7 +217,7 @@ adapterProviderMock:
     PROVIDER_BASE_URL: "https://mock-pix-lerian-server.sandbox.lerian.net"
 ```
 
-Because the component ships disabled, that default reaches no installation that does not enable it explicitly. Override it only to target your own mock server. These settings cannot get a default, because they identify *your* sandbox access, which you receive together with them:
+The `plugin-br-pix-lerian-adapter-provider-mock-api` image is not public: to enable the component, ask Lerian for read access and name a ghcr.io pull secret in `global.imagePullSecrets` (or `adapterProviderMock.imagePullSecrets`). Because the component ships disabled, that default reaches no installation that does not enable it explicitly. Override it only to target your own mock server. These settings cannot get a default, because they identify *your* sandbox access, which you receive together with them:
 
 | Setting | Where | Notes |
 |---|---|---|

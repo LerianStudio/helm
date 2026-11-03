@@ -1,24 +1,6 @@
 # Fleet Management — gestão remota de configuração
 
-O chart já nasce com suporte completo e **inativo**, não ausente. A distinção
-importa: ligar é mudar uma flag e informar três valores — nenhuma edição de
-configuração no cluster do cliente, nenhum upgrade de chart, nenhum passo que exija
-o cliente entender o mecanismo.
-
-Ligamos depois de validar a instalação nos nossos ambientes. O caminho de
-habilitação é verificado desde já — ver a seção de verificação no fim — justamente
-para que "ligar depois" não signifique "descobrir problemas depois".
-
-## Como ligar
-
-```yaml
-fleetManagement:
-  enabled: true
-  url: "https://fleet-management-<stack>.grafana.net"   # copiar VERBATIM da interface
-  username: "1563949"                                    # id numérico da stack
-  attributes:
-    plataforma: kubernetes
-```
+O Fleet Management vem **ligado** por padrão (`fleetManagement.enabled: true`), com `url` e `username` preenchidos. O cliente fornece só o token, pelo Secret abaixo.
 
 O cliente executa **um** comando antes do install, com os valores que entregamos
 — um Secret, duas chaves:
@@ -29,6 +11,8 @@ O cliente executa **um** comando antes do install, com os valores que entregamos
 # depois. Qualquer usuário no host consegue ler.
 #
 # `read -rs` não ecoa e não vai para o histórico; `--from-file` lê de stdin.
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+
 read -rs TELEMETRY_TOKEN; echo
 read -rs FLEET_TOKEN; echo
 
@@ -56,27 +40,13 @@ que nomeia a correção:
 | `ALLOY_FLEET_TOKEN` com `optional: true` | **medido:** o render passava e o agente subia SEM o token — autentica, falha, e nunca recebe configuração, visível só no log do pod |
 
 O último foi encontrado em revisão: declarar a variável não basta, ela precisa ser
-obrigatória. Enquanto Fleet está inativo o token permanece opcional, para que
-nenhum Secret seja exigido antes da hora.
+obrigatória.
 
 Há uma quinta guarda, sobre a **outra** credencial: se o perfil autentica no destino,
 `ALLOY_DESTINATION_CREDENTIAL` com `optional: true` também recusa o render. O motivo é
 o mesmo modo de falha, com consequência pior — o pod subiria com o header vazio, o
 ponto de entrada responderia `401`, que é falha **permanente**: o dado é descartado na
 hora, sem reenvio, e nada reinicia nem alerta.
-
-### ⚠️ Nos ambientes internos são duas chaves; em `aws-devops`, uma
-
-Isto parece inconsistência e não é. Os ambientes internos `aws-*` entregam telemetria
-ao **NLB interno**, sem passar pelo gateway — não há api-key a enviar, então
-`destination.credential.enabled: false`, o Secret tem **só** `fleet-token`, e
-`ALLOY_DESTINATION_CREDENTIAL` fica `optional: true` legitimamente.
-
-A guarda acima não dispara ali justamente porque o perfil não autentica. Em BYOC, onde
-autentica, ela dispara — que é o comportamento pretendido.
-
-Ao comparar um cluster interno com um de cliente, conferir **primeiro** se o destino
-autentica; sem isso a diferença de chaves parece um erro de provisionamento.
 
 ### Sobre o `username`
 
@@ -99,45 +69,11 @@ nova, no intervalo configurado. **Nada disca para dentro do cluster do cliente**
 
 Versão mínima do agente: v1.7.2. Usamos 1.21.3.
 
-## Sanitização não pode ser desligada remotamente
+## Onde vive a sanitização com o Fleet ligado
 
-Configuração local e remota têm **controladores de componente separados**. Da
-documentação:
+Com `fleetManagement.enabled: true` (o padrão), a configuração local do papel `node` tem só os blocos `logging` e `remotecfg`. A cadeia de coleta desse papel, com as regras de sanitização e o exportador, vem da configuração publicada no Fleet. O papel `singleton` não recebe pipeline do Fleet: a cadeia dele, com as mesmas regras de sanitização, fica na configuração local.
 
-> "Local and remote configurations each have their own component controller, which
-> means components loaded by one configuration are isolated from the other."
->
-> "Local and remote configurations **cannot be in conflict**."
-
-As regras de sanitização vivem na configuração **local**. Não há caminho pelo qual
-uma configuração remota as desative, substitua ou remova. O isolamento é
-arquitetural, não convenção.
-
-Corolário: erro na configuração remota **não afeta** a local. Se nunca houver
-configuração remota válida, o agente segue operando só com a local.
-
-## ⚠️ O risco real é o oposto do óbvio
-
-Do **mesmo** isolamento decorre o inverso: uma configuração remota também **não
-consegue encaminhar para** a nossa sanitização local. Os controladores não se
-referenciam.
-
-Consequência: uma pipeline remota que declare o **próprio exportador** teria um
-caminho de saída paralelo que **nunca passa pelo mascaramento**.
-
-O perigo não é *"a remota desliga minha regra"*. É *"a remota cria um caminho que
-ignora minha regra"*.
-
-**Mitigação é de política, não de configuração:**
-
-| Usar Fleet Management para | Não usar para |
-|---|---|
-| Coleta e descoberta | Declarar exportadores |
-| Ajuste de perímetro e de intervalo | Qualquer caminho de saída próprio |
-| Habilitar e desabilitar receptores | Pipeline que envie telemetria direto |
-
-Toda pipeline remota que exporte telemetria deve passar por revisão explícita. A
-exportação deve permanecer local.
+A configuração publicada é o render deste chart. `sanitizacao/publicar-fleet.sh` a publica, e `sanitizacao/verificar-fleet.sh` compara o publicado com o template. Quem tem acesso à console do Fleet pode publicar por fora desse caminho; o verificador é o que torna isso visível.
 
 ## Identidade do collector
 
@@ -170,71 +106,6 @@ de atributo **local**, um agente mal configurado poderia declarar o atributo de
 outro cliente e receber configuração alheia. Para qualquer matching com
 significado de segurança, use atributos **remotos**.
 
-## 🔴 RISCO ACEITO: um cliente pode enumerar a frota inteira
-
-**Decisão de 2026-08-10: aceito por ora, com a topologia de stack pendente para
-antes do anel de clientes.** Não bloqueia os anéis internos.
-
-### O que exatamente acontece
-
-O token que o agente usa para buscar configuração serve para mais do que isso. As
-mesmas credencial e URL respondem a `ListCollectors` e `ListPipelines` — chamadas
-de enumeração da stack:
-
-```bash
-# ⚠️ O header Content-Type é OBRIGATÓRIO: a API é Connect RPC e responde 415 sem
-# ele, porque `curl -d` sozinho envia application/x-www-form-urlencoded.
-curl -X POST -H 'Content-Type: application/json' -d '{}' -u "<stack-id>:<token>" \
-  https://fleet-management-<stack>.grafana.net/collector.v1.CollectorService/ListCollectors
-```
-
-Pipelines ficam em outro serviço, e trocar o par serviço/método dá 404:
-
-```bash
-curl -X POST -H 'Content-Type: application/json' -d '{}' -u "<stack-id>:<token>" \
-  https://fleet-management-<stack>.grafana.net/pipeline.v1.PipelineService/ListPipelines
-```
-
-Para comparar o que está publicado com o repositório, use
-`sanitizacao/verificar-fleet.sh` em vez de ler a saída à mão — ele confere as
-regras **na ordem** e acusa pipeline com exportador próprio.
-
-E o escopo mínimo de uma access policy é a **stack inteira**: seletores de rótulo,
-que seriam o mecanismo de sub-escopo, valem só para métricas e logs — não para
-Fleet Management.
-
-**Consequência:** um cliente que leia o Secret do próprio cluster — e ele pode, é
-o cluster dele — enumera collectors, atributos e pipelines de **todos os outros
-clientes** da mesma stack.
-
-### O que NÃO resolve
-
-| Tentativa | Por que não basta |
-|---|---|
-| Token por cliente | Melhora revogação e rastreabilidade, mas o alcance de cada token continua sendo a stack |
-| `username` distinto | Não é identidade — é o ID da stack, igual para todos |
-| Esconder a credencial do cliente | Estruturalmente impossível: o agente precisa lê-la em runtime, e quem tem o namespace lê o Secret |
-| RBAC do Fleet Management | Governa a interface, não o token de API. Planos distintos |
-| `id` e `attributes` | Auto-declarados e não autenticados. Não são fronteira de tenant |
-
-### O que resolve
-
-**Uma stack por cliente.** É o padrão que a documentação recomenda nomeando o
-cenário — revendedores e prestadores de serviço gerenciado com clientes que não
-devem acessar dados uns dos outros. Bônus: cada stack tem contabilização própria,
-o que dá atribuição de custo por cliente de graça.
-
-Particionamento **dentro** de uma stack não está documentado, e a evidência aponta
-para inexistente.
-
-### Por que aceitar por agora
-
-Fleet Management é fase posterior e começa pelos **nossos** ambientes (benedita,
-depois AWS), onde não há cliente na stack e o problema não existe.
-
-⚠️ **A decisão de topologia de stack precisa ser tomada ANTES de habilitar Fleet
-Management em cluster de cliente.** Não depois.
-
 ## O que fica obrigatoriamente local
 
 Configuração remota é **módulo**, não configuração de topo. Estes blocos
@@ -244,8 +115,6 @@ permanecem locais:
 - `remotecfg` (o próprio bloco)
 - parâmetros do servidor HTTP
 
-Somado à política de exportação local, isso define a fronteira do que a gestão
-remota alcança.
 
 ## Rotação do token
 

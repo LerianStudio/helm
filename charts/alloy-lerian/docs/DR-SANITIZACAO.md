@@ -5,11 +5,9 @@ entregar**.
 
 ## O que está em jogo
 
-Com `fleetManagement.enabled: true` (o padrão), a configuração de coleta **inteira**
-vem do Fleet — receptor, sanitização, allowlists, perímetro e destino. O ConfigMap
-local existe mas não é usado.
+Com `fleetManagement.enabled: true` (o padrão), a cadeia de coleta do papel `node` vem **inteira** do Fleet — receptor, sanitização, allowlists, perímetro e exportador. O ConfigMap local desse papel só carrega os blocos `logging` e `remotecfg`. O papel `singleton` não recebe pipeline do Fleet e segue com a configuração local.
 
-⚠️ **Isso significa que os três sinais dependem da mesma origem.** Se a configuração
+⚠️ **Isso significa que os três sinais das aplicações dependem da mesma origem.** Se a configuração
 sumir, não se perde só o log: param métricas e traces também.
 
 ## Quando acionar
@@ -42,8 +40,7 @@ de configuração; um cache velho sobreviveria ao reinício e reintroduziria uma
 **antiga das regras de PII** — exatamente o que o Fleet existe para evitar. Um agente
 que não sobe é ruidoso e detectável; um agente que sobe mascarando de menos, não.
 
-Isto é um risco aceito, não um problema em aberto. A mitigação é a detecção
-(`O11Y-*-001`) e o DR abaixo, não a persistência.
+Isto é um risco aceito, não um problema em aberto. A mitigação é a detecção e o DR abaixo, não a persistência.
 
 ## O procedimento
 
@@ -93,7 +90,7 @@ Por isso `verificar-fleet.sh` lista os desabilitados em vez de ignorá-los.
 
 ### ⚠️ Cache preso — a falha que exige reinício
 
-MEDIDO em aws-devops (2026-08-31): um módulo publicado, depois **deletado** do Fleet,
+MEDIDO (2026-08-31): um módulo publicado, depois **deletado** do Fleet,
 permaneceu no cache do agente e **impediu qualquer configuração nova de carregar**:
 
     level=error msg="failed to parse and load configuration" service=remotecfg
@@ -114,10 +111,9 @@ acionar alguém do outro lado.
 
 ### Sobre o token — correção de um erro comum
 
-O token do Fleet é um Access Policy token da Grafana Cloud (`glc_`). **Não expira por
-tempo** — os metadados que ele carrega são org, nome e região, sem campo de validade.
+O token do Fleet é um Access Policy token da Grafana Cloud (`glc_`). **Não expira por padrão**: só expira se uma data de expiração foi definida na criação.
 
-O modo de falha é **revogação**, manual ou por engano numa limpeza. Tratar como "vai
+Sem data de expiração, o modo de falha é **revogação**, manual ou por engano numa limpeza. Tratar como "vai
 expirar sozinho" leva a diagnosticar a coisa errada.
 
 ## O que se perde durante a indisponibilidade
@@ -132,25 +128,7 @@ Depende de onde a coleta para:
 | fila cheia | ⚠️ **descarte silencioso** — a aplicação recebe `200` |
 
 ⚠️ O último é o mais perigoso e é deliberado: `blockOnOverflow: false`, porque
-contrapressão travaria a aplicação do cliente. O alerta `O11Y-FILA-001` existe para
-que esse descarte não passe despercebido. Ver `docs/DIMENSIONAMENTO-FILA.md`.
-
-## Detecção
-
-Quatro alertas na Grafana Cloud, pasta `OBSERVABILITY`:
-
-| alerta | detecta |
-|---|---|
-| `O11Y-LOG-001` | log de aplicação ausente |
-| `O11Y-METRICA-001` | métrica ausente |
-| `O11Y-TRACE-001` | trace ausente |
-| `O11Y-FILA-001` | fila do exportador enchendo |
-
-⚠️ **Todos PAUSADOS** até 100% de produção estar na versão nova. Enquanto isso, a
-detecção é manual.
-
-⚠️ E os três de ausência **disparam juntos** quando a configuração some — é o sinal de
-que o problema não é de um sinal específico, e sim da via de configuração.
+contrapressão travaria a aplicação do cliente. Ver `docs/DIMENSIONAMENTO-FILA.md`.
 
 ## Voltando para o Fleet, depois
 

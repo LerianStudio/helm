@@ -3,10 +3,10 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), and `secrets.DATASOURCE_ONBOARDING_PASSWORD`. The MongoDB password is **not** operator-provided with the bundled subchart: it is generated into the `<release>-mongodb` Secret (key `mongodb-root-password`), which this chart owns and keeps across uninstall, and read via `secretKeyRef`.
-- Required from app 3.0.0 on: `secrets.DATASOURCE_CRED_ENC_KEY` — a hex-encoded AES key (16/24/32 bytes; `openssl rand -hex 32`) that both components use to encrypt registered data-source credentials at rest. It must be **identical** on the manager and the worker, and it **cannot be rotated** in that release. The render fails when either component's `image.tag` is `>= 3.0.0` and the key is empty; app 2.4.x (the chart's default appVersion) ignores it. See `docs/UPGRADE-4.1.md`.
+- Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), `secrets.DATASOURCE_ONBOARDING_PASSWORD`, and `secrets.LICENSE_KEY` (app 4.6.0 and later, which includes the default image: the render fails without it, and the manager and the worker refuse to boot without it). The MongoDB password is **not** operator-provided with the bundled subchart: it is generated into the `<release>-mongodb` Secret (key `mongodb-root-password`), which this chart owns and keeps across uninstall, and read via `secretKeyRef`.
+- Required from app 3.0.0 on: `secrets.DATASOURCE_CRED_ENC_KEY` — a hex-encoded AES key (16/24/32 bytes; `openssl rand -hex 32`) that both components use to encrypt registered data-source credentials at rest. It must be **identical** on the manager and the worker, and it **cannot be rotated** in that release. The render fails when either component's `image.tag` is `>= 3.0.0` and the key is empty; the default image (`4.7.0-beta.1`) needs it. See `docs/UPGRADE-4.1.md`.
 - Single-source infra secrets: MongoDB follows Pattern A, except that the chart, not the subchart, owns the `<release>-mongodb` Secret; the subchart reads it through `mongodb.auth.existingSecret`. RabbitMQ follows Pattern B (the groundhog2k broker is pointed at the application `reporter-manager` Secret via `rabbitmq.authentication.existingSecret`, so the broker password lives only in `secrets.RABBITMQ_DEFAULT_PASS`; this also removes the prior `midaz`-vs-`plugin` user mismatch). Valkey: the valkey.io subchart exposes no Secret-based password mechanism (auth is an inline ACL) and ships with `auth.enabled: false`, so there is no single-source wiring for it here. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
-- Release name: the hardcoded infra hosts and the `<release>-mongodb` / `reporter-manager` Secret references assume the release is installed as `reporter`. If you override `manager.name`/`manager.existingSecretName`, set `rabbitmq.authentication.existingSecret` to match.
+- Release name: the hardcoded infra hosts assume the release is installed as `reporter`; the `<release>-mongodb` Secret reference follows the release name. If you override `manager.name`/`manager.existingSecretName`, set `rabbitmq.authentication.existingSecret` to match.
 - Broker volume: the bundled RabbitMQ keeps its queues on PVC `reporter-rabbitmq`. The first upgrade to a chart version that renders it restarts the broker once, and messages still queued in the old in-pod directory (emptyDir) are lost; let the queues drain before that upgrade.
 - Bundled broker login: with `rabbitmq.enabled` the broker's only user is `secrets.RABBITMQ_DEFAULT_USER` (tag `management`, which the app's broker health check needs) with `secrets.RABBITMQ_DEFAULT_PASS`. Until the manager and the worker escape the password in their broker URL, only letters, digits and `-._~` are safe in it: a space, `"`, `\`, a backtick, `/`, `#`, `?`, `%` or a non-ASCII letter crash-loops the manager. The render refuses an empty password, the passwords printed in this chart (`reporter123` and `Lerian@123`, defaults of earlier versions, and the `CHANGE_ME` placeholder), and `manager.useExistingSecret` or `worker.useExistingSecret` (the broker never learns an external Secret's password). The broker takes the password when its pod starts: after changing it, or after upgrading from a version that shipped `reporter123`, run `kubectl -n <namespace> rollout restart statefulset/<release>-rabbitmq`. The broker's volume keeps the users it already has: after renaming `secrets.RABBITMQ_DEFAULT_USER`, delete the old one with `kubectl -n <namespace> exec <release>-rabbitmq-0 -- rabbitmqctl delete_user <old-user>`.
 - Dependency notes: Uses local MongoDB and RabbitMQ dependency charts unless external services are configured.
@@ -39,8 +39,8 @@ The Reporter plugin provides a flexible document templating system that enables 
 
 ## Prerequisites
 
-- Kubernetes 1.19+ (1.27+ with the default pod-spread preset, see [Pod Spreading](#pod-spreading-globalschedulingspread); the chart does not set `kubeVersion`, so Helm does not enforce this)
-- Helm 3.2.0+
+- Kubernetes 1.23+ (1.27+ with the default pod-spread preset, see [Pod Spreading](#pod-spreading-globalschedulingspread); the chart does not set `kubeVersion`, so Helm does not enforce this)
+- Helm 3.8.0+
 - KEDA 2.0+ (can be installed by the chart or externally)
 - PV provisioner support in the underlying infrastructure (for MongoDB, SeaweedFS, and RabbitMQ persistence)
 
@@ -72,7 +72,7 @@ To install with a custom values file:
 helm install reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version <version> -n reporter -f my-values.yaml
 ```
 
-The default image is `4.7.0-beta.1`, the first release that serves the health port. Pin `manager.image.tag` and `worker.image.tag` explicitly in production values; the default moves to the stable release when it ships.
+The default image is `4.7.0-beta.1`, the first release that serves the health port. Pin `manager.image.tag` and `worker.image.tag` explicitly in production values.
 
 ## Uninstalling the Chart
 
@@ -118,23 +118,21 @@ power-user reference; `values.schema.json` validates it.
 
 ### Notable Default Changes (lerian-common adoption + OTEL/TLS fix)
 
-This chart version adopts `lerian-common` typed masks and, alongside the stated
-OTEL/TLS fix, ships a few deliberate operational default changes. Each is
+Chart 4.0.0 adopted `lerian-common` typed masks and, alongside an OTEL/TLS fix, shipped a few deliberate operational default changes. Each is
 render-equivalent for the bundled dev topology (no override needed) unless noted:
 
 | Key | Old default | New default | Rationale |
 |-----|--------------|-------------|-----------|
-| `common.configmap.ALLOW_INSECURE_TLS` | `"false"` | **`"true"`** (security-relevant) | The bundled mongo/redis/rabbitmq/postgres subcharts run without TLS; the app *requires* this flag to bypass (mongo hard-fails with "TLS required" otherwise), so a zero-override `helm install` previously crashed. Same convention as `plugin-access-manager`. Flip to `"false"` explicitly for any managed-cloud/TLS-terminated topology (`global.cloud` presets do this for you). |
+| `common.configmap.ALLOW_INSECURE_TLS` | `"false"` | **`"true"`** (security-relevant) | The bundled mongo/redis/rabbitmq subcharts run without TLS; the app *requires* this flag to bypass (mongo hard-fails with "TLS required" otherwise), so a zero-override `helm install` previously crashed. Same convention as `plugin-access-manager`. Flip to `"false"` explicitly for any managed-cloud/TLS-terminated topology; `global.cloud` does not change it. |
 | `common.configmap.OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` | `"production"` | derived from `ENV_NAME` (default `"development"`) | Single-sources the OTEL deployment-environment with `ENV_NAME` instead of two independent hardcoded literals, so a zero-override install no longer contradicts itself (`ENV_NAME=development` but `deployment_environment=production`), which previously tripped the app's own production safety check against the non-TLS bundled OTel endpoint. |
 | `manager.configmap.LOG_LEVEL` / `worker.configmap.LOG_LEVEL` | `debug` | `info` | Reduce default log noise; override to `debug` for local troubleshooting. |
 | `worker.configmap.PDF_POOL_WORKERS` | `"5"` | `"3"` | Aligns the worker's default pool size with the manager's existing default (`3`), which was already `3` pre-PR. |
 | `worker.configmap.PDF_TIMEOUT_SECONDS` | `"30"` | `"90"` | Gives PDF generation enough headroom for larger reports before timing out. |
 | `common.configmap.MONGO_PARAMETERS` | `""` | `"maxIdleTimeMS=60000"` | Bounds idle MongoDB connections instead of holding them open indefinitely; a sensible production-safe default, not required by the OTEL/TLS fix but bundled here as part of the same "sensible chart defaults" pass. Override with `common.configmap.MONGO_PARAMETERS: ""` to restore the old (unbounded) behavior. |
-| `seaweedfs.global.serviceAccountName` | *(unset — subchart default `"seaweedfs"`)* | `"reporter-seaweedfs"` | **Upgrade note:** paired with `seaweedfs.global.createClusterRole: false` (also new) to avoid a fixed-name cluster-scoped `ClusterRole`/`ClusterRoleBinding` collision when more than one release runs on the same cluster. Because `createClusterRole` defaults to `false`, the ClusterRole itself is not created either way — but this **does rename the SeaweedFS `ServiceAccount`** object referenced by the master/volume/filer StatefulSets on any existing install that had `seaweedfs.enabled: true` before this change (old name `seaweedfs` → new name `reporter-seaweedfs`). Expect a one-time rolling restart of the SeaweedFS pods on upgrade; if you have IRSA/IAM-role annotations or RoleBindings pinned to the old ServiceAccount name, update them to `reporter-seaweedfs` before upgrading. |
+| `seaweedfs.global.serviceAccountName` | *(unset — subchart default `"seaweedfs"`)* | `"reporter-seaweedfs"` | **Upgrade note:** paired with `seaweedfs.global.createClusterRole: false` (also new) to avoid a fixed-name cluster-scoped `ClusterRole`/`ClusterRoleBinding` collision when more than one release runs on the same cluster. Because `createClusterRole` defaults to `false`, the ClusterRole itself is not created either way — but this **does rename the SeaweedFS `ServiceAccount`** object referenced by the master/volume/filer StatefulSets on any existing install that had `seaweedfs.enabled: true` before this change (old name `seaweedfs` → new name `reporter-seaweedfs`). Expect a one-time rolling restart of the SeaweedFS pods when upgrading from a chart older than 4.0.0; if you have IRSA/IAM-role annotations or RoleBindings pinned to the old ServiceAccount name, update them to `reporter-seaweedfs` before upgrading. |
 
 `MONGO_MAX_POOL_SIZE` (`100`) and `MONGO_HOST`/`RABBITMQ_HOST`/`REDIS_HOST`/`OBJECT_STORAGE_ENDPOINT`
-(FQDN `<svc>.reporter.svc.cluster.local` form, restored in this PR after an
-unintentional short-name drift was caught in review) are unchanged from the
+(FQDN `<svc>.reporter.svc.cluster.local` form) are unchanged from the
 pre-adoption defaults — kept byte-identical for existing installs.
 
 ### Pod Spreading (`global.scheduling.spread`)
@@ -192,7 +190,7 @@ preset constraint selects only the component's own pods
 ReplicaSet (`matchLabelKeys: [pod-template-hash]`), so a rolling update is never
 blocked by the old ReplicaSet's pods, even with `DoNotSchedule`. Requires
 Kubernetes >= 1.27 (`matchLabelKeys`, beta since 1.27 and enabled by default);
-on 1.19–1.26 set `global.scheduling.spread.enabled: false`, leave every
+on 1.23–1.26 set `global.scheduling.spread.enabled: false`, leave every
 `<component>.spread.enabled` unset or `false` (both override the global switch). Raw
 `<component>.topologySpreadConstraints` must also respect the cluster version: omit
 `matchLabelKeys` (needs 1.27+), `minDomains` (GA in 1.30) and `nodeTaintsPolicy` /
@@ -219,9 +217,9 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `manager.replicaCount` | Number of manager replicas | `1` |
+| `manager.replicaCount` | Number of manager replicas | `2` |
 | `manager.image.repository` | Manager image repository | `ghcr.io/lerianstudio/reporter-manager` |
-| `manager.image.tag` | Manager image tag | `4.5.0` |
+| `manager.image.tag` | Manager image tag | `4.7.0-beta.1` |
 | `manager.image.pullPolicy` | Manager image pull policy | `IfNotPresent` |
 | `manager.service.type` | Kubernetes Service type | `ClusterIP` |
 | `manager.service.port` | Service HTTP port | `4005` |
@@ -236,7 +234,7 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `worker.image.repository` | Worker image repository | `ghcr.io/lerianstudio/reporter-worker` |
-| `worker.image.tag` | Worker image tag | `4.5.0` |
+| `worker.image.tag` | Worker image tag | `4.7.0-beta.1` |
 | `worker.image.pullPolicy` | Worker image pull policy | `IfNotPresent` |
 | `worker.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `worker.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
@@ -297,7 +295,7 @@ secrets:
 
 ### Using Existing Secrets
 
-For production environments, you can use pre-existing Kubernetes Secrets instead of having the chart create them. When enabled, the chart skips Secret creation and references the provided secret name in the deployments.
+For production environments, you can use pre-existing Kubernetes Secrets instead of having the chart create them. When enabled, the chart skips Secret creation and references the provided secret name in the deployments. This needs an external broker (`rabbitmq.enabled: false`): with the bundled broker the render refuses `useExistingSecret`.
 
 ```yaml
 manager:
@@ -350,7 +348,7 @@ It is a *named* open family, never a fully-open ConfigMap.
 |----------|-------------|---------|
 | `DATASOURCE_<NAME>_SSLMODE` | SSL connection mode | `disable` |
 | `DATASOURCE_<NAME>_SSLROOTCERT` | Path to SSL root certificate | `""` |
-| `DATASOURCE_<NAME>_DB_SCHEMAS` | Comma-separated list of schemas to query | `public` |
+| `DATASOURCE_<CONFIG_NAME>_SCHEMAS` | Comma-separated list of PostgreSQL schemas to query. `<CONFIG_NAME>` is the `CONFIG_NAME` value in upper case (`external_db` → `DATASOURCE_EXTERNAL_DB_SCHEMAS`) | `public` |
 
 ### Configuration
 
@@ -422,7 +420,7 @@ analytics_db:reports.monthly_summary
 
 ### Using Existing Secrets
 
-When `useExistingSecret` is enabled for manager/worker, datasource passwords must be included in the external secret alongside all other required keys. The chart does not create any Secret resources in this mode.
+When `useExistingSecret` is enabled for manager/worker, datasource passwords must be included in the external secret alongside all other required keys. The chart does not create the manager or worker Secret in this mode.
 
 ### Reserved CRM Datasource (Opt-in)
 
@@ -583,7 +581,7 @@ Then access: http://localhost:4005
 The lerian-common health preset (`manager.health`, `worker.health`) owns the probes, grace period,
 drain, rollout strategy and PodDisruptionBudget: do not set `livenessProbe`, `readinessProbe`,
 `terminationGracePeriodSeconds`, `HEALTH_PORT`, `SHUTDOWN_DRAIN_DELAY` or `SHUTDOWN_TIMEOUT` (the render refuses
-them); `deploymentStrategy` and `pdb.*` are ignored. `common.configmap.RABBITMQ_HEALTH_CHECK_URL` no longer
+them); `deploymentStrategy` is ignored, and of `pdb.*` only `enabled` and `annotations` apply. `common.configmap.RABBITMQ_HEALTH_CHECK_URL` no longer
 exists: remove it from values files or the render fails. Tune only
 `health.drainSeconds` (default 15) and `health.shutdownSeconds` (default 30).
 
@@ -601,7 +599,7 @@ that serves the health port; a lower `image.tag` refuses to render.
 
 ## API Documentation
 
-The API documentation is available at the `/swagger/index.html` endpoint.
+With `manager.configmap.SWAGGER_ENABLED: "true"`, the API documentation is available at the `/swagger/index.html` endpoint.
 
 ## Contributing
 

@@ -3,8 +3,8 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY` and `RECIPIENT_DETAILS_ENCRYPTION_KEY`; `LICENSE_KEY`, which the chart does not check but newer app images refuse to boot without; JD and webhook fields are required when their non-sandbox features are enabled. The PostgreSQL, Valkey, and MongoDB passwords are **not** operator-provided with the bundled subcharts: each is auto-generated into its `<release>-{postgresql,valkey,mongodb}` Secret and read via `secretKeyRef`. The app is MongoDB-URI-only, so `MONGO_URI` is assembled on the deployment as `mongodb://<mongodb.auth.usernames[0]>:$(MONGO_PASSWORD)@<release>-mongodb…` where `MONGO_PASSWORD` is sourced from the subchart Secret (`mongodb-passwords`). For external PostgreSQL or Valkey, set `<subchart>.external=true` plus `<subchart>.auth.existingSecret`. An external MongoDB takes `mongodb.external=true` plus, in single-tenant mode, `bankTransfer.secrets.MONGO_URI` (the render fails without it): either with the credential inline, or referencing `$(MONGO_PASSWORD)`, which `mongodb.auth.existingSecret` (key `mongodb-passwords`) or `bankTransfer.secrets.MONGO_PASSWORD` supplies. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
-- Dependency notes: Uses local PostgreSQL and MongoDB dependency charts unless external services are configured.
+- Required secrets: `bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY` and `RECIPIENT_DETAILS_ENCRYPTION_KEY`; `LICENSE_KEY`, which the chart does not check but newer app images refuse to boot without; JD and webhook fields are required when their non-sandbox features are enabled. The PostgreSQL, Valkey, and MongoDB passwords are **not** operator-provided with the bundled subcharts: each is auto-generated into its `<release>-{postgresql,valkey,mongodb}` Secret and read via `secretKeyRef`. The app is MongoDB-URI-only, so `MONGO_URI` is assembled on the deployment as `mongodb://<mongodb.auth.usernames[0]>:$(MONGO_PASSWORD)@<release>-mongodb…` where `MONGO_PASSWORD` is sourced from the subchart Secret (`mongodb-passwords`); with `bankTransfer.useExistingSecret=true` the chart assembles nothing and that Secret must carry `MONGO_URI`. For external PostgreSQL or Valkey, set `<subchart>.external=true` plus `<subchart>.auth.existingSecret`; with migrations on (the default), an external PostgreSQL also needs `bankTransfer.secrets.POSTGRES_PASSWORD` (or an existing Secret with that key) for the migrations Job. An external MongoDB takes `mongodb.external=true` plus, in single-tenant mode, `bankTransfer.secrets.MONGO_URI` (the render fails without it): either with the credential inline, or referencing `$(MONGO_PASSWORD)`, which `mongodb.auth.existingSecret` (key `mongodb-passwords`) or `bankTransfer.secrets.MONGO_PASSWORD` supplies. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
+- Dependency notes: Uses local PostgreSQL, Valkey and MongoDB dependency charts unless external services are configured.
 - Production overrides: Provide bank-transfer credentials through chart secrets or `bankTransfer.useExistingSecret`; override Midaz/CRM/Fees/JD endpoints, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
@@ -40,10 +40,11 @@ $ helm upgrade plugin-br-bank-transfer oci://ghcr.io/lerianstudio/plugin-br-bank
 
 - Latest stable v1: chart `1.5.0`, application `1.2.1` — see
   [UPGRADE-1.5.md](docs/UPGRADE-1.5.md).
-- Latest stable v2: chart `2.4.0`, application `3.1.0` — see
-  [UPGRADE-2.4.md](docs/UPGRADE-2.4.md). Upgrading from v1 to v2 is covered by the mandatory
+- Latest stable v2: chart `2.8.0`, application `3.2.0` — see
+  [UPGRADE-2.8.md](docs/UPGRADE-2.8.md). Upgrading from v1 to v2 is covered by the mandatory
   [v1-to-v2 deployment how-to](docs/UPGRADE-2.0.md); that major upgrade forbids
   rolling old and new binaries together.
+- Upgrading from v2 to v3 is covered by [UPGRADE-3.0.md](docs/UPGRADE-3.0.md).
 
 ---
 
@@ -60,7 +61,7 @@ $ helm uninstall plugin-br-bank-transfer -n midaz-plugins
 ## Managed Cloud (`global.cloud`)
 
 Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
-bundled in-cluster Postgres/Redis/MongoDB/RabbitMQ with one knob:
+bundled in-cluster Postgres/Redis with one knob:
 
 ```yaml
 global:
@@ -71,7 +72,7 @@ global:
   env:
     name: "production"
   auth:
-    host: "http://plugin-access-manager-auth:4000"
+    host: "https://plugin-access-manager-auth.example:4000"
 
 # Disable the bundled subcharts — the masks above point at your managed
 # infra instead, so the in-cluster Postgres/Redis/MongoDB would otherwise
@@ -92,6 +93,7 @@ above; only the ENDPOINTS (host/port/user) still come from
 `global.datastores` — a cloud preset can't know your RDS host. A native
 `bankTransfer.configmap.<KEY>` always overrides any mask. `redis.host` is
 `host:port` (no separate `redis.port` field).
+MongoDB has no mask: an external MongoDB needs `bankTransfer.secrets.MONGO_URI`.
 
 Copy `values-template.yaml` as your starting point — it documents every
 `global.*` mask with a working example, including the required
@@ -200,11 +202,11 @@ bankTransfer:
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
 | `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `bankTransfer.image.tag` | Image tag used for deployment | `3.1.0` |
+| `bankTransfer.image.tag` | Image tag used for deployment | `3.4.0` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `bankTransfer.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
-| `bankTransfer.nameOverride` | Overrides the default generated name by Helm | `""` |
-| `bankTransfer.fullnameOverride` | Overrides the full name generated by Helm | `""` |
+| `nameOverride` | Overrides the default generated name | `bank-transfer` |
+| `fullnameOverride` | Overrides the full name generated by Helm | `""` |
 | `bankTransfer.ingress.enabled` | Enable or disable ingress | `false` |
 | `bankTransfer.ingress.className` | Ingress class name | `""` |
 | `bankTransfer.ingress.annotations` | Additional ingress annotations | `{}` |
@@ -231,24 +233,6 @@ bankTransfer:
 | `bankTransfer.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `bankTransfer.existingSecretName` | The name of the existing secret to use | `""` |
 
-### System Facts producer
-
-The plugin can record a `ted.transfer_settled` fact for every transfer that reaches `COMPLETED`. It is **off by default**: with `SYSTEM_FACTS_ENABLED` unset or `"false"` the chart only emits the flag and the plugin builds no emitter, no registry client and runs no fact SQL. Requires a plugin image that ships the producer and migration `000063_system_facts_outbox`. The app registers its own contract at boot and holds the forwarder until that contract is ACTIVE; there is no reconciler Job, init container or hook to run. See the plugin's `docs/runbooks/system-facts.md` (§7 rollout order).
-
-| Key | When | Format | Default |
-| --- | --- | --- | --- |
-| `bankTransfer.configmap.SYSTEM_FACTS_ENABLED` | to turn the producer on | `"true"` or `"false"` | `"false"` |
-| `bankTransfer.configmap.SYSTEM_FACTS_URL` | required when enabled | base URL of the System Facts service (delivery and registration) | empty: the render fails |
-| `bankTransfer.secrets.SYSTEM_FACTS_CLIENT_ID` / `SYSTEM_FACTS_CLIENT_SECRET` | when enabled | Access Manager client pair, exchanged at `PLUGIN_AUTH_ADDRESS`; both or neither | empty |
-| `bankTransfer.configmap.SYSTEM_FACTS_REQUIRE_SOURCE_SERVICE` | after every credential is rotated | `"true"` or `"false"` | `"false"` |
-| `bankTransfer.configmap.SYSTEM_FACTS_INSECURE_HTTP` | only for a plaintext `http://` URL off loopback; refused by the app under `production` | `"true"` or `"false"` | not emitted |
-
-- **Single-tenant:** the client pair delivers the facts and registers the contract.
-- **Multi-tenant:** the pair is the **service credential** that registers the contract at boot, and the render fails without it. Each tenant delivers with its own M2M credential, read from `tenants/{env}/{tenantOrgID}/plugin-br-bank-transfer/m2m/system-facts/credentials` (the target segment is fixed in the app, so there is no target-service key to set). The tenant credential's `source` must equal the service pair's.
-- `PLUGIN_AUTH_ADDRESS` must be reachable: it is resolved by the existing `global.auth.host` mask and is required by the app when the producer is on.
-- A dev-only static bearer (`SYSTEM_FACTS_TOKEN`) reaches the pod through `bankTransfer.extraEnvVars` or an existing Secret. The app refuses it under `production`, beside the client pair and in multi-tenant it is ignored.
-- With `bankTransfer.useExistingSecret=true` the pair must be present in that Secret; the chart does not validate it there.
-
 ### PostgreSQL Dependency
 
 | Parameter | Description | Default |
@@ -268,7 +252,6 @@ The plugin can record a `ted.transfer_settled` fact for every transfer that reac
 | `valkey.architecture` | Valkey architecture | `standalone` |
 | `valkey.auth.enabled` | Enable authentication | `true` |
 | `valkey.auth.password` | Valkey password. Leave empty to let the subchart auto-generate it into the `<release>-valkey` Secret (read via `secretKeyRef`). | `""` |
-| `valkey.auth.username` | Valkey username | `bank_transfer` |
 
 ### MongoDB Dependency
 
@@ -322,6 +305,8 @@ Key environment variables configured via `bankTransfer.configmap`:
 | `ORGANIZATION_IDS` | Organizations the licence is validated for (or set it under `bankTransfer.secrets`) | **Required** by newer app images, in every environment |
 | `COURIER_ACCOUNT_CLAIMS_ENABLED` | App v3.2.0+: sweep that claims this engine's CRM accounts on the Courier. When `"true"`, single-tenant also needs `COURIER_BASE_URL`, the `COURIER_CLIENT_ID`/`COURIER_CLIENT_SECRET` pair and `ORGANIZATION_ID` (the render fails without the URL or the organization) | `false` |
 
+Under `ENVIRONMENT_NAME=production` (the default) the app refuses to boot unless `PLUGIN_AUTH_ADDRESS` (with `PLUGIN_AUTH_ENABLED=true`, the default), `MIDAZ_BASE_URL`, `MIDAZ_TRANSACTION_URL`, `CRM_BASE_URL`, `FEES_BASE_URL` and `JD_BASE_URL` use `https://`. The chart's in-cluster `http://` defaults boot only outside production.
+
 For a complete list, see `values.yaml`.
 
 ---
@@ -332,10 +317,10 @@ Key secrets configured via `bankTransfer.secrets`:
 
 | Secret | Description |
 | --- | --- |
-| `POSTGRES_PASSWORD` | PostgreSQL password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external PostgreSQL without `postgresql.auth.existingSecret`. |
+| `POSTGRES_PASSWORD` | PostgreSQL password. With the bundled subchart it is auto-generated and read via `secretKeyRef`. Set it for an external PostgreSQL: the migrations Job reads it even with `postgresql.auth.existingSecret`, unless the migrations read an existing Secret (`bankTransfer.migrations.useExistingSecret` or `bankTransfer.useExistingSecret`). |
 | `REDIS_PASSWORD` | Redis/Valkey password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external Valkey without `valkey.auth.existingSecret`. |
 | `MONGO_PASSWORD` | MongoDB password for an external MongoDB without `mongodb.auth.existingSecret`, written only when `MONGO_URI` references `$(MONGO_PASSWORD)`. |
-| `MONGO_URI` | MongoDB connection URI. Assembled by the chart for the bundled subchart; **required** for an external MongoDB in single-tenant mode (the app reads only `MONGO_URI`). Delivered from the Secret, or as a deployment env when it references `$(MONGO_PASSWORD)` (kubelet expands only those). |
+| `MONGO_URI` | MongoDB connection URI. Assembled by the chart for the bundled subchart, except with `bankTransfer.useExistingSecret=true`: that Secret must then carry it. **Required** for an external MongoDB in single-tenant mode (the app reads only `MONGO_URI`). Delivered from the Secret, or as a deployment env when it references `$(MONGO_PASSWORD)` (kubelet expands only those). |
 | `LICENSE_KEY` | Lerian licence key. **Required** by newer app images, in every environment. The chart does not check it. |
 | `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 | `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |

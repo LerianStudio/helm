@@ -354,10 +354,10 @@ sisbajud:
     # -- MIDAZ_CRM_MODE: legacy | embedded. Match the institution's Midaz:
     #    Midaz v4 serves the CRM embedded in the ledger and no longer has the
     #    legacy /v1/holders surface, so it needs "embedded"; Midaz v3 needs
-    #    "legacy". The default stays "legacy" so an upgrade never changes the
-    #    surface of an existing install: set it explicitly. Symptom of the wrong
+    #    "legacy". The default is "embedded" (Midaz v4): an install on Midaz v3
+    #    must set "legacy" explicitly, also on upgrade. Symptom of the wrong
     #    mode: every holder read fails.
-    crmMode: "legacy"
+    crmMode: "embedded"
 
   # -- Inbound auth extras. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST come from
   #    global.auth (or configmap).

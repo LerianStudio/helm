@@ -121,7 +121,7 @@ EXECUTOR_HUB_WEBHOOK_TLS_KEY_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.moun
 {{- end }}
 {{- end }}
 # --- Midaz connector (ledger URL + credentials are per institution, in the DB) ----
-{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "legacy") }}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "embedded") }}
 # --- Inbound auth + token minting (lerian-common.auth.env) -----------------------
 {{ include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "") }}
 {{- include $kv (dict "cm" $cm "p" $s.auth "f" "productName" "k" "AUTH_PRODUCT_NAME" "opt" true) }}

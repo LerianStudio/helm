@@ -115,7 +115,7 @@ Existing Mensageria installs are unchanged: with `executor.enabled` unset the `E
 
 ## Midaz CRM mode
 
-`sisbajud.midaz.crmMode` (`MIDAZ_CRM_MODE`) must match the Midaz the institutions use; set it explicitly. The default stays `legacy` so an upgrade never changes an existing install.
+`sisbajud.midaz.crmMode` (`MIDAZ_CRM_MODE`) must match the Midaz the institutions use; set it explicitly. The default is `embedded` (Midaz v4). An install on Midaz v3 must set `legacy`, also on upgrade: a v3 install that relied on the old `legacy` default switches to `embedded` and every holder read fails.
 
 | Midaz | `crmMode` |
 |-------|-----------|

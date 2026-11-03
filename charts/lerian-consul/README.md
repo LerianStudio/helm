@@ -5,10 +5,10 @@
 - Chart type: `dependency-wrapper`
 - Wraps: the official [`hashicorp/consul`](https://helm.releases.hashicorp.com) chart, pinned exactly at `2.1.0` (Consul `2.1.0`).
 - Purpose: a minimal, single-node Consul **service-discovery** backend for `lib-service-discovery`. It is NOT a general Consul distribution — Connect/mesh, UI, catalog-sync, gateways and per-node client agents are all disabled.
-- Dependency notes: wraps the upstream `consul` chart and intentionally carries only `templates/NOTES.txt`. All Kubernetes resources (StatefulSet, Services, ACL/gossip/TLS jobs) come from the subchart, so application-chart artifacts such as `_helpers.tpl` and a component `Deployment` do not apply.
+- Dependency notes: wraps the upstream `consul` chart. Its own templates are `NOTES.txt`, the opt-in `networkpolicy.yaml` and the render guard `validate-quorum.yaml`. Every other Kubernetes resource (StatefulSet, Services, ACL/gossip/TLS jobs) come from the subchart, so application-chart artifacts such as `_helpers.tpl` and a component `Deployment` do not apply.
 - Required secrets: none to supply manually. With `consul.global.acls.manageSystemACLs=true` (default) the chart generates the bootstrap-ACL-token Secret; gossip encryption is OFF by default (single-node has no server-to-server gossip) and is REQUIRED before scaling past one server.
 - Production overrides: for HA set `consul.server.replicas`/`consul.server.bootstrapExpect` to an odd number (3/5) and `consul.server.disruptionBudget.enabled=true`; set `consul.global.tls.enabled=true` for cross-trust-boundary access; tune `consul.server.storage`, `consul.server.storageClass`, `consul.global.image` and `consul.server.resources` per cluster.
-- Reproducibility: `values.schema.json` keeps the `consul:` override block validated and `Chart.lock` pins the resolved dependency. Note that the schema is strict only at the top level and under `networkPolicy`; `consul:` and `consul.global` are open, so a typo under `consul:` is silently ignored. Check the effect with `helm template`.
+- Reproducibility: `Chart.lock` pins the resolved dependency. `values.schema.json` is strict only at the top level and under `networkPolicy`; `consul:` and `consul.global` are open, so a typo under `consul:` is silently ignored. Check the effect with `helm template`.
 - Prerequisite: the HashiCorp repository must be known to Helm before `helm dependency build` (see [Building the chart locally](#building-the-chart-locally)).
 - Source/license: chart source in `github.com/LerianStudio/helm` under the Elastic License 2.0. **The deployed Consul is third-party software under the Business Source License 1.1 — see [License](#license) below.**
 
@@ -39,12 +39,12 @@ defaults or is explicitly disabled in `values.yaml`.
 | Key | Default | Notes |
 | --- | --- | --- |
 | `consul.server.replicas` / `consul.server.bootstrapExpect` | `1` / `1` | ODD counts only (1, 3, 5). `2` is forbidden. |
-| `consul.global.image` | `hashicorp/consul:2.1.0@sha256:2597…56f7` | Consul image, pinned by DIGEST for reproducibility. |
+| `consul.global.image` | `hashicorp/consul:2.1.0@sha256:259f…56f7` | Consul image, pinned by DIGEST for reproducibility. |
 | `consul.server.storage` | `5Gi` | Raft data PVC size. |
 | `consul.server.storageClass` | `""` | Empty = cluster default StorageClass. |
 | `consul.global.acls.manageSystemACLs` | `true` | ACL bootstrap + token Secret. |
 | `consul.global.tls.enabled` | `false` | See TLS note below. |
-| `consul.global.gossipEncryption.autoGenerate` | `false` | OFF at the single-node default (nothing to encrypt). REQUIRED before scaling to 3/5 — set `true` (or provide `.secretName`); the chart fails the render otherwise. |
+| `consul.global.gossipEncryption.autoGenerate` | `false` | OFF at the single-node default (nothing to encrypt). REQUIRED before scaling to 3/5 — set `true` (or provide `.secretName` and `.secretKey`); the chart fails the render otherwise. |
 | `consul.server.resources` | modest | Sized for SD-only traffic. |
 | `consul.server.disruptionBudget.enabled` | `false` | Enable when running 3/5 replicas. |
 
@@ -62,7 +62,8 @@ Disabled by default (do not enable unless you know you need them):
 $ helm install lerian-consul charts/lerian-consul \
     --set consul.server.replicas=3 \
     --set consul.server.bootstrapExpect=3 \
-    --set consul.server.disruptionBudget.enabled=true
+    --set consul.server.disruptionBudget.enabled=true \
+    --set consul.global.gossipEncryption.autoGenerate=true
 ```
 
 ### TLS
@@ -90,7 +91,7 @@ This chart ships a **minimal secure baseline** that is on by default and stays
 light — the BYOC "facilitator, not blocker" stance — because the client owns the
 cluster and its trust boundary:
 
-- ACL system **on**. The chart creates only the admin-only bootstrap token; workloads must get a scoped SD token that the operator mints (never the bootstrap token) — see below.
+- ACL system **on**. Workloads must get a scoped SD token that the operator mints (never the bootstrap token) — see below.
 - Non-root server, in-cluster Services only: the server Service is headless (`clusterIP: None`) and the `-dns` Service is `ClusterIP`. No LoadBalancer/NodePort/Ingress.
 - DNS listener **off**, gossip/RPC host ports **off**, unused components disabled. See [Known limitations](#known-limitations) for the DNS ports that are still declared.
 
@@ -107,7 +108,7 @@ backend to an externally-distributed or shared/multi-tenant cluster, turn on:
 
 - **TLS**: `consul.global.tls.enabled=true` (encrypts the API; moves it to 8501).
 - **NetworkPolicy**: `networkPolicy.enabled=true` restricts ingress to the server
-  ports — server-to-server (RPC/gossip) only between the Consul servers, and the
+  ports — server-to-server (RPC/gossip) only from this release's Consul pods, and the
   API (8500/8501) only from the same namespace plus `networkPolicy.allowedNamespaces`
   (list the SD-consuming namespaces). Off by default; not every CNI enforces it,
   and some route kubelet probes through it (see the template note if a probe breaks).
@@ -151,7 +152,7 @@ Store each SecretID in that workload's own Secret and pass it as `SD_TOKEN` — 
 
 ## Upgrading from 1.x
 
-**From `lerian-consul` 1.x (Consul 1.20) to this release is a fresh install, not an upgrade.** HashiCorp supports no in-place path from Consul 1.x to 2.x, so do not `helm upgrade` an existing 1.x release. Service discovery is opt-in (`SD_ENABLED=false` by default), so the cost is re-registration, not data loss.
+**From `lerian-consul` 1.0.0 (Consul 1.20) to this release is a fresh install, not an upgrade.** Do not `helm upgrade` an existing 1.0.0 release. Service discovery is opt-in (`SD_ENABLED=false` by default), so the cost is re-registration, not data loss.
 
 1. `helm uninstall <release> -n <namespace>`.
 2. With ACLs on, delete the old bootstrap Secret (`kubectl delete secret -n <namespace> <consul-fullname>-bootstrap-acl-token`); an existing one makes the new install skip ACL bootstrap.
@@ -202,6 +203,7 @@ $ helm dependency build charts/lerian-consul
 | Chart Version | Consul Version |
 | :---: | :---: |
 | `1.0.0` | 1.20.6 |
+| `1.1.0` | 2.1.0 |
 
 ---
 
@@ -209,7 +211,7 @@ $ helm dependency build charts/lerian-consul
 
 This chart (the Lerian wrapper) is licensed under the **Elastic License 2.0**.
 
-The workload it deploys — **HashiCorp Consul** (pinned `2.1.0`) — is **not** Apache/MPL: Consul `1.17.0`+ is under the **Business Source License 1.1 (BSL)**, HashiCorp's source-available license (Consul `≤ 1.16.x` was MPL 2.0). This chart does **not** redistribute the Consul binary — it references the upstream chart/images (`helm.releases.hashicorp.com`), which your cluster pulls at deploy time.
+The workload it deploys — **HashiCorp Consul** (pinned `2.1.0`) — is **not** Apache/MPL: Consul `1.17.0`+ is under the **Business Source License 1.1 (BSL)**, HashiCorp's source-available license (Consul `≤ 1.16.x` was MPL 2.0). This chart does **not** redistribute the Consul binary — it references the upstream image (`hashicorp/consul`), which your cluster pulls at deploy time.
 
 **BSL Additional Use Grant (summary — read the full text at [hashicorp/consul `v2.1.0` LICENSE](https://github.com/hashicorp/consul/blob/v2.1.0/LICENSE)):** you may make production use of Consul **provided you do not offer it to third parties on a hosted or embedded basis in order to compete with HashiCorp's paid Consul** (HCP Consul / Consul Enterprise). "Embedded" means bundling Consul code **in a competitive offering**; a "competitive offering" is a *paid* product that *significantly overlaps* with HashiCorp's paid Consul. Each version's BSL converts to **MPL 2.0** four years after its release (the "Change Date").
 

@@ -20,7 +20,6 @@
 {{- if hasKey $cm "RECONCILIATION_LOOKBACK_HOURS" }}{{- fail "\n\nERROR: app.configmap.RECONCILIATION_LOOKBACK_HOURS is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- if hasKey $cm "EXAMPLE_STATUS_PROVIDER_MODE" }}{{- fail "\n\nERROR: app.configmap.EXAMPLE_STATUS_PROVIDER_MODE is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- if hasKey $cm "RECONCILIATION_MAX_PROVIDER_PAGES" }}{{- fail "\n\nERROR: app.configmap.RECONCILIATION_MAX_PROVIDER_PAGES is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
-{{- if hasKey $cm "TRUSTED_PROXIES" }}{{- fail "\n\nERROR: app.configmap.TRUSTED_PROXIES is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- if hasKey $sec "BTG_CLIENT_ID" }}{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_ID was RENAMED to app.secrets.PROVIDER_CLIENT_ID.\n   Rename the key in your values overlay.\n" }}{{- end }}
 {{- if hasKey $sec "BTG_CLIENT_SECRET" }}{{- fail "\n\nERROR: app.secrets.BTG_CLIENT_SECRET was RENAMED to app.secrets.PROVIDER_CLIENT_SECRET.\n   Rename the key in your values overlay.\n" }}{{- end }}
 {{- if hasKey $sec "BTG_WEBHOOK_SECRET" }}{{- fail "\n\nERROR: app.secrets.BTG_WEBHOOK_SECRET was RENAMED to app.secrets.BTG_WEBHOOK_HMAC_SECRET (the bearer mechanism was retired; the HMAC secret authenticates the webhook).\n   Rename the key in your values overlay.\n" }}{{- end }}

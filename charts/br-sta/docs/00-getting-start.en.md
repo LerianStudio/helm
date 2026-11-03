@@ -64,6 +64,7 @@ kubectl create namespace sta-dev
 # the license key stays in a file: it never lands in shell history or process args
 kubectl create secret generic br-sta-license -n sta-dev \
   --from-file=LICENSE_KEY=./br-sta.license
+helm dependency update charts/br-sta
 helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
   --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}' \
   --set common.license.organizationIds=<your-organization-id>
@@ -147,7 +148,7 @@ kubectl delete namespace sta-dev
    Helm `pre-install`/`pre-upgrade` hook and as an ArgoCD PreSync hook (the hook Secret
    at weight -2, the Job at -1), so the app never boots unmigrated under either tool.
 6. Register the BACEN operator credentials (`POST /v1/credentials`) and the
-   document-type / inbound-source configs through the API before transfers run.
+   inbound-source configs through the API before transfers run.
 
 ### RabbitMQ with a private CA (production)
 
@@ -224,7 +225,7 @@ verifier/export generator).
 | Production guard | `redpandaBundle` and `mockSta` are refused outside a development-class environment | `helm template ... --set global.env.name=staging` fails naming both |
 | Worker is single-replica | No leader election for every loop: exactly one replica, `Recreate` | Do not scale it; scale the manager instead |
 | Transfer scheduler | `TRANSFER_SCHEDULER_ENABLED` (default `true`) is the only path that uploads to BACEN | Worker log `Transfers outbound fanout started` |
-| Mock profile | Any `STA_SCHEME` / `STA_FILE_HOST` / `STA_PASSWORD_HOST` redirects the STA client away from BACEN and relaxes the trust-store readiness gate | Never set them in production |
+| Mock profile | Any `STA_SCHEME` / `STA_FILE_HOST` / `STA_PASSWORD_HOST` redirects the STA client away from BACEN | Never set them in production |
 | CORS | lib-commons' middleware reads `ACCESS_CONTROL_*`; the chart renders `ACCESS_CONTROL_ALLOW_ORIGIN` from `common.cors.allowedOrigins`. Empty = deny-all | Production: explicit origins only |
 | Master key | Replacing `MASTER_KEYS` makes every stored BACEN credential undecryptable | Add a new version (`v1:...,v2:...`) and switch `MASTER_KEY_VERSION` |
 | Filing sweep | `worker.scheduler.filingSweepEnabled` (default `false`) auto-closes stranded reporter filings; `filingSweepAgeMinutes` is a safety knob | Enable deliberately; do not tune the age down |
@@ -236,7 +237,7 @@ verifier/export generator).
 |---|---|
 | One key per product | A key licenses a single product. A key issued for another product is refused with `Exiting: LCS-0012: refused by the gateway (LCS-1005)`; an unknown or altered key with `(LCS-1002)` |
 | On refusal | The process exits and the pod goes to `CrashLoopBackOff`. In a rolling update the pod that is already running keeps serving, so the rollout stalls but nothing goes down |
-| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging are validated on this production gateway too. `IS_DEVELOPMENT` is deprecated and ignored: products validate only on the production gateway |
+| Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging are validated on this production gateway too. |
 | Refresh and grace | The key is re-validated every 6 h. When the gateway does not answer (network error or 5xx) after it has confirmed the key once, the process keeps serving through decaying grace windows (2 d, 1 d, 12 h, 6 h, so at most 3 d 18 h) and then exits. A process that was never confirmed gets 6 h only. A 4xx refusal ends the grace at once. The windows live in memory: a pod restarted during an outage starts unconfirmed |
 | Offline | No offline license mode in this app version |
 | Render gate | In every environment the render fails without `LICENSE_KEY` and `ORGANIZATION_IDS` (the app refuses to boot without a license; there is no unlicensed mode) |
@@ -248,7 +249,7 @@ verifier/export generator).
 
 ```bash
 kubectl -n <ns> get pods
-kubectl -n <ns> get jobs                          # migrations (and, in dev, buckets/topics) Complete
+kubectl -n <ns> get jobs                          # dev bundle: migrations, buckets and topics Complete
 kubectl -n <ns> port-forward svc/<manager-service> 14028:<service-port>
 curl -s localhost:14028/readyz                    # readiness (manager and worker probe path)
 curl -s localhost:14028/health                    # liveness
@@ -257,7 +258,7 @@ curl -s localhost:14028/health                    # liveness
 | Check | Command/URL | Expected | If it doesn't match, check first |
 |---|---|---|---|
 | Pods | `kubectl get pods` | manager and worker `1/1 Running`, 0 restarts | `CrashLoopBackOff`: the last log line names the failing dependency (section 7) |
-| Migrations | `kubectl get jobs` | `br-sta-migrations-<hash>` `Complete` | Postgres host/password, `ALLOW_INSECURE_TLS` for a plaintext Postgres |
+| Migrations | `kubectl get jobs` | `br-sta-migrations-<hash>` `Complete` with bundled Postgres; against external Postgres the hook Job is deleted once it succeeds | Postgres host/password, `ALLOW_INSECURE_TLS` for a plaintext Postgres |
 | Readiness | `GET /readyz` | `200`, `status: healthy`; `postgres`, `redis`, `rabbitmq`, `storage_transfer`, `license` `up` (`storage_audit_exports` `skipped` on the manager) | A `down` check names the dependency; a missing bucket shows as `storage_transfer` down |
 | Liveness | `GET /health` | `200 {"status":"available"}` | — |
 | Worker loops | `kubectl logs deploy/<fullname>-worker` | audit publisher/consumer, business publisher, outbound fanout, `scheduler: starting leader campaign`, periodic `poll outcome` | Missing loop: its toggle under `worker.*` / `common.transfer.*` |
@@ -278,7 +279,6 @@ curl -s localhost:14028/health                    # liveness
 | `Failed to connect to plugin-auth` at boot | plugin-access-manager is not installed or not reachable yet | Informational: the pods still become Ready. Authenticated calls need plugin-access-manager |
 | `PLUGIN_AUTH_ENABLED=false is only accepted in a development-class environment` | Auth off in `staging`/`production` | Enable `global.auth` or use a development-class `global.env.name` |
 | `MASTER_KEYS is malformed` / `must reference a key present` | Wrong `version:hex` shape or `MASTER_KEY_VERSION` mismatch | `v1:<64 hex chars>` and `common.credentials.masterKeyVersion: v1` |
-| br-sisbajud `sta_consumer` degraded after a br-sta fact | Known br-sisbajud behaviour: a fact for a transfer br-sisbajud did not create is retried and blocks the partition | Monitor `sta_consumer` on br-sisbajud's `/readyz`; see the br-sisbajud runbook |
 
 ---
 
@@ -293,13 +293,11 @@ Under ArgoCD, revert the values/chart version commit in Git instead; a manual ro
 is undone by the next sync.
 
 - **Migrations are forward-only.** A rollback redeploys the older chart and image but
-  does not revert the schema: the migrations Job only applies `up` migrations, and the
-  pre-upgrade/PreSync hook of the older revision re-runs them as a no-op. An older app
-  image can refuse a schema newer than the one it ships (for example, an app build
-  whose last migration is lower than the database's version fails its migration check
-  at boot). Roll back to an image that knows the current schema version, or restore the
-  database from a backup taken before the upgrade. Take that backup before every
-  upgrade that ships migrations.
+  does not revert the schema: the migrations Job only applies `up` migrations. Under
+  ArgoCD, the older revision's PreSync migrations Job fails when the database is ahead of
+  the migrations its image ships. Roll back to an image that knows the current schema
+  version, or restore the database from a backup taken before the upgrade. Take that
+  backup before every upgrade that ships migrations.
 - **`MASTER_KEYS` must survive every rollback and reinstall.** The operator credentials
   stored through `POST /v1/credentials` are envelope-encrypted, and each ciphertext is
   pinned to the master-key version that encrypted it. The app decrypts through that

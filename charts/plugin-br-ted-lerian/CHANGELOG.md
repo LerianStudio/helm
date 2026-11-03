@@ -3,6 +3,15 @@
 ## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
 
 Fixes:
+- Carry CRM M2M credentials in secrets and install values for improved security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
 - Carry CRM M2M credentials in secrets and install values for `plugin-br-ted-lerian`. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)

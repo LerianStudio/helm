@@ -9,6 +9,15 @@ Fixes:
 
 ---
 
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in the fetcher component to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
 ## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
 
 Features:

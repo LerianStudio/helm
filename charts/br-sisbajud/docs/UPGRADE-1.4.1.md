@@ -38,6 +38,8 @@ This is a patch release that increments the chart version from `1.4.0` to `1.4.1
 
 None. This upgrade can be applied without any configuration changes or migration steps. Existing `values.yaml` files are fully compatible.
 
+The br-sisbajud pod still restarts on upgrade: its `checksum/config` and `checksum/secret` annotations hash the ConfigMap and Secret, which carry the chart version label.
+
 ---
 
 ## Preview changes before upgrading

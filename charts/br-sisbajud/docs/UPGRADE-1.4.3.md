@@ -9,7 +9,7 @@
 
 ### License configuration cleanup
 
-The chart has removed the deprecated `isDevelopment` flag from the license configuration block. This flag was previously used to route the license SDK to a development gateway.
+The chart has removed the `isDevelopment` flag from the license configuration block. This flag was previously used to route the license SDK to a development gateway.
 
 | Setting | v1.4.2 | v1.4.3 |
 |---------|--------|--------|
@@ -49,6 +49,8 @@ brSisbajud:
    - `_helpers.tpl` validation messages
 
 #### Operational impact
+
+The br-sisbajud pod restarts on upgrade even if `isDevelopment` was never set: its `checksum/config` and `checksum/secret` annotations hash the ConfigMap and Secret, which carry the chart version label.
 
 **For production environments:**
 

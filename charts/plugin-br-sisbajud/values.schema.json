@@ -355,7 +355,7 @@
                   ]
                 }
               ],
-              "description": "DIRECT_PERMANENT_BLOCK_ENABLED (default true; needs global.streaming.brokers; false on an install without brokers)."
+              "description": "DIRECT_PERMANENT_BLOCK_ENABLED (default true; needs global.streaming.brokers, inbound auth on and single tenant; false otherwise)."
             },
             "permanentRefreshEvery": {
               "type": "string",
@@ -376,7 +376,7 @@
                   ]
                 }
               ],
-              "description": "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED (default \"\": follows permanentBlockEnabled; true needs permanentBlockEnabled true)."
+              "description": "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED (default \"\": follows STREAMING_ENABLED; true needs the stream on)."
             }
           }
         }

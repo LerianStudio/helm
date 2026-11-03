@@ -337,20 +337,24 @@ sisbajud:
     # -- DIRECT_PERMANENT_BLOCK_ENABLED: true (default) | false. true takes
     #    permanent blocks (SISBAJUD "P"/"D") and needs the balance-change stream:
     #    global.streaming.brokers (+ tlsEnabled/SASL in production), or the render
-    #    fails. An install without brokers (e.g. Mensageria-only) sets false:
+    #    fails. It also needs inbound auth on and a single-tenant install. An
+    #    install without brokers (e.g. Mensageria-only), with auth off or
+    #    multi-tenant sets false:
     #    the direct POST then refuses permanent blocks with 422 SBJ-0027
     #    (audited, nothing recorded); cancellations and UNBLOCK/TRANSFER of a
     #    permanent parent are always taken. Any other value refuses the render
-    #    (and the boot).
+    #    (and the boot). Rollback with ACTIVE permanents: false here AND
+    #    global.streaming.enabled: true (with the brokers), so they keep running.
     permanentBlockEnabled: true
     # -- DIRECT_PERMANENT_REFRESH_EVERY: how often the accounts of ACTIVE
     #    permanent blocks are refreshed (Go duration from 1m to 15m; app default 15m).
     permanentRefreshEvery: "15m"
     # -- EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED: publish a result for each
-    #    subsequent block of a permanent: "" (default: follows
-    #    permanentBlockEnabled, so true by default) | "true" | "false". Without it
-    #    the captures of a permanent are never published. "true" needs
-    #    permanentBlockEnabled: true (the render and the app refuse it otherwise).
+    #    subsequent block of a permanent: "" (default: follows STREAMING_ENABLED,
+    #    so true by default) | "true" | "false". Without it the captures of a
+    #    permanent are never published, also those of ACTIVE permanents after
+    #    the switch is turned off. "true" needs the stream on (the render and the
+    #    app refuse it otherwise).
     permanentResultEmitterEnabled: ""
 
   # -- Midaz connector default. Ledger URL and credentials are per institution

@@ -162,7 +162,7 @@ Expected output should show successful license validation with no errors.
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version 2.0.2 -n streaming-hub
+helm diff upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version 2.0.2 -n streaming-hub -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`

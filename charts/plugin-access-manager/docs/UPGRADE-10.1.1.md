@@ -12,7 +12,7 @@
   - [Database migrations](#database-migrations)
   - [Behavior changes between 1.5.1 and 1.8.5](#behavior-changes-between-151-and-185)
   - [Rollout behavior](#rollout-behavior)
-- **[After the upgrade: mask old audit records](#after-the-upgrade-mask-old-audit-records)**
+- **[After the upgrade: run the audit-record redaction](#after-the-upgrade-run-the-audit-record-redaction)**
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
@@ -176,7 +176,7 @@ These changes come from the Caradhras release notes. The list covers what operat
 - **Google One Tap removed (1.8.1).** Caradhras removes the Google One Tap login path.
 - **Passkeys for server-to-server callers (1.8.0).** Caradhras adds a passkey ceremony for server-to-server callers.
 - **Shared applications (1.8.4 and 1.8.5).** Caradhras unmasks a shared application only for administrators of both of its organizations.
-- **Audit records (1.8.2 and 1.8.3).** Caradhras masks secrets in new audit records. See [After the upgrade](#after-the-upgrade-mask-old-audit-records).
+- **Audit-record redaction (1.8.3).** The Caradhras image adds the `/redact-audit-records` tool. See [After the upgrade](#after-the-upgrade-run-the-audit-record-redaction).
 
 ### Rollout behavior
 
@@ -199,15 +199,11 @@ kubectl -n plugin-access-manager logs deploy/plugin-access-manager-caradhras -c 
 
 The deployment name is `<release>-caradhras`. Use `kubectl -n plugin-access-manager get deploy` to confirm it.
 
-# After the upgrade: mask old audit records
+# After the upgrade: run the audit-record redaction
 
-Before Caradhras `1.8.2`, the audit path masked JSON bodies only. Every form or multipart request that it recorded kept its secrets in clear text in `record.object`. This covers the Access Manager login (`client_secret`, `password`), set-password (`oldPassword`, `newPassword`) and the other token endpoints. A copy of each record also lives in `webhook_event.payload`.
+The Caradhras image includes `/redact-audit-records` (from `1.8.3`). It runs the Caradhras redactor over the audit rows already in the database, and it keeps every row. It replaces secret values with `***` and drops secret query parameters from `request_uri`. A body that the redactor cannot read (raw text, XML, malformed JSON) becomes `***`. A form or multipart body over 64 KiB is cut at 64 KiB.
 
-Caradhras `1.8.2` and later mask new records. They do not change the rows that are already in the database. After this upgrade, those old rows still hold the clear text.
-
-The Caradhras image includes `/redact-audit-records` (from `1.8.3`). It masks the old rows with the same redactor, and it keeps every row. It replaces secret values with `***` and drops secret query parameters from `request_uri`. A body that the redactor cannot read (raw text, XML, malformed JSON) becomes `***`. A form or multipart body over 64 KiB is cut at 64 KiB.
-
-Lerian runs this tool on Lerian Cloud. In a BYOC deployment, you decide whether to run it. Run it after the environment is on `1.8.2` or later, so that no new row leaks while it runs. A second run finds nothing to change.
+Lerian runs this tool on Lerian Cloud. In a BYOC deployment, you decide whether to run it. Run it after the environment is on `1.8.2` or later. A second run finds nothing to change.
 
 1. Dry run. This counts the rows that it would change and writes nothing:
 
@@ -274,7 +270,7 @@ Run the command in [Command to upgrade](#command-to-upgrade). Watch the rollout 
 
 **Step 6: Mask old audit records**
 
-Follow [After the upgrade](#after-the-upgrade-mask-old-audit-records).
+Follow [After the upgrade](#after-the-upgrade-run-the-audit-record-redaction).
 
 # Preview changes before upgrading
 

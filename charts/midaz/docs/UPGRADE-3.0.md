@@ -45,7 +45,7 @@ This change affects the following components:
 
 #### The app version has been bumped to v3.0.0.
 
-For more details, refer to the [app changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+For more details, refer to the app changelog.
 
 ## Additions
 

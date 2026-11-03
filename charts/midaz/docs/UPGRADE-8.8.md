@@ -34,7 +34,7 @@ This patch release ensures that both the ledger and CRM services are running the
 - **Downtime**: Minimal — rolling update will be performed automatically
 - **Configuration**: No changes required to existing values
 
-> **Note:** For detailed application-level changes, refer to the [midaz changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+> **Note:** For detailed application-level changes, refer to the midaz changelog.
 
 ## Configuration Reference
 

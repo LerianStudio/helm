@@ -28,7 +28,7 @@ The Midaz application components have been upgraded from version `3.7.8` to `3.8
 | ledger.image.tag | 3.7.8 | 3.8.0 |
 | crm.image.tag | 3.7.8 | 3.8.0 |
 
-This version includes new capabilities for service discovery, KMS integration, and streaming features. Refer to the [Midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md) for detailed application-level changes.
+This version includes new capabilities for service discovery, KMS integration, and streaming features. Refer to the Midaz application changelog for detailed application-level changes.
 
 ### 2. Service Discovery (Consul) integration
 

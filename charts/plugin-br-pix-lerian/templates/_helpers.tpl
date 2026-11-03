@@ -122,6 +122,12 @@ component keys, so a mismatch is a render error rather than a silent misroute.
 Usage:
   {{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "apps" "config" .Values.appsIngress) }}
 */}}
+{{- define "plugin-br-pix-lerian.validateIngressPath" -}}
+{{- if regexMatch "(^|/)(readyz|metrics)(/|$)" . -}}
+{{- fail (printf "plugin-br-pix-lerian: ingress path %q contains a reserved health or metrics segment" .) -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "plugin-br-pix-lerian.routedIngress" -}}
 {{- $ctx := .context }}
 {{- $cfg := .config }}
@@ -168,6 +174,7 @@ spec:
       http:
         paths:
           {{- range $route := $renderedRoutes }}
+          {{- include "plugin-br-pix-lerian.validateIngressPath" $route.path }}
           {{- $componentValues := index $ctx.Values $route.component }}
           {{- $serviceFullname := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" (default (kebabcase $route.component) $route.serviceName)) }}
           - path: {{ $route.path }}
@@ -571,6 +578,11 @@ Usage: include "plugin-br-pix-lerian.health" (dict "context" $ "component" $comp
 {{/* First image that serves HEALTH_PORT: the Pix release that introduced it. */}}
 {{- define "plugin-br-pix-lerian.minImage" -}}1.3.0-beta.26{{- end -}}
 {{- define "plugin-br-pix-lerian.health" -}}
+{{- range $key := list "HEALTH_PORT" "SHUTDOWN_DRAIN_DELAY" "SHUTDOWN_TIMEOUT" -}}
+{{- if hasKey ($.values.extraEnvVars | default dict) $key -}}
+{{- fail (printf "plugin-br-pix-lerian: %s.extraEnvVars.%s is owned by the health preset" $.component $key) -}}
+{{- end -}}
+{{- end -}}
 {{- $v := deepCopy .values -}}
 {{- $img := deepCopy ($v.image | default dict) -}}
 {{- $_ := set $img "tag" (default .context.Chart.AppVersion $img.tag) -}}

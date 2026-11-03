@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `secrets.NEXTAUTH_SECRET` and `secrets.LICENSE_KEY`. The console refuses to boot without either; the chart renders without them, and writes `LICENSE_KEY` into the Secret only when it is non-empty.
+- Required secrets: `secrets.NEXTAUTH_SECRET`; the console refuses to boot without it, and the chart renders without it. Set `secrets.LICENSE_KEY` to your Lerian license key; the chart writes it into the Secret only when it is non-empty.
 - Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured. Also depends on `lerian-common-helm` (shared library chart) for the HPA/PDB/Service/Ingress templates and the `global.*` config masks below.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override image tags, ingress, resources, namespace, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
@@ -12,7 +12,7 @@ A Helm chart for deploying Product Console - Lerian Studio's web interface for m
 
 ## Prerequisites
 
-- Kubernetes 1.19+
+- Kubernetes 1.27+
 - Helm 3.8.0+ (OCI registry support is enabled by default)
 
 ## Installing the Chart
@@ -62,28 +62,28 @@ empty — set a key there only to override its shipped default).
 | `image.tag` | Container image tag | Chart appVersion |
 | `ingress.enabled` | Enable ingress | `false` |
 | `configmap.NODE_ENV` | Node environment | `production` |
-| `configmap.MIDAZ_CONSOLE_PORT` | Console port | `8081` |
+| `configmap.MIDAZ_CONSOLE_PORT` | Not read by the console image, which listens on 8081; keep `service.port` at 8081 | `8081` |
 | `configmap.MIDAZ_BASE_PATH` | Midaz API base path | `http://midaz-ledger.midaz.svc.cluster.local:3002/v1` |
 | `configmap.NEXTAUTH_URL` | Public URL NextAuth uses for OAuth callbacks | `ingress.hosts[0].host` (as `https://<host>`) when ingress is enabled with a host, else `http://localhost:8081` |
 | `configmap.ALLOWED_ORIGINS` | Comma list of origins the console's CSRF guard accepts on mutating requests; empty blocks every write. Defaults to the ingress origin, not to `NEXTAUTH_URL` | `https://<first ingress host>` when ingress is enabled with a host, else empty (set it explicitly) |
 | `configmap.TRUSTED_PROXIES` | Comma list of CIDRs the console trusts as its own hops, see [Client IP resolution](#client-ip-resolution) | unset (no client IP is resolved) |
 | `configmap.PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address used for the SSO redirect, see [Keys with no default](#keys-with-no-default) | unset (falls back to the cluster-internal `PLUGIN_AUTH_BASE_PATH`) |
-| `configmap.MIDAZ_V2_BASE_PATH` | Address of the midaz ledger's `/v2` contract, where fees live, see [Keys with no default](#keys-with-no-default) | unset (the fees screens have no address) |
-| `configmap.MFA_ENABLED` | Tells the console the Access Manager may answer a password with an MFA challenge, see [Keys with no default](#keys-with-no-default) | unset (the image's own default) |
-| `configmap.FLOWKER_BASE_PATH` / `configmap.LENDER_BASE_PATH` / `configmap.MATCHER_BASE_PATH` / `configmap.TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (feature addressed nowhere) |
+| `configmap.MIDAZ_V2_BASE_PATH` | Address of the midaz ledger's `/v2` contract, where fees live, see [Keys with no default](#keys-with-no-default) | unset (the image's own default, built from `MIDAZ_API_HOST` and `MIDAZ_API_PORT`) |
+| `configmap.MFA_ENABLED` | Not read by the console image this chart pins | unset |
+| `configmap.FLOWKER_BASE_PATH` / `configmap.LENDER_BASE_PATH` / `configmap.MATCHER_BASE_PATH` / `configmap.TRACER_BASE_PATH` | Optional sibling services, see [Keys with no default](#keys-with-no-default) | unset (the image's built-in address applies) |
 | `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew / minDomains / nodeTaintsPolicy), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1, minDomains: 0, nodeTaintsPolicy: ""}` |
 | `spread` | Field-level override of `global.scheduling.spread` for the console Deployment | `{}` |
 | `topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `readinessProbe.path` | Readiness endpoint. Defaults to the MongoDB-independent one, see [MongoDB and readiness](#mongodb-and-readiness) | `/api/admin/health/alive` |
 | `secrets.NEXTAUTH_SECRET` | NextAuth secret. Required: the published console image exits at startup when it is empty | `""` |
-| `secrets.LICENSE_KEY` | Lerian license key. Required: the console refuses to boot without it. Goes to the Secret, never the ConfigMap; with `useExistingSecret`, add a `LICENSE_KEY` key to your Secret | `""` |
+| `secrets.LICENSE_KEY` | Lerian license key. Goes to the Secret, never the ConfigMap; with `useExistingSecret`, add a `LICENSE_KEY` key to your Secret | `""` |
 | `secrets.MONGODB_PASS` | MongoDB password. Leave empty with the bundled MongoDB: the console reads the password this chart keeps for it, see [MongoDB and readiness](#mongodb-and-readiness) | `""` |
 | `secrets.PLUGIN_AUTH_CLIENT_ID` | Alternative to `configmap.PLUGIN_AUTH_CLIENT_ID` when the client_id shouldn't sit in a ConfigMap; when set, the ConfigMap key is omitted | `""` |
 
 ### Inter-service defaults (cross-namespace)
 
 Product Console talks to several sibling Lerian services (Midaz ledger,
-plugin-access-manager, CRM, Reporter). By default these are addressed by the
+plugin-access-manager, Reporter). By default these are addressed by the
 standard in-cluster FQDN (`<service>.<namespace>.svc.cluster.local`), so the
 chart works out of the box even when each dependency is deployed in its own
 namespace — no service mesh or DNS wiring required. Override the
@@ -92,10 +92,9 @@ service/namespace names.
 
 | Service | `configmap` keys | Default host |
 |---|---|---|
-| Midaz ledger | `MIDAZ_API_HOST`, `MIDAZ_TRANSACTION_BASE_HOST` (+ `*_PORT`/`*_PATH`) | `midaz-ledger.midaz.svc.cluster.local` |
-| plugin-access-manager (auth) | `PLUGIN_AUTH_HOST` (+ `PLUGIN_AUTH_PORT`/`PLUGIN_AUTH_BASE_PATH`) | `plugin-access-manager-auth.plugin-access-manager.svc.cluster.local` |
-| plugin-access-manager (identity) | `PLUGIN_IDENTITY_HOST` (+ `PLUGIN_IDENTITY_PORT`/`PLUGIN_IDENTITY_BASE_PATH`) | `plugin-access-manager-identity.plugin-access-manager.svc.cluster.local` |
-| CRM plugin | `CRM_BASE_PATH` | `http://midaz-crm.midaz.svc.cluster.local:4003/v1/` |
+| Midaz ledger | `MIDAZ_BASE_PATH`, `MIDAZ_TRANSACTION_BASE_PATH`, `MIDAZ_V2_BASE_PATH` | `midaz-ledger.midaz.svc.cluster.local` |
+| plugin-access-manager (auth) | `PLUGIN_AUTH_BASE_PATH` | `plugin-access-manager-auth.plugin-access-manager.svc.cluster.local` |
+| plugin-access-manager (identity) | `PLUGIN_IDENTITY_BASE_PATH` | `plugin-access-manager-identity.plugin-access-manager.svc.cluster.local` |
 | Reporter | `REPORTER_BASE_PATH` | `http://reporter-manager.reporter.svc.cluster.local:4005/v1` |
 
 ### Keys with no default
@@ -109,25 +108,24 @@ the console keeps whatever its own image does.
 | Key | What it is | If it is wrong or missing |
 |---|---|---|
 | `TRUSTED_PROXIES` | CIDRs the console trusts as its own hops | Missing: no caller is ever named, so a tenant IP allowlist has nothing to judge. Wrong: see [Client IP resolution](#client-ip-resolution) |
-| `PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address (absolute, https, ends in `/v1`) | Missing: SSO redirects the browser to the cluster-internal name, which it cannot resolve. Only local dev, where both are `localhost`, can leave it out |
-| `MIDAZ_V2_BASE_PATH` | The midaz ledger's `/v2` contract, where fees live — same host and port as `MIDAZ_BASE_PATH`, `/v1` swapped for `/v2`, **ending in a slash**. See [Fees and the ledger's /v2 contract](#fees-and-the-ledgers-v2-contract) | Missing: every fees screen fails and the health check reports `MIDAZ_V2_BASE_PATH is not set` |
-| `MFA_ENABLED` | Assertion that the Access Manager in front of this console may answer a correct password with an MFA challenge. It enables MFA for nobody — that is per user, in the Access Manager | Missing where MFA is on: the console does not recognise the challenge, and a user with MFA enabled cannot sign in at all |
-| `FLOWKER_BASE_PATH` | Flowker's address, ends in `/v1` | Missing: the console has nowhere to send Flowker calls |
-| `LENDER_BASE_PATH` | Lender's address, **ends in `/api/v1`** — the version prefix is part of it | Missing: the console has nowhere to send Lender calls; without `/api/v1` every call misses Lender's routes |
-| `MATCHER_BASE_PATH` | Matcher's address, **bare origin, no `/v1`** — the console adds it | Missing: the console has nowhere to send Matcher calls; with a `/v1` suffix every call goes to `/v1/v1/...` |
-| `TRACER_BASE_PATH` | Tracer's address, **bare origin, no `/v1`** — the console adds it | Missing: the console has nowhere to send Tracer calls; with a `/v1` suffix every call goes to `/v1/v1/...` |
+| `PLUGIN_AUTH_PUBLIC_BASE_PATH` | Browser-facing Access Manager address (absolute, https, ends in `/v1`) | Missing: the console falls back to the cluster-internal `PLUGIN_AUTH_BASE_PATH`, refuses it because it is not https, and SSO sign-in fails with an error that names `PLUGIN_AUTH_PUBLIC_BASE_PATH`. Only local dev, where both are `localhost`, can leave it out |
+| `MIDAZ_V2_BASE_PATH` | The midaz ledger's `/v2` contract, where fees and CRM live — same host and port as `MIDAZ_BASE_PATH`, `/v1` swapped for `/v2`, **ending in a slash**. See [Fees and the ledger's /v2 contract](#fees-and-the-ledgers-v2-contract) | Missing: the console uses the default built into its image, `http://<MIDAZ_API_HOST>:<MIDAZ_API_PORT>/v2/` |
+| `MFA_ENABLED` | Not read by the console image this chart pins (`image.tag` in `values.yaml`); that image recognises an MFA challenge without it | No effect |
+| `FLOWKER_BASE_PATH` | Flowker's address, ends in `/v1` | Missing: the console uses the address built into its image |
+| `LENDER_BASE_PATH` | Lender's address, **ends in `/api/v1`** — the version prefix is part of it | Missing: the console uses the address built into its image; without `/api/v1` every call misses Lender's routes |
+| `MATCHER_BASE_PATH` | Matcher's address, **bare origin, no `/v1`** — the console adds it | Missing: the console uses the address built into its image; with a `/v1` suffix every call goes to `/v1/v1/...` |
+| `TRACER_BASE_PATH` | Tracer's address, **bare origin, no `/v1`** — the console adds it | Missing: the console uses the address built into its image |
 
-Those four sibling services are optional deployments, which is why the chart
-invents no address for them: a default would turn "this feature is not
-installed" into a connection error on the page.
+Those four sibling services are optional deployments, so the chart invents no
+address for them.
 
 ### Fees and the ledger's /v2 contract
 
 Fees — fee packages, billing packages, billing runs and the fees statement —
 used to be a separate plugin. They are not any more: they live inside the
-midaz ledger, served on its second API contract, `/v2`. Everything else the
-console asks the ledger still goes to `/v1`, so the two addresses coexist and
-`MIDAZ_V2_BASE_PATH` is the one the fees screens use.
+midaz ledger, served on its second API contract, `/v2`. The console also sends
+CRM, transaction-route and operation-route calls to `/v2`; most other calls go
+to `/v1`, so the two addresses coexist.
 
 Set it to the same host and port as `MIDAZ_BASE_PATH`, with `/v1` swapped for
 `/v2`:
@@ -152,10 +150,6 @@ before they were declared here, and still work from there, so no existing
 install has to change. Supplying one through both `configmap` and
 `extraEnvVars` is refused at render time: both write into the same ConfigMap
 `data` map, and the surviving value would be whatever the YAML parser kept.
-
-`NEXT_PUBLIC_DEMO_MODE` is internal presentation configuration rather than
-customer surface, so the chart declares no key for it: an install that needs it
-sets it through `extraEnvVars`.
 
 ### Client IP resolution
 
@@ -221,13 +215,10 @@ for client-IP attribution, not unattributed, and any tooling keyed on the
 header's presence should treat them that way.
 
 **Entries can be refused.** An entry that is not a CIDR is refused, and so is
-one wider than `/8` (IPv4) or `/48` (IPv6). A refused entry is named in the
-console's own log ONLY when the whole list is refused, which also puts the
-deployment back in the empty case above. A list that keeps at least one usable
-range drops its bad entries silently, so `198.51.100.0/24,0.0.0.0/0` trusts the
-first range, discards the second, and logs nothing naming the discarded entry.
-The console still logs whenever a request ends up with no caller named, so the
-warnings are there; the entry that caused them is not.
+one wider than `/8` (IPv4) or `/48` (IPv6). The console names each refused entry
+in its own log. When the whole list is refused, the deployment is back in the
+empty case above; when some entries survive, `198.51.100.0/24,0.0.0.0/0` trusts
+the first range and discards the second.
 
 **Do not widen the range to be safe.** Trusting a range means discarding its
 hops and continuing to look left, so a range that covers real callers (a
@@ -344,6 +335,9 @@ always wins over the corresponding mask.
 | `global.observability.enabled` | `lerian-common.globalValue` | `configmap.ENABLE_TELEMETRY` |
 | `global.datastores.mongo.{uri,host,port,user,params}` | `lerian-common.datastore.value` | `configmap.MONGODB_URI` / `MONGO_HOST` / `MONGO_PORT` / `MONGODB_USER` / `MONGO_PARAMETERS` |
 
+The console does not read `PLUGIN_AUTH_HOST`, so `global.auth.host` does not move
+its Access Manager address; `configmap.PLUGIN_AUTH_BASE_PATH` does.
+
 **Authorization is OFF unless it is switched on explicitly.** The console
 enforces permissions only when the variable it reads is the word `true`:
 `PLUGIN_AUTH_ENABLED` on the server, `NEXT_PUBLIC_PLUGIN_AUTH_ENABLED` in the
@@ -368,8 +362,7 @@ not the word `true`: it logs one `[startup] FATAL` line and exits 1, so a
 release left on the chart default `false` crash-loops instead of serving an
 open console. `OAUTH_ENABLED=true` alone starts the pod, with sessions required
 and no permission checks or bearer forwarding; the chart declares no key for
-it, so it can only be set through `extraEnvVars`. See the console repository's
-[`SECURITY.md`](https://github.com/LerianStudio/product-console/blob/develop/SECURITY.md).
+it, so it can only be set through `extraEnvVars`.
 
 `global.cloud: aws` also applies automatically (no chart change needed): it
 sets `MONGO_PARAMETERS` to the real DocumentDB connection-string shape

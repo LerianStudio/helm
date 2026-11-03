@@ -92,7 +92,7 @@ This upgrade requires no manual migration steps or configuration changes. The im
 grep -E "tag.*1.14.0-beta" your-custom-values.yaml
 ```
 
-3. Run the upgrade command.
+3. Run the upgrade command with your edited values file (`-f your-values.yaml`). Without `-f`, Helm reuses the values stored in the release and keeps a beta tag pin.
 
 4. Monitor the rollout status for all deployments:
 

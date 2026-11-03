@@ -33,7 +33,7 @@ This upgrade requires no manual migration steps.
 2. Run the upgrade command:
 
 ```bash
-helm upgrade plugin-bc-correios oci://registry-1.docker.io/lerianstudio/plugin-bc-correios-helm --version 3.0.1 -n <namespace>
+helm upgrade plugin-bc-correios oci://ghcr.io/lerianstudio/plugin-bc-correios-helm --version 3.0.1 -n <namespace>
 ```
 
 3. Verify the chart version has been updated:
@@ -45,7 +45,7 @@ helm list -n <namespace>
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-bc-correios oci://registry-1.docker.io/lerianstudio/plugin-bc-correios-helm --version 3.0.1 -n plugin-bc-correios
+helm diff upgrade plugin-bc-correios oci://ghcr.io/lerianstudio/plugin-bc-correios-helm --version 3.0.1 -n plugin-bc-correios
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -53,5 +53,5 @@ helm diff upgrade plugin-bc-correios oci://registry-1.docker.io/lerianstudio/plu
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-bc-correios oci://registry-1.docker.io/lerianstudio/plugin-bc-correios-helm --version 3.0.1 -n plugin-bc-correios
+helm upgrade plugin-bc-correios oci://ghcr.io/lerianstudio/plugin-bc-correios-helm --version 3.0.1 -n plugin-bc-correios
 ```

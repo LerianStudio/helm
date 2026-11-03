@@ -116,9 +116,9 @@ kubectl get events -n <namespace> --sort-by=.lastTimestamp | tail -30
 kubectl logs -n <namespace> job/plugin-br-pix-lerian-<component>-migrations
 kubectl logs -n <namespace> <pod> --previous | head -30
 
-# Readiness from inside the cluster
-kubectl port-forward -n <namespace> svc/plugin-br-pix-lerian-spi 4101:4101
-curl --fail -sS http://localhost:4101/spi/readyz
+# Readiness from inside the cluster (served on the internal health port 8099)
+kubectl port-forward -n <namespace> svc/plugin-br-pix-lerian-spi 8099:8099
+curl --fail -sS http://localhost:8099/readyz
 ```
 
 `readyz` must return 200 on every enabled workload. A 200 on `health` with 503 on `readyz` is a configuration problem, not a crash — read the body, then [Health and readiness reference](#health-and-readiness-reference).
@@ -570,24 +570,26 @@ A proxy workload your topology requires is configuration only — it gains no bu
 
 ## Health and readiness reference
 
-Every workload serves liveness and readiness over HTTP on its Service port. Paths carry the workload's route prefix, **except `dictHubVsync`, which serves both at the root.** The `readyz` response is the authoritative list for the active version, tenant mode, and configuration.
+Every workload serves its probes on the internal **health port 8099** (`HEALTH_PORT`), a ClusterIP Service port that no Ingress ever routes to: `/health` (liveness and startup, constant), `/readyz` (readiness) and `/metrics`. The chart owns the probe paths, the drain and the grace period: `startupProbe` and `livenessProbe` hit `/health`, `readinessProbe` hits `/readyz`, both on the named container port `health`. Shutdown drains `SHUTDOWN_DRAIN_DELAY` (15 s), then budgets `SHUTDOWN_TIMEOUT` (30 s), inside `terminationGracePeriodSeconds: 55`. **`dictHubVsync` is a worker profile**: no drain (`0s`) and a 45 s shutdown budget, so the same 55 s grace. Tune them per component with `<component>.health.drainSeconds` / `shutdownSeconds`; setting `livenessProbe`, `readinessProbe`, `startupProbe`, `terminationGracePeriodSeconds` or `HEALTH_PORT` / `SHUTDOWN_*` in `configmap` fails the render.
 
-| Workload | Service port | Liveness | Readiness | Always probed | Probed when configured |
-|---|---|---|---|---|---|
-| `spi` | 4101 | `/spi/health` | `/spi/readyz` | `required_keys`; Postgres in single-tenant | adapter and Midaz, each when its base URL is set; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
-| `spiSystemplane` | 4102 | `/spi/health` | `/spi/readyz` | Postgres | — |
-| `adapterProviderMock` | 4103 | `/provider-mock/health` | `/provider-mock/readyz` | — | its configured provider over HTTP |
-| `dictHub` | 4104 | `/dict-hub/health` | `/dict-hub/readyz` | `required_keys`; Postgres in single-tenant | CRM and adapter, each when its base URL is set; Valkey when the cache connected at boot; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
-| `dictHubVsync` | 4105 | `/health` | `/readyz` | `required_keys`, Valkey; Postgres and RabbitMQ in single-tenant; `scheduler` and `chunk_consumer` during startup | CRM when its base URL is set; adapter in single-tenant when its base URL is set; `tenant_consumers` in multi-tenant |
-| `dictProxy` | 4106 | `/dict-proxy/health` | `/dict-proxy/readyz` | `required_keys` | — |
-| `dictSystemplane` | 4107 | `/dict/health` | `/dict/readyz` | Postgres | — |
-| `cobHub` | 4108 | `/cob-hub/health` | `/cob-hub/readyz` | `required_keys`; Postgres in single-tenant | notification outbox relay in multi-tenant with streaming on; streaming when enabled |
-| `cobProxy` | 4109 | `/cob-proxy/health` | `/cob-proxy/readyz` | `required_keys` | — |
-| `cobSystemplane` | 4110 | `/cob/health` | `/cob/readyz` | Postgres | — |
-| `adapterLerian` | 4113 | `/lerian/health` | `/lerian/readyz` | Postgres | — |
-| `adapterLerianSystemplane` | 4115 | `/lerian/health` | `/lerian/readyz` | Postgres | — |
-| `pixauto` | 4116 | `/pixauto/health` | `/pixauto/readyz` | `required_keys`; Postgres in single-tenant | `auth.url` when auth is on; streaming when enabled |
-| `pixautoSystemplane` | 4117 | `/pixauto/health` | `/pixauto/readyz` | Postgres | — |
+The main port still answers a constant `<prefix>/health` and `<prefix>/version` (for `dictHubVsync`, at the root); its `<prefix>/readyz` is transitional and a later Pix release removes it, so do not build on it. The chart refuses a component whose `image.tag` is below `1.3.0-beta.26` (the first image that serves the health port) and reads the tag from `Chart.appVersion` when you set none. The `readyz` response is the authoritative list for the active version, tenant mode, and configuration.
+
+| Workload | Service ports | Always probed | Probed when configured |
+|---|---|---|---|
+| `spi` | 4101, 8099 | `required_keys`; Postgres in single-tenant | adapter and Midaz, each when its base URL is set; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
+| `spiSystemplane` | 4102, 8099 | Postgres | — |
+| `adapterProviderMock` | 4103, 8099 | — | its configured provider over HTTP |
+| `dictHub` | 4104, 8099 | `required_keys`; Postgres in single-tenant | CRM and adapter, each when its base URL is set; Valkey when the cache connected at boot; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
+| `dictHubVsync` | 4105, 8099 | `required_keys`, Valkey; Postgres and RabbitMQ in single-tenant; `scheduler` and `chunk_consumer` during startup | CRM when its base URL is set; adapter in single-tenant when its base URL is set; `tenant_consumers` in multi-tenant |
+| `dictProxy` | 4106, 8099 | `required_keys` | — |
+| `dictSystemplane` | 4107, 8099 | Postgres | — |
+| `cobHub` | 4108, 8099 | `required_keys`; Postgres in single-tenant | notification outbox relay in multi-tenant with streaming on; streaming when enabled |
+| `cobProxy` | 4109, 8099 | `required_keys` | — |
+| `cobSystemplane` | 4110, 8099 | Postgres | — |
+| `adapterLerian` | 4113, 8099 | Postgres | — |
+| `adapterLerianSystemplane` | 4115, 8099 | Postgres | — |
+| `pixauto` | 4116, 8099 | `required_keys`; Postgres in single-tenant | `auth.url` when auth is on; streaming when enabled |
+| `pixautoSystemplane` | 4117, 8099 | Postgres | — |
 
 Reading the responses:
 

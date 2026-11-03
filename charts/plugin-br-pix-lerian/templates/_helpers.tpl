@@ -557,24 +557,27 @@ annotations:
 {{- end -}}
 
 {{/*
-Probe initialDelaySeconds, defaulted on key PRESENCE rather than truthiness.
+Health preset (lerian-common.health) for one component, read with fromYaml.
+The chart takes ONLY these keys from it: ports, env, startupProbe, livenessProbe,
+readinessProbe, terminationGracePeriodSeconds and servicePorts. Replicas,
+strategy, pdb and autoscaling stay the chart's own (deliberately not passed in).
+Grace = drain 15 + shutdown 30 + 10 = 55 for the go stack.
 
-`{{ $values.readinessProbe.initialDelaySeconds | default 10 }}` is wrong for
-this one knob: Go templates treat 0 as empty, so an operator who sets
-`initialDelaySeconds: 0` -- a legal value meaning "start probing immediately" --
-silently gets the chart default instead. `dig` keys off whether the key is
-present, so an explicit 0 survives. Same trap `_migrations.tpl` documents for
-its own knobs.
+The effective image tag (component tag, else Chart.appVersion) is handed to the
+preset so its minImage guard also covers a tag inherited from appVersion.
 
-Only initialDelaySeconds needs this. periodSeconds, timeoutSeconds,
-successThreshold and failureThreshold all have a Kubernetes minimum of 1, so 0
-is not a value the API server accepts there and `default` is harmless.
-
-Usage:
-  {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.readinessProbe "default" 10) }}
+Usage: include "plugin-br-pix-lerian.health" (dict "context" $ "component" $component "values" $values) | fromYaml
 */}}
-{{- define "plugin-br-pix-lerian.probeInitialDelay" -}}
-{{- dig "initialDelaySeconds" .default (.probe | default dict) -}}
+{{/* First image that serves HEALTH_PORT: the Pix release that introduced it. */}}
+{{- define "plugin-br-pix-lerian.minImage" -}}1.3.0-beta.26{{- end -}}
+{{- define "plugin-br-pix-lerian.health" -}}
+{{- $v := deepCopy .values -}}
+{{- $img := deepCopy ($v.image | default dict) -}}
+{{- $_ := set $img "tag" (default .context.Chart.AppVersion $img.tag) -}}
+{{- $_ := set $v "image" $img -}}
+{{- include "lerian-common.health" (dict
+      "name" (printf "plugin-br-pix-lerian-%s" .component) "component" $v "health" $v.health
+      "port" ($v.service).port "minImage" (include "plugin-br-pix-lerian.minImage" .context)) -}}
 {{- end -}}
 
 {{/*

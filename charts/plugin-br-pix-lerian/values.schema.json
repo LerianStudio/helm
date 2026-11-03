@@ -430,23 +430,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -635,23 +636,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -840,23 +842,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -1045,23 +1048,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -1250,23 +1254,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -1455,23 +1460,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -1660,23 +1666,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -1865,23 +1872,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -2070,23 +2078,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -2275,23 +2284,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -2480,23 +2490,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -2685,23 +2696,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -2890,23 +2902,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"
@@ -3095,23 +3108,24 @@
           },
           "additionalProperties": true
         },
-        "readinessProbe": {
+        "health": {
           "type": "object",
+          "description": "lerian-common.health preset input. Probes, ports, drain and grace are owned by the preset.",
           "properties": {
-            "path": {
-              "type": "string"
+            "stack": {
+              "type": "string",
+              "enum": ["go", "go-worker"]
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1
             }
           },
-          "additionalProperties": true
-        },
-        "livenessProbe": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "additionalProperties": false
         },
         "configmap": {
           "type": "object"

@@ -222,10 +222,12 @@ spi:
   tolerations: []
   affinity: {}
 
-  readinessProbe:
-    path: "/spi/readyz"
-  livenessProbe:
-    path: "/spi/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
 
   serviceAccount:
     create: true
@@ -341,10 +343,12 @@ spiSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe:
-    path: "/spi/readyz"
-  livenessProbe:
-    path: "/spi/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -444,10 +448,12 @@ adapterProviderMock:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe:
-    path: "/provider-mock/readyz"
-  livenessProbe:
-    path: "/provider-mock/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -538,10 +544,12 @@ dictHub:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe:
-    path: "/dict-hub/readyz"
-  livenessProbe:
-    path: "/dict-hub/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -663,10 +671,14 @@ dictHubVsync:
     minReplicas: 1
     maxReplicas: 1   # vsync is a singleton worker
 
-  readinessProbe:
-    path: "/readyz"
-  livenessProbe:
-    path: "/health"
+  # -- Health preset (lerian-common.health), worker profile: probes on HEALTH_PORT 8099
+  # (/health, /readyz), no drain. Grace = shutdownSeconds 45 + 10 = 55, the same as
+  # the go components (15 drain + 30 shutdown + 10). Paths, ports, timings and grace
+  # are owned by the preset; the render refuses livenessProbe, readinessProbe,
+  # terminationGracePeriodSeconds and HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go-worker
+    shutdownSeconds: 45
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -769,10 +781,12 @@ dictProxy:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe:
-    path: "/dict-proxy/readyz"
-  livenessProbe:
-    path: "/dict-proxy/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -861,10 +875,12 @@ dictSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe:
-    path: "/dict/readyz"
-  livenessProbe:
-    path: "/dict/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -959,10 +975,12 @@ cobHub:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe:
-    path: "/cob-hub/readyz"
-  livenessProbe:
-    path: "/cob-hub/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1081,10 +1099,12 @@ cobProxy:
     minReplicas: 1
     maxReplicas: 3
 
-  readinessProbe:
-    path: "/cob-proxy/readyz"
-  livenessProbe:
-    path: "/cob-proxy/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1173,10 +1193,12 @@ cobSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe:
-    path: "/cob/readyz"
-  livenessProbe:
-    path: "/cob/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1333,8 +1355,10 @@ appsIngress:
     # notification-outbox reprocess endpoint, and the streaming manifest, which
     # the app mounts at {prefix}/v1/streaming/manifest.
     #
-    # /pixauto/readyz is kept as an Exact route because the gethomepage.dev/href
+    # /pixauto/health is kept as an Exact route because the gethomepage.dev/href
     # dashboard annotation targets it. Exact, so it cannot widen into a prefix.
+    # The main port keeps a constant {prefix}/health; /readyz is on the health port
+    # only (8099, never an Ingress backend).
     #
     # /pixauto/internal/v1/* is deliberately absent and must stay absent.
     # templates/ingress-apps.yaml fails the render if a route reintroduces it.
@@ -1342,7 +1366,7 @@ appsIngress:
       pathType: Prefix
       component: pixauto
       serviceName: pixauto
-    - path: /pixauto/readyz
+    - path: /pixauto/health
       pathType: Exact
       component: pixauto
       serviceName: pixauto
@@ -1412,10 +1436,12 @@ adapterLerian:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe:
-    path: "/lerian/readyz"
-  livenessProbe:
-    path: "/lerian/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1522,10 +1548,12 @@ adapterLerianSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe:
-    path: "/lerian/readyz"
-  livenessProbe:
-    path: "/lerian/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -1641,10 +1669,12 @@ pixauto:
   tolerations: []
   affinity: {}
 
-  readinessProbe:
-    path: "/pixauto/readyz"
-  livenessProbe:
-    path: "/pixauto/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
 
   serviceAccount:
     create: true
@@ -1771,10 +1801,12 @@ pixautoSystemplane:
     minReplicas: 1
     maxReplicas: 1
 
-  readinessProbe:
-    path: "/pixauto/readyz"
-  livenessProbe:
-    path: "/pixauto/health"
+  # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
+  # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
+  # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
+  # HEALTH_PORT / SHUTDOWN_* keys set here.
+  health:
+    stack: go
   nodeSelector: {}
   tolerations: []
   affinity: {}

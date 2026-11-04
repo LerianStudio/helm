@@ -101,6 +101,10 @@ data:
   RULE_SYNC_POLL_INTERVAL_SECONDS: {{ $cm.RULE_SYNC_POLL_INTERVAL_SECONDS | default "10" | quote }}
   RULE_SYNC_STALENESS_THRESHOLD_SECONDS: {{ $cm.RULE_SYNC_STALENESS_THRESHOLD_SECONDS | default "50" | quote }}
   RULE_SYNC_OVERLAP_BUFFER_SECONDS: {{ $cm.RULE_SYNC_OVERLAP_BUFFER_SECONDS | default "2" | quote }}
+  {{- if include "midaz.belowHealthMin" (dict "component" .Values.tracer "context" .) }}
+  # READINESS — drain grace on shutdown (images below the health preset).
+  READYZ_DRAIN_GRACE_SECONDS: {{ $cm.READYZ_DRAIN_GRACE_SECONDS | default "12" | quote }}
+  {{- end }}
   # READINESS — the rule-cache staleness /readyz tolerates (reported degraded, never a 503).
   READYZ_CACHE_STALENESS_THRESHOLD_SECONDS: {{ $cm.READYZ_CACHE_STALENESS_THRESHOLD_SECONDS | default "300" | quote }}
   # Retry-After (seconds) returned when a tenant hits its connection-pool cap.

@@ -6,13 +6,13 @@ release:
   name: midaz
   namespace: midaz
 tests:
-  - it: renders both workloads on the chart default image tag
+  - it: renders neither workload on the default 4.4.0 tag
     asserts:
       - hasDocuments:
-          count: 1
+          count: 0
         template: templates/ledger/partition-cronjob.yaml
       - hasDocuments:
-          count: 1
+          count: 0
         template: templates/ledger/partition-reconcile-job.yaml
   - it: renders both workloads on stable 4.5.x
     set:

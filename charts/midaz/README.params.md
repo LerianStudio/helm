@@ -59,13 +59,13 @@
 | `global.scheduling.spread.nodeTaintsPolicy` | string | `""` | `Honor` \| `Ignore` \| `""` (omitted = Kubernetes default `Ignore`). `Honor` counts only nodes whose taints the pod tolerates. |
 | `ledger.name` | string | `ledger` | Service name |
 | `ledger.enabled` | bool | `true` | Enable or disable the ledger service |
-| `ledger.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it |
+| `ledger.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it (image tag `4.5.0-beta.94` or later) |
 | `ledger.health.shutdownSeconds` | int | unset (preset: `30`) | `SHUTDOWN_TIMEOUT`: the one shutdown budget after the drain; pod grace is drain + this + 10s |
 | `ledger.replicaCount` | int | `2` | Number of replicas for the ledger service |
 | `ledger.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
 | `ledger.image.repository` | string | `lerianstudio/midaz-ledger` | Repository for the ledger service container image |
 | `ledger.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
-| `ledger.image.tag` | string | See `values.yaml` | Image tag used for deployment |
+| `ledger.image.tag` | string | `4.4.0` | Image tag used for deployment. A tag from `4.5.0-beta.94` on turns on the health preset; a lower tag keeps the 4.4 probes and ports |
 | `ledger.migrations` | object | `{}` | Dedicated migration runner (`midaz-ledger-migrations`, built FROM migrate/migrate) applying the onboarding and transaction migration sets. |
 | `ledger.migrations.enabled` | bool | `nil` | Run the migration Job. Unset means auto: on for 4.x ledger tags, which removed in-process migration, off for 3.x, which still migrates at startup. Set false to keep it off when the schema is applied out-of-band. |
 | `ledger.migrations.image.repository` | string | `lerianstudio/midaz-ledger-migrations` | Repository for the ledger migration-runner image |
@@ -200,12 +200,12 @@
 | `crm.useExistingSecret` | bool | `false` | Existing secrets name |
 | `tracer.name` | string | `tracer` | Service name |
 | `tracer.enabled` | bool | `false` | Enable or disable the Tracer service (disabled by default; opt-in per env) |
-| `tracer.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it |
+| `tracer.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it (image tag `4.5.0-beta.94` or later) |
 | `tracer.replicaCount` | int | `1` | Number of replicas for the Tracer service |
 | `tracer.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
 | `tracer.image.repository` | string | `lerianstudio/midaz-tracer` | Repository for the Tracer service container image. In midaz v4 tracer ships from the monorepo (`components/tracer`) and the release pipeline publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates the configuration contract this chart renders. |
 | `tracer.image.pullPolicy` | string | `Always` | Image pull policy |
-| `tracer.image.tag` | string | See `values.yaml` | Image tag used for deployment |
+| `tracer.image.tag` | string | `4.4.0` | Image tag used for deployment. A tag from `4.5.0-beta.94` on turns on the health preset; a lower tag keeps the 4.4 probes and ports |
 | `tracer.migrations` | object | `{}` | Dedicated migration runner (`midaz-tracer-migrations`, built FROM migrate/migrate). The v4 tracer no longer migrates at startup: it boots against an already-migrated schema, so this Job has to apply it. |
 | `tracer.migrations.enabled` | bool | `true` | Enable or disable the tracer migration Job |
 | `tracer.migrations.image.repository` | string | `lerianstudio/midaz-tracer-migrations` | Repository for the tracer migration-runner image |

@@ -15,6 +15,17 @@
 {{- /* RABBITMQ_PORT_HOST is the AMQP transport port the ledger dials (amqpPort mask field). */ -}}
 {{- $rabbitHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
 {{- $rabbitPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_HOST" "default" "5672") }}
+{{- /* Images below the health preset also read the broker management API (RABBITMQ_PORT_AMQP is
+   its port) for the /readyz RabbitMQ check; RABBITMQ_PROTOCOL picks the URL scheme. */ -}}
+{{- $legacy := include "midaz.belowHealthMin" (dict "component" .Values.ledger "context" .) }}
+{{- $rabbitProtocol := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "protocol" "nativeKey" "RABBITMQ_PROTOCOL" "default" "http") }}
+{{- $rabbitAmqpPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "15672") }}
+{{- $rabbitHealthCheckURL := "" }}
+{{- if eq $rabbitProtocol "http" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s:%s" $rabbitProtocol $rabbitHost $rabbitAmqpPort }}
+{{- else if eq $rabbitProtocol "https" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s" $rabbitProtocol $rabbitHost }}
+{{- end }}
 
 kind: ConfigMap
 apiVersion: v1
@@ -336,6 +347,11 @@ data:
   RABBITMQ_URI: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") | quote }}
   RABBITMQ_HOST: {{ $rabbitHost | quote }}
   RABBITMQ_PORT_HOST: {{ $rabbitPort | quote }}
+  {{- if $legacy }}
+  RABBITMQ_PROTOCOL: {{ $rabbitProtocol | quote }}
+  RABBITMQ_PORT_AMQP: {{ $rabbitAmqpPort | quote }}
+  RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
+  {{- end }}
   # TLS to the broker (AmazonMQ requires it). Native key, else the broker mask's tls.
   RABBITMQ_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "tls" "nativeKey" "RABBITMQ_TLS" "default" "false") | quote }}
   RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "transaction") | quote }}

@@ -217,7 +217,8 @@ Resolved value of one key (same precedence as kv), for gates.
 {{- include "lerian-common.cfgValue" (dict "configmap" .cm "nativeKey" .k "params" .p "field" .f "default" (toString (.d | default ""))) -}}
 {{- end -}}
 
-{{- /* streamingEnabled — STREAMING_ENABLED resolved configmap › the DIRECT permanent
+{{- /* streamingEnabled — STREAMING_ENABLED resolved extraEnvVars (the container env
+   overrides the ConfigMap envFrom, so it is the value the pod reads) › configmap › the DIRECT permanent
    block (on by default) unless global.streaming.enabled is explicitly false (then the
    render fails, _validate.tpl) › global.streaming.enabled explicitly true › "false",
    trimmed. An explicit true keeps the stream with the permanent block off: the
@@ -226,7 +227,10 @@ Resolved value of one key (same precedence as kv), for gates.
    turns the executor's stream on. */ -}}
 {{- define "plugin-br-sisbajud.streamingEnabled" -}}
 {{- $cm := .Values.sisbajud.configmap | default dict -}}
-{{- if hasKey $cm "STREAMING_ENABLED" -}}
+{{- $extra := .Values.sisbajud.extraEnvVars | default dict -}}
+{{- if hasKey $extra "STREAMING_ENABLED" -}}
+{{- index $extra "STREAMING_ENABLED" | toString | trim -}}
+{{- else if hasKey $cm "STREAMING_ENABLED" -}}
 {{- index $cm "STREAMING_ENABLED" | toString | trim -}}
 {{- else -}}
 {{- $gs := (.Values.global | default dict).streaming | default dict -}}

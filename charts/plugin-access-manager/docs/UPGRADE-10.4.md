@@ -183,6 +183,8 @@ The image upgrade triggers a rolling restart of all auth and identity pods. The 
 - Support for `SHUTDOWN_DRAIN_DELAY` and `SHUTDOWN_TIMEOUT` environment variables
 - Internal dependency readiness handling (replacing init containers)
 
+The application, not the chart, also checks the license differently from `3.14.0`. Auth and identity refuse to boot when `LICENSE_KEY` is empty, and they validate the license under the global organization only: `ORGANIZATION_IDS` is no longer read. Set `auth.secrets.LICENSE_KEY` and `identity.secrets.LICENSE_KEY` (or the same key in your existing Secrets) before you upgrade.
+
 > **Note:** This is a beta release. Operators should monitor logs and metrics closely after the upgrade.
 
 ### 4. Dependency Updates
@@ -197,7 +199,7 @@ The `lerian-common-helm` dependency upgrades from `2.3.0` to `2.6.0`.
 
 **Why this matters:**
 
-Versions `2.5.0` and `2.6.0` add the `lerian-common.health` template that powers the health preset feature. It also includes updates to the `lerian-common.service`, `lerian-common.pdb`, and `lerian-common.ingress` templates.
+Version `2.5.0` adds the `lerian-common.health` template that powers the health preset feature, and `2.6.0` updates it. It also includes updates to the `lerian-common.service`, `lerian-common.pdb`, and `lerian-common.ingress` templates.
 
 **Operational impact:**
 
@@ -212,7 +214,7 @@ The `health` preset replaces manual probe, strategy, and PDB configuration. Both
 ```yaml
 identity:
   health:
-    stack: go                # Required: preset type (only "go" is supported)
+    stack: go                # Preset type; chart default "go", the only one that fits auth and identity
     drainSeconds: 15         # Optional: connection drain time before shutdown
     shutdownSeconds: 30      # Optional: graceful shutdown timeout
 ```
@@ -227,7 +229,7 @@ auth:
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `stack` | *(required)* | Preset type. Must be `go` for auth and identity. |
+| `stack` | `go` | Preset type. Must be `go` for auth and identity. |
 | `drainSeconds` | 15 | Seconds to drain active connections before shutdown. Sets `SHUTDOWN_DRAIN_DELAY` env var. |
 | `shutdownSeconds` | 30 | Seconds to wait for graceful shutdown. Sets `SHUTDOWN_TIMEOUT` env var. |
 

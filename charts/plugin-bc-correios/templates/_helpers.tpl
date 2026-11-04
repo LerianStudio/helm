@@ -274,13 +274,24 @@ template:
       - name: migrate
         image: "{{ $m.image.repository }}:{{ $m.image.tag }}"
         imagePullPolicy: {{ $m.image.pullPolicy }}
-        envFrom:
-          - secretRef:
-              name: {{ $secretName }}
-          - configMapRef:
-              name: {{ include "bc-correios.fullname" . }}
         env:
-          {{- include "bc-correios.postgresPasswordEnv" . | nindent 10 }}
+          {{- range $k := list "POSTGRES_HOST" "POSTGRES_PORT" "POSTGRES_USER" "POSTGRES_NAME" "POSTGRES_SSLMODE" }}
+          - name: {{ $k }}
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "bc-correios.fullname" $ }}
+                key: {{ $k }}
+          {{- end }}
+          {{- with include "bc-correios.postgresPasswordEnv" . }}
+          {{- . | nindent 10 }}
+          {{- else }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: POSTGRES_PASSWORD
+                optional: true
+          {{- end }}
         args:
           - -path=/migrations
           - -database=postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_NAME)?sslmode=$(POSTGRES_SSLMODE)

@@ -260,7 +260,7 @@ bc-correios:
     enabled: true
     image:
       repository: migrate/migrate
-      tag: v4.20.1
+      tag: v4.20.1@sha256:76cc2074cb6642631f34a898ced71e6aeaa6b1a4d78c4daa743275a22e0c5be7
       pullPolicy: IfNotPresent
     backoffLimit: 3
     activeDeadlineSeconds: 600

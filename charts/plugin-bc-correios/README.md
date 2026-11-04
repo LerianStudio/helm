@@ -20,9 +20,11 @@ helm upgrade --install plugin-bc-correios ./charts/plugin-bc-correios \
   --values ./charts/plugin-bc-correios/values-template.yaml
 ```
 
+If the migrations Job fails (for example the database was not reachable yet), fix the cause, delete the Job with `kubectl delete job -n plugin-bc-correios -l app.kubernetes.io/instance=plugin-bc-correios,app.kubernetes.io/component=migrations`, then run `helm upgrade` again.
+
 ## Required Configuration
 
-- The chart applies the database migrations before the app serves traffic: a Job copies the SQL files from the app image (`/migrations`) and runs the `migrate/migrate` CLI (`bc-correios.migrations.*`; disable with `bc-correios.migrations.enabled: false` to run them yourself). The Job builds its database URL from the app's `POSTGRES_*` values, so a PostgreSQL password with URL-reserved characters must be URL-safe (the bundled subchart generates one that is). The app readiness probe stays red until the schema exists.
+- The chart applies the database migrations before the app serves traffic: a Job copies the SQL files from the app image (`/migrations`) and runs the `migrate/migrate` CLI (`bc-correios.migrations.*`; disable with `bc-correios.migrations.enabled: false` to run them yourself). The Job builds its database URL from the app's `POSTGRES_*` values, so a PostgreSQL password with URL-reserved characters must be URL-safe (the bundled subchart generates one that is).
 - The bundled Valkey runs with `--maxmemory-policy noeviction`: the app keeps idempotency records and rate-limit counters there, and requires an external Valkey to use the same policy with an explicit memory ceiling.
 - HTTP rate limiting runs on Valkey and is on by default: `RATE_LIMIT_ENABLED: "true"` (the limiter is off unless it is `"true"`). The limiter refuses requests when Valkey cannot decide. Set `RATE_LIMIT_ENABLED` in `bc-correios.configmap`.
 - The application image `ghcr.io/lerianstudio/plugin-bc-correios` is private: set `bc-correios.imagePullSecrets` to a Secret that can pull it.

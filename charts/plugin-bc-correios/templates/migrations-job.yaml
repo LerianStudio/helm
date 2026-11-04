@@ -1,11 +1,8 @@
 {{- $component := index .Values "bc-correios" -}}
 {{- if and $component.enabled $component.migrations.enabled }}
 {{- /*
-Migrations Job: copies the SQL files from the app image (/migrations), then applies them with the
-migrate CLI. A regular release resource (the bundled PostgreSQL is created in the same release, so a
-pre-install hook would wait forever); the app's readiness holds until the schema exists. The name
-carries a hash of the spec and the Postgres connection the Job reads from the ConfigMap, so a new image
-tag or connection is a new Job and the immutable template never blocks an upgrade (a failed Job is replaced). The ArgoCD annotations (ignored by Helm) stop orphaned old Jobs blocking Synced. The password reaches the DSN through kubelet $(VAR) substitution and must be URL-safe.
+Regular release resource (a pre-install hook would wait on the bundled PostgreSQL). The name hashes the
+spec and the Postgres connection, so a new image or connection is a new Job; ArgoCD hooks prune old ones.
 */ -}}
 {{- $spec := include "bc-correios.migrationsJobSpec" . -}}
 {{- $cm := $component.configmap -}}

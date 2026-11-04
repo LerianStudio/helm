@@ -283,14 +283,14 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- include $f (dict "msg" (printf "%s must be a whole number of seconds between 1 and %d, got %q." (index $row 0) (index $row 2) $raw) "set" (printf "sisbajud.vault.%s" (index $row 1))) -}}
 {{- end -}}
 {{- end -}}
-{{- /* Image-tag gate (CA-10): images before 1.1.0-beta.1 ignore KMS_AWS_KEY_MODE /
+{{- /* Image-tag gate: images before 1.1.0-beta.1 ignore KMS_AWS_KEY_MODE /
    KMS_AWS_KEY_ARN and create their own KMS key, silently. Same effective tag as
-   plugin-br-sisbajud.image (DR-04, rule B'):
+   plugin-br-sisbajud.image:
    - a tag is verifiable ONLY in the canonical form
      ^v?MAJOR.MINOR.PATCH(-(alpha|beta|rc).N)?$ (no "@", no leading zeros: SemVer
      2.0.0 forbids leading zeros, so it is unverifiable, not lower). Such a tag is compared with
      $min (the acknowledgement is NOT consulted): below it fails even with the flag.
-   - everything else FAILS CLOSED (DR-03/DR-04) unless acknowledged, and with the
+   - everything else FAILS CLOSED unless acknowledged, and with the
      acknowledgement no version check is made: "@" (tag@digest or digest-only; the
      kubelet pulls by digest, so the label may lie), other suffixes (-amd64, beta1,
      -beta.1-amd64), build metadata (+x), non-SemVer (latest, mirror tags).

@@ -4,7 +4,7 @@ plugin-br-sisbajud.configmapData — every env key the chart models, as
 ConfigMap `data` lines. Contract source: LerianStudio/plugin-br-sisbajud
 internal/bootstrap/config*.go (env tags + validations), restricted to what the
 process reads in EXECUTOR mode: MENSAGERIA_BASE_URL set, or EXECUTOR_ENABLED=true
-without it (DIRECT-only, DR-07: no transport / Hub webhook / SQS keys). Dependency
+without it (DIRECT-only: no transport / Hub webhook / SQS keys). Dependency
 connections go through the lerian-common masks/env helpers; the rest through
 lerian-common.cfgValue (plugin-br-sisbajud.kv). No credential is emitted here.
 ==============================================================================

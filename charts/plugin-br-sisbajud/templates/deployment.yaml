@@ -44,7 +44,10 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud") | nindent 8 }}
+        {{- include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud") | nindent 8 }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/part-of: {{ include "plugin-br-sisbajud.name" . }}
     spec:
       {{- with (include "plugin-br-sisbajud.pullSecrets" (dict "context" $ "list" $s.imagePullSecrets)) }}
       {{- . | nindent 6 }}

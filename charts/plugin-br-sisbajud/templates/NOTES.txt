@@ -27,4 +27,3 @@ Migrations: {{ include "plugin-br-sisbajud.migrationsFullname" . }} runs as a pr
 {{- end }}
 
 Ledger routing and credentials are per institution (institution config API), not chart values.
-/readyz also reports the object-store (SeaweedFS/S3) probe the app wires in every mode; see the chart README.

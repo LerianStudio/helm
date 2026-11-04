@@ -275,7 +275,7 @@ signal. Source: sisbajud.executor.enabled (string or boolean) or the configmap.
 executorMode — the app's executor mode (extensions_executor.go ExecutorEnabled /
 MensageriaConfigured): "mensageria" when MENSAGERIA_BASE_URL is non-blank
 (EXECUTOR_ENABLED=false never turns it off), "direct" when EXECUTOR_ENABLED=true
-without it (DIRECT-only, DR-07), "" otherwise (the chart refuses that render).
+without it (DIRECT-only), "" otherwise (the chart refuses that render).
 */}}
 {{- define "plugin-br-sisbajud.executorMode" -}}
 {{- $cm := .Values.sisbajud.configmap | default dict -}}

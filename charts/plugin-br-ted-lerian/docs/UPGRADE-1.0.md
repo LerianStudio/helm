@@ -298,9 +298,9 @@ plugin-br-ted-lerian:
 - `REDIS_PROTOCOL`: Redis protocol version (default: `3`)
 - `REDIS_POOL_SIZE`: Connection pool size (default: `10`)
 - `REDIS_MIN_IDLE_CONNS`: Minimum idle connections (default: `2`)
-- `REDIS_READ_TIMEOUT_MS`: Read timeout in milliseconds (default: `3000`)
-- `REDIS_WRITE_TIMEOUT_MS`: Write timeout in milliseconds (default: `3000`)
-- `REDIS_DIAL_TIMEOUT_MS`: Dial timeout in milliseconds (default: `5000`)
+- `REDIS_READ_TIMEOUT`: Read timeout in whole seconds, from `readTimeoutMs` (default: `3`)
+- `REDIS_WRITE_TIMEOUT`: Write timeout in whole seconds, from `writeTimeoutMs` (default: `3`)
+- `REDIS_DIAL_TIMEOUT`: Dial timeout in whole seconds, from `dialTimeoutMs` (default: `5`)
 
 #### Rate Limiting
 

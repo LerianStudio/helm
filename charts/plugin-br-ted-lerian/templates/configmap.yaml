@@ -1,6 +1,7 @@
 {{- if (index .Values "plugin-br-ted-lerian").enabled }}
 {{/*
-Bundled-infra host defaults. Precedence is unchanged and still handled by
+Bundled-infra host defaults. Each Bitnami subchart deploys in the release
+namespace unless its own namespaceOverride is set. Precedence is unchanged and still handled by
 lerian-common.datastore.value: an explicit boilerplate.configmap.* wins, then
 the global.datastores mask. These only replace the final "localhost" fallback,
 so enabling a subchart needs no host configuration at all, while an external
@@ -17,11 +18,11 @@ would point at something that does not exist.
 {{- if eq (dig "architecture" "standalone" .Values.postgresql) "replication" -}}
 {{- $pgName = printf "%s-%s" $pgName (dig "primary" "name" "primary" .Values.postgresql) -}}
 {{- end -}}
-{{- $pgDefault = printf "%s.%s.svc.cluster.local" $pgName (include "global.namespace" .) -}}
+{{- $pgDefault = printf "%s.%s.svc.cluster.local" $pgName (default .Release.Namespace .Values.postgresql.namespaceOverride) -}}
 {{- end -}}
 {{- $redisDefault := "localhost:6379" -}}
 {{- if and (ne (toString (dig "enabled" false .Values.valkey)) "false") (not (dig "external" false .Values.valkey)) -}}
-{{- $redisDefault = printf "%s-primary.%s.svc.cluster.local:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) (include "global.namespace" .) -}}
+{{- $redisDefault = printf "%s-primary.%s.svc.cluster.local:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) (default .Release.Namespace .Values.valkey.namespaceOverride) -}}
 {{- end -}}
 apiVersion: v1
 kind: ConfigMap
@@ -80,9 +81,10 @@ data:
   REDIS_PROTOCOL: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_PROTOCOL" "params" (index .Values "plugin-br-ted-lerian").redis "field" "protocol" "default" "3") | quote }}
   REDIS_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_POOL_SIZE" "params" (index .Values "plugin-br-ted-lerian").redis "field" "poolSize" "default" "10") | quote }}
   REDIS_MIN_IDLE_CONNS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_MIN_IDLE_CONNS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "minIdleConns" "default" "2") | quote }}
-  REDIS_READ_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_READ_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "readTimeoutMs" "default" "3000") | quote }}
-  REDIS_WRITE_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_WRITE_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "writeTimeoutMs" "default" "3000") | quote }}
-  REDIS_DIAL_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_DIAL_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "dialTimeoutMs" "default" "5000") | quote }}
+  # The app reads whole seconds; the *Ms values are converted (minimum 1s).
+  REDIS_READ_TIMEOUT: {{ index ((index .Values "plugin-br-ted-lerian").configmap | default dict) "REDIS_READ_TIMEOUT" | default (div (int (include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_READ_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "readTimeoutMs" "default" "3000"))) 1000 | max 1) | quote }}
+  REDIS_WRITE_TIMEOUT: {{ index ((index .Values "plugin-br-ted-lerian").configmap | default dict) "REDIS_WRITE_TIMEOUT" | default (div (int (include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_WRITE_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "writeTimeoutMs" "default" "3000"))) 1000 | max 1) | quote }}
+  REDIS_DIAL_TIMEOUT: {{ index ((index .Values "plugin-br-ted-lerian").configmap | default dict) "REDIS_DIAL_TIMEOUT" | default (div (int (include "lerian-common.cfgValue" (dict "configmap" (index .Values "plugin-br-ted-lerian").configmap "nativeKey" "REDIS_DIAL_TIMEOUT_MS" "params" (index .Values "plugin-br-ted-lerian").redis "field" "dialTimeoutMs" "default" "5000"))) 1000 | max 1) | quote }}
 
   # =============================================================================
   # AUTH — resolved from the global.auth contract (configmap overrides)
@@ -156,7 +158,8 @@ data:
 
   # =============================================================================
   # STREAMING — enable per-component; broker/TLS/SASL from global.streaming.
-  # Identity passed explicitly (clientId/cloudeventsSource fall back to the name).
+  # Identity passed explicitly: clientId falls back to the name; the app only boots
+  # with cloudeventsSource "br-ted", so that is the default.
   # =============================================================================
   {{- $streamEnabled := eq (dig "streaming" "enabled" false (index .Values "plugin-br-ted-lerian") | toString) "true" }}
   STREAMING_ENABLED: {{ $streamEnabled | quote }}
@@ -165,7 +168,7 @@ data:
         "enabled" $streamEnabled
         "name" (index .Values "plugin-br-ted-lerian").name
         "clientId" (dig "streaming" "clientId" (index .Values "plugin-br-ted-lerian").name (index .Values "plugin-br-ted-lerian"))
-        "cloudeventsSource" (dig "streaming" "cloudeventsSource" (index .Values "plugin-br-ted-lerian").name (index .Values "plugin-br-ted-lerian"))
+        "cloudeventsSource" (dig "streaming" "cloudeventsSource" "br-ted" (index .Values "plugin-br-ted-lerian"))
       )) }}{{ . | nindent 2 }}{{- end }}
 
   # Extra Env Vars

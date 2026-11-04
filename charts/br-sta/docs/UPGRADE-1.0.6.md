@@ -30,9 +30,9 @@ In 1.2.0, br-sta stamps every business fact with the tenant `default` and ignore
 
 The 1.2.0 migrations drop the `audit_outbox` table and keep none of its rows: a row still pending (`published_at` empty) when the migrations run is never delivered. The 1.0.0 manager and worker write that table, so stop them before you check it:
 
-1. Scale the manager Deployment to 0 replicas, then wait for the worker to publish the pending rows.
-2. Scale the worker Deployment to 0 replicas.
-3. Check that `audit_outbox` has no row with `published_at` empty.
+1. Scale the manager Deployment to 0 replicas and wait until its pods have terminated. Then wait for the worker to publish the pending rows.
+2. Scale the worker Deployment to 0 replicas and wait until its pods have terminated. A worker pod can run for its termination grace period, 60 seconds by default.
+3. Check that `audit_outbox` has no row with `published_at` empty. If a row is pending, scale the worker back up, let it publish the row, and repeat from step 2.
 4. Run the upgrade. It sets the replicas back from your values. With `manager.autoscaling.enabled: true` the chart sets no manager replicas, so scale the manager back to `manager.autoscaling.minReplicas` after the upgrade.
 
 **If you have NOT overridden image tags:**

@@ -74,31 +74,56 @@ brSisbajud:
 
 #### Migration steps
 
-1. **Check your current configuration**
+1. **Find every source of `IS_DEVELOPMENT` and `LICENSE_KEY`**
 
-   Review your `values.yaml` or Helm release values:
+   Read the values stored in the release:
 
    ```bash
    helm get values br-sisbajud -n br-sisbajud
    ```
 
-   Look for `brSisbajud.license.isDevelopment` or `IS_DEVELOPMENT` in the output.
+   Look for `brSisbajud.license.isDevelopment`, `brSisbajud.secrets.LICENSE_KEY`, `brSisbajud.secretRefs`, `brSisbajud.extraEnvVars`, and `brSisbajud.useExistingSecret` with `brSisbajud.existingSecretName`.
 
-2. **Remove the deprecated field**
+   `helm get values` does not show the content of a Secret the chart does not generate. With `useExistingSecret: true`, the chart does not render its own Secret: the pod loads the operator Secret with `envFrom`, unfiltered. List its keys (values stay hidden):
 
-   If present, remove `isDevelopment` from your values file:
+   ```bash
+   kubectl -n br-sisbajud describe secret <existingSecretName>
+   ```
+
+   Do the same for every Secret that `brSisbajud.secretRefs` points to.
+
+2. **Remove `IS_DEVELOPMENT` from every source that still sets it**
+
+   The chart drops `IS_DEVELOPMENT` only from the ConfigMap and the Secret it generates (`brSisbajud.configmap`, `brSisbajud.secrets`). The license SDK of app 1.1.0 still reads the variable, so remove it where the chart does not filter it:
+
+   - `brSisbajud.extraEnvVars`: delete the `IS_DEVELOPMENT` entry.
+   - `brSisbajud.secretRefs.IS_DEVELOPMENT`: delete the entry.
+   - The operator Secret of `useExistingSecret`: delete the `IS_DEVELOPMENT` key in the tool that owns the Secret (External Secrets, Vault, GitOps), or directly:
+
+     ```bash
+     kubectl -n br-sisbajud patch secret <existingSecretName> --type=json \
+       -p '[{"op":"remove","path":"/data/IS_DEVELOPMENT"}]'
+     ```
+
+   Removing `brSisbajud.license.isDevelopment` is cleanup only: chart 1.4.3 ignores the key, and the schema still accepts it, so it does not fail the render.
 
    ```yaml
    brSisbajud:
      license:
        organizationIds: "global"
-       # Remove this line:
+       # Optional cleanup, the chart ignores this line:
        # isDevelopment: "true"
    ```
 
-3. **Update LICENSE_KEY if needed**
+3. **Update LICENSE_KEY at its effective source**
 
-   Ensure `brSisbajud.secrets.LICENSE_KEY` holds a key the production license gateway accepts, in every environment.
+   The pod needs a key the production license gateway accepts, in every environment. Change the key where the pod really reads it:
+
+   - `brSisbajud.extraEnvVars` or `brSisbajud.secretRefs.LICENSE_KEY`, when present: these render as explicit `env` and win over `envFrom`.
+   - Otherwise the operator Secret, when `useExistingSecret: true`.
+   - Otherwise `brSisbajud.secrets.LICENSE_KEY`.
+
+   Change an external Secret before the upgrade. The chart does not hash a Secret it does not generate, so a later change to it does not restart the pod.
 
 4. **Verify the upgrade**
 
@@ -120,8 +145,10 @@ brSisbajud:
 
 ## Preview changes before upgrading
 
+Pass the full values file of the release, with the edits from steps 2 and 3. Without `-f` or `--set`, Helm reuses the values stored in the release and ignores your edits.
+
 ```bash
-helm diff upgrade br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 1.4.3 -n br-sisbajud
+helm diff upgrade br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 1.4.3 -n br-sisbajud -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -129,5 +156,5 @@ helm diff upgrade br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --vers
 ## Command to upgrade
 
 ```bash
-helm upgrade br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 1.4.3 -n br-sisbajud
+helm upgrade br-sisbajud oci://ghcr.io/lerianstudio/br-sisbajud-helm --version 1.4.3 -n br-sisbajud -f values.yaml
 ```

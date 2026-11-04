@@ -8,6 +8,21 @@ Features:
 Improvements:
 - Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
 - Correct the `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions from `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner starting from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `10.0.4` upgrade guide. (@fredcamaral)
 - Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
 - Correct chart documentation to align with templates and application code. (@fredcamaral)
 

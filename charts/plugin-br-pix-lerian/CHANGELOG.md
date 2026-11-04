@@ -3,6 +3,15 @@
 ## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
 
 Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
 
 - Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
 

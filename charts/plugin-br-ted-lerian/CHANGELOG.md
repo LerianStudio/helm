@@ -20,6 +20,22 @@ Improvements:
 
 Fixes:
 - Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain validity for zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for better clarity. (@gandalf-at-lerian)
+- Streamline the `1.0` upgrade guide to focus on chart-specific changes. (@fredcamaral)
+- Add verified upgrade guides for transitions from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to accurately reflect templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
 - Maintain the validity of zero-surge rollouts and environment overrides. (@fredcamaral)
 
 Improvements:

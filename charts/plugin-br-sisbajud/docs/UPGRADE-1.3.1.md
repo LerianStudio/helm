@@ -17,7 +17,7 @@ This guide covers the upgrade of the `plugin-br-sisbajud` Helm chart from versio
 |------|--------|
 | Pod template | The pod template no longer carries the `helm.sh/chart` label. The other labels are unchanged. |
 | Pod template | The `checksum/config` and `checksum/secret` annotations now hash only the ConfigMap `data` and the Secret `stringData`. |
-| Documentation | The README, the getting-started guides and the `NOTES.txt` output describe application version 1.2.0, the version the chart deploys. |
+| Documentation | The README, the getting-started guides and the `NOTES.txt` output no longer carry the object-store readiness note written for application 1.1.0. |
 
 **Application version:**
 

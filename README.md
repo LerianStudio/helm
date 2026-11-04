@@ -162,6 +162,8 @@ For implementation and configuration details, see the [README](https://charts.le
 
 ### Tracer
 
+> **Deprecated.** Enable Tracer in the `midaz` chart (`tracer.enabled: true`) instead. This chart receives no further Tracer image versions.
+
 For more details, check out the [official documentation](https://docs.lerian.studio/en/products/tracer/what-is-tracer).
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/tracer).

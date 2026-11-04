@@ -510,14 +510,14 @@ fallback for `service.port`/`replicaCount` — see `docs/UPGRADE-8.6-to-9.2.md`.
 | `caradhras.replicaCount` | Number of replicas | `1` |
 | `caradhras.name` | Name of the caradhras component | `<release>-caradhras` |
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
-| `caradhras.image.tag` | Image tag used for deployment | `1.8.6` |
+| `caradhras.image.tag` | Image tag used for deployment | `2.1.0` |
 | `caradhras.service.port` | Service port | `8000` |
 | `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). `nodeSelector` / `affinity` / `tolerations` for caradhras still come from `auth.*` | `{}` |
 | `caradhras.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
-| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions. `auth.initUser` needs both Caradhras tags >= 2.1.0 (the default 1.8.6 is refused) | `1.8.6` |
+| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions. `auth.initUser` needs both Caradhras tags >= 2.1.0 | `2.1.0` |
 | `caradhras.migrations.skipRBACChain` | Render `MIGRATIONS_SKIP_RBAC_CHAIN=true` on the migrate init container and on the caradhras container: the migrate applies the schema chain and skips the `migrations-rbac` chain (Lerian product permissions/roles/groups under owner `lerian`), and the caradhras boot schema check skips the same chain. For installs whose permissions arrive only via RI manifests. Needs caradhras and caradhras-migrations images that understand the variable; `false` renders nothing | `false` |
 | `caradhras.migrations.extraEnvVars` | Extra `NAME: value` env vars for the migrate init container only, rendered as name/value pairs. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused; names must be valid env var names (`[-._a-zA-Z][-._a-zA-Z0-9]*`); not for secrets | `{}` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
@@ -535,7 +535,7 @@ fallback for `service.port`/`replicaCount` — see `docs/UPGRADE-8.6-to-9.2.md`.
 | `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
-| `caradhras.builtInAdminPassword.enabled` | Inject the `built-in/admin` password as the `builtInAdminPassword` config key, by `secretKeyRef`. Read only when the built-in organization is first created (fresh database); it never changes an existing admin. Unset, a new admin gets the public default `123` and Caradhras warns every hour; over 72 bytes fails the boot before seeding. Needs Caradhras >= 1.9.0-beta.25: the render fails unless `caradhras.image.tag` is a semver tag >= 1.9.0-beta.25 (the default 1.8.6 ignores the key) | `false` |
+| `caradhras.builtInAdminPassword.enabled` | Inject the `built-in/admin` password as the `builtInAdminPassword` config key, by `secretKeyRef`. Read only when the built-in organization is first created (fresh database); it never changes an existing admin. Unset, a new admin gets the public default `123` and Caradhras warns every hour; over 72 bytes fails the boot before seeding. Needs Caradhras >= 1.9.0-beta.25: the render fails unless `caradhras.image.tag` is a semver tag >= 1.9.0-beta.25 | `false` |
 | `caradhras.builtInAdminPassword.secretName` | Secret holding that password. Required when enabled | `""` |
 | `caradhras.builtInAdminPassword.secretKey` | Key inside that Secret | `builtInAdminPassword` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |

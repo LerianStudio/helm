@@ -413,8 +413,7 @@ class StartupContract(unittest.TestCase):
             on = {'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
                 'enabled': True, 'secretName': 'operator-admin'}}}
             self.fails(on, 'pin a Caradhras tag >= 1.9.0-beta.25')
-        self.fails({'caradhras': {'builtInAdminPassword': {'enabled': True, 'secretName': 'x'}}},
-                   'pin a Caradhras tag >= 1.9.0-beta.25')
+        self.succeeds({'caradhras': {'builtInAdminPassword': {'enabled': True, 'secretName': 'x'}}})
         for tag in ('1.9.0-beta.25', '1.9.0-rc.1', '2.0.0'):
             self.succeeds({'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
                 'enabled': True, 'secretName': 'operator-admin'}}})

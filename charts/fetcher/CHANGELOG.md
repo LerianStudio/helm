@@ -3,6 +3,15 @@
 ## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
 
 Fixes:
+- Update fetcher to use stable images, ensuring reliability and consistency in deployments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
 - Updated fetcher to use stable images, ensuring more reliable and consistent performance. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)

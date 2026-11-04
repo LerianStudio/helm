@@ -2,6 +2,25 @@
 
 ## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.1)
 
+Features:
+
+- Add verified upgrade guides for `4.3.1`. (@fredcamaral)
+
+Fixes:
+
+- Use neutral `client.id` placeholder and public chart links. (@fredcamaral)
+
+Improvements:
+
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Correct chart documentation against templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/otel-collector-lerian-v5.0.0...otel-collector-lerian-v5.0.1)
+
+---
+
+## [5.0.1](https://github.com/LerianStudio/helm/releases/tag/otel-collector-lerian-v5.0.1)
+
 Fixes:
 - Use a neutral `client.id` placeholder and public chart links to improve clarity and accessibility. (@fredcamaral)
 

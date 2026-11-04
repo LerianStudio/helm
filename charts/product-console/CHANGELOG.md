@@ -4,6 +4,20 @@
 
 Fixes:
 - Stopped rendering keys that the console never reads to improve performance. (@fredcamaral)
+- Limited the NOTES MongoDB scheme to `mongodb` to ensure compatibility. (@fredcamaral)
+
+Improvements:
+- Added verified upgrade guides for transitioning from `4.4.7` to `4.5.0`, providing a smoother upgrade experience. (@fredcamaral)
+- Corrected chart documentation to align with templates and application code, ensuring accuracy and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.5.0...product-console-v4.5.1)
+
+---
+
+## [4.5.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.1)
+
+Fixes:
+- Stopped rendering keys that the console never reads to improve performance. (@fredcamaral)
 - Limited the NOTES MongoDB scheme to `mongodb` to prevent incorrect configurations. (@fredcamaral)
 
 Improvements:

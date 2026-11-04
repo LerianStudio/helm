@@ -582,7 +582,7 @@ helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm \
   -f values.yaml
 ```
 
-> **Warning:** The upgrade will trigger a rolling restart of the manager Deployment (and of the worker Deployment when KEDA is disabled). The new replica count will take effect immediately.
+> **Warning:** The upgrade will trigger a rolling restart of the manager Deployment (and of the worker Deployment when KEDA is disabled). The new replica count will take effect immediately. With the default KEDA ScaledJob, the chart sets no `rollout.strategy`, so KEDA deletes the worker Jobs of the previous version, including Jobs still running, and new worker Jobs start on the new image. A report that was being generated restarts from the beginning in a new Job, because the worker acknowledges its message only after finishing. To see the running Jobs before you upgrade: `kubectl get jobs -n reporter -l scaledjob.keda.sh/name=reporter-worker`.
 
 > **Warning:** Do not use `--reuse-values`. It keeps the 5.2.0 chart defaults, including `worker.configmap.HEALTH_PORT`, and the 5.3.0 render fails. Pass the migrated file with `-f`, or use `--reset-then-reuse-values`.
 

@@ -150,7 +150,7 @@ helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm \
   -f values.yaml
 ```
 
-> **Warning:** The upgrade rolls the manager Deployment (and the worker Deployment when KEDA is disabled; with the default KEDA ScaledJob, new worker Jobs start on the new image). If `LICENSE_KEY` is not set, the chart will fail at render time with a descriptive error message.
+> **Warning:** The upgrade rolls the manager Deployment (and the worker Deployment when KEDA is disabled). With the default KEDA ScaledJob, the chart sets no `rollout.strategy`, so KEDA deletes the worker Jobs of the previous version, including Jobs still running, and new worker Jobs start on the new image. A report that was being generated restarts from the beginning in a new Job, because the worker acknowledges its message only after finishing. To see the running Jobs before you upgrade: `kubectl get jobs -n reporter -l scaledjob.keda.sh/name=reporter-worker`. If `LICENSE_KEY` is not set, the chart will fail at render time with a descriptive error message.
 
 ### Step 4: Verify deployment health
 

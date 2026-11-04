@@ -60,9 +60,9 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.executor.sqs.*` | `EXECUTOR_SQS_*` | needs AWS credentials (IRSA annotation or `aws.rolesAnywhere`) |
 | `sisbajud.executor.webhook.maxHandleAttempts` | `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` | `5`; also the direct drainer's attempt cap in every executor mode (>= 1 + ceil(settleWindow / tickEvery)) |
 | `sisbajud.executor.resultMaxAttempts` | `EXECUTOR_RESULT_MAX_ATTEMPTS` | `12`; result drainer cap per row (`0` = app default) |
-| `sisbajud.executor.orderSweepEnabled` | `EXECUTOR_ORDER_SWEEP_ENABLED` | `false`; only `true`/`false`: the execution_order sweep |
+| `sisbajud.executor.orderSweepEnabled` | `EXECUTOR_ORDER_SWEEP_ENABLED` | `false`; only `true`/`false`: the sweep that closes done execution_order revisions |
 | `sisbajud.executor.direct.drainerInfraAlarmThreshold` | `EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD` | `3`; integer >= 1 |
-| `sisbajud.executor.direct.purgeEligibleAlarmAfter` | `EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER` | `168h`; Go duration > 0. No AUTOMATIC purge: a person decides. A direct order is eligible once it is closed and, for a BLOCK order, one CALENDAR year has passed since its first ledger effect (its receipt when none; a 29/02 start waits until 01/03); an ACTIVE permanent block is never eligible. The audited erase lists the eligible orders (`POST /v1/admin/direct/purge`, dry run) and crypto-shreds one (`POST /v1/admin/direct/orders/{orderId}/erase`): human `platform-admin` only, single-tenant. App runbook § 10 |
+| `sisbajud.executor.direct.purgeEligibleAlarmAfter` | `EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER` | `168h`; Go duration > 0. No AUTOMATIC purge: a person decides. A direct order is eligible once it is closed and, for a BLOCK order, one CALENDAR year has passed since its first ledger effect (its receipt when none; a 29/02 start waits until 01/03); an ACTIVE permanent block is never eligible. The audited erase lists the eligible orders (`POST /v1/admin/direct/purge`, dry run) and crypto-shreds one (`POST /v1/admin/direct/orders/{orderId}/erase`): human `platform-admin` only, single-tenant |
 | `sisbajud.executor.direct.purgeRefreshEvery` | `EXECUTOR_DIRECT_PURGE_REFRESH_EVERY` | `15m`; Go duration > 0: how often the purge-eligible count is refreshed |
 | `sisbajud.direct.permanentBlockEnabled` | `DIRECT_PERMANENT_BLOCK_ENABLED` | **`true`**: the direct POST takes permanent blocks (SISBAJUD "P"/"D"); needs `global.streaming.brokers` (the render fails without them). `false` refuses them with 422 SBJ-0027: set it on an install without brokers (e.g. Mensageria-only). Only `true`/`false` |
 | `sisbajud.direct.permanentRefreshEvery` | `DIRECT_PERMANENT_REFRESH_EVERY` | `15m`; Go duration from `1m` to `15m` (the app refuses the boot outside): refresh of the ACTIVE permanents' accounts |
@@ -96,13 +96,13 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 - Only a tag in the canonical form `^v?X.Y.Z(-(alpha|beta|rc).N)?$` is verifiable (e.g. `1.1.0-beta.1`, `v1.2.0`, `1.2.0-rc.2`); it is compared with the minimum. Every other tag fails closed unless `sisbajud.kms.allowUnverifiableImageTag: true`: non-SemVer (`latest`, mirror tags), other suffixes such as arch tags (`1.1.0-beta.1-amd64`, `1.2.0-beta1`) and build metadata (`1.2.0+build.5`), even when the version part is above the minimum. With the flag set such a tag passes without any version check, even one whose label is below the minimum (e.g. `1.1.0-beta.0-amd64`): the chart does not read the label of a non-canonical tag, so the acknowledgement is the operator's word that the image has key modes. This flag is per chart only: setting it under `global.kms` has no effect.
 - A tag containing `@` (`tag@digest` or digest-only) also requires `sisbajud.kms.allowUnverifiableImageTag: true`, even when the tag part is canonical: the kubelet pulls by digest, so the label cannot be verified against the minimum. With the flag set no version check is made. A canonical tag below the minimum fails even with the flag.
 - A digest-only tag (`image.tag: "@sha256:…"`) is not supported by this chart's image template: it renders `repo:@sha256:…`, which the kubelet rejects.
-- This is the first gate in this repo that treats `@` as a signal: other charts' minimum-version gates strip the digest or fail open on it. The deviation is deliberate (DR-04).
+- This is the first gate in this repo that treats `@` as a signal: other charts' minimum-version gates strip the digest or fail open on it. The deviation is deliberate.
 - Residual: a mutable SemVer tag re-pushed in a mirror is still only a label; the chart cannot detect it.
 - AWS credentials come via IRSA (`serviceAccount` annotations) or this chart's `aws.rolesAnywhere` block; this chart has no `secretRefs`.
 
 ## DIRECT-only executor (no Mensageria)
 
-`sisbajud.executor.enabled: "true"` with an empty `sisbajud.mensageria.baseUrl` boots the executor without the Sisbajud Mensageria. The chart then requires only `executor.m2mSubject`, `responseDeadlineMargin`, `heartbeatEvery`, `tickEvery` (plus the license, KMS, PostgreSQL, Redis, `PLUGIN_AUTH_HOST` and `global.auth.enabled: true`: the direct channel is served only with inbound auth on, and the render fails without it). It emits no `EXECUTOR_TRANSPORT` / Hub webhook / SQS keys except `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` (the direct drainer cap), renders no webhook Service, Ingress or container port, and does not require `MENSAGERIA_CLIENT_ID/SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` or `STREAMING_HUB_TENANT_ID`. Direct orders arrive on `POST /v1/institutions/{institutionId}/executor/...` (opt-in per institution). Operations: the application's `docs/runbooks/direct-channel-operations.md`.
+`sisbajud.executor.enabled: "true"` with an empty `sisbajud.mensageria.baseUrl` boots the executor without the Sisbajud Mensageria. The chart then requires only `executor.m2mSubject`, `responseDeadlineMargin`, `heartbeatEvery`, `tickEvery` (plus the license, KMS, PostgreSQL, Redis, `PLUGIN_AUTH_HOST` and `global.auth.enabled: true`: the direct channel is served only with inbound auth on, and the render fails without it). It emits no `EXECUTOR_TRANSPORT` / Hub webhook / SQS keys except `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` (the direct drainer cap), renders no webhook Service, Ingress or container port, and does not require `MENSAGERIA_CLIENT_ID/SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` or `STREAMING_HUB_TENANT_ID`. Direct orders arrive on `POST /v1/institutions/{institutionId}/executor/...` (opt-in per institution).
 
 Existing Mensageria installs are unchanged: with `executor.enabled` unset the `EXECUTOR_ENABLED` key is not emitted; the chart adds only the four direct-channel knobs above at the app defaults.
 
@@ -125,10 +125,6 @@ Existing Mensageria installs are unchanged: with `executor.enabled` unset the `E
 | v3 | `legacy` |
 
 With the wrong mode every holder read fails.
-
-## Known limitation: object-store readiness probe (app, B1)
-
-The application (still in `1.1.0`) wires a SeaweedFS/S3 client in every mode and its `/readyz` gates on it; `SEAWEEDFS_S3_ENDPOINT` defaults to `http://localhost:8333` in code, so in executor mode the pod stays NotReady unless that endpoint answers. Executor mode never reads or writes objects. Until the app skips that probe in executor mode, point `sisbajud.configmap.SEAWEEDFS_S3_ENDPOINT` / `SEAWEEDFS_BUCKET` / `SEAWEEDFS_REGION` (and, if needed, `sisbajud.secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY`) at a reachable S3 endpoint.
 
 ## Development profile
 

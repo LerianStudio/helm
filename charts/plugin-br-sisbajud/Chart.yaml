@@ -13,7 +13,6 @@ home: https://github.com/LerianStudio/helm
 
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-sisbajud
-  - https://github.com/LerianStudio/plugin-br-sisbajud
 
 maintainers:
   - name: "Lerian Studio"

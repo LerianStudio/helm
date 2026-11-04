@@ -255,7 +255,7 @@ bc-correios:
     # Streaming broker SASL password (optional)
     # STREAMING_SASL_PASSWORD: ""
   # -- Database migrations Job. Applies the golang-migrate SQL files shipped in the app image
-  # (/migrations) with the migrate CLI before the app serves traffic; the app does not run them.
+  # (/migrations) with the migrate CLI on install and on each upgrade; the app does not run them.
   migrations:
     enabled: true
     image:

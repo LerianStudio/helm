@@ -119,6 +119,8 @@ caradhras:
 
 Set `caradhras.migrations.image.tag` to the same tag. It does not follow `caradhras.image.tag`.
 
+The published stable tags that meet this requirement are `2.0.0` and `2.1.0`. Caradhras `2.0.0` and later refuse to boot without their own `LICENSE_KEY` (see `UPGRADE-10.2.md`): set `caradhras.secrets.LICENSE_KEY`, or add the key to your existing Secret if you use `caradhras.useExistingSecret`.
+
 > **Warning:** The chart validation requires a semver tag (e.g., `1.9.0-beta.25`, `2.0.0`). Digest references (e.g., `sha256:abc123...`) or `latest` cannot be validated and will cause the render to fail.
 
 ### Step 3: Enable the feature in values.yaml
@@ -135,6 +137,9 @@ caradhras:
     enabled: true
     secretName: "caradhras-admin-password"
     secretKey: "builtInAdminPassword"
+  # Caradhras 2.x refuses to boot without its own license key.
+  secrets:
+    LICENSE_KEY: "your-caradhras-license-key"
 ```
 
 ### Step 4: Upgrade the chart
@@ -223,6 +228,9 @@ caradhras:
     enabled: true
     secretName: "caradhras-admin-password"
     secretKey: "builtInAdminPassword"
+  # Caradhras 2.x refuses to boot without its own license key.
+  secrets:
+    LICENSE_KEY: "your-caradhras-license-key"
 ```
 
 ## New environment variable: builtInAdminPassword

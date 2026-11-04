@@ -178,6 +178,11 @@ spec:
           {{- if not (or $licensed (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (semverCompare "<2.0.0-0" $tag))) }}
           {{- fail "\n\nERROR: Caradhras refuses to boot without its own license key.\n   Set caradhras.secrets.LICENSE_KEY, or set caradhras.useExistingSecret=true with caradhras.existingSecretName naming a Secret that holds LICENSE_KEY.\n   The key is issued for the product `caradhras`; the auth and identity key does not license it.\n" }}
           {{- end }}
+          {{- $semver := "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" }}
+          {{- $migTag := regexReplaceAll "@.*$" (include "caradhras.migrationsImageTag" .) "" }}
+          {{- if and (regexMatch $semver $tag) (regexMatch $semver $migTag) (ne (regexFind "[0-9]+" $tag) (regexFind "[0-9]+" $migTag)) }}
+          {{- fail (printf "\n\nERROR: the Caradhras server tag %q and the migrations tag %q are on different major versions.\n   A server refuses a schema that is behind or ahead of its own release.\n   Set caradhras.image.tag and caradhras.migrations.image.tag to the same release (the legacy auth.backend.migrations.image.tag counts as the migrations tag).\n" $tag $migTag) }}
+          {{- end }}
           {{- if $licensed }}
           # Caradhras 2.x refuses to boot without its own license key (product
           # `caradhras`, not the auth/identity key). optional: a pre-2.0 image

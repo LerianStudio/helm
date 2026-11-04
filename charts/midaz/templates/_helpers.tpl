@@ -13,13 +13,20 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Common labels
+Common labels without the chart version, safe for pod templates
 */}}
-{{- define "midaz.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
+{{- define "midaz.podLabels" -}}
 {{ include "midaz.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "ledger.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz.podLabels" . }}
 {{- end }}
 
 {{/*
@@ -176,11 +183,18 @@ Return valid CRM version label
 {{/*
 CRM Common labels
 */}}
-{{- define "midaz-crm.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
+{{- define "midaz-crm.podLabels" -}}
 {{ include "midaz-crm.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "crm.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz-crm.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz-crm.podLabels" . }}
 {{- end }}
 
 {{/*
@@ -221,11 +235,18 @@ Return valid Tracer version label
 {{/*
 Tracer Common labels
 */}}
-{{- define "midaz-tracer.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
+{{- define "midaz-tracer.podLabels" -}}
 {{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "tracer.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz-tracer.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz-tracer.podLabels" . }}
 {{- end }}
 
 {{/*

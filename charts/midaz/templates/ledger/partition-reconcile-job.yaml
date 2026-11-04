@@ -22,7 +22,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 8 }}
+        {{- include "midaz.podLabels" (dict "context" . "component" $component "name" $component) | nindent 8 }}
     spec:
       {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "reconcile-indexes" "--tolerate-unavailable")) | nindent 6 }}
 {{- end }}

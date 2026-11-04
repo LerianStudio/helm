@@ -39,7 +39,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "midaz.labels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 8 }}
+        {{- include "midaz.podLabels" (dict "context" . "component" .Values.ledger.name "name" .Values.ledger.name ) | nindent 8 }}
     spec:
       {{- with .Values.ledger.imagePullSecrets }}
       imagePullSecrets:

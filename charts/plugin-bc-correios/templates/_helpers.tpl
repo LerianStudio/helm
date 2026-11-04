@@ -190,3 +190,105 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+bc-correios.postgresPasswordEnv — the POSTGRES_PASSWORD env entry shared by the app and the migrations
+Job: a secretKeyRef to the PostgreSQL subchart Secret, or to the app Secret when set in secrets.
+Renders nothing when the password comes from the app Secret through envFrom.
+*/}}
+{{- define "bc-correios.postgresPasswordEnv" -}}
+{{- $component := index .Values "bc-correios" -}}
+{{- $secretName := ternary $component.existingSecretName (include "bc-correios.fullname" .) $component.useExistingSecret -}}
+{{- $pg := .Values.postgresql | default dict -}}
+{{- $pgAuth := $pg.auth | default dict -}}
+{{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret -}}
+{{- include "bc-correios.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") -}}
+{{- else if $component.secrets.POSTGRES_PASSWORD -}}
+- name: POSTGRES_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: POSTGRES_PASSWORD
+{{- end -}}
+{{- end }}
+
+{{/*
+bc-correios.migrationsJobSpec — the migrations Job spec (see templates/migrations-job.yaml).
+*/}}
+{{- define "bc-correios.migrationsJobSpec" -}}
+{{- $component := index .Values "bc-correios" -}}
+{{- $m := $component.migrations -}}
+{{- $secretName := include "bc-correios.fullname" . -}}
+{{- if $component.useExistingSecret -}}
+{{- $secretName = required "bc-correios.existingSecretName is required when bc-correios.useExistingSecret is true" $component.existingSecretName -}}
+{{- end -}}
+backoffLimit: {{ $m.backoffLimit }}
+activeDeadlineSeconds: {{ $m.activeDeadlineSeconds }}
+template:
+  metadata:
+    labels:
+      {{- include "bc-correios.selectorLabels" (dict "context" . "component" "migrations" "name" "migrations") | nindent 6 }}
+  spec:
+    restartPolicy: Never
+    automountServiceAccountToken: false
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65532
+      runAsGroup: 65532
+      seccompProfile:
+        type: RuntimeDefault
+    {{- with $component.imagePullSecrets }}
+    imagePullSecrets:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.37
+        envFrom:
+          - configMapRef:
+              name: {{ include "bc-correios.fullname" . }}
+        command:
+          - /bin/sh
+          - -c
+          - |
+            until nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+              echo "$POSTGRES_HOST:$POSTGRES_PORT is not ready yet, waiting..."; sleep 5
+            done
+      - name: copy-migrations
+        image: "{{ $component.image.repository }}:{{ $component.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ $component.image.pullPolicy }}
+        command: ["cp", "-r", "/migrations/.", "/work/"]
+        volumeMounts:
+          - name: migrations
+            mountPath: /work
+    containers:
+      - name: migrate
+        image: "{{ $m.image.repository }}:{{ $m.image.tag }}"
+        imagePullPolicy: {{ $m.image.pullPolicy }}
+        envFrom:
+          - secretRef:
+              name: {{ $secretName }}
+          - configMapRef:
+              name: {{ include "bc-correios.fullname" . }}
+        env:
+          {{- include "bc-correios.postgresPasswordEnv" . | nindent 10 }}
+        args:
+          - -path=/migrations
+          - -database=postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_NAME)?sslmode=$(POSTGRES_SSLMODE)
+          - up
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        volumeMounts:
+          - name: migrations
+            mountPath: /migrations
+            readOnly: true
+        resources:
+          {{- toYaml $m.resources | nindent 10 }}
+    volumes:
+      - name: migrations
+        emptyDir: {}
+{{- end }}

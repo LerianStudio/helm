@@ -221,6 +221,10 @@ bc-correios:
     BC_CORREIO_RATE_LIMIT_PER_MINUTE: "50"
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
+    # Distributed HTTP rate limiting (Valkey). The limiter is off unless RATE_LIMIT_ENABLED is "true".
+    # ALLOW_RATELIMIT_FAIL_OPEN "false" refuses requests when Valkey cannot decide.
+    RATE_LIMIT_ENABLED: "true"
+    ALLOW_RATELIMIT_FAIL_OPEN: "false"
     # Plugin Auth (Access Manager). The app reads PLUGIN_AUTH_ADDRESS and lib-auth reads PLUGIN_AUTH_HOST; the chart renders both
     # with one value (PLUGIN_AUTH_HOST, when set, wins). With useExistingSecret it renders no PLUGIN_AUTH_HOST unless configmap sets it.
     PLUGIN_AUTH_ENABLED: "true"
@@ -252,6 +256,23 @@ bc-correios:
     OBJECT_STORAGE_SECRET_KEY: ""
     # Streaming broker SASL password (optional)
     # STREAMING_SASL_PASSWORD: ""
+  # -- Database migrations Job. Applies the golang-migrate SQL files shipped in the app image
+  # (/migrations) with the migrate CLI before the app serves traffic; the app does not run them.
+  migrations:
+    enabled: true
+    image:
+      repository: migrate/migrate
+      tag: v4.20.1
+      pullPolicy: IfNotPresent
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -292,7 +313,7 @@ valkey:
       enabled: false
     extraFlags:
       - "--maxmemory 256mb"
-      - "--maxmemory-policy allkeys-lru"
+      - "--maxmemory-policy noeviction"
       - "--hz 100"
       - "--maxclients 1000"
 # PostgreSQL configuration

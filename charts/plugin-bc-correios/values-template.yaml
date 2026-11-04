@@ -118,6 +118,8 @@ bc-correios:
     BC_CORREIO_RATE_LIMIT_PER_MINUTE: "50"
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
+    RATE_LIMIT_ENABLED: "true"
+    ALLOW_RATELIMIT_FAIL_OPEN: "false"
 
     # Plugin Auth
     PLUGIN_AUTH_ENABLED: "true"   # "false" is refused unless ENV_NAME is a development name (development, develop, dev, local, test)

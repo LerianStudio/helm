@@ -209,18 +209,13 @@ Routing mode accepts `hub` and `proxy`, defaulting to `hub`. **Leave it at `hub`
 
 `adapterLerian` / `adapterLerianSystemplane` — **Development only.** `adapterLerian` **fails to boot when `DEPLOYMENT_MODE` is anything other than `local`.** The default is `byoc` and the workload ships disabled, so nothing breaks out of the box; enabling it in `byoc` or `saas` crash-loops the pod. The `pix-adapter-lerian` database is still created by the bootstrap Job, because the default `databases` list does not depend on which workloads are enabled.
 
-`adapterProviderMock` — **Development only**, shipped `enabled: false`. A provider test double for development and homologation: it stands in for a real provider so the rest of the platform can be exercised end to end without one. Its default target is the Lerian sandbox mock server:
+`adapterProviderMock` — **Development only**, shipped `enabled: false`. A provider test double for development and homologation: it stands in for a real provider so the rest of the platform can be exercised end to end without one. Set `adapterProviderMock.configmap.PROVIDER_BASE_URL` to the mock server it should target.
 
-```yaml
-adapterProviderMock:
-  configmap:
-    PROVIDER_BASE_URL: "https://mock-pix-lerian-server.sandbox.lerian.net"
-```
-
-The `plugin-br-pix-lerian-adapter-provider-mock-api` image is not public: to enable the component, ask Lerian for read access and name a ghcr.io pull secret in `global.imagePullSecrets` (or `adapterProviderMock.imagePullSecrets`). Because the component ships disabled, that default reaches no installation that does not enable it explicitly. Override it only to target your own mock server. These settings cannot get a default, because they identify *your* sandbox access, which you receive together with them:
+The `plugin-br-pix-lerian-adapter-provider-mock-api` image is not public: to enable the component, ask Lerian for read access and name a ghcr.io pull secret in `global.imagePullSecrets` (or `adapterProviderMock.imagePullSecrets`). These settings cannot get a default, because they identify *your* sandbox access, which you receive together with them:
 
 | Setting | Where | Notes |
 |---|---|---|
+| `PROVIDER_BASE_URL` | `configmap` | **Required** — the mock provider server the component targets, issued with your sandbox access |
 | `PROVIDER_CLIENT_ID` | `secrets` | **Required** — the component does not start without it |
 | `PROVIDER_CLIENT_SECRET` | `secrets` | **Required** — the component does not start without it |
 | `SPI_BASE_URL` | `configmap` | **Required** — validated at boot. The chart ships an in-cluster default |
@@ -293,7 +288,7 @@ Set these before `helm install`. **"Required" does not mean the same thing on ev
 | `MULTI_TENANT_URL`, `MULTI_TENANT_SERVICE_API_KEY` | `configmap` / `secrets` | Application boot | **Required when `MULTI_TENANT_ENABLED=true`** on the five Systemplane workloads, `cobHub`, `dictHubVsync`, `pixauto`, `adapterLerian`. |
 | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | `configmap` | Application boot / Security posture | Defaults to `false` / an in-cluster placeholder. When enabled, `PLUGIN_AUTH_HOST` **must be non-empty** or the workload refuses to start. **Required to be `true`** on `pixauto` whenever `ENV_NAME` is not `local` or `development`; in single-tenant, set it on `pixautoSystemplane` too. |
 | `RABBITMQ_URI` | `secrets` | Render | **Required when `dictHubVsync` is enabled.** The render fails without it. |
-| `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET` | `secrets` | Application boot | **Required when `adapterProviderMock` is enabled** — it does not start without both. Issued with your sandbox access; see [Development-only components](#development-only-components). |
+| `PROVIDER_BASE_URL` (`configmap`), `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET` (`secrets`) | `configmap`, `secrets` | Application boot | **Required when `adapterProviderMock` is enabled** — it does not start without all three. Issued with your sandbox access; see [Development-only components](#development-only-components). |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_USER`, `REDIS_DB`, `REDIS_TLS` | `configmap` | Application boot / Optional degradation | The discrete keys the application actually reads for its cache, emitted by the `redis` datastore mask on `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`, `adapterLerian`. `REDIS_HOST` is what marks the cache configured: **required** on `dictHubVsync`, which does not start without it; optional on `spi`, `dictHub`, `cobHub`, `pixauto`, where its absence degrades the cache rather than failing the workload. Set them per component, or once for the whole release under `global.datastores.redis`. `REDIS_HOST` is also what the `wait-for-dependencies` init container probes with `nc -z` before the app container starts; a loopback host (the unset default `localhost`) is read as "no cache" and the probe is skipped, so an unconfigured lane rolls out normally. A `REDIS_HOST` pointing at an unreachable host is the one way this bites: the init container retries for five minutes and then fails, so the Pod never starts. |
 | `REDIS_PASSWORD` | `secrets` | Application boot | The cache credential, paired with `REDIS_HOST` above. Required wherever that host authenticates; it never renders into the ConfigMap. |
 | `ADAPTER_BASE_URL` | `configmap` | First request | Not validated at startup, so a missing value surfaces as rejected requests at runtime rather than a failed rollout. Include the provider's route prefix. |

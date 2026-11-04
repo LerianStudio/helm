@@ -26,7 +26,7 @@ spec:
           "componentKey" "dictHub"
           "componentValues" $values) | nindent 6 }}
       labels:
-        {{- include "plugin-br-pix-lerian.labels" (dict "context" $ "component" $component) | nindent 8 }}
+        {{- include "plugin-br-pix-lerian.podLabels" (dict "context" $ "component" $component) | nindent 8 }}
     spec:
       {{- with (include "plugin-br-pix-lerian.componentImagePullSecrets" (dict "context" $ "componentValues" $values)) }}
       {{- if . }}

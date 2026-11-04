@@ -60,17 +60,9 @@ You must ensure a valid GHCR pull secret is configured. If you have been success
 
 If you need to configure authentication for the mock STA image:
 
-1. **Request access** from Lerian Studio support (support@lerian.studio) for the mock STA image on GHCR
+1. **Request access** from Lerian to the mock STA image on GHCR.
 
-2. **Create a Kubernetes secret** with your GHCR credentials:
-
-```bash
-kubectl create secret docker-registry ghcr-pull-secret \
-  --docker-server=ghcr.io \
-  --docker-username=<your-github-username> \
-  --docker-password=<your-github-token> \
-  -n br-sta
-```
+2. **Create an image pull secret** for `ghcr.io` in the release namespace (here `ghcr-pull-secret`), following [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
 
 3. **Configure the pull secret** in your `values.yaml`:
 
@@ -91,7 +83,7 @@ mockSta:
     - name: ghcr-pull-secret
 ```
 
-> **Note:** The `mockSta.imagePullSecrets` setting, when specified, overrides the top-level `imagePullSecrets` list for the mock STA deployment only.
+> **Note:** The `mockSta.imagePullSecrets` setting, when non-empty, overrides the top-level `imagePullSecrets` list for the mock STA deployment only.
 
 > **Important:** The mock STA component is intended for development and testing environments only. It should not be enabled in production deployments.
 

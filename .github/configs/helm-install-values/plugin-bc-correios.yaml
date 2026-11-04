@@ -6,10 +6,7 @@ bc-correios:
   serviceAccount:
     create: false
   configmap:
-    ENV_NAME: "development"
     PLUGIN_AUTH_ENABLED: "false"
     # The license is required in every environment; the placeholder keeps the config complete
     # (README). install-test.sh replaces it with the CI license.
     LICENSE_KEY: "IT_LICENSE_KEY"
-    # The app boots with an unreachable broker: its events wait in the outbox.
-    STREAMING_BROKERS: "broker.example.com:9092"

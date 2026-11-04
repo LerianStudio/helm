@@ -229,10 +229,8 @@ bc-correios:
     LICENSE_KEY: ""
     # AI Insights
     FEATURE_AI_INSIGHTS_ENABLED: "true"
-    # Defaults 50 and 3, applied by the template. The keys stay unset here so that a values file that still
-    # sets the previous names (AI_TENANT_RATE_LIMIT_PER_MIN, AI_TENANT_MAX_CONCURRENT) keeps its values.
-    # AI_RATE_LIMIT_PER_MIN: "50"
-    # AI_MAX_CONCURRENT: "3"
+    AI_RATE_LIMIT_PER_MIN: "50"
+    AI_MAX_CONCURRENT: "3"
     # Observability
     TRACING_ENABLED: "false"
     METRICS_ENABLED: "false"

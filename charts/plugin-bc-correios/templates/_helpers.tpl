@@ -140,16 +140,15 @@ extraEnvVars win), "production" when neither is set.
 {{- end }}
 
 {{/*
-bc-correios.bootGuards — fail at render when the config the app refuses at boot would be rendered.
-Every ENV_NAME: LICENSE_KEY and LICENSE_FILE_PATH both empty (unless useExistingSecret supplies
-the key), STREAMING_BROKERS blank (unless useExistingSecret supplies it). ENV_NAME other than
-"development": POSTGRES_SSLMODE "disable", ALLOWED_ORIGINS empty or "*".
+bc-correios.bootGuards — fail at render on config the app refuses at boot. Always: empty LICENSE_KEY
+or blank STREAMING_BROKERS (unless useExistingSecret). ENV_NAME not "development": POSTGRES_SSLMODE
+"disable", ALLOWED_ORIGINS empty or "*".
 */}}
 {{- define "bc-correios.bootGuards" -}}
 {{- $component := index .Values "bc-correios" -}}
 {{- $cm := merge (deepCopy (default dict $component.extraEnvVars)) $component.configmap -}}
 {{- if not $component.useExistingSecret -}}
-{{- if not (or (trim (toString (default "" $cm.LICENSE_KEY))) (trim (toString (default "" $cm.LICENSE_FILE_PATH)))) -}}
+{{- if not (trim (toString (default "" $cm.LICENSE_KEY))) -}}
 {{- fail "\n\nERROR: bc-correios.configmap.LICENSE_KEY is required (the app refuses to start without a license in every environment). Set it, or put LICENSE_KEY in the Secret of bc-correios.useExistingSecret.\n" -}}
 {{- end -}}
 {{- if not (trim (replace "," "" (toString (default "" $cm.STREAMING_BROKERS)))) -}}

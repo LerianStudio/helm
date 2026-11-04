@@ -59,20 +59,20 @@ bc-correios:
 
 - If you do not have the Access Manager deployed, the plugin will fail to start or reject all requests with authentication errors
 - Development environments that previously ran without authentication must now explicitly disable it (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
-- The application enforces that `PLUGIN_AUTH_ENABLED` cannot be `"false"` unless `APP_ENV` is `"development"` (see next breaking change)
+- The application enforces that `PLUGIN_AUTH_ENABLED` cannot be `"false"` unless `ENV_NAME` is a development name (`development`, `develop`, `dev`, `local` or `test`) (see next breaking change)
 
 > **Warning:** If you upgrade without adjusting authentication settings and do not have Access Manager deployed, the plugin pods will fail health checks and enter a crash loop. Review [Deployment Scenarios](#deployment-scenarios) before upgrading.
 
 ### 2. Environment variable added: ENV_NAME
 
-The chart now renders `ENV_NAME` (default `"production"`) for the libraries. `APP_ENV` is still the variable the application reads for its own environment.
+The chart now renders `ENV_NAME` (default `"production"`) for the application and the libraries. `ENV_NAME` is the variable the application reads for its own environment.
 
 **Before (v2.2.0):**
 
 ```yaml
 bc-correios:
   configmap:
-    APP_ENV: "development"
+    ENV_NAME: "development"
 ```
 
 **After (v3.0.0):**
@@ -80,18 +80,16 @@ bc-correios:
 ```yaml
 bc-correios:
   configmap:
-    ENV_NAME: "production"
-    APP_ENV: "production"   # set it to run the application's production checks
+    ENV_NAME: "production"   # "development" skips the application's production checks
 ```
 
 **Operational impact:**
 
-- The application reads `APP_ENV`; `ENV_NAME` sets the libraries' environment (auth-client log format, lib-commons security tier) and `APP_ENV` drives the app's own validation. The chart renders `APP_ENV` as `"production"` unless you set it in `bc-correios.configmap` or `bc-correios.extraEnvVars`
-- When `APP_ENV` is not `"development"`, the application refuses to start if `PLUGIN_AUTH_ENABLED` is `"false"`, and the chart refuses to render an empty `LICENSE_KEY`, `POSTGRES_SSLMODE: "disable"` and `ALLOWED_ORIGINS` empty or `*`
-- A values file that sets `APP_ENV` keeps working
-- If you run a development environment without Access Manager, set `PLUGIN_AUTH_ENABLED: "false"` and set `APP_ENV: "development"` (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
+- The application reads `ENV_NAME` for its own environment. The chart renders it as `"production"` unless you set it in `bc-correios.configmap` or `bc-correios.extraEnvVars`
+- When `ENV_NAME` is not `"development"`, the application refuses to start if `PLUGIN_AUTH_ENABLED` is `"false"`, and the chart refuses to render an empty `LICENSE_KEY`, `POSTGRES_SSLMODE: "disable"` and `ALLOWED_ORIGINS` empty or `*`
+- If you run a development environment without Access Manager, set `PLUGIN_AUTH_ENABLED: "false"` and set `ENV_NAME: "development"` (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
 
-> **Important:** The chart runs the application's production checks by default. For a development install set `bc-correios.configmap.APP_ENV: "development"`.
+> **Important:** The chart runs the application's production checks by default. For a development install set `bc-correios.configmap.ENV_NAME: "development"`.
 
 ### 3. Plugin auth host variable renamed: PLUGIN_AUTH_HOST to PLUGIN_AUTH_ADDRESS
 
@@ -277,7 +275,7 @@ The `values.yaml` file now includes extensive inline comments explaining the beh
 **Key documentation additions:**
 
 - `global.externalRabbitmqDefinitions`: Clarifies that the job imports definitions but does not create users
-- `bc-correios.configmap.ENV_NAME`: Sets the libraries' environment; `APP_ENV` drives the app's own validation
+- `bc-correios.configmap.ENV_NAME`: Sets the application's environment
 - `bc-correios.configmap.PLUGIN_AUTH_ADDRESS`: Documents the default Access Manager service URL
 - `bc-correios.secrets.CACHE_PASSWORD`: Explains when this value is used vs. when the password is read from the Valkey Secret
 - `rabbitmq.authentication`: Documents that `user.value` and `password.value` are ignored when `existingSecret` is set
@@ -291,7 +289,7 @@ This section provides concrete configuration examples for common deployment scen
 
 ### Scenario 1: Development environment without Access Manager
 
-If you run a development environment and do not have the Access Manager deployed, you must explicitly disable authentication and set the environment name and `APP_ENV` to `"development"`.
+If you run a development environment and do not have the Access Manager deployed, you must explicitly disable authentication and set the environment name to `"development"`.
 
 **Required configuration:**
 
@@ -299,13 +297,12 @@ If you run a development environment and do not have the Access Manager deployed
 bc-correios:
   configmap:
     ENV_NAME: "development"
-    APP_ENV: "development"
     PLUGIN_AUTH_ENABLED: "false"
 ```
 
 **Why this is required:**
 
-- The application refuses to start with `PLUGIN_AUTH_ENABLED: "false"` unless `APP_ENV` is `"development"`
+- The application refuses to start with `PLUGIN_AUTH_ENABLED: "false"` unless `ENV_NAME` is a development name
 - Without `PLUGIN_AUTH_ENABLED: "false"`, the chart defaults to `PLUGIN_AUTH_ENABLED: "true"`, causing the plugin to fail authentication checks
 
 > **Warning:** Do not use this configuration in production. The application enforces that authentication cannot be disabled in production environments.
@@ -320,7 +317,6 @@ If you run a production environment with the Access Manager deployed, verify tha
 bc-correios:
   configmap:
     ENV_NAME: "production"
-    APP_ENV: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     LICENSE_KEY: "<your-license-key>"   # or put LICENSE_KEY in the Secret of bc-correios.useExistingSecret
@@ -426,7 +422,7 @@ The following table describes the authentication-related configuration settings.
 
 | Flag | Default (v3.0.0) | Description |
 |------|------------------|-------------|
-| `bc-correios.configmap.ENV_NAME` | `"production"` | Sets the libraries' environment (auth-client log format, lib-commons security tier). `APP_ENV` drives the app's own validation. |
+| `bc-correios.configmap.ENV_NAME` | `"production"` | Sets the application's environment. |
 | `bc-correios.configmap.PLUGIN_AUTH_ENABLED` | `"true"` | Enable or disable plugin authentication. Must be `"true"` in production. |
 | `bc-correios.configmap.PLUGIN_AUTH_ADDRESS` | `"http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"` | Access Manager auth service URL. Override if your Access Manager is deployed with a different release name or namespace. |
 | `bc-correios.configmap.PLUGIN_AUTH_CLIENT_ID` | `"plugin-bc-correios"` | Client ID registered in Access Manager. |
@@ -518,20 +514,18 @@ Determine whether you run a development or production environment and whether yo
 
 **Step 2: Update environment variable names in your values file**
 
-Keep `APP_ENV` in your values file; the application still reads it. `PLUGIN_AUTH_HOST` still works and takes precedence; `PLUGIN_AUTH_ADDRESS` is the values key the chart renders under both names:
+Set `ENV_NAME` in your values file; the application reads it. `PLUGIN_AUTH_HOST` still works and takes precedence; `PLUGIN_AUTH_ADDRESS` is the values key the chart renders under both names:
 
 ```yaml
 # Before (v2.2.0)
 bc-correios:
   configmap:
-    APP_ENV: "production"
     PLUGIN_AUTH_HOST: "http://my-access-manager:4000"
 
 # After (v3.0.0)
 bc-correios:
   configmap:
     ENV_NAME: "production"
-    APP_ENV: "production"
     PLUGIN_AUTH_ADDRESS: "http://my-access-manager:4000"
 ```
 

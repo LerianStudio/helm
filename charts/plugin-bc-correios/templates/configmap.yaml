@@ -33,7 +33,7 @@ data:
   POSTGRES_MIN_CONNS: {{ $component.configmap.POSTGRES_MIN_CONNS | default "5" | quote }}
 
   # Streaming broker (Kafka API). The app refuses to boot with a blank STREAMING_BROKERS.
-  {{- if not (and $component.useExistingSecret (not $component.configmap.STREAMING_BROKERS)) }}
+  {{- if not (or (hasKey (default dict $component.extraEnvVars) "STREAMING_BROKERS") (and $component.useExistingSecret (not $component.configmap.STREAMING_BROKERS))) }}
   STREAMING_BROKERS: {{ $component.configmap.STREAMING_BROKERS | default "" | quote }}
   {{- end }}
   STREAMING_TLS_ENABLED: {{ $component.configmap.STREAMING_TLS_ENABLED | default "false" | quote }}
@@ -76,9 +76,8 @@ data:
 
   # AI Insights
   FEATURE_AI_INSIGHTS_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.FEATURE_AI_INSIGHTS_ENABLED | quote }}
-  # The AI_TENANT_* names are the previous names of these two settings; a values file that still sets them keeps working.
-  AI_RATE_LIMIT_PER_MIN: {{ $component.configmap.AI_RATE_LIMIT_PER_MIN | default $component.configmap.AI_TENANT_RATE_LIMIT_PER_MIN | default "50" | quote }}
-  AI_MAX_CONCURRENT: {{ $component.configmap.AI_MAX_CONCURRENT | default $component.configmap.AI_TENANT_MAX_CONCURRENT | default "3" | quote }}
+  AI_RATE_LIMIT_PER_MIN: {{ $component.configmap.AI_RATE_LIMIT_PER_MIN | default "50" | quote }}
+  AI_MAX_CONCURRENT: {{ $component.configmap.AI_MAX_CONCURRENT | default "3" | quote }}
 
   # Observability
   TRACING_ENABLED: {{ $component.configmap.TRACING_ENABLED | default "false" | quote }}

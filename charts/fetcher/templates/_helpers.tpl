@@ -198,10 +198,10 @@ MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_NAME: {{ $cm.MONGO_NAME | default "fetcher-db" | quote }}
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
 MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
-{{- /* The aws preset's tlsInsecure is dropped: the app trusts the AWS RDS CA bundle, so DocumentDB certificates are verified. An explicitly set params value is untouched. */ -}}
+{{- /* The aws preset's tlsInsecure is dropped: the app trusts the AWS RDS CA bundle, so DocumentDB certificates are verified. An explicitly set params value (any source) is untouched. */ -}}
 {{- $mongoParams := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") -}}
-{{- $presetParams := (include "lerian-common.cloud.block" (dict "context" $ "kind" "mongo") | fromYaml).params | default "-" -}}
-{{- if eq $mongoParams $presetParams }}{{- $mongoParams = replace "tlsInsecure=true&" "" $mongoParams -}}{{- end }}
+{{- $set := or (hasKey $cm "MONGO_PARAMETERS") (hasKey ($ded.mongo | default dict) "params") (hasKey (($.Values.global.datastores | default dict).mongo | default dict) "params") -}}
+{{- if and (eq (($.Values.global | default dict).cloud | default "") "aws") (not $set) }}{{- $mongoParams = replace "tlsInsecure=true&" "" $mongoParams -}}{{- end }}
 MONGO_PARAMETERS: {{ $mongoParams | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
 {{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the

@@ -1460,7 +1460,7 @@
     },
     "aws": {
       "type": "object",
-      "description": "AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Clotilde/Proxmox)",
+      "description": "AWS Authentication - IAM Roles Anywhere for non-AWS clusters",
       "properties": {
         "rolesAnywhere": {
           "type": "object",

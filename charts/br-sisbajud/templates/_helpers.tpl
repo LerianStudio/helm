@@ -964,11 +964,8 @@ instead of CrashLooping the pod. Invoked from configmap.yaml.
 {{- include $req (dict "context" $ "key" "POSTGRES_PASSWORD" "secret" true "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q) with external Postgres" $envName) "set" "brSisbajud.secrets.POSTGRES_PASSWORD") -}}
 {{- end -}}
 {{- end -}}
-{{- /* License (validateLicenseConfig): required in a production-like environment; in
-   local|development|staging|e2e|test an empty LICENSE_KEY is the app's dev bypass. */ -}}
-{{- if $prodLike -}}
-{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" (printf "in a production-like environment (ENVIRONMENT_NAME=%q; the app refuses to boot unlicensed)" $envName) "set" "brSisbajud.secrets.LICENSE_KEY") -}}
-{{- end -}}
+{{- /* License (validateLicenseConfig): required in every environment, no unlicensed mode. */ -}}
+{{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" (printf "(the app refuses to boot unlicensed in every environment; ENVIRONMENT_NAME=%q)" $envName) "set" "brSisbajud.secrets.LICENSE_KEY") -}}
 {{- /* KMS backend. */ -}}
 {{- $kms := index $data "KMS_PROVIDER" -}}
 {{- if not (has $kms (list "vault" "aws")) -}}

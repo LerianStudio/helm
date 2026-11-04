@@ -79,7 +79,7 @@ helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
 
 A license is required here too. App 1.1.0 requires it in every
 environment, `development` included (no dev bypass). `values-dev.yaml` ships no key:
-the chart renders, but the pod does not boot until a real key is set.
+without the `secretRefs` above, the render fails and names the key.
 
 The images are public, so no pull secret is needed (top-level `imagePullSecrets` is
 only for a private mirror/registry). With
@@ -252,7 +252,7 @@ br-sta wiring (grouped values under `brSisbajud.sta`): `consumerEnabled`,
 
 | Topic | What to know | Before enabling / how to confirm |
 |---|---|---|
-| Fail-fast render | Mirrors the app's boot validation: `STA_INBOUND_BUCKET` always; Postgres/Redis host in single-tenant; KMS provider + credentials; streaming brokers/SASL/TLS; `LICENSE_KEY` in a production-like environment (the app requires it in every environment); Postgres password production-like; STA transfers client / inbound auth / declaration publisher credentials; multi-tenant URL/Redis/API key; `ORGANIZATION_IDS` required and `global` | Read the render error: it names the exact value |
+| Fail-fast render | Mirrors the app's boot validation: `STA_INBOUND_BUCKET` always; Postgres/Redis host in single-tenant; KMS provider + credentials; streaming brokers/SASL/TLS; `LICENSE_KEY` in every environment; Postgres password production-like; STA transfers client / inbound auth / declaration publisher credentials; multi-tenant URL/Redis/API key; `ORGANIZATION_IDS` required and `global` | Read the render error: it names the exact value |
 | Dev-only bundle guard | `openbao` (dev mode, keys in memory) and `redpandaBundle` are refused outside `local`/`development`/`develop`/`dev`/`test`/`e2e` (staging is refused). Separate from the app's own relaxations, which `staging` still gets | `helm template ... --set global.env.name=production` with the dev bundle fails naming both |
 | OpenBao dev mode | A restart of the OpenBao pod loses every Transit key: previously encrypted rows become unreadable | Dev/evaluation only; reset the database with it |
 | STA transfers client | Needs a reachable plugin-access-manager to mint its m2m bearer | Without it, return-file submission to br-sta fails |
@@ -271,7 +271,7 @@ br-sta wiring (grouped values under `brSisbajud.sta`): `consumerEnabled`,
 | Gateway | `https://license.lerian.io`, `POST /licenses/validate`. Egress to it is mandatory and the URL is not configurable. Keys issued for staging were validated on this production gateway. |
 | Refresh and grace | The key is re-validated every 6 h. When the gateway does not answer (network error or 5xx) after it has confirmed the key once, the process keeps serving through decaying grace windows (2 d, 1 d, 12 h, 6 h, so at most 3 d 18 h) and then exits. A process that was never confirmed gets 6 h only. A 4xx refusal ends the grace at once. The windows live in memory: a pod restarted during an outage starts unconfirmed |
 | Offline | No offline license mode in this app version |
-| Render gate | A production-like environment fails the render without `LICENSE_KEY` (a Secret value, `secretRefs`, `extraEnvVars` or `useExistingSecret`); in `local`/`development`/`staging`/`e2e`/`test` the render passes and the pod refuses to boot. `ORGANIZATION_IDS` must be `global` |
+| Render gate | Every environment fails the render without `LICENSE_KEY` (a Secret value, `secretRefs`, `extraEnvVars` or `useExistingSecret`). `ORGANIZATION_IDS` must be `global` |
 | How to confirm | No license check in `/readyz`: look for the boot log lines `Organization global has a valid license` and `license validation enabled` |
 
 ---

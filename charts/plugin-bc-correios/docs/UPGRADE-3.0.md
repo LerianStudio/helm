@@ -372,7 +372,7 @@ global:
 
 ### Scenario 4: Bundled RabbitMQ with manual user provisioning
 
-Without `bc-correios.useExistingSecret`, the chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS`; if `RABBITMQ_URL` uses that account, you need no manual provisioning. If you use the bundled RabbitMQ with `bc-correios.useExistingSecret`, you must manually provision the user account referenced in `bc-correios.secrets.RABBITMQ_URL` because the broker starts without default credentials when `rabbitmq.authentication.existingSecret` is set.
+Without `bc-correios.useExistingSecret`, the chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS`; if `RABBITMQ_URL` uses that account, you need no manual provisioning. If you use the bundled RabbitMQ with `bc-correios.useExistingSecret`, you must manually provision the user account referenced in `RABBITMQ_URL` in the app Secret because the broker starts without default credentials when `rabbitmq.authentication.existingSecret` is set.
 
 **Required configuration:**
 
@@ -386,7 +386,7 @@ rabbitmq:
 
 bc-correios:
   useExistingSecret: true
-  existingSecretName: "<app-secret-name>" # holds RABBITMQ_URL (amqp://<username>:<password>@plugin-bc-correios-rabbitmq:5672/) and RABBITMQ_ERLANG_COOKIE
+  existingSecretName: "<app-secret-name>" # holds RABBITMQ_URL (amqp://<username>:<password>@plugin-bc-correios-rabbitmq:5672/)
 ```
 
 **Migration steps:**
@@ -408,8 +408,7 @@ kubectl exec -n <namespace> -it <rabbitmq-pod-name> -- rabbitmqctl add_user <use
 kubectl exec -n <namespace> -it <rabbitmq-pod-name> -- rabbitmqctl set_permissions -p / <username> ".*" ".*" ".*"
 ```
 
-4. Update `bc-correios.secrets.RABBITMQ_URL` with the username and password
-5. Update `bc-correios.secrets.RABBITMQ_ERLANG_COOKIE` with the same Erlang cookie value
+4. Put `RABBITMQ_URL` with that username and password in the app Secret (`bc-correios.existingSecretName`)
 
 > **Warning:** The Erlang cookie must be a stable value. Changing it across upgrades breaks the RabbitMQ cluster. Generate it once and store it in a Secret that persists across upgrades.
 
@@ -445,7 +444,7 @@ The following table describes the RabbitMQ user provisioning behavior.
 |---------------|----------|
 | Bundled RabbitMQ without `existingSecret` | The subchart creates a default user based on `rabbitmq.authentication.user.value` and `rabbitmq.authentication.password.value`. |
 | Bundled RabbitMQ with `existingSecret`, without `bc-correios.useExistingSecret` | The chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS`; no manual provisioning is needed when `RABBITMQ_URL` uses that account. |
-| Bundled RabbitMQ with `existingSecret` and `bc-correios.useExistingSecret` | The broker starts without default credentials. You must manually provision the user account referenced in `bc-correios.secrets.RABBITMQ_URL`. |
+| Bundled RabbitMQ with `existingSecret` and `bc-correios.useExistingSecret` | The broker starts without default credentials. You must manually provision the user account referenced in `RABBITMQ_URL` in the app Secret. |
 | External RabbitMQ | The user account referenced in `bc-correios.secrets.RABBITMQ_URL` must already exist with appropriate permissions. |
 
 **Example: Bundled RabbitMQ with manual user provisioning:**
@@ -460,7 +459,7 @@ rabbitmq:
 
 bc-correios:
   useExistingSecret: true
-  existingSecretName: "<app-secret-name>" # holds RABBITMQ_URL (amqp://bc_correios:changeme@plugin-bc-correios-rabbitmq:5672/) and RABBITMQ_ERLANG_COOKIE
+  existingSecretName: "<app-secret-name>" # holds RABBITMQ_URL (amqp://bc_correios:changeme@plugin-bc-correios-rabbitmq:5672/)
 ```
 
 ### Valkey Password Configuration

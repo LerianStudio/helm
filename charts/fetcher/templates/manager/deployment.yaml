@@ -18,10 +18,10 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/manager/configmap.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/manager/secrets.yaml") . | sha256sum }}
-        checksum/common-config: {{ include (print $.Template.BasePath "/common/configmap.yaml") . | sha256sum }}
-        checksum/common-secret: {{ include (print $.Template.BasePath "/common/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/manager/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/manager/secrets.yaml") . | fromYaml).data | toYaml | sha256sum }}
+        checksum/common-config: {{ (include (print $.Template.BasePath "/common/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
+        checksum/common-secret: {{ (include (print $.Template.BasePath "/common/secrets.yaml") . | fromYaml).data | toYaml | sha256sum }}
         {{- with .Values.manager.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

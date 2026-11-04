@@ -33,8 +33,7 @@ keywords:
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 
 # This Helm chart includes multiple dependencies required for the application.
-# To understand the purpose and configuration of each dependency, visit:
-# https://docs.lerian.studio/docs/midaz-components
+# The purpose and configuration of each dependency is documented in its own chart.
 dependencies:
   # Library chart — renders nothing on its own; provides the shared workload
   # fragments (service, hpa, serviceAccount, scheduling) whose output is

@@ -4,21 +4,30 @@
 namespaceOverride: "system-facts"
 
 global:
-  # Managed-cloud topology preset: aws | gcp | azure. Leave "" for the bundled
-  # in-cluster infra (plaintext).
+  # Managed-cloud topology preset: aws | gcp | azure. It sets the PostgreSQL SSL
+  # mode; with "" the ssl value under datastores.postgres applies.
   cloud: ""
   # Env-wide shared datastore endpoints (only postgres/redis are used here).
-  datastores: {}
-  #   postgres: { host: "my-rds.example.com", user: "system-facts" }
-  #   redis: { host: "my-elasticache.example.com:6379" }
+  # The application connects to PostgreSQL and Redis over TLS only; plaintext
+  # needs system-facts.allowInsecureTls "true" (outside production).
+  datastores:
+    postgres:
+      ssl: "require"
+      # host: "my-rds.example.com"
+      # user: "system-facts"
+    redis:
+      tls: true
+      # host: "my-elasticache.example.com:6379"
   # Env-wide telemetry (enabled/endpoint/deployment-env only; per-service OTEL
   # identity stays in system-facts.otel).
   observability: {}
   #   enabled: true
   #   otlpEndpoint: "otel-collector:4317"
-  # Env-wide plugin-access-manager auth.
-  auth: {}
-  #   host: "http://plugin-access-manager-auth:4000"
+  # Env-wide plugin-access-manager auth. Required: the default environment is
+  # production, which refuses to boot with authorization off.
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth:4000"
   # Env-wide Access Manager permission declaration (RI). The gate is per
   # component (system-facts.configmap.IDP_DECLARATION_ENABLED); the client pair
   # goes in system-facts.secrets.IDP_M2M_CLIENT_ID / IDP_M2M_CLIENT_SECRET.
@@ -112,6 +121,16 @@ system-facts:
     REDIS_PASSWORD: ""
     # Required: the application refuses to boot without a valid license.
     LICENSE_KEY: ""
+    # Required in production: the reference protection keys.
+    FACTS_REFERENCE_HASH_KEY: ""
+    FACTS_REFERENCE_ENCRYPTION_KEY: ""
+
+  # With authorization on, the application refuses to boot unless both flags are "true".
+  extraEnvVars:
+    - name: AUTH_M2M_INVERSION_ENABLED
+      value: "true"
+    - name: AUTH_M2M_PRODUCT_FORWARD_ENABLED
+      value: "true"
 
   useExistingSecret: false
   existingSecretName: ""

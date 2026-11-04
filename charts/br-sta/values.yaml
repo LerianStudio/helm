@@ -191,7 +191,9 @@ common:
   # -- RabbitMQ (audit transport + business-event channel): enabled, vhost,
   # exchange, queue, healthCheckUrl, healthCheckAllowedHosts,
   # requireHealthAllowedHosts, allowInsecureHealthCheck, allowInsecureTls.
-  # host/ports/user/scheme live in datastores.broker;
+  # publisherConfirmTimeoutMs, publisherRecoveryInitialMs, publisherRecoveryMaxMs,
+  # publisherMaxRecoveries: ignored by app 1.3.0; set only for an image pinned
+  # below 1.3.0. host/ports/user/scheme live in datastores.broker;
   # RABBITMQ_DEFAULT_PASS (or a full RABBITMQ_URL) is a secret.
   rabbitmq: {}
   # -- Transactional outbox: enabled, tableName, dispatchIntervalSec, batchSize,
@@ -433,7 +435,8 @@ worker:
   # ---------------------------------------------------------------------------
   # -- Leader-gated scheduler (BACEN verdict polling + maintenance jobs):
   # enabled, serviceName, leaderTtlSeconds, heartbeatSeconds,
-  # staleCleanupIntervalHours, retentionIntervalHours,
+  # credentialIntervalHours (image below 1.3.0 only), staleCleanupIntervalHours,
+  # retentionIntervalHours,
   # quarantineRetentionDays, filingSweepEnabled, filingSweepIntervalMinutes,
   # filingSweepAgeMinutes (a SAFETY knob — see README), filingSweepBatchLimit.
   scheduler: {}

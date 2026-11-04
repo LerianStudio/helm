@@ -694,6 +694,13 @@ RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "requireHealthAllowedHosts" "k" "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureHealthCheck" "k" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" "d" (ternary "true" "false" $rmqBundled)) }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureTls" "k" "RABBITMQ_ALLOW_INSECURE_TLS" "d" "false") }}
+{{- /* RABBITMQ_PUBLISHER_*: app 1.3.0 ignores them (the publisher is gone). Rendered
+   only when set, for a manager/worker image pinned below 1.3.0 (1.2.0 defaults:
+   5000 / 1000 / 30000 / 10). */}}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherConfirmTimeoutMs" "k" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryInitialMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryMaxMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherMaxRecoveries" "k" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "opt" true) }}
 # --- Outbox (lib-commons; production requires it) -----------------------------
 {{ include $kv (dict "cm" $cm "p" $c.outbox "f" "enabled" "k" "OUTBOX_ENABLED" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $c.outbox "f" "tableName" "k" "OUTBOX_TABLE_NAME" "d" "outbox_events") }}
@@ -857,6 +864,8 @@ envDefaults apply otherwise).
 {{ include $kv (dict "cm" $cm "p" $s "f" "serviceName" "k" "SCHEDULER_SERVICE_NAME" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "leaderTtlSeconds" "k" "SCHEDULER_LEADER_TTL_SECONDS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "heartbeatSeconds" "k" "SCHEDULER_HEARTBEAT_SECONDS" "opt" true) }}
+{{- /* Read only by a worker image pinned below 1.3.0; 1.3.0 sweeps every 5 minutes. */}}
+{{ include $kv (dict "cm" $cm "p" $s "f" "credentialIntervalHours" "k" "SCHEDULER_CREDENTIAL_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "staleCleanupIntervalHours" "k" "SCHEDULER_STALE_CLEANUP_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "retentionIntervalHours" "k" "SCHEDULER_RETENTION_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "quarantineRetentionDays" "k" "SCHEDULER_QUARANTINE_RETENTION_DAYS" "opt" true) }}
@@ -1309,11 +1318,8 @@ dropped from the ConfigMap/Secret escape hatch; NOTES.txt lists any still set.
 The reporter-events routing key became a code constant; the ACOS010 producer
 category moved into a code table; the expected-tenant comparison was removed;
 the POSTGRES_* server-tuning pair is docker-compose only; the TRUST_STORE_* knobs
-are not read by the current service. App 1.3.0 retired the RABBITMQ_PUBLISHER_*
-knobs (the publisher they tuned is gone) and SCHEDULER_CREDENTIAL_INTERVAL_HOURS
-(the credential recovery sweep now runs every 5 minutes); 1.2.0 read them with
-the same defaults. ORGANIZATION_IDS is NOT listed: images below 1.3.0 need it.
+are not read by the current service.
 */}}
 {{- define "br-sta.removedKeys" -}}
-{{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "SCHEDULER_CREDENTIAL_INTERVAL_HOURS" | toJson -}}
+{{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" | toJson -}}
 {{- end -}}

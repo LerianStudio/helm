@@ -148,6 +148,7 @@ Shared (`common.*`):
 | `rabbitmq.enabled` / `vhost` / `exchange` / `queue` | `RABBITMQ_ENABLED` / `RABBITMQ_VHOST` / `RABBITMQ_EXCHANGE` / `RABBITMQ_QUEUE` | `true` / `/` / `events` / unset |
 | `rabbitmq.healthCheckUrl` / `healthCheckAllowedHosts` | `RABBITMQ_HEALTH_CHECK_URL` / `RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS` | `<http\|https>://<broker host>:<broker port>/api/health/checks/alarms` (https for an `amqps` broker) / the broker host. lib-commons checks the management API on every connect and refuses an empty URL |
 | `rabbitmq.requireHealthAllowedHosts` / `allowInsecureHealthCheck` / `allowInsecureTls` | `RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS` / `RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK` / `RABBITMQ_ALLOW_INSECURE_TLS` | `false` / `true` only with the bundled (plain-HTTP) broker, else `false` / `false` |
+| `rabbitmq.publisherConfirmTimeoutMs` / `publisherRecoveryInitialMs` / `publisherRecoveryMaxMs` / `publisherMaxRecoveries` | `RABBITMQ_PUBLISHER_*` | unset. App 1.3.0 ignores them; set only for an image pinned below 1.3.0 (its defaults: `5000` / `1000` / `30000` / `10`) |
 | `outbox.enabled` / `tableName` / `allowEmptyTenant` | `OUTBOX_ENABLED` / `OUTBOX_TABLE_NAME` / `OUTBOX_ALLOW_EMPTY_TENANT` | `true` / `outbox_events` / `true` |
 | `outbox.dispatchIntervalSec` / `batchSize` / `publishMaxAttempts` / `publishBackoffMs` | `OUTBOX_DISPATCH_INTERVAL_SEC` / `OUTBOX_BATCH_SIZE` / `OUTBOX_PUBLISH_MAX_ATTEMPTS` / `OUTBOX_PUBLISH_BACKOFF_MS` | `2` / `50` / `3` / `200` |
 | `outbox.retryWindowSec` / `maxDispatchAttempts` / `processingTimeoutSec` / `maxFailedPerBatch` | `OUTBOX_RETRY_WINDOW_SEC` / `OUTBOX_MAX_DISPATCH_ATTEMPTS` / `OUTBOX_PROCESSING_TIMEOUT_SEC` / `OUTBOX_MAX_FAILED_PER_BATCH` | `300` / `10` / `600` / `25` |
@@ -193,7 +194,7 @@ Worker-only (`worker.*`, rendered into the worker ConfigMap):
 | `scheduler.enabled` | `SCHEDULER_ENABLED` | `true` (BACEN verdict polling + maintenance jobs) |
 | `scheduler.filingSweepEnabled` | `SCHEDULER_FILING_SWEEP_ENABLED` | `false` (a deliberate decision: it auto-closes stranded reporter filings) |
 | `scheduler.filingSweepAgeMinutes` | `SCHEDULER_FILING_SWEEP_AGE_MINUTES` | unset (app: `120`). A **safety** knob: do not tune it down to make the sweep responsive |
-| `scheduler.{serviceName,leaderTtlSeconds,heartbeatSeconds,staleCleanupIntervalHours,retentionIntervalHours,quarantineRetentionDays,filingSweepIntervalMinutes,filingSweepBatchLimit}` | `SCHEDULER_*` | unset (app defaults) |
+| `scheduler.{serviceName,leaderTtlSeconds,heartbeatSeconds,credentialIntervalHours,staleCleanupIntervalHours,retentionIntervalHours,quarantineRetentionDays,filingSweepIntervalMinutes,filingSweepBatchLimit}` | `SCHEDULER_*` | unset (app defaults; app 1.3.0 ignores `credentialIntervalHours`) |
 | `credentials.recoveryOnBoot` | `CREDENTIALS_RECOVERY_ON_BOOT` | `true` |
 | `auditPublisher.enabled` / `auditConsumer.enabled` | `AUDIT_PUBLISHER_ENABLED` / `AUDIT_CONSUMER_ENABLED` | `true` / `true` |
 | `auditPartition.enabled` | `AUDIT_PARTITION_MANAGER_ENABLED` | `true` (leave it on: it is the only forward creator of the audit partitions) |

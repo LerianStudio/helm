@@ -1,5 +1,22 @@
 # Reporter Changelog
 
+## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.2)
+
+Fixes:
+- Verify DocumentDB certificates on the AWS preset to ensure secure connections. (@fredcamaral)
+- Gate certificate verification on app image and hash data only, improving security checks. (@fredcamaral)
+- Accept regulatory catalog keys and mount a catalog directory for better compliance handling. (@fredcamaral)
+- Use neutral language for roles and remove hints about organization IDs to ensure clarity and neutrality. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides, enhancing clarity and accuracy. (@dy-shimizu, @gandalf-at-lerian)
+- Warn users that the upgrade process deletes running KEDA worker Jobs, providing important upgrade information. (@gandalf-at-lerian)
+- Add the verified `5.3.1` upgrade guide to assist users with the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.1...reporter-v5.3.2)
+
+---
+
 ## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
 
 Fixes:

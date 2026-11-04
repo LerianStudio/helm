@@ -3,6 +3,20 @@
 ## [4.5.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.1)
 
 Fixes:
+- Stop rendering keys that the console never reads, improving efficiency. (@fredcamaral)
+- Limit the NOTES MongoDB scheme to `mongodb` to ensure proper functionality. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.4.7` to `4.5.0`, assisting users in the upgrade process. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.5.0...product-console-v4.5.1)
+
+---
+
+## [4.5.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.1)
+
+Fixes:
 - Stop rendering keys that the console never reads. (@fredcamaral)
 - Limit the NOTES MongoDB scheme to `mongodb`. (@fredcamaral)
 

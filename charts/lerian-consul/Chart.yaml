@@ -41,9 +41,9 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # pinned dependency. We do NOT re-implement Consul; the StatefulSet, Services,
 # ACL bootstrap, TLS-init and gossip-key jobs all come from the subchart.
 #
-# Pin rationale: chart 2.1.0 ships Consul 2.1.0 (consul-k8s 2.1.0). There is no
-# supported in-place path from Consul 1.x, so the 1.x -> 2.x move is a fresh
-# install (see README, "Upgrading from 1.x"). The version is pinned EXACTLY
+# Pin rationale: chart 2.1.0 ships Consul 2.1.0 (consul-k8s 2.1.0). This chart
+# supports no in-place move from its 1.0.0 release (Consul 1.20): that move is a
+# fresh install (see README, "Upgrading from 1.x"). The version is pinned EXACTLY
 # (no ^/~) so `helm dependency build` from Chart.lock is fully reproducible.
 dependencies:
   - name: consul

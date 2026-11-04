@@ -5,7 +5,7 @@ description: A Helm chart for Product Console - Lerian Studio's web interface
 type: application
 annotations:
   lerian.studio/chart-type: single-service
-home: https://github.com/LerianStudio/helm
+home: https://github.com/LerianStudio/helm/tree/main/charts/product-console
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/product-console
   - https://github.com/LerianStudio/product-console

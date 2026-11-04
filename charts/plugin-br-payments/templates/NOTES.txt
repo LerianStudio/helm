@@ -93,5 +93,4 @@ Then access: http://localhost:{{ .Values.app.service.port }}/health
 
 ## Source
 
-  - Plugin source:   https://github.com/LerianStudio/plugin-br-payments
   - Chart source:    https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-payments

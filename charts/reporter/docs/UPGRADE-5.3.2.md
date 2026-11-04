@@ -32,7 +32,7 @@ With `global.cloud: aws`, the chart no longer adds `tlsInsecure=true` to `MONGO_
 
 - This change applies only when `MONGO_PARAMETERS` resolves to the AWS preset. A different value that you set in `common.configmap.MONGO_PARAMETERS` (or `datastores.mongo.params`) renders unchanged.
 - The chart keeps `tlsInsecure=true` when a manager or worker image tag is below `4.7.0` (pre-releases of `4.7.0` count as `4.7.0`).
-- Other cloud settings and the default render are not changed.
+- With `global.cloud` unset, `gcp` or `azure`, `MONGO_PARAMETERS` does not change.
 
 ### 2. Pod template labels and checksum annotations
 
@@ -49,7 +49,7 @@ New optional values `manager.extraVolumes`, `manager.extraVolumeMounts`, `worker
 
 No action is needed before the upgrade.
 
-If you run on AWS with DocumentDB, check after the upgrade that the manager and worker pods start and connect to the database. With the default KEDA ScaledJob, worker pods exist only while a report Job runs and carry only the `scaledjob.keda.sh/name` label:
+If you run on AWS with DocumentDB, check after the upgrade that the manager and worker pods start and connect to the database. With the default KEDA ScaledJob, worker pods exist only while a report Job runs. They carry the `scaledjob.keda.sh/name` label, not `app.kubernetes.io/name`:
 
 ```bash
 kubectl get pods -n <namespace>

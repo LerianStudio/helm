@@ -46,7 +46,8 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 
 | Values | Env | Notes |
 |---|---|---|
-| `sisbajud.mensageria.baseUrl` | `MENSAGERIA_BASE_URL` | https; turns the process into the executor |
+| `sisbajud.mensageria.baseUrl` | `MENSAGERIA_BASE_URL` | https; turns the process into the executor (Mensageria mode) |
+| `sisbajud.executor.enabled` | `EXECUTOR_ENABLED` | `""` (default, not emitted) \| `true` \| `false`. `true` without `mensageria.baseUrl` = DIRECT-only executor (see below); `false` never turns a configured Mensageria off |
 | `sisbajud.mensageria.mtlsEnabled` | `MENSAGERIA_MTLS_ENABLED` | `false` (one-way TLS). `true` requires the CA and the client pair. Must match the Mensageria |
 | `sisbajud.mensageria.ca.existingSecret` (+ `key`, `mountPath`) | `MENSAGERIA_TLS_CA_FILE` | server CA, mounted at `<mountPath>/ca.crt`. Optional in one-way TLS (empty = system trust store); empty falls back to `tls.existingSecret` + `tls.caKey` |
 | `sisbajud.mensageria.tls.existingSecret` (+ `certKey`, `keyKey`, `mountPath`) | `MENSAGERIA_TLS_CLIENT_CERT_FILE`, `MENSAGERIA_TLS_CLIENT_KEY_FILE` | client pair, mounted (at `<mountPath>/tls.crt`, `tls.key`) and emitted **only with mTLS** |
@@ -57,6 +58,15 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.executor.transport` | `EXECUTOR_TRANSPORT` | `webhook` (default) or `sqs` |
 | `sisbajud.executor.webhook.*` | `EXECUTOR_HUB_WEBHOOK_*` | outside `DEPLOYMENT_MODE=local`: `tls.existingSecret` or `upstreamTlsValidated: true` |
 | `sisbajud.executor.sqs.*` | `EXECUTOR_SQS_*` | needs AWS credentials (IRSA annotation or `aws.rolesAnywhere`) |
+| `sisbajud.executor.webhook.maxHandleAttempts` | `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` | `5`; also the direct drainer's attempt cap in every executor mode (>= 1 + ceil(settleWindow / tickEvery)) |
+| `sisbajud.executor.resultMaxAttempts` | `EXECUTOR_RESULT_MAX_ATTEMPTS` | `12`; result drainer cap per row (`0` = app default) |
+| `sisbajud.executor.orderSweepEnabled` | `EXECUTOR_ORDER_SWEEP_ENABLED` | `false`; only `true`/`false`: the execution_order sweep |
+| `sisbajud.executor.direct.drainerInfraAlarmThreshold` | `EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD` | `3`; integer >= 1 |
+| `sisbajud.executor.direct.purgeEligibleAlarmAfter` | `EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER` | `168h`; Go duration > 0. No AUTOMATIC purge: a person decides. A direct order is eligible once it is closed and, for a BLOCK order, one CALENDAR year has passed since its first ledger effect (its receipt when none; a 29/02 start waits until 01/03); an ACTIVE permanent block is never eligible. The audited erase lists the eligible orders (`POST /v1/admin/direct/purge`, dry run) and crypto-shreds one (`POST /v1/admin/direct/orders/{orderId}/erase`): human `platform-admin` only, single-tenant. App runbook § 10 |
+| `sisbajud.executor.direct.purgeRefreshEvery` | `EXECUTOR_DIRECT_PURGE_REFRESH_EVERY` | `15m`; Go duration > 0: how often the purge-eligible count is refreshed |
+| `sisbajud.direct.permanentBlockEnabled` | `DIRECT_PERMANENT_BLOCK_ENABLED` | **`true`**: the direct POST takes permanent blocks (SISBAJUD "P"/"D"); needs `global.streaming.brokers` (the render fails without them). `false` refuses them with 422 SBJ-0027: set it on an install without brokers (e.g. Mensageria-only). Only `true`/`false` |
+| `sisbajud.direct.permanentRefreshEvery` | `DIRECT_PERMANENT_REFRESH_EVERY` | `15m`; Go duration from `1m` to `15m` (the app refuses the boot outside): refresh of the ACTIVE permanents' accounts |
+| `sisbajud.direct.permanentResultEmitterEnabled` | `EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED` | `""`: follows `STREAMING_ENABLED`, so `true` by default (without it the captures of a permanent are never published, also those of ACTIVE permanents after the switch is turned off); or `true`/`false`. `true` needs the stream on (the render and the app refuse it otherwise) |
 | `global.kms.*` | `KMS_PROVIDER`, `VAULT_*`, `AWS_REGION`, `KMS_AWS_KEY_MODE`, `KMS_AWS_KEY_ARN`, `KMS_AWS_CREDENTIALS_KEY_ARN` | `vault` or `aws`; the app has no in-memory provider. With `aws`: `awsRegion`, `awsKeyMode`, `awsKeyArn`, `awsCredentialsKeyArn` |
 | `sisbajud.kms.awsKeyMode` | `KMS_AWS_KEY_MODE` | `managed` or `provided`; required with `KMS_PROVIDER=aws` |
 | `sisbajud.kms.awsKeyArn` | `KMS_AWS_KEY_ARN` | `provided`: required; `managed`: must be empty |
@@ -73,10 +83,11 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 
 `VAULT_ADDR` and `MENSAGERIA_BASE_URL` must be https (`VAULT_ADDR` may be http only for a loopback host or `ENVIRONMENT_NAME` `local|development|test`); argocd-vault-plugin placeholders (`<path:...>`) are not checked at render.
 
-`STREAMING_ENABLED` is pinned to `false`: executor mode starts no producer or consumer. `sisbajud.configmap` accepts only the executor's non-credential keys (`values.schema.json`); credentials go in `sisbajud.secrets` (emitted only when set) or the existing Secret.
+`STREAMING_ENABLED` follows the DIRECT permanent block, which is on by default: a DIRECT executor without the permanent block starts no producer or consumer. The permanent block (`sisbajud.direct.permanentBlockEnabled: true`, the default) reads the balance-change stream: set `global.streaming.brokers` (plus `tlsEnabled`, required in a production-like environment, and `saslMechanism`/`saslUsername` as the brokers need; `STREAMING_SASL_PASSWORD` and `STREAMING_TLS_CA_CERT` in `sisbajud.secrets`). the stream is on whenever the permanent block is, unless `global.streaming.enabled` is explicitly `false`; with the permanent block off it is on only when `global.streaming.enabled` is explicitly `true` (a brokers block alone never starts one); `sisbajud.configmap.STREAMING_ENABLED` overrides both, and `sisbajud.configmap.STREAMING_*` overrides the global transport values. The render fails with the permanent block on and no streaming. `STREAMING_CLOUDEVENTS_SOURCE` is pinned to `plugin-br-sisbajud` (the app refuses any other). `sisbajud.configmap` accepts only the executor's non-credential keys (`values.schema.json`); credentials go in `sisbajud.secrets` (emitted only when set) or the existing Secret.
 
 **AWS KMS key mode.** With `KMS_PROVIDER=aws` the key mode is now required: set `sisbajud.kms.awsKeyMode` (or `global.kms.awsKeyMode`); `provided` needs both `awsKeyArn` and `awsCredentialsKeyArn`, and they must differ; `managed` needs both empty (the app creates and owns the keys). `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated in every aws mode. The mode and both ARNs are trimmed both for validation and in the ConfigMap; `awsKmsTimeoutSec` and `awsKmsRotationCheckIntervalSec` are validated after trimming but rendered as set (the app trims them at boot). `"+30"` is refused at render although the app accepts it (deliberately stricter).
 
+- `ALLOW_RATELIMIT_DISABLED` is accepted in `sisbajud.configmap` for compatibility; the plugin ignores it.
 - `KMS_AWS_*` enter only via `sisbajud.kms.*` / `sisbajud.vault.*` (or `global.kms.*`); the `sisbajud.configmap` key enum (`values.schema.json`) rejects them.
 - `aws` is single-tenant (BYOC) only: the render fails with multi-tenant enabled (the app refuses it).
 - `sisbajud.extraEnvVars` entries are container env and override the ConfigMap, but they are not validated at render: a `MULTI_TENANT_ENABLED` or `KMS_AWS_*` set there (including `KMS_PROVIDER=aws`, or an image whose tag the gate never sees) bypasses the checks above, and only the app's boot validation refuses an invalid combination.
@@ -88,6 +99,32 @@ Liveness probes `/version` (static build info, always 200): the app's `/health` 
 - This is the first gate in this repo that treats `@` as a signal: other charts' minimum-version gates strip the digest or fail open on it. The deviation is deliberate (DR-04).
 - Residual: a mutable SemVer tag re-pushed in a mirror is still only a label; the chart cannot detect it.
 - AWS credentials come via IRSA (`serviceAccount` annotations) or this chart's `aws.rolesAnywhere` block; this chart has no `secretRefs`.
+
+## DIRECT-only executor (no Mensageria)
+
+`sisbajud.executor.enabled: "true"` with an empty `sisbajud.mensageria.baseUrl` boots the executor without the Sisbajud Mensageria. The chart then requires only `executor.m2mSubject`, `responseDeadlineMargin`, `heartbeatEvery`, `tickEvery` (plus the license, KMS, PostgreSQL, Redis, `PLUGIN_AUTH_HOST` and `global.auth.enabled: true`: the direct channel is served only with inbound auth on, and the render fails without it). It emits no `EXECUTOR_TRANSPORT` / Hub webhook / SQS keys except `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` (the direct drainer cap), renders no webhook Service, Ingress or container port, and does not require `MENSAGERIA_CLIENT_ID/SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` or `STREAMING_HUB_TENANT_ID`. Direct orders arrive on `POST /v1/institutions/{institutionId}/executor/...` (opt-in per institution). Operations: the application's `docs/runbooks/direct-channel-operations.md`.
+
+Existing Mensageria installs are unchanged: with `executor.enabled` unset the `EXECUTOR_ENABLED` key is not emitted; the chart adds only the four direct-channel knobs above at the app defaults.
+
+## DIRECT permanent block switch (`DIRECT_PERMANENT_BLOCK_ENABLED`)
+
+**Upgrade note:** the permanent block and its result emitter are ON by default, and they need the balance-change stream. An install without brokers (Mensageria-only, or DIRECT without permanent blocks) must set `sisbajud.direct.permanentBlockEnabled: false` before upgrading; otherwise the render fails naming both ways out (brokers, or the switch off). The permanent block is also served only single-tenant with inbound auth on: an install with `global.auth.enabled: false` or `global.multiTenant.enabled: true` must set `permanentBlockEnabled: false` too (the render fails otherwise, as the app's boot does).
+
+`sisbajud.direct.permanentBlockEnabled: false` stops only NEW permanent blocks: the direct POST refuses them (422 SBJ-0027) and no new permanent opens. Permanents already ACTIVE keep their capture of credits, expiry, retry and result republish while the app can serve that path (single tenant, inbound auth on, `STREAMING_ENABLED=true` with `STREAMING_BROKERS`).
+
+- While the switch is off and ACTIVE permanents exist, the app sets the gauge `sisbajud_executor_permanent_active_with_switch_off` (and logs an ERROR once per episode). Alert on `> 0`: turn the switch back on, or let those permanents close.
+- Turning the switch off (a rollback) with ACTIVE permanents is REFUSED at boot when that path cannot be served (`DIRECT_PERMANENT_BLOCK_ENABLED=false with ACTIVE permanents whose maintenance cannot run`): their capture, expiry and retry would stop silently. So with ACTIVE permanents, roll back by setting `permanentBlockEnabled: false` AND `global.streaming.enabled: true` (keeping `global.streaming.brokers` and its TLS/SASL): the stream and the result emitter (which follows it) stay on, so the ACTIVE permanents keep capturing and publishing. A rollback that also turns streaming off (or drops the brokers) does not boot.
+
+## Midaz CRM mode
+
+`sisbajud.midaz.crmMode` (`MIDAZ_CRM_MODE`) must match the Midaz the institutions use; set it explicitly. The default is `embedded` (Midaz v4). An install on Midaz v3 must set `legacy`, also on upgrade: a v3 install that relied on the old `legacy` default switches to `embedded` and every holder read fails.
+
+| Midaz | `crmMode` |
+|-------|-----------|
+| v4 (CRM embedded in the ledger, no legacy `/v1/holders`) | `embedded` |
+| v3 | `legacy` |
+
+With the wrong mode every holder read fails.
 
 ## Known limitation: object-store readiness probe (app, B1)
 

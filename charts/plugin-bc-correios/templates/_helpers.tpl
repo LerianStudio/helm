@@ -225,9 +225,6 @@ bc-correios.migrationsJobSpec — the migrations Job spec (see templates/migrati
 backoffLimit: {{ $m.backoffLimit }}
 activeDeadlineSeconds: {{ $m.activeDeadlineSeconds }}
 template:
-  metadata:
-    labels:
-      {{- include "bc-correios.selectorLabels" (dict "context" . "component" "migrations" "name" "migrations") | nindent 6 }}
   spec:
     restartPolicy: Never
     automountServiceAccountToken: false

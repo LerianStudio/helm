@@ -222,9 +222,7 @@ bc-correios:
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
     # Distributed HTTP rate limiting (Valkey). The limiter is off unless RATE_LIMIT_ENABLED is "true".
-    # ALLOW_RATELIMIT_FAIL_OPEN "false" refuses requests when Valkey cannot decide.
     RATE_LIMIT_ENABLED: "true"
-    ALLOW_RATELIMIT_FAIL_OPEN: "false"
     # Plugin Auth (Access Manager). The app reads PLUGIN_AUTH_ADDRESS and lib-auth reads PLUGIN_AUTH_HOST; the chart renders both
     # with one value (PLUGIN_AUTH_HOST, when set, wins). With useExistingSecret it renders no PLUGIN_AUTH_HOST unless configmap sets it.
     PLUGIN_AUTH_ENABLED: "true"

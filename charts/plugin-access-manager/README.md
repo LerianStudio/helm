@@ -119,14 +119,14 @@ valkey:
 caradhras:
   ingress:
     enabled: true
-    className: "nginx"            # prefer an internal-only ingress class
+    className: "nginx"            # use an internal-only class: this exposes the Caradhras admin panel and API
     hosts:
       - host: caradhras.example.com
         paths:
           - path: /
             pathType: Prefix
     tls:
-      - secretName: caradhras-tls   # certificate issued by a public CA
+      - secretName: caradhras-tls   # create it before the install (or let cert-manager issue it), public-CA certificate
         hosts:
           - caradhras.example.com
 auth:

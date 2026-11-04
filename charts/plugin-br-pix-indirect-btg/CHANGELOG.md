@@ -3,6 +3,21 @@
 ## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.2)
 
 Fixes:
+- Applied bundled PostgreSQL settings under the primary configuration. (@fredcamaral)
+- Applied bundled PostgreSQL settings. (@fredcamaral)
+
+Improvements:
+- Corrected the `plugin-br-pix-indirect-btg` `5.2` upgrade guide. (@fredcamaral)
+- Added verified upgrade guides for `5.2.1` to `5.3.1`. (@fredcamaral)
+- Corrected chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.3.1...plugin-br-pix-indirect-btg-v5.3.2)
+
+---
+
+## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.2)
+
+Fixes:
 - Apply bundled Postgres settings to ensure proper configuration. (@fredcamaral)
 - Apply bundled PostgreSQL settings under primary to maintain consistency. (@fredcamaral)
 

@@ -2,6 +2,25 @@
 
 ## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
 
+Features:
+
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`. (@fredcamaral)
+
+Fixes:
+
+- Require `LICENSE_KEY` in every environment to ensure consistent licensing checks. (@fredcamaral)
+- Render an explicit zero grace period to address potential misinterpretations in the system behavior. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
 Fixes:
 - Require `LICENSE_KEY` in every environment to ensure proper configuration. (@fredcamaral)
 - Render an explicit zero grace period to improve clarity in the system's behavior. (@fredcamaral)

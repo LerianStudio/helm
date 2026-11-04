@@ -1,5 +1,18 @@
 # Br-sta Changelog
 
+## [1.0.6](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.6)
+
+Features:
+- Update `br-sta` to `1.2.0`. (@bedatty, @gandalf-at-lerian)
+
+Improvements:
+- Add the verified `1.0.5` upgrade guide. (@fredcamaral)
+- Point the mock pull secret step at the Kubernetes guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.5...br-sta-v1.0.6)
+
+---
+
 ## [1.0.5](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.5)
 
 Features:

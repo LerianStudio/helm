@@ -1,9 +1,10 @@
 apiVersion: v2
 name: tracer-helm
-description: A Helm chart for Tracer - Real-time transaction validation and
-  fraud prevention API
+description: DEPRECATED - Tracer ships inside the midaz chart; install the midaz
+  chart instead
 
 type: application
+deprecated: true
 annotations:
   lerian.studio/chart-type: single-service
 

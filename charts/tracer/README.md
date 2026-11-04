@@ -1,5 +1,7 @@
 # Tracer Helm Chart
 
+> **Deprecated.** This chart no longer receives new Tracer image versions. New installs use the Tracer that the [`midaz` chart](../midaz/README.md) installs, configured under the `tracer:` values block.
+
 ## Chart Contract
 
 - Chart type: `single-service`

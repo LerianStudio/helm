@@ -16,7 +16,7 @@ This guide covers the upgrade from `alloy-lerian` chart version **2.0.7** to **2
 
 ## Changes
 
-- **Narrower permission set.** The node and singleton agents no longer have cluster-wide read access to Secrets, ConfigMaps and `pods/log`. No component in the rendered pipeline reads them through the Kubernetes API. Kube-state-metrics no longer lists Secrets and ConfigMaps. Its allowlist already excluded those metric families, so the exported series do not change.
+- **Narrower permission set.** The node and singleton agent ClusterRoles no longer include `secrets`, `configmaps` and `pods/log`; no component in the rendered pipeline reads them through the Kubernetes API. Kube-state-metrics no longer lists Secrets and ConfigMaps. Its allowlist already excluded those metric families, so the exported series do not change.
 - **Client profile and `node-exporter`.** With `profile: client`, `node-exporter.enabled: true` now fails at render time. `values.yaml` and `Chart.yaml` already said the client profile does not accept it. Node-infrastructure collection stays available only in the `own` profile.
 - **Image registry.** `values.yaml` documents `global.image.registry`. `global.imageRegistry` applies to the kube-state-metrics and node-exporter images only. The agent and config-reloader images use `global.image.registry`. If only `global.imageRegistry` is set, `NOTES.txt` now warns about it after install or upgrade.
 - **`NOTES.txt`.** It now states where collection and sanitization run for each role when Fleet Management is on, and that the `alloy-lerian` Secret needs the `fleet-token` key in both profiles.

@@ -20,6 +20,7 @@ This chart manages 14 independently deployable Pix Lerian workloads. Each gets i
 
 | Chart version | App image tag |
 |---|---|
+| 2.1.x | 1.3.0 |
 | 1.0.2, 2.0.x | 1.1.0 |
 | 1.0.0, 1.0.1 | 1.0.0 |
 
@@ -116,9 +117,9 @@ kubectl get events -n <namespace> --sort-by=.lastTimestamp | tail -30
 kubectl logs -n <namespace> job/plugin-br-pix-lerian-<component>-migrations
 kubectl logs -n <namespace> <pod> --previous | head -30
 
-# Readiness from inside the cluster
-kubectl port-forward -n <namespace> svc/plugin-br-pix-lerian-spi 4101:4101
-curl --fail -sS http://localhost:4101/spi/readyz
+# Readiness from inside the cluster (served on the internal health port 8099)
+kubectl port-forward -n <namespace> svc/plugin-br-pix-lerian-spi 8099:8099
+curl --fail -sS http://localhost:8099/readyz
 ```
 
 `readyz` must return 200 on every enabled workload. A 200 on `health` with 503 on `readyz` is a configuration problem, not a crash — read the body, then [Health and readiness reference](#health-and-readiness-reference).
@@ -369,7 +370,7 @@ Two edits move a values file across:
 | `global.externalPostgresDefinitions.pixswitchCredentials` | `global.externalPostgresDefinitions.pixLerianCredentials` |
 | `DB_PASSWORD_PIXSWITCH`, on the Secret named by `useExistingSecret.name` | `DB_PASSWORD_PIX_LERIAN`, on the same Secret |
 
-Nothing else changes: `username`, `password` and `useExistingSecret` keep their names and meaning. This is the only key in the retired chart's `values.yaml` that this chart refuses; a values file that never set `global.externalPostgresDefinitions` renders here unchanged.
+Nothing else changes: `username`, `password` and `useExistingSecret` keep their names and meaning. This is the only key in the retired chart's `values.yaml` that this chart refuses; a values file that never set `global.externalPostgresDefinitions` renders here unchanged, except for the health inputs listed under [Upgrade and rollback](#upgrade-and-rollback).
 
 ### Migration Jobs
 
@@ -565,32 +566,33 @@ A proxy workload your topology requires is configuration only — it gains no bu
 
 ## Health and readiness reference
 
-Every workload serves liveness and readiness over HTTP on its Service port. Paths carry the workload's route prefix, **except `dictHubVsync`, which serves both at the root.** The `readyz` response is the authoritative list for the active version, tenant mode, and configuration.
+Every workload serves its probes on the internal **health port 8099** (`HEALTH_PORT`), a ClusterIP Service port that no Ingress ever routes to: `/health` (liveness and startup, constant), `/readyz` (readiness) and `/metrics`. The chart owns the probe paths, the drain and the grace period: `startupProbe` and `livenessProbe` hit `/health`, `readinessProbe` hits `/readyz`, both on the named container port `health`. Shutdown drains `SHUTDOWN_DRAIN_DELAY` (15 s), then budgets `SHUTDOWN_TIMEOUT` (30 s), inside `terminationGracePeriodSeconds: 55`. Tune them per component with `<component>.health.drainSeconds` / `shutdownSeconds`; setting `<component>.livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePeriodSeconds`, or `HEALTH_PORT` / `SHUTDOWN_*` in `configmap` or `extraEnvVars`, fails the render.
 
-| Workload | Service port | Liveness | Readiness | Always probed | Probed when configured |
-|---|---|---|---|---|---|
-| `spi` | 4101 | `/spi/health` | `/spi/readyz` | `required_keys`; Postgres in single-tenant | adapter and Midaz, each when its base URL is set; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
-| `spiSystemplane` | 4102 | `/spi/health` | `/spi/readyz` | Postgres | — |
-| `adapterProviderMock` | 4103 | `/provider-mock/health` | `/provider-mock/readyz` | — | its configured provider over HTTP |
-| `dictHub` | 4104 | `/dict-hub/health` | `/dict-hub/readyz` | `required_keys`; Postgres in single-tenant | CRM and adapter, each when its base URL is set; Valkey when the cache connected at boot; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
-| `dictHubVsync` | 4105 | `/health` | `/readyz` | `required_keys`, Valkey; Postgres and RabbitMQ in single-tenant; `scheduler` and `chunk_consumer` during startup | CRM when its base URL is set; adapter in single-tenant when its base URL is set; `tenant_consumers` in multi-tenant |
-| `dictProxy` | 4106 | `/dict-proxy/health` | `/dict-proxy/readyz` | `required_keys` | — |
-| `dictSystemplane` | 4107 | `/dict/health` | `/dict/readyz` | Postgres | — |
-| `cobHub` | 4108 | `/cob-hub/health` | `/cob-hub/readyz` | `required_keys`; Postgres in single-tenant | notification outbox relay in multi-tenant with streaming on; streaming when enabled |
-| `cobProxy` | 4109 | `/cob-proxy/health` | `/cob-proxy/readyz` | `required_keys` | — |
-| `cobSystemplane` | 4110 | `/cob/health` | `/cob/readyz` | Postgres | — |
-| `adapterLerian` | 4113 | `/lerian/health` | `/lerian/readyz` | Postgres | — |
-| `adapterLerianSystemplane` | 4115 | `/lerian/health` | `/lerian/readyz` | Postgres | — |
-| `pixauto` | 4116 | `/pixauto/health` | `/pixauto/readyz` | `required_keys`; Postgres in single-tenant | `auth.url` when auth is on; streaming when enabled |
-| `pixautoSystemplane` | 4117 | `/pixauto/health` | `/pixauto/readyz` | Postgres | — |
+The main port still answers a constant `<prefix>/health` and `<prefix>/version` (for `dictHubVsync`, at the root); its `<prefix>/readyz` is transitional and a later Pix release removes it, so do not build on it. The chart refuses a component whose `image.tag` is below `1.3.0` (the first stable release that serves the health port; its pre-releases are refused too) and reads the tag from `Chart.appVersion` when you set none. The `readyz` response is the authoritative list for the active version, tenant mode, and configuration.
+
+| Workload | Service ports | Startup checks (`readyz` is 503 until each first passes) | Report-only checks (named in the body, never turn `readyz` red) |
+|---|---|---|---|
+| `spi` | 4101, 8099 | `required_keys`; Postgres in single-tenant | `permission_declaration` when auth is on; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
+| `spiSystemplane` | 4102, 8099 | Postgres | — |
+| `adapterProviderMock` | 4103, 8099 | — | — |
+| `dictHub` | 4104, 8099 | `required_keys`; Postgres in single-tenant | `permission_declaration` when auth is on; Valkey; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
+| `dictHubVsync` | 4105, 8099 | `required_keys`; Postgres in single-tenant | Valkey; RabbitMQ in single-tenant; `tenant_consumers` in multi-tenant |
+| `dictProxy` | 4106, 8099 | `required_keys` | — |
+| `dictSystemplane` | 4107, 8099 | Postgres | — |
+| `cobHub` | 4108, 8099 | `required_keys`; Postgres in single-tenant | `permission_declaration` when auth is on; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
+| `cobProxy` | 4109, 8099 | `required_keys` | — |
+| `cobSystemplane` | 4110, 8099 | Postgres | — |
+| `adapterLerian` | 4113, 8099 | — | `permission_declaration` when auth is on |
+| `adapterLerianSystemplane` | 4115, 8099 | Postgres | — |
+| `pixauto` | 4116, 8099 | `required_keys`; Postgres in single-tenant | `permission_declaration` when auth is on; notification outbox relay in multi-tenant with streaming on; streaming when enabled |
+| `pixautoSystemplane` | 4117, 8099 | Postgres | — |
 
 Reading the responses:
 
 - **200 on `health`** means the process is up. It does **not** mean the workload can serve traffic.
-- **200 on `readyz`** means the process is up and its checked dependencies are satisfied.
-- **503 on `readyz`** means a check failed. The two right-hand columns say which checks a workload runs; a conditional probe exists only when that dependency or feature is configured. The proxies gate on configuration keys only, and `adapterProviderMock` probes its provider rather than a database, so "Postgres is checked everywhere" is not true. **Read the `readyz` body** — it names each check and its status.
-- Failure modes by check: `required_keys` — the configuration store has nothing for a key the workload needs, which is the usual reason a correctly configured pod stays 503; Postgres, Valkey, RabbitMQ — the dependency is unreachable; adapter, Midaz, CRM, provider, `auth.url` — an HTTP dependency did not answer; notification outbox relay or streaming — the event path is not healthy.
-- **Tenant mode changes the set, not just the values.** A check on a deployment-wide connection pool is registered only where that pool exists — single-tenant, not multi-tenant. So `spi`, `dictHub`, `cobHub`, `dictHubVsync`, and `pixauto` carry a Postgres check in single-tenant and none in multi-tenant, and `dictHubVsync` also drops its RabbitMQ and adapter checks there while gaining `tenant_consumers`. The relay check runs the other way round: multi-tenant only, and only with streaming enabled. **Ready in multi-tenant is therefore a narrower claim,** and a tenant whose own configuration is missing still fails at the request, not at `readyz`.
+- **503 on `readyz`** is a start-up state: a Startup check has not passed yet. Once every Startup check has passed once, `readyz` answers 200, or a degraded 200 when a check fails later, and keeps the pod in rotation. A Postgres outage after start-up therefore shows in the `readyz` body and in the logs, not in the status code. **Read the `readyz` body** — it names each check and its status.
+- Why a correctly configured pod stays 503: `required_keys` — the configuration store has nothing for a key the workload needs; Postgres — the dependency is unreachable or the DSN is wrong.
+- **Tenant mode changes the set, not just the values.** A check on a deployment-wide connection pool is registered only where that pool exists — single-tenant, not multi-tenant. So `spi`, `dictHub`, `cobHub`, `dictHubVsync`, and `pixauto` carry a Postgres check in single-tenant and none in multi-tenant, and `dictHubVsync` also drops its RabbitMQ check there while gaining `tenant_consumers`. The relay check runs the other way round: multi-tenant only, and only with streaming enabled. **Ready in multi-tenant is therefore a narrower claim,** and a tenant whose own configuration is missing still fails at the request, not at `readyz`.
 - `health` and `readyz` are unauthenticated on every workload. See [Authentication](#authentication).
 
 ## Troubleshooting
@@ -623,7 +625,7 @@ Also check the mode value itself: it is matched **case-sensitively and untrimmed
 
 ### `health` is 200 but `readyz` is 503
 
-**Causes** — a dependency check failing, or required configuration keys absent from the store.
+**Causes** — a Startup check has not passed yet: required configuration keys absent from the store, or Postgres unreachable. After the first pass `readyz` no longer returns 503; read its body for a later failure.
 
 **Fix** — if the response points at required keys, set the domain's identity and dependency values on the **Systemplane** workload, which seeds them; in multi-tenant those keys arrive by provisioning instead, so provision them and restart the workload if the key is boot-captured ([Systemplane configuration lifecycle](#systemplane-configuration-lifecycle)). If it points at Postgres, check the DSN and network reachability.
 
@@ -670,6 +672,8 @@ Before upgrading:
 **`dictProxy` and `cobProxy` default to disabled.** An existing release that relied on the earlier `enabled: true` default loses the `dict-proxy` and `cob-proxy` workloads (Deployment, Service, ConfigMap, Secret, and any ServiceAccount, HPA and PodDisruptionBudget) on `helm upgrade`. To keep them, set `dictProxy.enabled=true` / `cobProxy.enabled=true`. See [Hub and proxy are not interchangeable](#hub-and-proxy-are-not-interchangeable).
 
 **`ENV_NAME` now defaults to `production`.** A release that never set it ran `development`, and so did `pixauto` and `pixautoSystemplane` in releases built from `values-template.yaml`, which set it on every other component. API docs turn off on every workload. Multi-tenant workloads also read `ENV_NAME` at every boot, so after `helm upgrade` `pixauto` refuses to boot with auth off, `cobHub` refuses an invalid DICT adapter configuration, `pixauto` regulatory dispatch (when enabled) refuses missing adapter credentials and logs switch to JSON. Single-tenant domain workloads keep the `app.env_name` their Systemplane stored at first boot, so on app `1.1.0` the upgrade alone does not change their posture: check it and set it to `production` through `/v1/system`. App releases after `1.1.0` read `ENV_NAME` from the deployment only and ignore the stored value. To keep a development lane, set `ENV_NAME` to `development` or `local` on every enabled component, Systemplanes included, before upgrading.
+
+**From 2.0.x to the health chart (app `1.3.0`).** The chart now owns probes, drain and grace, and refuses inputs it used to accept. Drop them from the values file before upgrading: `<component>.readinessProbe`, `livenessProbe`, `startupProbe` and `terminationGracePeriodSeconds`; `HEALTH_PORT`, `SHUTDOWN_DRAIN_DELAY` and `SHUTDOWN_TIMEOUT` in `configmap` or `extraEnvVars`; any `image.tag` below `1.3.0`, `1.3.0` pre-releases included; and an Ingress path with a `readyz` or `metrics` segment (a copied `/pixauto/readyz` route becomes `/pixauto/health`). Each one fails the render with a message naming it, so nothing changes silently. In single-tenant, an earlier chart seeded `vsync.gate_ttl_sec=3600` into the DICT Systemplane store, the stored row wins over the environment, and app `1.3.0` refuses to boot `dictHubVsync` below its floor (about 45540 s). Before upgrading, set it to `57600` with `PUT <prefix>/v1/system/vsync/gate_ttl_sec` on `dictSystemplane`, or with a guarded update of that `systemplane_entries` row where the admin API is fenced. Multi-tenant installs seed nothing and are unaffected.
 
 Then run the same command as [step 4 of the quickstart](#production-quickstart) with the new `--version`. Migration hooks run **before** the new pods roll out, so a failing migration blocks the release rather than leaving a partial rollout.
 

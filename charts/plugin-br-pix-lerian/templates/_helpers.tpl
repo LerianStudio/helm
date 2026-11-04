@@ -130,6 +130,12 @@ component keys, so a mismatch is a render error rather than a silent misroute.
 Usage:
   {{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "apps" "config" .Values.appsIngress) }}
 */}}
+{{- define "plugin-br-pix-lerian.validateIngressPath" -}}
+{{- if regexMatch "(^|/)(readyz|metrics)(/|$)" . -}}
+{{- fail (printf "plugin-br-pix-lerian: ingress path %q contains a reserved health or metrics segment" .) -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "plugin-br-pix-lerian.routedIngress" -}}
 {{- $ctx := .context }}
 {{- $cfg := .config }}
@@ -176,6 +182,7 @@ spec:
       http:
         paths:
           {{- range $route := $renderedRoutes }}
+          {{- include "plugin-br-pix-lerian.validateIngressPath" $route.path }}
           {{- $componentValues := index $ctx.Values $route.component }}
           {{- $serviceFullname := include "plugin-br-pix-lerian.componentFullname" (dict "context" $ctx "component" (default (kebabcase $route.component) $route.serviceName)) }}
           - path: {{ $route.path }}
@@ -565,24 +572,32 @@ annotations:
 {{- end -}}
 
 {{/*
-Probe initialDelaySeconds, defaulted on key PRESENCE rather than truthiness.
+Health preset (lerian-common.health) for one component, read with fromYaml.
+The chart takes ONLY these keys from it: ports, env, startupProbe, livenessProbe,
+readinessProbe, terminationGracePeriodSeconds and servicePorts. Replicas,
+strategy, pdb and autoscaling stay the chart's own (deliberately not passed in).
+Grace = drain 15 + shutdown 30 + 10 = 55 for the go stack.
 
-`{{ $values.readinessProbe.initialDelaySeconds | default 10 }}` is wrong for
-this one knob: Go templates treat 0 as empty, so an operator who sets
-`initialDelaySeconds: 0` -- a legal value meaning "start probing immediately" --
-silently gets the chart default instead. `dig` keys off whether the key is
-present, so an explicit 0 survives. Same trap `_migrations.tpl` documents for
-its own knobs.
+The effective image tag (component tag, else Chart.appVersion) is handed to the
+preset so its minImage guard also covers a tag inherited from appVersion.
 
-Only initialDelaySeconds needs this. periodSeconds, timeoutSeconds,
-successThreshold and failureThreshold all have a Kubernetes minimum of 1, so 0
-is not a value the API server accepts there and `default` is harmless.
-
-Usage:
-  {{ include "plugin-br-pix-lerian.probeInitialDelay" (dict "probe" $values.readinessProbe "default" 10) }}
+Usage: include "plugin-br-pix-lerian.health" (dict "context" $ "component" $component "values" $values) | fromYaml
 */}}
-{{- define "plugin-br-pix-lerian.probeInitialDelay" -}}
-{{- dig "initialDelaySeconds" .default (.probe | default dict) -}}
+{{/* First stable Pix release that serves HEALTH_PORT; its pre-releases are refused. */}}
+{{- define "plugin-br-pix-lerian.minImage" -}}1.3.0{{- end -}}
+{{- define "plugin-br-pix-lerian.health" -}}
+{{- range $key := list "HEALTH_PORT" "SHUTDOWN_DRAIN_DELAY" "SHUTDOWN_TIMEOUT" -}}
+{{- if hasKey ($.values.extraEnvVars | default dict) $key -}}
+{{- fail (printf "plugin-br-pix-lerian: %s.extraEnvVars.%s is owned by the health preset" $.component $key) -}}
+{{- end -}}
+{{- end -}}
+{{- $v := deepCopy .values -}}
+{{- $img := deepCopy ($v.image | default dict) -}}
+{{- $_ := set $img "tag" (default .context.Chart.AppVersion $img.tag) -}}
+{{- $_ := set $v "image" $img -}}
+{{- include "lerian-common.health" (dict
+      "name" (printf "plugin-br-pix-lerian-%s" .component) "component" $v "health" $v.health
+      "port" ($v.service).port "minImage" (include "plugin-br-pix-lerian.minImage" .context)) -}}
 {{- end -}}
 
 {{/*

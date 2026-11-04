@@ -151,17 +151,18 @@ não são validados um contra o outro no boot.
 ```bash
 kubectl get pods -n <namespace>
 kubectl get jobs -n <namespace>   # um Job de migração com falha fica por ttlSecondsAfterFinished (300 s por padrão); o bem-sucedido já foi removido (hook-succeeded)
-# health/readiness são servidos sob o prefixo de path de cada componente, ex. spi:
-curl <spi-url>/spi/health
-curl <spi-url>/spi/readyz
-# dict-hub -> /dict-hub/{health,readyz}, cob-hub -> /cob-hub/{health,readyz}, etc.
+# health/readiness no health port interno 8099 (porta de Service ClusterIP, nunca roteada por Ingress), via port-forward, ex. spi:
+kubectl port-forward -n <namespace> svc/plugin-br-pix-lerian-spi 8099:8099
+curl http://localhost:8099/health
+curl http://localhost:8099/readyz
+# o mesmo vale para todo componente: svc/plugin-br-pix-lerian-<componente> 8099:8099
 ```
 
 | Check | Comando/URL | Esperado | Se não bater, checar primeiro |
 |---|---|---|---|
 | Pods dos workloads habilitados | `kubectl get pods -n <ns>` | `Running` | `CreateContainerConfigError` → Secret ausente; `CrashLoopBackOff` → log indica a variável faltante |
 | Migration Jobs | `kubectl get jobs -n <ns>` | Nenhum Job com falha. O Helm remove cada Job de migração após o sucesso (`hook-succeeded`), então uma instalação bem-sucedida não lista nenhum | Um Job `Failed`/`BackoffLimitExceeded` fica por `migrations.ttlSecondsAfterFinished` (300 s por padrão); leia os logs antes disso. Se faltar schema, confirmar que o hub está habilitado (seção 5) e que um DSN foi informado |
-| Readiness | `curl <hub>/readyz` | 200, sem `required_keys` pendente no corpo da resposta | O corpo lista as chaves que a Systemplane store ainda não tem |
+| Readiness | `curl http://localhost:8099/readyz` (port-forward do Service do hub, porta 8099) | 200, sem `required_keys` pendente no corpo da resposta | O corpo lista as chaves que a Systemplane store ainda não tem |
 | Auth ativo | request de negócio sem token contra um hub | 401/403 | Se retornar 200, confirmar que `PLUGIN_AUTH_ENABLED` está `true` naquele componente e, em single-tenant, na Systemplane correspondente |
 | Roteamento correto | request de negócio contra `dictProxy`/`cobProxy` | 404 (esperado nesta versão) | Se esperava 200, confirmar se o tráfego deveria ir para o hub |
 | Transação ponta a ponta | fluxo real via `spi` (ou `adapterProviderMock` em homologação) | Sucesso completo |

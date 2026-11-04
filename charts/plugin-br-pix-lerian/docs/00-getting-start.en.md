@@ -154,17 +154,18 @@ the two are not cross-validated at boot.
 ```bash
 kubectl get pods -n <namespace>
 kubectl get jobs -n <namespace>   # a FAILED migration Job stays for ttlSecondsAfterFinished (300 s by default); a successful one is already deleted (hook-succeeded)
-# health/readiness are served under each component's own path prefix, e.g. spi:
-curl <spi-url>/spi/health
-curl <spi-url>/spi/readyz
-# dict-hub -> /dict-hub/{health,readyz}, cob-hub -> /cob-hub/{health,readyz}, etc.
+# health/readiness are served on the internal health port 8099 (a ClusterIP Service port, never routed by an Ingress), via port-forward, e.g. spi:
+kubectl port-forward -n <namespace> svc/plugin-br-pix-lerian-spi 8099:8099
+curl http://localhost:8099/health
+curl http://localhost:8099/readyz
+# the same holds for every component: svc/plugin-br-pix-lerian-<component> 8099:8099
 ```
 
 | Check | Command/URL | Expected | If it doesn't match, check first |
 |---|---|---|---|
 | Pods of enabled workloads | `kubectl get pods -n <ns>` | `Running` | `CreateContainerConfigError` → missing Secret; `CrashLoopBackOff` → log names the missing variable |
 | Migration Jobs | `kubectl get jobs -n <ns>` | No failed Job. Helm deletes each migration Job after it succeeds (`hook-succeeded`), so a successful install lists none | A `Failed`/`BackoffLimitExceeded` Job stays for `migrations.ttlSecondsAfterFinished` (300 s by default), so read its logs before then. If the schema is missing, check that the hub is enabled (section 5) and that a DSN was supplied |
-| Readiness | `curl <hub>/readyz` | 200, no pending `required_keys` in the response body | The body lists the keys the Systemplane store is still missing |
+| Readiness | `curl http://localhost:8099/readyz` (port-forward to the hub Service, port 8099) | 200, no pending `required_keys` in the response body | The body lists the keys the Systemplane store is still missing |
 | Auth active | business request without a token against a hub | 401/403 | If it returns 200, confirm `PLUGIN_AUTH_ENABLED` is `true` on that component and, in single-tenant, on its Systemplane workload |
 | Correct routing | business request against `dictProxy`/`cobProxy` | 404 (expected in this release) | If you expected 200, confirm whether traffic should go to the hub instead |
 | End-to-end transaction | real flow through `spi` (or `adapterProviderMock` in homologation) | Full success |

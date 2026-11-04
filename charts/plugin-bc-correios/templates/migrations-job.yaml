@@ -4,14 +4,16 @@
 Migrations Job: copies the SQL files from the app image (/migrations), then applies them with the
 migrate CLI. A regular release resource (the bundled PostgreSQL is created in the same release, so a
 pre-install hook would wait forever); the app's readiness holds until the schema exists. The name
-carries a hash of the spec, so a new image tag is a new Job and the immutable template never blocks
-an upgrade. The ArgoCD annotations (ignored by Helm) stop orphaned old Jobs blocking Synced. The password reaches the DSN through kubelet $(VAR) substitution and must be URL-safe.
+carries a hash of the spec and the Postgres connection the Job reads from the ConfigMap, so a new image
+tag or connection is a new Job and the immutable template never blocks an upgrade (a failed Job is replaced). The ArgoCD annotations (ignored by Helm) stop orphaned old Jobs blocking Synced. The password reaches the DSN through kubelet $(VAR) substitution and must be URL-safe.
 */ -}}
 {{- $spec := include "bc-correios.migrationsJobSpec" . -}}
+{{- $cm := $component.configmap -}}
+{{- $conn := list ($cm.POSTGRES_HOST | default (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .))) $cm.POSTGRES_PORT $cm.POSTGRES_USER $cm.POSTGRES_NAME $cm.POSTGRES_SSLMODE -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "bc-correios.fullname" . }}-migrations-{{ $spec | sha256sum | trunc 8 }}
+  name: {{ include "bc-correios.fullname" . }}-migrations-{{ print $spec ($conn | toJson) | sha256sum | trunc 8 }}
   namespace: {{ include "global.namespace" . }}
   annotations:
     argocd.argoproj.io/hook: Sync

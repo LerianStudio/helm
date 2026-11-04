@@ -18,6 +18,15 @@ Fixes:
 
 ---
 
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.0.2)
+
+Fixes:
+- Removed the `helm.sh/chart` label from the pod template labels in notifications. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.1...notifications-v1.0.2)
+
+---
+
 ## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.0.1)
 
 Fixes:

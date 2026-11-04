@@ -6,6 +6,19 @@ Fixes:
 - Ensure the chart version is not included in pod labels to maintain consistency. (@fredcamaral)
 
 Improvements:
+- Add verified upgrade guides for transitioning from `9.0.1` to `9.0.2`, providing users with clear instructions. (@fredcamaral)
+- Correct the chart documentation to align with the templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.2...plugin-fees-v9.0.3)
+
+---
+
+## [9.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.3)
+
+Fixes:
+- Ensure the chart version is not included in pod labels to maintain consistency. (@fredcamaral)
+
+Improvements:
 - Add verified upgrade guides for transitioning from `9.0.1` to `9.0.2`. (@fredcamaral)
 - Correct chart documentation to align with templates and application code. (@fredcamaral)
 

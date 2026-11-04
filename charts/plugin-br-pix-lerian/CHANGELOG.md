@@ -2,6 +2,21 @@
 
 ## [2.0.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.5)
 
+Features:
+- Documented the mock provider base URL as a required configuration. (@fredcamaral)
+- Added the verified `2.0.4` upgrade guide to assist users in transitioning to the new version. (@fredcamaral)
+
+Fixes:
+- Stopped pod restarts on chart-only releases to improve stability. (@fredcamaral)
+- Modified the configuration to hash config data only in pod checksums, enhancing security and consistency. (@fredcamaral)
+- Removed the chart label from pod templates and set a neutral default for mock configurations. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.4...plugin-br-pix-lerian-v2.0.5)
+
+---
+
+## [2.0.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.5)
+
 Fixes:
 - Prevent pod restarts during chart-only releases to enhance stability. (@fredcamaral)
 - Optimize pod checksums by hashing only the configuration data, reducing unnecessary changes. (@fredcamaral)

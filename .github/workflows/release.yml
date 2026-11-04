@@ -364,7 +364,7 @@ jobs:
           set -euo pipefail
           git fetch --quiet origin "$BRANCH"
           if ! git merge-base --is-ancestor "origin/$BRANCH" HEAD; then
-            echo "::error::$BRANCH moved during the run and ${CHART_NAME} published nothing; it releases with the next change under charts/${CHART_NAME} on the main tip, or from a new run started at the main tip"
+            echo "::error::$BRANCH moved during the run and ${CHART_NAME} published nothing; it releases with the next change merged under charts/${CHART_NAME}"
             exit 1
           fi
 

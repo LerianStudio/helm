@@ -67,8 +67,8 @@ global:
   # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT. development | develop | dev | local |
   # test are the app's development class (PLUGIN_AUTH_ENABLED=false is accepted,
   # dev-only bundles are allowed); `production` turns on the app's production
-  # gates (TLS, mandatory audit transport). The license (LICENSE_KEY +
-  # ORGANIZATION_IDS) is required in every environment. Default: production.
+  # gates (TLS, mandatory audit transport). The license (LICENSE_KEY) is
+  # required in every environment. Default: production.
   # Example: env: { name: "development" }
   env: {}
   # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
@@ -177,7 +177,8 @@ common:
   # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
   # a bundled plaintext datastore is enabled), allowCorsWildcard, allowInsecureOtel.
   security: {}
-  # -- organizationIds (ORGANIZATION_IDS — required in every environment). LICENSE_KEY is a secret.
+  # -- Retired: app 1.3.0 no longer reads ORGANIZATION_IDS (the licence is global).
+  # A license.organizationIds still set here is ignored. LICENSE_KEY is a secret.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
   # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
@@ -188,9 +189,8 @@ common:
   redis: {}
   # -- RabbitMQ (audit transport + business-event channel): enabled, vhost,
   # exchange, queue, healthCheckUrl, healthCheckAllowedHosts,
-  # requireHealthAllowedHosts, allowInsecureHealthCheck, allowInsecureTls,
-  # publisherConfirmTimeoutMs, publisherRecoveryInitialMs, publisherRecoveryMaxMs,
-  # publisherMaxRecoveries. host/ports/user/scheme live in datastores.broker;
+  # requireHealthAllowedHosts, allowInsecureHealthCheck, allowInsecureTls.
+  # host/ports/user/scheme live in datastores.broker;
   # RABBITMQ_DEFAULT_PASS (or a full RABBITMQ_URL) is a secret.
   rabbitmq: {}
   # -- Transactional outbox: enabled, tableName, dispatchIntervalSec, batchSize,
@@ -268,8 +268,7 @@ common:
   # (required in every environment),
   # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, IDP_M2M_CLIENT_SECRET,
   # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
-  # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, when a tier sources it from
-  # the secret store). Any other key is emitted verbatim.
+  # MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
   secrets: {}
   # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
   # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
@@ -431,7 +430,7 @@ worker:
   # ---------------------------------------------------------------------------
   # -- Leader-gated scheduler (BACEN verdict polling + maintenance jobs):
   # enabled, serviceName, leaderTtlSeconds, heartbeatSeconds,
-  # credentialIntervalHours, staleCleanupIntervalHours, retentionIntervalHours,
+  # staleCleanupIntervalHours, retentionIntervalHours,
   # quarantineRetentionDays, filingSweepEnabled, filingSweepIntervalMinutes,
   # filingSweepAgeMinutes (a SAFETY knob — see README), filingSweepBatchLimit.
   scheduler: {}

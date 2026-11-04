@@ -605,8 +605,6 @@ ENV_NAME: {{ $envName | quote }}
 ALLOW_INSECURE_TLS: {{ include "br-sta.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowCorsWildcard" "k" "ALLOW_CORS_WILDCARD" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowInsecureOtel" "k" "ALLOW_INSECURE_OTEL" "opt" true) }}
-# --- License (lib-license-go); LICENSE_KEY lives in the Secret ------------------
-{{ include $kv (dict "cm" $cm "p" $c.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "opt" true) }}
 # --- Multi-tenant (lerian-common.multiTenant.env; secrets via multiTenant.secret) --
 MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 {{- /* Tenant-manager client tuning as grouped params (common.multiTenant.*): the
@@ -692,10 +690,6 @@ RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "requireHealthAllowedHosts" "k" "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureHealthCheck" "k" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" "d" (ternary "true" "false" $rmqBundled)) }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureTls" "k" "RABBITMQ_ALLOW_INSECURE_TLS" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherConfirmTimeoutMs" "k" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "d" "5000") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryInitialMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "d" "1000") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryMaxMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "d" "30000") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherMaxRecoveries" "k" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "d" "10") }}
 # --- Outbox (lib-commons; production requires it) -----------------------------
 {{ include $kv (dict "cm" $cm "p" $c.outbox "f" "enabled" "k" "OUTBOX_ENABLED" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $c.outbox "f" "tableName" "k" "OUTBOX_TABLE_NAME" "d" "outbox_events") }}
@@ -859,7 +853,6 @@ envDefaults apply otherwise).
 {{ include $kv (dict "cm" $cm "p" $s "f" "serviceName" "k" "SCHEDULER_SERVICE_NAME" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "leaderTtlSeconds" "k" "SCHEDULER_LEADER_TTL_SECONDS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "heartbeatSeconds" "k" "SCHEDULER_HEARTBEAT_SECONDS" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $s "f" "credentialIntervalHours" "k" "SCHEDULER_CREDENTIAL_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "staleCleanupIntervalHours" "k" "SCHEDULER_STALE_CLEANUP_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "retentionIntervalHours" "k" "SCHEDULER_RETENTION_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "quarantineRetentionDays" "k" "SCHEDULER_QUARANTINE_RETENTION_DAYS" "opt" true) }}
@@ -941,10 +934,6 @@ REDIS_PASSWORD: {{ $s.REDIS_PASSWORD | quote }}
 {{- /* Bundled broker (Pattern B): the broker's initial user is read from here. */}}
 RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{- end }}
-{{- /* ORGANIZATION_IDS (an identifier whose home is common.license.organizationIds)
-   is also accepted in common.secrets for tiers that source it from the secret
-   store: it flows through the verbatim pass-through below, and the license
-   gate counts it there. */}}
 {{- range $k := list "RABBITMQ_DEFAULT_PASS" "RABBITMQ_URL" "RABBITMQ_ERLANG_COOKIE" "POSTGRES_REPLICA_PASSWORD" "MASTER_KEYS" "LICENSE_KEY" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "IDP_M2M_CLIENT_SECRET" }}
 {{- with index $s $k }}
 {{ $k }}: {{ . | quote }}
@@ -1173,7 +1162,6 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- /* License: required in EVERY environment (bootstrap/license.go
    errLicenseNotConfigured). The published image has no unlicensed mode. */ -}}
 {{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" "in every environment (the app refuses to boot without a license; there is no unlicensed mode)" "set" "common.secrets.LICENSE_KEY") -}}
-{{- include $req (dict "context" $ "key" "ORGANIZATION_IDS" "value" (index $data "ORGANIZATION_IDS") "secret" true "why" "in every environment (the app refuses to boot without a license; there is no unlicensed mode)" "set" "common.license.organizationIds") -}}
 {{- /* DEPLOYMENT_MODE vocabulary (normalizeDeploymentMode: trimmed, case-insensitive;
    empty means local): any other value refuses boot. */ -}}
 {{- $deployMode := lower (trim (toString (index $data "DEPLOYMENT_MODE" | default ""))) -}}
@@ -1315,8 +1303,11 @@ dropped from the ConfigMap/Secret escape hatch; NOTES.txt lists any still set.
 The reporter-events routing key became a code constant; the ACOS010 producer
 category moved into a code table; the expected-tenant comparison was removed;
 the POSTGRES_* server-tuning pair is docker-compose only; the TRUST_STORE_* knobs
-are not read by the current service.
+are not read by the current service. App 1.3.0 retired ORGANIZATION_IDS (the
+licence is global, a compiled constant), the RABBITMQ_PUBLISHER_* knobs (the
+publisher they tuned is gone) and SCHEDULER_CREDENTIAL_INTERVAL_HOURS (the
+credential recovery sweep now runs every 5 minutes).
 */}}
 {{- define "br-sta.removedKeys" -}}
-{{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" | toJson -}}
+{{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" "ORGANIZATION_IDS" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "SCHEDULER_CREDENTIAL_INTERVAL_HOURS" | toJson -}}
 {{- end -}}

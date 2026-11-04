@@ -45,7 +45,7 @@ chart falha de propósito até as conexões externas e os secrets estarem setado
 | Object storage S3 | Sempre em produção (o bucket de transfer guarda as duas direções) | `global.objectStorage.sta` (+ `staAuditExports` para exports de auditoria) + `common.secrets.AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` ou anotação IRSA / workload identity no `serviceAccount` |
 | Kafka / Redpanda | Ligado por default: fatos de negócio em `lerian.streaming.br-sta` (+ `.dlq`), o tópico que o br-sisbajud consome | `global.streaming` (brokers obrigatórios) + `common.secrets.STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT`. Com `topicAutoProvision: true` (default) os dois binários criam os tópicos no boot se o principal tiver CreateTopics; com `false` (tópicos via IaC) eles precisam existir antes |
 | plugin-access-manager | Obrigatório fora da classe de desenvolvimento (a app só aceita `PLUGIN_AUTH_ENABLED=false` em development/develop/dev/local/test) | `global.auth.enabled` + `global.auth.host` |
-| Gateway de licença Lerian | Todos os ambientes (`LICENSE_KEY` + `ORGANIZATION_IDS`; a app recusa o boot sem licença, não há modo sem licença); os pods precisam de egress até ele | `common.secrets.LICENSE_KEY`, `common.license.organizationIds` |
+| Gateway de licença Lerian | Todos os ambientes (`LICENSE_KEY`; a app recusa o boot sem licença, não há modo sem licença); os pods precisam de egress até ele | `common.secrets.LICENSE_KEY` |
 | BACEN STA | O upstream real (host de homologação ou produção) | `common.bacen.environment` (default `homologation`) |
 | Tenant manager | Só com multi-tenancy | `global.multiTenant` + `common.secrets.MULTI_TENANT_SERVICE_API_KEY` |
 
@@ -66,8 +66,7 @@ kubectl create secret generic br-sta-license -n sta-dev \
   --from-file=LICENSE_KEY=./br-sta.license
 helm dependency update charts/br-sta
 helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
-  --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}' \
-  --set common.license.organizationIds=<seu-organization-id>
+  --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}'
 ```
 
 O `values-dev.yaml` traz só valores de licença placeholder: o manager e o worker não
@@ -112,8 +111,8 @@ kubectl delete namespace sta-dev
 >
 > - [ ] PostgreSQL com `sslmode=require` (ou mais estrito), Valkey com TLS, RabbitMQ via
 >   `amqps` com a API de management via `https` (CA privada: ver "RabbitMQ com CA
->   privada" abaixo), Kafka com TLS + SASL, origens CORS explícitas, `LICENSE_KEY` e
->   `ORGANIZATION_IDS` setados.
+>   privada" abaixo), Kafka com TLS + SASL, origens CORS explícitas e `LICENSE_KEY`
+>   setada.
 > - [ ] O hook de migrations completa e, em seguida, manager e worker ficam `1/1 Running`.
 > - [ ] `GET /readyz` responde `200`, com `license`, `postgres`, `rabbitmq`, `redis`
 >   (`tls: true`) e `storage_transfer` `up`.
@@ -222,7 +221,7 @@ export generator).
 
 | Tema | O que saber | Antes de habilitar / como confirmar |
 |---|---|---|
-| Render fail-fast | O chart espelha a validação de boot da app: `MASTER_KEYS` (formato e versão), switch de auth, host de Postgres/Redis em single-tenant, host do RabbitMQ + URL do health check, licença em todos os ambientes (`LICENSE_KEY` + `ORGANIZATION_IDS`), gates de produção (senha do Postgres, sem `sslmode=disable`, RabbitMQ + outbox + canal de negócio ligados, bucket de transfer, sem CORS wildcard), brokers/SASL do streaming, exchange + resolver do reporter bridge | Leia o erro do render: ele diz exatamente o valor a setar |
+| Render fail-fast | O chart espelha a validação de boot da app: `MASTER_KEYS` (formato e versão), switch de auth, host de Postgres/Redis em single-tenant, host do RabbitMQ + URL do health check, licença em todos os ambientes (`LICENSE_KEY`), gates de produção (senha do Postgres, sem `sslmode=disable`, RabbitMQ + outbox + canal de negócio ligados, bucket de transfer, sem CORS wildcard), brokers/SASL do streaming, exchange + resolver do reporter bridge | Leia o erro do render: ele diz exatamente o valor a setar |
 | Guarda de produção | `redpandaBundle` e `mockSta` são recusados fora da classe dev | `helm template ... --set global.env.name=staging` falha citando os dois |
 | Worker de réplica única | Não há leader election para todos os loops: exatamente uma réplica, `Recreate` | Não escale o worker; escale o manager |
 | Scheduler de transfer | `TRANSFER_SCHEDULER_ENABLED` (default `true`) é o único caminho que envia ao BACEN | Log do worker `Transfers outbound fanout started` |
@@ -241,7 +240,7 @@ export generator).
 | Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging também são validadas neste gateway de produção. |
 | Refresh e carência | A chave é revalidada a cada 6 h. Quando o gateway não responde (erro de rede ou 5xx) depois de ter confirmado a chave uma vez, o processo segue servindo em janelas de carência decrescentes (2 d, 1 d, 12 h, 6 h, no máximo 3 d 18 h) e depois sai. Um processo que nunca foi confirmado ganha só 6 h. Uma recusa 4xx encerra a carência na hora. As janelas vivem em memória: um pod reiniciado durante uma queda começa sem confirmação |
 | Offline | Não há modo de licença offline nesta versão da app |
-| Gate de render | Em todos os ambientes o render falha sem `LICENSE_KEY` e `ORGANIZATION_IDS` (a app recusa o boot sem licença; não há modo sem licença) |
+| Gate de render | Em todos os ambientes o render falha sem `LICENSE_KEY` (a app recusa o boot sem licença; não há modo sem licença) |
 | Como confirmar | `GET /readyz` -> `checks.license` `up` |
 
 ---
@@ -276,7 +275,7 @@ curl -s localhost:14028/health                    # liveness
 | Job `redpanda-topics` preso em `waiting for ...` | A API Kafka do Redpanda embutido ainda não subiu (o Job espera `rpk topic list`) | Confira o pod `redpanda-0` e os logs dele; o Job tenta de novo até o broker responder |
 | Postgres `password authentication failed` depois de mudar as senhas dev | O volume de dados guarda a senha com que foi inicializado | `helm uninstall`, apague os PVCs, reinstale |
 | Chamadas do browser bloqueadas mesmo com `CORS_ALLOWED_ORIGINS` setado | O middleware de CORS lê `ACCESS_CONTROL_ALLOW_ORIGIN` | Use `common.cors.allowedOrigins`; `*` exige `common.security.allowCorsWildcard: true` e é recusado em produção |
-| Boot recusado, erros de licença | `LICENSE_KEY` / `ORGANIZATION_IDS` ausentes, chave de outro produto (`LCS-1005`) ou chave desconhecida (`LCS-1002`), ou sem egress até o gateway de licença (não há modo de licença offline nesta versão da app) | Sete os dois, use a chave deste produto, libere o egress (seção 5, Licença) |
+| Boot recusado, erros de licença | `LICENSE_KEY` ausente, chave de outro produto (`LCS-1005`) ou chave desconhecida (`LCS-1002`), ou sem egress até o gateway de licença (não há modo de licença offline nesta versão da app) | Sete a `LICENSE_KEY`, use a chave deste produto, libere o egress (seção 5, Licença) |
 | `Failed to connect to plugin-auth` no boot | O plugin-access-manager não está instalado ou ainda não está acessível | Informativo: os pods ficam Ready mesmo assim. Chamadas autenticadas precisam do plugin-access-manager |
 | `PLUGIN_AUTH_ENABLED=false is only accepted in a development-class environment` | Auth desligado em `staging`/`production` | Ligue `global.auth` ou use um `global.env.name` da classe dev |
 | `MASTER_KEYS is malformed` / `must reference a key present` | Formato `versão:hex` errado ou `MASTER_KEY_VERSION` divergente | `v1:<64 chars hex>` e `common.credentials.masterKeyVersion: v1` |

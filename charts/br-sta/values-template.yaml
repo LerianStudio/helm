@@ -20,7 +20,7 @@ global:
   # -- production (the default) turns on the app's production gates: TLS,
   # mandatory audit transport, transfer bucket. development | develop |
   # dev | local | test are the development class (auth may be off). The license
-  # (LICENSE_KEY + ORGANIZATION_IDS) is required in every environment.
+  # (LICENSE_KEY) is required in every environment.
   env:
     name: "production"
   datastores:
@@ -91,8 +91,6 @@ common:
     trustedProxies: ""                 # same CIDR (TRUSTED_PROXIES, lib-auth client-IP forwarding)
   # Access-manager permission declaration (manager); off by default:
   # identity: { declarationEnabled: true, host: "<access-manager-idp-url>", m2mClientId: "<client-id>" }
-  license:
-    organizationIds: ""                # <- REQUIRED (every environment)
   bacen:
     environment: "homologation"        # production => the live BACEN STA host
   transfer:

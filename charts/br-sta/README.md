@@ -60,7 +60,7 @@ $ helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version <new-vers
 
 App 1.2.0 ships migration `000021_replace_audit_outbox_with_outbox_events`, which **drops the `audit_outbox` table** and moves audit and business facts onto `outbox_events`, drained by the lib-commons outbox dispatcher. No rows are copied: a fact still pending in `audit_outbox` when the migrations Job runs is lost, on both channels (`target` `audit`, the audit trail, and `business`, the outbound result delivery). Drain it before upgrading:
 
-1. Stop new facts: scale the manager to 0 and, on the worker, pause the jobs that change transfer state (`common.transfer.schedulerEnabled: false`, `common.transfer.inboundEnabled: false`, `worker.scheduler.enabled: false`), keeping RabbitMQ up and the 1.0.x audit and business publishers on.
+1. Stop new facts: scale the manager to 0 and, on the worker, pause the jobs that change transfer state (`common.transfer.schedulerEnabled: false`, `common.transfer.inboundEnabled: false`, `worker.scheduler.enabled: false`, and `common.reporterEvents.consumerEnabled: false`, since the Reporter bridge creates transfers), keeping RabbitMQ up and the 1.0.x audit and business publishers on.
 2. Wait until nothing is pending:
 
    ```sql

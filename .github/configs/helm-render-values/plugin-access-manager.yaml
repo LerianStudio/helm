@@ -6,3 +6,6 @@ auth:
   secrets:
     AUTHORIZER_CLIENT_SECRET: "sample"
     LICENSE_KEY: "sample"
+caradhras:
+  secrets:
+    LICENSE_KEY: "sample"

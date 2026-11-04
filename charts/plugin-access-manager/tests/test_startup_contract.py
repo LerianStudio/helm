@@ -16,7 +16,9 @@ BASE = {
     'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'},
              'initUser': {'enabled': False}},
     'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'}},
+    'caradhras': {'secrets': {'LICENSE_KEY': 'render-only'}},
 }
+PRE_LICENSE = {'image': {'tag': '1.8.6'}, 'migrations': {'image': {'tag': '1.8.6'}}}
 
 
 class UniqueLoader(yaml.SafeLoader):
@@ -424,6 +426,13 @@ class StartupContract(unittest.TestCase):
             self.succeeds({c: {'secrets': {'LICENSE_KEY': ''}, 'useExistingSecret': True,
                                'existingSecretName': 'x'}})
 
+    def test_caradhras_license_key_required(self):
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        self.fails({'caradhras': no_key}, 'caradhras.secrets.LICENSE_KEY')
+        self.succeeds({'caradhras': {'secrets': {'LICENSE_KEY': 'k'}}})
+        self.succeeds({'caradhras': {**no_key, **PRE_LICENSE}})
+        self.fails({'caradhras': {**no_key, 'image': {'tag': '2.0.0-beta.1'}}}, 'caradhras.secrets.LICENSE_KEY')
+
     def test_ingress_falls_back_to_global(self):
         glob = {'global': {'ingress': {'className': 'nginx', 'domain': 'example.test',
                                        'tls': [{'secretName': 'tls', 'hosts': ['auth.example.test']}]}}}
@@ -626,12 +635,12 @@ class StartupContract(unittest.TestCase):
         self.assertEqual(configmap['data']['redisEndpoint'], 'valkey:6379')
 
     def test_caradhras_without_license_key_renders_no_env(self):
-        env, secret = self.caradhras_license()
+        env, secret = self.caradhras_license({'LICENSE_KEY': ''}, **PRE_LICENSE)
         self.assertIsNone(env)
         self.assertIsNone(secret)
 
     def test_caradhras_redis_endpoint_only_secret_has_no_license_key(self):
-        env, secret = self.caradhras_license({'redisEndpoint': 'valkey:6379,100,pw'})
+        env, secret = self.caradhras_license({'LICENSE_KEY': '', 'redisEndpoint': 'valkey:6379,100,pw'}, **PRE_LICENSE)
         self.assertIsNone(env)
         self.assertEqual(list(secret['data']), ['redisEndpoint'])
 

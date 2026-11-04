@@ -312,7 +312,6 @@ worker:
     # Storage Provider - OBJECT_STORAGE_ENDPOINT/_REGION/_BUCKET/_USE_PATH_STYLE
     # now emitted by lerian-common.objectStorage.value (name "fetcher"); see
     # global.objectStorage.fetcher.
-    STORAGE_PROVIDER: "seaweedfs"
     OBJECT_STORAGE_KEY_PREFIX: ""
     # Rate Limiting - Three-tier system with Redis backend
     # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)
@@ -336,9 +335,6 @@ worker:
     # common.configmap.STREAMING_SASL_MECHANISM / STREAMING_TLS_ENABLED are set
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
-    # Storage Encryption Keys
-    CRYPTO_ENCRYPT_FILE_STORAGE: ""
-    CRYPTO_HASH_SECRET_KEY_FILE_STORAGE: ""
     # CRM Plugin Encryption Keys
     CRYPTO_ENCRYPT_SECRET_KEY_PLUGIN_CRM: ""
     CRYPTO_HASH_SECRET_KEY_PLUGIN_CRM: ""
@@ -358,8 +354,8 @@ worker:
 # global.datastores.
 datastores: {}
 common:
-  # NOTE: REDIS_TLS and RABBITMQ_TLS (read by the app) are not emitted by any datastore mask
-  # (global.datastores.*.tls/scheme, global.cloud); set them here when the endpoint needs TLS.
+  # NOTE: REDIS_TLS follows global.datastores.redis.tls / global.cloud. RABBITMQ_TLS is not
+  # emitted by any datastore mask; set it here when the broker needs TLS.
   # -- Shared (common) application config for BOTH the manager and worker
   # surfaces. Defaults for every shared key live in the templates
   # (fetcher.commonConfigmapData): dependency CONNECTIONS resolve through
@@ -377,7 +373,6 @@ secrets:
   REDIS_USER: ""
   REDIS_PASSWORD: ""
   LICENSE_KEY: ""
-  ORGANIZATION_IDS: ""
 # =============================================================================
 # Optional Dependencies - Enable to deploy components in Kubernetes
 # =============================================================================
@@ -526,13 +521,13 @@ valkey:
   auth:
     enabled: false
 # KEDA - Kubernetes Event-driven Autoscaling
-# NOTE: enabling this installs the KEDA operator only. The chart has no ScaledObject
+# NOTE: enabling this installs the KEDA operator and its CRDs only. The chart has no ScaledObject
 # template, so it does not autoscale the manager or worker; use manager.autoscaling (HPA)
 # or create your own ScaledObject.
 keda:
   enabled: false
   crds:
-    install: false
+    install: true
   webhookCerts:
     generate: true
   serviceAccount:

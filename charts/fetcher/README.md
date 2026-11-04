@@ -100,7 +100,7 @@ global:
 ```
 
 `global.cloud` sets the connection TOPOLOGY (MongoDB TLS parameters, AMQP scheme/ports, S3
-path-style) for the masks above; it does not set Redis TLS, so set `common.configmap.REDIS_TLS` when your Redis needs TLS. Only the ENDPOINTS (host/port) still come
+path-style) for the masks above; it sets Redis TLS (`REDIS_TLS`) too. Only the ENDPOINTS (host/port) still come
 from `global.datastores`/`global.objectStorage` — a cloud preset can't know
 your DocumentDB/ElastiCache/AmazonMQ host. A native `common.configmap.<KEY>`
 (or `manager.configmap.<KEY>` / `worker.configmap.<KEY>` for their own masked
@@ -176,7 +176,7 @@ Both deployables render probes, `terminationGracePeriodSeconds`, the drain env (
 | `common.configmap.RABBITMQ_PORT_AMQP` | RabbitMQ AMQP port | `5672` |
 | `common.configmap.REDIS_HOST` | Redis/Valkey host | `valkey` |
 | `common.configmap.REDIS_PORT` | Redis/Valkey port | `6379` |
-| `common.configmap.REDIS_TLS` | Connect to Redis/Valkey over TLS. The app reads it, but no datastore mask (`global.datastores.redis.tls`, `global.cloud`) emits it: set it here. Passes through as-is when set. | unset (app default `false`) |
+| `common.configmap.REDIS_TLS` | Connect to Redis/Valkey over TLS. Resolves from `global.datastores.redis.tls` or the `global.cloud` preset; set it here to override. | `false` |
 | `common.configmap.RABBITMQ_TLS` | Connect to RabbitMQ over TLS. The app reads it, but no datastore mask (`global.datastores.broker.scheme`, `global.cloud`) emits it: set it here. Passes through as-is when set. | unset (app default `false`) |
 | `common.configmap.ALLOW_INSECURE_TLS` | Allow plaintext (non-TLS) connections to MongoDB/RabbitMQ/Redis. Bundled dev-mode dependencies have no TLS, so the app refuses to connect unless this is `"true"`. Set to `"false"` in production with TLS-terminated backends. | `"true"` |
 | `global.streaming.enabled` | Enables lib-streaming (CloudEvents) job notifications for the worker. When unset, the template defaults `STREAMING_ENABLED` to `"true"`. `worker.configmap.STREAMING_ENABLED` overrides it. With streaming on, the worker needs a reachable broker. | unset (template default `"true"`) |

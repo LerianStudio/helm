@@ -5,7 +5,7 @@ Migrations Job: copies the SQL files from the app image (/migrations), then appl
 migrate CLI. A regular release resource (the bundled PostgreSQL is created in the same release, so a
 pre-install hook would wait forever); the app's readiness holds until the schema exists. The name
 carries a hash of the spec, so a new image tag is a new Job and the immutable template never blocks
-an upgrade. The password reaches the DSN through kubelet $(VAR) substitution and must be URL-safe.
+an upgrade. The ArgoCD annotations (ignored by Helm) stop orphaned old Jobs blocking Synced. The password reaches the DSN through kubelet $(VAR) substitution and must be URL-safe.
 */ -}}
 {{- $spec := include "bc-correios.migrationsJobSpec" . -}}
 apiVersion: batch/v1
@@ -13,6 +13,9 @@ kind: Job
 metadata:
   name: {{ include "bc-correios.fullname" . }}-migrations-{{ $spec | sha256sum | trunc 8 }}
   namespace: {{ include "global.namespace" . }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
   labels:
     {{- include "bc-correios.labels" (dict "context" . "component" "migrations" "name" "migrations") | nindent 4 }}
 spec:

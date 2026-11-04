@@ -229,11 +229,23 @@ template:
     restartPolicy: Never
     automountServiceAccountToken: false
     securityContext:
-      runAsNonRoot: true
-      runAsUser: 65532
-      runAsGroup: 65532
-      seccompProfile:
-        type: RuntimeDefault
+      {{- toYaml $component.podSecurityContext | nindent 6 }}
+    {{- with $component.nodeSelector }}
+    nodeSelector:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $component.affinity }}
+    affinity:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $component.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $component.hostAliases }}
+    hostAliases:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
     {{- with $component.imagePullSecrets }}
     imagePullSecrets:
       {{- toYaml . | nindent 6 }}
@@ -274,11 +286,7 @@ template:
           - -database=postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_NAME)?sslmode=$(POSTGRES_SSLMODE)
           - up
         securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop:
-              - ALL
+          {{- toYaml $component.securityContext | nindent 10 }}
         volumeMounts:
           - name: migrations
             mountPath: /migrations

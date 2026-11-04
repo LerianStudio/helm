@@ -1,14 +1,15 @@
 # install-test.sh grants the GHCR pull secret to the namespace's default ServiceAccount
 # only; the chart's own ServiceAccount would pull the private image anonymously (401).
 # kind runs no Access Manager (its images need a license). The app accepts plugin auth
-# off only when APP_ENV is development, so the gate sets it.
+# off only when ENV_NAME is a development name, so the gate sets it.
 bc-correios:
   serviceAccount:
     create: false
   configmap:
     ENV_NAME: "development"
-    APP_ENV: "development"
     PLUGIN_AUTH_ENABLED: "false"
-    # The app requires a license only outside development; the placeholder keeps the
-    # config complete (README); the app defaults ORGANIZATION_IDS to "global".
+    # The license is required in every environment; the placeholder keeps the config complete
+    # (README). install-test.sh replaces it with the CI license.
     LICENSE_KEY: "IT_LICENSE_KEY"
+    # The app boots with an unreachable broker: its events wait in the outbox.
+    STREAMING_BROKERS: "broker.example.com:9092"

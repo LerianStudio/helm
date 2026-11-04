@@ -31,32 +31,6 @@ global:
         name: ""
       # -- Password for bc_correios role (ignored if useExistingSecret.name is set)
       password: ""
-  # -- Bootstrap job for external RabbitMQ: imports the exchanges, queues, and bindings from
-  # files/rabbitmq/load_definitions.json (vhost "/"). It does NOT create users or permissions.
-  externalRabbitmqDefinitions:
-    # -- Enable or disable the RabbitMQ bootstrap job
-    enabled: false
-    # -- RabbitMQ connection settings
-    connection:
-      # -- RabbitMQ protocol (http or https)
-      protocol: "http"
-      # -- RabbitMQ host (management API endpoint)
-      host: "plugin-bc-correios-rabbitmq"
-      # -- RabbitMQ HTTP management port
-      port: "15672"
-      # -- RabbitMQ AMQP port (for connectivity check)
-      portAmqp: "5672"
-      # -- Skip TLS verification for self-signed certificates (not recommended for production)
-      skipTlsVerify: false
-    # -- Admin credentials for RabbitMQ management API
-    rabbitmqAdminLogin:
-      useExistingSecret:
-        # -- Name of existing secret containing RABBITMQ_ADMIN_USER and RABBITMQ_ADMIN_PASS keys
-        name: ""
-      # -- Admin username (ignored if useExistingSecret.name is set)
-      username: "admin"
-      # -- Admin password (ignored if useExistingSecret.name is set)
-      password: ""
 bc-correios:
   # -- Service name
   name: bc-correios
@@ -72,7 +46,7 @@ bc-correios:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "1.1.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -205,13 +179,10 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    # ENV_NAME sets the libraries' environment (auth-client log format, lib-commons security tier).
-    # The app's own validation follows APP_ENV (chart default "production"): the chart then requires
-    # LICENSE_KEY, a POSTGRES_SSLMODE other than "disable" and explicit ALLOWED_ORIGINS at render time.
-    # Set APP_ENV "development" for a development install, which skips the app's production checks.
+    # ENV_NAME is the app's environment. Unless it is "development", the app (and the chart, at render
+    # time) refuses a POSTGRES_SSLMODE of "disable" and ALLOWED_ORIGINS empty or "*".
     ENV_NAME: "production"
     APP_NAME: "plugin-bc-correios"
-    APP_VERSION: "1.0.0"
     LOG_LEVEL: "info"
     SERVER_PORT: "9090"
     SERVER_READ_TIMEOUT_SEC: "30"
@@ -229,10 +200,12 @@ bc-correios:
     POSTGRES_SSLMODE: "disable"
     POSTGRES_MAX_CONNS: "50"
     POSTGRES_MIN_CONNS: "5"
-    # RabbitMQ
-    RABBITMQ_USER: "plugin-bc-correios"
-    # Chart derives the in-cluster host automatically (collapse-aware). Set only for an external/overridden endpoint.
-    RABBITMQ_HOST: ""
+    # Streaming broker (Kafka API). REQUIRED: the app refuses to boot without it, e.g. "broker.example.com:9092".
+    # Other STREAMING_* settings (STREAMING_CLIENT_ID, STREAMING_TLS_CA_CERT) go in extraEnvVars.
+    STREAMING_BROKERS: ""
+    STREAMING_TLS_ENABLED: "false"
+    # STREAMING_SASL_MECHANISM: "SCRAM-SHA-512"
+    # STREAMING_SASL_USERNAME: ""
     # Cache (Valkey)
     # Chart derives the in-cluster address automatically (collapse-aware). Set only for an external/overridden endpoint.
     CACHE_ADDR: ""
@@ -247,24 +220,19 @@ bc-correios:
     BC_CORREIO_ENVIRONMENT: "homologation"
     BC_CORREIO_RATE_LIMIT_PER_MINUTE: "50"
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
-    BC_CORREIO_RETRY_MAX_RETRIES: "3"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
     # Plugin Auth (Access Manager). The app reads PLUGIN_AUTH_ADDRESS and lib-auth reads PLUGIN_AUTH_HOST; the chart renders both
     # with one value (PLUGIN_AUTH_HOST, when set, wins). With useExistingSecret it renders no PLUGIN_AUTH_HOST unless configmap sets it.
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
-    # License. Required when APP_ENV is not "development" (chart default "production").
+    # License. Required in every environment.
     LICENSE_KEY: ""
     # AI Insights
     FEATURE_AI_INSIGHTS_ENABLED: "true"
-    AI_TENANT_RATE_LIMIT_PER_MIN: "50"
-    AI_TENANT_MAX_CONCURRENT: "3"
-    AI_GLOBAL_MAX_CONCURRENT: "15"
-    # Multi-tenancy
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""
-    DEFAULT_TENANT_ID: "00000000-0000-0000-0000-000000000001"
+    # Defaults 50 and 3, applied by the template. The keys stay unset here so that a values file that still
+    # sets the previous names (AI_TENANT_RATE_LIMIT_PER_MIN, AI_TENANT_MAX_CONCURRENT) keeps its values.
+    # AI_RATE_LIMIT_PER_MIN: "50"
+    # AI_MAX_CONCURRENT: "3"
     # Observability
     TRACING_ENABLED: "false"
     METRICS_ENABLED: "false"
@@ -274,14 +242,6 @@ bc-correios:
   secrets:
     # PostgreSQL credentials
     POSTGRES_PASSWORD: ""
-    # RabbitMQ credentials
-    RABBITMQ_PASS: ""
-    RABBITMQ_URL: ""
-    # Erlang cookie for the bundled RabbitMQ. REQUIRED when rabbitmq.enabled (the broker reads
-    # it from this Secret via rabbitmq.authentication.existingSecret + erlangCookie.secretKey).
-    # Must be a STABLE value — changing it across upgrades breaks the cluster.
-    # Generate once with: openssl rand -hex 32
-    RABBITMQ_ERLANG_COOKIE: ""
     # AES-256 encryption key (32 bytes — override with a real key in production)
     ENCRYPTION_KEY: ""
     # Cache (Valkey) credentials. Only used for an external Valkey (valkey.enabled=false or
@@ -292,8 +252,8 @@ bc-correios:
     # Object storage credentials
     OBJECT_STORAGE_ACCESS_KEY: ""
     OBJECT_STORAGE_SECRET_KEY: ""
-    # Plugin Auth M2M client secret (optional)
-    # PLUGIN_AUTH_CLIENT_SECRET: ""
+    # Streaming broker SASL password (optional)
+    # STREAMING_SASL_PASSWORD: ""
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
@@ -366,64 +326,6 @@ postgresql:
     extraEnvVars:
       - name: POSTGRESQL_MAX_CONNECTIONS
         value: "200"
-# RabbitMQ configuration
-rabbitmq:
-  enabled: true
-  image:
-    tag: "4.0.5"
-  # NOTE: `persistence.size` is NOT a key of the groundhog2k/rabbitmq subchart and has no effect:
-  # the broker data volume (/var/lib/rabbitmq) renders as an emptyDir, so queue data does not
-  # survive a pod restart. The subchart's own key for a PVC is `storage.requestedSize`; set it on a
-  # new install, because Kubernetes rejects adding a volume claim template to an existing StatefulSet.
-  persistence:
-    size: 4Gi
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: "1"
-      memory: 1Gi
-  podSecurityContext:
-    runAsUser: 1001
-    runAsGroup: 1001
-    fsGroup: 1001
-    fsGroupChangePolicy: "OnRootMismatch"
-    seccompProfile: {type: RuntimeDefault}
-  containerSecurityContext:
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
-    capabilities: {drop: ["ALL"]}
-  # The broker reads its Erlang cookie from the application Secret (single source) via
-  # authentication.existingSecret + erlangCookie.secretKey. Setting existingSecret only
-  # affects keys that declare a secretKey, so the broker user/password behaviour is
-  # unchanged; the cookie is no longer a deterministic literal shipped in the chart.
-  # `user.value` / `password.value` below are IGNORED while existingSecret is set (they are only
-  # honoured without existingSecret), and neither declares a secretKey, so the bundled broker is
-  # started WITHOUT RABBITMQ_DEFAULT_USER/RABBITMQ_DEFAULT_PASS (the broker would not create a
-  # default user anyway while it imports the definitions file). The chart declares the app account
-  # in the imported definitions instead: user bc-correios.configmap.RABBITMQ_USER, password
-  # bc-correios.secrets.RABBITMQ_PASS, full permissions on vhost "/". With
-  # bc-correios.useExistingSecret the password is not known to the chart: provision the account
-  # that bc-correios.secrets.RABBITMQ_URL points at yourself (or use an external broker).
-  # RABBITMQ_ERLANG_COOKIE is REQUIRED in the app Secret when rabbitmq.enabled (see
-  # secrets + bc-correios.rabbitmqErlangCookieRequired). Must be a STABLE value — changing
-  # it across upgrades breaks the cluster. Generate once with: openssl rand -hex 32
-  # If the app Secret name is overridden (fullnameOverride/nameOverride), update
-  # authentication.existingSecret to match.
-  authentication:
-    existingSecret: "bc-correios"
-    user:
-      value: "plugin-bc-correios"
-    password:
-      value: ""
-    erlangCookie:
-      secretKey: RABBITMQ_ERLANG_COOKIE
-  extraSecrets:
-    - name: "bc-correios-rabbitmq-load-definition"
-      mountPath: /etc/rabbitmq/definitions
-  customConfig: |
-    management.load_definitions = /etc/rabbitmq/definitions/load_definition.json
 # SeaweedFS (inline — no external subchart)
 seaweedfs:
   enabled: true

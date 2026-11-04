@@ -1,7 +1,5 @@
 {{- $component := index .Values "bc-correios" -}}
 {{- if $component.enabled }}
-{{- include "bc-correios.rabbitmqErlangCookieRequired" . }}
-{{- include "bc-correios.rabbitmqExistingSecretConsistent" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -73,10 +71,6 @@ spec:
 
               # Wait for PostgreSQL
               wait_for_service "$POSTGRES_HOST" "$POSTGRES_PORT"
-
-              # Wait for RabbitMQ (AMQP port)
-              # Uses RABBITMQ_HOST from configmap — no credentials required for TCP check
-              wait_for_service "$RABBITMQ_HOST" "5672"
 
               # Wait for Valkey/Cache
               CACHE_HOST=$(echo "$CACHE_ADDR" | cut -d: -f1)

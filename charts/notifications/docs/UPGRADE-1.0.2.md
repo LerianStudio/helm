@@ -20,11 +20,12 @@ Every pod of the release restarts once during this upgrade.
 
 ### Pod templates no longer carry the `helm.sh/chart` label
 
-The pod templates of the `api`, `worker-email`, `worker-sms` and `worker-webhook` Deployments no longer carry the `helm.sh/chart` label. The label contains the chart version, so every chart release changed the pod template and restarted the pods, even when nothing else changed.
+The pod templates of the `api`, `worker-email`, `worker-sms` and `worker-webhook` Deployments no longer carry the `helm.sh/chart` label. The label contains the chart version.
 
 - The label stays on the metadata of every resource, including the Deployments.
+- The migrations Job runs as a pre-upgrade hook, as on every upgrade, and is deleted when it succeeds.
 - Selectors are unchanged.
-- The pod template change makes Kubernetes roll each Deployment once on this upgrade. Later chart releases do not restart pods only because the chart version changed.
+- The pod template change makes Kubernetes roll each Deployment once on this upgrade.
 
 ## Migration Steps
 

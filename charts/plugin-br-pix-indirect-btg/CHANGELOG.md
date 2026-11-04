@@ -1,5 +1,31 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.3.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.3)
+
+Fixes:
+- Removed the chart label from pod templates to streamline configuration. (@fredcamaral)
+
+Improvements:
+- Added the verified `5.3.2` upgrade guide to the documentation to assist users with the update process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.3.2...plugin-br-pix-indirect-btg-v5.3.3)
+
+---
+
+## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.2)
+
+Fixes:
+- Apply bundled PostgreSQL settings under the primary configuration for improved database integration. (@fredcamaral)
+- Correct the upgrade guide for `plugin-br-pix-indirect-btg` `5.2` to ensure accurate instructions. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitions from `5.2.1` to `5.3.1` to assist users in updating smoothly. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.3.1...plugin-br-pix-indirect-btg-v5.3.2)
+
+---
+
 ## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.2)
 
 Fixes:

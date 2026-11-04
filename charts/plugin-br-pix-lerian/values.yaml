@@ -1940,8 +1940,7 @@ valkey:
 # Used only by dict-hub-vsync for RABBITMQ_URI.
 # Chosen path: EXTERNAL broker with a CA-signed TLS cert (trusted by the system
 # trust store) on amqps://:5671. The in-cluster subchart would present a
-# self-signed cert that lib-commons rejects, so it stays disabled — the anacleto
-# chaos/fuzzing overlays also migrate off the embedded broker to external.
+# self-signed cert that lib-commons rejects, so it stays disabled.
 rabbitmq:
   enabled: false
   image:

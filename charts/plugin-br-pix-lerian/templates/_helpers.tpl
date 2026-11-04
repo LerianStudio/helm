@@ -74,6 +74,14 @@ Usage: include "plugin-br-pix-lerian.labels" (dict "context" $ "component" "spi"
 */}}
 {{- define "plugin-br-pix-lerian.labels" -}}
 helm.sh/chart: {{ include "plugin-br-pix-lerian.chart" .context }}
+{{ include "plugin-br-pix-lerian.podLabels" (dict "context" .context "component" .component) }}
+{{- end }}
+
+{{/*
+Labels for pod templates: common labels without helm.sh/chart. The checksum
+annotations hash only the data, so a chart version bump alone does not roll pods.
+*/}}
+{{- define "plugin-br-pix-lerian.podLabels" -}}
 {{ include "plugin-br-pix-lerian.selectorLabels" (dict "context" .context "component" .component) }}
 app.kubernetes.io/version: {{ .context.Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
@@ -554,9 +562,9 @@ Inputs (dict):
 {{- end -}}
 {{- end -}}
 annotations:
-  checksum/configmap: {{ include (print $ctx.Template.BasePath "/" $component "/configmap.yaml") $ctx | sha256sum }}
+  checksum/configmap: {{ (include (print $ctx.Template.BasePath "/" $component "/configmap.yaml") $ctx | fromYaml).data | toYaml | sha256sum }}
   {{- if not $extern }}
-  checksum/secret: {{ include (print $ctx.Template.BasePath "/" $component "/secrets.yaml") $ctx | sha256sum }}
+  checksum/secret: {{ (include (print $ctx.Template.BasePath "/" $component "/secrets.yaml") $ctx | fromYaml).stringData | toYaml | sha256sum }}
   {{- end }}
   {{- with $pod }}
   {{- toYaml . | nindent 2 }}

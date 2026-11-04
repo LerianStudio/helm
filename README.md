@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.6.2` | 1.6.1 | 1.6.1 |
+| `0.6.3` | 1.6.1 | 1.6.1 |
 -----------------
 
 ### BR JD Courier
@@ -121,7 +121,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.4` | 1.1.0 |
+| `2.0.5` | 1.1.0 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.3.2` | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 |
+| `5.3.3` | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 |
 
 -----------------
 

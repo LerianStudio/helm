@@ -3,6 +3,34 @@
 ## [1.0.4](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.4)
 
 Improvements:
+- Clarified RBAC grants in chart comments to improve readability and understanding. (@fredcamaral)
+- Corrected the comment regarding cluster-scoped write permissions in RBAC. (@fredcamaral)
+- Updated chart documentation to align with templates and application code. (@fredcamaral)
+
+Docs:
+- Added verified upgrade guides for `1.0.3`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.3...agent-v1.0.4)
+
+---
+
+## [1.0.4](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.4)
+
+Improvements:
+- Clearly stated RBAC grants in chart comments to improve clarity. (@fredcamaral)
+- Corrected the cluster-scoped write comment in RBAC for accuracy. (@fredcamaral)
+- Updated chart documentation to align with templates and application code. (@fredcamaral)
+
+Docs:
+- Added verified upgrade guides for `1.0.3`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.3...agent-v1.0.4)
+
+---
+
+## [1.0.4](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.4)
+
+Improvements:
 - Clearly state RBAC grants in chart comments to enhance readability and understanding. (@fredcamaral)
 - Correct the comment regarding cluster-scoped write permissions in RBAC to ensure accuracy. (@fredcamaral)
 - Update chart documentation to align with templates and application code for consistency. (@fredcamaral)

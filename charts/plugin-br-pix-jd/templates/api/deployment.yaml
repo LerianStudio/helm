@@ -36,7 +36,7 @@ spec:
         {{- . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "api") | nindent 8 }}
+        {{- include "plugin-br-pix-jd.componentPodLabels" (dict "root" $ "name" "api") | nindent 8 }}
     spec:
       serviceAccountName: {{ include "plugin-br-pix-jd.serviceAccountName" . }}
       {{- with (.Values.api.imagePullSecrets | default (.Values.global).imagePullSecrets) }}

@@ -3,6 +3,38 @@
 ## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.0.4)
 
 Fixes:
+- Align chart defaults with the `3.1.0` app. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `v2.0.3`. (@dy-shimizu)
+- Fix `v2.0.3` upgrade guide. (@gandalf-at-lerian)
+- Apply review fixes to chart documentation and upgrade guides. (@dy-shimizu, @gandalf-at-lerian)
+- Include values file in upgrade preview. (@gandalf-at-lerian)
+- Align final upgrade command with Step 4. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v2.0.3...streaming-hub-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.0.4)
+
+Fixes:
+- Align chart defaults with the `3.1.0` app to ensure consistency. (@fredcamaral)
+
+Improvements:
+- Add a Helm upgrade guide for `v2.0.3` to assist users with the upgrade process. (@dy-shimizu)
+- Fix the `v2.0.3` upgrade guide to correct errors and improve clarity. (@gandalf-at-lerian)
+- Apply review fixes to chart documentation and upgrade guides for better accuracy and readability. (@dy-shimizu, @gandalf-at-lerian)
+- Include the values file in the upgrade preview to provide a comprehensive overview. (@gandalf-at-lerian)
+- Align the final upgrade command with Step 4 to ensure the instructions are clear and accurate. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v2.0.3...streaming-hub-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.0.4)
+
+Fixes:
 - Align chart defaults with the `3.1.0` app to ensure consistency. (@fredcamaral)
 
 Improvements:

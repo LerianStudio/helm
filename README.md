@@ -339,6 +339,19 @@ For implementation and configuration details, see the [README](https://charts.le
 | `1.1.2` | 1.1.0 |
 -----------------
 
+### Lerian Consul
+
+Single-node Consul service-discovery backend for lib-service-discovery in BYOC deployments, wrapping the official HashiCorp Consul chart.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-consul).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.1.0` | 2.1.0 |
+-----------------
+
 ## License
 
 Copyright 2024 Lerian Studio Ltd. Licensed under the Elastic License 2.0. See

@@ -138,7 +138,7 @@ origin:
 ```yaml
 profile: "own"
 origin:
-  id: "aws-staging"
+  id: "acme-stg"
 ```
 
 > **Important:** The profile is **not inferable** from cluster properties. It must be explicitly set based on operational responsibility.
@@ -157,7 +157,7 @@ origin:
 The format is `<client>-<stage>` where:
 - Client name is a **single word** (e.g., `acme-prd`, never `acme-corp-prd`)
 - Stage is `stg` or `prd`
-- The three SaaS environments (`aws-staging`, `aws-production`, `aws-devops`) are the only exempt values
+- Three reserved identifiers used by Lerian's own environments are the only exempt values; do not use them in a client install
 
 > **Warning:** Changing the origin ID for a live environment orphans every existing series at the destination. This is a data migration, not a configuration change.
 
@@ -353,8 +353,6 @@ destination:
 - `profile: client` — authentication is **required** (derived from profile)
 - `profile: own` — authentication is **disabled** (traffic goes via internal LB)
 
-> **Note:** Internal environments (`aws-staging`, `aws-production`) override the endpoint to use an internal load balancer that does not require authentication.
-
 ### 11. Retry and Queue Configuration
 
 The chart configures in-memory queuing and retry behavior for transient failures.
@@ -491,7 +489,7 @@ Deploy the chart in your own environment where you operate the entire cluster.
 ```yaml
 profile: "own"
 origin:
-  id: "aws-staging"
+  id: "acme-stg"
 
 collection:
   namespaces:

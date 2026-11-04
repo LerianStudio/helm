@@ -458,10 +458,8 @@ collection:
 # flow through it. Nothing is scraped and nothing extra is instrumented.
 #
 # ⚠️ THIS IS NOT OPTIONAL IN PRACTICE — it replaces a producer that exists
-# today. The connector lives in the OpenTelemetry Collector agent this chart replaces, so an
-# agent without it silently stops producing the RED series. MEASURED: an internal cluster
-# migrated to Alloy on 2026-08-11 and `calls_total` disappeared for that
-# cluster while it still exists for the six clusters that kept the old agent.
+# today. The connector lives in the OpenTelemetry Collector agent this chart
+# replaces, so an agent without it silently stops producing the RED series.
 #
 # Turning it off is defensible only where nothing consumes the RED series —
 # never as an oversight.

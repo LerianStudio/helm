@@ -1,7 +1,6 @@
 apiVersion: v2
 name: tracer-helm
-description: DEPRECATED - Tracer ships inside the midaz chart; install the midaz
-  chart instead
+description: DEPRECATED - enable tracer in the midaz chart instead
 
 type: application
 deprecated: true

@@ -18,7 +18,7 @@ The default `ledger.image.tag` and `tracer.image.tag` (`4.4.0`) and the chart `a
 
 The `helm.sh/chart` label no longer appears on the pod templates of the ledger, CRM and tracer Deployments, both migrations Jobs, the partition CronJob and the partition reconcile Job. The label stays on the Deployments, Jobs and CronJobs themselves. Pod selectors do not change.
 
-Pods restart once on this upgrade, following the usual rolling update. Later chart-only upgrades no longer change the ledger pod template. Both migrations Jobs run as upgrade hooks, as on every upgrade.
+Pods restart once on this upgrade, following the usual rolling update. Later chart-only upgrades no longer change the ledger pod template. The ledger migrations Job, and the tracer migrations Job when the tracer is enabled, run as upgrade hooks, as on every upgrade.
 
 ## Action required
 

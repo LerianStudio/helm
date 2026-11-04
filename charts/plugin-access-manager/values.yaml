@@ -503,8 +503,9 @@ caradhras:
     # caradhras.configmap.redisEndpoint.
     redisEndpoint: ""
     # -- Caradhras license key, injected as env LICENSE_KEY by secretKeyRef.
-    # Required by images that carry the license gate (they refuse to boot
-    # without it). Issued for product `caradhras`; not the auth/identity key.
+    # Required for Caradhras 2.x (it refuses to boot without it, and the render
+    # fails without it or useExistingSecret). Issued for product `caradhras`;
+    # not the auth/identity key.
     LICENSE_KEY: ""
   # -- Set true to manage the caradhras Secret yourself: the chart creates none
   # and reads `LICENSE_KEY` from existingSecretName, plus `redisEndpoint` unless

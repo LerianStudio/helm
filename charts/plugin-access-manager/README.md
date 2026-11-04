@@ -8,6 +8,7 @@
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - External bootstrap Secret: needed only for an organization Caradhras has never initialized; create it before identity starts (changes or late creation require an identity rollout restart). An initialized organization needs no password.
 - Initial admin: with `auth.initUser.enabled` in single-tenant mode, identity >= 3.17.0 calls Caradhras >= 2.1.0 `ensure-first-admin`. Caradhras creates the first Console admin (`admin`, in `admin-group`) only for an organization never initialized: one that did not exist when migration 000029 ran and never had a non-internal user. Deleting every user never re-seeds it. The render refuses `auth.initUser.enabled` with older tags. One upgrade can roll all three: identity keeps retrying, unready, until Caradhras 2.1.0 answers. Caradhras must trust the application behind identity's `AUTHORIZER_CLIENT_ID` (a `trustedServiceApplications` entry `admin/<app>:<organization>`); the default `app-lerian` client is trusted. For another client, set `caradhras.extraEnvVars.trustedServiceApplications` to the full comma-separated list: it replaces the image default `admin/app-lerian:lerian,admin/app-built-in:built-in`, so keep those entries. Without the entry, identity gets 403 and stays unready. The former `caradhras-user-init` post-install Job and its image, timeout and resource keys are gone; leftover keys are ignored. The `-init-user` Secret is no longer a hook, so it stays after install. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow.
+- Caradhras 2.x: moving to Caradhras 2.x is one-way. Its migrations move the database forward, and a 1.8.x Caradhras pod then refuses to start. The Caradhras key must be issued for the `caradhras` product.
 - Legacy upgrade: if a failed legacy install left its generated bootstrap Secret behind, inspect the namespace, release, Secret name and `helm.sh/hook` metadata to confirm it is that obsolete hook resource. Remove only that generated bootstrap Secret before upgrading, and provide the intended password or external Secret selection. Never remove an external Secret, database Secret or account data for this step.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
@@ -112,6 +113,8 @@ valkey:
 # with a public-CA certificate and point both AUTHORIZER_ADDRESS at that URL
 # (see "Production: reach Caradhras over HTTPS" below):
 caradhras:
+  secrets:
+    LICENSE_KEY: "CHANGE_ME"
   ingress:
     enabled: true
     className: "nginx"            # use an internal-only class: this exposes the Caradhras admin panel and API
@@ -130,9 +133,9 @@ caradhras:
 # instances' credentials explicitly (or set auth.useExistingSecret and
 # identity.useExistingSecret to true and point auth.existingSecretName and
 # identity.existingSecretName at pre-created Secrets with the same keys).
-# LICENSE_KEY and AUTHORIZER_CLIENT_SECRET are required for both components:
-# the render fails without AUTHORIZER_CLIENT_SECRET, and auth and identity
-# refuse to boot with an empty LICENSE_KEY.
+# LICENSE_KEY and AUTHORIZER_CLIENT_SECRET are required for auth and identity:
+# the render fails without AUTHORIZER_CLIENT_SECRET, and both refuse to boot
+# with an empty LICENSE_KEY. Caradhras 2.x needs its own LICENSE_KEY (above).
 auth:
   configmap:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"

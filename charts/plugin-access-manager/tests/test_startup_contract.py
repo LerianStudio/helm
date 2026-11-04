@@ -433,6 +433,18 @@ class StartupContract(unittest.TestCase):
         self.succeeds({'caradhras': {**no_key, **PRE_LICENSE}})
         self.fails({'caradhras': {**no_key, 'image': {'tag': '2.0.0-beta.1'}}}, 'caradhras.secrets.LICENSE_KEY')
 
+    def test_caradhras_license_key_with_digest_pinned_tags(self):
+        digest = '@sha256:' + 'a' * 64
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        pin = lambda t: {'image': {'tag': t}, 'migrations': {'image': {'tag': t}}}
+        self.succeeds({'caradhras': {'secrets': {'LICENSE_KEY': 'k'}, **pin('2.1.0' + digest)}})
+        self.succeeds({'caradhras': {**no_key, **pin('1.8.6' + digest)}})
+        self.fails({'caradhras': {**no_key, **pin('2.1.0' + digest)}}, 'caradhras.secrets.LICENSE_KEY')
+        self.succeeds({'caradhras': {**no_key, **pin('2.1.0' + digest),
+                                     'useExistingSecret': True, 'existingSecretName': 'x'}})
+        # not plain semver: the key is required, with the chart's message rather than a semver parse error
+        self.fails({'caradhras': {**no_key, **pin('1.8.6.1')}}, 'caradhras.secrets.LICENSE_KEY')
+
     def test_ingress_falls_back_to_global(self):
         glob = {'global': {'ingress': {'className': 'nginx', 'domain': 'example.test',
                                        'tls': [{'secretName': 'tls', 'hosts': ['auth.example.test']}]}}}

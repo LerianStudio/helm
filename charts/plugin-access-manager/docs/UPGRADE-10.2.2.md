@@ -12,15 +12,15 @@
 
 ### 1. Caradhras Redis Endpoint Configuration Flexibility
 
-The chart now allows operators to provide the Caradhras Redis/Valkey session endpoint via ConfigMap (`caradhras.configmap.redisEndpoint`) while still using an external Secret for the license key (`LICENSE_KEY`). Previously, when `caradhras.useExistingSecret` was enabled, the chart required both `redisEndpoint` and `LICENSE_KEY` to be in the external Secret.
+The chart now allows operators to provide the Caradhras Redis/Valkey session endpoint via ConfigMap (`caradhras.configmap.redisEndpoint`) while still using an external Secret for the license key (`LICENSE_KEY`). Previously, when `caradhras.useExistingSecret` was enabled, the chart always read `redisEndpoint` from the external Secret, and setting `caradhras.configmap.redisEndpoint` as well failed the render.
 
 **What changed:**
 
-The template logic for determining the Redis endpoint source has been updated to check whether `caradhras.configmap.redisEndpoint` is set. When it is, the chart reads the endpoint from the ConfigMap and only expects `LICENSE_KEY` in the external Secret.
+The template logic for determining the Redis endpoint source has been updated to check whether `caradhras.configmap.redisEndpoint` is set. When it is, the chart reads the endpoint from the ConfigMap and reads only `LICENSE_KEY` from the external Secret.
 
 | Setting | v10.2.1 | v10.2.2 |
 |---------|---------|---------|
-| `caradhras.useExistingSecret` behavior | External Secret must contain both `redisEndpoint` and `LICENSE_KEY` | External Secret must contain `LICENSE_KEY`; `redisEndpoint` can come from ConfigMap if `caradhras.configmap.redisEndpoint` is set |
+| `caradhras.useExistingSecret` behavior | External Secret must contain `redisEndpoint`; `LICENSE_KEY` is read when present | Same, unless `caradhras.configmap.redisEndpoint` is set: then the Secret only needs `LICENSE_KEY` |
 | `caradhras.configmap.redisEndpoint` with `useExistingSecret=true` | Render fails: both define `redisEndpoint` | Used; the operator-managed Secret's `redisEndpoint` key is not read |
 
 **Why this matters:**
@@ -31,27 +31,16 @@ The template logic for determining the Redis endpoint source has been updated to
 
 **Before (v10.2.1):**
 
-When `caradhras.useExistingSecret=true`, the chart always expected the external Secret to contain both keys:
+When `caradhras.useExistingSecret=true`, the chart always read `redisEndpoint` from the external Secret, and `LICENSE_KEY` when the Secret had it:
 
 ```yaml
 # values.yaml
 caradhras:
   useExistingSecret: true
   existingSecretName: "caradhras-credentials"
-  # Both redisEndpoint and LICENSE_KEY must be in the Secret
 ```
 
-```yaml
-# External Secret (operator-managed)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: caradhras-credentials
-type: Opaque
-data:
-  redisEndpoint: cmVkaXMtc2VydmljZTo2Mzc5  # required
-  LICENSE_KEY: bGljZW5zZS1rZXktdmFsdWU=              # required
-```
+The Secret `caradhras-credentials` carries `redisEndpoint` and, for Caradhras `2.0.0` and later, `LICENSE_KEY`.
 
 **After (v10.2.2):**
 
@@ -67,17 +56,7 @@ caradhras:
   # Do not set configmap.redisEndpoint
 ```
 
-```yaml
-# External Secret (operator-managed)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: caradhras-credentials
-type: Opaque
-data:
-  redisEndpoint: cmVkaXMtc2VydmljZTo2Mzc5  # still read from Secret
-  LICENSE_KEY: bGljZW5zZS1rZXktdmFsdWU=              # required
-```
+The Secret keeps `redisEndpoint` (still read from it) and, for Caradhras `2.0.0` and later, `LICENSE_KEY`.
 
 #### Option 2: Split endpoint (ConfigMap) and license (Secret)
 
@@ -90,43 +69,7 @@ caradhras:
     redisEndpoint: "redis-service:6379"  # non-sensitive, in ConfigMap
 ```
 
-```yaml
-# External Secret (operator-managed)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: caradhras-license
-type: Opaque
-data:
-  LICENSE_KEY: bGljZW5zZS1rZXktdmFsdWU=  # only license key required
-  # redisEndpoint not needed
-```
-
-**Template changes:**
-
-The helper template `plugin-caradhras.sessionFromSecret` now checks whether the ConfigMap provides the endpoint before deciding to read it from the Secret:
-
-**Before (v10.2.1):**
-
-```yaml
-{{- define "plugin-caradhras.sessionFromSecret" -}}
-{{- $secrets := .Values.caradhras.secrets | default dict -}}
-{{- $inline := $secrets.redisEndpoint | default "" | toString -}}
-{{- $existing := and .Values.caradhras.useExistingSecret (.Values.caradhras.existingSecretName | default "") -}}
-{{- if or $inline $existing -}}true{{- end -}}
-{{- end }}
-```
-
-**After (v10.2.2):**
-
-```yaml
-{{- define "plugin-caradhras.sessionFromSecret" -}}
-{{- $secrets := .Values.caradhras.secrets | default dict -}}
-{{- $inline := $secrets.redisEndpoint | default "" | toString -}}
-{{- $existing := and .Values.caradhras.useExistingSecret (.Values.caradhras.existingSecretName | default "") (not (include "plugin-caradhras.sessionFromConfigMap" .)) -}}
-{{- if or $inline $existing -}}true{{- end -}}
-{{- end }}
-```
+The Secret `caradhras-license` needs only `LICENSE_KEY`; its `redisEndpoint` key, if any, is not read.
 
 **Validation and error messages:**
 

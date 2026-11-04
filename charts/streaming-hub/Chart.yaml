@@ -12,7 +12,7 @@ version: 2.0.3
 appVersion: "3.1.0"
 annotations:
   lerian.studio/chart-type: multi-component
-home: https://github.com/LerianStudio/streaming-hub
+home: https://github.com/LerianStudio/helm/tree/main/charts/streaming-hub
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/streaming-hub
   - https://github.com/LerianStudio/streaming-hub

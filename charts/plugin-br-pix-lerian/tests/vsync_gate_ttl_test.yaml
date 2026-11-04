@@ -2,12 +2,25 @@ suite: VSync gate TTL
 release: {name: test, namespace: test}
 templates:
   - templates/dict-hub-vsync/configmap.yaml
+  - templates/dict-systemplane/configmap.yaml
 tests:
   - it: leaves the TTL to the application by default
+    template: templates/dict-hub-vsync/configmap.yaml
     set: {dictHubVsync.enabled: true}
     asserts:
       - notExists: {path: data.VSYNC_GATE_TTL_SEC}
   - it: preserves an explicit TTL as a string
+    template: templates/dict-hub-vsync/configmap.yaml
     set: {dictHubVsync.enabled: true, dictHubVsync.configmap.VSYNC_GATE_TTL_SEC: '57600'}
+    asserts:
+      - equal: {path: data.VSYNC_GATE_TTL_SEC, value: '57600'}
+  - it: leaves the systemplane seed TTL to the application by default
+    template: templates/dict-systemplane/configmap.yaml
+    set: {dictSystemplane.enabled: true}
+    asserts:
+      - notExists: {path: data.VSYNC_GATE_TTL_SEC}
+  - it: preserves an explicit systemplane seed TTL as a string
+    template: templates/dict-systemplane/configmap.yaml
+    set: {dictSystemplane.enabled: true, dictSystemplane.configmap.VSYNC_GATE_TTL_SEC: '57600'}
     asserts:
       - equal: {path: data.VSYNC_GATE_TTL_SEC, value: '57600'}

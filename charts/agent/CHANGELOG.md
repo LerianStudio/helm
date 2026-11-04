@@ -3,6 +3,19 @@
 ## [1.0.5](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.5)
 
 Fixes:
+- Remove the chart label from the pod template to ensure proper configuration. (@fredcamaral)
+- Address issues with unreachable source in the pod template. (@fredcamaral)
+
+Improvements:
+- Add the verified `1.0.4` upgrade guide to the documentation for better upgrade clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/agent-v1.0.4...agent-v1.0.5)
+
+---
+
+## [1.0.5](https://github.com/LerianStudio/helm/releases/tag/agent-v1.0.5)
+
+Fixes:
 - Removed the chart label from the pod template to streamline configurations. (@fredcamaral)
 - Eliminated an unreachable source from the pod template setup. (@fredcamaral)
 

@@ -1,5 +1,22 @@
 # Alloy-lerian Changelog
 
+## [2.0.9](https://github.com/LerianStudio/helm/releases/tag/alloy-lerian-v2.0.9)
+
+Features:
+- Add the `2.0.8` upgrade guide. (@fredcamaral)
+- Word the `2.0.8` permission change by its rules. (@fredcamaral)
+
+Fixes:
+- Correct the fleet environment guard message and neutralize a description. (@fredcamaral)
+
+Improvements:
+- Drop an environment name and a cross-repo reference from the span metrics note. (@fredcamaral)
+- Drop environment detail from the span metrics comment. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/alloy-lerian-v2.0.8...alloy-lerian-v2.0.9)
+
+---
+
 ## [2.0.8](https://github.com/LerianStudio/helm/releases/tag/alloy-lerian-v2.0.8)
 
 Features:

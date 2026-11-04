@@ -3,6 +3,17 @@
 ## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-bc-correios-v4.0.1)
 
 Fixes:
+
+- Tightened guards and updated documentation for `plugin-bc-correios` `1.1.0`. (@fredcamaral)
+- Moved `plugin-bc-correios` to app `1.1.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-bc-correios-v4.0.0...plugin-bc-correios-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-bc-correios-v4.0.1)
+
+Fixes:
 - Tightened guards and updated documentation for `plugin-bc-correios` `1.1.0`. (@fredcamaral)
 - Moved `plugin-bc-correios` to app `1.1.0`. (@fredcamaral)
 

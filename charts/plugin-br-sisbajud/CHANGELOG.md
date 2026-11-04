@@ -3,6 +3,42 @@
 ## [1.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.3.0)
 
 Features:
+- Expose the direct channel settings to enhance configuration options. (@brunobls)
+- Enable the permanent block feature by default, providing a more robust setup. (@brunobls)
+- Ship app `1.2.0`, introducing new functionalities and improvements. (@brunobls)
+- Default the Midaz CRM mode to embedded, simplifying the initial setup. (@gandalf-at-lerian)
+- Expose streaming capabilities for the permanent block, allowing for more flexible data handling. (@brunobls)
+- Expose purge refresh, sweep, and maintenance keys to improve system maintenance and data management. (@brunobls)
+
+Fixes:
+- Ensure the extraEnvVars streaming flag is honored, maintaining expected behavior. (@brunobls)
+- Gate the permanent block feature as app `1.2.0` does, ensuring consistent functionality. (@brunobls)
+- Refuse zero durations in the configmap to prevent misconfigurations. (@brunobls)
+- Gate global streaming on the permanent block to ensure compatibility. (@brunobls)
+- Default `OTEL_LIBRARY_NAME` to the module path, ensuring proper tracing configuration. (@brunobls)
+- Refuse a zero purge alarm duration to avoid configuration errors. (@brunobls)
+- Read the configmap in the notes for accurate documentation. (@brunobls)
+- Require authentication in DIRECT-only mode to enhance security. (@brunobls)
+- Emit the drainer cap in every mode to ensure consistent operation. (@brunobls)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides, enhancing clarity and usability. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `1.1.1` to `1.2.0`, assisting users in the upgrade process. (@fredcamaral)
+- Correct chart documentation against templates and app code for accuracy. (@fredcamaral)
+- Note when global streaming applies, providing clearer guidance on feature usage. (@brunobls)
+- Describe streaming and the permanent rollback to inform users of available options. (@brunobls)
+- Describe the audited purge and its retention, offering insights into data management practices. (@brunobls)
+- Mark `ALLOW_RATELIMIT_DISABLED` as ignored, clarifying its status in the configuration. (@brunobls)
+- Document the permanent block switch-off, informing users of available controls. (@brunobls)
+- Document which Midaz CRM mode to set, guiding users in configuration choices. (@brunobls)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.2.0...plugin-br-sisbajud-v1.3.0)
+
+---
+
+## [1.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.3.0)
+
+Features:
 - Expose the direct channel settings to allow configuration of direct communication channels. (@brunobls)
 - Enable the permanent block by default to enhance security measures. (@brunobls)
 - Ship app `1.2.0` to provide the latest features and improvements. (@brunobls)

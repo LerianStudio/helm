@@ -2,6 +2,24 @@
 
 ## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
 
+Features:
+
+- Add verified upgrade guides for transitioning from `10.1.4` to `10.5.0`. (@fredcamaral)
+
+Fixes:
+
+- Inherit global ingress settings and require license keys for proper functionality. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.0...plugin-access-manager-v10.5.1)
+
+---
+
+## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
+
 Fixes:
 - Ensure the plugin inherits global ingress settings and requires a license key for operation. (@fredcamaral)
 

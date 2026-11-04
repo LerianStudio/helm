@@ -2,6 +2,16 @@
 
 ## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
 
+Improvements:
+- Updated the shutdown budget comment to align with the specific SPB budgets. (@fredcamaral)
+- Corrected the shutdown timeline in the values documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-jd-courier-v2.2.0...br-jd-courier-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/br-jd-courier-v2.2.1)
+
 Features:
 
 - Tie the shutdown budget comment to the SPB budgets. (@fredcamaral)

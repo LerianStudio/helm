@@ -77,6 +77,9 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            {{- with .Values.worker.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           ports:
             {{- toYaml $h.ports | nindent 12 }}
           envFrom:
@@ -114,6 +117,9 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+      {{- with .Values.worker.extraVolumes }}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" "reporter-iam-tls") | trimPrefix "volumes:\n" | nindent 6 }}
       {{- end }}

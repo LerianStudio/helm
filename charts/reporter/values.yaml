@@ -313,6 +313,9 @@ manager:
     #                                        # (or both components) and mount the tree in both pods.
   # Extra Env Vars
   extraEnvVars: {}
+  # -- Extra pod volumes and container mounts, e.g. a catalog tree for REGULATORY_CATALOG_DIR.
+  extraVolumes: []
+  extraVolumeMounts: []
   # -- HPA configuration (used when KEDA is disabled)
   autoscaling:
     enabled: true
@@ -457,6 +460,9 @@ worker:
     scaleDownStabilizationSeconds: 300
   # Extra Env Vars
   extraEnvVars: {}
+  # -- Extra pod volumes and container mounts, e.g. a catalog tree for REGULATORY_CATALOG_DIR.
+  extraVolumes: []
+  extraVolumeMounts: []
   # -- KEDA configuration for worker auto-scaling (default mode)
   keda:
     scaledJob:
@@ -897,14 +903,12 @@ rabbitmq:
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
   auth:
     enabled: false
 otel-collector-lerian:
   enabled: true
-# -- AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Clotilde/Proxmox)
+# -- AWS Authentication - IAM Roles Anywhere for non-AWS clusters
 aws:
   rolesAnywhere:
     enabled: false

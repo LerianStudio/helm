@@ -45,9 +45,7 @@ data:
   # ISPB when this is empty, so set it to exercise your own.
   ADAPTER_ISPB: {{ $cm.ADAPTER_ISPB | default "" | quote }}
   POLLER_INTERVAL_SEC: {{ $cm.POLLER_INTERVAL_SEC | default "30" | quote }}
-  # -- Base URL of the mock provider server this component talks to.
-  # Empty uses the application default (http://localhost:9001): set it to
-  # your mock server.
+  # -- Required when adapterProviderMock is enabled: base URL of your mock provider server.
   PROVIDER_BASE_URL: {{ $cm.PROVIDER_BASE_URL | default "" | quote }}
   SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4101/spi" | quote }}
   DICT_BASE_URL: {{ $cm.DICT_BASE_URL | default "http://plugin-br-pix-lerian-dict-hub:4104/dict-hub" | quote }}

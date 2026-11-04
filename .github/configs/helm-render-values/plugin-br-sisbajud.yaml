@@ -31,12 +31,18 @@ sisbajud:
   # balance-change stream, so it is turned off here.
   direct:
     permanentBlockEnabled: false
+  # Single tenant: the Midaz connection comes from the environment (v2.0.0).
+  midaz:
+    baseUrl: "https://midaz.example.invalid"
+    authAddress: "https://access-manager.example.invalid"
   secrets:
     LICENSE_KEY: "REPLACE_WITH_YOUR_LICENSE_KEY"
     MENSAGERIA_CLIENT_ID: "render-fixture-only"
     MENSAGERIA_CLIENT_SECRET: "render-fixture-only"
     EXECUTOR_HUB_WEBHOOK_SECRET: "render-fixture-only"
     VAULT_TOKEN: "render-fixture-only"
+    MIDAZ_LEDGER_CLIENT_ID: "render-fixture-only"
+    MIDAZ_LEDGER_CLIENT_SECRET: "render-fixture-only"
 
 postgresql:
   enabled: true

@@ -123,8 +123,8 @@ remotecfg {
     // replicado no DaemonSet é exatamente a duplicação que esta migração corrigiu.
     "role"         = {{ $papel | quote }},
     // Separa o universo BYOC do interno. FIXO no chart, NAO parametrizavel: este
-    // chart E o agente dos clientes; os ambientes da propria Lerian rodam
-    // `alloy-lerian-internal` (k8s-monitoring), que nao passa por aqui.
+    // chart E o agente dos clientes; os ambientes da propria Lerian usam outro
+    // agente, que nao passa por aqui.
     //
     // POR QUE EXISTE: sem ele os matchers disponiveis sao genericos
     // (`collector.os="linux"`, `role="node"`, `platform="kubernetes"`) e um
@@ -227,8 +227,8 @@ Inverted, the destination credential is optional in the own profile and, in the
 client profile — where 401 is a PERMANENT failure and a pod that starts without a
 credential loses data silently and continuously — held to the strict requirement
 by this guard. The `alloy-lerian` Secret must still exist in both profiles:
-ALLOY_FLEET_TOKEN (key `fleet-token`) is required whenever Fleet Management is
-on, which is the default.
+ALLOY_FLEET_TOKEN (key `fleet-token`) is required by default in both profiles,
+with Fleet Management on or off.
 */}}
 {{- define "alloy-lerian.assertCredentialEnv" -}}
 {{- if eq (include "alloy-lerian.destinationAuthenticated" .) "true" -}}

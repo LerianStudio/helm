@@ -156,8 +156,8 @@ destination:
     # Quanto a fila aguenta, com linha média de 909 bytes medida em produção:
     #
     #   ambiente interno     ~17 minutos
-    #   cliente A (prd)     ~18 segundos
-    #   cliente B (prd)     ~1,7 SEGUNDOS
+    #   cliente A (prd)      ~18 segundos
+    #   cliente B (prd)      ~1,7 SEGUNDOS
     #
     # ⚠️ Para cliente de alto volume a fila não protege — 1 h de retenção no
     # cliente B exigiria ~1,8 GB de RAM contra um limite de container de 512 Mi.
@@ -364,7 +364,7 @@ collection:
   # está pedindo para não filtrar nada, e isso não pode ser silencioso.
   #
   # ⚠️ O filtro `keep` gerado inclui a alternativa `|^$` automaticamente. MEDIDO em
-  # Ambiente interno: 272 séries `container_*` têm namespace VAZIO — agregados de nó e
+  # ambiente interno: 272 séries `container_*` têm namespace VAZIO — agregados de nó e
   # sandboxes de pod. Sem essa alternativa elas cairiam em silêncio, levando com
   # elas o denominador da razão uso/limite.
   onlyNamespaces:

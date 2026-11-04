@@ -30,7 +30,7 @@ The new comments also say to leave `SHUTDOWN_TIMEOUT` unset: on images built on 
 
 **Migration action:**
 
-No values change is required.
+With the default image `1.2.1`, no values change is required. If you set `SHUTDOWN_TIMEOUT`, in `config` or in the Secret named by `secrets.existingSecret`, remove it before you move to an image built on lib-commons v7.21.0-beta.20 or later.
 
 > **Note:** If you are running application images older than lib-commons v7.21.0-beta.20, the previous shutdown behavior still applies. The chart's default image `1.2.1` is one of them: it is built on lib-commons v7.19.0. The documentation update prepares you for newer images but does not change the behavior of older ones.
 
@@ -40,15 +40,17 @@ No values change is required.
 
 ### Migration Job runs on every upgrade
 
-With `migrations.enabled: true` (the default), the chart renders the `br-jd-courier-migrate` Job as a `pre-install,pre-upgrade` hook. It runs `migrate up` against the Courier database on every `helm upgrade`, including this one, before the Deployments change. If the Job fails, Helm marks the upgrade as failed. The default image is `1.2.1` in both versions, so the Job applies no new migration.
+With `migrations.enabled: true` (the default), the chart renders the `br-jd-courier-migrate` Job as a `pre-install,pre-upgrade` hook. It runs `migrate up` against the Courier database on every `helm upgrade`, including this one, before the Deployments change. If the Job fails, Helm marks the upgrade as failed. The default image is `1.2.1` in both versions, so this release adds no migration file. `migrate up` still applies any migration that is pending in the database, for example after a failed Job or an install with `migrations.enabled: false`.
 
 ---
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --version 2.2.1 -n br-jd-courier
+helm diff upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --version 2.2.1 -n br-jd-courier -f values.yaml
 ```
+
+> **Note:** Pass the values file of the release to both commands. With no `-f` or `--set`, Helm reuses the values stored in the release, so a key you removed from the file stays active.
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
@@ -59,5 +61,5 @@ helm diff upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --
 ## Command to upgrade
 
 ```bash
-helm upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --version 2.2.1 -n br-jd-courier
+helm upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --version 2.2.1 -n br-jd-courier -f values.yaml
 ```

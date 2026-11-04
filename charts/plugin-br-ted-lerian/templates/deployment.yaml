@@ -12,8 +12,10 @@ spec:
     type: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.type }}
     {{- if eq (index .Values "plugin-br-ted-lerian").deploymentUpdate.type "RollingUpdate" }}
     rollingUpdate:
-      maxSurge: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.maxSurge }}
-      maxUnavailable: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.maxUnavailable }}
+      {{- $u := (index .Values "plugin-br-ted-lerian").deploymentUpdate }}
+      maxSurge: {{ $u.maxSurge }}
+      {{- /* Kubernetes refuses both limits at 0: a zero-surge rollout keeps one pod of headroom. */}}
+      maxUnavailable: {{ and (eq (toString $u.maxSurge) "0") (eq (toString $u.maxUnavailable) "0") | ternary 1 $u.maxUnavailable }}
     {{- end }}
   {{- if not (index .Values "plugin-br-ted-lerian").autoscaling.enabled }}
   replicas: {{ (index .Values "plugin-br-ted-lerian").replicaCount }}

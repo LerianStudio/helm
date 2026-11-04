@@ -151,8 +151,8 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 Identity Common labels
 */}}
 {{- define "plugin-identity.labels" -}}
-helm.sh/chart: {{ include "plugin-identity.chart" .context }}
-{{ include "plugin-identity.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-identity.chart" .context }}
+{{ end }}{{ include "plugin-identity.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -161,8 +161,8 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 Auth Common labels
 */}}
 {{- define "plugin-auth.labels" -}}
-helm.sh/chart: {{ include "plugin-auth.chart" .context }}
-{{ include "plugin-auth.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-auth.chart" .context }}
+{{ end }}{{ include "plugin-auth.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -171,8 +171,8 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 Caradhras Common labels
 */}}
 {{- define "plugin-caradhras.labels" -}}
-helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
-{{ include "plugin-caradhras.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
+{{ end }}{{ include "plugin-caradhras.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -196,8 +196,8 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
 {{- define "plugin-caradhras-ui.labels" -}}
-helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
-{{ include "plugin-caradhras-ui.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
+{{ end }}{{ include "plugin-caradhras-ui.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}

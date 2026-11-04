@@ -3,6 +3,22 @@
 ## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
 
 Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain validity for zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for clarity and accuracy. (@gandalf-at-lerian)
+- Streamline the `1.0` upgrade guide to align with the chart's actual behavior. (@fredcamaral)
+- Add verified upgrade guides for transitioning from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to match templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
 - Align the rendered configuration with what the application reads to ensure consistency. (@fredcamaral)
 - Maintain validity of zero-surge rollouts and environment overrides. (@fredcamaral)
 

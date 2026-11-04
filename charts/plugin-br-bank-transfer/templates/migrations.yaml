@@ -146,7 +146,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "bank-transfer.labels" (dict "context" . "component" "migrations" "name" (get $bankTransfer "name") ) | nindent 8 }}
+        {{- include "bank-transfer.labels" (dict "context" . "component" "migrations" "name" (get $bankTransfer "name") "podTemplate" true) | nindent 8 }}
       {{- with (get $migrations "podAnnotations") }}
       annotations:
         {{- toYaml . | nindent 8 }}

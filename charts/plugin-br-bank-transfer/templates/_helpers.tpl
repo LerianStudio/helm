@@ -38,8 +38,8 @@ Return valid bank-transfer version label
 Common labels
 */}}
 {{- define "bank-transfer.labels" -}}
-helm.sh/chart: {{ include "bank-transfer.chart" .context }}
-{{ include "bank-transfer.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
+{{ if not .podTemplate }}helm.sh/chart: {{ include "bank-transfer.chart" .context }}
+{{ end }}{{ include "bank-transfer.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "bank-transfer.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}

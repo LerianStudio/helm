@@ -29,10 +29,6 @@ Fleet Management: ATIVO
   Papel singleton: a coleta e a sanitização de eventos ficam no ConfigMap local,
   junto do `remotecfg`.
 
-  A configuração remota roda em controlador SEPARADO da local: ela não desliga
-  as regras locais, mas um exportador próprio na pipeline remota teria caminho de
-  saída que NÃO passa pelo mascaramento. Mantenha a exportação local.
-
   O Secret `alloy-lerian` precisa da chave `fleet-token` nos dois perfis.
 {{- else -}}
 Fleet Management: inativo (fleetManagement.enabled: false)

@@ -126,6 +126,21 @@ Existing Mensageria installs are unchanged: with `executor.enabled` unset the `E
 
 With the wrong mode every holder read fails.
 
+## Midaz connection (single tenant)
+
+In single tenant the executor reaches Midaz through the environment, not through each institution's row (plugin v2.0.0). The render fails naming the key:
+
+| Value | Env | Where | Rule |
+|-------|-----|-------|------|
+| `sisbajud.midaz.baseUrl` | `MIDAZ_BASE_URL` | ConfigMap | **Required** in executor mode |
+| `sisbajud.midaz.authAddress` | `MIDAZ_AUTH_ADDRESS` | ConfigMap | Auth group: optional, all-or-nothing |
+| `sisbajud.secrets.MIDAZ_LEDGER_CLIENT_ID` / `MIDAZ_LEDGER_CLIENT_SECRET` | same | Secret (or the existing Secret) | Auth group: optional, all-or-nothing |
+| `sisbajud.secrets.MIDAZ_CRM_CLIENT_ID` / `MIDAZ_CRM_CLIENT_SECRET` | same | Secret | Required with `crmMode: legacy` when the auth group is set; needs `authAddress`; refused with `embedded` |
+
+A Midaz without auth needs only `baseUrl`. With auth, set `authAddress` and the ledger client pair together; a partial group is refused. Both URLs are https (http only to a loopback host, or outside production), and each client pair is set whole. With `useExistingSecret: true` the chart cannot read the Secret: the group is decided by `authAddress`, and the Secret must carry the client pairs.
+
+**Upgrade note (breaking, plugin v2.0.0):** a single-tenant install must set `sisbajud.midaz.baseUrl` (and the auth group when its Midaz requires auth) before upgrading; the render fails without `baseUrl`. Multi-tenant is unchanged: each institution keeps its own connection, and the render refuses any of these keys there.
+
 ## Development profile
 
 `postgresql.enabled=true` and `valkey.enabled=true` bundle plaintext infra for development: set `sisbajud.app.environmentName=development`; the app reads the subchart passwords via `secretKeyRef` and the schema is applied by a `migrations` initContainer in the app pod.

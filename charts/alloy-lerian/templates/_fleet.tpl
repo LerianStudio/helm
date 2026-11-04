@@ -218,16 +218,17 @@ than there, because the decision belongs to the PROFILE and static YAML cannot
 ask which profile is active.
 
 Why this direction and not the other. The first version defaulted to
-`optional: false` and made this guard reject own environments. MEASURED on
-benedita: every own environment then failed with CreateContainerConfigError,
-"secret alloy-lerian not found", over a variable the rendered config never even
-references — and the only fix was to repeat ~20 lines of extraEnv to undo the
+`optional: false` and made this guard reject own environments. Those then failed
+with CreateContainerConfigError over a destination credential the rendered config
+never references, and the only fix was to repeat ~20 lines of extraEnv to undo the
 default. A default the simplest case has to override is the wrong default.
 
-Inverted, both cases are served: own environments install with no Secret and no
-overrides, and the client profile — where 401 is a PERMANENT failure and a pod
-that starts without a credential loses data silently and continuously — is held
-to the strict requirement by this guard.
+Inverted, the destination credential is optional in the own profile and, in the
+client profile — where 401 is a PERMANENT failure and a pod that starts without a
+credential loses data silently and continuously — held to the strict requirement
+by this guard. The `alloy-lerian` Secret must still exist in both profiles:
+ALLOY_FLEET_TOKEN (key `fleet-token`) is required whenever Fleet Management is
+on, which is the default.
 */}}
 {{- define "alloy-lerian.assertCredentialEnv" -}}
 {{- if eq (include "alloy-lerian.destinationAuthenticated" .) "true" -}}

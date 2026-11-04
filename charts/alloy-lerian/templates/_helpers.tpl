@@ -68,15 +68,15 @@ at the destination with no owner.
 
 WHO USES THIS CHART, which is what the rule encodes:
 
-  - our three SaaS environments: aws-production, aws-staging, aws-devops. Reserved,
-    exempt from the pattern. They predate the convention and renaming them would
-    orphan the metric history of every series already carrying those names.
+  - our SaaS environments, listed in `$reserved` below. Reserved, exempt from the
+    pattern. They predate the convention and renaming them would orphan the
+    metric history of every series already carrying those names.
   - client clusters: <client>-<stage>, lowercase, stage = stg | prd. Nothing else.
     The client name is a SINGLE word — acme-prd, never acme-corp-prd. Composition
     is refused deliberately: the identifier is parsed by routing and cost rules
     that split on the last hyphen, and a composed name makes that split ambiguous.
 
-Internal test clusters (benedita, clotilde, lazari-sandbox and the like) are NOT a
+Internal test clusters are NOT a
 case here: they report to a separate self-hosted Grafana and will not run this
 chart. No exemption is carved for them, on purpose — an exemption that nothing uses
 is a rule someone will later mistake for a supported path.
@@ -214,8 +214,8 @@ estourar. O sintoma seria "nao chega nada", sem erro que aponte a causa.
 {{/*
 Plaintext is refused only when a CREDENTIAL travels to this endpoint. Cleartext
 transmission of the token is the risk; plain HTTP by itself is not, and an
-internal Service inside our own cluster is a legitimate destination — benedita
-uses exactly that, over http, with no credential.
+internal Service inside our own cluster is a legitimate destination — an own
+environment can use exactly that, over http, with no credential.
 
 Tying the rule to the credential rather than to the scheme keeps the internal
 path working while making it impossible to send a token in the clear across a
@@ -402,7 +402,7 @@ NODE-EXPORTER TARGET — onde raspar metricas de no
 Mesma logica do clusterObjectTarget: instalar o exportador e raspa-lo sao
 decisoes SEPARADAS. Um ambiente que ja rode node-exporter mantem
 `node-exporter.enabled: false` e aponta aqui para o existente — foi o caso medido
-na benedita, que roda `prometheus-prometheus-node-exporter` ha 40 dias.
+em um ambiente que ja roda `prometheus-prometheus-node-exporter` ha 40 dias.
 
 Vazio + subchart habilitado => deriva o Service do subchart (`<release>-node-exporter`;
 o subchart roda sob o alias `node-exporter`, entao o nome nao leva `prometheus-`).
@@ -449,9 +449,9 @@ coleta nada, em silencio.
 
 
 {{- define "alloy-lerian.assertNodeInfra" -}}
-{{- $requested := (.Values.collection).nodeInfrastructure | default false -}}
+{{- $requested := or ((.Values.collection).nodeInfrastructure) ((index .Values "node-exporter" | default dict).enabled) | default false -}}
 {{- if and $requested (eq (include "alloy-lerian.profile" .) "client") -}}
-{{- fail "\n\nalloy-lerian: `collection.nodeInfrastructure` is not available in the client profile.\n\nNode CPU, memory and filesystem describe the host, which belongs to the client.\nWe have no standing to act on it, and it would cross the public network for no\nreturn.\n\nCluster-object metrics (pod phase, deployment state, autoscaler) are collected\nin both profiles — those describe workloads we operate.\n" -}}
+{{- fail "\n\nalloy-lerian: `collection.nodeInfrastructure` and `node-exporter.enabled` are not available in the client profile.\n\nNode CPU, memory and filesystem describe the host, which belongs to the client.\nWe have no standing to act on it, and it would cross the public network for no\nreturn.\n\nCluster-object metrics (pod phase, deployment state, autoscaler) are collected\nin both profiles — those describe workloads we operate.\n" -}}
 {{- end -}}
 {{/* Emits NOTHING. An assertion helper that returns a value gets that value
      written into the manifest by the call site — which produced

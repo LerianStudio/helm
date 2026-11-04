@@ -233,7 +233,7 @@ This upgrade needs no mandatory changes. Review your PodDisruptionBudget configu
        maxUnavailable: 1
    ```
 
-4. To disable a TLS flag, set boolean `false` or the string `"false"`:
+4. To set a TLS flag to `false`, use boolean `false` or the string `"false"`:
 
    ```yaml
    tracer:

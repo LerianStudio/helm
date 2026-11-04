@@ -526,7 +526,20 @@ MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
 MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "100" | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
-MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") | quote }}
+{{- /* The app (lib-commons) verifies DocumentDB against its embedded RDS CA bundle, so the shared cloud preset's tlsInsecure is dropped when that preset is what resolved. */}}
+{{- $mongoParams := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") -}}
+{{- /* The bundle ships from app 4.7.0 (lib-commons 7.20.0): older pinned tags keep the preset. A tag semver cannot parse (latest, a digest) counts as new. */}}
+{{- $bundled := true -}}
+{{- range $c := list $.Values.manager $.Values.worker -}}
+{{- $t := $c.image.tag | default (include "plugin.version" $) | toString | trimPrefix "v" -}}
+{{- if and (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $t) (semverCompare "<4.7.0-0" $t) -}}
+{{- $bundled = false -}}
+{{- end -}}
+{{- end -}}
+{{- if and $bundled (eq $mongoParams (index (include "lerian-common.cloud.block" (dict "context" $ "kind" "mongo") | fromYaml) "params" | default "-")) -}}
+{{- $mongoParams = $mongoParams | replace "tlsInsecure=true&" "" -}}
+{{- end }}
+MONGO_PARAMETERS: {{ $mongoParams | quote }}
 {{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);
    identity (library/port/insecure) stays inline. configmap.<KEY> still overrides via otel.env. */}}
 OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}

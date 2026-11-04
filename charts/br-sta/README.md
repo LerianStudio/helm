@@ -67,13 +67,14 @@ App 1.2.0 ships migration `000021_replace_audit_outbox_with_outbox_events`, whic
    SELECT target, count(*) FROM audit_outbox WHERE published_at IS NULL GROUP BY target;
    ```
 
-3. A 1.0.x drain stops selecting a row after its last failed publish, so a row that stays pending will never leave. Export what is left before you upgrade, so it can be replayed or reconciled by hand:
+3. If rows stay pending, the 1.0.x drain has given up on them: it only selects rows with `attempts` below its retry limit. Fix what made the publishes fail (broker reachability, exchange), keep a copy of the rows, then make them eligible again and go back to step 2:
 
    ```sql
    \copy (SELECT * FROM audit_outbox WHERE published_at IS NULL) TO 'audit_outbox_pending.csv' CSV HEADER
+   UPDATE audit_outbox SET attempts = 0 WHERE published_at IS NULL;
    ```
 
-4. Upgrade the chart (the migrations Job applies `000021` before the app boots), then revert the pauses from step 1.
+4. Only when the step 2 query returns no rows, upgrade the chart (the migrations Job applies `000021` before the app boots), then revert the pauses from step 1. Running the upgrade with rows still pending loses them.
 
 The down migration recreates `audit_outbox` empty: facts pending in `outbox_events` are not moved back.
 

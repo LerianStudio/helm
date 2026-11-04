@@ -27,7 +27,9 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "plugin-worker.labels" (dict "context" . "name" .Values.worker.name ) | nindent 8 }}
+        {{- include "plugin-worker.selectorLabels" (dict "context" . "name" .Values.worker.name) | nindent 8 }}
+        app.kubernetes.io/version: {{ include "plugin.version" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/worker/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/worker/configmap.yaml") . | sha256sum }}

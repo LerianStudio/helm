@@ -526,7 +526,12 @@ MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
 MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "100" | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
-MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") | quote }}
+{{- /* The app (lib-commons) verifies DocumentDB against its embedded RDS CA bundle, so the shared cloud preset's tlsInsecure is dropped when that preset is what resolved. */}}
+{{- $mongoParams := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") -}}
+{{- if eq $mongoParams (index (include "lerian-common.cloud.block" (dict "context" $ "kind" "mongo") | fromYaml) "params" | default "-") -}}
+{{- $mongoParams = $mongoParams | replace "tlsInsecure=true&" "" -}}
+{{- end }}
+MONGO_PARAMETERS: {{ $mongoParams | quote }}
 {{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);
    identity (library/port/insecure) stays inline. configmap.<KEY> still overrides via otel.env. */}}
 OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}

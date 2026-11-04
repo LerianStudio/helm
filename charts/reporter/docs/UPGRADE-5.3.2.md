@@ -30,16 +30,16 @@ With `global.cloud: aws`, the chart no longer adds `tlsInsecure=true` to `MONGO_
 |---------|--------|--------|
 | `MONGO_PARAMETERS` with `global.cloud: aws` | `tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&connectTimeoutMS=10000&serverSelectionTimeoutMS=10000` | `tls=true&directConnection=true&retryWrites=false&connectTimeoutMS=10000&serverSelectionTimeoutMS=10000` |
 
-- This change applies only when the value comes from the AWS preset. A value that you set yourself in `manager.configmap.MONGO_PARAMETERS` or `worker.configmap.MONGO_PARAMETERS` renders unchanged.
-- The chart keeps `tlsInsecure=true` when a manager or worker image tag is below `4.7.0`.
+- This change applies only when `MONGO_PARAMETERS` resolves to the AWS preset. A different value that you set in `common.configmap.MONGO_PARAMETERS` (or `datastores.mongo.params`) renders unchanged.
+- The chart keeps `tlsInsecure=true` when a manager or worker image tag is below `4.7.0` (pre-releases of `4.7.0` count as `4.7.0`).
 - Other cloud settings and the default render are not changed.
 
 ### 2. Pod template labels and checksum annotations
 
-- The manager and worker pod templates no longer carry the `helm.sh/chart` label. The pod selectors are not changed.
+- The manager pod template, and the worker pod template when KEDA is disabled, no longer carry the `helm.sh/chart` label. The pod selectors are not changed.
 - The `checksum/config` and `checksum/secret` annotations are now computed from the ConfigMap and Secret data only.
 
-Because the pod template changes, the manager and worker pods restart once during this upgrade.
+Because the pod template changes, the manager pods (and the worker Deployment pods when KEDA is disabled) restart once during this upgrade. With the default KEDA ScaledJob, the worker Job template does not change, so running worker Jobs are not restarted.
 
 ### 3. Extra volumes for manager and worker
 
@@ -49,11 +49,13 @@ New optional values `manager.extraVolumes`, `manager.extraVolumeMounts`, `worker
 
 No action is needed before the upgrade.
 
-If you run on AWS with DocumentDB, check after the upgrade that the manager and worker pods start and connect to the database:
+If you run on AWS with DocumentDB, check after the upgrade that the manager and worker pods start and connect to the database. With the default KEDA ScaledJob, worker pods exist only while a report Job runs and carry only the `scaledjob.keda.sh/name` label:
 
 ```bash
 kubectl get pods -n <namespace>
 kubectl logs -n <namespace> -l app.kubernetes.io/name=reporter-manager --tail=50
+# Worker, default KEDA ScaledJob; with KEDA disabled use -l app.kubernetes.io/name=reporter-worker
+kubectl logs -n <namespace> -l scaledjob.keda.sh/name=reporter-worker --tail=50
 ```
 
 > **Note:** Existing infrastructure components (MongoDB, RabbitMQ, Valkey) are not affected.

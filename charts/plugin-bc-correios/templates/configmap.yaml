@@ -9,12 +9,10 @@ metadata:
 data:
   # Application Settings
   ALLOW_INSECURE_TLS: {{ include "bc-correios.flagDefaultTrue" $component.configmap.ALLOW_INSECURE_TLS | quote }}
-  ENV_NAME: {{ $component.configmap.ENV_NAME | default "production" | quote }}
-  {{- if not (hasKey (default dict $component.extraEnvVars) "APP_ENV") }}
-  APP_ENV: {{ include "bc-correios.appEnv" . | quote }}
+  {{- if not (hasKey (default dict $component.extraEnvVars) "ENV_NAME") }}
+  ENV_NAME: {{ include "bc-correios.envName" . | quote }}
   {{- end }}
   APP_NAME: {{ $component.configmap.APP_NAME | default "plugin-bc-correios" | quote }}
-  APP_VERSION: {{ $component.configmap.APP_VERSION | default "1.0.0" | quote }}
   LOG_LEVEL: {{ $component.configmap.LOG_LEVEL | default "info" | quote }}
   SERVER_PORT: {{ $component.configmap.SERVER_PORT | default "9090" | quote }}
   SERVER_READ_TIMEOUT_SEC: {{ $component.configmap.SERVER_READ_TIMEOUT_SEC | default "30" | quote }}
@@ -34,14 +32,17 @@ data:
   POSTGRES_MAX_CONNS: {{ $component.configmap.POSTGRES_MAX_CONNS | default "50" | quote }}
   POSTGRES_MIN_CONNS: {{ $component.configmap.POSTGRES_MIN_CONNS | default "5" | quote }}
 
-  # RabbitMQ
-  RABBITMQ_USER: {{ $component.configmap.RABBITMQ_USER | default "plugin-bc-correios" | quote }}
-  # RABBITMQ_HOST is used by the init container to wait for RabbitMQ (no credentials needed).
-  # For bundled RabbitMQ, defaults to the groundhog2k subchart service name, replicating its
-  # rabbitmq.fullname collapse: when the release name already contains "rabbitmq" the chart uses
-  # the release name alone, otherwise "<release>-rabbitmq".
-  # For external RabbitMQ, set configmap.RABBITMQ_HOST to the external hostname.
-  RABBITMQ_HOST: {{ $component.configmap.RABBITMQ_HOST | default (ternary .Release.Name (printf "%s-rabbitmq" .Release.Name) (contains "rabbitmq" .Release.Name)) | quote }}
+  # Streaming broker (Kafka API). The app refuses to boot with a blank STREAMING_BROKERS.
+  {{- if not (or (hasKey (default dict $component.extraEnvVars) "STREAMING_BROKERS") (and $component.useExistingSecret (not $component.configmap.STREAMING_BROKERS))) }}
+  STREAMING_BROKERS: {{ $component.configmap.STREAMING_BROKERS | default "" | quote }}
+  {{- end }}
+  STREAMING_TLS_ENABLED: {{ $component.configmap.STREAMING_TLS_ENABLED | default "false" | quote }}
+  {{- with $component.configmap.STREAMING_SASL_MECHANISM }}
+  STREAMING_SASL_MECHANISM: {{ . | quote }}
+  {{- end }}
+  {{- with $component.configmap.STREAMING_SASL_USERNAME }}
+  STREAMING_SASL_USERNAME: {{ . | quote }}
+  {{- end }}
 
   # Cache (Valkey)
   CACHE_ADDR: {{ $component.configmap.CACHE_ADDR | default (printf "%s-primary:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .))) | quote }}
@@ -58,7 +59,6 @@ data:
   BC_CORREIO_ENVIRONMENT: {{ $component.configmap.BC_CORREIO_ENVIRONMENT | default "homologation" | quote }}
   BC_CORREIO_RATE_LIMIT_PER_MINUTE: {{ $component.configmap.BC_CORREIO_RATE_LIMIT_PER_MINUTE | default "50" | quote }}
   BC_CORREIO_RATE_LIMIT_PER_HOUR: {{ $component.configmap.BC_CORREIO_RATE_LIMIT_PER_HOUR | default "2700" | quote }}
-  BC_CORREIO_RETRY_MAX_RETRIES: {{ $component.configmap.BC_CORREIO_RETRY_MAX_RETRIES | default "3" | quote }}
   BC_CORREIO_TLS_MIN_VERSION: {{ $component.configmap.BC_CORREIO_TLS_MIN_VERSION | default "TLSv1.2" | quote }}
 
   # Plugin Auth
@@ -68,7 +68,6 @@ data:
   {{- if not (or (hasKey (default dict $component.extraEnvVars) "PLUGIN_AUTH_HOST") (and $component.useExistingSecret (not $component.configmap.PLUGIN_AUTH_HOST))) }}
   PLUGIN_AUTH_HOST: {{ $authHost | quote }}
   {{- end }}
-  PLUGIN_AUTH_CLIENT_ID: {{ $component.configmap.PLUGIN_AUTH_CLIENT_ID | default "plugin-bc-correios" | quote }}
 
   # License
   {{- if not (and $component.useExistingSecret (not $component.configmap.LICENSE_KEY)) }}
@@ -77,14 +76,8 @@ data:
 
   # AI Insights
   FEATURE_AI_INSIGHTS_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.FEATURE_AI_INSIGHTS_ENABLED | quote }}
-  AI_TENANT_RATE_LIMIT_PER_MIN: {{ $component.configmap.AI_TENANT_RATE_LIMIT_PER_MIN | default "50" | quote }}
-  AI_TENANT_MAX_CONCURRENT: {{ $component.configmap.AI_TENANT_MAX_CONCURRENT | default "3" | quote }}
-  AI_GLOBAL_MAX_CONCURRENT: {{ $component.configmap.AI_GLOBAL_MAX_CONCURRENT | default "15" | quote }}
-
-  # Multi-tenancy
-  MULTI_TENANT_ENABLED: {{ $component.configmap.MULTI_TENANT_ENABLED | default "false" | quote }}
-  MULTI_TENANT_URL: {{ $component.configmap.MULTI_TENANT_URL | default "" | quote }}
-  DEFAULT_TENANT_ID: {{ $component.configmap.DEFAULT_TENANT_ID | default "00000000-0000-0000-0000-000000000001" | quote }}
+  AI_RATE_LIMIT_PER_MIN: {{ $component.configmap.AI_RATE_LIMIT_PER_MIN | default "50" | quote }}
+  AI_MAX_CONCURRENT: {{ $component.configmap.AI_MAX_CONCURRENT | default "3" | quote }}
 
   # Observability
   TRACING_ENABLED: {{ $component.configmap.TRACING_ENABLED | default "false" | quote }}

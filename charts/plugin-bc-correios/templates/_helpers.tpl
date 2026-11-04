@@ -130,67 +130,37 @@ valkey-password
 {{- end }}
 
 {{/*
-bc-correios.rabbitmqErlangCookieRequired — fail when the bundled groundhog2k rabbitmq subchart is
-enabled but no erlang cookie is provided. The broker is pointed at the app Secret via
-authentication.existingSecret, which sources the cookie from secretKey RABBITMQ_ERLANG_COOKIE, so a
-stable operator-provided cookie is mandatory for clustering across restarts. Stands down when the
-bundled broker is disabled/external or an existing app Secret is used (useExistingSecret).
+bc-correios.envName — the ENV_NAME the app reads: the operator value (configmap or extraEnvVars;
+extraEnvVars win), "production" when neither is set.
 */}}
-{{- define "bc-correios.rabbitmqErlangCookieRequired" -}}
-{{- $component := index .Values "bc-correios" -}}
-{{- $rmq := default dict .Values.rabbitmq -}}
-{{- $rmqEnabled := ne (toString $rmq.enabled) "false" -}}
-{{- if and $rmqEnabled (not $component.useExistingSecret) (not $component.secrets.RABBITMQ_ERLANG_COOKIE) -}}
-{{- fail "\n\nERROR: bc-correios.secrets.RABBITMQ_ERLANG_COOKIE is REQUIRED when the bundled rabbitmq subchart is enabled.\n   The broker reads its Erlang cookie from the application Secret (single source).\n   Provide a stable value (it must not change across upgrades) e.g.: openssl rand -hex 32\n" -}}
-{{- end -}}
-{{- end }}
-
-{{/*
-bc-correios.rabbitmqExistingSecretConsistent — fail when the bundled rabbitmq subchart is enabled and
-still carries the SHIPPED DEFAULT authentication.existingSecret ("bc-correios") but the app Secret has
-been renamed (fullnameOverride / nameOverride), so the broker would reference a Secret that does not
-exist. values.yaml cannot template, so this render-time gate catches the drift. Custom (non-default)
-existingSecret values are the operator's responsibility and pass untouched.
-*/}}
-{{- define "bc-correios.rabbitmqExistingSecretConsistent" -}}
-{{- $rmq := default dict .Values.rabbitmq -}}
-{{- $rmqEnabled := ne (toString $rmq.enabled) "false" -}}
-{{- $auth := default dict $rmq.authentication -}}
-{{- $component := index .Values "bc-correios" -}}
-{{- $secretName := ternary $component.existingSecretName (include "bc-correios.fullname" .) $component.useExistingSecret -}}
-{{- if and $rmqEnabled (eq (default "" $auth.existingSecret) "bc-correios") (ne $secretName "bc-correios") -}}
-{{- fail (printf "\n\nERROR: rabbitmq.authentication.existingSecret is still the shipped default \"bc-correios\" but the app Secret renders as %q.\n   The broker would reference a Secret that does not exist.\n   Update rabbitmq.authentication.existingSecret to %q (or set it to your own existing Secret).\n" $secretName $secretName) -}}
-{{- end -}}
-{{- end }}
-
-{{/*
-bc-correios.appEnv — the APP_ENV the app reads: the operator value (configmap or extraEnvVars; extraEnvVars
-win), "production" when neither is set.
-*/}}
-{{- define "bc-correios.appEnv" -}}
+{{- define "bc-correios.envName" -}}
 {{- $component := index .Values "bc-correios" -}}
 {{- $cm := merge (deepCopy (default dict $component.extraEnvVars)) $component.configmap -}}
-{{- default "production" $cm.APP_ENV -}}
+{{- default "production" $cm.ENV_NAME -}}
 {{- end }}
 
 {{/*
-bc-correios.bootGuards — fail at render when APP_ENV is not "development" and the config the
-app refuses at boot would be rendered: LICENSE_KEY empty (unless useExistingSecret supplies it),
-POSTGRES_SSLMODE "disable", ALLOWED_ORIGINS empty or "*".
+bc-correios.bootGuards — fail at render on config the app refuses at boot. Always: empty LICENSE_KEY
+or blank STREAMING_BROKERS (unless useExistingSecret). ENV_NAME not "development": POSTGRES_SSLMODE
+"disable", ALLOWED_ORIGINS empty or "*".
 */}}
 {{- define "bc-correios.bootGuards" -}}
 {{- $component := index .Values "bc-correios" -}}
 {{- $cm := merge (deepCopy (default dict $component.extraEnvVars)) $component.configmap -}}
-{{- $env := include "bc-correios.appEnv" . -}}
-{{- if ne $env "development" -}}
-{{- if and (not $component.useExistingSecret) (not (trim (toString $cm.LICENSE_KEY))) -}}
-{{- fail "\n\nERROR: bc-correios.configmap.LICENSE_KEY is required when APP_ENV is not \"development\" (the app refuses to start). Set it, or put LICENSE_KEY in the Secret of bc-correios.useExistingSecret. A development install sets bc-correios.configmap.APP_ENV \"development\".\n" -}}
+{{- if not $component.useExistingSecret -}}
+{{- if not (trim (toString (default "" $cm.LICENSE_KEY))) -}}
+{{- fail "\n\nERROR: bc-correios.configmap.LICENSE_KEY is required (the app refuses to start without a license in every environment). Set it, or put LICENSE_KEY in the Secret of bc-correios.useExistingSecret.\n" -}}
 {{- end -}}
+{{- if not (trim (replace "," "" (toString (default "" $cm.STREAMING_BROKERS)))) -}}
+{{- fail "\n\nERROR: bc-correios.configmap.STREAMING_BROKERS is required (the app refuses to start without a streaming broker). Set it to the Kafka-API broker list, e.g. \"broker.example.com:9092\", or put STREAMING_BROKERS in the Secret of bc-correios.useExistingSecret.\n" -}}
+{{- end -}}
+{{- end -}}
+{{- if ne (include "bc-correios.envName" .) "development" -}}
 {{- if eq (default "disable" $cm.POSTGRES_SSLMODE) "disable" -}}
-{{- fail "\n\nERROR: bc-correios.configmap.POSTGRES_SSLMODE must not be \"disable\" when APP_ENV is not \"development\" (the app refuses to start). A development install sets bc-correios.configmap.APP_ENV \"development\".\n   Set a TLS mode such as \"require\". The bundled PostgreSQL has TLS off: set postgresql.tls.enabled and postgresql.tls.autoGenerated to true, or use an external PostgreSQL with TLS.\n" -}}
+{{- fail "\n\nERROR: bc-correios.configmap.POSTGRES_SSLMODE must not be \"disable\" when ENV_NAME is not \"development\" (the app refuses to start). A development install sets bc-correios.configmap.ENV_NAME \"development\".\n   Set a TLS mode such as \"require\". The bundled PostgreSQL has TLS off: set postgresql.tls.enabled and postgresql.tls.autoGenerated to true, or use an external PostgreSQL with TLS.\n" -}}
 {{- end -}}
 {{- if has (default "*" $cm.ALLOWED_ORIGINS) (list "*") -}}
-{{- fail "\n\nERROR: bc-correios.configmap.ALLOWED_ORIGINS must be set to explicit origins, not \"*\", when APP_ENV is not \"development\" (the app refuses to start). A development install sets bc-correios.configmap.APP_ENV \"development\".\n   Example: \"https://app.example.com\".\n" -}}
+{{- fail "\n\nERROR: bc-correios.configmap.ALLOWED_ORIGINS must be set to explicit origins, not \"*\", when ENV_NAME is not \"development\" (the app refuses to start). A development install sets bc-correios.configmap.ENV_NAME \"development\".\n   Example: \"https://app.example.com\".\n" -}}
 {{- end -}}
 {{- end -}}
 {{- end }}

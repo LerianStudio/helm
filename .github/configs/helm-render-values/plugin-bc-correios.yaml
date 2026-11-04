@@ -1,10 +1,10 @@
-# Render-only fixture: APP_ENV development skips the production checks the chart enforces.
+# Render-only fixture: ENV_NAME development skips the production checks on the PostgreSQL TLS mode
+# and the CORS origins; the license and the streaming broker are required in every environment.
 bc-correios:
   configmap:
-    APP_ENV: "development"
+    ENV_NAME: "development"
+    LICENSE_KEY: "sample"
+    STREAMING_BROKERS: "broker.example.com:9092"
   secrets:
     POSTGRES_PASSWORD: "sample"
-    RABBITMQ_PASS: "sample"
-    RABBITMQ_URL: "amqp://rabbitmq:5672/"
-    RABBITMQ_ERLANG_COOKIE: "sample"
     ENCRYPTION_KEY: "sample"

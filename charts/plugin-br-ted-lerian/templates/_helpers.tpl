@@ -39,6 +39,14 @@ Common labels
 */}}
 {{- define "plugin-br-ted-lerian.labels" -}}
 helm.sh/chart: {{ include "plugin-br-ted-lerian.chart" .context }}
+{{ include "plugin-br-ted-lerian.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart every pod each time.
+*/}}
+{{- define "plugin-br-ted-lerian.podLabels" -}}
 {{ include "plugin-br-ted-lerian.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin-br-ted-lerian.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}

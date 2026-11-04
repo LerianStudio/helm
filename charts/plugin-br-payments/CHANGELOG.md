@@ -3,6 +3,15 @@
 ## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
 
 Fixes:
+- Updated charts to use stable payments version `1.2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
+
+Fixes:
 
 - Use stable payments `1.2.0` in charts. (@fredcamaral)
 

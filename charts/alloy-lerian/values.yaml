@@ -674,17 +674,16 @@ node:
     digest: sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
 
   enabled: true
-  # Agent RBAC: the upstream rules without read access to Secrets and
-  # ConfigMaps. The list is grafana/alloy 1.15.0's rbac.rules minus configmaps and
-  # secrets, so an alloy subchart upgrade must re-check it. No component in the rendered pipeline reads either through the
-  # API (no `remote.kubernetes.*`), so cluster-wide read on them is not granted.
+  # Agent RBAC: grafana/alloy 1.15.0's rbac.rules without configmaps, secrets and
+  # pods/log; no component in the rendered pipeline reads them through the API.
+  # An alloy subchart upgrade must re-check this list.
   rbac:
     rules: &agentRules
       - apiGroups: ["", "discovery.k8s.io", "networking.k8s.io"]
         resources: ["endpoints", "endpointslices", "ingresses", "pods", "services"]
         verbs: ["get", "list", "watch"]
       - apiGroups: [""]
-        resources: ["pods", "pods/log", "namespaces"]
+        resources: ["pods", "namespaces"]
         verbs: ["get", "list", "watch"]
       - apiGroups: ["monitoring.grafana.com"]
         resources: ["podlogs"]

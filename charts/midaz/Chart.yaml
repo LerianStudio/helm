@@ -7,7 +7,6 @@ annotations:
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/midaz
-  - https://github.com/LerianStudio/midaz
 # A list of maintainers who are responsible for the chart
 maintainers:
   - name: "Lerian Studio"
@@ -25,8 +24,7 @@ keywords:
 # The URL to an icon file for this chart. Or the icon data.
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # This Helm chart includes multiple dependencies required for the application.
-# To understand the purpose and configuration of each dependency, visit:
-# https://docs.lerian.studio/docs/midaz-components
+# The dependencies provide the datastores and messaging the Midaz components use.
 dependencies:
   - name: lerian-common-helm
     version: "2.6.0"

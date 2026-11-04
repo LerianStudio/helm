@@ -1023,8 +1023,6 @@ valkey:
 postgresql:
   # PostgreSQL is the backbone of Midaz for managing structured data that demands transactional reliability and consistency.
   # This component is responsible for providing a robust relational database
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-postgresql
   enabled: true
   global:
     security:

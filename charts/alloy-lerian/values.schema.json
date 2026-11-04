@@ -69,7 +69,7 @@
     },
     "spanMetrics": {
       "additionalProperties": false,
-      "description": "RED metrics derived from spans (calls_total, duration_milliseconds_*). Replaces the connector that lived in the retiring otel-collector-client; disabling it stops those series from being produced at all.",
+      "description": "RED metrics derived from spans (calls_total, duration_milliseconds_*). Replaces the connector that lived in the OpenTelemetry Collector agent this chart replaces; disabling it stops those series from being produced at all.",
       "properties": {
         "buckets": {
           "description": "Explicit histogram bucket boundaries. Changing them renames every _bucket series.",

@@ -563,7 +563,7 @@ jobs:
             | xargs -0 --no-run-if-empty jq -s -c '.')
           MATRIX=${MATRIX:-[]}
           if [[ "$EVENT_NAME" == workflow_dispatch && "$MATRIX" == '[]' ]]; then
-            echo '::error::The source run has no published chart artifacts'
+            echo '::error::The source run has no published chart artifacts (none published, or the 1-day retention expired)'
             exit 1
           fi
 
@@ -589,6 +589,10 @@ jobs:
         chart: ${{ fromJson(needs.collect-published-charts.outputs.matrix) }}
     permissions:
       contents: read
+    concurrency:
+      group: helm-gitops-main
+      cancel-in-progress: false
+      queue: max
     runs-on: ${{ vars.GITOPS_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
     steps:
       - name: Refuse to sync without the GitOps runner

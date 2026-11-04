@@ -632,8 +632,10 @@ Set `ledger.secrets.LICENSE_KEY`, and `tracer.secrets.LICENSE_KEY` when the trac
 
 ## Preview changes before upgrading
 
+> **Important:** Pass the `values.yaml` you edited in the steps above with `-f` on both commands. Without `-f` or `--set`, `helm upgrade` reuses the values stored in the release and ignores the edited file. With `-f`, Helm does not merge the stored values, so the file must hold all your overrides for this release. If you do not keep one, export it with `helm get values midaz -n midaz -o yaml > values.yaml` and apply the steps above to it. Do not add `--reuse-values`: it brings back the values stored in the release, including the keys you removed.
+
 ```bash
-helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.3.0 -n midaz
+helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.3.0 -n midaz -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -641,5 +643,5 @@ helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --ver
 ## Command to upgrade
 
 ```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.3.0 -n midaz
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.3.0 -n midaz -f values.yaml
 ```

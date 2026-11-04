@@ -4,7 +4,7 @@ description: A Helm chart for Fetcher - Data extraction service for Lerian Studi
 type: application
 annotations:
   lerian.studio/chart-type: multi-component
-home: https://github.com/LerianStudio/fetcher
+home: https://github.com/LerianStudio/helm/tree/main/charts/fetcher
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"

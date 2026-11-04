@@ -8,7 +8,6 @@ annotations:
 home: https://github.com/LerianStudio/helm/tree/main/charts/product-console
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/product-console
-  - https://github.com/LerianStudio/product-console
 # A list of maintainers who are responsible for the chart
 maintainers:
   - name: "Lerian Studio"

@@ -1,9 +1,11 @@
 {
+  "extends": "semantic-release-monorepo",
   "branches": [
     "main",
     {
-      "name": "develop",
-      "prerelease": "beta"
+      "name": "maintenance/plugin-br-pix-indirect-btg-3.8.x",
+      "range": "3.8.x",
+      "channel": "3.8.x"
     }
   ],
   "plugins": [
@@ -12,19 +14,52 @@
       {
         "preset": "conventionalcommits",
         "parserOpts": {
-          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES"]
+          "noteKeywords": [
+            "BREAKING CHANGE",
+            "BREAKING CHANGES"
+          ]
         },
         "releaseRules": [
-          { "type": "feat", "release": "minor" },
-          { "type": "perf", "release": "minor" },
-          { "type": "build", "release": "minor" },
-          { "type": "chore", "release": "patch" },
-          { "type": "ci", "release": "patch" },
-          { "type": "test", "release": "patch" },
-          { "type": "fix", "release": "patch" },
-          { "type": "refactor", "release": "patch" },
-          { "type": "docs", "release": "patch" },
-          { "breaking": true, "release": "major" }
+          {
+            "type": "feat",
+            "release": "minor"
+          },
+          {
+            "type": "perf",
+            "release": "minor"
+          },
+          {
+            "type": "build",
+            "release": "minor"
+          },
+          {
+            "type": "chore",
+            "release": "patch"
+          },
+          {
+            "type": "ci",
+            "release": "patch"
+          },
+          {
+            "type": "test",
+            "release": "patch"
+          },
+          {
+            "type": "fix",
+            "release": "patch"
+          },
+          {
+            "type": "refactor",
+            "release": "patch"
+          },
+          {
+            "type": "docs",
+            "release": "patch"
+          },
+          {
+            "breaking": true,
+            "release": "major"
+          }
         ]
       }
     ],
@@ -33,10 +68,17 @@
       {
         "preset": "conventionalcommits",
         "parserOpts": {
-          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING"]
+          "noteKeywords": [
+            "BREAKING CHANGE",
+            "BREAKING CHANGES",
+            "BREAKING"
+          ]
         },
         "writerOpts": {
-          "commitsSort": ["subject", "scope"],
+          "commitsSort": [
+            "subject",
+            "scope"
+          ],
           "headerPartial": "## {{gitTag}} ({{date}})\n"
         }
       }
@@ -44,15 +86,14 @@
     [
       "semantic-release-helm3",
       {
-        "chartPath": "charts/chart-name",
-        "registry": "oci://registry-1.docker.io/lerianstudio",
+        "chartPath": ".",
         "onlyUpdateVersion": true
       }
     ],
     [
       "@semantic-release/exec",
       {
-        "successCmd": "helm push charts/chart-name oci://ghcr.io/lerianstudio"
+        "prepareCmd": "PACKAGE_DIR=$(mktemp -d) && STAGE=$(mktemp -d)/$(basename \"$PWD\") && cp -R . \"$STAGE\" && rm -f \"$STAGE/.releaserc.json\" \"$STAGE/package.json\" \"$STAGE/package-lock.json\" && helm package \"$STAGE\" --destination \"$PACKAGE_DIR\" && set -- \"$PACKAGE_DIR\"/*.tgz && [ \"$#\" -eq 1 ] && helm push \"$1\" oci://ghcr.io/lerianstudio && helm push \"$1\" oci://registry-1.docker.io/lerianstudio"
       }
     ],
     [
@@ -60,7 +101,7 @@
       {
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
         "assets": [
-          "charts/chart-name/Chart.yaml"
+          "Chart.yaml"
         ]
       }
     ]

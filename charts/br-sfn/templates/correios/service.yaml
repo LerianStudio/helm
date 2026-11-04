@@ -1,3 +1,0 @@
-{{- if $.Values.correios.enabled -}}
-{{ include "br-sfn.componentService" (dict "root" $ "name" "correios" "comp" $.Values.correios "defaultPort" 8080) }}
-{{- end -}}

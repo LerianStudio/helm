@@ -12,3 +12,6 @@ pix:
     MIDAZ_CLIENT_ID: "sample"
     MIDAZ_CLIENT_SECRET: "sample"
     LICENSE_KEY: "sample"
+outbound:
+  configmap:
+    WEBHOOK_DEFAULT_URL: "https://example.test/webhooks"

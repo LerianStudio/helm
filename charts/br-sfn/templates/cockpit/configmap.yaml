@@ -1,3 +1,0 @@
-{{- if $.Values.cockpit.enabled -}}
-{{ include "br-sfn.componentConfigmap" (dict "root" $ "name" "cockpit" "comp" $.Values.cockpit) }}
-{{- end -}}

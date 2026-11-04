@@ -10,10 +10,27 @@ on:
 
 jobs:
   update:
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@v1.36.8
+    # v1.55.0 honours the is_legacy_patch/version_line fields the senders already emit,
+    # routing a maintenance-line release to <prefix>/<chart>-<major>.<minor>.x (cut from
+    # main) instead of overwriting the mainline chart. release.yml releases from those
+    # branches, so this closes the loop. Contract is additive between the two versions:
+    # only the four legacy_* inputs appear, none removed or renamed, secrets unchanged.
+    # Pinned to the tier-2 channel like this repo's other shared workflows, not to a
+    # version: releases arrive when tier-2 is promoted. Since v1.76.0 it writes a
+    # single-service chart's image to the root .image.tag (and drops the orphan
+    # "<component>:" block older runs left) instead of .<component>.image.tag, which no
+    # template reads: product-console bumps moved appVersion but kept shipping the old
+    # image. Inputs and secrets are unchanged from v1.55.0.
+    uses: LerianStudio/shared-workflows-public/.github/workflows/helm-update-chart.yml@tier-1
     with:
       payload: ${{ inputs.payload }}
-      base_branch: develop
+      # develop is retired for this repo (see the PR template): mainline updates belong on main.
+      base_branch: main
+      # Chart line branches use the same prefix as the app repos' maintenance lines,
+      # instead of the action's `hotfix` default. Every existing chart line branch must
+      # be renamed to this prefix: the resolver looks the branch up by <prefix>/<chart>-<line>.x
+      # and would otherwise create a second, duplicate line off main.
+      legacy_branch_prefix: maintenance
       slack_notification: true
     secrets:
       APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}

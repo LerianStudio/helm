@@ -28,7 +28,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name ) | nindent 8 }}
+        {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name "podTemplate" true) | nindent 8 }}
     spec:
       {{- with .Values.bankTransfer.imagePullSecrets }}
       imagePullSecrets:

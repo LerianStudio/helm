@@ -7,7 +7,6 @@ annotations:
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-bank-transfer
-  - https://github.com/LerianStudio/plugin-br-bank-transfer
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"

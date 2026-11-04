@@ -41,6 +41,7 @@ common:
 
 - If you have `common.license.isDevelopment` set in your `values.yaml`, it will be silently ignored after the upgrade
 - The chart no longer renders `IS_DEVELOPMENT` from `common.license.isDevelopment` into the manager and worker ConfigMap
+- The manager and worker pods restart on upgrade even without this key: their `checksum/config` and `checksum/secret` annotations hash the shared ConfigMap and Secret, which carry the chart version label
 - If you set `isDevelopment: "true"` for a key issued by the dev license gateway, the manager and worker now validate that key on the production gateway (`https://license.lerian.io`)
 
 #### Action Required

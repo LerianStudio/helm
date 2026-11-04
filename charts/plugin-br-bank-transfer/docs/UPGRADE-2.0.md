@@ -81,7 +81,7 @@ Per the application's own migration runbook ("Operator notes" → "The deploy pr
 **Operational impact:**  
 The chart's default `bankTransfer.deploymentUpdate` is `RollingUpdate` with `maxSurge: 100%` / `maxUnavailable: 0` — by design, it brings the new pod up *before* retiring the old one. That is exactly the coexistence window this breaking change warns against. **Do not rely on the default rolling strategy for this upgrade.**
 
-Recommended sequencing, validated on `benedita/dev-st` and `benedita/stg-mt`:
+Recommended sequencing for this upgrade:
 1. Scale `bankTransfer.replicaCount` to `0` and confirm the old pods are fully `Terminated` (not just `Terminating`).
 2. Only then run `helm upgrade` with the `2.0.0` image tag and replicas restored. The migration Job (hook) runs before any new pod exists, and no old binary is ever up at the same time as a new one.
 

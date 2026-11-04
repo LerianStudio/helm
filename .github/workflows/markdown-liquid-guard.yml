@@ -1,0 +1,33 @@
+name: Markdown Liquid Guard
+
+# Blocks a pull request whose markdown would break or blank out charts.lerian.studio.
+#
+# GitHub Pages builds the site with Jekyll, which runs Liquid over every published
+# .md. Helm template snippets ({{ ... }}) outside a raw block fail the whole Pages
+# build when malformed, and render as nothing when they happen to parse — the site
+# went undeployed for weeks over one unterminated `{{` in an upgrade guide, and the
+# Pages build only reports it after the merge. See .github/scripts/liquid-guard.py.
+#
+# NO `paths:` FILTER, DELIBERATELY: a required check that does not run leaves the pull
+# request pending forever. The scan covers every tracked .md and takes seconds.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: markdown-liquid-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Markdown Liquid Guard
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Check markdown for Liquid outside raw blocks
+        run: python3 .github/scripts/liquid-guard.py

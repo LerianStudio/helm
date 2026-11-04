@@ -31,36 +31,12 @@ jobs:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
         with:
           scopes: |
-            midaz
-            plugin-access-manager
-            plugin-crm
-            reporter
-            plugin-fees
-            plugin-br-pix-jd
-            br-jd-courier
             plugin-br-pix-indirect-btg
-            plugin-br-pix-lerian
-            plugin-br-sisbajud
-            plugin-br-ted-lerian
-            plugin-br-bank-transfer
-            lerian-notification
-            plugin-br-bank-transfer-jd
             templates
             dependencies
-            otel-collector
-            alloy-lerian
             plugins
             pipe
             doc
-            product-console
-            fetcher
-            lender
-            tracer
-            br-sta
-            br-ccs
-            br-slc
-            br-sisbajud
-            agent
             new
             charts
             common

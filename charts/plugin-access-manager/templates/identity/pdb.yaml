@@ -1,9 +1,0 @@
-{{- if .Values.identity.pdb.enabled }}
-{{- include "lerian-common.pdb" (dict
-      "pdb" .Values.identity.pdb
-      "name" (include "plugin-identity.fullname" .)
-      "labels" (include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name))
-      "selector" (include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name))
-      "minAvailableDefault" 1
-    ) }}
-{{- end }}

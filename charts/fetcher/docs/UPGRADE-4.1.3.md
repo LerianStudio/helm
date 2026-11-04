@@ -23,7 +23,7 @@ No action is required before the upgrade. The `manager` and `worker` pods restar
 
 With `global.cloud: aws` and no explicit params value, the default `MONGO_PARAMETERS` no longer includes `tlsInsecure=true`. DocumentDB connections use the AWS RDS CA set that ships in the application image.
 
-On `global.cloud: aws`, check the `MONGO_PARAMETERS` line in the `helm diff` output before you upgrade.
+On `global.cloud: aws`, the `helm diff` output shows `tlsInsecure=true` leaving `MONGO_PARAMETERS`, unless you set the params explicitly.
 
 **Rendered `MONGO_PARAMETERS` with `global.cloud: aws` and no explicit params value:**
 
@@ -75,7 +75,7 @@ kubectl logs -n fetcher -l app.kubernetes.io/component=manager --tail=50
 kubectl logs -n fetcher -l app.kubernetes.io/component=worker --tail=50
 ```
 
-If either component logs a certificate verification error against DocumentDB, set `global.datastores.mongo.params` explicitly for your environment and upgrade again.
+If either component logs a certificate verification error against DocumentDB, check that the endpoint presents a certificate issued by the AWS RDS CA. An explicit `global.datastores.mongo.params` value renders exactly as set, so you can supply the connection parameters your endpoint needs.
 
 ## Preview changes before upgrading
 

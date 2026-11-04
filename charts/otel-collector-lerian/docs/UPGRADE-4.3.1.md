@@ -78,7 +78,7 @@ The top-level comment block in `values.yaml` has been rewritten to provide a com
 #   transform/mask_body_sensitive_data_replace_* (log PII masking), batch
 # - Connectors: spanmetrics
 # - Exporters: otlphttp/server (OTLP/HTTP)
-# - client.id: `resource/add_client_id` ships the placeholder `Firmino`. Set your
+# - client.id: `resource/add_client_id` ships the placeholder `change-me`. Set your
 #   own value; the chart does not validate it.
 ```
 
@@ -87,7 +87,7 @@ The updated documentation now accurately reflects:
 - All active receivers, including `k8sobjects` for Kubernetes events
 - The complete processor chain, including memory limiter, filtering, attribute transformation, and PII masking
 - The `spanmetrics` connector used for generating metrics from spans
-- A reminder that the `client.id` placeholder value (`Firmino`) should be replaced with your organization's identifier
+- A reminder that the `client.id` placeholder value (`change-me`) should be replaced with your organization's identifier
 
 > **Important:** The documentation now explicitly notes that the chart ships with a placeholder `client.id` value. Operators should verify their `values.yaml` overrides include a meaningful `client.id` for proper telemetry attribution in the Lerian backend.
 

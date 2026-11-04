@@ -164,6 +164,38 @@ existingSecret values are the operator's responsibility and pass untouched.
 {{- end }}
 
 {{/*
+bc-correios.appEnv — the APP_ENV the app reads: set only when the operator sets APP_ENV (configmap or
+extraEnvVars; extraEnvVars win). Empty otherwise: the app then runs as "development".
+*/}}
+{{- define "bc-correios.appEnv" -}}
+{{- $component := index .Values "bc-correios" -}}
+{{- $cm := merge (deepCopy (default dict $component.extraEnvVars)) $component.configmap -}}
+{{- default "" $cm.APP_ENV -}}
+{{- end }}
+
+{{/*
+bc-correios.bootGuards — fail at render when APP_ENV is set outside "development" and the config the
+app refuses at boot would be rendered: LICENSE_KEY empty, POSTGRES_SSLMODE "disable",
+ALLOWED_ORIGINS empty or "*".
+*/}}
+{{- define "bc-correios.bootGuards" -}}
+{{- $component := index .Values "bc-correios" -}}
+{{- $cm := merge (deepCopy (default dict $component.extraEnvVars)) $component.configmap -}}
+{{- $env := include "bc-correios.appEnv" . -}}
+{{- if and $env (ne $env "development") -}}
+{{- if not (trim (toString $cm.LICENSE_KEY)) -}}
+{{- fail "\n\nERROR: bc-correios.configmap.LICENSE_KEY is required when APP_ENV is not \"development\" (the app refuses to start).\n" -}}
+{{- end -}}
+{{- if eq (default "disable" $cm.POSTGRES_SSLMODE) "disable" -}}
+{{- fail "\n\nERROR: bc-correios.configmap.POSTGRES_SSLMODE must not be \"disable\" when APP_ENV is not \"development\" (the app refuses to start).\n   Set a TLS mode such as \"require\".\n" -}}
+{{- end -}}
+{{- if has (default "*" $cm.ALLOWED_ORIGINS) (list "*" "") -}}
+{{- fail "\n\nERROR: bc-correios.configmap.ALLOWED_ORIGINS must be set to explicit origins, not \"*\", when APP_ENV is not \"development\" (the app refuses to start).\n   Example: \"https://app.example.com\".\n" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 A flag that defaults to "true". Sprig `default` treats an explicit boolean false
 as empty, so a bool is rendered as-is. Input: the value.
 */}}

@@ -107,11 +107,6 @@ auth-database:
 valkey:
   enabled: false
 
-# auth.secrets.DB_PASSWORD is normally single-sourced from the bundled
-# database's Secret. With both datastores disabled above, supply the managed
-# instances' credentials explicitly (or set auth.useExistingSecret and
-# identity.useExistingSecret to true and point auth.existingSecretName and
-# identity.existingSecretName at pre-created Secrets with the same keys):
 # ENV_NAME "production" also needs an https AUTHORIZER_ADDRESS, or the render
 # fails. Caradhras serves plain http, so publish it through an internal ingress
 # with a public-CA certificate and point both AUTHORIZER_ADDRESS at that URL
@@ -129,16 +124,29 @@ caradhras:
       - secretName: caradhras-tls   # create it before the install (or let cert-manager issue it), public-CA certificate
         hosts:
           - caradhras.example.com
+
+# auth.secrets.DB_PASSWORD is normally single-sourced from the bundled
+# database's Secret. With both datastores disabled above, supply the managed
+# instances' credentials explicitly (or set auth.useExistingSecret and
+# identity.useExistingSecret to true and point auth.existingSecretName and
+# identity.existingSecretName at pre-created Secrets with the same keys).
+# LICENSE_KEY and AUTHORIZER_CLIENT_SECRET are required for both components:
+# the render fails without AUTHORIZER_CLIENT_SECRET, and auth and identity
+# refuse to boot with an empty LICENSE_KEY.
 auth:
   configmap:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"
   secrets:
+    LICENSE_KEY: "CHANGE_ME"
+    AUTHORIZER_CLIENT_SECRET: "CHANGE_ME"
     DB_PASSWORD: "CHANGE_ME"
     REDIS_PASSWORD: "CHANGE_ME"
 identity:
   configmap:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"
   secrets:
+    LICENSE_KEY: "CHANGE_ME"
+    AUTHORIZER_CLIENT_SECRET: "CHANGE_ME"
     REDIS_PASSWORD: "CHANGE_ME"
 ```
 

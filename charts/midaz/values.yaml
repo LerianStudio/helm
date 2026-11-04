@@ -257,7 +257,7 @@ ledger:
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
     # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
-    # rollout) and, from 4.5.0, the partition runner; a lower tag keeps the 4.4 probes and ports.
+    # rollout); the partition runner is on from 4.5.0-beta.1; a lower tag keeps the 4.4 probes and ports.
     tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
@@ -790,7 +790,7 @@ tracer:
     pullPolicy: Always
     # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
     # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
-    # rollout) and, from 4.5.0, the partition runner; a lower tag keeps the 4.4 probes and ports.
+    # rollout); a lower tag keeps the 4.4 probes and ports.
     tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots

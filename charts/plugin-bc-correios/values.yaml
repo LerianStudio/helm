@@ -134,7 +134,7 @@ bc-correios:
       alb.ingress.kubernetes.io/scheme: internet-facing
       alb.ingress.kubernetes.io/target-type: ip
     hosts:
-      - host: "bc-correios.dev.lerian.io"
+      - host: "bc-correios.example.com"
         paths:
           - path: /
             pathType: Prefix
@@ -205,8 +205,10 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    # Deployment environment. A development install without Access Manager sets ENV_NAME
-    # "development" and PLUGIN_AUTH_ENABLED "false": the app refuses auth off in production.
+    # ENV_NAME sets the libraries' environment (auth-client log format, lib-commons security tier).
+    # The app's own validation follows APP_ENV (chart default "production"): the chart then requires
+    # LICENSE_KEY, a POSTGRES_SSLMODE other than "disable" and explicit ALLOWED_ORIGINS at render time.
+    # Set APP_ENV "development" for a development install, which skips the app's production checks.
     ENV_NAME: "production"
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: "1.0.0"
@@ -247,11 +249,12 @@ bc-correios:
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
     BC_CORREIO_RETRY_MAX_RETRIES: "3"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
-    # Plugin Auth (Access Manager). PLUGIN_AUTH_ADDRESS is the auth service URL the app calls.
+    # Plugin Auth (Access Manager). The app reads PLUGIN_AUTH_ADDRESS and lib-auth reads PLUGIN_AUTH_HOST; the chart renders both
+    # with one value (PLUGIN_AUTH_HOST, when set, wins). With useExistingSecret it renders no PLUGIN_AUTH_HOST unless configmap sets it.
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
-    # License
+    # License. Required when APP_ENV is not "development" (chart default "production").
     LICENSE_KEY: ""
     # AI Insights
     FEATURE_AI_INSIGHTS_ENABLED: "true"
@@ -307,7 +310,7 @@ bc-correios:
 # Valkey (Redis-compatible) configuration
 valkey:
   enabled: true
-  # Here and in postgresql: bitnami/* tags are gone; bitnamilegacy serves the same tags, so data stays readable.
+  # Here and in postgresql: bitnami/* tags are gone; the bundled images come from bitnamilegacy.
   global:
     security:
       allowInsecureImages: true
@@ -343,6 +346,10 @@ postgresql:
   image:
     repository: bitnamilegacy/postgresql
     tag: "17.4.0"
+  # Used by the init containers that postgresql.tls and postgresql.volumePermissions turn on.
+  volumePermissions:
+    image:
+      repository: bitnamilegacy/os-shell
   external: false
   architecture: standalone
   auth:
@@ -366,7 +373,8 @@ rabbitmq:
     tag: "4.0.5"
   # NOTE: `persistence.size` is NOT a key of the groundhog2k/rabbitmq subchart and has no effect:
   # the broker data volume (/var/lib/rabbitmq) renders as an emptyDir, so queue data does not
-  # survive a pod restart. The subchart's own key for a PVC is `storage.requestedSize`.
+  # survive a pod restart. The subchart's own key for a PVC is `storage.requestedSize`; set it on a
+  # new install, because Kubernetes rejects adding a volume claim template to an existing StatefulSet.
   persistence:
     size: 4Gi
   resources:
@@ -392,9 +400,12 @@ rabbitmq:
   # unchanged; the cookie is no longer a deterministic literal shipped in the chart.
   # `user.value` / `password.value` below are IGNORED while existingSecret is set (they are only
   # honoured without existingSecret), and neither declares a secretKey, so the bundled broker is
-  # started WITHOUT RABBITMQ_DEFAULT_USER/RABBITMQ_DEFAULT_PASS and files/rabbitmq/load_definitions.json
-  # declares no users. Provision the account that bc-correios.secrets.RABBITMQ_URL points at yourself
-  # (or use an external broker).
+  # started WITHOUT RABBITMQ_DEFAULT_USER/RABBITMQ_DEFAULT_PASS (the broker would not create a
+  # default user anyway while it imports the definitions file). The chart declares the app account
+  # in the imported definitions instead: user bc-correios.configmap.RABBITMQ_USER, password
+  # bc-correios.secrets.RABBITMQ_PASS, full permissions on vhost "/". With
+  # bc-correios.useExistingSecret the password is not known to the chart: provision the account
+  # that bc-correios.secrets.RABBITMQ_URL points at yourself (or use an external broker).
   # RABBITMQ_ERLANG_COOKIE is REQUIRED in the app Secret when rabbitmq.enabled (see
   # secrets + bc-correios.rabbitmqErlangCookieRequired). Must be a STABLE value — changing
   # it across upgrades breaks the cluster. Generate once with: openssl rand -hex 32
@@ -435,7 +446,3 @@ seaweedfs:
 # already contains image.tag; this comment documents the CI/CD mapping:
 #   helm_values_key_mappings: '{"plugin-bc-correios": "bc-correios"}'
 # No duplicate key needed — the pipeline targets the bc-correios block directly.
-
-br-spb-bc-correios:
-  image:
-    tag: 1.2.0

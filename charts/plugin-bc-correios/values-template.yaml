@@ -22,7 +22,7 @@ bc-correios:
       alb.ingress.kubernetes.io/scheme: internet-facing
       alb.ingress.kubernetes.io/target-type: ip
     hosts:
-      - host: ""  # REQUIRED - Set your hostname (e.g., bc-correios.prod.lerian.io)
+      - host: ""  # REQUIRED - Set your hostname (e.g., bc-correios.example.com)
         paths:
           - path: /
             pathType: Prefix
@@ -76,7 +76,7 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    ENV_NAME: "production"   # "development" (with PLUGIN_AUTH_ENABLED "false") for a dev install
+    ENV_NAME: "production"   # sets the libraries' environment; APP_ENV (chart default "production"; "development" skips the app's production checks) drives the app's own validation
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: ""   # REQUIRED - matches image tag
     LOG_LEVEL: "info"
@@ -86,7 +86,7 @@ bc-correios:
     SERVER_SHUTDOWN_TIMEOUT_SEC: "30"
 
     # CORS / Proxy
-    ALLOWED_ORIGINS: "*"
+    ALLOWED_ORIGINS: "*"   # explicit origins are required unless APP_ENV is "development"; "*" is refused
     TRUSTED_PROXIES: "127.0.0.1,::1"
 
     # PostgreSQL - REQUIRED
@@ -120,12 +120,12 @@ bc-correios:
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
 
     # Plugin Auth
-    PLUGIN_AUTH_ENABLED: "true"   # "false" is refused unless ENV_NAME is development-class
+    PLUGIN_AUTH_ENABLED: "true"   # "false" is refused unless APP_ENV is "development"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
 
     # License
-    LICENSE_KEY: ""   # REQUIRED in production
+    LICENSE_KEY: ""   # REQUIRED when APP_ENV is not "development"
 
     # AI Insights
     FEATURE_AI_INSIGHTS_ENABLED: "true"
@@ -179,7 +179,7 @@ bc-correios:
 #   - Schema: public
 #
 # RabbitMQ:
-#   - User: the account in RABBITMQ_URL (with full permissions on / vhost); the chart does not create it
+#   - User: the account in RABBITMQ_URL (full permissions on / vhost). The bundled broker creates it from RABBITMQ_USER and RABBITMQ_PASS; an external broker must already have it
 #   - Exchanges: bc-correios.audit, bc-correios.audit.dlx, bc-correios.mail-events,
 #     bc-correios.webhook.dlx
 #   - Queues: bc-correios.audit.events, bc-correios.audit.dead, bc-correios.webhook.dispatch,

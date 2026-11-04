@@ -6,7 +6,7 @@
 - **[Overview](#overview)**
 - **[Breaking Changes](#breaking-changes)**
   - [1. Plugin authentication now enabled by default](#1-plugin-authentication-now-enabled-by-default)
-  - [2. Environment variable renamed: APP_ENV to ENV_NAME](#2-environment-variable-renamed-app_env-to-env_name)
+  - [2. Environment variable added: ENV_NAME](#2-environment-variable-added-env_name)
   - [3. Plugin auth host variable renamed: PLUGIN_AUTH_HOST to PLUGIN_AUTH_ADDRESS](#3-plugin-auth-host-variable-renamed-plugin_auth_host-to-plugin_auth_address)
   - [4. Bitnami image repositories replaced with bitnamilegacy](#4-bitnami-image-repositories-replaced-with-bitnamilegacy)
   - [5. Bundled RabbitMQ no longer creates default user credentials](#5-bundled-rabbitmq-no-longer-creates-default-user-credentials)
@@ -26,8 +26,6 @@
   - [RabbitMQ User Provisioning](#rabbitmq-user-provisioning)
   - [Valkey Password Configuration](#valkey-password-configuration)
 - **[Migration Steps](#migration-steps)**
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
 
@@ -61,13 +59,13 @@ bc-correios:
 
 - If you do not have the Access Manager deployed, the plugin will fail to start or reject all requests with authentication errors
 - Development environments that previously ran without authentication must now explicitly disable it (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
-- The application enforces that `PLUGIN_AUTH_ENABLED` cannot be `"false"` when `ENV_NAME` is `"production"` (see next breaking change)
+- The application enforces that `PLUGIN_AUTH_ENABLED` cannot be `"false"` unless `APP_ENV` is `"development"` (see next breaking change)
 
 > **Warning:** If you upgrade without adjusting authentication settings and do not have Access Manager deployed, the plugin pods will fail health checks and enter a crash loop. Review [Deployment Scenarios](#deployment-scenarios) before upgrading.
 
-### 2. Environment variable renamed: APP_ENV to ENV_NAME
+### 2. Environment variable added: ENV_NAME
 
-The environment variable controlling the deployment environment has been renamed from `APP_ENV` to `ENV_NAME`, and the default value has changed from `"development"` to `"production"`.
+The chart now renders `ENV_NAME` (default `"production"`) for the libraries. `APP_ENV` is still the variable the application reads for its own environment.
 
 **Before (v2.2.0):**
 
@@ -83,16 +81,17 @@ bc-correios:
 bc-correios:
   configmap:
     ENV_NAME: "production"
+    APP_ENV: "production"   # set it to run the application's production checks
 ```
 
 **Operational impact:**
 
-- The application code reads `ENV_NAME` instead of `APP_ENV`
-- When `ENV_NAME` is `"production"`, the application refuses to start if `PLUGIN_AUTH_ENABLED` is `"false"`
-- If you previously set `APP_ENV: "production"` in your values file, you must rename it to `ENV_NAME: "production"`
-- If you run a development environment without Access Manager, you must set both `ENV_NAME: "development"` and `PLUGIN_AUTH_ENABLED: "false"` (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
+- The application reads `APP_ENV`; `ENV_NAME` sets the libraries' environment (auth-client log format, lib-commons security tier) and `APP_ENV` drives the app's own validation. The chart renders `APP_ENV` as `"production"` unless you set it in `bc-correios.configmap` or `bc-correios.extraEnvVars`
+- When `APP_ENV` is not `"development"`, the application refuses to start if `PLUGIN_AUTH_ENABLED` is `"false"`, and the chart refuses to render an empty `LICENSE_KEY`, `POSTGRES_SSLMODE: "disable"` and `ALLOWED_ORIGINS` empty or `*`
+- A values file that sets `APP_ENV` keeps working
+- If you run a development environment without Access Manager, set `PLUGIN_AUTH_ENABLED: "false"` and set `APP_ENV: "development"` (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
 
-> **Important:** The application will not recognize `APP_ENV` after this upgrade. If you have custom values that set `APP_ENV`, the application will use the new default `ENV_NAME: "production"` and may refuse to start if authentication is disabled.
+> **Important:** The chart runs the application's production checks by default. For a development install set `bc-correios.configmap.APP_ENV: "development"`.
 
 ### 3. Plugin auth host variable renamed: PLUGIN_AUTH_HOST to PLUGIN_AUTH_ADDRESS
 
@@ -116,8 +115,7 @@ bc-correios:
 
 **Operational impact:**
 
-- The application code reads `PLUGIN_AUTH_ADDRESS` instead of `PLUGIN_AUTH_HOST`
-- If you previously set `PLUGIN_AUTH_HOST` in your values file, you must rename it to `PLUGIN_AUTH_ADDRESS`
+- The application reads `PLUGIN_AUTH_ADDRESS` and lib-auth reads `PLUGIN_AUTH_HOST`; the chart renders both with one value. `PLUGIN_AUTH_HOST` in `bc-correios.configmap` or `bc-correios.extraEnvVars`, when set, takes precedence. With `bc-correios.useExistingSecret`, set `PLUGIN_AUTH_HOST` in that Secret or in `configmap`
 - The new default assumes the Access Manager auth service is deployed in the `midaz-plugins` namespace with the release name `plugin-access-manager-auth`
 
 > **Note:** If your Access Manager is deployed with a different release name or namespace, override `PLUGIN_AUTH_ADDRESS` with the correct service URL.
@@ -172,8 +170,6 @@ postgresql:
 - Existing PersistentVolumeClaims will continue to work without data migration
 - If you have custom image pull policies or registry mirrors configured, verify they support the `bitnamilegacy` repository
 
-> **Note:** The comment in `values.yaml` states: "bitnami/* tags are gone; bitnamilegacy serves the same tags, so data stays readable." This change is purely a registry migration and does not affect data compatibility.
-
 ### 5. Bundled RabbitMQ no longer creates default user credentials
 
 When using the bundled RabbitMQ with `rabbitmq.authentication.existingSecret` set (which is now required for the Erlang cookie), the broker is started without `RABBITMQ_DEFAULT_USER` or `RABBITMQ_DEFAULT_PASS` environment variables. The `rabbitmq.authentication.user.value` and `rabbitmq.authentication.password.value` settings are ignored when `existingSecret` is set.
@@ -188,11 +184,11 @@ When `rabbitmq.authentication.existingSecret` is set, the bundled RabbitMQ start
 
 **Operational impact:**
 
-- You must manually provision the RabbitMQ user account that `bc-correios.secrets.RABBITMQ_URL` references
+- Without `bc-correios.useExistingSecret`, the chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS` (`templates/rabbitmq_load_definitions.yaml`). Set `bc-correios.secrets.RABBITMQ_URL` to use that account (`amqp://<RABBITMQ_USER>:<RABBITMQ_PASS>@<release>-rabbitmq:5672/`) and no manual provisioning is needed; for any other account in the URL, provision it as described below. With `bc-correios.useExistingSecret` or an external broker, you must provision the RabbitMQ user account that `bc-correios.secrets.RABBITMQ_URL` references
 - The Erlang cookie (`RABBITMQ_ERLANG_COOKIE`) is still required in the application Secret when `rabbitmq.enabled` is `true` (see `bc-correios.rabbitmqErlangCookieRequired` helper)
 - If you do not provision the user account, the plugin will fail to connect to RabbitMQ and enter a crash loop
 
-> **Warning:** The bundled RabbitMQ will start with no user accounts. You must create the user referenced in `RABBITMQ_URL` before the plugin can connect. See [Scenario 4](#scenario-4-bundled-rabbitmq-with-manual-user-provisioning) for instructions.
+> **Warning:** With `bc-correios.useExistingSecret`, the bundled RabbitMQ starts with no user accounts. You must create the user referenced in `RABBITMQ_URL` before the plugin can connect. See [Scenario 4](#scenario-4-bundled-rabbitmq-with-manual-user-provisioning) for instructions.
 
 ### 6. RabbitMQ bootstrap job no longer creates users or permissions
 
@@ -281,7 +277,7 @@ The `values.yaml` file now includes extensive inline comments explaining the beh
 **Key documentation additions:**
 
 - `global.externalRabbitmqDefinitions`: Clarifies that the job imports definitions but does not create users
-- `bc-correios.configmap.ENV_NAME`: Explains the relationship between `ENV_NAME` and `PLUGIN_AUTH_ENABLED`
+- `bc-correios.configmap.ENV_NAME`: Sets the libraries' environment; `APP_ENV` drives the app's own validation
 - `bc-correios.configmap.PLUGIN_AUTH_ADDRESS`: Documents the default Access Manager service URL
 - `bc-correios.secrets.CACHE_PASSWORD`: Explains when this value is used vs. when the password is read from the Valkey Secret
 - `rabbitmq.authentication`: Documents that `user.value` and `password.value` are ignored when `existingSecret` is set
@@ -295,7 +291,7 @@ This section provides concrete configuration examples for common deployment scen
 
 ### Scenario 1: Development environment without Access Manager
 
-If you run a development environment and do not have the Access Manager deployed, you must explicitly disable authentication and set the environment name to `"development"`.
+If you run a development environment and do not have the Access Manager deployed, you must explicitly disable authentication and set the environment name and `APP_ENV` to `"development"`.
 
 **Required configuration:**
 
@@ -303,13 +299,14 @@ If you run a development environment and do not have the Access Manager deployed
 bc-correios:
   configmap:
     ENV_NAME: "development"
+    APP_ENV: "development"
     PLUGIN_AUTH_ENABLED: "false"
 ```
 
 **Why this is required:**
 
-- The application refuses to start with `PLUGIN_AUTH_ENABLED: "false"` when `ENV_NAME` is `"production"`
-- Without these overrides, the chart defaults to `ENV_NAME: "production"` and `PLUGIN_AUTH_ENABLED: "true"`, causing the plugin to fail authentication checks
+- The application refuses to start with `PLUGIN_AUTH_ENABLED: "false"` unless `APP_ENV` is `"development"`
+- Without `PLUGIN_AUTH_ENABLED: "false"`, the chart defaults to `PLUGIN_AUTH_ENABLED: "true"`, causing the plugin to fail authentication checks
 
 > **Warning:** Do not use this configuration in production. The application enforces that authentication cannot be disabled in production environments.
 
@@ -317,15 +314,21 @@ bc-correios:
 
 If you run a production environment with the Access Manager deployed, verify that the default Access Manager service URL matches your deployment.
 
-**Default configuration (no overrides needed if your Access Manager matches):**
+**Production configuration (the Access Manager address is the default; the last three values have no production-ready default):**
 
 ```yaml
 bc-correios:
   configmap:
     ENV_NAME: "production"
+    APP_ENV: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
+    LICENSE_KEY: "<your-license-key>"   # or put LICENSE_KEY in the Secret of bc-correios.useExistingSecret
+    POSTGRES_SSLMODE: "require"
+    ALLOWED_ORIGINS: "https://app.example.com"
 ```
+
+The bundled PostgreSQL has TLS off. With it, also set `postgresql.tls.enabled: true` and `postgresql.tls.autoGenerated: true`, or use an external PostgreSQL with TLS.
 
 **If your Access Manager is deployed with a different release name or namespace:**
 
@@ -375,7 +378,7 @@ global:
 
 ### Scenario 4: Bundled RabbitMQ with manual user provisioning
 
-If you use the bundled RabbitMQ, you must manually provision the user account referenced in `bc-correios.secrets.RABBITMQ_URL` because the broker starts without default credentials when `rabbitmq.authentication.existingSecret` is set.
+Without `bc-correios.useExistingSecret`, the chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS`; if `RABBITMQ_URL` uses that account, you need no manual provisioning. If you use the bundled RabbitMQ with `bc-correios.useExistingSecret`, you must manually provision the user account referenced in `RABBITMQ_URL` in the app Secret because the broker starts without default credentials when `rabbitmq.authentication.existingSecret` is set.
 
 **Required configuration:**
 
@@ -388,9 +391,8 @@ rabbitmq:
       secretKey: "erlang-cookie"
 
 bc-correios:
-  secrets:
-    RABBITMQ_URL: "amqp://<username>:<password>@plugin-bc-correios-rabbitmq:5672/"
-    RABBITMQ_ERLANG_COOKIE: "<same-value-as-in-existingSecret>"
+  useExistingSecret: true
+  existingSecretName: "<app-secret-name>" # holds RABBITMQ_URL (amqp://<username>:<password>@plugin-bc-correios-rabbitmq:5672/)
 ```
 
 **Migration steps:**
@@ -412,8 +414,7 @@ kubectl exec -n <namespace> -it <rabbitmq-pod-name> -- rabbitmqctl add_user <use
 kubectl exec -n <namespace> -it <rabbitmq-pod-name> -- rabbitmqctl set_permissions -p / <username> ".*" ".*" ".*"
 ```
 
-4. Update `bc-correios.secrets.RABBITMQ_URL` with the username and password
-5. Update `bc-correios.secrets.RABBITMQ_ERLANG_COOKIE` with the same Erlang cookie value
+4. Put `RABBITMQ_URL` with that username and password in the app Secret (`bc-correios.existingSecretName`)
 
 > **Warning:** The Erlang cookie must be a stable value. Changing it across upgrades breaks the RabbitMQ cluster. Generate it once and store it in a Secret that persists across upgrades.
 
@@ -425,7 +426,7 @@ The following table describes the authentication-related configuration settings.
 
 | Flag | Default (v3.0.0) | Description |
 |------|------------------|-------------|
-| `bc-correios.configmap.ENV_NAME` | `"production"` | Deployment environment. The application refuses to start with `PLUGIN_AUTH_ENABLED: "false"` when this is `"production"`. |
+| `bc-correios.configmap.ENV_NAME` | `"production"` | Sets the libraries' environment (auth-client log format, lib-commons security tier). `APP_ENV` drives the app's own validation. |
 | `bc-correios.configmap.PLUGIN_AUTH_ENABLED` | `"true"` | Enable or disable plugin authentication. Must be `"true"` in production. |
 | `bc-correios.configmap.PLUGIN_AUTH_ADDRESS` | `"http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"` | Access Manager auth service URL. Override if your Access Manager is deployed with a different release name or namespace. |
 | `bc-correios.configmap.PLUGIN_AUTH_CLIENT_ID` | `"plugin-bc-correios"` | Client ID registered in Access Manager. |
@@ -448,7 +449,8 @@ The following table describes the RabbitMQ user provisioning behavior.
 | Configuration | Behavior |
 |---------------|----------|
 | Bundled RabbitMQ without `existingSecret` | The subchart creates a default user based on `rabbitmq.authentication.user.value` and `rabbitmq.authentication.password.value`. |
-| Bundled RabbitMQ with `existingSecret` | The broker starts without default credentials. You must manually provision the user account referenced in `bc-correios.secrets.RABBITMQ_URL`. |
+| Bundled RabbitMQ with `existingSecret`, without `bc-correios.useExistingSecret` | The chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS`; no manual provisioning is needed when `RABBITMQ_URL` uses that account. |
+| Bundled RabbitMQ with `existingSecret` and `bc-correios.useExistingSecret` | The broker starts without default credentials. You must manually provision the user account referenced in `RABBITMQ_URL` in the app Secret. |
 | External RabbitMQ | The user account referenced in `bc-correios.secrets.RABBITMQ_URL` must already exist with appropriate permissions. |
 
 **Example: Bundled RabbitMQ with manual user provisioning:**
@@ -462,9 +464,8 @@ rabbitmq:
       secretKey: "erlang-cookie"
 
 bc-correios:
-  secrets:
-    RABBITMQ_URL: "amqp://bc_correios:changeme@plugin-bc-correios-rabbitmq:5672/"
-    RABBITMQ_ERLANG_COOKIE: "<same-value-as-in-existingSecret>"
+  useExistingSecret: true
+  existingSecretName: "<app-secret-name>" # holds RABBITMQ_URL (amqp://bc_correios:changeme@plugin-bc-correios-rabbitmq:5672/)
 ```
 
 ### Valkey Password Configuration
@@ -512,12 +513,12 @@ This upgrade requires careful preparation due to the breaking changes around aut
 
 Determine whether you run a development or production environment and whether you have the Access Manager deployed.
 
-- **Development without Access Manager:** You must set `ENV_NAME: "development"` and `PLUGIN_AUTH_ENABLED: "false"` (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
+- **Development without Access Manager:** You must set `PLUGIN_AUTH_ENABLED: "false"` (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
 - **Production with Access Manager:** Verify the `PLUGIN_AUTH_ADDRESS` matches your Access Manager service URL (see [Scenario 2](#scenario-2-production-environment-with-access-manager))
 
 **Step 2: Update environment variable names in your values file**
 
-If you have custom values that set `APP_ENV` or `PLUGIN_AUTH_HOST`, rename them:
+Keep `APP_ENV` in your values file; the application still reads it. `PLUGIN_AUTH_HOST` still works and takes precedence; `PLUGIN_AUTH_ADDRESS` is the values key the chart renders under both names:
 
 ```yaml
 # Before (v2.2.0)
@@ -530,12 +531,13 @@ bc-correios:
 bc-correios:
   configmap:
     ENV_NAME: "production"
+    APP_ENV: "production"
     PLUGIN_AUTH_ADDRESS: "http://my-access-manager:4000"
 ```
 
 **Step 3: Provision RabbitMQ user accounts**
 
-If you use the bundled RabbitMQ with `rabbitmq.authentication.existingSecret` set, or if you use an external RabbitMQ, ensure the user account referenced in `bc-correios.secrets.RABBITMQ_URL` exists with appropriate permissions.
+If you use the bundled RabbitMQ with `rabbitmq.authentication.existingSecret` and `bc-correios.useExistingSecret` set, or if you use an external RabbitMQ, ensure the user account referenced in `bc-correios.secrets.RABBITMQ_URL` exists with appropriate permissions.
 
 - **Bundled RabbitMQ:** Follow [Scenario 4](#scenario-4-bundled-rabbitmq-with-manual-user-provisioning)
 - **External RabbitMQ:** Follow [Scenario 3](#scenario-3-external-rabbitmq-with-existing-user-accounts)

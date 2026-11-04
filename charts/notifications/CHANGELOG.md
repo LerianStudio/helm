@@ -4,6 +4,16 @@
 
 Fixes:
 
+- Ensure notifications are correctly displayed and processed without errors. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.0...notifications-v1.0.1)
+
+---
+
+## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.0.1)
+
+Fixes:
+
 - Ensure notifications are displayed correctly by addressing issues with the migration process. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.0...notifications-v1.0.1)

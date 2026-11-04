@@ -2,6 +2,23 @@
 
 ## [3.0.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.0.5)
 
+Fixes:
+- Keep MongoDB password secure in the configuration. (@fredcamaral)
+- Use version `3.5.0` for compatibility improvements. (@fredcamaral)
+- Stop rendering the `IS_DEVELOPMENT` flag to ensure consistent behavior across environments. (@fredcamaral)
+
+Improvements:
+- Sync the default image documentation to ensure it is up-to-date. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides for clarity and accuracy. (@gandalf-at-lerian)
+- Add verified upgrade guides for version `3.0.4` to assist users with the update process. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for better user guidance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.0.4...plugin-br-bank-transfer-v3.0.5)
+
+---
+
+## [3.0.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.0.5)
+
 Features:
 
 Fixes:

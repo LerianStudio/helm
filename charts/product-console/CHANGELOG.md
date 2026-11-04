@@ -1,5 +1,20 @@
 # Product-console Changelog
 
+## [4.5.2](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.2)
+
+Fixes:
+- Stop pod restarts on chart-only releases to improve stability. (@fredcamaral)
+- Hash only configuration data in pod checksums to ensure accurate updates. (@fredcamaral)
+- Exclude chart version from pod labels to prevent unnecessary updates. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides to enhance clarity and accuracy. (@dy-shimizu, @gandalf-at-lerian)
+- Add the verified `4.5.1` upgrade guide to assist users in the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.5.1...product-console-v4.5.2)
+
+---
+
 ## [4.5.1](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.1)
 
 Fixes:

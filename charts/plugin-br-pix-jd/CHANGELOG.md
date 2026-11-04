@@ -6,6 +6,20 @@ Fixes:
 - Ensure the chart label is kept out of pod templates to maintain consistency. (@fredcamaral)
 
 Improvements:
+- Apply review fixes to the chart documentation and upgrade guides for better clarity. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from versions `0.5.9` to `0.6.2`. (@fredcamaral)
+- Correct the chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.2...plugin-br-pix-jd-v0.6.3)
+
+---
+
+## [0.6.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.3)
+
+Fixes:
+- Ensure the chart label is kept out of pod templates to maintain consistency. (@fredcamaral)
+
+Improvements:
 - Apply review fixes to chart documentation and upgrade guides for clarity and accuracy. (@gandalf-at-lerian)
 - Add verified upgrade guides for transitioning from version `0.5.9` to `0.6.2`. (@fredcamaral)
 - Correct chart documentation to align with templates and application code. (@fredcamaral)

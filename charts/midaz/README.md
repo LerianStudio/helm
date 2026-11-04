@@ -84,6 +84,11 @@ reference; `values.schema.json` validates it.
 
 ## Install Midaz Helm Chart:
 
+**Prerequisites:**
+
+- Kubernetes 1.27 or later. The default pod-spreading preset uses `matchLabelKeys` (see Pod Spreading).
+- Helm 3.8 or later. The chart is published as an OCI artifact, which Helm supports from 3.8.
+
 To install Midaz using Helm, run:
 
 ```console
@@ -663,6 +668,7 @@ Notes:
 - **Version:** 2.1.11
 - **Repository:** https://groundhog2k.github.io/helm-charts
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
+- **Broker version:** the bundled image is RabbitMQ 3.13.6. The Midaz ledger documents RabbitMQ 4.1.x as its supported broker, so for production use an external RabbitMQ 4.1.x.
 
 - **Important — no persistent volume:** by default, the bundled RabbitMQ has no persistent volume. When its pod is recreated, it loses its queues and messages. For production, give it a volume with `rabbitmq.storage.requestedSize` (for example `8Gi`, plus `rabbitmq.storage.className` if you need a specific StorageClass), or use an external RabbitMQ instance. Kubernetes refuses changes to a StatefulSet's `volumeClaimTemplates`, so adding the volume to an existing release requires deleting the RabbitMQ StatefulSet first.
 

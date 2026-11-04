@@ -24,7 +24,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "fetcher-worker.labels" . | nindent 8 }}
+        {{- include "fetcher-worker.podLabels" . | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- with .Values.worker.imagePullSecrets }}

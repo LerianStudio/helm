@@ -26,7 +26,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "fetcher-manager.labels" . | nindent 8 }}
+        {{- include "fetcher-manager.podLabels" . | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- with .Values.manager.imagePullSecrets }}

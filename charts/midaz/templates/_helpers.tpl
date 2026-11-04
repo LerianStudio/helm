@@ -323,7 +323,7 @@ true
 {{- end -}}
 {{- end -}}
 
-{{/* Explicit settings win; auto enables only stable versions with the runner. */}}
+{{/* Explicit settings win; auto enables from 4.5.0-beta.1; every ledger image from that tag on ships the runner. */}}
 {{- define "midaz.ledgerPartitionEnabled" -}}
 {{- $enabled := dig "partition" "enabled" nil (.Values.ledger | default dict) -}}
 {{- if kindIs "invalid" $enabled -}}
@@ -331,7 +331,7 @@ true
 {{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
        render on a malformed version instead of resolving to "off". */ -}}
 {{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
-{{- if semverCompare ">=4.5.0" $tag -}}true{{- end -}}
+{{- if semverCompare ">=4.5.0-beta.1" $tag -}}true{{- end -}}
 {{- end -}}
 {{- else if eq (toString $enabled) "true" -}}
 true

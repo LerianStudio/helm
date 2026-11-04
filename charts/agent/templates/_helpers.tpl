@@ -44,6 +44,14 @@ Common labels
 */}}
 {{- define "lerian-agent.labels" -}}
 helm.sh/chart: {{ include "lerian-agent.chart" .context }}
+{{ include "lerian-agent.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart the pod each time.
+*/}}
+{{- define "lerian-agent.podLabels" -}}
 {{ include "lerian-agent.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "lerian-agent.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}

@@ -19,7 +19,6 @@ icon: https://avatars.githubusercontent.com/LerianStudio
 home: https://github.com/LerianStudio/helm/tree/main/charts/agent
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/agent
-  - https://github.com/LerianStudio/agent
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"

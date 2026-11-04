@@ -97,7 +97,7 @@ $ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --versio
 
 Replace `<version>` with the desired chart version. This creates a namespace called `midaz` if it doesn't already exist and deploys the Midaz Helm chart.
 
-The default ledger and tracer image is the stable `4.4.0`. A `ledger.image.tag` or `tracer.image.tag` of `4.5.0-beta.94` or later, the first image that serves the health port, turns on the health preset (`HEALTH_PORT` 8099, preset probes, PDB and rollout strategy) and the ledger partition runner (on from `4.5.0-beta.1`, so on for every `4.5.0` pre-release at or above `4.5.0-beta.94`). Below `4.5.0-beta.94` the chart renders the 4.4 layout: probes on the main port, `RABBITMQ_HEALTH_CHECK_URL` on the ledger, `READYZ_DRAIN_GRACE_SECONDS` on the tracer, and it honors `readinessProbe`, `livenessProbe`, `terminationGracePeriodSeconds`, `deploymentUpdate` and `pdb.maxUnavailable`/`minAvailable` values.
+The default ledger and tracer image is the stable `4.4.0`. A `ledger.image.tag` or `tracer.image.tag` of `4.5.0-beta.94` or later, the first image that serves the health port, turns on the health preset (`HEALTH_PORT` 8099, preset probes, PDB and rollout strategy). The ledger partition runner is on for any `ledger.image.tag` from `4.5.0-beta.1`. Below `4.5.0-beta.94` the chart renders the 4.4 layout: probes on the main port, `RABBITMQ_HEALTH_CHECK_URL` on the ledger, `READYZ_DRAIN_GRACE_SECONDS` on the tracer, and it honors `readinessProbe`, `livenessProbe`, `terminationGracePeriodSeconds`, `deploymentUpdate` and `pdb.maxUnavailable`/`minAvailable` values.
 
 Upgrading a release that runs a `4.5.0` pre-release (chart `10.3.0` to `10.3.2` on default values): set `ledger.image.tag` and `tracer.image.tag` to the running tag before `helm upgrade`. Without the pin the default `4.4.0` migration Job finds a schema newer than its migrations and fails (`no migration found for version N`), so the upgrade stops before any pod changes. Setting `ledger.migrations.enabled: false`, `tracer.migrations.enabled: false` or an empty `deploymentSyncWave` removes that stop; keep the pin in those installs.
 
@@ -260,7 +260,7 @@ Midaz deploys the following core services:
 |---|---|---|
 | `ledger.enabled` | Enable or disable the ledger service. | `true` |
 | `ledger.name` | Service name. | `"ledger"` |
-| `ledger.health.stack`, `tracer.health.stack` | Runtime stack for the health preset. Probes, `HEALTH_PORT` 8099 (`/health`, `/readyz`, internal `health` Service port only), drain, grace, rollout strategy and PDB are owned by the chart; the render refuses probe, grace, `SHUTDOWN_*` and `HEALTH_PORT` overrides. | `go` |
+| `ledger.health.stack`, `tracer.health.stack` | Runtime stack for the health preset. Probes, `HEALTH_PORT` 8099 (`/health`, `/readyz`, internal `health` Service port only), drain, grace, rollout strategy and PDB are owned by the chart from image tag `4.5.0-beta.94`; at those tags the render refuses probe, grace, `SHUTDOWN_*` and `HEALTH_PORT` overrides. | `go` |
 | `ledger.health.shutdownSeconds` | `SHUTDOWN_TIMEOUT` in seconds, the one shutdown budget after the 15s drain; pod grace is drain + this + 10s. | unset (preset: `30`) |
 | `ledger.replicaCount` | Number of replicas for the ledger service. | `2` |
 | `ledger.image.repository` | Repository for the ledger service container image. | `"lerianstudio/midaz-ledger"` |

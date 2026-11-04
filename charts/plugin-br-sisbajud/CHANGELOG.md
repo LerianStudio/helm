@@ -3,6 +3,22 @@
 ## [1.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.3.1)
 
 Fixes:
+
+- Align the chart text with app `1.2.0`. (@fredcamaral)
+- Keep pod checksums stable across chart releases. (@fredcamaral)
+- Align text with app `1.2.0` and remove chart label from pods. (@fredcamaral)
+
+Improvements:
+
+- Add the reviewed `1.3.0` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.3.0...plugin-br-sisbajud-v1.3.1)
+
+---
+
+## [1.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.3.1)
+
+Fixes:
 - Aligned the chart text with app `1.2.0`. (@fredcamaral)
 - Kept pod checksums stable across chart releases. (@fredcamaral)
 - Aligned text with app `1.2.0` and removed the chart label from pods. (@fredcamaral)

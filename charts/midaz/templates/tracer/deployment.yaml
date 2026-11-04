@@ -65,7 +65,9 @@ spec:
             - name: grpc
               containerPort: {{ include "midaz-tracer.grpcPort" . }}
               protocol: TCP
-            {{- toYaml $h.ports | nindent 12 }}
+            {{- with $h.ports }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           envFrom:
           {{- if not .Values.tracer.useExistingSecret }}
           - secretRef:
@@ -109,8 +111,10 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.tracer.resources | nindent 12 }}
+          {{- with $h.startupProbe }}
           startupProbe:
-            {{- toYaml $h.startupProbe | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           livenessProbe:
             {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:

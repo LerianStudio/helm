@@ -235,7 +235,8 @@ ledger:
     # timeout. See docs/UPGRADE-9.1.md section 6.
     timeoutSeconds: 300
   # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout
-  # strategy and PDB are owned by the chart. Only these keys are values.
+  # strategy and PDB are owned by the chart. Only these keys are values. Applies when
+  # image.tag is 4.5.0-beta.94 or later; a lower tag ignores it and keeps the 4.4 layout.
   health:
     # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
     stack: go
@@ -254,8 +255,10 @@ ledger:
     repository: lerianstudio/midaz-ledger
     # -- Image pull policy
     pullPolicy: IfNotPresent
-    # -- Image tag used for deployment
-    tag: "4.5.0-beta.94"
+    # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
+    # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
+    # rollout) and, from 4.5.0, the partition runner; a lower tag keeps the 4.4 probes and ports.
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -764,7 +767,8 @@ crm:
   existingSecretName: ""
 tracer:
   # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout
-  # strategy and PDB are owned by the chart. Only these keys are values.
+  # strategy and PDB are owned by the chart. Only these keys are values. Applies when
+  # image.tag is 4.5.0-beta.94 or later; a lower tag ignores it and keeps the 4.4 layout.
   health:
     # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
     stack: go
@@ -784,8 +788,10 @@ tracer:
     repository: lerianstudio/midaz-tracer
     # -- Image pull policy
     pullPolicy: Always
-    # -- Image tag used for deployment
-    tag: "4.5.0-beta.94"
+    # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
+    # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
+    # rollout) and, from 4.5.0, the partition runner; a lower tag keeps the 4.4 probes and ports.
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.

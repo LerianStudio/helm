@@ -213,9 +213,13 @@ spec:
             - name: http
               containerPort: {{ .Values.ledger.service.port | default 3002 }}
               protocol: TCP
-            {{- toYaml $h.ports | nindent 12 }}
+            {{- with $h.ports }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with $h.startupProbe }}
           startupProbe:
-            {{- toYaml $h.startupProbe | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           livenessProbe:
             {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:

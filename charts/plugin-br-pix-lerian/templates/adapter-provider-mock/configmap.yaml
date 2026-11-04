@@ -45,12 +45,10 @@ data:
   # ISPB when this is empty, so set it to exercise your own.
   ADAPTER_ISPB: {{ $cm.ADAPTER_ISPB | default "" | quote }}
   POLLER_INTERVAL_SEC: {{ $cm.POLLER_INTERVAL_SEC | default "30" | quote }}
-  # -- Lerian sandbox mock server this component talks to. Safe as a
-  # default: adapterProviderMock ships disabled, so this reaches no
-  # installation that does not enable the component explicitly, and an
-  # operator who does enable it gets the right endpoint instead of having
-  # to ask for it. Point it elsewhere only to target your own mock server.
-  PROVIDER_BASE_URL: {{ $cm.PROVIDER_BASE_URL | default "https://mock-pix-lerian-server.sandbox.lerian.net" | quote }}
+  # -- Base URL of the mock provider server this component talks to.
+  # Empty uses the application default (http://localhost:9001): set it to
+  # your mock server.
+  PROVIDER_BASE_URL: {{ $cm.PROVIDER_BASE_URL | default "" | quote }}
   SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4101/spi" | quote }}
   DICT_BASE_URL: {{ $cm.DICT_BASE_URL | default "http://plugin-br-pix-lerian-dict-hub:4104/dict-hub" | quote }}
   COB_BASE_URL: {{ $cm.COB_BASE_URL | default "http://plugin-br-pix-lerian-cob-hub:4108/cob-hub" | quote }}

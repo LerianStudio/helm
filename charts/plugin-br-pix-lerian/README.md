@@ -209,15 +209,9 @@ Routing mode accepts `hub` and `proxy`, defaulting to `hub`. **Leave it at `hub`
 
 `adapterLerian` / `adapterLerianSystemplane` — **Development only.** `adapterLerian` **fails to boot when `DEPLOYMENT_MODE` is anything other than `local`.** The default is `byoc` and the workload ships disabled, so nothing breaks out of the box; enabling it in `byoc` or `saas` crash-loops the pod. The `pix-adapter-lerian` database is still created by the bootstrap Job, because the default `databases` list does not depend on which workloads are enabled.
 
-`adapterProviderMock` — **Development only**, shipped `enabled: false`. A provider test double for development and homologation: it stands in for a real provider so the rest of the platform can be exercised end to end without one. Its default target is the Lerian sandbox mock server:
+`adapterProviderMock` — **Development only**, shipped `enabled: false`. A provider test double for development and homologation: it stands in for a real provider so the rest of the platform can be exercised end to end without one. Set `adapterProviderMock.configmap.PROVIDER_BASE_URL` to the mock server it should target; when empty, the application uses its own default, `http://localhost:9001`.
 
-```yaml
-adapterProviderMock:
-  configmap:
-    PROVIDER_BASE_URL: "https://mock-pix-lerian-server.sandbox.lerian.net"
-```
-
-The `plugin-br-pix-lerian-adapter-provider-mock-api` image is not public: to enable the component, ask Lerian for read access and name a ghcr.io pull secret in `global.imagePullSecrets` (or `adapterProviderMock.imagePullSecrets`). Because the component ships disabled, that default reaches no installation that does not enable it explicitly. Override it only to target your own mock server. These settings cannot get a default, because they identify *your* sandbox access, which you receive together with them:
+The `plugin-br-pix-lerian-adapter-provider-mock-api` image is not public: to enable the component, ask Lerian for read access and name a ghcr.io pull secret in `global.imagePullSecrets` (or `adapterProviderMock.imagePullSecrets`). These settings cannot get a default, because they identify *your* sandbox access, which you receive together with them:
 
 | Setting | Where | Notes |
 |---|---|---|

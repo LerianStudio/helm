@@ -130,10 +130,10 @@ Secrets (sensitive):
 {{- else }}
 
   Bundled MongoDB is DISABLED.
-  Configure an external MongoDB connection using one of the following options:
+  Configure an external MongoDB connection:
 
   The console builds the connection string itself. Set:
-    - configmap.MONGODB_URI        (the scheme only: mongodb, default, or mongodb+srv)
+    - configmap.MONGODB_URI        (the scheme only: mongodb, the default)
     - configmap.MONGO_HOST         (hostname)
     - configmap.MONGO_PORT         (default: 27017)
 

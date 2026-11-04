@@ -76,7 +76,7 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    ENV_NAME: "production"   # not read by the app; set APP_ENV (default "development") to select the environment
+    ENV_NAME: "production"   # sets the libraries' environment; APP_ENV (default "development") drives the app's own validation
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: ""   # REQUIRED - matches image tag
     LOG_LEVEL: "info"

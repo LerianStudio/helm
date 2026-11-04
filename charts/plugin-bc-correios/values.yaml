@@ -205,8 +205,9 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    # Not read by the app: it reads APP_ENV (default "development"). Set APP_ENV "production" to run
-    # the app's production checks; the chart then requires LICENSE_KEY, a POSTGRES_SSLMODE other than
+    # ENV_NAME sets the libraries' environment (auth-client log format, lib-commons security tier).
+    # The app's own validation follows APP_ENV (default "development"); set APP_ENV "production" to run
+    # its production checks, and the chart then requires LICENSE_KEY, a POSTGRES_SSLMODE other than
     # "disable" and explicit ALLOWED_ORIGINS at render time.
     ENV_NAME: "production"
     APP_NAME: "plugin-bc-correios"

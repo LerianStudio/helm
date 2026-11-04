@@ -9,6 +9,7 @@ metadata:
 data:
   # Application Settings
   ALLOW_INSECURE_TLS: {{ include "bc-correios.flagDefaultTrue" $component.configmap.ALLOW_INSECURE_TLS | quote }}
+  ENV_NAME: {{ $component.configmap.ENV_NAME | default "production" | quote }}
   {{- with include "bc-correios.appEnv" . }}
   {{- if not (hasKey (default dict $component.extraEnvVars) "APP_ENV") }}
   APP_ENV: {{ . | quote }}

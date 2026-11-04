@@ -18,14 +18,14 @@ This is a patch release. The app version stays at `3.4.0`. No `values.yaml` chan
 
 **What changed:**
 
-- The `fees` pod template no longer carries the `helm.sh/chart` label. Every other resource the chart creates keeps it. The Deployment selector is unchanged.
+- The `fees` pod template no longer carries the `helm.sh/chart` label. Every other resource the chart creates keeps it.
 
 **Impact:**
 
 - The pod template changes, so the `fees` pods restart once during this upgrade.
 - The Deployment selector does not change, so the upgrade needs no delete and re-create.
 
-The chart stays deprecated. To retire it, follow [Moving to Midaz](https://github.com/LerianStudio/helm/tree/main/charts/plugin-fees#moving-to-midaz) in the chart README.
+The chart stays deprecated. To retire this release, follow [Moving to Midaz](https://github.com/LerianStudio/helm/tree/main/charts/plugin-fees#moving-to-midaz) in the chart README.
 
 # Preview changes before upgrading
 

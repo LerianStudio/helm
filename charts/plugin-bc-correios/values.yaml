@@ -249,8 +249,8 @@ bc-correios:
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
     BC_CORREIO_RETRY_MAX_RETRIES: "3"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
-    # Plugin Auth (Access Manager). PLUGIN_AUTH_ADDRESS is rendered as the app's PLUGIN_AUTH_HOST (PLUGIN_AUTH_HOST, when set, wins).
-    # With useExistingSecret the chart renders no PLUGIN_AUTH_HOST unless configmap.PLUGIN_AUTH_HOST is set: put it in that Secret or in configmap.
+    # Plugin Auth (Access Manager). The app reads PLUGIN_AUTH_ADDRESS and lib-auth reads PLUGIN_AUTH_HOST; the chart renders both
+    # with one value (PLUGIN_AUTH_HOST, when set, wins). With useExistingSecret it renders no PLUGIN_AUTH_HOST unless configmap sets it.
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
@@ -346,6 +346,10 @@ postgresql:
   image:
     repository: bitnamilegacy/postgresql
     tag: "17.4.0"
+  # Used by the init containers that postgresql.tls and postgresql.volumePermissions turn on.
+  volumePermissions:
+    image:
+      repository: bitnamilegacy/os-shell
   external: false
   architecture: standalone
   auth:

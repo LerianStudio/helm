@@ -115,7 +115,7 @@ bc-correios:
 
 **Operational impact:**
 
-- The chart renders `PLUGIN_AUTH_ADDRESS` as the application's `PLUGIN_AUTH_HOST`; `PLUGIN_AUTH_HOST` in `bc-correios.configmap` or `bc-correios.extraEnvVars`, when set, takes precedence. With `bc-correios.useExistingSecret`, set `PLUGIN_AUTH_HOST` in that Secret or in `configmap`
+- The application reads `PLUGIN_AUTH_ADDRESS` and lib-auth reads `PLUGIN_AUTH_HOST`; the chart renders both with one value. `PLUGIN_AUTH_HOST` in `bc-correios.configmap` or `bc-correios.extraEnvVars`, when set, takes precedence. With `bc-correios.useExistingSecret`, set `PLUGIN_AUTH_HOST` in that Secret or in `configmap`
 - The new default assumes the Access Manager auth service is deployed in the `midaz-plugins` namespace with the release name `plugin-access-manager-auth`
 
 > **Note:** If your Access Manager is deployed with a different release name or namespace, override `PLUGIN_AUTH_ADDRESS` with the correct service URL.
@@ -518,7 +518,7 @@ Determine whether you run a development or production environment and whether yo
 
 **Step 2: Update environment variable names in your values file**
 
-Keep `APP_ENV` in your values file; the application still reads it. `PLUGIN_AUTH_HOST` still works and takes precedence; `PLUGIN_AUTH_ADDRESS` is the values key the chart renders as `PLUGIN_AUTH_HOST`:
+Keep `APP_ENV` in your values file; the application still reads it. `PLUGIN_AUTH_HOST` still works and takes precedence; `PLUGIN_AUTH_ADDRESS` is the values key the chart renders under both names:
 
 ```yaml
 # Before (v2.2.0)

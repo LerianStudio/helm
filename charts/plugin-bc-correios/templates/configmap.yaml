@@ -63,8 +63,10 @@ data:
 
   # Plugin Auth
   PLUGIN_AUTH_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.PLUGIN_AUTH_ENABLED | quote }}
+  {{- $authHost := $component.configmap.PLUGIN_AUTH_HOST | default $component.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" }}
+  PLUGIN_AUTH_ADDRESS: {{ $authHost | quote }}
   {{- if not (or (hasKey (default dict $component.extraEnvVars) "PLUGIN_AUTH_HOST") (and $component.useExistingSecret (not $component.configmap.PLUGIN_AUTH_HOST))) }}
-  PLUGIN_AUTH_HOST: {{ $component.configmap.PLUGIN_AUTH_HOST | default $component.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" | quote }}
+  PLUGIN_AUTH_HOST: {{ $authHost | quote }}
   {{- end }}
   PLUGIN_AUTH_CLIENT_ID: {{ $component.configmap.PLUGIN_AUTH_CLIENT_ID | default "plugin-bc-correios" | quote }}
 

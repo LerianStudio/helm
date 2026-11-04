@@ -3,6 +3,19 @@
 ## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
 
 Fixes:
+- Use stable images to enhance reliability and consistency in deployments. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0`, providing clear instructions for users. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
 - Use stable images for the reporter to ensure reliability and consistency. (@fredcamaral)
 
 Improvements:

@@ -132,14 +132,12 @@ Secrets (sensitive):
   Bundled MongoDB is DISABLED.
   Configure an external MongoDB connection using one of the following options:
 
-  Option 1 — Full connection string:
-    - configmap.MONGODB_URI        (e.g. mongodb://host:27017/dbname)
-
-  Option 2 — Host and port pair:
+  The console builds the connection string itself. Set:
+    - configmap.MONGODB_URI        (the scheme only: mongodb, default, or mongodb+srv)
     - configmap.MONGO_HOST         (hostname)
     - configmap.MONGO_PORT         (default: 27017)
 
-  Both options also require:
+  Also set:
     - configmap.MONGODB_DB_NAME    (database name)
     - configmap.MONGODB_USER       (database user)
     - secrets.MONGODB_PASS         (database password)

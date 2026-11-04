@@ -48,8 +48,7 @@ profile: ""
 #
 # Form: <client>-<stage>, lowercase, stage = stg | prd. The client name is a
 # SINGLE word — acme-prd, never acme-corp-prd. Our three SaaS environments are the
-# only exempt values; internal test clusters do not run this chart and get no
-# exemption.
+# only exempt values.
 #
 # Note: this marks PROVENANCE, not identity. The credential authenticates the
 # sender; the marker is self-declared. Changing it for a live environment is a
@@ -66,10 +65,9 @@ destination:
   # vazio e obrigava cada consumidor a repetir o mesmo valor — e repetir um valor
   # que é igual em todos os lugares é onde o erro de digitação nasce.
   #
-  # Para usar outro destino, os DOIS lugares precisam mudar juntos: esta entrada e a
-  # variável `ALLOY_DESTINATION_ENDPOINT` no `extraEnv` do papel. A variável é o
-  # que chega ao agente; esta entrada é o que o chart valida (recusa http quando o
-  # perfil envia credencial). Uma guarda recusa o render se faltar a variável.
+  # Para usar outro destino, mude só esta entrada: o chart passa a variável
+  # `ALLOY_DESTINATION_ENDPOINT` ao pod a partir do próprio ConfigMap. Esta entrada
+  # é também o que o chart valida (recusa http quando o perfil envia credencial).
   endpoint: https://telemetry.lerian.io
 
   credential:
@@ -677,7 +675,8 @@ node:
 
   enabled: true
   # Agent RBAC: the upstream rules without read access to Secrets and
-  # ConfigMaps. No component in the rendered pipeline reads either through the
+  # ConfigMaps. The list is grafana/alloy 1.15.0's rbac.rules minus configmaps and
+  # secrets, so an alloy subchart upgrade must re-check it. No component in the rendered pipeline reads either through the
   # API (no `remote.kubernetes.*`), so cluster-wide read on them is not granted.
   rbac:
     rules: &agentRules

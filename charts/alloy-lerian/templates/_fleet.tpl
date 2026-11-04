@@ -122,14 +122,10 @@ remotecfg {
     // diferentes; sem isto um pipeline cairia nos dois, e o de escopo de cluster
     // replicado no DaemonSet é exatamente a duplicação que esta migração corrigiu.
     "role"         = {{ $papel | quote }},
-    // Separa o universo BYOC do interno. FIXO no chart, NAO parametrizavel: este
-    // chart E o agente dos clientes; os ambientes da propria Lerian usam outro
-    // agente, que nao passa por aqui.
-    //
-    // POR QUE EXISTE: sem ele os matchers disponiveis sao genericos
-    // (`collector.os="linux"`, `role="node"`, `platform="kubernetes"`) e um
-    // agente interno que subisse com esse par casaria a config dos clientes. A
-    // separacao hoje vive so no NOME do pipeline, e nome nao e matcher.
+    // Marca este agente como BYOC. FIXO no chart, NAO parametrizavel: este chart
+    // E o agente dos clientes. Os demais atributos sao genericos
+    // (`collector.os="linux"`, `role="node"`, `platform="kubernetes"`); este
+    // permite um matcher que alcance so os agentes deste chart.
     //
     // ⚠️ NAO E FRONTEIRA DE SEGURANCA. Atributos de remotecfg sao
     // auto-declarados e nao autenticados (ver docs/FLEET-MANAGEMENT.md): servem

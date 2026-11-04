@@ -76,11 +76,6 @@ WHO USES THIS CHART, which is what the rule encodes:
     is refused deliberately: the identifier is parsed by routing and cost rules
     that split on the last hyphen, and a composed name makes that split ambiguous.
 
-Internal test clusters are NOT a
-case here: they report to a separate self-hosted Grafana and will not run this
-chart. No exemption is carved for them, on purpose — an exemption that nothing uses
-is a rule someone will later mistake for a supported path.
-
 Only stg and prd are accepted as stages. hml was dropped: a stage nobody routes to
 is a stage that produces telemetry nobody watches.
 
@@ -209,7 +204,7 @@ nao para o agente: o exportador tenta, falha, e a telemetria acumula na fila ate
 estourar. O sintoma seria "nao chega nada", sem erro que aponte a causa.
 */}}
 {{- if not $e -}}
-{{- fail "\n\nalloy-lerian: `destination.endpoint` esta vazio.\n\nO chart tem default — `https://telemetry.lerian.io`, o ponto de entrada de\nproducao — entao isto significa que o valor foi zerado explicitamente.\n\nEndpoint vazio nao para o agente: ele coleta, tenta entregar, falha, e a\ntelemetria acumula na fila ate estourar. Nao chega nada, e nada diz por que.\n\nInforme um destino, ou remova a chave para usar o default:\n\n  destination:\n    endpoint: https://telemetry.lerian.io      # BYOC, o default\n    endpoint: http://nlb-interno...:4318       # ambientes internos\n" -}}
+{{- fail "\n\nalloy-lerian: `destination.endpoint` esta vazio.\n\nO chart tem default — `https://telemetry.lerian.io`, o ponto de entrada de\nproducao — entao isto significa que o valor foi zerado explicitamente.\n\nEndpoint vazio nao para o agente: ele coleta, tenta entregar, falha, e a\ntelemetria acumula na fila ate estourar. Nao chega nada, e nada diz por que.\n\nInforme um destino, ou remova a chave para usar o default:\n\n  destination:\n    endpoint: https://telemetry.lerian.io      # BYOC, o default\n" -}}
 {{- end -}}
 {{/*
 Plaintext is refused only when a CREDENTIAL travels to this endpoint. Cleartext
@@ -261,8 +256,8 @@ values entry is what gets checked.
 {{- end -}}
 
 {{/*
-Whether the destination requires authentication. Internal platforms do not
-validate the credential, so the header is omitted there rather than sent empty.
+Whether the destination requires authentication. Where it does not, the header
+is omitted rather than sent empty.
 */}}
 {{- define "alloy-lerian.destinationAuthenticated" -}}
 {{- if hasKey .Values.destination.credential "enabled" -}}

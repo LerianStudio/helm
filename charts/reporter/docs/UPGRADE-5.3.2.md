@@ -13,7 +13,7 @@
 
 ## Overview
 
-This is a patch release. The application version stays at `4.8.0`. No value is renamed or removed, and the upgrade needs no action before it.
+This is a patch release. The application version stays at `4.8.0`. No value is renamed or removed, and the upgrade needs no action before it, unless you use `global.cloud: aws` with a MongoDB certificate that the AWS RDS CA does not issue (see [Migration Steps](#migration-steps)).
 
 | Field | v5.3.1 | v5.3.2 |
 |-------|--------|--------|
@@ -30,8 +30,8 @@ With `global.cloud: aws`, the chart no longer adds `tlsInsecure=true` to `MONGO_
 |---------|--------|--------|
 | `MONGO_PARAMETERS` with `global.cloud: aws` | `tls=true&tlsInsecure=true&directConnection=true&retryWrites=false&connectTimeoutMS=10000&serverSelectionTimeoutMS=10000` | `tls=true&directConnection=true&retryWrites=false&connectTimeoutMS=10000&serverSelectionTimeoutMS=10000` |
 
-- This change applies only when `MONGO_PARAMETERS` resolves to the AWS preset. A different value that you set in `common.configmap.MONGO_PARAMETERS` (or `datastores.mongo.params`) renders unchanged.
-- The chart keeps `tlsInsecure=true` when a manager or worker image tag is below `4.7.0` (pre-releases of `4.7.0` count as `4.7.0`).
+- This change applies only when `MONGO_PARAMETERS` resolves to the AWS preset. A different value that you set in `common.configmap.MONGO_PARAMETERS`, `datastores.mongo.params` or `global.datastores.mongo.params` renders unchanged.
+- The chart keeps `tlsInsecure=true` when a pinned worker image tag is below `4.7.0` (pre-releases of `4.7.0` count as `4.7.0`). A tag that is not a version, such as `latest` or a digest, counts as new.
 - With `global.cloud` unset, `gcp` or `azure`, `MONGO_PARAMETERS` does not change.
 
 ### 2. Pod template labels and checksum annotations
@@ -47,7 +47,7 @@ New optional values `manager.extraVolumes`, `manager.extraVolumeMounts`, `worker
 
 ## Migration Steps
 
-No action is needed before the upgrade.
+No action is needed before the upgrade, with one exception. With `global.cloud: aws`, if your MongoDB server certificate is not issued by the AWS RDS CA or a public CA, set `global.datastores.mongo.params` or `common.configmap.MONGO_PARAMETERS` to the parameters your server needs before you upgrade. An explicit value renders unchanged.
 
 If you run on AWS with DocumentDB, check after the upgrade that the manager and worker pods start and connect to the database. With the default KEDA ScaledJob, worker pods exist only while a report Job runs. They carry the `scaledjob.keda.sh/name` label, not `app.kubernetes.io/name`:
 

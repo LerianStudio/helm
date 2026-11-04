@@ -272,6 +272,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_COMMON_BASE_URL` | `""` |
 | `BTG_TOKEN_REFRESH_INTERVAL` | `"4m"` |
 | `BTG_HTTP_TIMEOUT` | unset (app default) |
+| `REQUEST_TIMEOUT_SEC` | unset (app default; app 1.2.0 and later; must be at least four `BTG_HTTP_TIMEOUT`s) |
 | `BTG_CREDENTIAL_SYNC_INTERVAL` | unset (app default) |
 | `PROVIDER_CREDENTIAL_CLAIM_LEASE` | unset (app default) |
 | `BTG_MTLS_OUTBOUND_ENABLED` | unset (app default) |

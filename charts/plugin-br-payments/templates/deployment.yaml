@@ -25,7 +25,10 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "plugin-br-payments.labels" (dict "context" .) | nindent 8 }}
+        {{- include "plugin-br-payments.selectorLabels" (dict "context" .) | nindent 8 }}
+        app.kubernetes.io/version: {{ include "plugin-br-payments.versionLabelValue" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/part-of: plugin-br-payments
       annotations:
         {{- /* Roll the pods when their configuration changes (the ConfigMap and
                Secret are read through envFrom, which Kubernetes does not re-read). */}}

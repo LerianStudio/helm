@@ -3,6 +3,18 @@
 ## [1.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.4)
 
 Fixes:
+- Use a placeholder ingress host by default to improve configuration flexibility. (@fredcamaral)
+
+Improvements:
+- Add the verified `1.1.3` upgrade guide to the documentation, providing users with detailed instructions for upgrading. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.3...plugin-br-ted-lerian-v1.1.4)
+
+---
+
+## [1.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.4)
+
+Fixes:
 - Use a placeholder ingress host by default. (@fredcamaral)
 
 Improvements:

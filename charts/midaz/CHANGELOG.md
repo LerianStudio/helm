@@ -3,6 +3,20 @@
 ## [10.3.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.4)
 
 Fixes:
+- Ensure the chart version is not included in pod labels to maintain consistency. (@fredcamaral)
+- Remove dead links from the documentation to improve navigation. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for better clarity and accuracy. (@dy-shimizu, @gandalf-at-lerian)
+- Update the upgrade commands for versions `10.3` and `10.3.1` to include the edited values file, ensuring smoother upgrade processes. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.3...midaz-v10.3.4)
+
+---
+
+## [10.3.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.4)
+
+Fixes:
 - Keep the chart version out of pod labels to prevent unnecessary updates and drop dead links. (@fredcamaral)
 
 Improvements:

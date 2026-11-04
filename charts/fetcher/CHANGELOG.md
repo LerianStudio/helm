@@ -3,6 +3,20 @@
 ## [4.1.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.3)
 
 Fixes:
+- Verified DocumentDB certificates on the AWS preset to enhance security. (@fredcamaral)
+- Adjusted pod checksums to hash only configuration data, ensuring accurate updates. (@fredcamaral)
+- Maintained explicit MongoDB parameter values unchanged on AWS to prevent unintended modifications. (@fredcamaral)
+
+Improvements:
+- Added the verified `4.1.2` upgrade guide to assist users with the update process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.2...fetcher-v4.1.3)
+
+---
+
+## [4.1.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.3)
+
+Fixes:
 - Verified DocumentDB certificates on the AWS preset to ensure secure connections. (@fredcamaral)
 - Adjusted pod checksums to hash only configuration data, improving checksum accuracy. (@fredcamaral)
 - Maintained explicit MongoDB parameter values without alteration on AWS, preserving intended configurations. (@fredcamaral)

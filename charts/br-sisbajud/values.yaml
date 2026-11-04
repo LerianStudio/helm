@@ -130,7 +130,8 @@ securityContext:
 brSisbajud:
   enabled: true
   replicaCount: 1
-  # -- 55 = 15s SHUTDOWN_DRAIN_DELAY + 30s shutdown budget + 10s margin; never lower it.
+  # -- 55 = 15s SHUTDOWN_DRAIN_DELAY + 30s shutdown budget + 10s margin; do not lower it below the shutdown budget.
+  # The default image (app 1.1.0) does not read SHUTDOWN_DRAIN_DELAY.
   terminationGracePeriodSeconds: 55
   revisionHistoryLimit: 10
   image:

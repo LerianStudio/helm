@@ -818,7 +818,8 @@ STREAMING_ENABLED: {{ $streamingRaw | quote }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "healthCheckTimeout" "k" "STREAMING_HEALTH_CHECK_TIMEOUT" "d" "2s") }}
 {{- /* lib-streaming knobs outside lerian-common.streaming.env. closeTimeoutS must stay
    below the 30s shutdown budget (SHUTDOWN_TIMEOUT), which runs inside the pod's
-   terminationGracePeriodSeconds, or SIGKILL cuts the producer drain/flush short. */}}
+   terminationGracePeriodSeconds, or SIGKILL cuts the producer drain/flush short.
+   The default image (app 1.1.0) does not read SHUTDOWN_DRAIN_DELAY. */}}
 {{ include $kv (dict "cm" $cm "p" (dict) "f" "shutdownDrainDelay" "k" "SHUTDOWN_DRAIN_DELAY" "d" "15s") }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "topicAutoProvision" "k" "STREAMING_TOPIC_AUTO_PROVISION" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $b.streaming "f" "closeTimeoutS" "k" "STREAMING_CLOSE_TIMEOUT_S" "d" "20") }}

@@ -470,11 +470,11 @@ spanMetrics:
   # POR QUE: o papel `node` e um DaemonSet, logo ha UM ACUMULADOR POR NO. Cada
   # um mantem estado proprio e escreve a MESMA serie com valores diferentes no
   # mesmo timestamp — o destino rejeita com `new-value-for-timestamp`. Foi
-  # exatamente o que os ambientes internos mediram (~4.200 amostras/min em
-  # devops) antes de mover a geracao para o concentrador.
+  # exatamente o que os ambientes internos mediram antes de mover a geracao
+  # para o concentrador.
   #
-  # O destino do BYOC JA E o collector-server, que desde o PR #759 tem conector
-  # unico roteado por `service`. A infraestrutura para centralizar ja existe.
+  # O destino do BYOC JA E o collector-server, que tem conector unico roteado
+  # por `service`. A infraestrutura para centralizar ja existe.
   #
   # ⚠️ ORDEM OBRIGATORIA AO LIGAR UM CLIENTE NO SERVER: desligar aqui PRIMEIRO,
   # depois incluir o client_id na allowlist `filter/spanmetrics_migrados` do

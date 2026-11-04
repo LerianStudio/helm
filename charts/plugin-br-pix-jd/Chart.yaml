@@ -11,7 +11,6 @@ annotations:
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-pix-jd
-  - https://github.com/LerianStudio/plugin-br-pix-jd
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
@@ -44,8 +43,8 @@ dependencies:
     repository: "https://charts.bitnami.com/bitnami"
     condition: postgresql.enabled
   # Valkey EMBARCADO, desligado por default — mesma postura do postgresql acima e do
-  # go-boilerplate-ddd-helm, que é o chart de referência desta wiring. Só a lane
-  # `chaos` do anacleto liga: injeção de falha precisa de datastore descartável.
+  # go-boilerplate-ddd-helm, que é o chart de referência desta wiring. Ligue-o quando
+  # o ambiente precisar de um datastore descartável (ex.: injeção de falha).
   # `bitnamisecure` porque o bitnami/valkey perdeu as tags gratuitas do catálogo
   # público; o digest é pinado, e allowInsecureImages é o que o subchart exige para
   # aceitar um repositório que não bate com o esperado.

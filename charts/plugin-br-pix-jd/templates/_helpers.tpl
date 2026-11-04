@@ -97,6 +97,14 @@ Honors global.commonLabels so a platform-wide label set lands on every object.
 */}}
 {{- define "plugin-br-pix-jd.componentLabels" -}}
 helm.sh/chart: {{ include "plugin-br-pix-jd.chart" .root }}
+{{ include "plugin-br-pix-jd.componentPodLabels" . }}
+{{- end }}
+
+{{/*
+componentPodLabels — componentLabels without helm.sh/chart, for pod templates: the
+chart version changes on every release and would restart every pod each time.
+*/}}
+{{- define "plugin-br-pix-jd.componentPodLabels" -}}
 {{ include "plugin-br-pix-jd.componentSelectorLabels" . }}
 app.kubernetes.io/version: {{ .root.Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .root.Release.Service }}
@@ -539,7 +547,7 @@ POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ include "plugin-br-pix-jd.cfg" (dict "confi
 POSTGRES_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "POSTGRES_CONNECT_TIMEOUT_SEC" "default" "10") | quote }}
 MIGRATIONS_PATH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIGRATIONS_PATH" "default" "/migrations") | quote }}
 {{- /* ALLOW_INSECURE_TLS — modeled as a first-class key, not left to the escape hatch,
-   because the benedita test environments run Postgres, Valkey and RabbitMQ WITHOUT TLS
+   because test environments may run Postgres, Valkey and RabbitMQ WITHOUT TLS
    and lib-commons refuses a plaintext connection to any of them unless this is set.
    Reaching a required knob through extraConfigmap would be the chart admitting it does
    not model its own deployment target.
@@ -1155,7 +1163,7 @@ Input dict: root, configmap, graceSeconds.
 {{- fail "\n\nERROR: STREAMING_ENABLED=true requires OUTBOX_ENABLED=true.\nUse cases write a streaming envelope to the outbox table and the outbox dispatcher is\nthe SOLE publish path, so streaming without the outbox starts a producer nothing ever\nfeeds — events are silently never published.\n" -}}
 {{- end -}}
 {{- if not (index $cm "STREAMING_BROKERS" | default "") -}}
-{{- fail "\n\nERROR: STREAMING_BROKERS is required when STREAMING_ENABLED=true.\nComma-separated Kafka broker list, e.g. redpanda.dev-st.lerian.net:9092\n" -}}
+{{- fail "\n\nERROR: STREAMING_BROKERS is required when STREAMING_ENABLED=true.\nComma-separated Kafka broker list, e.g. redpanda.example.com:9092\n" -}}
 {{- end -}}
 {{- $closeTimeout := index $cm "STREAMING_CLOSE_TIMEOUT_S" | default "30" | toString | atoi -}}
 {{- if ge $closeTimeout (int .graceSeconds) -}}

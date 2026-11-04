@@ -63,7 +63,7 @@ helm diff upgrade plugin-br-ted-lerian oci://ghcr.io/lerianstudio/plugin-br-ted-
 
 If you added a host above, append `--reuse-values -f <your-values.yaml>` to this command.
 
-If you set your own host, the Ingress `host` shows no change. If it shows `plugin-br-ted-lerian.example.com` and you use the Ingress, set your host as described above.
+To check whether you set a host, run `helm get values plugin-br-ted-lerian -n plugin-br-ted-lerian`. If the output has no `plugin-br-ted-lerian.ingress.hosts`, the release uses the chart default. If you use the Ingress, do the step in Before you upgrade.
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
@@ -86,5 +86,5 @@ kubectl get ingress -n plugin-br-ted-lerian
 helm list -n plugin-br-ted-lerian
 ```
 
-If ingress is enabled, the Ingress host is your own host. The release shows chart `plugin-br-ted-lerian-helm-1.1.4`.
+If you set a host, the Ingress shows your host. The release shows chart `plugin-br-ted-lerian-helm-1.1.4`.
 <!-- {% endraw %} -->

@@ -84,9 +84,10 @@ rules:
   # class and change which one is default, which sets where FUTURE volumes are
   # provisioned. It does not reach any existing volume or its contents.
   #
-  # This is the only cluster-scoped write the agent holds. Components that need
-  # ClusterRoles, aggregated APIServices or admission webhooks are not
-  # installed by the agent; an operator installs them by hand.
+  # Besides namespace creation, this is the only cluster-scoped write the
+  # agent holds. Components that need ClusterRoles, aggregated APIServices or
+  # admission webhooks are not installed by the agent; an operator installs
+  # them by hand.
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]

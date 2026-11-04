@@ -59,7 +59,7 @@ bc-correios:
 
 - If you do not have the Access Manager deployed, the plugin will fail to start or reject all requests with authentication errors
 - Development environments that previously ran without authentication must now explicitly disable it (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
-- The application enforces that `PLUGIN_AUTH_ENABLED` cannot be `"false"` when `APP_ENV` is set and is not `"development"` (see next breaking change)
+- The application enforces that `PLUGIN_AUTH_ENABLED` cannot be `"false"` unless `APP_ENV` is `"development"` (see next breaking change)
 
 > **Warning:** If you upgrade without adjusting authentication settings and do not have Access Manager deployed, the plugin pods will fail health checks and enter a crash loop. Review [Deployment Scenarios](#deployment-scenarios) before upgrading.
 
@@ -86,12 +86,12 @@ bc-correios:
 
 **Operational impact:**
 
-- The application reads `APP_ENV` (default `"development"`); `ENV_NAME` sets the libraries' environment (auth-client log format, lib-commons security tier) and `APP_ENV` drives the app's own validation. The chart renders `APP_ENV` only when you set it in `bc-correios.configmap` or `bc-correios.extraEnvVars`
-- When `APP_ENV` is set and is not `"development"`, the application refuses to start if `PLUGIN_AUTH_ENABLED` is `"false"`, and the chart refuses to render an empty `LICENSE_KEY`, `POSTGRES_SSLMODE: "disable"` and `ALLOWED_ORIGINS` empty or `*`
+- The application reads `APP_ENV`; `ENV_NAME` sets the libraries' environment (auth-client log format, lib-commons security tier) and `APP_ENV` drives the app's own validation. The chart renders `APP_ENV` as `"production"` unless you set it in `bc-correios.configmap` or `bc-correios.extraEnvVars`
+- When `APP_ENV` is not `"development"`, the application refuses to start if `PLUGIN_AUTH_ENABLED` is `"false"`, and the chart refuses to render an empty `LICENSE_KEY`, `POSTGRES_SSLMODE: "disable"` and `ALLOWED_ORIGINS` empty or `*`
 - A values file that sets `APP_ENV` keeps working
-- If you run a development environment without Access Manager, set `PLUGIN_AUTH_ENABLED: "false"` and leave `APP_ENV` unset or `"development"` (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
+- If you run a development environment without Access Manager, set `PLUGIN_AUTH_ENABLED: "false"` and set `APP_ENV: "development"` (see [Scenario 1](#scenario-1-development-environment-without-access-manager))
 
-> **Important:** To run the application's production checks, set `bc-correios.configmap.APP_ENV: "production"`.
+> **Important:** The chart runs the application's production checks by default. For a development install set `bc-correios.configmap.APP_ENV: "development"`.
 
 ### 3. Plugin auth host variable renamed: PLUGIN_AUTH_HOST to PLUGIN_AUTH_ADDRESS
 
@@ -291,7 +291,7 @@ This section provides concrete configuration examples for common deployment scen
 
 ### Scenario 1: Development environment without Access Manager
 
-If you run a development environment and do not have the Access Manager deployed, you must explicitly disable authentication and set the environment name to `"development"`.
+If you run a development environment and do not have the Access Manager deployed, you must explicitly disable authentication and set the environment name and `APP_ENV` to `"development"`.
 
 **Required configuration:**
 
@@ -299,12 +299,13 @@ If you run a development environment and do not have the Access Manager deployed
 bc-correios:
   configmap:
     ENV_NAME: "development"
+    APP_ENV: "development"
     PLUGIN_AUTH_ENABLED: "false"
 ```
 
 **Why this is required:**
 
-- The application refuses to start with `PLUGIN_AUTH_ENABLED: "false"` when `APP_ENV` is set and is not `"development"`
+- The application refuses to start with `PLUGIN_AUTH_ENABLED: "false"` unless `APP_ENV` is `"development"`
 - Without `PLUGIN_AUTH_ENABLED: "false"`, the chart defaults to `PLUGIN_AUTH_ENABLED: "true"`, causing the plugin to fail authentication checks
 
 > **Warning:** Do not use this configuration in production. The application enforces that authentication cannot be disabled in production environments.

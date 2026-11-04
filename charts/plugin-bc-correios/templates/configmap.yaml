@@ -10,10 +10,8 @@ data:
   # Application Settings
   ALLOW_INSECURE_TLS: {{ include "bc-correios.flagDefaultTrue" $component.configmap.ALLOW_INSECURE_TLS | quote }}
   ENV_NAME: {{ $component.configmap.ENV_NAME | default "production" | quote }}
-  {{- with include "bc-correios.appEnv" . }}
   {{- if not (hasKey (default dict $component.extraEnvVars) "APP_ENV") }}
-  APP_ENV: {{ . | quote }}
-  {{- end }}
+  APP_ENV: {{ include "bc-correios.appEnv" . | quote }}
   {{- end }}
   APP_NAME: {{ $component.configmap.APP_NAME | default "plugin-bc-correios" | quote }}
   APP_VERSION: {{ $component.configmap.APP_VERSION | default "1.0.0" | quote }}

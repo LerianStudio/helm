@@ -76,7 +76,7 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    ENV_NAME: "production"   # sets the libraries' environment; APP_ENV (default "development") drives the app's own validation
+    ENV_NAME: "production"   # sets the libraries' environment; APP_ENV (chart default "production"; "development" skips the app's production checks) drives the app's own validation
     APP_NAME: "plugin-bc-correios"
     APP_VERSION: ""   # REQUIRED - matches image tag
     LOG_LEVEL: "info"
@@ -86,7 +86,7 @@ bc-correios:
     SERVER_SHUTDOWN_TIMEOUT_SEC: "30"
 
     # CORS / Proxy
-    ALLOWED_ORIGINS: "*"   # the app refuses "*" when APP_ENV is not "development"; set explicit origins there
+    ALLOWED_ORIGINS: "*"   # explicit origins are required unless APP_ENV is "development"; "*" is refused
     TRUSTED_PROXIES: "127.0.0.1,::1"
 
     # PostgreSQL - REQUIRED
@@ -120,7 +120,7 @@ bc-correios:
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
 
     # Plugin Auth
-    PLUGIN_AUTH_ENABLED: "true"   # "false" is refused when APP_ENV is set and is not "development"
+    PLUGIN_AUTH_ENABLED: "true"   # "false" is refused unless APP_ENV is "development"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
 

@@ -1,4 +1,7 @@
+# Render-only fixture: APP_ENV development skips the production checks the chart enforces.
 bc-correios:
+  configmap:
+    APP_ENV: "development"
   secrets:
     POSTGRES_PASSWORD: "sample"
     RABBITMQ_PASS: "sample"

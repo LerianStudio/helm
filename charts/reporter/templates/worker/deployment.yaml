@@ -31,8 +31,8 @@ spec:
         app.kubernetes.io/version: {{ include "plugin.version" . }}
         app.kubernetes.io/managed-by: {{ .Release.Service }}
       annotations:
-        checksum/secret: {{ include (print $.Template.BasePath "/worker/secrets.yaml") . | sha256sum }}
-        checksum/config: {{ include (print $.Template.BasePath "/worker/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/worker/secrets.yaml") . | fromYaml).data | toYaml | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/worker/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
         {{- range $key, $value := .Values.worker.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}

@@ -50,7 +50,7 @@ brSisbajud:
 
 #### Operational impact
 
-The br-sisbajud pod restarts on upgrade even if `isDevelopment` was never set: its `checksum/config` and `checksum/secret` annotations hash the ConfigMap and Secret, which carry the chart version label.
+The br-sisbajud pod restarts on upgrade even if `isDevelopment` was never set: its `checksum/config` annotation hashes the ConfigMap, which carries the chart version label. `checksum/secret` hashes the chart-managed Secret and is not rendered with `brSisbajud.useExistingSecret: true`; `checksum/config` alone restarts the pod in that case.
 
 **For production environments:**
 
@@ -116,7 +116,7 @@ brSisbajud:
 |----------|--------|--------|-------------|
 | `IS_DEVELOPMENT` | Emitted from `brSisbajud.license.isDevelopment` | Not emitted | Previously routed license SDK to dev gateway |
 
-> **Important:** The `IS_DEVELOPMENT` environment variable is now included in the chart's `removedKeys` list. Even if you manually add it to `brSisbajud.configmap` or `brSisbajud.secrets`, the chart will not emit it to the application pods.
+> **Important:** The `IS_DEVELOPMENT` environment variable is now included in the chart's `removedKeys` list. Even if you manually add it to `brSisbajud.configmap` or `brSisbajud.secrets`, the chart will not emit it to the application pods. It still reaches the pod through `brSisbajud.extraEnvVars`, `brSisbajud.secretRefs.IS_DEVELOPMENT`, or the operator Secret of `useExistingSecret` (loaded by `envFrom`).
 
 ## Preview changes before upgrading
 

@@ -19,7 +19,12 @@ nameOverride: ""
 fullnameOverride: ""
 
 global:
+  # Registry for kube-state-metrics and node-exporter images.
   imageRegistry: ""
+  # Registry for the agent and config-reloader images. The upstream Alloy chart
+  # reads this key, not `imageRegistry`: set both to mirror every image.
+  image:
+    registry: ""
   imagePullSecrets: []
 
 # ---------------------------------------------------------------------------
@@ -43,8 +48,7 @@ profile: ""
 #
 # Form: <client>-<stage>, lowercase, stage = stg | prd. The client name is a
 # SINGLE word — acme-prd, never acme-corp-prd. Our three SaaS environments are the
-# only exempt values; internal test clusters do not run this chart and get no
-# exemption.
+# only exempt values.
 #
 # Note: this marks PROVENANCE, not identity. The credential authenticates the
 # sender; the marker is self-declared. Changing it for a live environment is a
@@ -61,31 +65,17 @@ destination:
   # vazio e obrigava cada consumidor a repetir o mesmo valor — e repetir um valor
   # que é igual em todos os lugares é onde o erro de digitação nasce.
   #
-  # ⚠️ Os ambientes internos `aws-*` SOBRESCREVEM: eles entregam a um balanceador
-  # interno que não passa pelo gateway, e portanto não usa api-key. MEDIDO: uma
-  # configuração com o endereço público recebe 403 lá, que é falha PERMANENTE —
-  # descarta na hora, sem reenvio.
-  #
-  # Ao sobrescrever, os DOIS lugares precisam mudar juntos: esta entrada e a
-  # variável `ALLOY_DESTINATION_ENDPOINT` no `extraEnv` do papel. A variável é o
-  # que chega ao agente; esta entrada é o que o chart valida (recusa http quando o
-  # perfil envia credencial). Uma guarda recusa o render se faltar a variável.
+  # Para usar outro destino, mude só esta entrada: o chart passa a variável
+  # `ALLOY_DESTINATION_ENDPOINT` ao pod a partir do próprio ConfigMap. Esta entrada
+  # é também o que o chart valida (recusa http quando o perfil envia credencial).
   endpoint: https://telemetry.lerian.io
 
   credential:
     # Derivado do perfil: ausente em `own`, obrigatório em `client`. Defina
     # explicitamente para sobrescrever.
     #
-    # POR QUE `own` NÃO AUTENTICA — é topologia, não relaxamento:
-    # em aws-staging e aws-production a entrega vai por um LOAD BALANCER INTERNO E
-    # PRIVADO, dentro da VPC. A autenticação da plataforma vive na borda, no API
-    # Gateway; o tráfego de telemetria não sai para a internet. Autenticar neste
-    # salto significaria sair e voltar só para validar credencial — latência e um
-    # ponto de falha a mais, sem ganhar isolamento, porque quem alcança o LB
-    # privado já está dentro do perímetro.
-    #
-    # Confirmado no estado atual: o otel-collector-client de staging exporta com
-    # `headers: []` e funciona.
+    # Em `own` a autenticação do destino fica desligada por padrão; defina
+    # `enabled: true` para exigi-la.
     #
     # Em `client` (BYOC) o cluster é de terceiro e a entrega cruza a internet
     # pública — daí a credencial ser obrigatória, e 401 ser descarte permanente.
@@ -123,7 +113,7 @@ destination:
     consumers: 10
     # Singleton role only, and deliberately deeper than `size` above.
     #
-    # MEASURED on benedita: with the node role's 1000, the singleton lost 256
+    # MEASURED on an internal cluster: with the node role's 1000, the singleton lost 256
     # event records in its first seconds — loki.source.kubernetes_events replays
     # the cluster's existing event history the moment it starts, so the opening
     # burst is far above steady state. No HTTP error at any point: the destination
@@ -150,9 +140,9 @@ destination:
     #
     # Quanto a fila aguenta, com linha média de 909 bytes medida em produção:
     #
-    #   aws-devops     ~17 minutos
-    #   cliente A (prd)     ~18 segundos
-    #   cliente B (prd)     ~1,7 SEGUNDOS
+    #   ambiente interno     ~17 minutos
+    #   cliente A (prd)      ~18 segundos
+    #   cliente B (prd)      ~1,7 SEGUNDOS
     #
     # ⚠️ Para cliente de alto volume a fila não protege — 1 h de retenção no
     # cliente B exigiria ~1,8 GB de RAM contra um limite de container de 512 Mi.
@@ -218,7 +208,7 @@ collection:
   # Disponível só no perfil `own`: com `profile: client` o render falha, porque o
   # nó pertence ao cliente e não temos competência para agir sobre ele.
   #
-  # ⚠️ VOLUME. Medido na benedita: 3 nós produzem 612 famílias e **46.575 séries**
+  # ⚠️ VOLUME. Medido em cluster interno: 3 nós produzem 612 famílias e **46.575 séries**
   # — 11% de todas as séries daquele cluster. Escala com o número de nós. Ligar
   # sem a allowlist de métricas infla exatamente o que esta migração reduz.
   #
@@ -228,7 +218,7 @@ collection:
   nodeInfrastructure: false
 
   # ⚠️ ALLOWLIST DE OBJETOS DE CLUSTER — o kube-state-metrics NÃO tem allowlist
-  # própria. MEDIDO em aws-devops (2026-08-25): sem este filtro ele entrega o
+  # própria. MEDIDO em ambiente interno (2026-08-25): sem este filtro ele entrega o
   # conjunto padrão INTEIRO, 184 famílias e 5.272 séries. Estas 46 famílias são
   # 1.254 séries — corte de 76%.
   #
@@ -308,8 +298,8 @@ collection:
   #
   # ⚠️ SEM ISTO, A MIGRAÇÃO PERDE OBSERVAÇÃO. O agente que este chart substitui usa
   # o receptor `kubeletstats`, e é dele que vêm as famílias `container_*` que já
-  # existem no destino hoje — MEDIDO: 68 séries em aws-devops, 72 em
-  # aws-production, 44 em aws-staging. O kube-state-metrics NÃO cobre isso: ele
+  # existem no destino hoje — MEDIDO: 68, 72 e 44 séries em três
+  # ambientes internos. O kube-state-metrics NÃO cobre isso: ele
   # descreve o ESTADO declarado do objeto (limite, réplica desejada, fase), nunca
   # o consumo observado. Trocar de agente sem esta coleta apaga a resposta para
   # "este pod está estourando o limite?".
@@ -329,10 +319,8 @@ collection:
   # `client` usa `onlyNamespaces` (ação keep): cluster do cliente, olhamos só onde
   #          instalamos nossos produtos.
   #
-  # MEDIDO: aws-staging já dropava os namespaces de sistema no collector e emitia
-  # 488 séries `container_*`; aws-devops, SEM o filtro, emitia 2.284 com número de
-  # pods equivalente. A diferença é este filtro, não o tamanho do cluster — e sem
-  # ele a migração de staging INFLARIA o consumo em ~1.800 séries sem ninguém pedir.
+  # A diferença é este filtro, não o tamanho do cluster: sem ele o consumo de
+  # contêiner inflaria em ~1.800 séries sem ninguém pedir.
   #
   # Por que estes três: kube-proxy, VPC CNI, coredns, csi e afins vivem aqui. São
   # volume alto e responsabilidade do provedor — saúde de nó e de EKS vem por
@@ -359,7 +347,7 @@ collection:
   # está pedindo para não filtrar nada, e isso não pode ser silencioso.
   #
   # ⚠️ O filtro `keep` gerado inclui a alternativa `|^$` automaticamente. MEDIDO em
-  # aws-devops: 272 séries `container_*` têm namespace VAZIO — agregados de nó e
+  # ambiente interno: 272 séries `container_*` têm namespace VAZIO — agregados de nó e
   # sandboxes de pod. Sem essa alternativa elas cairiam em silêncio, levando com
   # elas o denominador da razão uso/limite.
   onlyNamespaces:
@@ -374,7 +362,7 @@ collection:
   # é só raspar ou não.
   containerUsageTarget: ""
 
-  # ⚠️ ALLOWLIST, não coleta integral. MEDIDO na benedita: o endpoint expõe 78
+  # ⚠️ ALLOWLIST, não coleta integral. MEDIDO em cluster interno: o endpoint expõe 78
   # famílias e 90.948 séries; estas 16 são 4.893 (−94,6%).
   #
   # O corte não foi por volume, foi por valor: as famílias caras não respondem
@@ -416,7 +404,7 @@ collection:
   #
   # ⚠️ REPOSIÇÃO, não recurso novo. O agente que sai tem um pipeline
   # `metrics/internal` raspando localhost:8887, e dele vêm as famílias `otelcol_*`
-  # presentes no destino hoje — MEDIDO: 288 séries em aws-devops. Sem isto a
+  # presentes no destino hoje — MEDIDO: 288 séries em ambiente interno. Sem isto a
   # migração as apaga, e a perda é invisível por construção: você deixa de ver
   # justamente o mecanismo que reportaria perda.
   #
@@ -471,7 +459,7 @@ collection:
 #
 # ⚠️ THIS IS NOT OPTIONAL IN PRACTICE — it replaces a producer that exists
 # today. The connector lives in the otel-collector-client being retired, so an
-# agent without it silently stops producing the RED series. MEASURED: benedita
+# agent without it silently stops producing the RED series. MEASURED: an internal cluster
 # migrated to Alloy on 2026-08-11 and `calls_total` disappeared for that
 # cluster while it still exists for the six clusters that kept the old agent.
 #
@@ -540,7 +528,7 @@ spanMetrics:
   #
   # WHY IT IS NEEDED HERE SPECIFICALLY: `span_name` is always a dimension. The
   # connector includes it by construction and it cannot be removed through
-  # `dimensions`. MEASURED in aws-staging: 154 distinct span names, more than
+  # `dimensions`. MEASURED in an internal environment: 154 distinct span names, more than
   # any dimension we chose. Upstream documents this as the usual cause of
   # span-metric cardinality blowups — span names that violate the semantic
   # convention of staying low-cardinality (an id in the name, one span name per
@@ -549,8 +537,8 @@ spanMetrics:
   # SIZING, from measured totals of the four spanmetrics families per cluster
   # (2026-08-12):
   #
-  #   aws-staging       8.676   <- the largest
-  #   aws-production    3.924
+  #   internal A        8.676   <- the largest
+  #   internal B        3.924
   #   cliente A (prd)        3.024
   #   cliente B (prd)          996
   #   cliente C (prd)           144
@@ -572,7 +560,7 @@ spanMetrics:
   # ⚠️ EVERY DIMENSION MULTIPLIES CARDINALITY. Each distinct combination is a
   # billable series, and the destination charges series x writes per minute.
   #
-  # MEASURED on calls_total{client_id="aws-staging"} (723 series), 2026-08-12:
+  # MEASURED on calls_total{client_id="<internal>"} (723 series), 2026-08-12:
   #
   #   http.route                  176 values  the axis of per-endpoint RED
   #   k8s.namespace.name           17 values  stable; 153 alert rules use it
@@ -686,6 +674,36 @@ node:
     digest: sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
 
   enabled: true
+  # Agent RBAC: grafana/alloy 1.15.0's rbac.rules without configmaps, secrets and
+  # pods/log; no component in the rendered pipeline reads them through the API.
+  # An alloy subchart upgrade must re-check this list.
+  rbac:
+    rules: &agentRules
+      - apiGroups: ["", "discovery.k8s.io", "networking.k8s.io"]
+        resources: ["endpoints", "endpointslices", "ingresses", "pods", "services"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: [""]
+        resources: ["pods", "namespaces"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["monitoring.grafana.com"]
+        resources: ["podlogs"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["monitoring.coreos.com"]
+        resources: ["prometheusrules"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["monitoring.coreos.com"]
+        resources: ["alertmanagerconfigs"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["monitoring.coreos.com"]
+        resources: ["podmonitors", "servicemonitors", "probes", "scrapeconfigs"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: [""]
+        resources: ["events"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["apps", "extensions"]
+        resources: ["replicasets"]
+        verbs: ["get", "list", "watch"]
+
   alloy:
     # Config comes from the ConfigMap this chart renders; upstream must not
     # create its own.
@@ -815,7 +833,7 @@ node:
             # exigindo que o Secret exista antes do install.
             #
             # No perfil own o destino não valida nada e a variável nem é lida.
-            # MEDIDO na benedita: com `optional: false` fixo aqui, TODO ambiente
+            # MEDIDO em cluster interno: com `optional: false` fixo aqui, TODO ambiente
             # próprio travava em CreateContainerConfigError e precisava repetir
             # ~20 linhas de extraEnv só para desfazer este default. Um default que
             # o caso mais simples precisa sobrescrever é o default errado.
@@ -892,7 +910,7 @@ node:
     #
     # O padrao upstream para um DaemonSet que recebe trafego e `extraPorts` com
     # `hostPort` — o README oficial diz "Daemonsets taking traffic might find this
-    # useful" — sem hostNetwork. MEDIDO na benedita, com hostNetwork:false e
+    # useful" — sem hostNetwork. MEDIDO em cluster interno, com hostNetwork:false e
     # hostPort nas portas OTLP:
     #
     #   trafego chega            SIM (10.792 spans aceitos)
@@ -959,6 +977,8 @@ singleton:
     digest: sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
 
   enabled: true
+  rbac:
+    rules: *agentRules
   alloy:
     configMap:
       create: false
@@ -1070,7 +1090,7 @@ singleton:
             # exigindo que o Secret exista antes do install.
             #
             # No perfil own o destino não valida nada e a variável nem é lida.
-            # MEDIDO na benedita: com `optional: false` fixo aqui, TODO ambiente
+            # MEDIDO em cluster interno: com `optional: false` fixo aqui, TODO ambiente
             # próprio travava em CreateContainerConfigError e precisava repetir
             # ~20 linhas de extraEnv só para desfazer este default. Um default que
             # o caso mais simples precisa sobrescrever é o default errado.
@@ -1299,6 +1319,11 @@ kube-state-metrics:
   # break or be removed without notice. Our scale does not require it.
   autosharding:
     enabled: false
+  # No kept metric comes from Secrets or ConfigMaps, so the exporter neither
+  # lists nor watches them.
+  collectorsExclude:
+    - secrets
+    - configmaps
 
 # ---------------------------------------------------------------------------
 # NODE-EXPORTER — métricas de nó, DESLIGADO por padrão
@@ -1314,7 +1339,7 @@ kube-state-metrics:
 #     nodeInfrastructure: true    # liga o scrape no papel singleton
 #
 # Separado porque instalar e coletar são decisões distintas — um ambiente que já
-# rode node-exporter (como benedita hoje) mantém `enabled: false` e aponta o
+# rode node-exporter (como alguns ambientes internos) mantém `enabled: false` e aponta o
 # scrape para o existente, exatamente como fazemos com o kube-state-metrics.
 #
 # Ligar só em ambiente NOSSO. No perfil `client` a guarda recusa.

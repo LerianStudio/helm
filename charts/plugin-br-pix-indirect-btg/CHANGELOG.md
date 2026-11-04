@@ -3,6 +3,18 @@
 ## [5.3.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.3)
 
 Fixes:
+- Dropped the chart label from pod templates to streamline configuration. (@fredcamaral)
+
+Improvements:
+- Added the verified `5.3.2` upgrade guide to assist users with the update process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.3.2...plugin-br-pix-indirect-btg-v5.3.3)
+
+---
+
+## [5.3.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.3)
+
+Fixes:
 - Removed the chart label from pod templates to streamline configuration. (@fredcamaral)
 
 Improvements:

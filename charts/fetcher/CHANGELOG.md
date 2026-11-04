@@ -3,6 +3,19 @@
 ## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
 
 Fixes:
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to improve functionality and performance. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1` to assist users in updating their systems smoothly. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Fixes:
 - Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys. (@fredcamaral)
 
 Improvements:

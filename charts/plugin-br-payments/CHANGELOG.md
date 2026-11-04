@@ -3,6 +3,22 @@
 ## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.2)
 
 Fixes:
+- Keep control-plane guard on API pods and trim comments to ensure proper functionality. (@fredcamaral)
+- Align starter overlay, schema, and pod labels for consistency. (@fredcamaral)
+
+Improvements:
+- Fix the `1.1.2` secret commands in the documentation for better clarity. (@fredcamaral)
+- Correct the `1.1.2` upgrade guide to reflect accurate instructions. (@fredcamaral)
+- Add verified upgrade guides for versions `1.1.3` to `2.2.1` to assist users in transitioning between versions. (@fredcamaral)
+- Correct chart documentation against templates and app code to ensure accuracy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.1...plugin-br-payments-v2.2.2)
+
+---
+
+## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.2)
+
+Fixes:
 - Keep control-plane guard on API pods and trim comments to maintain code clarity. (@fredcamaral)
 - Align starter overlay, schema, and pod labels for consistent deployment configurations. (@fredcamaral)
 

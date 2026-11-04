@@ -3,6 +3,15 @@
 ## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
 
 Fixes:
+- Ensure the system-facts values template boots correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
 - Make the system-facts values template boot. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)

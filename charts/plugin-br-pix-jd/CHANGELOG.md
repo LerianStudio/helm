@@ -5,6 +5,20 @@
 Fixes:
 
 - Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+Improvements:
+
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
 - Stated the migrations pin for `1.6.1` in the documentation. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)

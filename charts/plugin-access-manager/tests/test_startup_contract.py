@@ -13,9 +13,9 @@ import yaml
 CHART = Path(__file__).resolve().parents[1]
 CARADHRAS_2_1 = {'image': {'tag': '2.1.0'}, 'migrations': {'image': {'tag': '2.1.0'}}}
 BASE = {
-    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'},
+    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'},
              'initUser': {'enabled': False}},
-    'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'}},
+    'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'}},
 }
 
 
@@ -418,6 +418,26 @@ class StartupContract(unittest.TestCase):
         for tag in ('1.9.0-beta.25', '1.9.0-rc.1', '2.0.0'):
             self.succeeds({'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
                 'enabled': True, 'secretName': 'operator-admin'}}})
+
+    def test_license_key_required(self):
+        for c in ('auth', 'identity'):
+            self.fails({c: {'secrets': {'LICENSE_KEY': ''}}}, f'{c}.secrets.LICENSE_KEY is required')
+            self.succeeds({c: {'secrets': {'LICENSE_KEY': ''}, 'useExistingSecret': True,
+                               'existingSecretName': 'x'}})
+
+    def test_ingress_falls_back_to_global(self):
+        glob = {'global': {'ingress': {'className': 'nginx', 'domain': 'example.test',
+                                       'tls': [{'secretName': 'tls', 'hosts': ['auth.example.test']}]}}}
+        for c in ('auth', 'identity'):
+            docs = self.succeeds({**glob, c: {'ingress': {'enabled': True}}})
+            spec = next(d for d in docs if d['kind'] == 'Ingress')['spec']
+            self.assertEqual(spec['ingressClassName'], 'nginx')
+            self.assertEqual(spec['rules'][0]['host'], f'{c}.example.test')
+            self.assertEqual(spec['tls'][0]['secretName'], 'tls')
+            own = {c: {'ingress': {'enabled': True, 'className': 'alb',
+                                   'hosts': [{'host': 'own.test', 'paths': [{'path': '/', 'pathType': 'Prefix'}]}]}}}
+            spec = next(d for d in self.succeeds({**glob, **own}) if d['kind'] == 'Ingress')['spec']
+            self.assertEqual((spec['ingressClassName'], spec['rules'][0]['host']), ('alb', 'own.test'))
 
     def test_auth_service_exposes_only_ports_the_container_serves(self):
         docs = self.succeeds({})

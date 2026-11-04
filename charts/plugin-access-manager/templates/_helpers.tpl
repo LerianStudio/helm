@@ -576,6 +576,23 @@ never has to be spliced into a connection string.
 {{- end }}
 
 {{/*
+plugin-access-manager.ingress — the component ingress map for lerian-common.ingress.
+The shipped className "", tls [] and a single empty host are placeholders: an empty
+one is left out so global.ingress supplies it. An explicit value always wins.
+Input (dict): ingress (component .ingress), global (.Values.global.ingress).
+*/}}
+{{- define "plugin-access-manager.ingress" -}}
+{{- $i := deepCopy .ingress -}}
+{{- $g := .global | default dict -}}
+{{- if not $i.className -}}{{- $_ := unset $i "className" -}}{{- end -}}
+{{- if not $i.tls -}}{{- $_ := unset $i "tls" -}}{{- end -}}
+{{- $named := false -}}
+{{- range $i.hosts | default list -}}{{- if .host -}}{{- $named = true -}}{{- end -}}{{- end -}}
+{{- if and (not $named) $g.domain -}}{{- $_ := unset $i "hosts" -}}{{- end -}}
+{{- toYaml $i -}}
+{{- end }}
+
+{{/*
 plugin-caradhras.builtInAdminPasswordEnabled — "true" when the operator opted in
 to giving a new built-in/admin its password from a Secret.
 */}}

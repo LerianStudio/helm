@@ -470,7 +470,7 @@ caradhras:
   # -- Whether to create database on startup (requires CREATEDB permission).
   # Defaults to false: most DB users granted to caradhras have no CREATEDB
   # privilege, and the target database/schema is typically provisioned ahead
-  # of time (see benedita sandbox permission-denied incident, 2026-08-25).
+  # of time.
   createDatabase: false
   # -- Caradhras (beego) config keys. Names are the beego literals, camelCase:
   # caradhras reads them with conf.GetConfigString, which looks up the exact
@@ -614,7 +614,7 @@ caradhras:
       # -- otherwise defaults to 1.8.6 in templates/_helpers.tpl.
       # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
-    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests (e.g. cross). Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
+    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests. Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
     skipRBACChain: false
     # -- Extra env vars for the migrate init container only, as a NAME: value map
     # -- (rendered as name/value pairs, values quoted). Chart-owned names (POSTGRES_HOST/PORT/DB/
@@ -634,7 +634,7 @@ caradhras:
 auth-database:
   # Database dependency for identity and access management.
   # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-security#identity-management-with-casdoor
+  # https://docs.lerian.studio/en/platform/access-manager/am-components
   enabled: true
   global:
     security:
@@ -679,8 +679,6 @@ auth-database:
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
   global:
     security:

@@ -1,7 +1,7 @@
 <!-- {% raw %} -->
 # Helm Upgrade from v1.0.4 to v1.0.5
 
-This guide helps operators upgrade the **Lerian BYOC agent** chart from version **1.0.4** to **1.0.5**. This is a patch release. It needs no action before or after the upgrade.
+This guide helps operators upgrade the **Lerian BYOC agent** chart from version **1.0.4** to **1.0.5**. This is a patch release. It needs no action before or after the upgrade, except one conditional step in [Migration Steps](#migration-steps).
 
 ## Topics
 
@@ -37,11 +37,16 @@ The pod template changes, so `helm upgrade` replaces the agent pod once. With th
 
 ## Migration Steps
 
-This upgrade requires no manual migration steps.
-
-If the control plane has moved the agent to a newer build, set `agent.image.digest` to the digest the Deployment runs before you upgrade. Otherwise the upgrade re-renders the `1.0.2` tag and walks the agent back.
-
 The commands below use the release name `lerian-agent` and the namespace `lerian-system` from the chart README install command. They are examples: replace them with the values you used at install time.
+
+One step applies only if the control plane has moved the agent to a newer build. Read the image the Deployment runs:
+
+```bash
+kubectl -n lerian-system get deploy lerian-agent \
+  -o jsonpath='{.spec.template.spec.containers[0].image}'
+```
+
+If the image ends in `@sha256:<digest>`, add `--reuse-values --set agent.image.digest=sha256:<digest>` to the upgrade command below. Otherwise the upgrade re-renders the `1.0.2` tag and walks the agent back.
 
 Save your current values (optional):
 

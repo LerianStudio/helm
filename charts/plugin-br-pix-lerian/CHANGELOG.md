@@ -1,5 +1,25 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default `pixauto SPI_BASE_URL` to the SPI port to ensure correct configuration. (@fredcamaral)
+- Honor `global.auth` in the `pixauto` ingress guard to maintain security settings. (@fredcamaral)
+- Enable authentication on every workload in the template to enhance security. (@fredcamaral)
+- Point `pixauto SPI_BASE_URL` at the SPI service port for accurate service routing. (@fredcamaral)
+
+Improvements:
+- Update documentation to indicate that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides for better clarity. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3` to assist users with updates. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
 ## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
 
 Fixes:

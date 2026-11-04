@@ -3,6 +3,16 @@
 ## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
 
 Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
 - Prevent the rendering of `IS_DEVELOPMENT` in the application. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)

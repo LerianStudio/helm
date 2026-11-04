@@ -130,7 +130,8 @@ securityContext:
 brSisbajud:
   enabled: true
   replicaCount: 1
-  # -- 55 = 15s SHUTDOWN_DRAIN_DELAY + 30s shutdown budget + 10s margin; never lower it.
+  # -- 55 = 15s SHUTDOWN_DRAIN_DELAY + 30s shutdown budget + 10s margin; do not lower it below the shutdown budget.
+  # The default image (app 1.1.0) does not read SHUTDOWN_DRAIN_DELAY.
   terminationGracePeriodSeconds: 55
   revisionHistoryLimit: 10
   image:
@@ -287,9 +288,7 @@ brSisbajud:
   # a bundled subchart is enabled), allowCorsWildcard, allowInsecureOtel,
   # allowWebhookPrivateNetwork.
   security: {}
-  # -- organizationIds (must be "global"). LICENSE_KEY is a secret, required in a production-like
-  # environment (anything but local|development|staging|e2e|test); in those five
-  # an empty LICENSE_KEY is the app's dev bypass.
+  # -- organizationIds (must be "global"). LICENSE_KEY is a secret, required in every environment.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
   # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.

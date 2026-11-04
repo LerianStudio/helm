@@ -248,7 +248,7 @@ legacy overrides remain visible, including to the repository guard below.
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "2.1.0") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" (regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "")) -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImagePullPolicy" -}}

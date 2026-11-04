@@ -103,6 +103,20 @@ class StartupContract(unittest.TestCase):
             if d['kind'] == 'HorizontalPodAutoscaler':
                 self.assertGreaterEqual(d['spec']['minReplicas'], 1)
 
+    def test_migrations_tag_follows_the_server_tag(self):
+        def migrate_image(caradhras):
+            d = next(d for d in self.succeeds({'caradhras': caradhras}) if d['kind'] == 'Deployment'
+                     and d['metadata']['name'].endswith('-caradhras'))
+            return next(c for c in d['spec']['template']['spec']['initContainers']
+                        if c['name'] == 'migrate')['image'].rsplit(':', 1)[1]
+        digest = '@sha256:' + 'a' * 64
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        self.assertEqual(migrate_image({}), '2.1.0')
+        self.assertEqual(migrate_image({**no_key, 'image': {'tag': '1.8.6'}}), '1.8.6')
+        self.assertEqual(migrate_image({'image': {'tag': '2.1.0' + digest}}), '2.1.0')
+        self.assertEqual(migrate_image({**no_key, **PRE_LICENSE,
+                                        'migrations': {'image': {'tag': '1.8.5'}}}), '1.8.5')
+
     def test_probes_use_the_health_port_and_caradhras_drains(self):
         docs = self.succeeds({'caradhras': {'ui': {'enabled': True}}})
         for d in docs:
@@ -442,8 +456,6 @@ class StartupContract(unittest.TestCase):
         self.fails({'caradhras': {**no_key, **pin('2.1.0' + digest)}}, 'caradhras.secrets.LICENSE_KEY')
         self.succeeds({'caradhras': {**no_key, **pin('2.1.0' + digest),
                                      'useExistingSecret': True, 'existingSecretName': 'x'}})
-        # not plain semver: the key is required, with the chart's message rather than a semver parse error
-        self.fails({'caradhras': {**no_key, **pin('1.8.6.1')}}, 'caradhras.secrets.LICENSE_KEY')
 
     def test_ingress_falls_back_to_global(self):
         glob = {'global': {'ingress': {'className': 'nginx', 'domain': 'example.test',

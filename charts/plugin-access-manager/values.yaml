@@ -612,8 +612,7 @@ caradhras:
       # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
       pullPolicy: ""
       # -- Empty preserves auth.backend.migrations.image.tag overrides;
-      # -- otherwise defaults to 2.1.0 in templates/_helpers.tpl.
-      # -- Independent of caradhras.image.tag: override both when changing versions.
+      # -- otherwise defaults to the server tag (caradhras.image.tag), without any @digest.
       tag: ""
     # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests. Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
     skipRBACChain: false

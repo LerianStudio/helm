@@ -1,5 +1,692 @@
 # Plugin-access-manager Changelog
 
+## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
+
+Features:
+
+- Add verified upgrade guides for transitioning from `10.1.4` to `10.5.0`. (@fredcamaral)
+
+Fixes:
+
+- Ensure global ingress inheritance and require license keys for proper functionality. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.0...plugin-access-manager-v10.5.1)
+
+---
+
+## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
+
+Fixes:
+- Ensure global ingress settings are inherited and require a license key for functionality. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `10.1.4` to `10.5.0`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.0...plugin-access-manager-v10.5.1)
+
+---
+
+## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
+
+Fixes:
+- Inherit global ingress settings and require license keys for operation. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `10.1.4` to `10.5.0`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.0...plugin-access-manager-v10.5.1)
+
+---
+
+## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
+
+Features:
+
+- Add verified upgrade guides for transitioning from version `10.1.4` to `10.5.0`. (@fredcamaral)
+
+Fixes:
+
+- Ensure global ingress is inherited and license keys are required. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.0...plugin-access-manager-v10.5.1)
+
+---
+
+## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
+
+Features:
+
+- Add verified upgrade guides for transitioning from `10.1.4` to `10.5.0`. (@fredcamaral)
+
+Fixes:
+
+- Ensure the plugin inherits global ingress settings and requires a license key for operation. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.0...plugin-access-manager-v10.5.1)
+
+---
+
+## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
+
+Features:
+
+- Add verified upgrade guides for transitioning from `10.1.4` to `10.5.0`. (@fredcamaral)
+
+Fixes:
+
+- Ensure global ingress settings are inherited and require license keys for operation. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.0...plugin-access-manager-v10.5.1)
+
+---
+
+## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
+
+Features:
+
+- Add verified upgrade guides for transitioning from `10.1.4` to `10.5.0`. (@fredcamaral)
+
+Fixes:
+
+- Ensure global ingress settings are inherited and license keys are required. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.0...plugin-access-manager-v10.5.1)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract to enhance security. (@fredcamaral)
+- Create the first console admin from identity at boot, streamlining the setup process. (@fredcamaral)
+- Document the effects of removing init-user on `argocd` and `helmfile`. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring to ensure proper functionality. (@fredcamaral)
+- Update `plugin-auth@3.16.0` and `plugin-identity@3.16.0` to maintain compatibility. (@lerian-studio)
+- Preserve health preset to ensure consistent system status checks. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window to prevent early timeouts. (@fredcamaral)
+- Provide identity a startup window that outlasts the init-user retry, ensuring smoother initialization. (@fredcamaral)
+
+Improvements:
+- Merge the main branch into the bootstrap branch to keep the codebase up-to-date. (@fredcamaral)
+- Document the process of retiring the bootstrap credential, aiding in future deprecations. (@fredcamaral)
+- Clarify bootstrap upgrades to assist users in understanding the upgrade process. (@fredcamaral)
+- Keep the auth secret text unchanged during refactoring for consistency. (@fredcamaral)
+- Remove the auth init-user job as part of a refactor to simplify the authentication process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the `argocd` and `helmfile` effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0` and `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the `argocd` and `helmfile` effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0`, `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract to enhance security. (@fredcamaral)
+- Create the first console admin from identity at boot, ensuring a smoother initial setup process. (@fredcamaral)
+- Document the effects of removing init-user on ArgoCD and Helmfile configurations. (@fredcamaral)
+
+Fixes:
+- Repair the wiring for admin secrets to ensure proper functionality. (@fredcamaral)
+- Update dependencies to `plugin-auth@3.16.0` and `plugin-identity@3.16.0` for compatibility improvements. (@lerian-studio)
+- Preserve the health preset to maintain system stability. (@fredcamaral)
+- Cover the HTTP client timeout during the identity startup window to prevent initialization issues. (@fredcamaral)
+- Extend the identity startup window to outlast the init-user retry, improving reliability. (@fredcamaral)
+
+Improvements:
+- Merge the main branch into the bootstrap branch to keep development aligned. (@fredcamaral)
+- Document the process of retiring the bootstrap credential for better clarity. (@fredcamaral)
+- Clarify the documentation regarding bootstrap upgrades to aid understanding. (@fredcamaral)
+- Keep the auth secret text unchanged during refactoring to maintain consistency. (@fredcamaral)
+- Remove the auth init-user job as part of a refactoring effort to streamline processes. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the ArgoCD and Helmfile effect of removing `init-user`. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0` and `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the `init-user` retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth `init-user` job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the ArgoCD and Helmfile effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0` and `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract to enhance security. (@fredcamaral)
+- Create the first console admin from identity at boot to streamline the setup process. (@fredcamaral)
+- Document the effects of removing init-user on ArgoCD and Helmfile to provide clarity on system changes. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring to ensure proper configuration. (@fredcamaral)
+- Update dependencies to `plugin-auth@3.16.0` and `plugin-identity@3.16.0` for compatibility and security. (@lerian-studio)
+- Preserve health preset to maintain system stability. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window to prevent initialization issues. (@fredcamaral)
+- Provide identity a startup window that outlasts the init-user retry to improve reliability. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch for consistency and up-to-date features. (@fredcamaral)
+- Document the process of retiring the bootstrap credential to guide users through transitions. (@fredcamaral)
+- Clarify bootstrap upgrades to enhance user understanding of the upgrade process. (@fredcamaral)
+- Keep the auth secret text unchanged to maintain consistency in authentication processes. (@fredcamaral)
+- Remove the auth init-user job to simplify the authentication setup. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the ArgoCD and Helmfile effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0` and `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the `argocd` and `helmfile` effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0` and `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the ArgoCD and Helmfile effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0`, `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the ArgoCD and Helmfile effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0`, `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract. (@fredcamaral)
+- Create the first console admin from identity at boot. (@fredcamaral)
+- Document the `argocd` and `helmfile` effect of removing init-user. (@fredcamaral)
+
+Fixes:
+- Repair admin secret wiring. (@fredcamaral)
+- Update `plugin-auth@3.16.0` and `plugin-identity@3.16.0`. (@lerian-studio)
+- Preserve health preset. (@fredcamaral)
+- Cover the HTTP client timeout in the identity startup window. (@fredcamaral)
+- Give identity a startup window that outlasts the init-user retry. (@fredcamaral)
+
+Improvements:
+- Merge main into the bootstrap branch. (@fredcamaral)
+- Document retiring the bootstrap credential. (@fredcamaral)
+- Clarify bootstrap upgrades. (@fredcamaral)
+- Keep the auth secret text unchanged. (@fredcamaral)
+- Remove the auth init-user job. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.0)
+
+Features:
+- Require the single-use first-admin contract to enhance security. (@fredcamaral)
+- Create the first console admin from identity at boot, streamlining the initial setup process. (@fredcamaral)
+- Document the effects of removing init-user on `argocd` and `helmfile`, providing clarity on the changes. (@fredcamaral)
+
+Fixes:
+- Repair the admin secret wiring to ensure proper functionality. (@fredcamaral)
+- Update dependencies to `plugin-auth@3.16.0` and `plugin-identity@3.16.0` for compatibility and stability improvements. (@lerian-studio)
+- Preserve the health preset to maintain system integrity during operations. (@fredcamaral)
+- Address the HTTP client timeout issue within the identity startup window, ensuring smoother initialization. (@fredcamaral)
+- Extend the startup window for identity to outlast the init-user retry, improving reliability during startup. (@fredcamaral)
+
+Improvements:
+- Merge the main branch into the bootstrap branch to keep the codebase up-to-date. (@fredcamaral)
+- Document the process of retiring the bootstrap credential for better understanding of the transition. (@fredcamaral)
+- Clarify the upgrade process for bootstrap, aiding in smoother transitions. (@fredcamaral)
+- Keep the auth secret text unchanged during refactoring to maintain consistency. (@fredcamaral)
+- Remove the auth init-user job as part of refactoring efforts to streamline the codebase. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.1...plugin-access-manager-v10.5.0)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images to enhance reliability and performance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images to enhance reliability and consistency in deployments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.1)
+
+Fixes:
+- Use stable images for the plugin-access-manager component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.4.0...plugin-access-manager-v10.4.1)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note from documentation. (@fredcamaral)
+- Mark the health `minImage` as a placeholder in documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note from documentation. (@fredcamaral)
+- Mark the health `minImage` as a placeholder in documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note from documentation. (@fredcamaral)
+- Mark the health `minImage` as a placeholder in documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note. (@fredcamaral)
+- Mark the health `minImage` as a placeholder. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note. (@fredcamaral)
+- Mark the health `minImage` as a placeholder. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired `pdb` and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note. (@fredcamaral)
+- Mark the health `minImage` as a placeholder. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note. (@fredcamaral)
+- Mark the health `minImage` as a placeholder. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note from the documentation. (@fredcamaral)
+- Mark the health `minImage` as a placeholder in the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.4.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+
+Improvements:
+- Drop the `minImage` placeholder note from the documentation. (@fredcamaral)
+- Mark the health `minImage` as a placeholder in the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.3.0...plugin-access-manager-v10.4.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.3.0)
+
+Features:
+- Add opt-in for Caradhras built-in admin password from a secret. (@fredcamaral)
+
+Fixes:
+- Raise the admin password floor to Caradhras `1.9.0-beta.25`. (@fredcamaral)
+- Require Caradhras `>= 1.9.0` for the built-in admin password opt-in. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.3...plugin-access-manager-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.3.0)
+
+Features:
+- Add an opt-in feature for Caradhras built-in admin password from a secret. (@fredcamaral)
+
+Fixes:
+- Raise the admin password floor to Caradhras `1.9.0-beta.25`. (@fredcamaral)
+- Require Caradhras `>= 1.9.0` for the built-in admin password opt-in. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.3...plugin-access-manager-v10.3.0)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.3.0)
+
+Features:
+- Add opt-in for Caradhras built-in admin password from a secret. (@fredcamaral)
+
+Fixes:
+- Raise the admin password floor to Caradhras `1.9.0-beta.25`. (@fredcamaral)
+- Require Caradhras `>= 1.9.0` for the built-in admin password opt-in. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.3...plugin-access-manager-v10.3.0)
+
+---
+
+## [10.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.3)
+
+Fixes:
+- Set the Caradhras shutdown drain delay to 5 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.2.2...plugin-access-manager-v10.2.3)
+
+---
+
 ## [10.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.2.2)
 
 Fixes:

@@ -1,6 +1,7 @@
-{{- if .Values.identity.autoscaling.enabled }}
+{{- $h := include "plugin-identity.health" . | fromYaml }}
+{{- if hasKey $h "autoscaling" }}
 {{- include "lerian-common.hpa" (dict
-      "autoscaling" .Values.identity.autoscaling
+      "autoscaling" $h.autoscaling
       "name" (include "plugin-identity.fullname" .)
       "labels" (printf "%s " (include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name)))
     ) }}

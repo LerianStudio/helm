@@ -1,5 +1,555 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to version `1.6.1`. (@fredcamaral)
+
+Improvements:
+- Stated the migrations pin for version `1.6.1` in the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+Documentation:
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+
+- Updated `plugin-br-pix-jd` to `1.6.1`, ensuring compatibility and addressing any issues present in previous versions. (@fredcamaral)
+
+Improvements:
+
+- Documented the migration pin for `1.6.1` to provide clarity on the necessary steps for updating. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Features:
+
+- State the migrations pin for `1.6.1`. (@fredcamaral)
+
+Fixes:
+
+- Update `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+
+- Updated `plugin-br-pix-jd` to `1.6.1`, ensuring compatibility and addressing any related issues. (@fredcamaral)
+- Documented the migration pin for `1.6.1` to provide clarity on version-specific changes. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to `1.6.1`, ensuring compatibility and addressing any issues present in the previous version. (@fredcamaral)
+
+Documentation:
+- Stated the migrations pin for `1.6.1` in the documentation, providing clarity on the necessary steps for users upgrading to this version. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to `1.6.1` to address various issues. (@fredcamaral)
+
+Improvements:
+- Stated the migrations pin for `1.6.1` in the documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to version `1.6.1`. (@fredcamaral)
+
+Documentation:
+- Stated the migrations pin for version `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+Improvements:
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Features:
+
+- State the migrations pin for `1.6.1` in the documentation. (@fredcamaral)
+
+Fixes:
+
+- Update `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+Improvements:
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+Improvements:
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Features:
+
+- State the migrations pin for `1.6.1`. (@fredcamaral)
+
+Fixes:
+
+- Update `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to `1.6.1`, ensuring compatibility and resolving any existing issues. (@fredcamaral)
+
+Improvements:
+- Documented the migrations pin for `1.6.1` to provide clarity on the update process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+
+- Updated `plugin-br-pix-jd` to `1.6.1`, ensuring compatibility and addressing any existing issues. (@fredcamaral)
+
+Improvements:
+
+- Documented the migration pin for `1.6.1` to provide clarity on the update process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+- Updated `plugin-br-pix-jd` to `1.6.1`, ensuring compatibility and addressing any issues present in previous versions. (@fredcamaral)
+- Stated the migrations pin for `1.6.1` to provide clarity on necessary updates and changes. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.2)
+
+Fixes:
+
+- Updated `plugin-br-pix-jd` to `1.6.1`. (@fredcamaral)
+
+Improvements:
+
+- Stated the migrations pin for `1.6.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.1...plugin-br-pix-jd-v0.6.2)
+
+---
+
+## [0.6.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.1)
+
+Fixes:
+
+- Use stable images for the plugin to ensure consistent performance and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.0...plugin-br-pix-jd-v0.6.1)
+
+---
+
+## [0.6.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.1)
+
+Fixes:
+- Updated the plugin to use stable images to ensure reliability and consistency in deployments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.0...plugin-br-pix-jd-v0.6.1)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health management. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure compatibility with the new health preset. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB, improving the plugin's stability and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+- Pass the ALB health check and let the preset own the PDB. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health management of the plugin. (@fredcamaral)
+
+Fixes:
+- Refuse retired `pdb` and rollout overrides to maintain compatibility and stability. (@fredcamaral)
+- Pass the `alb` health check and allow the preset to manage the `pdb` for improved reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopted the `lerian-common` health preset to enhance the health check configuration. (@fredcamaral)
+
+Fixes:
+- Refused retired PDB and adjusted rollout overrides to ensure stability and compliance. (@fredcamaral)
+- Passed the ALB health check and allowed the health preset to manage the PDB settings. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health monitoring capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse retired `pdb` and rollout overrides to improve stability and reliability. (@fredcamaral)
+- Pass the `alb` health check and allow the preset to manage the `pdb` for better integration and performance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health management of the plugin. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure compatibility with the updated health management system. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB, ensuring smoother integration with the health management system. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the plugin's health management. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure compatibility and stability. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB for improved reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance health check configurations. (@fredcamaral)
+
+Fixes:
+- Refuse retired `pdb` and rollout overrides to ensure stability and compliance with updated standards. (@fredcamaral)
+- Pass the `alb` health check and allow the preset to manage the `pdb` for improved reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+- Pass the ALB health check and let the preset own the PDB. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health management of the plugin. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure compatibility and stability. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB for improved health check integration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.0)
+
+Features:
+- Adopt the `lerian-common` health preset for improved health management. (@fredcamaral)
+
+Fixes:
+- Refuse retired PDB and rollout overrides to ensure stability and compliance with new standards. (@fredcamaral)
+- Pass the ALB health check and allow the preset to manage the PDB, enhancing the plugin's robustness. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.9...plugin-br-pix-jd-v0.6.0)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in `plugin-br-pix-jd`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Correct the `v0.5.7` upgrade guide to address worker image and license behavior. (@gandalf-at-lerian)
+- Correct the `v0.5.8` upgrade guide to address migration hook behavior. (@gandalf-at-lerian)
+- Correct the `v0.5.6` upgrade guide to include a note on pod roll. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide to correct worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide to address migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide to clarify pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Features:
+
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT`. (@fredcamaral)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
+## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the plugin. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.6`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.7`. (@victorlazari)
+- Add Helm upgrade guide for `plugin-br-pix-jd` `v0.5.8`. (@victorlazari)
+- Fix `v0.5.7` upgrade guide worker image and license behavior. (@gandalf-at-lerian)
+- Fix `v0.5.8` upgrade guide migration hook behavior. (@gandalf-at-lerian)
+- Fix `v0.5.6` upgrade guide pod roll note. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.5.8...plugin-br-pix-jd-v0.5.9)
+
+---
+
 ## [0.5.9](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.5.9)
 
 Fixes:

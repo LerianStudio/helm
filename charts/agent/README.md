@@ -4,9 +4,9 @@
 
 - Chart type: `single-service`
 - Required secrets: `agent.secrets.AGENT_TOKEN` (and `agent.secrets.AGENT_ID` with a per-agent token) from the control plane's agent registration, or `agent.useExistingSecret` with a Secret carrying the same keys. `agent.configmap.CONTROL_PLANE_URL` is required as well.
-- Dependency notes: Depends on the `lerian-common-helm` library chart (2.2.0) for its Service, ServiceAccount, HPA, PDB, deployment strategy, probes, scheduling and OTel collector env; it renders nothing on its own. No application dependency is bundled. The agent only makes outbound requests: to the Lerian control plane, and to the registries it is allowed to pull from.
+- Dependency notes: Depends on the `lerian-common-helm` library chart (2.2.0) for its Service, ServiceAccount, HPA, PDB, deployment strategy, probes, scheduling and OTel collector env; it renders nothing on its own. No application dependency is bundled.
 - Production overrides: `agent.managedNamespaces` (every namespace the agent may install into), `agent.useExistingSecret`, the registry allowlists, `agent.networkPolicy` CIDRs, resources, and `agent.image.digest` once the agent has moved itself to a newer build.
-- Source/license: The chart is in `github.com/LerianStudio/helm` (Elastic License 2.0); the agent application is in `github.com/LerianStudio/agent`.
+- Source/license: The chart is in `github.com/LerianStudio/helm` (Elastic License 2.0); the agent application's source is not public.
 
 Installs the Lerian BYOC agent: it runs in your Kubernetes cluster, polls the
 Lerian control plane over an outbound-only connection (no inbound ports, no
@@ -103,9 +103,12 @@ For every value, see [values.yaml](values.yaml).
 `agent.managedNamespaces` lists every namespace this agent may install,
 upgrade and uninstall releases in, write their Secrets to, and read pod logs
 and events of when an install fails. Empty means the release namespace only.
-Outside that list the agent can only read cluster-shape information (nodes,
-namespace existence, pod and Service counts, capability checks) - it cannot
-create a pod there, so it cannot mount another ServiceAccount's token.
+Outside that list the agent can read cluster-shape information (nodes,
+namespace existence, pods and Services, capability checks), create namespaces
+and write StorageClasses. It cannot create a pod in a namespace outside that
+list, so it cannot mount another ServiceAccount's token there. The exception is
+the agent's own namespace, where the self-update creates pods and patches the
+agent's Deployment.
 
 Each listed namespace must already exist, and adding one later needs a
 `helm upgrade` of this chart. Add `lerian-infra` if you want the deployer to
@@ -163,23 +166,20 @@ kubectl -n lerian-system get deploy lerian-agent \
 
 ## What leaves your cluster
 
-This is the complete list of what this agent sends Lerian, grouped by what
+This is the list of what this agent sends Lerian, grouped by what
 causes it. Most of it leaves while everything is working, not only when
-something breaks. The same inventory, with the code behind every claim, is the
-"What leaves the cluster" section of
-[`docs/threat-model.md`](https://github.com/LerianStudio/deployer/blob/main/docs/threat-model.md); this is it in the place
-you are reading before you install. Every ceiling and interval it refers to is
+something breaks. Every ceiling and interval it refers to is
 in the closed table at the end of this section.
 
 | What leaves | Occasion | Who causes it | Where it lands, and for how long |
 | --- | --- | --- | --- |
 | **A heartbeat** - this agent's id, the moment, that it is connected, the build it runs, and (if you set `agent.secretVault`) which vault your secrets live in: provider, store name and kind, **path prefix**, refresh interval. No secret material. Plus the registries your cluster holds a chart-pull credential for - the hostnames and path prefixes off your pull Secret's own keys, re-read on every beat, never the credential. Plus your cluster's own identity - the UID Kubernetes gave the `kube-system` namespace when the cluster was created, read once at start and restated on every beat. It identifies the cluster and nothing inside it, and it is what makes an operator's command naming one of your ledgers refuse to run against somebody else's cluster. Part of the same list also leaves inside a failed chart pull's error text, cut to the named-scopes ceiling below | Continuous, at the observation interval | Nobody; the agent's own clock | Lerian's database, upserted in place so only the latest exists |
 | **Health of a release** - Helm's status word, your workloads and their replica counts, your pods with phase, readiness and restart count, a derived sentence saying what is wrong, and a list of what the agent was refused. Workloads and pods are each kept up to the entry ceiling below; the sentence and the refusals have ceilings of their own | Continuous, at the observation interval, per release the control plane asked this agent to watch, **whatever the capture switch says** | Nobody | Lerian's database, latest observation only: the next one overwrites it |
-| **Container output** - the tail of what the stopped containers of an UNWELL release printed, with secret-shaped fields removed by name inside your cluster before anything goes on the wire. That pass runs on five fields and no others - a pod's status message, a container's waiting and terminated messages, a container's log tail, and a Warning event's message. **Nothing else this agent sends is redacted** | Continuous, at the observation interval, only for a release that already looks wrong, capture switch on | Nobody | Lerian's database (overwritten as above) and, where the control plane is configured with a telemetry store, Lerian's per-tenant log store under the declared telemetry retention |
+| **Container output** - the tail of what the stopped containers of an UNWELL release printed, with secret-shaped fields removed by name inside your cluster before anything goes on the wire. That pass runs on five fields - a pod's status message, a container's waiting and terminated messages, a container's log tail, and a Warning event's message. | Continuous, at the observation interval, only for a release that already looks wrong, capture switch on | Nobody | Lerian's database (overwritten as above) and, where the control plane is configured with a telemetry store, Lerian's per-tenant log store under the declared telemetry retention |
 | **Warning events** about the release's own objects - the object, reason, message and count; where image-pull, scheduling and quota refusals live. The namespace's Warnings are all listed, because the cluster offers no way to ask for one release's; the ones about anything else, including another release installed alongside this one, are discarded inside your cluster and never leave it | The same occasions, in the same report | Nobody | The same two places |
 | **Five numbers per release** - CPU millicores, memory bytes, desired and ready replicas, restarts. Summed over the release's own pods; **no pod name, no container name, no image, no label of yours** | Continuous, at the observation interval, capture switch on | Nobody | Nothing in Lerian's database. The latest sample is held in memory and scraped into Lerian's metrics store; it is dropped after the staleness window below, and the history there lives under that store's retention |
 | **Failure evidence** - the same output and the same events, read the same way | On a failed install, upgrade, rollback or uninstall | Whoever ran the operation | A row against the deployment revision, whose body is cleared when you delete the deployment; and the log store copy, which the deletion does NOT touch and which expires only under that store's retention |
-| **The text of a failure** - the error string verbatim plus a sentence naming the operation. **Not redacted**: the redaction pass reaches container output and the cluster's own messages, nothing else. It can carry a permission denial naming your ServiceAccount, verb, resource and namespace; an admission webhook's rejection echoing part of a manifest; a registry's or TLS stack's own words. A failure family and a failure code ride with it, both from a closed set the agent chooses from, carrying nothing of yours | On failure of ANY requested operation | Whoever ran the operation | The work item, and the deployment's and revision's error message, which have no expiry |
+| **The text of a failure** - the error string plus a sentence naming the operation. It can carry a permission denial naming your ServiceAccount, verb, resource and namespace; an admission webhook's rejection echoing part of a manifest; a registry's or TLS stack's own words. A failure family and a failure code ride with it, both from a closed set the agent chooses from, carrying nothing of yours | On failure of ANY requested operation | Whoever ran the operation | The work item, and the deployment's and revision's error message, which have no expiry |
 | **A preflight report** - a verdict and one entry per check, each a sentence and a remediation, plus the platforms your nodes run (`linux/arm64`). Those sentences carry your own naming: **your StorageClass and IngressClass names**, what in-cluster DNS resolves to, registry hosts your pod cannot reach, names of nodes a stack cannot land on and why, and - if your cluster serves no IngressClass - **one Service, its namespace and its public load-balancer address**. They also carry: your image-pull Secrets by name, referenced or not, with a ready-to-paste `kubectl create secret docker-registry` line; a managed datastore's host and port with its security posture, **which leaves on a passing check too**; CRD kinds, API groups and cluster-scoped object names; a required Secret's namespace and name; your cluster's Kubernetes version (the raw version string when it will not parse), how many nodes are schedulable out of how many, and the CPU and memory left on them; and, wherever a check could not reach an answer, the Kubernetes API's or the registry's own error text verbatim, cut to the recorded-read-error ceiling below | On request, before a stack is created or installed | A Lerian operator, or the install gate acting for one | Lerian's database, pruned at the report retention below unless an install was signed against it |
 | **A status check's answer** - Helm's status word and revision, the chart and its app version, your workloads by kind and name with their desired and ready counts, **your full pod list with name, phase, readiness, restart count and reason**, and what the cluster refused to answer. This is what a status check sends when it goes RIGHT; the failure row above covers it going wrong | On request | A Lerian operator | The work item, deleted on the same clock as the rows below |
 | **A release's computed values** - everything Helm would use for that release | On request | A Lerian operator | The work item. Deleted by the next sweep after the item expires - the sweep runs on its own interval below. The item's clock starts when it became CLAIMABLE, not when it finished: it runs for the retention window below, extended while the operation is still going, up to the lifetime ceiling below |
@@ -319,4 +319,3 @@ it by hand to start over.
 ## Source
 
 - Chart: [LerianStudio/helm](https://github.com/LerianStudio/helm/tree/main/charts/agent)
-- Agent: [LerianStudio/agent](https://github.com/LerianStudio/agent)

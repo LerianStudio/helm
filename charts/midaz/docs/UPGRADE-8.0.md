@@ -36,7 +36,7 @@ ledger:
     tag: "3.7.2"
 ```
 
-> **Note:** For application-level changes included in version 3.7.2, refer to the [Midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+> **Note:** For application-level changes included in version 3.7.2, refer to the Midaz application changelog.
 
 ### 2. CRM service image tag update
 

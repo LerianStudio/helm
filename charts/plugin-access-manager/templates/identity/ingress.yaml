@@ -1,11 +1,13 @@
 {{- if .Values.identity.ingress.enabled -}}
+{{- $h := include "plugin-identity.health" . | fromYaml -}}
 {{- include "lerian-common.ingress" (dict
       "context" .
-      "ingress" .Values.identity.ingress
+      "ingress" (include "plugin-access-manager.ingress" (dict "ingress" .Values.identity.ingress "global" (.Values.global).ingress) | fromYaml)
       "global" (.Values.global).ingress
       "subdomain" "identity"
       "name" (include "plugin-identity.fullname" .)
       "labels" (printf "%s " (include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name)))
       "svcPort" .Values.identity.service.port
+      "healthcheck" $h.alb
     ) }}
 {{- end }}

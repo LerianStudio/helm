@@ -12,8 +12,10 @@ spec:
     type: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.type }}
     {{- if eq (index .Values "plugin-br-ted-lerian").deploymentUpdate.type "RollingUpdate" }}
     rollingUpdate:
-      maxSurge: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.maxSurge }}
-      maxUnavailable: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.maxUnavailable }}
+      {{- $u := (index .Values "plugin-br-ted-lerian").deploymentUpdate }}
+      maxSurge: {{ $u.maxSurge }}
+      {{- /* Kubernetes refuses both limits at 0: a zero-surge rollout keeps one pod of headroom. */}}
+      maxUnavailable: {{ and (eq (toString $u.maxSurge) "0") (eq (toString $u.maxUnavailable) "0") | ternary 1 $u.maxUnavailable }}
     {{- end }}
   {{- if not (index .Values "plugin-br-ted-lerian").autoscaling.enabled }}
   replicas: {{ (index .Values "plugin-br-ted-lerian").replicaCount }}
@@ -24,15 +26,15 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
         {{- if not (index .Values "plugin-br-ted-lerian").useExistingSecret }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/secrets.yaml") . | fromYaml).stringData | toYaml | sha256sum }}
         {{- end }}
         {{- with (index .Values "plugin-br-ted-lerian").podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name) | nindent 8 }}
+        {{- include "plugin-br-ted-lerian.podLabels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name) | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: {{ (index .Values "plugin-br-ted-lerian").terminationGracePeriodSeconds }}
       {{- with (index .Values "plugin-br-ted-lerian").imagePullSecrets }}

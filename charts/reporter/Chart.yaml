@@ -1,12 +1,12 @@
 apiVersion: v2
 name: reporter-helm
-description: A Helm chart for deploying Golang applications
+description: Installs Lerian Reporter, the manager API and the report-generation worker, with optional MongoDB, RabbitMQ, Valkey and SeaweedFS
 type: application
 annotations:
   lerian.studio/chart-type: multi-component
-home: https://github.com/LerianStudio/reporter/tree/main/deploy/charts/reporter
+home: https://github.com/LerianStudio/helm/tree/main/charts/reporter
 sources:
-  - https://github.com/LerianStudio/reporter/tree/main/deploy/charts/reporter
+  - https://github.com/LerianStudio/helm/tree/main/charts/reporter
   - https://github.com/LerianStudio/reporter
 # A list of maintainers who are responsible for the chart
 maintainers:
@@ -14,9 +14,9 @@ maintainers:
     email: "support@lerian.studio"
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 5.2.0
+version: 5.3.1
 # This is the version number of the application being deployed.
-appVersion: "4.6.0"
+appVersion: "4.8.0"
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
   - midaz
@@ -28,7 +28,7 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 # Dependencies
 dependencies:
   - name: lerian-common-helm
-    version: "2.4.0"
+    version: "2.6.0"
     repository: "oci://ghcr.io/lerianstudio"
   - name: keda
     version: "2.17.1"

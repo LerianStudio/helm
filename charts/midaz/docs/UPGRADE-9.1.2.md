@@ -26,7 +26,7 @@ grafana:
   # This component is responsible for collecting and exporting telemetry data
   # such as traces and metrics, enhancing the monitoring of the application.
   # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack
+  # https://docs.lerian.studio/en/products/midaz/observability-in-midaz
   enabled: false
   name: grafana
   # -- Configure the ingress for Access Grafana Dashboard
@@ -106,7 +106,7 @@ helm get values midaz -n midaz | grep -A 20 "^grafana:"
    helm install grafana grafana/grafana -n midaz
    ```
 
-   Then configure your Midaz observability stack to point to the external Grafana instance. Refer to the [Midaz observability documentation](https://docs.lerian.studio/docs/observability-in-midaz#midaz-observability-stack) for integration details.
+   Then configure your Midaz observability stack to point to the external Grafana instance. Refer to the [Midaz observability documentation](https://docs.lerian.studio/en/products/midaz/observability-in-midaz) for integration details.
 
 3. **If you have no Grafana overrides**, no action is required. The upgrade will proceed without issues.
 

@@ -22,7 +22,7 @@ The chart now defaults to application version `1.2.1` instead of `1.2.0`. Both t
 
 **Why it matters:**
 
-If you are using the default image tag (not overriding `jd-courier.image.tag` in your values), upgrading to v2.1.2 will deploy the `1.2.1` application image. The `1.2.1` release stops requiring a token tenant in single-tenant environments and logs the tenant projection only when it occurs. See the [br-jd-courier v1.2.1 release notes](https://github.com/LerianStudio/br-jd-courier/releases/tag/v1.2.1).
+If you are using the default image tag (not overriding `jd-courier.image.tag` in your values), upgrading to v2.1.2 will deploy the `1.2.1` application image. The `1.2.1` release stops requiring a token tenant in single-tenant environments and logs the tenant projection only when it occurs.
 
 **Migration action:**
 

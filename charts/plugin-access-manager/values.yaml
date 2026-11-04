@@ -67,7 +67,6 @@ global:
       # only nodes whose taints the pod tolerates (e.g. skips a node Karpenter is
       # draining, tainted karpenter.sh/disrupted).
       nodeTaintsPolicy: ""
-
 # Common configuration shared between components
 common:
   # Common secrets and configurations
@@ -112,21 +111,14 @@ common:
     # requirement still applies; it is the binary's, not the chart's.
     allowCustomCallbackPath: false
 identity:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
-  # -- Startup probe configuration. Disabled by default; enable to give slow-starting
-  # pods more time before liveness/readiness probes take over. All fields override chart defaults.
-  startupProbe:
-    enabled: false
-    failureThreshold: 5
-    periodSeconds: 10
-    timeoutSeconds: 10
+  # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain and shutdown env, grace, rollout and PDB.
+  # stack go; tune only health.drainSeconds (default 15) and health.shutdownSeconds (default 30).
+  health:
+    stack: go
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
-  replicaCount: 1
+  replicaCount: 2
   revisionHistoryLimit: 10
   # -- Component name. Empty derives it from the release name (<release>-identity),
   # which is what the cross-component DNS defaults resolve to. Set it only to pin a
@@ -139,7 +131,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.14.0"
+    tag: "3.17.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -168,11 +160,6 @@ identity:
     type: ClusterIP
     # -- Service port
     port: 4001
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   podSecurityContext: {}
   # fsGroup: 2000
 
@@ -192,12 +179,8 @@ identity:
     seccompProfile:
       type: RuntimeDefault
   pdb:
-    # -- Enable or disable PodDisruptionBudget
+    # -- Enable or disable PodDisruptionBudget (maxUnavailable 1 comes from the health preset; setting pdb.minAvailable/maxUnavailable or deploymentStrategy fails the render)
     enabled: true
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
-    # -- Minimum number of available pods
-    minAvailable: 0
     # -- Annotations for PodDisruptionBudget
     annotations: {}
   resources:
@@ -213,7 +196,7 @@ identity:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 2
     # -- Maximum number of replicas
     maxReplicas: 3
     # -- Target CPU utilization percentage for autoscaling
@@ -299,17 +282,10 @@ identity:
   useExistingSecret: false
   existingSecretName: ""
 auth:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
-  # -- Startup probe configuration. Disabled by default; enable to give slow-starting
-  # pods more time before liveness/readiness probes take over. All fields override chart defaults.
-  startupProbe:
-    enabled: false
-    failureThreshold: 5
-    periodSeconds: 10
-    timeoutSeconds: 10
+  # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain and shutdown env, grace, rollout and PDB.
+  # stack go; tune only health.drainSeconds (default 15) and health.shutdownSeconds (default 30).
+  health:
+    stack: go
   # Default values
   # This is a YAML-formatted file.
   # Declare variables to be passed into your templates.
@@ -323,7 +299,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.14.0"
+    tag: "3.17.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -354,11 +330,6 @@ auth:
     type: ClusterIP
     # -- Service port
     port: 4000
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   podSecurityContext: {}
   # fsGroup: 2000
 
@@ -373,14 +344,9 @@ auth:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
-    # -- Enable or disable PodDisruptionBudget
+    # -- Enable or disable PodDisruptionBudget (maxUnavailable 1 comes from the health preset; setting pdb.minAvailable/maxUnavailable or deploymentStrategy fails the render)
     enabled: true
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
-    # -- Minimum number of available pods
-    minAvailable: 0
     # -- Annotations for PodDisruptionBudget
     annotations: {}
   resources:
@@ -472,18 +438,10 @@ auth:
     SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
-  # -- Init User Job: creates the admin user on FIRST INSTALL ONLY (not on
-  # -- upgrades; if deleted by the customer, it is NOT recreated). Disabled
-  # -- by default and intentionally not advertised here — no environment
-  # -- across benedita/anacleto/AWS staging+production relies on the
-  # -- implicit default, every one of them sets this explicitly either way.
-  # -- All defaults (image, adminEmail/adminDisplayName, timeouts, resources)
-  # -- live in templates/auth/init_user.yaml — set initUser.enabled=true and
-  # -- adminPassword (or useExistingSecret + adminPasswordSecretName) to turn
-  # -- it on.
+  # -- Identity >= 3.17.0 asks Caradhras >= 2.1.0 (server and migrations) to create the first Console admin at most once, and only for an organization Caradhras never initialized (see README); deleting users never re-seeds it.
+  # -- Set adminPassword or useExistingSecret + adminPasswordSecretName; adminEmail and adminDisplayName are optional.
   initUser:
     enabled: false
-
 # -- Caradhras: the auth backend/authorization service, promoted to a
 # top-level component sibling of `identity`/`auth` (formerly nested as
 # `auth.backend`, which ran the legacy Casdoor image). Lerian's Caradhras
@@ -512,7 +470,7 @@ caradhras:
   # -- Whether to create database on startup (requires CREATEDB permission).
   # Defaults to false: most DB users granted to caradhras have no CREATEDB
   # privilege, and the target database/schema is typically provisioned ahead
-  # of time (see benedita sandbox permission-denied incident, 2026-08-25).
+  # of time.
   createDatabase: false
   # -- Caradhras (beego) config keys. Names are the beego literals, camelCase:
   # caradhras reads them with conf.GetConfigString, which looks up the exact
@@ -567,6 +525,22 @@ caradhras:
     secretName: ""
     # -- Key inside that Secret.
     secretKey: REDIS_PASSWORD
+  # -- Password for built-in/admin, injected as the beego config key
+  # `builtInAdminPassword` by secretKeyRef, like redisPassword above. Caradhras
+  # reads it only when it first creates the built-in organization (fresh
+  # database) and never changes an existing admin. Unset, a new built-in/admin
+  # gets the public default `123` and caradhras WARNs every hour until it is
+  # changed; a value over 72 bytes (bcrypt's limit) fails the boot before seeding.
+  # Needs Caradhras >= 1.9.0-beta.25 (the chart default image 1.8.6 ignores the key):
+  # the render fails unless caradhras.image.tag is a semver tag >= 1.9.0-beta.25.
+  builtInAdminPassword:
+    # -- Opt-in. Off by default.
+    enabled: false
+    # -- Secret holding the password. Required when enabled: no Secret this
+    # chart creates carries it.
+    secretName: ""
+    # -- Key inside that Secret.
+    secretKey: builtInAdminPassword
   service:
     # -- Kubernetes service type for the caradhras component
     type: ClusterIP
@@ -640,7 +614,7 @@ caradhras:
       # -- otherwise defaults to 1.8.6 in templates/_helpers.tpl.
       # -- Independent of caradhras.image.tag: override both when changing versions.
       tag: ""
-    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests (e.g. cross). Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
+    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests. Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
     skipRBACChain: false
     # -- Extra env vars for the migrate init container only, as a NAME: value map
     # -- (rendered as name/value pairs, values quoted). Chart-owned names (POSTGRES_HOST/PORT/DB/
@@ -657,11 +631,10 @@ caradhras:
   # -- per component with caradhras.ui.spread / caradhras.ui.topologySpreadConstraints.
   ui:
     enabled: false
-
 auth-database:
   # Database dependency for identity and access management.
   # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-security#identity-management-with-casdoor
+  # https://docs.lerian.studio/en/platform/access-manager/am-components
   enabled: true
   global:
     security:
@@ -679,7 +652,8 @@ auth-database:
     database: "casdoor"
     # -- Secret with the password. The default points the subchart at the one this chart keeps across
     # uninstall (templates/auth-database/secrets.yaml); this chart's own templates read it as empty.
-    existingSecret: '{{ if eq .Chart.Name "auth-database" }}{{ include "common.names.fullname" . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "auth-database" }}{{ include "common.names.fullname"
+      . }}{{ end }}'
   primary:
     persistence:
       size: 8Gi
@@ -705,8 +679,6 @@ auth-database:
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
   global:
     security:

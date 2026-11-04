@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: None for the default render, which is **not** a working installation. A working installation requires per-component Postgres DSNs, `LICENSE_KEY` outside `local` mode, and `SYSTEMPLANE_SECRET_MASTER_KEY` on the Systemplane components in the modes listed under [Required before installation](#required-before-installation). Credential-bearing DSNs, URLs, tokens, and passwords belong in a component's `secrets` block or an existing Secret — never in `configmap`.
+- Required secrets: None for the default render, which is **not** a working installation. A working installation requires per-component Postgres DSNs and `LICENSE_KEY` outside `local` mode; see [Required before installation](#required-before-installation). Credential-bearing DSNs, URLs, tokens, and passwords belong in a component's `secrets` block or an existing Secret — never in `configmap`.
 - Dependency notes: PostgreSQL, Valkey, and RabbitMQ ship as local subcharts that are **disabled by default**. Production points the components at externally managed services.
 - Production overrides: Per-component `secrets` (or `useExistingSecret` + `existingSecretName`), `global.externalPostgresDefinitions`, `PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, and the ingress blocks. An existing Secret **replaces** the chart-rendered Secret for that component; it is not merged.
 - Source/license: Source is in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm); chart license is Elastic License 2.0.
@@ -14,14 +14,14 @@ BACEN-compliant Pix platform for the Lerian ecosystem.
 
 This chart manages 14 independently deployable Pix Lerian workloads. Each gets its own Deployment, Service, ConfigMap, Secret, ServiceAccount, and — where configured — HPA and PodDisruptionBudget. Ingress is opt-in, disabled by default on all three surfaces.
 
-**The default render is not a working installation.** `helm template` with no values succeeds, but validates structure only. With defaults: 8 of the 14 workloads are disabled (including `dictProxy` and `cobProxy`); no Postgres DSN is set, so **no migration Job is rendered** and the schemas are never applied; PostgreSQL, Valkey, RabbitMQ, the external-Postgres bootstrap, and all three ingresses are off; and `LICENSE_KEY` is empty while `DEPLOYMENT_MODE` defaults to `byoc`, which the applications refuse.
+**The default render is not a working installation.** `helm template` with no values succeeds, but validates structure only. With defaults: 6 of the 14 workloads are disabled (including `dictProxy` and `cobProxy`); no Postgres DSN is set, so **no migration Job is rendered** and the schemas are never applied; PostgreSQL, Valkey, RabbitMQ, the external-Postgres bootstrap, and all three ingresses are off; and `LICENSE_KEY` is empty while `DEPLOYMENT_MODE` defaults to `byoc`, which the applications refuse.
 
 ## Compatibility
 
 | Chart version | App image tag |
 |---|---|
-| 1.1.0 | 1.1.0 |
-| 1.0.0 | 1.0.0 |
+| 1.0.2, 2.0.x | 1.1.0 |
+| 1.0.0, 1.0.1 | 1.0.0 |
 
 The row above covers this chart only. There is no in-place upgrade path from any earlier chart — moving to this chart is a fresh install (cutover), not a `helm upgrade`, and a cutover does not migrate or copy data. See [Upgrade and rollback](#upgrade-and-rollback).
 
@@ -62,15 +62,15 @@ dictProxy: { enabled: false }
 
 | Value | Where | On which workloads |
 |---|---|---|
-| `DATABASE_URL` | `secrets` | `spi`, `dictHub`, `dictHubVsync`, `cobHub` — **no DSN means no migration Job, so no schema** |
+| `DATABASE_URL` | `secrets` | `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto` — **no DSN means no migration Job, so no schema** |
 | `SYSTEMPLANE_POSTGRES_DSN` | `secrets` | the enabled `*Systemplane` workloads |
 | `LICENSE_KEY` | `secrets` | every enabled workload (`DEPLOYMENT_MODE` is not `local`) |
 | `ORGANIZATION_IDS` | `configmap` | with `LICENSE_KEY`, on the eight license-client workloads |
 | `ORGANIZATION_ID`, `ISPB` | `configmap` | the domain application **and** its `*Systemplane` workload |
-| `SYSTEMPLANE_SECRET_MASTER_KEY` | `secrets` | `spiSystemplane`, `dictSystemplane`, `cobSystemplane`, `pixautoSystemplane` |
 | `RABBITMQ_URI` | `secrets` | `dictHubVsync` — hard requirement; the render fails without it |
 | `REDIS_HOST` | `configmap` | `dictHubVsync` — hard requirement; plus `REDIS_PASSWORD` in `secrets` when the instance is authenticated |
 | `ADAPTER_BASE_URL` and the `*_BASE_URL` family | `configmap` | the domain application **and** its `*Systemplane` workload |
+| `PLUGIN_AUTH_ENABLED: "true"`, `PLUGIN_AUTH_HOST` | `configmap` | each enabled domain application **and** its `*Systemplane` workload |
 
 Supply every secret from a Secret your own secret manager populates, created **before** `helm install` because migration hooks run first. See [Production secret management](#production-secret-management).
 
@@ -108,7 +108,7 @@ kubectl get pods -n <namespace> -l app.kubernetes.io/instance=<release-name>
 kubectl get jobs -n <namespace> -l app.kubernetes.io/instance=<release-name>
 
 # Successful hook Jobs are deleted by Helm (hook-succeeded), so an empty list after a
-# good install is normal. A FAILED Job is kept: look for it here
+# good install is normal. A FAILED Job stays for ttlSecondsAfterFinished (300 s by default): look for it here
 kubectl get jobs -n <namespace> -o name | grep migrations
 
 # First place a failed install explains itself
@@ -130,7 +130,7 @@ The single list; later sections link here instead of restating it.
 | Requirement | When |
 |---|---|
 | **Kubernetes 1.23+** and **Helm 3.10+** | Always |
-| **GHCR access** — a credential that can pull the chart and the 14 `ghcr.io/lerianstudio/plugin-br-pix-lerian-*` images | Always |
+| **GHCR access** — a credential that can pull the chart and the 14 `ghcr.io/lerianstudio/plugin-br-pix-lerian-*` images (the `adapterProviderMock` image is not public: ask Lerian for read access before enabling it) | Always |
 | **A namespace**, created before install, plus an image pull secret in it named in `global.imagePullSecrets` | Always |
 | **PostgreSQL** reachable from the cluster, with the databases and role from [Database bootstrap and migrations](#database-bootstrap-and-migrations) | Always |
 | **Permission to create Jobs** — bootstrap and migrations both run as Jobs | Always |
@@ -189,8 +189,6 @@ Ports 4111, 4112, and 4114 are intentionally unused. A Systemplane workload's pr
 
 Each workload pulls its own image, `ghcr.io/lerianstudio/plugin-br-pix-lerian-<component>-api`, set under `<component>.image.repository`. Workers omit the `-api` suffix — `dictHubVsync` pulls `plugin-br-pix-lerian-dict-hub-vsync`. There is no shared `global.image`; a `global.image.tag` is accepted by the schema and then ignored.
 
-The application also ships an adapter consumer entrypoint that this chart does not model. If your integration needs it, deploy it outside this chart.
-
 ### Hub and proxy are not interchangeable
 
 Each domain picks a tier. A **hub** owns the domain's business logic and its local state — its own database, and Valkey on some components. A **proxy** fronts a provider that already owns that state, so it keeps no local business state. Which tier fits follows the provider's capability. **The domains are independent:** setting DICT to proxy does not affect COB, so DICT-on-proxy with COB-on-hub is valid in the model.
@@ -209,7 +207,7 @@ Routing mode accepts `hub` and `proxy`, defaulting to `hub`. **Leave it at `hub`
 
 ### Development-only components
 
-`adapterLerian` / `adapterLerianSystemplane` — **Development only.** `adapterLerian` **fails to boot when `DEPLOYMENT_MODE` is anything other than `local`.** The default is `byoc` and the workload ships disabled, so nothing breaks out of the box; enabling it in `byoc` or `saas` crash-loops the pod. The `pix-adapter-lerian` database is still created by the bootstrap Job, because the database list is fixed.
+`adapterLerian` / `adapterLerianSystemplane` — **Development only.** `adapterLerian` **fails to boot when `DEPLOYMENT_MODE` is anything other than `local`.** The default is `byoc` and the workload ships disabled, so nothing breaks out of the box; enabling it in `byoc` or `saas` crash-loops the pod. The `pix-adapter-lerian` database is still created by the bootstrap Job, because the default `databases` list does not depend on which workloads are enabled.
 
 `adapterProviderMock` — **Development only**, shipped `enabled: false`. A provider test double for development and homologation: it stands in for a real provider so the rest of the platform can be exercised end to end without one. Its default target is the Lerian sandbox mock server:
 
@@ -219,7 +217,7 @@ adapterProviderMock:
     PROVIDER_BASE_URL: "https://mock-pix-lerian-server.sandbox.lerian.net"
 ```
 
-Because the component ships disabled, that default reaches no installation that does not enable it explicitly. Override it only to target your own mock server. These settings cannot get a default, because they identify *your* sandbox access, which you receive together with them:
+The `plugin-br-pix-lerian-adapter-provider-mock-api` image is not public: to enable the component, ask Lerian for read access and name a ghcr.io pull secret in `global.imagePullSecrets` (or `adapterProviderMock.imagePullSecrets`). Because the component ships disabled, that default reaches no installation that does not enable it explicitly. Override it only to target your own mock server. These settings cannot get a default, because they identify *your* sandbox access, which you receive together with them:
 
 | Setting | Where | Notes |
 |---|---|---|
@@ -265,7 +263,7 @@ Notes on the entries above:
 | `dictHubVsync` + Valkey/RabbitMQ | Both hard requirements. The chart **fails the render** without `RABBITMQ_URI`. In multi-tenant the shared connection is not opened and `RABBITMQ_URI` is not consulted — queues live in per-tenant vhosts |
 | `dictHub` + RabbitMQ | Publish-only and **off unless you set it**; the chart does not ship the key. It only accelerates reconciliation dispatch. An unavailable broker warns and continues on the backstop |
 | `adapterLerian` + Valkey | Required once its DLQ admin surface is active, gated by Kafka broker configuration. Moot — the workload is `Development only` |
-| Streaming | `spi`, `dictHub`, `cobHub`, `pixauto` can emit CloudEvents, **off by default**; only `pixauto` ships the `STREAMING_*` keys. Leave `STREAMING_CLOUDEVENTS_SOURCE` empty — a non-empty value that does not match the application's own source refuses the boot **whether or not streaming is enabled**. Streaming enabled without brokers also refuses the boot |
+| Streaming | `spi`, `dictHub`, `cobHub`, `pixauto` can emit CloudEvents, **off by default**. Do not set `STREAMING_CLOUDEVENTS_SOURCE` on `spi`, `dictHub` or `cobHub`: the chart sets it to `plugin-br-pix-lerian`. On `pixauto` the chart sets it empty, and an empty source refuses the boot once streaming is enabled: set `pixauto.configmap.STREAMING_CLOUDEVENTS_SOURCE: "plugin-br-pix-lerian"` there. Any other non-empty value that does not match the application's own source refuses the boot **whether or not streaming is enabled**. Streaming enabled without brokers also refuses the boot |
 | `MULTI_TENANT_REDIS_*` on `dictHubVsync` | A **separate** Redis from the cache the `REDIS_*` keys point at, where the Tenant Manager publishes tenant lifecycle events. Pointing both at one instance makes tenant changes invisible to the worker. Optional — discovery then falls back to the periodic sweep. The CA certificate, when used, is base64-encoded PEM |
 
 ## Required before installation
@@ -291,10 +289,9 @@ Set these before `helm install`. **"Required" does not mean the same thing on ev
 | `ISPB` | `configmap` | Readiness | Single-tenant identity on `spi`, `dictHub`, `dictHubVsync`. Required to reach ready — see [Health and readiness reference](#health-and-readiness-reference). |
 | `DATABASE_URL` | `secrets` | Application boot | **Required** on `spi`, `dictHub`, `dictProxy`, `cobProxy` in every mode. **Required in single-tenant only** on `cobHub`, `dictHubVsync`, `pixauto`. Not used by `adapterLerian`, `adapterProviderMock`. |
 | `SYSTEMPLANE_POSTGRES_DSN` | `secrets` | Application boot | On the five Systemplane workloads, **one of** this or `DATABASE_URL` is required, and this one **wins** when both are set. **Required** on `adapterLerian` and `pixauto`. On other workloads it is optional and falls back to `DATABASE_URL`. |
-| `SYSTEMPLANE_SECRET_MASTER_KEY` | `secrets` | Application boot | **Required, and must be non-empty**, on `spiSystemplane`, `dictSystemplane`, `cobSystemplane`, `pixautoSystemplane` whenever `ENV_NAME` is not `local` or `development`; and on `adapterLerianSystemplane` whenever `DEPLOYMENT_MODE` is not `local`. Note the two gates differ. See [the note below](#about-systemplane_secret_master_key). |
 | `MULTI_TENANT_ENABLED` | `configmap` | Application boot | Defaults to `false`. See [Multi-tenant configuration](#multi-tenant-configuration). |
-| `MULTI_TENANT_URL`, `MULTI_TENANT_API_KEY` | `configmap` / `secrets` | Application boot | **Required when `MULTI_TENANT_ENABLED=true`** on the five Systemplane workloads, `cobHub`, `dictHubVsync`, `pixauto`, `adapterLerian`. `dictSystemplane` and `cobSystemplane` do **not** ship these keys — add them through the open maps. |
-| `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | `configmap` | Application boot / Security posture | Defaults to `false` / an in-cluster placeholder. When enabled, `PLUGIN_AUTH_HOST` **must be non-empty** or the workload refuses to start. **Required to be `true`** on `pixauto` whenever `ENV_NAME` is not `local` or `development`. |
+| `MULTI_TENANT_URL`, `MULTI_TENANT_SERVICE_API_KEY` | `configmap` / `secrets` | Application boot | **Required when `MULTI_TENANT_ENABLED=true`** on the five Systemplane workloads, `cobHub`, `dictHubVsync`, `pixauto`, `adapterLerian`. |
+| `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | `configmap` | Application boot / Security posture | Defaults to `false` / an in-cluster placeholder. When enabled, `PLUGIN_AUTH_HOST` **must be non-empty** or the workload refuses to start. **Required to be `true`** on `pixauto` whenever `ENV_NAME` is not `local` or `development`; in single-tenant, set it on `pixautoSystemplane` too. |
 | `RABBITMQ_URI` | `secrets` | Render | **Required when `dictHubVsync` is enabled.** The render fails without it. |
 | `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET` | `secrets` | Application boot | **Required when `adapterProviderMock` is enabled** — it does not start without both. Issued with your sandbox access; see [Development-only components](#development-only-components). |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_USER`, `REDIS_DB`, `REDIS_TLS` | `configmap` | Application boot / Optional degradation | The discrete keys the application actually reads for its cache, emitted by the `redis` datastore mask on `spi`, `dictHub`, `dictHubVsync`, `cobHub`, `pixauto`, `adapterLerian`. `REDIS_HOST` is what marks the cache configured: **required** on `dictHubVsync`, which does not start without it; optional on `spi`, `dictHub`, `cobHub`, `pixauto`, where its absence degrades the cache rather than failing the workload. Set them per component, or once for the whole release under `global.datastores.redis`. `REDIS_HOST` is also what the `wait-for-dependencies` init container probes with `nc -z` before the app container starts; a loopback host (the unset default `localhost`) is read as "no cache" and the probe is skipped, so an unconfigured lane rolls out normally. A `REDIS_HOST` pointing at an unreachable host is the one way this bites: the init container retries for five minutes and then fails, so the Pod never starts. |
@@ -302,12 +299,6 @@ Set these before `helm install`. **"Required" does not mean the same thing on ev
 | `ADAPTER_BASE_URL` | `configmap` | First request | Not validated at startup, so a missing value surfaces as rejected requests at runtime rather than a failed rollout. Include the provider's route prefix. |
 
 Setting a key a workload does not read has no effect. `configmap`, `secrets`, and `extraEnvVars` are open maps: the chart passes any key straight to the container, but **that is not proof the binary reads or validates it**. Unknown keys are ignored silently. Use only keys documented for that workload and this version.
-
-### About `SYSTEMPLANE_SECRET_MASTER_KEY`
-
-- **No format and no length is validated by this release.** Do not infer a required encoding or size.
-- Supply it from an existing Secret; see [Production secret management](#production-secret-management).
-- It is checked at every boot, so keep the same value across upgrades — otherwise a rollout needs the new value supplied everywhere first.
 
 ## Production secret management
 
@@ -425,6 +416,7 @@ Set the same values on both the domain application **and** its Systemplane workl
 
 - Identity: `ORGANIZATION_ID`, `ISPB`
 - Dependency addresses: `ADAPTER_BASE_URL`, and the `*_BASE_URL` / `*_CLIENT_ID` / `*_CLIENT_SECRET` families
+- Authentication: `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST`
 
 The Systemplane workload seeds these into the configuration store and the applications read them back. Readiness is gated on the store, so a workload can run with correct environment values and still report itself not ready if the domain's Systemplane workload was never given them.
 
@@ -432,7 +424,7 @@ The Systemplane workload seeds these into the configuration store and the applic
 
 With `MULTI_TENANT_ENABLED: "true"`, four requirements change — the per-workload lists are in [Required before installation](#required-before-installation):
 
-- `MULTI_TENANT_URL` and `MULTI_TENANT_API_KEY` become **required**. `dictSystemplane` and `cobSystemplane` do not ship these keys — add them through the open maps.
+- `MULTI_TENANT_URL` and `MULTI_TENANT_SERVICE_API_KEY` become **required**.
 - `DEPLOYMENT_MODE` must be **explicitly set**; an implicit mode is refused.
 - `ORGANIZATION_ID` **must be empty** on `cobHub` and `pixauto`. A value there refuses the boot, because a deployment-wide organization could only act as a cross-tenant fallback.
 - `DATABASE_URL` stops being required on the workloads that resolve per-tenant pools instead.
@@ -474,7 +466,7 @@ Seeding rules:
 - **The seed only replaces a value still at its registered default.** A value an administrator has already changed is preserved — re-deploying with a different environment value will **not** overwrite it.
 - A value the key's validator rejects is dropped silently.
 
-The boot snapshot is skipped, leaving the environment value in place, when: the deployment is multi-tenant; no store is reachable (no DSN, or a connection failure — logged as a warning, and the workload continues); the stored value is empty or absent; or it has the wrong type. `adapterLerian` has **no boot snapshot at all** — it reads the store per request.
+The boot snapshot is skipped, leaving the environment value in place, when: the deployment is multi-tenant; no store is reachable (no DSN, or a connection failure — logged as a warning, and the workload continues); the stored value is empty; or it has the wrong type. `adapterLerian` has **no boot snapshot at all** — it reads the store per request.
 
 Which keys need a restart:
 
@@ -511,12 +503,12 @@ The chart reserves the pod annotation carrying the ConfigMap/Secret checksum, wh
 
 ## Authentication
 
-`PLUGIN_AUTH_ENABLED=true` with a resolvable `PLUGIN_AUTH_HOST` mounts per-route authorization on the business and machine-to-machine routes of the workloads that carry it. It does not cover probes, OpenAPI routes, the `*Systemplane` administrative APIs, or the provider mock — those need network-level controls from your platform.
+`PLUGIN_AUTH_ENABLED=true` with a resolvable `PLUGIN_AUTH_HOST` mounts per-route authorization on the business and machine-to-machine routes of the workloads that carry it. In single-tenant mode a domain application takes the toggle from the store its Systemplane workload seeds, so set both keys on that Systemplane workload too ([Single-tenant configuration](#single-tenant-configuration)). It does not cover probes, OpenAPI routes, or the provider mock — those need network-level controls from your platform.
 
 - **The default is `false`.** Configure nothing and you get an unauthenticated surface. Set it explicitly before exposing any route.
 - **Keep `systemplaneIngress.enabled: false`,** the default. Restrict the administrative API with NetworkPolicies or equivalent.
 - **API docs are served only in `local` and `development`.** With `SWAGGER_ENABLED` unset, OpenAPI and docs routes are mounted only when `ENV_NAME` is `local` or `development` (case and surrounding spaces ignored); the `production` default and every other value leave them off. Set `SWAGGER_ENABLED` to override. App `1.1.0` predates this rule and serves them unless `ENV_NAME` is exactly `production`.
-- **An unreachable `PLUGIN_AUTH_HOST` denies requests rather than allowing them.** The URL format is not validated, so the symptom is a permissions failure at request time, not a boot failure.
+- **An unreachable `PLUGIN_AUTH_HOST` denies requests rather than allowing them.** The symptom is a permissions failure at request time, not a boot failure.
 
 ## Ingress and service URLs
 
@@ -567,6 +559,11 @@ spi:
   configmap:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_HOST: "<access-manager-url>"
+
+spiSystemplane:
+  configmap:
+    PLUGIN_AUTH_ENABLED: "true"
+    PLUGIN_AUTH_HOST: "<access-manager-url>"
 ```
 
 A proxy workload your topology requires is configuration only — it gains no business routes. Give it a DSN and a license key, keep callers' routing modes at `hub`, and do not point client traffic at it. See [Hub and proxy are not interchangeable](#hub-and-proxy-are-not-interchangeable).
@@ -611,7 +608,7 @@ Every entry below uses the commands in [step 5 of the quickstart](#verify); only
 | `CreateContainerConfigError`, or a workload failing on a variable you believe you set | Your Secret does not exist yet or lacks the key. **An existing Secret replaces the chart's Secret entirely; there is no merge**, so anything left in `<component>.secrets` is not applied | Put that workload's complete set of secret keys into your Secret and create it **before** `helm install`. Inspect it with `kubectl get secret -n <namespace> <name> -o jsonpath='{.data}'` |
 | Business requests return 404 through the ingress | A wrong path prefix, or traffic reaching a proxy, which serves no business routes in this release | Check the [health and readiness table](#health-and-readiness-reference) for the prefix — a Systemplane workload's is its **domain** prefix — and confirm the route's backend is the hub |
 | Requests return 403 `TENANT_CONFIG_NOT_FOUND` | The calling tenant has no configuration, is missing required keys, or the request carried no resolvable tenant. **There is no global fallback**; the path fails closed by design | Provision that tenant's configuration before sending traffic. The log line names the cause and the missing keys |
-| An ingress is published while `PLUGIN_AUTH_ENABLED` is false, and the render succeeded anyway | The render check covers one workload only, and is blind when `useExistingSecret: true` | Set `PLUGIN_AUTH_ENABLED: "true"` and a resolvable `PLUGIN_AUTH_HOST` on every published workload, keep `systemplaneIngress.enabled: false`, and restrict the admin surface at the network layer. See [Ingress and service URLs](#ingress-and-service-urls) |
+| An ingress is published while `PLUGIN_AUTH_ENABLED` is false, and the render succeeded anyway | The render check covers one workload only, and is blind when `useExistingSecret: true` | Set `PLUGIN_AUTH_ENABLED: "true"` and a resolvable `PLUGIN_AUTH_HOST` on every published workload and on its Systemplane workload, keep `systemplaneIngress.enabled: false`, and restrict the admin surface at the network layer. See [Ingress and service URLs](#ingress-and-service-urls) |
 
 ### Workload refuses to start, log names a variable
 
@@ -622,11 +619,10 @@ Every entry below uses the commands in [step 5 of the quickstart](#verify); only
 | `LICENSE_KEY` | Set it on that workload. |
 | the license client failing to initialise | Set `ORGANIZATION_IDS` — `global` for a single-license deployment. |
 | `DATABASE_URL` / a Postgres DSN | Set `DATABASE_URL` or `SYSTEMPLANE_POSTGRES_DSN` per the [requirements table](#required-before-installation). |
-| `SYSTEMPLANE_SECRET_MASTER_KEY` | Set a non-empty value on that Systemplane workload. |
-| `MULTI_TENANT_URL` / `MULTI_TENANT_API_KEY` | Required when `MULTI_TENANT_ENABLED=true`. `dictSystemplane` and `cobSystemplane` need the keys added through their open maps. |
+| `MULTI_TENANT_URL` / `MULTI_TENANT_SERVICE_API_KEY` | Required when `MULTI_TENANT_ENABLED=true`. |
 | `DEPLOYMENT_MODE` must be explicitly set | Set it on that workload; multi-tenant does not accept an implicit mode. |
 | `ORGANIZATION_ID` must be empty | Remove it from `cobHub` / `pixauto` in multi-tenant mode. |
-| `PLUGIN_AUTH_ENABLED` must be true | On `pixauto` outside `local`/`development`, enable auth or set `ENV_NAME` accordingly. |
+| `PLUGIN_AUTH_ENABLED` must be true | On `pixauto` outside `local`/`development`, enable auth or set `ENV_NAME` accordingly; in single-tenant, set the same value on `pixautoSystemplane` too. |
 
 Also check the mode value itself: it is matched **case-sensitively and untrimmed**, so `SAAS` or a trailing space is not the mode you meant.
 
@@ -698,7 +694,7 @@ What a rollback does:
 
 The consequence decides whether a rollback is usable at all: **the image you roll back to has to be compatible with the schema that is already applied.** Where it is, the rollback is a clean way back. Where it is not, restoring the manifests will not make the older binary work — recovering needs a restore from the backup you took before upgrading, or a hand-applied down migration.
 
-Inspect hook Jobs before rolling back, so you know which migration last ran; a failed migration Job is kept rather than cleaned up, precisely so its log is still there. Keep `SYSTEMPLANE_SECRET_MASTER_KEY` unchanged across upgrades and rollbacks — it is checked at every boot, so a revision that does not carry it will not start.
+Inspect hook Jobs before rolling back, so you know which migration last ran; a failed migration Job is deleted with its log `migrations.ttlSecondsAfterFinished` seconds (300 by default) after it fails.
 
 ## Uninstall and residual resources
 

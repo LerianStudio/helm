@@ -46,6 +46,9 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            {{- with .Values.worker.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "plugin-worker.fullname" . }}
@@ -54,6 +57,9 @@ spec:
           env:
           - name: HOME
             value: /tmp
+          # A Job pod has no Service to drain from.
+          - name: SHUTDOWN_DRAIN_DELAY
+            value: 0s
           {{- include "reporter.mongoPasswordEnv" (dict "context" $ "secretName" (ternary .Values.worker.existingSecretName (include "plugin-worker.fullname" .) .Values.worker.useExistingSecret)) | nindent 10 }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
@@ -79,6 +85,9 @@ spec:
         volumes:
           - name: tmp
             emptyDir: {}
+        {{- with .Values.worker.extraVolumes }}
+        {{- toYaml . | nindent 10 }}
+        {{- end }}
         {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
         {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" "reporter-iam-tls") | trimPrefix "volumes:\n" | nindent 8 }}
         {{- end }}

@@ -19,9 +19,9 @@
 
 ## Overview
 
-This guide covers the `notifications` chart (published as `notifications-helm`; formerly `lerian-notification` / `lerian-notification-helm`) upgrade from `0.1.0` to `1.0.0-beta.4`. The changes described below were introduced up to `1.0.0-beta.3`. The application image (`appVersion: 0.1.0`) is unchanged, but the chart is now production-shaped: the migrations Job is rewritten for distroless, the security context defaults align with the Kubernetes Pod Security Standards restricted profile, and several rendering bugs (HPA, PDB, Redis defaults) are fixed.
+This guide covers the `notifications` chart (published as `notifications-helm`; formerly `lerian-notification` / `lerian-notification-helm`) upgrade from `0.1.0` to `1.0.0`. The changes described below were introduced up to `1.0.0-beta.3`. The chart now deploys the ghcr `notifications` images at `1.1.0` (`appVersion: "1.1.0"`), the api binds `0.0.0.0:8080`, and `secrets.LICENSE_KEY` is required (the render refuses without it unless `secretRef.name` points at an existing Secret carrying `LICENSE_KEY`). The chart is now production-shaped: the migrations Job is rewritten for distroless, the security context defaults align with the Kubernetes Pod Security Standards restricted profile, and several rendering bugs (HPA, PDB, Redis defaults) are fixed.
 
-This is a **breaking** chart upgrade. A new value, `secrets.DATABASE_URL`, is required when `migrations.enabled` is true. Read [Migration Steps](#migration-steps) before upgrading.
+This is a **breaking** chart upgrade. A new value, `secrets.DATABASE_URL`, is required when `migrations.enabled` is true. Images also move from `docker.io` to `ghcr.io/lerianstudio` at `1.1.0`. Read [Migration Steps](#migration-steps) before upgrading.
 
 ## Features
 
@@ -119,8 +119,10 @@ Chart files modified between `0.1.0` and `1.0.0-beta.3` (paths as they are now; 
 2. **Check your Redis settings.** If you explicitly set `REDIS_MIN_RETRY_BACKOFF` or `REDIS_MAX_RETRY_BACKOFF`, the chart defaults are now correct; remove your override if you were working around the old bug.
 3. **Audit any HPA override.** If you set `api.autoscaling.enabled: true` without `targetCPUUtilizationPercentage` or `targetMemoryUtilizationPercentage`, the upgrade will now `helm template`-fail with a clear message rather than rendering an invalid HPA. Add at least one target.
 4. **Re-check PDB intent.** If you previously set `api.pdb.maxUnavailable: 0` and relied on the buggy fall-through to `minAvailable`, the chart will now honor `0` literally and block all disruptions. Switch to `minAvailable` if that was unintended.
-5. Review the rendered diff using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
-6. Run the upgrade. The migrations Job runs as a `pre-install` / `pre-upgrade` hook; verify it completed before checking app pods:
+5. **Allow the new image registry.** Images move from `docker.io` to `ghcr.io/lerianstudio` at `1.1.0`; make sure your cluster can pull from ghcr.io.
+6. **Set `secrets.LICENSE_KEY`.** It is now required: the render refuses without it, unless `secretRef.name` points at an existing Secret holding a `LICENSE_KEY` key.
+7. Review the rendered diff using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
+8. Run the upgrade. The migrations Job runs as a `pre-install` / `pre-upgrade` hook; verify it completed before checking app pods:
 
 ```bash
 kubectl get jobs -n notifications
@@ -133,7 +135,7 @@ kubectl rollout status -n notifications deploy/<api-deployment-name>
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.0.0-beta.4 -n notifications
+helm diff upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.0.0 -n notifications
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -141,6 +143,6 @@ helm diff upgrade notifications oci://registry-1.docker.io/lerianstudio/notifica
 ## Command to upgrade
 
 ```bash
-helm upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.0.0-beta.4 -n notifications
+helm upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.0.0 -n notifications
 ```
 <!-- {% endraw %} -->

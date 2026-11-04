@@ -11,10 +11,11 @@ import unittest
 import yaml
 
 CHART = Path(__file__).resolve().parents[1]
+CARADHRAS_2_1 = {'image': {'tag': '2.1.0'}, 'migrations': {'image': {'tag': '2.1.0'}}}
 BASE = {
-    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'},
+    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'},
              'initUser': {'enabled': False}},
-    'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only'}},
+    'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'}},
 }
 
 
@@ -76,19 +77,31 @@ class StartupContract(unittest.TestCase):
 
     def test_default_images_and_no_scale_to_zero(self):
         docs = self.succeeds({})
-        images = [c['image'] for d in docs if d['kind'] == 'Deployment'
-                  for c in d['spec']['template']['spec']['containers']]
-        self.assertIn('ghcr.io/lerianstudio/plugin-auth:3.14.0', images)
-        self.assertIn('ghcr.io/lerianstudio/plugin-identity:3.14.0', images)
-        self.assertIn('ghcr.io/lerianstudio/caradhras:1.8.6', images)
-        init_images = [c['image'] for d in docs if d['kind'] == 'Deployment'
-                       for c in d['spec']['template']['spec'].get('initContainers', [])]
-        self.assertIn('ghcr.io/lerianstudio/caradhras-migrations:1.8.6', init_images)
+        values = yaml.safe_load((CHART / 'values.yaml').read_text())
+        app_version = str(yaml.safe_load((CHART / 'Chart.yaml').read_text())['appVersion'])
+        for component in ('auth', 'identity'):
+            image = values[component]['image']
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-' + component))
+            self.assertEqual(deployment['spec']['template']['spec']['containers'][0]['image'],
+                             f"{image['repository']}:{image.get('tag') or app_version}")
+        image = values['caradhras']['image']
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        self.assertEqual(deployment['spec']['template']['spec']['containers'][0]['image'],
+                         f"{image['repository']}:{image['tag']}")
+        override = {'caradhras': {'migrations': {'image': {
+            'repository': 'example.test/migrations', 'tag': 'render-test'}}}}
+        deployment = next(d for d in self.succeeds(override) if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        migrate = next(c for c in deployment['spec']['template']['spec']['initContainers']
+                       if c['name'] == 'migrate')
+        self.assertEqual(migrate['image'], 'example.test/migrations:render-test')
         for d in docs:
             if d['kind'] == 'HorizontalPodAutoscaler':
                 self.assertGreaterEqual(d['spec']['minReplicas'], 1)
 
-    def test_probes_outwait_checks_and_caradhras_drains(self):
+    def test_probes_use_the_health_port_and_caradhras_drains(self):
         docs = self.succeeds({'caradhras': {'ui': {'enabled': True}}})
         for d in docs:
             if d['kind'] != 'Deployment':
@@ -98,8 +111,15 @@ class StartupContract(unittest.TestCase):
             for c in pod['containers']:
                 for kind in ('readinessProbe', 'livenessProbe', 'startupProbe'):
                     if kind in c:
-                        floor = 8 if kind == 'readinessProbe' and name.endswith(('-auth', '-identity')) else 3
-                        self.assertGreaterEqual(c[kind]['timeoutSeconds'], floor, f'{name} {kind}')
+                        self.assertGreaterEqual(c[kind]['timeoutSeconds'], 3, f'{name} {kind}')
+                        if name.endswith(('-auth', '-identity')):
+                            self.assertEqual(c[kind]['httpGet']['port'], 'health', f'{name} {kind}')
+            if name.endswith(('-auth', '-identity')):
+                env = {e['name']: e['value'] for e in pod['containers'][0]['env'] if 'value' in e}
+                self.assertEqual((env['HEALTH_PORT'], env['SHUTDOWN_DRAIN_DELAY'], env['SHUTDOWN_TIMEOUT']), ('8099', '15s', '30s'))
+                self.assertEqual(pod['terminationGracePeriodSeconds'], 55)
+                self.assertNotIn('initContainers', pod)
+                self.assertEqual(d['spec']['strategy']['rollingUpdate']['maxUnavailable'], 0)
             if name.endswith('-caradhras'):
                 self.assertIn('sleep', pod['containers'][0]['lifecycle']['preStop']['exec']['command'])
                 self.assertGreaterEqual(pod['terminationGracePeriodSeconds'], 55)
@@ -214,15 +234,20 @@ class StartupContract(unittest.TestCase):
         values['identity']['configmap']['AUTH_M2M_JWKS_URL'] = 'http://[2001:db8::1]/keys'
         self.crash_loops(values, 'identity')
 
-    def test_image_before_the_gate_is_not_checked(self):
+    def test_image_gate(self):
         prod = {'global': {'env': {'name': 'production'}}}
-        for tag in ['3.1.0', 'v3.2.9', '3.2.9-rc.1', '3.2.0@sha256:' + '0' * 64]:
+        # Below the first image that serves the health port the render refuses; a digest is not compared.
+        for tag in ['3.1.0', 'v3.2.9', '3.2.9-rc.1', '3.16.0-beta.4']:
             with self.subTest(tag=tag):
                 values = copy.deepcopy(prod)
                 values['auth'] = {'image': {'tag': tag}}
                 values['identity'] = {'image': {'tag': tag}}
-                self.succeeds(values)
-        for tag in ['3.3.0-beta.1', '3.9.0', 'latest']:
+                self.fails(values, 'is below 3.16.0-beta.5')
+        values = copy.deepcopy(prod)
+        values['auth'] = {'image': {'tag': '3.2.0@sha256:' + '0' * 64}}
+        values['identity'] = {'image': {'tag': '3.2.0@sha256:' + '0' * 64}}
+        self.succeeds(values)
+        for tag in ['3.16.0-beta.5', '3.16.0', 'latest']:
             with self.subTest(tag=tag):
                 values = copy.deepcopy(prod)
                 values['auth'] = {'image': {'tag': tag}}
@@ -368,21 +393,154 @@ class StartupContract(unittest.TestCase):
                         if 'secretRef' in e]
                 self.assertEqual(refs, ['operator-secret'])
 
+    def test_builtin_admin_password_opt_in(self):
+        def env(docs):
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-caradhras'))
+            return [e for e in deployment['spec']['template']['spec']['containers'][0]['env']
+                    if e['name'] == 'builtInAdminPassword']
+        self.assertEqual(env(self.succeeds({})), [])
+        on = {'caradhras': {'image': {'tag': '2.0.0'}, 'builtInAdminPassword': {'enabled': True}}}
+        self.fails(on, 'caradhras.builtInAdminPassword.secretName is empty')
+        on['caradhras']['builtInAdminPassword']['secretName'] = 'operator-admin'
+        self.assertEqual(env(self.succeeds(on)), [{'name': 'builtInAdminPassword', 'valueFrom': {
+            'secretKeyRef': {'name': 'operator-admin', 'key': 'builtInAdminPassword'}}}])
+        on['caradhras']['builtInAdminPassword'].update(secretName='0123', secretKey='123')
+        self.assertEqual(env(self.succeeds(on))[0]['valueFrom']['secretKeyRef'], {'name': '0123', 'key': '123'})
+
+    def test_builtin_admin_password_needs_a_caradhras_that_reads_it(self):
+        for tag in ('1.8.6', '1.9.0-beta.24', 'latest', 'sha256:abc'):
+            on = {'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
+                'enabled': True, 'secretName': 'operator-admin'}}}
+            self.fails(on, 'pin a Caradhras tag >= 1.9.0-beta.25')
+        self.fails({'caradhras': {'builtInAdminPassword': {'enabled': True, 'secretName': 'x'}}},
+                   'pin a Caradhras tag >= 1.9.0-beta.25')
+        for tag in ('1.9.0-beta.25', '1.9.0-rc.1', '2.0.0'):
+            self.succeeds({'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
+                'enabled': True, 'secretName': 'operator-admin'}}})
+
+    def test_license_key_required(self):
+        for c in ('auth', 'identity'):
+            self.fails({c: {'secrets': {'LICENSE_KEY': ''}}}, f'{c}.secrets.LICENSE_KEY is required')
+            self.succeeds({c: {'secrets': {'LICENSE_KEY': ''}, 'useExistingSecret': True,
+                               'existingSecretName': 'x'}})
+
+    def test_ingress_falls_back_to_global(self):
+        glob = {'global': {'ingress': {'className': 'nginx', 'domain': 'example.test',
+                                       'tls': [{'secretName': 'tls', 'hosts': ['auth.example.test']}]}}}
+        for c in ('auth', 'identity'):
+            docs = self.succeeds({**glob, c: {'ingress': {'enabled': True}}})
+            spec = next(d for d in docs if d['kind'] == 'Ingress')['spec']
+            self.assertEqual(spec['ingressClassName'], 'nginx')
+            self.assertEqual(spec['rules'][0]['host'], f'{c}.example.test')
+            self.assertEqual(spec['tls'][0]['secretName'], 'tls')
+            own = {c: {'ingress': {'enabled': True, 'className': 'alb',
+                                   'hosts': [{'host': 'own.test', 'paths': [{'path': '/', 'pathType': 'Prefix'}]}]}}}
+            spec = next(d for d in self.succeeds({**glob, **own}) if d['kind'] == 'Ingress')['spec']
+            self.assertEqual((spec['ingressClassName'], spec['rules'][0]['host']), ('alb', 'own.test'))
+
     def test_auth_service_exposes_only_ports_the_container_serves(self):
         docs = self.succeeds({})
         service = next(d for d in docs if d['kind'] == 'Service' and d['metadata']['name'].endswith('-auth'))
         deployment = next(d for d in docs if d['kind'] == 'Deployment' and d['metadata']['name'].endswith('-auth'))
-        container_ports = {p['name'] for p in deployment['spec']['template']['spec']['containers'][0]['ports']}
-        self.assertEqual({p['targetPort'] for p in service['spec']['ports']}, container_ports)
+        container = deployment['spec']['template']['spec']['containers'][0]['ports']
+        by_name = {p['name']: p['containerPort'] for p in container}
+        self.assertEqual({(p['name'], by_name[p['name']]) for p in service['spec']['ports']},
+                         {(p['name'], p['containerPort']) for p in container})
+        self.assertEqual(by_name['health'], 8099)
 
-    def test_init_user_post_install_only(self):
-        docs = self.succeeds({'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}}})
-        jobs = [d for d in docs if d['kind'] == 'Job']
-        job = next(d for d in jobs if d['metadata']['name'].endswith('init-user'))
-        self.assertEqual(job['metadata']['annotations']['helm.sh/hook'], 'post-install')
-        self.assertEqual(job['spec']['template']['spec']['containers'][0]['image'],
-                         'ghcr.io/lerianstudio/caradhras-user-init:3.14.0')
+    def identity_env(self, init_user):
+        docs = self.succeeds({'auth': {'initUser': init_user}, 'caradhras': CARADHRAS_2_1})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('identity'))
+        env = deployment['spec']['template']['spec']['containers'][0].get('env', [])
+        return docs, {e['name']: e for e in env}
 
+    def test_init_user_feeds_identity_boot(self):
+        disabled_docs, env = self.identity_env({'enabled': False})
+        self.assertFalse({'ADMIN_PASSWORD', 'ADMIN_EMAIL', 'ADMIN_DISPLAY_NAME'} & env.keys())
+        docs, env = self.identity_env({'enabled': True, 'adminPassword': 'render-only'})
+        ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+        self.assertEqual((ref['key'], ref['optional']), ('ADMIN_PASSWORD', True))
+        self.assertEqual(env['ADMIN_EMAIL']['value'], 'admin@midaz.tech')
+        self.assertEqual(env['ADMIN_DISPLAY_NAME']['value'], 'Admin')
+        self.assertEqual([d['kind'] for d in docs if d['kind'] == 'Job'], [])
+        secret = next(d for d in docs if d['kind'] == 'Secret' and d['metadata']['name'] == ref['name'])
+        self.assertNotIn('annotations', secret['metadata'])
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == ref['name']
+                             for d in disabled_docs))
+
+    def test_init_user_managed_secret_uses_selected_key(self):
+        for name, key in (('bootstrap', 'password'), ('123', '456')):
+            with self.subTest(name=name, key=key):
+                docs, env = self.identity_env({'enabled': True, 'adminPassword': 'render-only',
+                                               'adminPasswordSecretName': name,
+                                               'adminPasswordSecretKey': key})
+                ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+                self.assertEqual((ref['name'], ref['key']), (name, key))
+                secret = next(d for d in docs if d['kind'] == 'Secret'
+                              and d['metadata']['name'] == name)
+                self.assertEqual(base64.b64decode(secret['data'][key]).decode(), 'render-only')
+
+    def test_init_user_password_change_rolls_identity(self):
+        annotations = []
+        for password in ('x' * 73, 'render-only'):
+            docs, _ = self.identity_env({'enabled': True, 'adminPassword': password})
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-identity'))
+            annotations.append(deployment['spec']['template']['metadata']['annotations'])
+        self.assertNotEqual(annotations[0], annotations[1])
+
+    def test_init_user_preserves_health_preset(self):
+        containers = []
+        for init in ({'enabled': False}, {'enabled': True, 'adminPassword': 'render-only'}):
+            docs, env = self.identity_env(init)
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-identity'))
+            container = deployment['spec']['template']['spec']['containers'][0]
+            containers.append(container)
+            self.assertEqual(env['HEALTH_PORT']['value'], '8099')
+            self.assertEqual(env['SHUTDOWN_DRAIN_DELAY']['value'], '15s')
+            for kind, path in (('startupProbe', '/health'), ('livenessProbe', '/health'),
+                               ('readinessProbe', '/readyz')):
+                self.assertEqual(container[kind]['httpGet'], {'path': path, 'port': 'health'})
+            service = next(d for d in docs if d['kind'] == 'Service'
+                           and d['metadata']['name'].endswith('-identity'))
+            self.assertIn('health', {port['name'] for port in service['spec']['ports']})
+        for kind in ('startupProbe', 'livenessProbe', 'readinessProbe', 'ports'):
+            self.assertEqual(containers[0][kind], containers[1][kind])
+
+    def test_init_user_existing_secret(self):
+        docs, env = self.identity_env({'enabled': True, 'useExistingSecret': True,
+                                       'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})
+        ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+        self.assertEqual((ref['name'], ref['key'], ref['optional']), ('mine', 'pw', True))
+        self.assertFalse([d for d in docs if d['metadata']['name'].endswith('init-user')])
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == 'mine' for d in docs))
+        disabled, _ = self.identity_env({'enabled': False, 'useExistingSecret': True,
+                                         'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == 'mine' for d in disabled))
+        self.fails({'auth': {'initUser': {'enabled': True, 'useExistingSecret': True}}, 'caradhras': CARADHRAS_2_1},
+                   'adminPasswordSecretName must be specified')
+
+    def test_init_user_needs_the_ensure_first_admin_contract(self):
+        def init(identity='3.17.0', server='2.1.0', migrations='2.1.0', **extra):
+            return {'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}},
+                    'identity': {'image': {'tag': identity}},
+                    'caradhras': {'image': {'tag': server}, 'migrations': {'image': {'tag': migrations}}},
+                    **extra}
+        refused = [dict(server='1.8.6', migrations='1.8.6'), dict(migrations='1.8.6'), dict(server='1.8.6'),
+                   dict(identity='3.16.1'), dict(identity='3.17.0-beta.1')]
+        refused += [{k: tag} for tag in ('2.1.0-rc.2', '2.0.2', 'latest', '2.1.0@sha256:abc')
+                    for k in ('server', 'migrations')]
+        for case in refused:
+            with self.subTest(case=case):
+                self.fails(init(**case), 'auth.initUser.enabled needs identity >= 3.17.0')
+        self.succeeds(init())
+        self.succeeds(init(server='v2.1.0', migrations='v2.1.0'))
+        # Multi-tenant identity never calls ensure-first-admin.
+        self.succeeds(init(identity='3.16.1', server='1.8.6', migrations='1.8.6',
+                           **{'global': {'multiTenant': {'enabled': True}}}))
 
     def migrate_env(self, patch):
         docs = self.succeeds(patch)

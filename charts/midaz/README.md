@@ -3,8 +3,8 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided), `rabbitmq.authentication.erlangCookie.value` while the bundled RabbitMQ is enabled (a stable value, e.g. `openssl rand -hex 32`; the chart refuses to render without it, since the broker cannot boot on an empty cookie), plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). The standalone CRM defaults to `crm.configmap.KMS_VENDOR: "none"` (legacy mode on those keys, like the ledger); for envelope encryption set `KMS_VENDOR: "hashicorp-vault"` and your own `KMS_VAULT_ADDR` (the chart bundles no Vault and no longer defaults it to `http://midaz-hc-vault:8200`). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. A 4.x ledger also refuses to boot with `ENV_NAME=production` (the default) unless `PLUGIN_AUTH_ENABLED=true`, so the chart refuses that pair at render time: enable auth (`global.auth.enabled` or `ledger.configmap.PLUGIN_AUTH_ENABLED`) or set a non-production `global.env.name`. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled datastores' Secrets (see Dependency notes) and are only required when the matching backend is external.
-- Dependency notes: PostgreSQL and MongoDB passwords are single-sourced from Secrets this chart keeps across uninstall (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`), Valkey's from the bundled Bitnami subchart Secret (`<release>-valkey` key `valkey-password`); all are injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ and optional OpenTelemetry are also bundled. The bundled RabbitMQ gives its only users, `transaction` and `consumer`, the ledger's `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` (from `ledger.secrets`, or from `ledger.existingSecretName`, which the chart reads at render: that path needs `helm install`/`helm upgrade` against the cluster, and `helm template` or Argo CD refuse it). When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
+- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided), `ledger.secrets.LICENSE_KEY` (the ledger refuses to boot without it; `tracer.secrets.LICENSE_KEY` too when the tracer is enabled), `rabbitmq.authentication.erlangCookie.value` while the bundled RabbitMQ is enabled (a stable value, e.g. `openssl rand -hex 32`; the chart refuses to render without it, since the broker cannot boot on an empty cookie), plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). The standalone CRM defaults to `crm.configmap.KMS_VENDOR: "none"` (legacy mode on those keys, like the ledger); for envelope encryption set `KMS_VENDOR: "hashicorp-vault"` and your own `KMS_VAULT_ADDR` (the chart bundles no Vault and no longer defaults it to `http://midaz-hc-vault:8200`). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. With a 4.x ledger the chart refuses to render `ENV_NAME=production` (the default) unless `PLUGIN_AUTH_ENABLED=true`: enable auth (`global.auth.enabled` or `ledger.configmap.PLUGIN_AUTH_ENABLED`) or set a non-production `global.env.name`. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled datastores' Secrets (see Dependency notes) and are only required when the matching backend is external.
+- Dependency notes: PostgreSQL and MongoDB passwords are single-sourced from Secrets this chart keeps across uninstall (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`), Valkey's from the bundled Bitnami subchart Secret (`<release>-valkey` key `valkey-password`); all are injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ is also bundled. The bundled RabbitMQ gives its only users, `transaction` and `consumer`, the ledger's `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` (from `ledger.secrets`, or from `ledger.existingSecretName`, which the chart reads at render: that path needs `helm install`/`helm upgrade` against the cluster, and `helm template` or Argo CD refuse it). When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
 - Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the chart own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
@@ -14,11 +14,8 @@
 
 Source code can be found here:
 * https://github.com/LerianStudio/helm/tree/main/charts/midaz
-* https://github.com/LerianStudio/midaz
 
-This helm chart installs [Midaz](https://lerian.studio/midaz#about), a high-performance ledger.
-
-The default installation is similar to the one provided in the [Midaz repo](https://github.com/LerianStudio/midaz?tab=readme-ov-file#quick-installation-guide-localhost).
+This helm chart installs [Midaz](https://docs.lerian.studio/en/products/midaz/about-midaz), a high-performance ledger.
 
 ---
 
@@ -87,6 +84,11 @@ reference; `values.schema.json` validates it.
 
 ## Install Midaz Helm Chart:
 
+**Prerequisites:**
+
+- Kubernetes 1.27 or later. The default pod-spreading preset uses `matchLabelKeys` (see Pod Spreading).
+- Helm 3.8 or later. The chart is published as an OCI artifact, which Helm supports from 3.8.
+
 To install Midaz using Helm, run:
 
 ```console
@@ -94,6 +96,10 @@ $ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --versio
 ```
 
 Replace `<version>` with the desired chart version. This creates a namespace called `midaz` if it doesn't already exist and deploys the Midaz Helm chart.
+
+The default ledger and tracer image is the stable `4.4.0`. A `ledger.image.tag` or `tracer.image.tag` of `4.5.0-beta.94` or later, the first image that serves the health port, turns on the health preset (`HEALTH_PORT` 8099, preset probes, PDB and rollout strategy). The ledger partition runner is on for any `ledger.image.tag` from `4.5.0-beta.1`. Below `4.5.0-beta.94` the chart renders the 4.4 layout: probes on the main port, `RABBITMQ_HEALTH_CHECK_URL` on the ledger, `READYZ_DRAIN_GRACE_SECONDS` on the tracer, and it honors `readinessProbe`, `livenessProbe`, `terminationGracePeriodSeconds`, `deploymentUpdate` and `pdb.maxUnavailable`/`minAvailable` values.
+
+Upgrading a release that runs a `4.5.0` pre-release (chart `10.3.0` to `10.3.2` on default values): set `ledger.image.tag` and `tracer.image.tag` to the running tag before `helm upgrade`. Without the pin the default `4.4.0` migration Job finds a schema newer than its migrations and fails (`no migration found for version N`), so the upgrade stops before any pod changes. Setting `ledger.migrations.enabled: false`, `tracer.migrations.enabled: false` or an empty `deploymentSyncWave` removes that stop; keep the pin in those installs.
 
 After installation, you can verify that the release was successful by listing the Helm releases in the midaz namespace:
 
@@ -145,7 +151,7 @@ ledger:
       alb.ingress.kubernetes.io/scheme: internal  # Use "internet-facing" for public ALB
       alb.ingress.kubernetes.io/target-type: ip   # Use "instance" if targeting EC2 instances
       alb.ingress.kubernetes.io/group.name: "midaz"  # Group ALB resources under this name
-      alb.ingress.kubernetes.io/healthcheck-path: "/health"  # Health check path (the ledger serves /health and /readyz)
+      alb.ingress.kubernetes.io/healthcheck-path: "/health"  # Health check path (constant /health on the main port; /readyz is served on the internal health port 8099)
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'  # Listen on HTTP and HTTPS
     hosts:
       - host: midaz.example.com
@@ -254,11 +260,12 @@ Midaz deploys the following core services:
 |---|---|---|
 | `ledger.enabled` | Enable or disable the ledger service. | `true` |
 | `ledger.name` | Service name. | `"ledger"` |
+| `ledger.health.stack`, `tracer.health.stack` | Runtime stack for the health preset. Probes, `HEALTH_PORT` 8099 (`/health`, `/readyz`, internal `health` Service port only), drain, grace, rollout strategy and PDB are owned by the chart from image tag `4.5.0-beta.94`; at those tags the render refuses probe, grace, `SHUTDOWN_*` and `HEALTH_PORT` overrides. | `go` |
+| `ledger.health.shutdownSeconds` | `SHUTDOWN_TIMEOUT` in seconds, the one shutdown budget after the 15s drain; pod grace is drain + this + 10s. | unset (preset: `30`) |
 | `ledger.replicaCount` | Number of replicas for the ledger service. | `2` |
-| `ledger.terminationGracePeriodSeconds` | Seconds Kubernetes waits after SIGTERM before killing the pod; must cover the shutdown drain (HTTP, streaming events, producer flush). `tracer.terminationGracePeriodSeconds` works the same way (default `55`). | `72` |
 | `ledger.image.repository` | Repository for the ledger service container image. | `"lerianstudio/midaz-ledger"` |
 | `ledger.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
-| `ledger.image.tag` | Image tag used for deployment. | See `values.yaml` |
+| `ledger.image.tag` | Image tag used for deployment. From `4.5.0-beta.94` the health preset applies. | `"4.4.0"` |
 | `ledger.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
 | `ledger.nameOverride` | Overrides the default generated name by Helm. | `""` |
 | `ledger.fullnameOverride` | Overrides the full name generated by Helm. | `""` |
@@ -266,9 +273,7 @@ Midaz deploys the following core services:
 | `ledger.podSecurityContext` | Security context applied at the pod level. | `{}` |
 | `ledger.securityContext.*` | Security context for every ledger container: the application, its `wait-for-dependencies` init container and the migration Job. | See `values.yaml` |
 | `ledger.pdb.enabled` | Specifies whether PodDisruptionBudget is enabled. | `true` |
-| `ledger.pdb.maxUnavailable` | Maximum number of unavailable pods; ignored when `minAvailable` is set. | `1` |
 | `ledger.pdb.annotations` | Annotations for the PodDisruptionBudget. | `{}` |
-| `ledger.deploymentUpdate.*` | Deployment update strategy. | See `values.yaml` |
 | `ledger.service.type` | Kubernetes service type. | `"ClusterIP"` |
 | `ledger.service.port` | Port for the HTTP API. | `3002` |
 | `ledger.service.annotations` | Annotations for the service. | `{}` |
@@ -292,11 +297,28 @@ Midaz deploys the following core services:
 | `ledger.secrets.*` | Secrets for the service. | See `values.yaml` |
 | `ledger.useExistingSecret` | Use an existing secret instead of creating a new one. | `false` |
 | `ledger.existingSecretName` | The name of the existing secret to use. | `""` |
-| `ledger.extraEnvVars` | A list of extra environment variables. | `[]` |
+| `ledger.extraEnvVars` | Extra environment variables, as a map of `NAME: value`. | `{}` |
 | `ledger.serviceAccount.create` | Specifies whether the service account should be created. | `true` |
 | `ledger.serviceAccount.annotations` | Annotations for the service account. | `{}` |
 | `ledger.serviceAccount.name` | Service account name. If not defined, it will be generated automatically. | `""` |
 | `ledger.aws.rolesAnywhere.enabled` | Enable the AWS IAM Roles Anywhere sidecar on the ledger, for clusters without IRSA. The multi-tenant ledger reads its per-tenant Tracer M2M credential from Secrets Manager. On EKS keep it `false` and set `ledger.serviceAccount.annotations["eks.amazonaws.com/role-arn"]`; never enable both. When enabled, `trustAnchorArn`, `profileArn` and `roleArn` are required, the client certificate Secret (`certificateSecretName`, default `<midaz-ledger.fullname>-iam-tls`) must be provisioned outside the chart, and `ledger.podSecurityContext` is replaced with `fsGroup: 65532`. Set `AWS_REGION` in `ledger.extraEnvVars`. | `false` |
+| `ledger.partition.enabled` | Run the partition runner (CronJob and reconcile hook Job). Unset means auto: on for ledger tags `>= 4.5.0-beta.1` (every ledger image from that tag on ships the runner), off below that and for non-SemVer tags; `true`/`false` pins it. | unset |
+| `ledger.partition.schedule` | Cron schedule of the `partition ensure --reconcile-indexes` CronJob. Keep it outside the database's backup and maintenance windows. | `"0 6 * * *"` |
+| `ledger.partition.timeZone` | IANA time zone for `schedule`; empty uses the kube-controller-manager's zone, UTC on most managed clusters. | `""` |
+| `ledger.partition.activeDeadlineSeconds` | Hard timeout for one `ensure` run, in seconds. | `1800` |
+| `ledger.partition.reconcile.enabled` | Run `partition reconcile-indexes --tolerate-unavailable` as a hook Job after the migration Job, alongside the app rollout. | `true` |
+| `ledger.partition.reconcile.syncWave` | Argo CD sync wave of the reconcile Job (plain Helm orders it with hook weight `10`). | `"1"` |
+| `ledger.partition.reconcile.activeDeadlineSeconds` | Hard timeout for the reconcile Job, in seconds. | `1800` |
+| `ledger.partition.reconcile.ttlSecondsAfterFinished` | How long a failed reconcile Job is kept for inspection; a successful hook Job is deleted at once. | `259200` |
+| `ledger.partition.resources.*` | CPU/Memory requests/limits of the partition runner pods. | See `values.yaml` |
+
+#### Ledger Partition Runner
+
+Ledger images from `4.5.0-beta.1` on ship a `/partition` binary next to `/app`, and the chart runs it in two workloads that reuse the ledger image, ConfigMap, Secret and scheduling settings: the `midaz-ledger-partition` CronJob runs `/partition ensure --reconcile-indexes` daily (creates future partitions on a partitioned database, reports their health and retries pending registered indexes), and the `midaz-ledger-partition-reconcile-<tag>` hook Job runs `/partition reconcile-indexes --tolerate-unavailable` on every install, upgrade and Argo CD sync, after the ledger migration Job and alongside the app rollout (Helm hook weight `10`, Argo CD wave `ledger.partition.reconcile.syncWave`, the Deployment's wave). Both set `DB_TRANSACTION_*` and `MULTI_TENANT_*` inline from the release values, so the `pre-upgrade` hook never reads the previous ConfigMap. On a database that keeps the unpartitioned layout both exit `0` without changes (`ensure` logs `skipped_reason=unpartitioned` per table). The hook never fails a deploy because of an unreachable tenant or a pending index; those still fail the daily CronJob (`kube_job_status_failed`). A non-zero exit of the CronJob is the alert signal: `1` a database or table needs attention, `2` a usage or startup error. The hook still fails on an invalid registry entry, a failed index build, a name conflict or a startup error. Set `ledger.partition.enabled=false` to turn both off, or `ledger.partition.reconcile.enabled=false` to keep only the CronJob; on a partitioned database `ensure` is what keeps future partitions ahead of the clock, and without it new rows eventually land in the DEFAULT partition.
+
+Signals to watch: the exit code of the CronJob (`kube_job_status_failed{job_name=~".*-partition-.*"} > 0` with kube-state-metrics); on a partitioned single-tenant database the ledger gauges `ledger_partition_future_buffer_depth` (warn when below the table's horizon for more than a day), `ledger_partition_default_rows` and `ledger_partition_default_inserts_total` (any value above zero is act-now); in multi-tenant mode `tenant_dependency_up_ratio{dependency="partition"} == 0` for a tenant whose partitions are unhealthy. To check a database without waiting for the schedule, run `kubectl -n <namespace> create job partition-manual --from=cronjob/midaz-ledger-partition`.
+
+Without this chart, run the same two steps from the ledger image with the ledger's own `DB_TRANSACTION_*` variables (or `MULTI_TENANT_*` and `APPLICATION_NAME` in multi-tenant mode): `/partition reconcile-indexes --tolerate-unavailable` after every migration run, alongside the rollout, and `/partition ensure --reconcile-indexes` once a day, off-peak.
 
 #### Creating Ledger Secret Manually
 
@@ -313,10 +335,15 @@ kubectl create secret generic midaz-ledger \
   --from-literal=REDIS_PASSWORD='<your-redis-password>' \
   --from-literal=RABBITMQ_DEFAULT_PASS='<your-rabbitmq-password>' \
   --from-literal=RABBITMQ_CONSUMER_PASS='<your-rabbitmq-consumer-password>' \
+  --from-literal=LICENSE_KEY='<your-license-key>' \
+  --from-literal=LCRYPTO_HASH_SECRET_KEY='<your-hash-secret-key>' \
+  --from-literal=LCRYPTO_ENCRYPT_SECRET_KEY='<your-encrypt-secret-key>' \
+  --from-literal=MONGO_CRM_PASSWORD='<your-mongo-crm-password>' \
+  --from-literal=MONGO_FEES_PASSWORD='<your-mongo-fees-password>' \
   -n midaz
 ```
 
-**Note:** The ledger service uses module-specific database credentials (onboarding and transaction) since it combines both modules. The `DB_*`, `MONGO_*`, and `REDIS_PASSWORD` keys above are only read when the matching backend is **external**; for the bundled Bitnami subcharts those passwords are single-sourced from the subchart Secret via `secretKeyRef`, so the keys in this secret are ignored. Only `RABBITMQ_DEFAULT_PASS`, `RABBITMQ_CONSUMER_PASS`, and (for external backends) the infra passwords are required.
+**Note:** The ledger service uses module-specific database credentials (onboarding and transaction) since it combines both modules. The `DB_*`, `MONGO_*`, and `REDIS_PASSWORD` keys above are only read when the matching backend is **external**; for the bundled Bitnami subcharts those passwords are single-sourced from the subchart Secret via `secretKeyRef`, so the keys in this secret are ignored. Only `RABBITMQ_DEFAULT_PASS`, `RABBITMQ_CONSUMER_PASS`, `LICENSE_KEY`, the two `LCRYPTO_*` keys (4.x ledger with `KMS_VENDOR=none`) and (for external backends) the infra passwords are required.
 
 Then configure the ledger service to use this existing secret:
 
@@ -338,11 +365,10 @@ ledger:
 
 ### CRM (Customer Relationship Management)
 
-The `crm` service provides APIs for managing holder data and their relationships with ledger accounts. Previously available as a separate chart (`plugin-crm`) deployed in the `midaz-plugins` namespace, the CRM is being migrated to become a core component of Midaz, now deployed in the `midaz` namespace.
+The `crm` service provides APIs for managing holder data and their relationships with ledger accounts. Previously available as a separate chart (`plugin-crm`) deployed in the `midaz-plugins` namespace, the CRM is now served in-process by the 4.x ledger (the chart default); this `crm` workload runs the standalone 3.x image (`lerianstudio/midaz-crm:3.8.4`).
 
-For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/v2/crm)
+For more details, refer to the official documentation: [CRM Documentation](https://docs.lerian.studio/en/products/midaz/crm/crm-overview)
 
-> **Migration Note:** If you are currently using `plugin-crm` in the `midaz-plugins` namespace, we recommend migrating to this new integrated CRM workload. See the [Upgrade Guide](docs/UPGRADE-5.0.md#4-crm-service-integration) for migration steps.
 
 | Parameter | Description | Default Value |
 |---|---|---|
@@ -386,7 +412,7 @@ For more details, refer to the official documentation: [CRM Documentation](https
 | `crm.secrets.*` | Secrets for the service. | See `values.yaml` |
 | `crm.useExistingSecret` | Use an existing secret instead of creating a new one. | `false` |
 | `crm.existingSecretName` | The name of the existing secret to use. | `""` |
-| `crm.extraEnvVars` | A list of extra environment variables. | `{}` |
+| `crm.extraEnvVars` | Extra environment variables, as a map of `NAME: value`. | `{}` |
 
 #### Creating CRM Secret Manually
 
@@ -434,7 +460,7 @@ crm:
 The `tracer` service provides real-time transaction validation and fraud prevention. From midaz v4 it ships from the monorepo (`components/tracer`) and is published as `lerianstudio/midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates this configuration contract. It is disabled by default (`tracer.enabled=false`) and existing releases render unchanged.
 
 - **Database.** Tracer uses the bundled PostgreSQL with the same `midaz` role that owns `onboarding` and `transaction`. `tracer.configmap.DB_HOST` is empty by default and resolves to this release's PostgreSQL primary Service (`<release>-postgresql-primary`, or `<release>-postgresql` in the standalone topology), so a release name other than `midaz` still connects; set it explicitly for an external PostgreSQL, where the render fails rather than guessing. Its database (`tracer.configmap.DB_NAME`, default `tracer`) is created by `files/midaz/init.sql` on a fresh internal cluster, and by the external bootstrap Job (`global.externalPostgresDefinitions.enabled=true`) otherwise; both paths use the configured name. On a pre-existing internal cluster, initdb scripts no longer run: create the configured database once by hand before enabling tracer (`CREATE DATABASE tracer;` with the default `tracer.configmap.DB_NAME`).
-- **Migrations.** Neither tracer nor the v4 ledger migrates at startup anymore. `tracer.migrations` and `ledger.migrations` render the dedicated `midaz-tracer-migrations` / `midaz-ledger-migrations` runner Jobs, whose tag defaults to the matching application tag. The tracer Job renders when both `tracer.enabled` and `tracer.migrations.enabled` (default `true`) are true; the ledger Job is on for 4.x ledger tags only (`ledger.migrations.enabled` pins it either way). Setting either `migrations.enabled` to `false` means the schema must be applied out of band, because the v4 services no longer migrate themselves. Both Jobs are plain Sync-phase resources because the bundled PostgreSQL Secret they read is only created during Sync; while a Job renders, its Deployment carries `argocd.argoproj.io/sync-wave: "1"` (`<component>.migrations.deploymentSyncWave`) so Argo CD applies the service only after the Job reports Complete. Against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` under `<component>.migrations.annotations` instead.
+- **Migrations.** Neither tracer nor the v4 ledger migrates at startup anymore. `tracer.migrations` and `ledger.migrations` render the dedicated `midaz-tracer-migrations` / `midaz-ledger-migrations` runner Jobs, whose tag defaults to the matching application tag. The tracer Job renders when both `tracer.enabled` and `tracer.migrations.enabled` (default `true`) are true; the ledger Job is on for 4.x ledger tags only (`ledger.migrations.enabled` pins it either way). Setting either `migrations.enabled` to `false` means the schema must be applied out of band, because the v4 services no longer migrate themselves. Both Jobs are Argo CD `Sync` hooks because the bundled PostgreSQL Secret they read is only created during Sync; while a Job renders, its Deployment carries `argocd.argoproj.io/sync-wave: "1"` (`<component>.migrations.deploymentSyncWave`) so Argo CD applies the service only after the Job reports Complete. Against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` under `<component>.migrations.annotations` instead.
 - **Ledger to tracer transport.** The chart renders `ledger.configmap.TRACER_TRANSPORT` as empty by default, which the ledger resolves to gRPC. It only matters when the integration is on: with `TRACER_BASE_URL` empty (the default) the ledger never reads it. What the ledger accepts depends on its application version (checked against `components/ledger/internal/bootstrap/config.go` at each tag):
 
   | Ledger app version | `TRACER_TRANSPORT` unset or empty | `grpc` | `rest` |
@@ -453,7 +479,7 @@ The `tracer` service provides real-time transaction validation and fraud prevent
       TRACER_TRANSPORT: ""                    # empty resolves to gRPC; "grpc" is equivalent
   ```
 
-  With the integration on, `PLUGIN_AUTH_ENABLED=true` and `MULTI_TENANT_ENABLED=false`, the render also fails unless `ledger.configmap.TRACER_M2M_CLIENT_ID` and `ledger.secrets.TRACER_M2M_CLIENT_SECRET` are set, mirroring the ledger's boot check. With `ledger.useExistingSecret=true` the chart cannot see the secret, so only the client id is checked and the ledger enforces the secret at boot. Multi-tenant reads the identity per tenant (`M2M_SECRETS_BACKEND`) and is not checked. Which seam identity and TLS mode to use (`TRACER_API_KEY`, the `TRACER_M2M_*` pair, `TRACER_TLS_MODE`) follows the tracer's `API_KEY_ENABLED` / `PLUGIN_AUTH_ENABLED` settings; see the app's `components/tracer/README.md` for the seam rules. A live ledger-to-tracer connection has not been verified with this chart.
+  With the integration on, `PLUGIN_AUTH_ENABLED=true` and `MULTI_TENANT_ENABLED=false`, the render also fails unless `ledger.configmap.TRACER_M2M_CLIENT_ID` and `ledger.secrets.TRACER_M2M_CLIENT_SECRET` are set, mirroring the ledger's boot check. With `ledger.useExistingSecret=true` the chart cannot see the secret, so only the client id is checked and the ledger enforces the secret at boot. Multi-tenant reads the identity per tenant (`M2M_SECRETS_BACKEND`) and is not checked. Which seam identity and TLS mode to use (`TRACER_API_KEY`, the `TRACER_M2M_*` pair, `TRACER_TLS_MODE`) follows the tracer's `API_KEY_ENABLED` / `PLUGIN_AUTH_ENABLED` settings. A live ledger-to-tracer connection has not been verified with this chart.
 - **Memory.** `tracer.configmap.GOMEMLIMIT` must track `tracer.resources.limits.memory` (~90%). The image ships `GOMEMLIMIT=1800MiB`, sized for a 2Gi container, so without the override the Go heap outgrows a 512Mi cgroup and the pod is OOM-killed.
 - **Fail-fast configuration.** The chart mirrors the tracer boot validators, so misconfiguration fails `helm template` instead of crash-looping: `API_KEY_ENABLED=true` requires an API key and rejects wildcard CORS; `MULTI_TENANT_ENABLED=true` requires `PLUGIN_AUTH_ENABLED=true`, a service API key, and rejects `API_KEY_ENABLED_ONLY_VALIDATION=true`; `tracer.useExistingSecret=true` requires `tracer.existingSecretName`. Booleans are matched the way the runtime parses them (`strconv.ParseBool`), so `TRUE`, `True`, `1`, `t` and `T` are treated as enabled here too.
 
@@ -628,10 +654,14 @@ Notes:
       MONGO_TRANSACTION_NAME: { your-host-name }
       MONGO_TRANSACTION_USER: { your-host-user }
       MONGO_TRANSACTION_PORT: { your-host-port }
+      MONGO_CRM_HOST: { your-host }
+      MONGO_FEES_HOST: { your-host }
 
     secrets:
       MONGO_ONBOARDING_PASSWORD: { your-host-pass }
       MONGO_TRANSACTION_PASSWORD: { your-host-pass }
+      MONGO_CRM_PASSWORD: { your-host-pass }
+      MONGO_FEES_PASSWORD: { your-host-pass }
   ```
 
 
@@ -640,6 +670,7 @@ Notes:
 - **Version:** 2.1.11
 - **Repository:** https://groundhog2k.github.io/helm-charts
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
+- **Broker version:** the bundled image is RabbitMQ 3.13.6. The Midaz ledger documents RabbitMQ 4.1.x as its supported broker, so for production use an external RabbitMQ 4.1.x.
 
 - **Important — no persistent volume:** by default, the bundled RabbitMQ has no persistent volume. When its pod is recreated, it loses its queues and messages. For production, give it a volume with `rabbitmq.storage.requestedSize` (for example `8Gi`, plus `rabbitmq.storage.className` if you need a specific StorageClass), or use an external RabbitMQ instance. Kubernetes refuses changes to a StatefulSet's `volumeClaimTemplates`, so adding the volume to an existing release requires deleting the RabbitMQ StatefulSet first.
 
@@ -729,12 +760,11 @@ If your RabbitMQ server requires TLS/SSL, update the client environment variable
 ledger:
   configmap:
     RABBITMQ_URI: "amqps"      # was "amqp"
-    RABBITMQ_PROTOCOL: "https" # was "http"
 ```
 
 ### OpenTelemetry Collector wiring
 
-Since `8.4.0` the `otel-collector-lerian` subchart is no longer installed as a dependency of this chart (the dependency was removed; see [`UPGRADE-8.4.md`](docs/UPGRADE-8.4.md) for the migration story). The `otel-collector-lerian.enabled` flag now only controls whether `HOST_IP`, `POD_IP`, `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` and `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)` are injected into the `ledger` and `crm` deployments.
+Since `8.4.0` the `otel-collector-lerian` subchart is no longer installed as a dependency of this chart (the dependency was removed; see [`UPGRADE-8.4.md`](docs/UPGRADE-8.4.md) for the migration story). The `otel-collector-lerian.enabled` flag now only controls whether `HOST_IP`, `POD_IP`, `OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317` and `OTEL_RESOURCE_ATTRIBUTES=k8s.pod.ip=$(POD_IP)` are injected into the `ledger`, `crm` and `tracer` deployments.
 
 By default `enabled: true` — Midaz expects a node-local OTel collector listening on `4317` (`hostPort` or `hostNetwork`). Install the [otel-collector-lerian chart](../otel-collector-lerian) separately or point your own collector at the same port.
 

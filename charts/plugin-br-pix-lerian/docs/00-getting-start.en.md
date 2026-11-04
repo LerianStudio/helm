@@ -1,8 +1,6 @@
 # plugin-br-pix-lerian — Installation Runbook
 
-> Filled in from the chart itself (`README.md`, `values.schema.json`, templates) and
-> the reference configuration in
-> `lerian-internal-gitops/environments/benedita/helmfile/applications/dev-st/plugin-br-pix-lerian`.
+> Filled in from the chart itself (`README.md`, `values.schema.json`, templates).
 > Goal: someone outside the squad, with only the chart and this runbook, can install a
 > working release and knows what to check if something doesn't behave as expected.
 
@@ -12,10 +10,9 @@
 
 | Field | Value |
 |---|---|
-| Product / Chart | `plugin-br-pix-lerian` (chart 1.0.0 / app `1.0.0-beta.337`) |
+| Product / Chart | `plugin-br-pix-lerian` |
 | Owning squad | Pix Lerian |
 | Last review of this runbook | 2026-09-14, against chart 1.0.0 |
-| Escalation contact | Pix Lerian squad (see chart CODEOWNERS) |
 
 ---
 
@@ -51,15 +48,16 @@ workloads for your use case, pointing at Postgres, and setting `LICENSE_KEY` +
 | PostgreSQL | Per enabled domain — up to 5 possible databases: `pix-spi`, `pix-dict`, `pix-cob`, `pix-adapter-lerian`, `pix-pixauto` | `DATABASE_URL` / `SYSTEMPLANE_POSTGRES_DSN` in `secrets`, or an external Secret via `useExistingSecret` |
 | Valkey/Redis | Required on `dictHubVsync` and on `adapterLerian` when enabled; optional (with cache degradation) on `spi`/`dictHub`/`cobHub`/`pixauto` | Mask `global.datastores.redis` (host/port/user/db/tls) — section 4 |
 | RabbitMQ | Required when `dictHubVsync` is enabled; optional publish-only on `dictHub` | `RABBITMQ_URI` in `secrets` |
-| Streaming (Kafka/Redpanda) | Optional — `spi`, `dictHub`, `cobHub`, `pixauto` can emit CloudEvents | Mask `global.streaming` — section 4. Leave `STREAMING_CLOUDEVENTS_SOURCE` empty (except on `pixauto`, which uses its own value — see section 4) |
+| Streaming (Kafka/Redpanda) | Optional — `spi`, `dictHub`, `cobHub`, `pixauto` can emit CloudEvents | Mask `global.streaming` — section 4. Leave `STREAMING_CLOUDEVENTS_SOURCE` empty, except on `pixauto` with streaming enabled: set it to `plugin-br-pix-lerian` there, or `pixauto` refuses to boot |
 | MongoDB | Not used by this chart | — |
 | `plugin-access-manager` (auth) | Recommended in any exposed environment — see section 5 | Mask `global.auth` (`PLUGIN_AUTH_ENABLED` + `PLUGIN_AUTH_HOST`) |
 | Vault / secret manager | Recommended in production | `useExistingSecret: true` + `existingSecretName` per component — the external Secret must carry the complete key set for that workload |
 | Streaming Hub (callbacks) | External to this chart | This chart publishes events to the broker via `lib-streaming`; the Streaming Hub resolves subscriptions and performs the HTTP callback — no callback URL is configured here |
 
 For development/homologation without a real provider, use `adapterProviderMock`
-(section 5). Databases must exist with the correct connection role before
-installation — the chart applies migrations, it does not create the database itself
+(section 5); its image is not public: ask Lerian for read access and name a ghcr.io pull
+secret in `global.imagePullSecrets`. Databases must exist with the correct connection role before the
+migrations run: provision them yourself, or enable the chart's optional bootstrap Jobs
 (see [Database bootstrap and migrations](../README.md#database-bootstrap-and-migrations)).
 
 ---
@@ -91,8 +89,7 @@ installation — the chart applies migrations, it does not create the database i
 
 ## 4. Shared configuration contract (masks / lerian-common)
 
-This chart follows the `lerian-common` contract. The fields below are already
-consolidated as masks in the `benedita/dev-st` reference environment and are the
+This chart follows the `lerian-common` contract. The fields below are the
 recommended default for any new environment:
 
 ```yaml
@@ -123,12 +120,8 @@ global:
 Each field above can be overridden per component via `<component>.configmap.<KEY>`
 when that specific component needs a value different from the global one.
 
-**Known exception:** keep `STREAMING_TENANT_ID` and `STREAMING_CLOUDEVENTS_SOURCE`
-native (outside the mask) on `pixauto` — this component uses its own
-`cloudeventsSource` value, different from the other three streaming components.
-
 **Template parameters that are not mask-eligible** (setting these via `configmap`
-has no effect, since no template in this version consumes them): `REDIS_PROTOCOL`,
+has no effect, since no template in this version consumes them):
 `OTEL_EXPORTER_OTLP_ENDPOINT_PORT` (the actual OTLP endpoint is resolved via
 `HOST_IP` by the chart itself), `global.image.tag` (there is no shared image; each
 component pins its own tag under `<component>.image.tag`).
@@ -145,10 +138,10 @@ the two are not cross-validated at boot.
 | Topic | What to know | Before enabling / how to confirm |
 |---|---|---|
 | `PLUGIN_AUTH_ENABLED` vs `IDP_DECLARATION_ENABLED` (`pixauto`) | Two independent controls: `PLUGIN_AUTH_ENABLED` authenticates incoming requests; `IDP_DECLARATION_ENABLED` controls whether `pixauto` publishes its permission declaration to `plugin-access-manager` | Register `pixauto`'s M2M application in `plugin-access-manager` before enabling `IDP_DECLARATION_ENABLED`. Confirm in `plugin-access-manager` that the declaration was accepted for the `pixauto` slug |
-| `PLUGIN_AUTH_ENABLED` | Gates authentication on business and M2M routes; defaults to `false` | Enable explicitly (via the `global.auth.enabled` mask) in any exposed environment — recommended on all 14 components |
+| `PLUGIN_AUTH_ENABLED` | Gates authentication on business and M2M routes; defaults to `false` | Enable explicitly (via the `global.auth.enabled` mask) in any exposed environment — recommended on all 14 components. Required on `pixauto` whenever `ENV_NAME` is not `local` or `development` (in single-tenant, on `pixautoSystemplane` too): `pixauto` refuses to boot otherwise. |
 | Proxy tier (`dictProxy`/`cobProxy`) | In this release, serves only `health`, `readyz`, and an OpenAPI document with no business operations | Do not route business traffic to the proxy; use the domain's hub for real traffic. Validate with an actual business transaction, not just the probe |
 | Disabling a hub (`dictHub`/`cobHub`/`spi`) | The migration Job for that domain is only rendered for an enabled hub | If a hub stays disabled, apply that domain's schema through another means before starting the remaining workloads |
-| `STREAMING_CLOUDEVENTS_SOURCE` | Must match the application's internal source, whether or not streaming is enabled | Leave empty, except on `pixauto` |
+| `STREAMING_CLOUDEVENTS_SOURCE` | Must match the application's internal source, whether or not streaming is enabled | Leave empty, except on `pixauto` with streaming enabled: the chart sets no source there, and an empty one refuses the boot. Set `plugin-br-pix-lerian` |
 | `adapterLerian` | Expects `DEPLOYMENT_MODE=local`; it is the adapter used in development | Keep disabled (default) outside a local environment |
 | `adapterProviderMock` | Its routes carry no authorization of their own, independent of `PLUGIN_AUTH_ENABLED` | Enable only in a controlled environment, never on a shared ingress reachable by untrusted callers |
 | `ORGANIZATION_ID` on `pixauto` (single-tenant) | The app reads from the Systemplane store first, falling back to this value if the store is empty | Set `ORGANIZATION_ID` (or seed the store) before sending traffic — without it, requests return `403 TENANT_CONFIG_NOT_FOUND` |
@@ -160,7 +153,7 @@ the two are not cross-validated at boot.
 
 ```bash
 kubectl get pods -n <namespace>
-kubectl get jobs -n <namespace>   # a FAILED migration Job is kept; a successful one is already deleted (hook-succeeded)
+kubectl get jobs -n <namespace>   # a FAILED migration Job stays for ttlSecondsAfterFinished (300 s by default); a successful one is already deleted (hook-succeeded)
 # health/readiness are served under each component's own path prefix, e.g. spi:
 curl <spi-url>/spi/health
 curl <spi-url>/spi/readyz
@@ -170,9 +163,9 @@ curl <spi-url>/spi/readyz
 | Check | Command/URL | Expected | If it doesn't match, check first |
 |---|---|---|---|
 | Pods of enabled workloads | `kubectl get pods -n <ns>` | `Running` | `CreateContainerConfigError` → missing Secret; `CrashLoopBackOff` → log names the missing variable |
-| Migration Jobs | `kubectl get jobs -n <ns>` | No failed Job. Helm deletes each migration Job after it succeeds (`hook-succeeded`), so a successful install lists none | A `Failed`/`BackoffLimitExceeded` Job is kept for its logs. If the schema is missing, check that the hub is enabled (section 5) and that a DSN was supplied |
+| Migration Jobs | `kubectl get jobs -n <ns>` | No failed Job. Helm deletes each migration Job after it succeeds (`hook-succeeded`), so a successful install lists none | A `Failed`/`BackoffLimitExceeded` Job stays for `migrations.ttlSecondsAfterFinished` (300 s by default), so read its logs before then. If the schema is missing, check that the hub is enabled (section 5) and that a DSN was supplied |
 | Readiness | `curl <hub>/readyz` | 200, no pending `required_keys` in the response body | The body lists the keys the Systemplane store is still missing |
-| Auth active | business request without a token against a hub | 401/403 | If it returns 200, confirm `PLUGIN_AUTH_ENABLED` is `true` on that component |
+| Auth active | business request without a token against a hub | 401/403 | If it returns 200, confirm `PLUGIN_AUTH_ENABLED` is `true` on that component and, in single-tenant, on its Systemplane workload |
 | Correct routing | business request against `dictProxy`/`cobProxy` | 404 (expected in this release) | If you expected 200, confirm whether traffic should go to the hub instead |
 | End-to-end transaction | real flow through `spi` (or `adapterProviderMock` in homologation) | Full success |
 

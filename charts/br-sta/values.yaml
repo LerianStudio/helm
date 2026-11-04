@@ -112,9 +112,9 @@ global:
   # Example: kms: { vendor: "aws", keyId: "arn:aws:kms:sa-east-1:<account>:key/<id>" }
   kms: {}
 
-# -- Pull secrets for the manager, worker, migrations Job and mock STA. The images are
-# public on GHCR, so none is needed by default; set it only for a private mirror or
-# registry, e.g. [{name: my-registry-credential}]. Per-component lists override it.
+# -- Pull secrets for the manager, worker, migrations Job and mock STA. The app images are
+# public on GHCR, so none is needed by default; set it for a private mirror or
+# registry, or for the mock STA image (not public), e.g. [{name: my-registry-credential}]. Per-component lists override it.
 imagePullSecrets: []
 
 serviceAccount:
@@ -177,8 +177,7 @@ common:
   # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
   # a bundled plaintext datastore is enabled), allowCorsWildcard, allowInsecureOtel.
   security: {}
-  # -- organizationIds (ORGANIZATION_IDS — required in every environment), isDevelopment
-  # (routes the license SDK to the dev gateway). LICENSE_KEY is a secret.
+  # -- organizationIds (ORGANIZATION_IDS — required in every environment). LICENSE_KEY is a secret.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
   # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
@@ -742,7 +741,8 @@ redpandaTopics:
 # When enabled, STA_SCHEME / STA_FILE_HOST / STA_PASSWORD_HOST point the STA client
 # at it (a native common.configmap key still wins). The chart refuses it in a
 # production-like environment.
-# The image is public on GHCR (it follows the app's imagePullSecrets, if any).
+# The image is not public: ask Lerian for read access and name a ghcr.io pull secret in
+# imagePullSecrets (mockSta.imagePullSecrets, when set, overrides the top-level list).
 mockSta:
   enabled: false
   image:

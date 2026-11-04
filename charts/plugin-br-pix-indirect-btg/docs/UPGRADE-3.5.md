@@ -102,6 +102,8 @@ schedule:
     PLUGIN_PIX_BTG_CLIENT_SECRET: ""
 ```
 
+> Current charts: `<component>.pdb` is owned by the health preset (PDB `maxUnavailable: 1`) and the render fails if it is set; remove it.
+
 > **Important:** The `SCHEDULE_APP_BASE_URL` and `PLUGIN_AUTH_URL` must be configured for your environment. The worker requires these endpoints to communicate with the domain API and authenticate. See [Migration Steps](#migration-steps) for required configuration.
 
 **Resource requirements:**

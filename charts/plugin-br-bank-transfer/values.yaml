@@ -219,7 +219,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.4.0"
+    tag: "3.5.0"
   # -- PostgreSQL migrations. External Postgres: a Job (Helm hook pre-install,pre-upgrade;
   # ArgoCD PreSync). Bundled Postgres: an initContainer of each app pod, so no pod starts
   # on an unmigrated schema; the hook notes below apply to the external Job only.
@@ -486,11 +486,8 @@ bankTransfer:
     # =================================================================
     # License gateway — newer app images refuse to boot without LICENSE_KEY
     # (bankTransfer.secrets) and ORGANIZATION_IDS (below), in every
-    # environment. lib-license-go picks the gateway itself: IS_DEVELOPMENT
-    # "true" (exactly) selects the development gateway, which a development
-    # licence key needs. Rendered only when set.
+    # environment. Products validate only on the production licence gateway.
     # =================================================================
-    # IS_DEVELOPMENT: "true"
 
     # =================================================================
     # OpenTelemetry

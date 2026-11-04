@@ -8,7 +8,6 @@ data:
   ENV_NAME: {{ .Values.reconciliation.configmap.ENV_NAME | default "development" | quote }}
   VERSION: {{ .Values.reconciliation.image.tag | default .Chart.AppVersion | quote }}
   LOG_LEVEL: {{ .Values.reconciliation.configmap.LOG_LEVEL | default "info" | quote }}
-  WORKER_PORT: {{ .Values.reconciliation.configmap.WORKER_PORT | default "4017" | quote }}
 
   # Database Configuration (Primary)
   DB_HOST: {{ .Values.reconciliation.configmap.DB_HOST | default (include "plugin-br-pix-indirect-btg.postgresHost" .) | quote }}

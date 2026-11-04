@@ -201,8 +201,6 @@ data:
   # =====================================================================
   # LICENSE GATEWAY — rendered in both modes. Newer app images refuse to
   # boot without LICENSE_KEY (Secret) and ORGANIZATION_IDS, in every environment.
-  # IS_DEVELOPMENT is read by lib-license-go: exactly "true" selects the
-  # development licence gateway, which a development licence key needs.
   # =====================================================================
   {{- /* Can also be supplied via .Values.bankTransfer.secrets.ORGANIZATION_IDS
      (rendered into the Secret by templates/secrets.yaml, or present in an
@@ -211,9 +209,6 @@ data:
      set there, this key is omitted here so envFrom doesn't declare it twice. */}}
   {{- if and .Values.bankTransfer.configmap.ORGANIZATION_IDS (not (.Values.bankTransfer.secrets.ORGANIZATION_IDS | default "")) }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
-  {{- end }}
-  {{- if .Values.bankTransfer.configmap.IS_DEVELOPMENT }}
-  IS_DEVELOPMENT: {{ .Values.bankTransfer.configmap.IS_DEVELOPMENT | quote }}
   {{- end }}
 
   # =====================================================================

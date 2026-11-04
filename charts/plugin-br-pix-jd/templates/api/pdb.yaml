@@ -1,9 +1,7 @@
-{{- if and .Values.api.enabled .Values.api.pdb.enabled }}
-{{- /* specStyle "explicit": minAvailable and maxUnavailable are mutually exclusive
-   in policy/v1, and the explicit style fails fast when both are set rather than
-   silently preferring one. */ -}}
+{{- if .Values.api.enabled }}
+{{- /* The preset owns the budget (maxUnavailable 1, AlwaysAllow). */ -}}
 {{- include "lerian-common.pdb" (dict
-      "pdb" (fromYaml (include "plugin-br-pix-jd.withCommonAnnotations" (dict "root" $ "block" .Values.api.pdb)))
+      "pdb" (fromYaml (include "plugin-br-pix-jd.withCommonAnnotations" (dict "root" $ "block" (fromYaml (include "plugin-br-pix-jd.api.health" .)).pdb)))
       "specStyle" "explicit"
       "name" (include "plugin-br-pix-jd.componentFullname" (dict "root" $ "name" "api"))
       "namespace" (include "plugin-br-pix-jd.namespace" $)

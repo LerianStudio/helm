@@ -6,7 +6,7 @@
 - Required secrets: `LICENSE_KEY`, `MENSAGERIA_CLIENT_ID`, `MENSAGERIA_CLIENT_SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` (webhook transport), the KMS credential (`VAULT_TOKEN` or `VAULT_APPROLE_SECRET_ID`; none for AWS KMS), `POSTGRES_PASSWORD` / `REDIS_PASSWORD` for external infra, plus, as existing Secrets, the Mensageria server CA (`ca.crt`; optional in one-way TLS) and, with mTLS only, the executor client pair (`tls.crt`, `tls.key`). The default render fails on purpose and names the first missing value.
 - Dependency notes: PostgreSQL and Valkey ship as Bitnami subcharts, **disabled by default** and development-only. Production uses external, managed PostgreSQL and Redis/Valkey, a Vault Transit or AWS KMS, plugin-access-manager and the Sisbajud Mensageria (br-sfn).
 - Production overrides: `global.datastores`, `global.kms`, `global.auth.host`, `sisbajud.mensageria.*`, `sisbajud.executor.*`, and `sisbajud.useExistingSecret` + `existingSecretName` (an existing Secret **replaces** the chart Secret; it is not merged).
-- Source/license: chart source in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm) (Elastic License 2.0); application in [LerianStudio/plugin-br-sisbajud](https://github.com/LerianStudio/plugin-br-sisbajud).
+- Source/license: chart source in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm) (Elastic License 2.0); application in `LerianStudio/plugin-br-sisbajud`.
 
 ## Overview
 
@@ -16,7 +16,7 @@ The SISBAJUD **executor**. One process that:
 2. executes them on **Midaz** (block, unblock, transfer, information) using each institution's connector configuration, stored sealed in its database;
 3. posts the results back to the Mensageria.
 
-Notices arrive through the Streaming Hub **webhook** (default, own listener on `:9082`) or an **SQS** queue. The regulatory side (STA intake, return files, BACEN) is the Sisbajud Mensageria, a br-sfn rail — it is not part of this chart. This chart replaces `br-sisbajud` (deprecated).
+Notices arrive through the Streaming Hub **webhook** (default, own listener on `:9082`) or an **SQS** queue. The regulatory side (STA intake, return files, BACEN) is the Sisbajud Mensageria, a br-sfn rail — it is not part of this chart. The `br-sisbajud` chart deploys it.
 
 | Resource | Notes |
 |---|---|
@@ -29,6 +29,7 @@ Notices arrive through the Streaming Hub **webhook** (default, own listener on `
 ## Install
 
 ```bash
+kubectl create namespace sisbajud
 kubectl create secret generic sisbajud-mensageria-ca -n sisbajud --from-file=ca.crt=mensageria-ca.pem
 # mTLS only (sisbajud.mensageria.mtlsEnabled: true):
 kubectl create secret tls sisbajud-mensageria-client -n sisbajud --cert=client.pem --key=client-key.pem
@@ -50,7 +51,6 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.mensageria.mtlsEnabled` | `MENSAGERIA_MTLS_ENABLED` | `false` (one-way TLS). `true` requires the CA and the client pair. Must match the Mensageria |
 | `sisbajud.mensageria.ca.existingSecret` (+ `key`, `mountPath`) | `MENSAGERIA_TLS_CA_FILE` | server CA, mounted at `<mountPath>/ca.crt`. Optional in one-way TLS (empty = system trust store); empty falls back to `tls.existingSecret` + `tls.caKey` |
 | `sisbajud.mensageria.tls.existingSecret` (+ `certKey`, `keyKey`, `mountPath`) | `MENSAGERIA_TLS_CLIENT_CERT_FILE`, `MENSAGERIA_TLS_CLIENT_KEY_FILE` | client pair, mounted (at `<mountPath>/tls.crt`, `tls.key`) and emitted **only with mTLS** |
-| `sisbajud.license.isDevelopment` | `IS_DEVELOPMENT` | `"true"` routes the license check to the dev gateway (dev-issued keys) |
 | `sisbajud.executor.m2mSubject` | `EXECUTOR_M2M_SUBJECT` | `sub` of the executor M2M token |
 | `sisbajud.executor.streamingHubTenantId` | `STREAMING_HUB_TENANT_ID` | required; same value as the Streaming Hub deployment |
 | `sisbajud.secrets.MENSAGERIA_CLIENT_ID/SECRET` | same | minted at `PLUGIN_AUTH_HOST` |
@@ -79,7 +79,7 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.license.organizationIds` | `ORGANIZATION_IDS` | must be `global` |
 | `global.auth.*` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | |
 
-Liveness probes `/version` (static build info, always 200): the app's `/health` stays 503 until its startup self-probe passes, and that self-probe stays degraded while no institution is routed, so a fresh install would be restarted in a loop. Readiness stays on `/readyz`.
+Liveness probes `/version` (static build info, always 200): the app's `/health` stays 503 until its startup self-probe passes. Readiness stays on `/readyz`.
 
 `VAULT_ADDR` and `MENSAGERIA_BASE_URL` must be https (`VAULT_ADDR` may be http only for a loopback host or `ENVIRONMENT_NAME` `local|development|test`); argocd-vault-plugin placeholders (`<path:...>`) are not checked at render.
 
@@ -128,7 +128,7 @@ With the wrong mode every holder read fails.
 
 ## Known limitation: object-store readiness probe (app, B1)
 
-The application (still in `1.0.0`) wires a SeaweedFS/S3 client in every mode and its `/readyz` gates on it; `SEAWEEDFS_S3_ENDPOINT` defaults to `http://localhost:8333` in code, so in executor mode the pod stays NotReady unless that endpoint answers. Executor mode never reads or writes objects. Until the app skips that probe in executor mode, point `sisbajud.configmap.SEAWEEDFS_S3_ENDPOINT` / `SEAWEEDFS_BUCKET` / `SEAWEEDFS_REGION` (and, if needed, `sisbajud.secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY`) at a reachable S3 endpoint.
+The application (still in `1.1.0`) wires a SeaweedFS/S3 client in every mode and its `/readyz` gates on it; `SEAWEEDFS_S3_ENDPOINT` defaults to `http://localhost:8333` in code, so in executor mode the pod stays NotReady unless that endpoint answers. Executor mode never reads or writes objects. Until the app skips that probe in executor mode, point `sisbajud.configmap.SEAWEEDFS_S3_ENDPOINT` / `SEAWEEDFS_BUCKET` / `SEAWEEDFS_REGION` (and, if needed, `sisbajud.secrets.SEAWEEDFS_ACCESS_KEY` / `SEAWEEDFS_SECRET_KEY`) at a reachable S3 endpoint.
 
 ## Development profile
 

@@ -1,4 +1,5 @@
-{{- if .Values.pix.autoscaling.enabled }}
+{{- $h := include "plugin-br-pix-indirect-btg.health" . | fromYaml }}
+{{- if $h.autoscaling }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -10,7 +11,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "plugin-br-pix-indirect-btg.fullname" . }}
-  minReplicas: {{ .Values.pix.autoscaling.minReplicas }}
+  minReplicas: {{ $h.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.pix.autoscaling.maxReplicas }}
   metrics:
     {{- if .Values.pix.autoscaling.targetCPUUtilizationPercentage }}

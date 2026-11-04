@@ -1,5 +1,493 @@
 # Fetcher Changelog
 
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Fixes:
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Fixes:
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to enhance functionality. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Features:
+
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+
+Fixes:
+
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to improve functionality. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Fixes:
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to enhance functionality. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Fixes:
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to improve functionality. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Fixes:
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to improve functionality. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Fixes:
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to improve functionality. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Features:
+
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+
+Fixes:
+
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to improve functionality. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.2](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.2)
+
+Fixes:
+- Emit `REDIS_TLS`, install KEDA CRDs, and drop unread keys to improve functionality. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `4.0.1` to `4.1.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.1...fetcher-v4.1.2)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Update fetcher to use stable images, ensuring reliability and consistency in deployments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Updated fetcher to use stable images, ensuring more reliable and consistent performance. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+
+- Ensure fetcher uses stable images to enhance reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images for fetcher to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images to ensure consistent behavior in the fetcher component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+
+- Use stable images in fetcher to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Updated fetcher to use stable images for improved reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images to enhance reliability and consistency in the fetcher component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in the fetcher component to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images for fetcher to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+
+- Use stable images for fetcher to ensure reliability and consistency in deployments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in the fetcher component to improve reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+
+- Use stable images in fetcher to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in fetcher to ensure reliability and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in the fetcher component to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.1)
+
+Fixes:
+- Use stable images in the fetcher component to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.0...fetcher-v4.1.1)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health configuration. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace overrides to prevent incorrect configurations, and update the README to reflect these changes. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to ensure deprecated settings are not used. (@fredcamaral)
+
+Improvements:
+- Document which health keys are refused by the render to clarify configuration options. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health check capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace overrides to prevent incorrect configurations, and update the README accordingly. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to ensure deprecated settings are not used. (@fredcamaral)
+
+Improvements:
+- Document which health keys the render process refuses, providing clearer guidance for users. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health monitoring capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace overrides to prevent misconfigurations, and update the README to reflect these changes. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to ensure compatibility with the latest configurations. (@fredcamaral)
+
+Improvements:
+- Document which health keys the render process refuses, providing better clarity for users. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
+## [4.1.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.0)
+
+Features:
+- Adopt the `lerian-common` health preset to enhance the health check capabilities. (@fredcamaral)
+
+Fixes:
+- Refuse `pdb.enabled` and zero grace period overrides to ensure proper configuration handling, and update the README to reflect these changes. (@fredcamaral)
+- Refuse retired `pdb` and rollout overrides to maintain compatibility with current configurations. (@fredcamaral)
+
+Improvements:
+- Document which health keys are refused by the render process to provide clearer guidance on configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.1...fetcher-v4.1.0)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+Improvements:
+
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+Features:
+- Add Helm upgrade guide for fetcher `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for fetcher `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+Improvements:
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+
+Fixes:
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Features:
+
+- Add Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+Improvements:
+
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+
+Fixes:
+
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Link the license by URL so packaged charts resolve it. (@fredcamaral)
+- Relicense under Elastic License 2.0. (@fredcamaral)
+
+Features:
+- Add Helm upgrade guide for fetcher `v4.0.0`. (@guimoreirar)
+- Add Helm upgrade guide for fetcher `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
+## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
+
+Improvements:
+- Added a Helm upgrade guide for `fetcher` `v4.0.0`. (@guimoreirar)
+- Added a Helm upgrade guide for `fetcher` `v3.4.4`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.0.0...fetcher-v4.0.1)
+
+---
+
 ## [4.0.1](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.0.1)
 
 Features:

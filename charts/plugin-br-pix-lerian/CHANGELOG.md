@@ -1,5 +1,390 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default `pixauto` SPI_BASE_URL to the SPI port. (@fredcamaral)
+- Honor `global.auth` in the `pixauto` ingress guard. (@fredcamaral)
+- Enable authentication on every workload in the template. (@fredcamaral)
+- Point `pixauto` SPI_BASE_URL at the SPI service port. (@fredcamaral)
+
+Improvements:
+- Document that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Correct chart documentation against templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default the `pixauto` `SPI_BASE_URL` to the SPI port, ensuring correct configuration. (@fredcamaral)
+- Ensure the global authentication settings are respected in the `pixauto` ingress guard. (@fredcamaral)
+- Enable authentication on every workload within the template to enhance security. (@fredcamaral)
+- Correct the `pixauto` `SPI_BASE_URL` to point at the SPI service port for accurate routing. (@fredcamaral)
+
+Improvements:
+- Document the requirement for a pull credential for the mock image, providing clarity for users. (@fredcamaral)
+- Apply review fixes to the chart documentation and upgrade guides, improving clarity and accuracy. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`, assisting users in seamless updates. (@fredcamaral)
+- Correct the chart documentation to align with templates and application code, ensuring consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default `pixauto SPI_BASE_URL` to the SPI port to ensure correct configuration. (@fredcamaral)
+- Honor `global.auth` in the `pixauto` ingress guard to maintain security settings. (@fredcamaral)
+- Enable authentication on every workload in the template to enhance security. (@fredcamaral)
+- Point `pixauto SPI_BASE_URL` at the SPI service port for accurate service routing. (@fredcamaral)
+
+Improvements:
+- Update documentation to indicate that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides for better clarity. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3` to assist users with updates. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve performance and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve performance and reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve the reliability of the plugin. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to enhance reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
 ## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
 
 Fixes:

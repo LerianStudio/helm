@@ -44,7 +44,7 @@
 | `global.externalMongoDefinitions.midazCredentials.useExistingSecret.name` | string | `""` | Name of existing secret containing MONGO_APP_USER and MONGO_APP_PASSWORD keys |
 | `global.externalMongoDefinitions.midazCredentials.username` | string | `"midaz"` | App username (ignored if useExistingSecret.name is set) |
 | `global.externalMongoDefinitions.midazCredentials.password` | string | `""` | Password for midaz user (ignored if useExistingSecret.name is set) |
-| `global.externalMongoDefinitions.midazCredentials.roles` | object | `{}` | List of roles to grant to the user. Each item is a {role, db} pair. |
+| `global.externalMongoDefinitions.midazCredentials.roles` | list | `readWrite` on `onboarding`, `transaction`, `crm`, `fees` | List of roles to grant to the user. Each item is a {role, db} pair. |
 | `global.datastores` | object | `{}` | Shared datastore masks. Keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / mongo / redis / broker. Each accepts host/port/user/replicaHost/name; `ssl` is honored only under the generic `postgres` key (and `global.cloud`), not under `postgresOnboarding`/`postgresTransaction`. |
 | `global.observability` | object | `{}` | Env-wide observability (OTel collector): enabled / otlpEndpoint / deploymentEnvironment. |
 | `global.multiTenant` | object | `{}` | Env-wide multi-tenant (tenant-manager): url / redisHost / redisPort / redisTls / ... |
@@ -57,22 +57,21 @@
 | `global.scheduling.spread.maxSkew` | int | `1` | Max allowed pod-count difference between topology domains (integer >= 1). |
 | `global.scheduling.spread.minDomains` | int | `0` | Minimum eligible domains for `DoNotSchedule` constraints (0 = off). With fewer domains the scheduler treats the global minimum as 0, so a hard hostname spread never stacks replicas on one node. |
 | `global.scheduling.spread.nodeTaintsPolicy` | string | `""` | `Honor` \| `Ignore` \| `""` (omitted = Kubernetes default `Ignore`). `Honor` counts only nodes whose taints the pod tolerates. |
-| `ledger.readinessProbe` | object | `{}` | Readiness probe configuration. All fields override chart defaults. |
-| `ledger.livenessProbe` | object | `{}` | Liveness probe configuration. All fields override chart defaults. |
 | `ledger.name` | string | `ledger` | Service name |
-| `ledger.enabled` | bool | `true` | NOTE: migration.allowAllServices is not in the public values.yaml - set it in your override values for internal testing |
+| `ledger.enabled` | bool | `true` | Enable or disable the ledger service |
+| `ledger.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it (image tag `4.5.0-beta.94` or later) |
+| `ledger.health.shutdownSeconds` | int | unset (preset: `30`) | `SHUTDOWN_TIMEOUT`: the one shutdown budget after the drain; pod grace is drain + this + 10s |
 | `ledger.replicaCount` | int | `2` | Number of replicas for the ledger service |
 | `ledger.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
-| `ledger.terminationGracePeriodSeconds` | int | `72` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `ledger.image.repository` | string | `lerianstudio/midaz-ledger` | Repository for the ledger service container image |
 | `ledger.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
-| `ledger.image.tag` | string | See `values.yaml` | Image tag used for deployment |
+| `ledger.image.tag` | string | `4.4.0` | Image tag used for deployment. A tag from `4.5.0-beta.94` on turns on the health preset; a lower tag keeps the 4.4 probes and ports |
 | `ledger.migrations` | object | `{}` | Dedicated migration runner (`midaz-ledger-migrations`, built FROM migrate/migrate) applying the onboarding and transaction migration sets. |
-| `ledger.migrations.enabled` | object | `{}` | Run the migration Job. Unset means auto: on for 4.x ledger tags, which removed in-process migration, off for 3.x, which still migrates at startup. Set false to keep it off when the schema is applied out-of-band. |
+| `ledger.migrations.enabled` | bool | `nil` | Run the migration Job. Unset means auto: on for 4.x ledger tags, which removed in-process migration, off for 3.x, which still migrates at startup. Set false to keep it off when the schema is applied out-of-band. |
 | `ledger.migrations.image.repository` | string | `lerianstudio/midaz-ledger-migrations` | Repository for the ledger migration-runner image |
 | `ledger.migrations.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
 | `ledger.migrations.image.tag` | string | `""` | Migration image tag. Empty tracks `ledger.image.tag` so the schema and the binary reading it cannot drift. |
-| `ledger.migrations.annotations` | object | `{}` | Extra Job annotations. The Job is a plain Sync-phase resource by default because the bundled PostgreSQL Secret it reads is only created during Sync; against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment. |
+| `ledger.migrations.annotations` | object | `{}` | Extra Job annotations. The Job is an Argo CD Sync hook by default because the bundled PostgreSQL Secret it reads is only created during Sync; against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment. |
 | `ledger.migrations.deploymentSyncWave` | string | `"1"` | Argo CD sync wave stamped on the ledger Deployment while this Job renders, so the Deployment is applied only once the Job reports Complete (the Job itself stays in the default wave, with the bundled PostgreSQL Secret it reads). Set to "" to drop the annotation and let both apply together. Ignored by plain `helm install`. |
 | `ledger.migrations.backoffLimit` | int | `6` | Retries before the Job is marked failed |
 | `ledger.migrations.activeDeadlineSeconds` | int | `600` | Hard timeout for the whole Job |
@@ -81,8 +80,18 @@
 | `ledger.migrations.waitForPostgres.enabled` | bool | `true` | Enable or disable the wait-for-postgres init container |
 | `ledger.migrations.waitForPostgres.image.repository` | string | `busybox` | Repository for the wait-for-postgres init container image |
 | `ledger.migrations.waitForPostgres.image.tag` | string | `"1.37"` | Image tag for the wait-for-postgres init container image |
-| `ledger.migrations.resources.limits` | object | `{}` | CPU and memory limits for the migration Job |
-| `ledger.migrations.resources.requests` | object | `{}` | Minimum CPU and memory requests for the migration Job |
+| `ledger.migrations.resources.limits` | object | See `values.yaml` | CPU and memory limits for the migration Job |
+| `ledger.migrations.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests for the migration Job |
+| `ledger.partition` | object | `{}` | Partition runner (`/partition`, shipped in the ledger image). A CronJob runs `partition ensure` on its schedule, daily by default: it creates the time partitions of the partitioned transaction tables ahead of the clock and reports their health through its exit code (0 healthy or unpartitioned, 1 needs attention, 2 invalid configuration). In multi-tenant mode it visits every active tenant. |
+| `ledger.partition.enabled` | bool | `nil` | Run the `partition ensure` CronJob. Unset (the default) means auto: on for ledger tags >= 4.5.0-beta.1 (every ledger image from that tag on ships the runner), off below that and for non-SemVer tags. Set true or false to override. |
+| `ledger.partition.schedule` | string | `"0 6 * * *"` | Cron schedule of the `partition ensure` run, read in `timeZone`. The default, 06:00 in that zone, stays clear of the early-morning backup and maintenance windows managed PostgreSQL services often default to; pick a time outside your database's own windows. |
+| `ledger.partition.timeZone` | string | `""` | IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses the time zone of the kube-controller-manager, UTC on most managed clusters; set it to pin the schedule to a zone. |
+| `ledger.partition.activeDeadlineSeconds` | int | `1800` | Hard timeout for one run, in seconds |
+| `ledger.partition.reconcile.enabled` | bool | `true` | Run `partition reconcile-indexes` as a Sync/upgrade hook Job after the migration Job. It exits 0 on an empty registry, an unpartitioned table or a database without the partition support migration, so it never blocks a sync on an older schema. |
+| `ledger.partition.reconcile.syncWave` | string | `"1"` | Argo CD sync wave of the reconcile Job (after the migration Job's default wave 0). On plain Helm the hook weight "10" orders it instead. |
+| `ledger.partition.reconcile.activeDeadlineSeconds` | int | `1800` | Hard timeout for the reconcile Job, in seconds (a concurrent index build on a large partition can take a while) |
+| `ledger.partition.resources.limits` | object | See `values.yaml` | CPU and memory limits for the partition runner |
+| `ledger.partition.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests for the partition runner |
 | `ledger.imagePullSecrets` | list | `[]` | Secrets for pulling images from a private registry |
 | `ledger.nameOverride` | string | `""` | Overrides the default generated name by Helm |
 | `ledger.fullnameOverride` | string | `""` | Overrides the full name generated by Helm |
@@ -93,20 +102,15 @@
 | `ledger.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `ledger.pdb` | object | `{}` | PodDisruptionBudget configuration |
 | `ledger.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `ledger.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `ledger.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
-| `ledger.deploymentUpdate` | object | `{}` | Deployment update strategy |
-| `ledger.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
-| `ledger.deploymentUpdate.maxSurge` | string | `100%` | Maximum number of pods that can be created over the desired number of pods |
-| `ledger.deploymentUpdate.maxUnavailable` | int | `0` | Maximum number of pods that can be unavailable during the update |
 | `ledger.service.type` | string | `ClusterIP` | Kubernetes service type |
 | `ledger.service.port` | int | `3002` | Port for the HTTP API (all APIs on single port) |
 | `ledger.ingress.enabled` | bool | `false` | Enable or disable ingress |
 | `ledger.ingress.className` | string | `""` | Ingress class name |
 | `ledger.ingress.annotations` | object | `{}` | Additional ingress annotations |
 | `ledger.ingress.tls` | list | `[]` | TLS configuration for ingress |
-| `ledger.resources.limits` | object | `{}` | CPU and memory limits for pods |
-| `ledger.resources.requests` | object | `{}` | Minimum CPU and memory requests |
+| `ledger.resources.limits` | object | See `values.yaml` | CPU and memory limits for pods |
+| `ledger.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests |
 | `ledger.autoscaling.enabled` | bool | `true` | Enable or disable horizontal pod autoscaling |
 | `ledger.autoscaling.minReplicas` | int | `2` | Minimum number of replicas |
 | `ledger.autoscaling.maxReplicas` | int | `9` | Maximum number of replicas |
@@ -127,7 +131,7 @@
 | `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` | string | `""` | CRM holder-field crypto (lib-crypto). Operator-provided key material protecting PII at rest. Required when the ledger serves CRM and KMS_VENDOR is unset or "none" (legacy mode, local symmetric keys). |
 | `ledger.secrets.KMS_VAULT_SECRET_ID` | string | `""` | Vault AppRole SecretID, the credential half of the KMS auth pair. Only set when ledger.configmap.KMS_VENDOR="hashicorp-vault" (envelope encryption). The RoleID counterpart is not secret and stays in the ConfigMap. |
 | `ledger.secrets.LICENSE_KEY` | string | `""` | Product license key. Required: the ledger refuses to boot when empty. |
-| `ledger.secrets.REDIS_PASSWORD` | string | `""` | Shared passwords. REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an existingSecret override. RABBITMQ_* remain operator-provided (see README "Known limitation" — RabbitMQ is not yet single-sourced). |
+| `ledger.secrets.REDIS_PASSWORD` | string | `""` | Shared passwords. REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an existingSecret override. RABBITMQ_* are operator-provided; the bundled RabbitMQ gives them to its `transaction` and `consumer` users. |
 | `ledger.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Rendered into the ledger Secret. |
 | `ledger.secrets.STREAMING_SASL_PASSWORD` | string | `""` | Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set when the streaming backend uses SASL auth and/or a private TLS CA. When set, they are rendered into the ledger Secret (never the ConfigMap). |
 | `ledger.serviceAccount.create` | bool | `true` | Specifies whether a ServiceAccount should be created |
@@ -174,8 +178,8 @@
 | `crm.ingress.className` | string | `""` | Ingress class name |
 | `crm.ingress.annotations` | object | `{}` | Additional ingress annotations |
 | `crm.ingress.tls` | list | `[]` | TLS configuration for ingress |
-| `crm.resources.limits` | string | `{}` | CPU and memory limits for pods |
-| `crm.resources.requests` | string | `{}` | Minimum CPU and memory requests |
+| `crm.resources.limits` | string | See `values.yaml` | CPU and memory limits for pods |
+| `crm.resources.requests` | string | See `values.yaml` | Minimum CPU and memory requests |
 | `crm.autoscaling.enabled` | bool | `true` | Enable or disable horizontal pod autoscaling |
 | `crm.autoscaling.minReplicas` | int | `1` | Minimum number of replicas |
 | `crm.autoscaling.maxReplicas` | int | `3` | Maximum number of replicas |
@@ -194,22 +198,20 @@
 | `crm.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Rendered into the CRM Secret. |
 | `crm.secrets.STREAMING_SASL_PASSWORD` | string | `""` | Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set when the streaming backend uses SASL auth and/or a private TLS CA. When set, they are rendered into the CRM Secret (never the ConfigMap). |
 | `crm.useExistingSecret` | bool | `false` | Existing secrets name |
-| `tracer.readinessProbe` | object | `{}` | Readiness probe configuration. All fields override chart defaults. |
-| `tracer.livenessProbe` | object | `{}` | Liveness probe configuration. All fields override chart defaults. |
 | `tracer.name` | string | `tracer` | Service name |
 | `tracer.enabled` | bool | `false` | Enable or disable the Tracer service (disabled by default; opt-in per env) |
+| `tracer.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it (image tag `4.5.0-beta.94` or later) |
 | `tracer.replicaCount` | int | `1` | Number of replicas for the Tracer service |
 | `tracer.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
-| `tracer.terminationGracePeriodSeconds` | int | `55` | Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush. |
 | `tracer.image.repository` | string | `lerianstudio/midaz-tracer` | Repository for the Tracer service container image. In midaz v4 tracer ships from the monorepo (`components/tracer`) and the release pipeline publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates the configuration contract this chart renders. |
 | `tracer.image.pullPolicy` | string | `Always` | Image pull policy |
-| `tracer.image.tag` | string | See `values.yaml` | Image tag used for deployment |
+| `tracer.image.tag` | string | `4.4.0` | Image tag used for deployment. A tag from `4.5.0-beta.94` on turns on the health preset; a lower tag keeps the 4.4 probes and ports |
 | `tracer.migrations` | object | `{}` | Dedicated migration runner (`midaz-tracer-migrations`, built FROM migrate/migrate). The v4 tracer no longer migrates at startup: it boots against an already-migrated schema, so this Job has to apply it. |
 | `tracer.migrations.enabled` | bool | `true` | Enable or disable the tracer migration Job |
 | `tracer.migrations.image.repository` | string | `lerianstudio/midaz-tracer-migrations` | Repository for the tracer migration-runner image |
 | `tracer.migrations.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
 | `tracer.migrations.image.tag` | string | `""` | Migration image tag. Empty tracks `tracer.image.tag` so the schema and the binary reading it cannot drift. |
-| `tracer.migrations.annotations` | object | `{}` | Extra Job annotations. The Job is a plain Sync-phase resource by default because the bundled PostgreSQL Secret it reads is only created during Sync; against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment. |
+| `tracer.migrations.annotations` | object | `{}` | Extra Job annotations. The Job is an Argo CD Sync hook by default because the bundled PostgreSQL Secret it reads is only created during Sync; against a pre-provisioned database, set `argocd.argoproj.io/hook: PreSync` here to order it ahead of the Deployment. |
 | `tracer.migrations.deploymentSyncWave` | string | `"1"` | Argo CD sync wave stamped on the tracer Deployment while this Job renders, so the Deployment is applied only once the Job reports Complete (the Job itself stays in the default wave, with the bundled PostgreSQL Secret it reads). Set to "" to drop the annotation and let both apply together. Ignored by plain `helm install`. |
 | `tracer.migrations.backoffLimit` | int | `6` | Retries before the Job is marked failed (also absorbs a database that is reachable but not yet provisioned by the bootstrap Job) |
 | `tracer.migrations.activeDeadlineSeconds` | int | `600` | Hard timeout for the whole Job |
@@ -218,8 +220,8 @@
 | `tracer.migrations.waitForPostgres.enabled` | bool | `true` | Enable or disable the wait-for-postgres init container |
 | `tracer.migrations.waitForPostgres.image.repository` | string | `busybox` | Repository for the wait-for-postgres init container image |
 | `tracer.migrations.waitForPostgres.image.tag` | string | `"1.37"` | Image tag for the wait-for-postgres init container image |
-| `tracer.migrations.resources.limits` | object | `{}` | CPU and memory limits for the migration Job |
-| `tracer.migrations.resources.requests` | object | `{}` | Minimum CPU and memory requests for the migration Job |
+| `tracer.migrations.resources.limits` | object | See `values.yaml` | CPU and memory limits for the migration Job |
+| `tracer.migrations.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests for the migration Job |
 | `tracer.imagePullSecrets` | list | `[]` | Secrets for pulling images from a private registry |
 | `tracer.nameOverride` | string | `""` | Overrides the default generated name by Helm |
 | `tracer.fullnameOverride` | string | `""` | Overrides the full name generated by Helm |
@@ -230,12 +232,7 @@
 | `tracer.securityContext.readOnlyRootFilesystem` | bool | `true` | Defines the root filesystem as read-only |
 | `tracer.pdb` | object | `{}` | PodDisruptionBudget configuration |
 | `tracer.pdb.enabled` | bool | `true` | Enable or disable PodDisruptionBudget |
-| `tracer.pdb.maxUnavailable` | int | `1` | Maximum number of unavailable pods; ignored when minAvailable is set. |
 | `tracer.pdb.annotations` | object | `{}` | Annotations for the PodDisruptionBudget |
-| `tracer.deploymentUpdate` | object | `{}` | Deployment update strategy |
-| `tracer.deploymentUpdate.type` | string | `RollingUpdate` | Type of deployment strategy |
-| `tracer.deploymentUpdate.maxSurge` | int | `1` | Maximum number of pods that can be created over the desired number of pods |
-| `tracer.deploymentUpdate.maxUnavailable` | int | `0` | Maximum number of pods that can be unavailable during the update |
 | `tracer.service.type` | string | `ClusterIP` | Kubernetes service type |
 | `tracer.service.port` | int | `4020` | Service port (HTTP API) |
 | `tracer.service.grpcPort` | int | `4021` | gRPC reservation seam port, always published on the container and Service. The tracer always listens on gRPC (":4021" when TRACER_GRPC_PORT is unset). When `tracer.configmap.TRACER_GRPC_PORT` is set, its numeric tail takes precedence over this value. |
@@ -243,8 +240,8 @@
 | `tracer.ingress.className` | string | `""` | Ingress class name |
 | `tracer.ingress.annotations` | object | `{}` | Additional ingress annotations |
 | `tracer.ingress.tls` | list | `[]` | TLS configuration for ingress |
-| `tracer.resources.limits` | object | `{}` | CPU and memory limits for pods |
-| `tracer.resources.requests` | object | `{}` | Minimum CPU and memory requests |
+| `tracer.resources.limits` | object | See `values.yaml` | CPU and memory limits for pods |
+| `tracer.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests |
 | `tracer.autoscaling.enabled` | bool | `true` | Enable or disable horizontal pod autoscaling |
 | `tracer.autoscaling.minReplicas` | int | `1` | Minimum number of replicas |
 | `tracer.autoscaling.maxReplicas` | int | `5` | Maximum number of replicas |
@@ -262,5 +259,5 @@
 | `tracer.secrets.API_KEY` | string | `""` | API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true). |
 | `tracer.secrets.LICENSE_KEY` | string | `""` | Product license key. Required: the tracer refuses to boot when empty. |
 | `tracer.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set. |
-| `otel-collector-lerian` | object | `{}` | OTEL exporter configuration for midaz services. When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES are injected into the `ledger` and `crm` deployments only. Port is fixed at 4317. If you need a different collector endpoint, leave enabled=false and configure OTEL env vars directly in the application configmap (ledger.configmap / crm.configmap). |
-| `otel-collector-lerian.enabled` | bool | `true` | Inject OTEL env vars into the midaz ledger and crm deployments |
+| `otel-collector-lerian` | object | `{}` | OTEL exporter configuration for midaz services. When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES are injected into the `ledger`, `crm` and `tracer` deployments. Port is fixed at 4317. If you need a different collector endpoint, leave enabled=false and configure OTEL env vars directly in the application configmap (ledger.configmap / crm.configmap). |
+| `otel-collector-lerian.enabled` | bool | `true` | Inject OTEL env vars into the midaz ledger, crm and tracer deployments |

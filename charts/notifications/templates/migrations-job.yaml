@@ -19,6 +19,25 @@
   POSTGRES_* values because a distroless Job has no shell to URL-encode
   the password at runtime.
 */}}
+{{- if not .Values.secretRef.name }}
+{{- /* The chart Secret is a regular release resource and does not exist yet at
+  pre-install time, so the hook gets its own Secret, created just before it. */}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "notifications.fullname" . }}-migrations
+  namespace: {{ include "notifications.namespace" . }}
+  labels:
+    {{- include "notifications.labels" (dict "context" . "name" (printf "%s-migrations" (include "notifications.fullname" .))) | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+type: Opaque
+data:
+  DATABASE_URL: {{ .Values.secrets.DATABASE_URL | default "" | b64enc | quote }}
+---
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -64,14 +83,10 @@ spec:
             {{- toYaml .Values.migrations.securityContext | nindent 12 }}
           env:
             - name: DATABASE_URL
-              {{- if .Values.secretRef.name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secretRef.name }}
+                  name: {{ .Values.secretRef.name | default (printf "%s-migrations" (include "notifications.fullname" .)) }}
                   key: DATABASE_URL
-              {{- else }}
-              value: {{ .Values.secrets.DATABASE_URL | quote }}
-              {{- end }}
           command:
             - /migrate
           args:

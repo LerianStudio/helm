@@ -22,7 +22,7 @@ This patch release updates the Midaz application from version `4.2.1` to `4.2.2`
 |-----------|--------|--------|
 | appVersion | 4.2.1 | 4.2.2 |
 
-For detailed application-level changes, refer to the [Midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+For detailed application-level changes, refer to the Midaz application changelog.
 
 ### 2. Image tag updates
 

@@ -323,6 +323,104 @@ true
 {{- end -}}
 {{- end -}}
 
+{{/* Explicit settings win; auto enables from 4.5.0-beta.1; every ledger image from that tag on ships the runner. */}}
+{{- define "midaz.ledgerPartitionEnabled" -}}
+{{- $enabled := dig "partition" "enabled" nil (.Values.ledger | default dict) -}}
+{{- if kindIs "invalid" $enabled -}}
+{{- $tag := .Values.ledger.image.tag | default .Chart.AppVersion | toString | trimPrefix "v" -}}
+{{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
+       render on a malformed version instead of resolving to "off". */ -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
+{{- if semverCompare ">=4.5.0-beta.1" $tag -}}true{{- end -}}
+{{- end -}}
+{{- else if eq (toString $enabled) "true" -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/* Both partition workloads use ledger connections and migration credentials. */}}
+{{- define "midaz-ledger.partitionPodSpec" -}}
+{{- $ctx := .context -}}
+{{- $values := $ctx.Values -}}
+{{- $partition := $values.ledger.partition | default dict -}}
+{{- $pg := $values.postgresql | default dict -}}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ctx "subchart" "postgresql")) -}}
+{{- $secretName := ternary $values.ledger.existingSecretName (include "midaz-ledger.fullname" $ctx) $values.ledger.useExistingSecret -}}
+restartPolicy: Never
+automountServiceAccountToken: false
+{{- with $values.ledger.imagePullSecrets }}
+imagePullSecrets:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+securityContext:
+  {{- toYaml $values.ledger.podSecurityContext | nindent 2 }}
+containers:
+  - name: partition
+    image: "{{ $values.ledger.image.repository }}:{{ $values.ledger.image.tag | default $ctx.Chart.AppVersion }}"
+    imagePullPolicy: {{ $values.ledger.image.pullPolicy }}
+    command: ["/partition"]
+    args: {{ toJson .args }}
+    securityContext:
+      {{- toYaml $values.ledger.securityContext | nindent 6 }}
+    envFrom:
+      - secretRef:
+          name: {{ $secretName }}
+      - configMapRef:
+          name: {{ include "midaz-ledger.fullname" $ctx }}
+    env:
+      {{- /* Inline settings override stale ConfigMaps during pre-upgrade hooks. */}}
+      {{- range $name, $value := include "midaz-ledger.partitionInlineEnv" $ctx | fromYaml }}
+      - name: {{ $name }}
+        value: {{ $value | toString | quote }}
+      {{- end }}
+      {{- /* Single-tenant runners use the same PostgreSQL Secret as migrations. */}}
+      {{- if ne (include "midaz.isTrue" ($values.ledger.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
+      {{- if $pgInternal }}
+      {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 6 }}
+      {{- else if or $values.ledger.useExistingSecret $values.ledger.secrets.DB_TRANSACTION_PASSWORD }}
+      - name: DB_TRANSACTION_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: {{ $secretName }}
+            key: DB_TRANSACTION_PASSWORD
+      {{- end }}
+      {{- end }}
+    resources:
+      {{- toYaml $partition.resources | nindent 6 }}
+{{- with $values.ledger.nodeSelector }}
+nodeSelector:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with $values.ledger.affinity }}
+affinity:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with $values.ledger.tolerations }}
+tolerations:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end -}}
+
+{{/* Inline values override stale ConfigMaps during pre-upgrade hooks. */}}
+{{- define "midaz-ledger.partitionInlineEnv" -}}
+{{- $cm := .Values.ledger.configmap | default dict -}}
+{{- $dsl := .Values.ledger.datastores -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+DB_TRANSACTION_HOST: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" "midaz-postgresql-primary") | quote }}
+DB_TRANSACTION_PORT: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") | quote }}
+DB_TRANSACTION_NAME: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") | quote }}
+DB_TRANSACTION_USER: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") | quote }}
+DB_TRANSACTION_SSLMODE: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
+MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+{{ include "lerian-common.multiTenant.env" (dict "context" . "configmap" $cm "enabled" $mtEnabled "serviceName" "ledger" "emitRedis" true "requiredUrl" true "requiredRedisHost" true) }}
+{{- end -}}
+
+{{/* Include the image tag in the immutable reconcile Job name. */}}
+{{- define "midaz-ledger.partitionReconcileJobName" -}}
+{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-ledger.fullname" .) "tag" (.Values.ledger.image.tag | default .Chart.AppVersion | toString) "suffix" "partition-reconcile") -}}
+{{- end -}}
+
 {{/*
 midaz-tracer.migrationsFullname — one Job name per rendered Job spec
 (dict "context" . "spec" <rendered spec>). The tracer Job is a regular release
@@ -339,19 +437,17 @@ golang-migrate tracks progress in the schema_migrations table.
 {{- include "midaz.migrationsJobName" (dict "base" (include "midaz-ledger.fullname" .) "tag" (include "midaz-ledger.migrationsTag" .)) -}}
 {{- end -}}
 
-{{/*
-midaz.migrationsJobName — "<base>-migrations-<tag>" while it fits in the 63
-character limit. Beyond that, truncating the whole string would cut the tag off
-and make two releases collide on one immutable Job name, so the long form
-truncates the base and ends in a hash of the tag, which stays discriminating.
-*/}}
+{{/* Preserve unique tag-derived names within the Kubernetes length limit. */}}
 {{- define "midaz.migrationsJobName" -}}
+{{- $suffix := .suffix | default "migrations" -}}
 {{- $tag := regexReplaceAll "[^a-z0-9.]+" (lower .tag) "-" -}}
-{{- $name := printf "%s-migrations-%s" .base $tag -}}
+{{- $name := printf "%s-%s-%s" .base $suffix $tag -}}
 {{- if le (len $name) 63 -}}
 {{- $name | trimSuffix "-" | trimSuffix "." -}}
 {{- else -}}
-{{- printf "%s-migrations-%s" (trunc 42 .base | trimSuffix "-" | trimSuffix ".") (sha256sum $tag | trunc 8) -}}
+{{- /* base + "-" + suffix + "-" + 8-char hash stays within 62 characters
+       (42 for the "migrations" suffix, as before). */ -}}
+{{- printf "%s-%s-%s" (trunc (int (sub 52 (len $suffix))) .base | trimSuffix "-" | trimSuffix ".") $suffix (sha256sum $tag | trunc 8) -}}
 {{- end -}}
 {{- end -}}
 
@@ -491,7 +587,7 @@ supplied through values; an existing Secret is opaque to the chart.
 {{- /* Skip validation when the value is a secret-manager INJECTION PLACEHOLDER, not the literal
    key: ArgoCD-Vault-Plugin `<path:secret/...#K>`, envsubst `${VAR}`, or any `<...>` token. The
    real hex key is substituted AFTER `helm template`, so hex-validating the placeholder would
-   hard-fail the render in every Vault/AVP-backed environment (benedita, etc.). Literal values
+   hard-fail the render in every Vault/AVP-backed environment. Literal values
    (operator-supplied or the CI fixture) are still validated. */ -}}
 {{- if or (hasPrefix "<" $key) (contains "<path:" $key) (contains "${" $key) -}}
 {{- /* injected at deploy time — trust the secret manager */ -}}
@@ -551,5 +647,76 @@ behavior unchanged).
 {{- if $unset -}}
 {{- fail (printf "\n\nmidaz: managed/external Mongo is selected (mongodb.enabled=false) but the %s Mongo host is not set.\nThe ledger still needs a reachable Mongo for CRM and Fees (they are folded into the ledger binary), and the ledger init container hard-gates on MONGO_CRM_HOST and MONGO_FEES_HOST regardless of crm.enabled. With the packaged Mongo disabled and no host override, these default to the packaged Service \"midaz-mongodb\" (which is not deployed), so the ledger pod CrashLoops after ledger.initContainer.timeoutSeconds (default 300s).\n\nSet the host(s) explicitly, e.g.:\n  --set global.datastores.mongoCrm.host=<your-mongo-host> --set global.datastores.mongoFees.host=<your-mongo-host>\nor per-component:\n  ledger.datastores.mongoCrm.host / ledger.datastores.mongoFees.host\nor as a native override:\n  ledger.configmap.MONGO_CRM_HOST / ledger.configmap.MONGO_FEES_HOST\n\nSee charts/midaz/docs/UPGRADE-9.1.md section 6 (Ledger CRM and Fees module integration).\n" (join " and " $unset)) -}}
 {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Health preset inputs per component. minImage is the first Midaz image that serves
+/health and /readyz on HEALTH_PORT 8099. An image.tag below it keeps the 4.4 layout
+(midaz.healthLegacy); at or above it the preset owns probes, ports, PDB and rollout.
+*/}}
+{{- define "midaz.healthMinImage" -}}4.5.0-beta.94{{- end -}}
+
+{{/* "true" when the component's effective image tag is a SemVer below minImage. */}}
+{{- define "midaz.belowHealthMin" -}}
+{{- $tag := toString (.component.image.tag | default .context.Chart.AppVersion) -}}
+{{- if and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $tag) (lt ((semver $tag).Compare (semver (include "midaz.healthMinImage" .context))) 0) -}}true{{- end -}}
+{{- end -}}
+
+{{/*
+The 4.4 layout in the preset's output shape (dict name, component, context): the images
+below minImage serve /health and /readyz on the main port and read no HEALTH_PORT.
+Operator keys: probes, terminationGracePeriodSeconds, deploymentUpdate, pdb.
+*/}}
+{{- define "midaz.healthLegacy" -}}
+{{- $c := .component -}}
+{{- $ledger := eq .name "ledger" -}}
+{{- $du := dig "deploymentUpdate" dict $c -}}
+{{- $type := $du.type | default "RollingUpdate" -}}
+{{- $strategy := dict "type" $type -}}
+{{- if eq $type "RollingUpdate" -}}
+{{- $_ := set $strategy "rollingUpdate" (dict "maxSurge" (dig "maxSurge" (ternary "100%" 1 $ledger) $du) "maxUnavailable" (dig "maxUnavailable" 0 $du)) -}}
+{{- end -}}
+{{- $port := ternary "http" (int $c.service.port) $ledger -}}
+{{- $lp := dig "livenessProbe" dict $c -}}
+{{- $rp := dig "readinessProbe" dict $c -}}
+{{- $live := dict "httpGet" (dict "path" ($lp.path | default "/health") "port" $port) "initialDelaySeconds" ($lp.initialDelaySeconds | default (ternary 0 15 $ledger)) "periodSeconds" ($lp.periodSeconds | default (ternary 10 20 $ledger)) "timeoutSeconds" ($lp.timeoutSeconds | default (ternary 3 5 $ledger)) "successThreshold" ($lp.successThreshold | default 1) "failureThreshold" ($lp.failureThreshold | default 3) -}}
+{{- $ready := dict "httpGet" (dict "path" ($rp.path | default "/readyz") "port" $port) "initialDelaySeconds" ($rp.initialDelaySeconds | default (ternary 0 5 $ledger)) "periodSeconds" ($rp.periodSeconds | default 10) "timeoutSeconds" ($rp.timeoutSeconds | default (ternary 16 5 $ledger)) "successThreshold" ($rp.successThreshold | default 1) "failureThreshold" ($rp.failureThreshold | default 3) -}}
+{{- $pdb := $c.pdb | default dict -}}
+{{- $out := dict "strategy" $strategy "terminationGracePeriodSeconds" (dig "terminationGracePeriodSeconds" (ternary 72 55 $ledger) $c) "env" (list (dict "name" "SHUTDOWN_DRAIN_DELAY" "value" "15s")) "livenessProbe" $live "readinessProbe" $ready "autoscaling" (dict "minReplicas" $c.autoscaling.minReplicas) -}}
+{{- if $pdb.minAvailable -}}
+{{- $_ := set $out "pdb" (dict "minAvailable" $pdb.minAvailable) -}}
+{{- else -}}
+{{- $_ := set $out "pdb" (dict "maxUnavailable" (dig "maxUnavailable" 1 $pdb)) -}}
+{{- end -}}
+{{- if not $c.autoscaling.enabled -}}{{- $_ := set $out "replicas" $c.replicaCount -}}{{- end -}}
+{{- toYaml $out -}}
+{{- end -}}
+
+{{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "midaz.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "midaz: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- if $.component.deploymentUpdate -}}{{- fail (printf "midaz: %s.deploymentUpdate is owned by the health preset (RollingUpdate); remove it" $.name) -}}{{- end -}}
+{{- end -}}
+
+{{- define "midaz-ledger.health" -}}
+{{- if include "midaz.belowHealthMin" (dict "component" .Values.ledger "context" .) -}}
+{{- include "midaz.healthLegacy" (dict "name" "ledger" "component" .Values.ledger) -}}
+{{- else -}}
+{{- include "midaz.presetOwned" (dict "name" "ledger" "component" .Values.ledger) -}}
+{{- include "lerian-common.health" (dict "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health "port" (int .Values.ledger.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "midaz-tracer.health" -}}
+{{- if include "midaz.belowHealthMin" (dict "component" .Values.tracer "context" .) -}}
+{{- include "midaz.healthLegacy" (dict "name" "tracer" "component" .Values.tracer) -}}
+{{- else -}}
+{{- include "midaz.presetOwned" (dict "name" "tracer" "component" .Values.tracer) -}}
+{{- include "lerian-common.health" (dict "name" "tracer" "component" .Values.tracer "health" .Values.tracer.health "port" (int .Values.tracer.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.tracer.replicaCount "autoscaling" .Values.tracer.autoscaling) -}}
 {{- end -}}
 {{- end -}}

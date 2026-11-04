@@ -1,0 +1,9 @@
+{{- $h := include "fetcher-worker.health" . | fromYaml }}
+{{- if $h.pdb }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" $h.pdb
+      "name" (include "fetcher-worker.fullname" .)
+      "labels" (include "fetcher-worker.labels" .)
+      "selector" (include "fetcher-worker.selectorLabels" .)
+    ) }}
+{{- end }}

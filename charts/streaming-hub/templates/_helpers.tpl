@@ -72,6 +72,14 @@ Input: dict { context, component }.
 */}}
 {{- define "streaming-hub.labels" -}}
 helm.sh/chart: {{ include "streaming-hub.chart" .context }}
+{{ include "streaming-hub.podLabels" . }}
+{{- end }}
+
+{{/*
+Pod-template labels: the common labels WITHOUT helm.sh/chart, so a chart release
+that changes no pod spec does not roll every pod. Input: dict { context, component }.
+*/}}
+{{- define "streaming-hub.podLabels" -}}
 {{ include "streaming-hub.componentSelectorLabels" (dict "context" .context "component" .component) }}
 app.kubernetes.io/version: {{ include "streaming-hub.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
@@ -220,13 +228,11 @@ Input: none. Caller: nindent 12.
 
 {{/*
 streaming-hub.licenseGuard — render-time mirror of the app's license config
-gate (lib-license-go, GLOBAL mode). Fails the render for the two combinations
-the license-gated app refuses at boot, so the operator reads the fix in the
-`helm` output instead of a CrashLoopBackOff:
+gate (lib-license-go, GLOBAL mode). Fails the render for the combination the
+license-gated app refuses at boot, so the operator reads the fix in the `helm`
+output instead of a CrashLoopBackOff:
   - ORGANIZATION_IDS not EXACTLY "global" (trimmed, case-sensitive: the app
-    compares the literal, so "GLOBAL" or a comma list is refused);
-  - IS_DEVELOPMENT exactly "true" (the dev license server) while
-    STREAMING_HUB_ENV is "production".
+    compares the literal, so "GLOBAL" or a comma list is refused).
 The EFFECTIVE value is judged: streamingHub.extraEnvVars is explicit env and
 WINS over the ConfigMap (envFrom), so it is read first.
 LICENSE_KEY is deliberately NOT `required` here: like the DSN and the cursor
@@ -248,9 +254,28 @@ Input: root context (.).
 {{- if ne $org "global" -}}
 {{- fail (printf "\n\nERROR: ORGANIZATION_IDS must be exactly \"global\" (got %q): streaming-hub supports GLOBAL license mode only, and the app refuses any other value at boot (ErrLicenseOrganizationIDsInvalid). Leave streamingHub.configmap.ORGANIZATION_IDS unset (the chart default is \"global\")." $org) -}}
 {{- end -}}
-{{- $isDev := toString (ternary (get $x "IS_DEVELOPMENT") (get $cm "IS_DEVELOPMENT" | default "") (hasKey $x "IS_DEVELOPMENT")) -}}
+{{- end -}}
+
+{{/*
+streaming-hub.hardenedEnvGuard — render-time mirror of two refusals the app makes
+in staging and production (the chart default STREAMING_HUB_ENV is production):
+Kafka TLS must be on, and STREAMING_HUB_KEK_REF must name the KEK variable. The
+effective value is judged: extraEnvVars wins over the ConfigMap (envFrom).
+Input: root context (.).
+*/}}
+{{- define "streaming-hub.hardenedEnvGuard" -}}
+{{- $sh := .Values.streamingHub -}}
+{{- $cm := $sh.configmap | default dict -}}
+{{- $x := $sh.extraEnvVars | default dict -}}
 {{- $env := trim (toString (ternary (get $x "STREAMING_HUB_ENV") (get $cm "STREAMING_HUB_ENV" | default "production") (hasKey $x "STREAMING_HUB_ENV"))) -}}
-{{- if and (eq $isDev "true") (eq $env "production") -}}
-{{- fail "\n\nERROR: IS_DEVELOPMENT=\"true\" points license validation at the DEVELOPMENT license server, which the app refuses when STREAMING_HUB_ENV=production (ErrLicenseDevServerInProduction). Unset streamingHub.configmap.IS_DEVELOPMENT, or set STREAMING_HUB_ENV to a non-production environment." -}}
+{{- if has $env (list "production" "staging") -}}
+{{- $tls := lower (trim (toString (ternary (get $x "STREAMING_HUB_KAFKA_TLS_ENABLED") (get $cm "STREAMING_HUB_KAFKA_TLS_ENABLED" | default "false") (hasKey $x "STREAMING_HUB_KAFKA_TLS_ENABLED")))) -}}
+{{- if has $tls (list "false" "0" "f") -}}
+{{- fail (printf "\n\nERROR: STREAMING_HUB_ENV=%s requires Kafka TLS. Set streamingHub.configmap.STREAMING_HUB_KAFKA_TLS_ENABLED=\"true\" (and streamingHub.secrets.STREAMING_HUB_KAFKA_CA_CERT for a private CA), or set streamingHub.configmap.STREAMING_HUB_ENV=local for a development install." $env) -}}
+{{- end -}}
+{{- $kek := trim (toString (ternary (get $x "STREAMING_HUB_KEK_REF") (get $cm "STREAMING_HUB_KEK_REF" | default "") (hasKey $x "STREAMING_HUB_KEK_REF"))) -}}
+{{- if not $kek -}}
+{{- fail (printf "\n\nERROR: STREAMING_HUB_ENV=%s requires a KEK reference. Set streamingHub.configmap.STREAMING_HUB_KEK_REF to the name of the variable that carries the KEK in the Secret, or set streamingHub.configmap.STREAMING_HUB_ENV=local for a development install." $env) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

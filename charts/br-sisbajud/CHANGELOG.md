@@ -1,5 +1,375 @@
 # Br-sisbajud Changelog
 
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure compliance. (@fredcamaral)
+- Render an explicit zero grace period to clarify default settings. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, enhancing documentation for smoother updates. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure compliance. (@fredcamaral)
+- Render an explicit zero grace period to clarify the system behavior. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, providing clearer instructions for users. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Prevent the rendering of `IS_DEVELOPMENT` in the application. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the application to prevent unnecessary exposure of development flags. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Prevent the rendering of `IS_DEVELOPMENT` in the application to ensure it does not appear in production environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` to ensure the correct environment configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` in the application. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` in the application. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component to prevent unnecessary development-specific code from being included. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` to prevent unnecessary exposure of development flags. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component to prevent unnecessary development-specific code from being included in production builds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stop rendering `IS_DEVELOPMENT` to prevent unnecessary development-specific code from being included in production builds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Adjusted the shutdown drain delay and increased the pod grace period to 55 seconds. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Adjusted the shutdown drain delay and increased the pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to ensure proper shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
+## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
+
+Fixes:
+- Set shutdown drain delay and increase pod grace period to 55 seconds to improve shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.1...br-sisbajud-v1.4.2)
+
+---
+
 ## [1.4.2](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.2)
 
 Fixes:

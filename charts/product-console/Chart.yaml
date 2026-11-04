@@ -5,7 +5,7 @@ description: A Helm chart for Product Console - Lerian Studio's web interface
 type: application
 annotations:
   lerian.studio/chart-type: single-service
-home: https://github.com/LerianStudio/helm
+home: https://github.com/LerianStudio/helm/tree/main/charts/product-console
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/product-console
   - https://github.com/LerianStudio/product-console
@@ -15,7 +15,7 @@ maintainers:
     email: "support@lerian.studio"
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 4.5.0
+version: 4.5.1
 # This is the version number of the application being deployed.
 appVersion: "3.0.0"
 # A list of keywords about the chart. This helps others discover the chart.

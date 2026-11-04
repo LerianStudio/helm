@@ -19,8 +19,6 @@ The following image tags have been updated in `values.yaml`:
 |-----------|---------|---------|
 | `ledger.image.tag` | `4.3.0` | `4.4.0` |
 | `tracer.image.tag` | `4.3.0` | `4.4.0` |
-| `midaz-ledger-migrations.image.tag` | `4.3.0` | `4.4.0` |
-| `midaz-tracer-migrations.image.tag` | `4.3.0` | `4.4.0` |
 
 **Before (v10.0.3):**
 
@@ -32,14 +30,6 @@ ledger:
 tracer:
   image:
     tag: "4.3.0"
-
-midaz-ledger-migrations:
-  image:
-    tag: 4.3.0
-
-midaz-tracer-migrations:
-  image:
-    tag: 4.3.0
 ```
 
 **After (v10.0.4):**
@@ -52,15 +42,9 @@ ledger:
 tracer:
   image:
     tag: "4.4.0"
-
-midaz-ledger-migrations:
-  image:
-    tag: 4.4.0
-
-midaz-tracer-migrations:
-  image:
-    tag: 4.4.0
 ```
+
+The migration images follow `ledger.image.tag` and `tracer.image.tag` unless you set `ledger.migrations.image.tag` or `tracer.migrations.image.tag`.
 
 #### Why This Matters
 
@@ -82,8 +66,8 @@ This is a standard application version update. The upgrade process will:
 > **Important:** The migration jobs run as Helm hooks during the upgrade. Monitor their completion before the main application pods start:
 
 ```bash
-kubectl get jobs -n midaz -l app.kubernetes.io/component=migrations
-kubectl logs -n midaz -l app.kubernetes.io/component=migrations --tail=100 -f
+kubectl get jobs -n midaz -l 'app.kubernetes.io/name in (midaz-ledger-migrations,midaz-tracer-migrations)'
+kubectl logs -n midaz -l 'app.kubernetes.io/name in (midaz-ledger-migrations,midaz-tracer-migrations)' --tail=100 -f
 ```
 
 > **Note:** If your deployment uses custom image repositories (via `ledger.image.repository` or `tracer.image.repository`), ensure that version 4.4.0 is available in those repositories before upgrading.

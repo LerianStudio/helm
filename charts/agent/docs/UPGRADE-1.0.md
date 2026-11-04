@@ -74,7 +74,7 @@ The following values **must** be set for the agent to function:
 ```yaml
 agent:
   configmap:
-    CONTROL_PLANE_URL: "https://control.lerian.studio"
+    CONTROL_PLANE_URL: "https://cp.example.com"
   secrets:
     AGENT_TOKEN: "lerian_enroll_abc123..."
     # AGENT_ID: "" # Leave empty for enrollment token
@@ -142,7 +142,7 @@ The secret must contain keys:
 ```yaml
 agent:
   configmap:
-    CONTROL_PLANE_URL: "https://control.lerian.studio"
+    CONTROL_PLANE_URL: "https://cp.example.com"
     HEARTBEAT_INTERVAL: "60s"
     MAX_RETRY_ATTEMPTS: "5"
     RETRY_BACKOFF_MAX: "60s"
@@ -489,7 +489,7 @@ agent:
 1. Obtain an enrollment token from the control plane:
 
 ```bash
-curl -X POST https://control.lerian.studio/api/tenants/my-tenant-id/agents/enrollments \
+curl -X POST https://cp.example.com/api/tenants/my-tenant-id/agents/enrollments \
   -H "Authorization: Bearer $CONTROL_PLANE_TOKEN"
 ```
 
@@ -498,7 +498,7 @@ curl -X POST https://control.lerian.studio/api/tenants/my-tenant-id/agents/enrol
 ```yaml
 agent:
   configmap:
-    CONTROL_PLANE_URL: "https://control.lerian.studio"
+    CONTROL_PLANE_URL: "https://cp.example.com"
   secrets:
     AGENT_TOKEN: "lerian_enroll_abc123xyz..."
     AGENT_ID: ""
@@ -529,7 +529,7 @@ kubectl -n agent logs deploy/lerian-agent | grep -i heartbeat
 1. Obtain a per-agent token and ID from the control plane:
 
 ```bash
-curl -X POST https://control.lerian.studio/api/tenants/my-tenant-id/agents \
+curl -X POST https://cp.example.com/api/tenants/my-tenant-id/agents \
   -H "Authorization: Bearer $CONTROL_PLANE_TOKEN"
 ```
 
@@ -538,7 +538,7 @@ curl -X POST https://control.lerian.studio/api/tenants/my-tenant-id/agents \
 ```yaml
 agent:
   configmap:
-    CONTROL_PLANE_URL: "https://control.lerian.studio"
+    CONTROL_PLANE_URL: "https://cp.example.com"
   secrets:
     AGENT_TOKEN: "lerian_agent_def456uvw..."
     AGENT_ID: "550e8400-e29b-41d4-a716-446655440000"
@@ -574,7 +574,7 @@ kubectl create secret generic my-agent-credentials \
 ```yaml
 agent:
   configmap:
-    CONTROL_PLANE_URL: "https://control.lerian.studio"
+    CONTROL_PLANE_URL: "https://cp.example.com"
   useExistingSecret: true
   existingSecretName: "my-agent-credentials"
 ```
@@ -608,7 +608,7 @@ kubectl create namespace development
 ```yaml
 agent:
   configmap:
-    CONTROL_PLANE_URL: "https://control.lerian.studio"
+    CONTROL_PLANE_URL: "https://cp.example.com"
   secrets:
     AGENT_TOKEN: "lerian_enroll_..."
     AGENT_ID: ""
@@ -641,7 +641,7 @@ helm install agent oci://registry-1.docker.io/lerianstudio/agent-helm \
 ```yaml
 agent:
   configmap:
-    CONTROL_PLANE_URL: "https://control.lerian.studio"
+    CONTROL_PLANE_URL: "https://cp.example.com"
   secrets:
     AGENT_TOKEN: "lerian_enroll_..."
     AGENT_ID: ""
@@ -678,7 +678,7 @@ kubectl create secret docker-registry my-registry-secret \
 ```yaml
 agent:
   configmap:
-    CONTROL_PLANE_URL: "https://control.lerian.studio"
+    CONTROL_PLANE_URL: "https://cp.example.com"
   secrets:
     AGENT_TOKEN: "lerian_enroll_..."
     AGENT_ID: ""

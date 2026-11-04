@@ -1,0 +1,79 @@
+# Helm Upgrade from v1.0.2 to v1.0.3
+
+This guide helps operators upgrade the **Lerian BYOC agent** chart from version **1.0.2** to **1.0.3**. This is a patch release.
+
+## Topics
+
+- **[Overview](#overview)**
+- **[Changes in v1.0.3](#changes-in-v103)**
+- **[Migration Steps](#migration-steps)**
+- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
+- **[Command to upgrade](#command-to-upgrade)**
+
+## Overview
+
+Version **1.0.3** is a patch release. There are **no breaking changes**, **no configuration changes**, and **no template changes**.
+
+**What changed:**
+
+- Chart version bumped from `1.0.2` to `1.0.3`
+- The license line in the chart README now reads Elastic License 2.0
+
+**What stayed the same:**
+
+- Agent application version remains `1.0.2`
+- Agent container image tag remains `1.0.2`
+- All configuration options remain unchanged
+- All default values remain unchanged
+- All RBAC, networking, and security settings remain unchanged
+- All template files remain unchanged
+
+## Changes in v1.0.3
+
+| Setting | v1.0.2 | v1.0.3 |
+|---------|--------|--------|
+| Chart `version` | `1.0.2` | `1.0.3` |
+| `appVersion` | `1.0.2` | `1.0.2` |
+| `agent.image.tag` | `1.0.2` | `1.0.2` |
+
+**Operational impact:**
+
+The chart version is part of the `helm.sh/chart` label on the agent pod template, so `helm upgrade` replaces the agent pod. With the `Recreate` strategy (`agent.deploymentUpdate.type`), the old pod stops before the new one starts.
+
+## Migration Steps
+
+This upgrade requires no manual migration steps.
+
+If the control plane has moved the agent to a newer build, set `agent.image.digest` to the digest the Deployment runs before you upgrade. Otherwise the upgrade re-renders the `1.0.2` tag and walks the agent back.
+
+**To upgrade:**
+
+1. Review your current values file (if you have one):
+
+```bash
+helm get values lerian-agent -n lerian-system > current-values.yaml
+```
+
+2. Run the upgrade command (see below)
+
+3. Verify the release was updated:
+
+```bash
+helm list -n lerian-system
+```
+
+The chart version should show `1.0.3`, while the app version remains `1.0.2`.
+
+## Preview changes before upgrading
+
+```bash
+helm diff upgrade lerian-agent oci://registry-1.docker.io/lerianstudio/agent-helm --version 1.0.3 -n lerian-system
+```
+
+> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+
+## Command to upgrade
+
+```bash
+helm upgrade lerian-agent oci://registry-1.docker.io/lerianstudio/agent-helm --version 1.0.3 -n lerian-system
+```

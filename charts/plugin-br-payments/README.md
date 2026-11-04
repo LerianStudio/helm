@@ -3,25 +3,27 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render, and `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.LICENSE_KEY` in every environment; `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render; `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`); and `PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` in single-tenant while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
-A Helm chart for [plugin-br-payments](https://github.com/LerianStudio/plugin-br-payments) — Lerian Studio's plugin for Brazilian payment operations: boleto issuance, bill payments (bankslip, utilities, DARF), settlement via webhooks, and periodic reconciliation.
+A Helm chart for [plugin-br-payments](https://docs.lerian.studio/en/interfaces/payments-btg/boleto-and-bill-payment) — Lerian Studio's plugin for Brazilian payment operations: boleto issuance, bill payments (bankslip, utilities, DARF), settlement via webhooks, and periodic reconciliation.
 
 ## TL;DR
 
 ```bash
-helm repo add lerian https://lerianstudio.github.io/helm
-helm install my-payments lerian/plugin-br-payments-helm \
+helm install my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm \
+  --version <chart version> \
   --namespace midaz-plugins --create-namespace \
   -f values-prod.yaml
 ```
 
+The default image is the stable `1.2.0` release. The health-port compatibility floor remains `1.2.0-beta.1`. Pin `app.image.tag` explicitly in production values.
+
 ## Prerequisites
 
-- Kubernetes 1.23+
+- Kubernetes 1.27+
 - Helm 3.10+
 - Either:
   - the in-cluster PostgreSQL subchart (default, `postgresql.enabled=true`), or
@@ -29,6 +31,7 @@ helm install my-payments lerian/plugin-br-payments-helm \
 - A reachable `plugin-auth` (lib-auth) deployment when `PLUGIN_AUTH_ENABLED=true`.
 - A reachable Midaz onboarding/transaction stack.
 - A configured Brazilian payment provider (BTG is the first supported adapter).
+- Pull access to the application image `ghcr.io/lerianstudio/plugin-br-payments`, which is not public: list a registry Secret in `app.imagePullSecrets` (the control-plane migrations Job uses the same list).
 
 ## Architecture
 
@@ -115,8 +118,7 @@ is no longer needed.
 
 ## Configuration keys
 
-The ConfigMap and Secret are **template-owned**: they render exactly the keys below (the
-application 1.0.2 contract), and `values.schema.json` refuses any other key under
+The ConfigMap and Secret are **template-owned**: they render exactly the keys below, and `values.schema.json` refuses any other key under
 `app.configmap` / `app.secrets`. Set `app.configmap.<KEY>` to override a key; a key marked
 *unset* is rendered only when you set it, so the application default applies otherwise. A
 `null` counts as unset. Connection endpoints resolve through the lerian-common masks, native
@@ -129,7 +131,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 |-----|---------|
 | `ENV_NAME` | `global.env.name`, else `"production"` |
 | `LOG_LEVEL` | `"info"` |
-| `DEPLOYMENT_MODE` | `"byoc"` (`"saas"` refuses to boot unless every configured endpoint, OTLP included, uses TLS) |
+| `DEPLOYMENT_MODE` | `"byoc"` |
 | `SERVICE_TYPE` | `"both"` |
 | `SWAGGER_ENABLED` | `"false"` |
 | `VERSION` | the image tag |
@@ -376,29 +378,16 @@ The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collec
 
 ## Probes
 
-| Probe | Path | Notes |
-|-------|------|-------|
-| Startup | `/health` | Covers boot (connect 30s + migrations up to `MIGRATION_TIMEOUT_SEC`, default 300s) before liveness and readiness start. Default 40 x 10s = 400s. |
-| Liveness | `/health` | Lightweight startup self-probe. Returns 200 once startup completes. |
-| Readiness | `/readyz` | Deep per-dependency checks (Postgres, Provider, Midaz, Tenant Manager). Returns 503 if any dep is `down`/`degraded`. |
-| Tenant readiness | `/readyz/tenant/:id` | Mounted only when `MULTI_TENANT_ENABLED=true`. Anti-enumeration uniform shape. |
+The `lerian-common.health` preset owns probes, ports, grace period, rollout strategy and PodDisruptionBudget; none is a value (the render refuses `readinessProbe`, `livenessProbe`, `startupProbe`, `terminationGracePeriodSeconds`, `HEALTH_PORT` and `SHUTDOWN_*` overrides). The app serves them on the internal port 8099 (`HEALTH_PORT`), never through the Ingress.
 
-Default probe values match the canonical Lerian readiness contract documented in [`plugin-br-payments/docs/readyz-guide.md`](https://github.com/LerianStudio/plugin-br-payments/blob/main/docs/readyz-guide.md):
+| Probe | Path (port 8099) | Notes |
+|-------|------------------|-------|
+| Startup | `/health` | Covers boot, including the migrations that now run behind readiness. |
+| Liveness | `/health` | Process only. |
+| Readiness | `/readyz` | The pod's own state: Postgres at boot, schema, boot credential, Tenant Manager. The provider and Midaz are not checks, and a later Postgres outage never pulls the pod. |
+| Tenant readiness | `/readyz/tenant/:id` | Multi-tenant only, no JWT. Exposed on the Service as the internal `health` port. |
 
-```yaml
-readinessProbe:
-  initialDelaySeconds: 5
-  periodSeconds: 5
-  timeoutSeconds: 3
-  failureThreshold: 2
-livenessProbe:
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 3
-  failureThreshold: 3
-```
-
-`terminationGracePeriodSeconds` is set to **60** to match the service's drain + shutdown budget. Setting it lower will cause `SIGKILL` mid-shutdown.
+`app.health.shutdownSeconds` (default 35) is SHUTDOWN_TIMEOUT, one total budget; the grace period is drain (15s) + that + 10s. The preset refuses an image below `minImage`, the first one that serves the health port.
 
 ## Multi-tenancy
 
@@ -422,13 +411,13 @@ app:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```
 
-When enabled, `/readyz/tenant/:id` becomes available and `/readyz` reports `provider:n/a` globally (use the per-tenant probe instead). Do not set `app.secrets.PROVIDER_CLIENT_ID` or `app.secrets.PROVIDER_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record. The control-plane migrations Job (`app.controlplaneMigrations.enabled`, required for multi-tenant) runs before each install and upgrade; the render fails if it cannot (bundled Postgres, or the Job disabled).
+When enabled, `/readyz/tenant/:id` becomes available and the provider credential is read per tenant, so use the per-tenant probe for it. Do not set `app.secrets.PROVIDER_CLIENT_ID` or `app.secrets.PROVIDER_CLIENT_SECRET`; the application resolves those credentials per tenant. The control-plane migrations Job (`app.controlplaneMigrations.enabled`, required for multi-tenant) runs before each install and upgrade; the render fails if it cannot (bundled Postgres, or the Job disabled).
 
 ### AWS credentials for Secrets Manager (`aws.rolesAnywhere`)
 
 Multi-tenant mode with `MULTI_TENANT_CREDENTIAL_SOURCE: "vault"` calls AWS Secrets
 Manager to read each tenant's integrations bundle. On a cluster that already runs on
-AWS (IRSA), the pod gets credentials for free. On a **non-AWS cluster** (on-prem,
+AWS (IRSA), annotate the ServiceAccount with the IAM role through `app.serviceAccount.annotations`. On a **non-AWS cluster** (on-prem,
 Proxmox, another cloud) there is no such mechanism, so enable IAM Roles Anywhere: an
 `aws-signing-helper` sidecar exchanges an X.509 client certificate for temporary AWS
 credentials and serves them on a local metadata endpoint the app reads via the
@@ -482,7 +471,7 @@ If you also disable the routes cache (`ACCOUNTING_ROUTES_CACHE_TTL_SEC` `<= 0`),
 | `app.service.port` | `8080` | Service port. |
 | `app.ingress.enabled` | `false` | Expose via Ingress. |
 | `app.autoscaling.enabled` | `true` | Enable HPA. |
-| `app.terminationGracePeriodSeconds` | `60` | Required by the readyz contract. |
+| `app.health.shutdownSeconds` | `35` | SHUTDOWN_TIMEOUT; the grace period is derived (drain 15s + this + 10s). |
 | `app.configmap.SERVICE_TYPE` | `both` | Run API + worker in one process. |
 | `app.configmap.MULTI_TENANT_ENABLED` | unset (app default `false`) | Toggle multi-tenant mode; env-wide via `global.multiTenant.enabled`. The deprecated `MULTI_TENANCY_ENABLED` is refused at render with the rename named. |
 | `app.controlplaneMigrations.enabled` | `false` | Enable the control-plane migrations `PreSync` Job. Renders with `MULTI_TENANT_ENABLED=true` and the bundled PostgreSQL disabled; it does not require database bootstrap. |

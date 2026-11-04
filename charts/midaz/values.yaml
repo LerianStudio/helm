@@ -234,10 +234,12 @@ ledger:
     # to the packaged "midaz-mongodb" Service and the pod CrashLoops after this
     # timeout. See docs/UPGRADE-9.1.md section 6.
     timeoutSeconds: 300
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
+  # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout
+  # strategy and PDB are owned by the chart. Only these keys are values. Applies when
+  # image.tag is 4.5.0-beta.94 or later; a lower tag ignores it and keeps the 4.4 layout.
+  health:
+    # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
+    stack: go
   # -- Service name
   name: ledger
   # -- Enable or disable the ledger service (unified onboarding + transaction)
@@ -248,18 +250,14 @@ ledger:
   replicaCount: 2
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
-  # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
-  # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
-  # Ledger images on lib-commons v7.21.0-beta.20 or later need 60 = 15s SHUTDOWN_DRAIN_DELAY
-  # + 30s shutdown budget (HTTP drain, 10s event wait) + 5s producer flush + 10s margin;
-  # earlier images need ~72 (15s drain + ~47s per-stage shutdown + 10s margin).
-  terminationGracePeriodSeconds: 72
   image:
     # -- Repository for the ledger service container image
     repository: lerianstudio/midaz-ledger
     # -- Image pull policy
     pullPolicy: IfNotPresent
-    # -- Image tag used for deployment
+    # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
+    # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
+    # rollout); the partition runner is on from 4.5.0-beta.1; a lower tag keeps the 4.4 probes and ports.
     tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
@@ -311,6 +309,44 @@ ledger:
       requests:
         cpu: 50m
         memory: 64Mi
+  # -- Partition runner creates transaction partitions ahead of time and reports
+  # health via exit codes (0 healthy/unpartitioned, 1 attention, 2 invalid).
+  # It visits every active tenant in multi-tenant mode.
+  partition:
+    # -- Run the scheduled runner. Unset enables tags >= 4.5.0-beta.1 (every ledger
+    # image from that tag on ships the runner); older and non-SemVer tags default off. Set true or false to override.
+    enabled:
+    # -- Cron schedule in `timeZone`, defaulting to 06:00 outside common managed
+    # PostgreSQL maintenance windows; choose a time outside your database's windows.
+    schedule: "0 6 * * *"
+    # -- IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses
+    # the time zone of the kube-controller-manager, UTC on most managed
+    # clusters; set it to pin the schedule to a zone.
+    timeZone: ""
+    # -- Hard timeout for one run, in seconds
+    activeDeadlineSeconds: 1800
+    reconcile:
+      # -- Run reconcile-indexes after migration as a Sync/upgrade hook. Empty
+      # registries, unpartitioned tables and older schemas exit 0 without blocking sync.
+      enabled: true
+      # -- Argo CD sync wave of the reconcile Job (after the migration Job's
+      # default wave 0). On plain Helm the hook weight "10" orders it instead.
+      syncWave: "1"
+      # -- Hard timeout for the reconcile Job, in seconds (a concurrent index
+      # build on a large partition can take a while)
+      activeDeadlineSeconds: 1800
+      # -- How long a reconcile Job that stays after finishing, a failed one,
+      # is kept for inspection; a successful hook Job is deleted at once
+      ttlSecondsAfterFinished: 259200
+    resources:
+      # -- CPU and memory limits for the partition runner
+      limits:
+        cpu: 200m
+        memory: 128Mi
+      # -- Minimum CPU and memory requests for the partition runner
+      requests:
+        cpu: 50m
+        memory: 64Mi
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -337,22 +373,12 @@ ledger:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration
+  # -- PodDisruptionBudget configuration (from image tag 4.5.0-beta.94 the spec comes from the health preset, and setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
-    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
-  # -- Deployment update strategy
-  deploymentUpdate:
-    # -- Type of deployment strategy
-    type: RollingUpdate
-    # -- Maximum number of pods that can be created over the desired number of pods
-    maxSurge: 100%
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 0
   service:
     # -- Kubernetes service type
     type: ClusterIP
@@ -740,10 +766,12 @@ crm:
   useExistingSecret: false
   existingSecretName: ""
 tracer:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
+  # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout
+  # strategy and PDB are owned by the chart. Only these keys are values. Applies when
+  # image.tag is 4.5.0-beta.94 or later; a lower tag ignores it and keeps the 4.4 layout.
+  health:
+    # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
+    stack: go
   # -- Service name
   name: tracer
   # -- Enable or disable the Tracer service (disabled by default; opt-in per env)
@@ -752,9 +780,6 @@ tracer:
   replicaCount: 1
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
-  # -- Seconds Kubernetes waits after SIGTERM before killing the pod. Must cover the
-  # shutdown drain: in-flight HTTP requests, in-flight streaming events, producer flush.
-  terminationGracePeriodSeconds: 55
   image:
     # -- Repository for the Tracer service container image. In midaz v4 tracer
     # ships from the monorepo (`components/tracer`) and the release pipeline
@@ -763,7 +788,9 @@ tracer:
     repository: lerianstudio/midaz-tracer
     # -- Image pull policy
     pullPolicy: Always
-    # -- Image tag used for deployment
+    # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
+    # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
+    # rollout); a lower tag keeps the 4.4 probes and ports.
     tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
@@ -841,27 +868,12 @@ tracer:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration
+  # -- PodDisruptionBudget configuration (from image tag 4.5.0-beta.94 the spec comes from the health preset, and setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Maximum number of unavailable pods; ignored when minAvailable is set.
-    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
-  # -- Deployment update strategy
-  deploymentUpdate:
-    # -- Type of deployment strategy
-    type: RollingUpdate
-    # -- Maximum number of pods that can be created over the desired number of pods
-    maxSurge: 1
-    # -- Maximum number of pods that can be unavailable during the update.
-    # 0 = surge the new pod and wait for it Ready before terminating the old one,
-    # giving zero-downtime rollouts for single-replica components — matches the
-    # ledger default. Important where the replacement pod may briefly stay Pending
-    # (e.g. a required nodeAffinity that waits for a Karpenter node to be launched):
-    # with maxUnavailable=1 the old pod is torn down first and the service blips.
-    maxUnavailable: 0
   service:
     # -- Kubernetes service type
     type: ClusterIP

@@ -337,7 +337,7 @@
         "configmap": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Operator ConfigMap overrides (key -> value). See templates/configmap.yaml.",
+          "description": "Operator ConfigMap overrides (key -> value). See templates/configmap.yaml. IS_DEVELOPMENT is deprecated: still accepted so upgrades keep validating, ignored.",
           "propertyNames": {
             "enum": [
               "AGGRESSIVE_RATE_LIMIT_MAX",
@@ -380,6 +380,7 @@
               "STREAMING_HUB_AUTODISABLE_FAILURE_WINDOW",
               "STREAMING_HUB_AWS_HUB_PRINCIPAL_ARN",
               "STREAMING_HUB_AWS_SETUP_TEMPLATE_URL",
+              "STREAMING_HUB_DASHBOARD_RATE",
               "STREAMING_HUB_DISPATCH_CLAIM_BATCH",
               "STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS",
               "STREAMING_HUB_DISPATCH_WORKERS",
@@ -411,6 +412,7 @@
               "STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT",
               "STREAMING_HUB_PULL_BURST",
               "STREAMING_HUB_PULL_RATE",
+              "STREAMING_HUB_READ_RATE",
               "STREAMING_HUB_RECONCILER_ENABLED",
               "STREAMING_HUB_RECONCILER_INTERVAL",
               "STREAMING_HUB_REDIS_ADDRESS",

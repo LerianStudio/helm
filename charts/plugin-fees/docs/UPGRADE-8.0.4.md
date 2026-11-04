@@ -34,7 +34,7 @@ This upgrade can be applied without any modifications to your existing configura
 helm diff upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version 8.0.4 -n plugin-fees
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+> **Note:** Requires the helm-diff plugin. Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 # Command to upgrade
 

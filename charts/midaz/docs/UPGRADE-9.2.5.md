@@ -20,7 +20,7 @@ This patch release updates the Midaz application from version `4.0.5` to `4.0.7`
 |-----------|--------|--------|
 | appVersion | 4.0.5 | 4.0.7 |
 
-For detailed application-level changes, refer to the [Midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+For detailed application-level changes, refer to the Midaz application changelog.
 
 ### 2. Image tag updates
 

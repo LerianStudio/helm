@@ -112,6 +112,8 @@ plugin-br-ted-lerian:
   secrets:
     POSTGRES_PASSWORD: ""
     REDIS_PASSWORD: ""
+    CRM_CLIENT_ID: ""
+    CRM_CLIENT_SECRET: ""
 
   useExistingSecret: false
   existingSecretName: ""

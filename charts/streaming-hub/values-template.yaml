@@ -21,12 +21,12 @@ streamingHub:
     STREAMING_HUB_KAFKA_SCRAM_MECHANISM: "" # e.g. SCRAM-SHA-256 (empty = no SASL)
     STREAMING_HUB_ALLOW_INSECURE_KAFKA: "false"
     STREAMING_HUB_KEK_SOURCE: ""            # env | aws-kms | ...
+    STREAMING_HUB_KAFKA_TLS_ENABLED: "true" # required in staging and production
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: ""
     STREAMING_HUB_TENANT_ID: default
     # License (lib-license-go, GLOBAL mode). The key is a secret (below).
     ORGANIZATION_IDS: global                # must be EXACTLY "global" (the chart default)
-    # IS_DEVELOPMENT: "true"                # dev license server; refused with STREAMING_HUB_ENV=production
     # Multi-tenant: the switch plus the values it REQUIRES when true. The hub
     # refuses to boot with an empty or "local" ENV_NAME, and the credential sweep
     # fails without a region the AWS SDK chain can resolve.
@@ -49,7 +49,7 @@ streamingHub:
     # this ConfigMap second, so a value here overwrites a projected one. Left
     # commented out, nothing is emitted and the Secret's value reaches the pod.
     # STREAMING_HUB_KAFKA_SCRAM_USERNAME: ""
-    STREAMING_HUB_KEK_REF: ""               # KEK reference / pointer (KMS key id / ARN / env-var name — not key material)
+    STREAMING_HUB_KEK_REF: "STREAMING_HUB_KEK" # KEK reference / pointer (KMS key id / ARN / env-var name — not key material)
     # Control-plane rate limiting — the EXTERNAL Redis/Valkey the lib-commons
     # limiter counts in. Leave the address empty and nothing is limited (silently;
     # the pod still looks healthy). On 2.x this must be an instance DEDICATED to

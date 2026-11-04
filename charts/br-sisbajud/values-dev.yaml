@@ -20,8 +20,8 @@
 # TLS is off everywhere.
 #
 # What development relaxes in the app (internal/bootstrap/config_validation.go):
-# POSTGRES_SSLMODE=disable, a plaintext broker, PLUGIN_AUTH_ENABLED=false and an
-# empty LICENSE_KEY (the license dev bypass) are allowed. Local bearer
+# POSTGRES_SSLMODE=disable, a plaintext broker and PLUGIN_AUTH_ENABLED=false
+# are allowed. LICENSE_KEY is required in every environment. Local bearer
 # verification (AUTH_JWT_*) and the execution listener TLS are NOT relaxed: see
 # brSisbajud.auth / brSisbajud.execution below. Features that
 # need services this bundle does not provide are OFF: inbound auth
@@ -79,11 +79,9 @@ brSisbajud:
   # GLOBAL license mode: the only value the app accepts.
   license:
     organizationIds: "global"
-    # A key issued by the license dev gateway also needs:
-    # isDevelopment: "true"
-  # No LICENSE_KEY: with ENVIRONMENT_NAME=development an empty key is the app's
-  # dev bypass. To validate a real one, create a Secret from a file and point
-  # brSisbajud.secretRefs.LICENSE_KEY at it. Never commit a real key.
+  # No LICENSE_KEY here: the app requires one in every environment. Create a
+  # Secret from a file and point brSisbajud.secretRefs.LICENSE_KEY at it
+  # (or set brSisbajud.secrets.LICENSE_KEY at install time). Never commit a real key.
 
 # Explicit dev passwords: the Valkey subchart otherwise regenerates its password
 # on every render (every `helm upgrade` rotated it and restarted Valkey and the

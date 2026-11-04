@@ -19,7 +19,7 @@ The chart's `appVersion` has been updated from `3.7.3` to `3.7.6`. This is a pat
 |---------|--------|--------|
 | `appVersion` | 3.7.3 | 3.7.6 |
 
-> **Note:** Review the [Midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md) for detailed information about application-level changes between versions 3.7.3 and 3.7.6.
+> **Note:** Review the Midaz application changelog for detailed information about application-level changes between versions 3.7.3 and 3.7.6.
 
 ### 2. Ledger service image tag update
 

@@ -50,19 +50,19 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 8 }}
+        {{- include "streaming-hub.podLabels" (dict "context" $ "component" $component) | nindent 8 }}
       annotations:
         # Config-rollout trigger. Every role consumes the shared ConfigMap and the
         # chart Secret through envFrom ONLY, so a value change rewrites those objects
         # while leaving the pod template byte-identical — `helm upgrade` then cuts no
         # new ReplicaSet and the running pods keep the OLD config until an unrelated
         # restart. Hashing the rendered manifests into the template closes that.
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/configmap.yaml") $ | fromYaml).data | toYaml | sha256sum }}
         {{- if not $sh.useExistingSecret }}
         # Only when the chart OWNS the Secret. Under useExistingSecret the Secret is
         # Vault/gitops-managed and changes outside Helm's view, so a hash of the
         # (empty) rendered template would be a constant that never triggers anything.
-        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") $ | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/secrets.yaml") $ | fromYaml).data | toYaml | sha256sum }}
         {{- end }}
       {{- with $sh.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -73,7 +73,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "streaming-hub.serviceAccountName" $ }}
       automountServiceAccountToken: {{ $sh.serviceAccount.automountServiceAccountToken | default false }}
-      terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 80 }}
+      terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 90 }}
       {{- if $rolesAnywhere }}
       # IAM Roles Anywhere: fsGroup lets the sidecar's non-root user (65532) read the
       # 0440 iam-certs projection. MERGED into the chart's podSecurityContext — fsGroup

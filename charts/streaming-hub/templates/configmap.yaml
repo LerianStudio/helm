@@ -35,6 +35,7 @@ RETIRED in 2.x and have no line here; see the note at STREAMING_HUB_PULL_RATE.
 */}}
 {{- $ := . -}}
 {{- include "streaming-hub.licenseGuard" . -}}
+{{- include "streaming-hub.hardenedEnvGuard" . -}}
 {{- $cm := .Values.streamingHub.configmap | default dict -}}
 {{- $dds := .Values.streamingHub.datastores | default dict -}}
 {{- $mtEnabled := eq (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | toString) "true" -}}
@@ -94,13 +95,6 @@ data:
   # ORGANIZATION_IDS must be EXACTLY "global" — the app refuses any other value at
   # boot, and streaming-hub.licenseGuard refuses it at render.
   ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
-  # IS_DEVELOPMENT is read by the LIBRARY: exactly "true" selects the development
-  # license server (license.dev.lerian.io), anything else the production one.
-  # EMIT-WHEN-SET: unset means the production license server. Refused (render and
-  # boot) together with STREAMING_HUB_ENV=production.
-  {{- with $cm.IS_DEVELOPMENT }}
-  IS_DEVELOPMENT: {{ . | quote }}
-  {{- end }}
   # --- kafka / redpanda (external; SCRAM password + CA cert live in the Secret) ---
   STREAMING_HUB_KAFKA_BROKERS: {{ $cm.STREAMING_HUB_KAFKA_BROKERS | default "localhost:19092" | quote }}
   STREAMING_HUB_KAFKA_SCRAM_MECHANISM: {{ $cm.STREAMING_HUB_KAFKA_SCRAM_MECHANISM | default "" | quote }}
@@ -129,17 +123,19 @@ data:
   # empty to trust the container's system roots. Not a credential (a public CA cert).
   STREAMING_HUB_REDIS_CA_CERT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $dds "configmap" $cm "type" "redis" "field" "caCert" "nativeKey" "STREAMING_HUB_REDIS_CA_CERT" "default" "") | quote }}
   # --- rate limiting (lib-commons three-tier contract, Redis-backed) ---
-  # The WHOLE contract via lerian-common.rateLimit.env — all ten keys, not just the
-  # switch. Emitting a subset would leave RATE_LIMIT_MAX & friends unreachable
-  # (the schema allowlist rejects any key this chart does not enumerate), so an
-  # operator could turn limiting on without being able to say what the limit IS.
+  # Only the three keys the hub and lib-commons read. The per-tier allowances are
+  # STREAMING_HUB_PULL_RATE, _DASHBOARD_RATE and _READ_RATE; RATE_LIMIT_MAX,
+  # RATE_LIMIT_WINDOW_SEC and the AGGRESSIVE_/RELAXED_ pairs are never read, so
+  # they are not rendered (still accepted by the schema).
   # Productized knobs live at streamingHub.rateLimit.*; configmap.<KEY> overrides.
   # NOTE ON FAIL-OPEN: lib-commons forbids fail-open by DEFAULT and logs it as a
   # "security bypass" when permitted (commons/net/http/ratelimit/middleware.go).
   # streamingHub.rateLimit.allowFailOpen is what turns it on — see values.yaml.
-  {{- include "lerian-common.rateLimit.env" (dict "configmap" $cm "params" (.Values.streamingHub.rateLimit | default dict)) | nindent 2 }}
-  # --- sinks / DB TLS opt-ins — MUST stay "false" for production ---
-  STREAMING_HUB_ALLOW_PRIVATE_SINKS: {{ $cm.STREAMING_HUB_ALLOW_PRIVATE_SINKS | default "false" | quote }}
+  {{- $rl := .Values.streamingHub.rateLimit | default dict }}
+  RATE_LIMIT_ENABLED: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_ENABLED" "params" $rl "field" "enabled" "default" "true") | quote }}
+  ALLOW_RATELIMIT_FAIL_OPEN: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_RATELIMIT_FAIL_OPEN" "params" $rl "field" "allowFailOpen" "default" "") | quote }}
+  RATE_LIMIT_REDIS_TIMEOUT_MS: {{ include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "RATE_LIMIT_REDIS_TIMEOUT_MS" "params" $rl "field" "redisTimeoutMs" "default" "500") | quote }}
+  # --- DB TLS opt-in — MUST stay "false" for production ---
   STREAMING_HUB_ALLOW_INSECURE_DB_TLS: {{ $cm.STREAMING_HUB_ALLOW_INSECURE_DB_TLS | default "false" | quote }}
   # --- crypto / KEK (KEK_REF is a POINTER to the env var; the material is a Secret) ---
   STREAMING_HUB_KEK_SOURCE: {{ $cm.STREAMING_HUB_KEK_SOURCE | default "env" | quote }}
@@ -156,7 +152,6 @@ data:
   STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME: {{ $cm.STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME | default "30m" | quote }}
   # --- dispatcher ---
   STREAMING_HUB_DISPATCH_WORKERS: {{ $cm.STREAMING_HUB_DISPATCH_WORKERS | default "8" | quote }}
-  STREAMING_HUB_DISPATCH_CLAIM_BATCH: {{ $cm.STREAMING_HUB_DISPATCH_CLAIM_BATCH | default "16" | quote }}
   STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS: {{ $cm.STREAMING_HUB_DISPATCH_IDLE_INTERVAL_MS | default "250" | quote }}
   # --- delivery pacing / poison handling ---
   STREAMING_HUB_POISON_THRESHOLD: {{ $cm.STREAMING_HUB_POISON_THRESHOLD | default "5" | quote }}
@@ -182,7 +177,6 @@ data:
   STREAMING_HUB_PARTITION_RETENTION_ENABLED: {{ $cm.STREAMING_HUB_PARTITION_RETENTION_ENABLED | default "false" | quote }}
   STREAMING_HUB_PARTITION_RETENTION_HORIZON: {{ $cm.STREAMING_HUB_PARTITION_RETENTION_HORIZON | default "0" | quote }}
   # --- DLQ visibility ---
-  STREAMING_HUB_DLQ_GROUP: {{ $cm.STREAMING_HUB_DLQ_GROUP | default "streaming-hub-dlq.local" | quote }}
   STREAMING_HUB_DLQ_RETENTION: {{ $cm.STREAMING_HUB_DLQ_RETENTION | default "168h" | quote }}
   STREAMING_HUB_DLQ_PRUNE_INTERVAL: {{ $cm.STREAMING_HUB_DLQ_PRUNE_INTERVAL | default "1h" | quote }}
   # --- idempotency reaper ---
@@ -205,6 +199,9 @@ data:
       STREAMING_HUB_PULL_BURST is deliberately ABSENT from the list: it has no
       line above any more, so leaving it enumerated would make this hatch skip it
       and an operator who set it would get nothing, silently. */ -}}
+  {{- /* IS_DEVELOPMENT, STREAMING_HUB_ALLOW_PRIVATE_SINKS, STREAMING_HUB_DISPATCH_CLAIM_BATCH,
+      STREAMING_HUB_DLQ_GROUP and the unread RATE_LIMIT_* keys stay listed so the hatch
+      below never emits them. The schema still accepts them. */ -}}
   {{- $enumerated := dict
       "POSTGRES_HOST" 1 "POSTGRES_PORT" 1 "POSTGRES_USER" 1 "POSTGRES_DB" 1 "POSTGRES_SSLMODE" 1
       "PLUGIN_AUTH_ENABLED" 1 "PLUGIN_AUTH_ADDRESS" 1
@@ -212,7 +209,8 @@ data:
       "STREAMING_HUB_ENV" 1 "STREAMING_HUB_LOG_LEVEL" 1 "STREAMING_HUB_HTTP_LISTEN_ADDR" 1
       "STREAMING_HUB_METRICS_ENABLED" 1 "STREAMING_HUB_SWAGGER_ENABLED" 1
       "STREAMING_HUB_SHUTDOWN_TIMEOUT" 1 "STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT" 1
-      "ORGANIZATION_IDS" 1 "IS_DEVELOPMENT" 1
+      "ORGANIZATION_IDS" 1
+      "IS_DEVELOPMENT" 1
       "STREAMING_HUB_KAFKA_BROKERS" 1 "STREAMING_HUB_KAFKA_SCRAM_MECHANISM" 1
       "STREAMING_HUB_KAFKA_SCRAM_USERNAME" 1 "STREAMING_HUB_KAFKA_TLS_ENABLED" 1
       "STREAMING_HUB_ALLOW_INSECURE_KAFKA" 1 "STREAMING_HUB_ALLOW_PRIVATE_SINKS" 1

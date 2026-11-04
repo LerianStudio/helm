@@ -13,6 +13,19 @@ Improvements:
 
 ---
 
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.0.3)
+
+Fixes:
+- Update `streaming-hub` to `3.1.0`. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `2.0.1` to `2.0.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v2.0.2...streaming-hub-v2.0.3)
+
+---
+
 ## [2.0.2](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.0.2)
 
 Fixes:

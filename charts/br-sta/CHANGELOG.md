@@ -2,6 +2,18 @@
 
 ## [1.0.5](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.5)
 
+Improvements:
+
+- Updated documentation to indicate that the mock STA image requires a pull credential. (@fredcamaral)
+- Added verified upgrade guides for transitioning from version `1.0.3` to `1.0.4`. (@fredcamaral)
+- Corrected chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.4...br-sta-v1.0.5)
+
+---
+
+## [1.0.5](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.5)
+
 Features:
 
 - Added verified upgrade guides for transitioning from `1.0.3` to `1.0.4`. (@fredcamaral)

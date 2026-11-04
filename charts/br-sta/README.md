@@ -5,8 +5,8 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `common.secrets.MASTER_KEYS` always (credential envelope-encryption key material; the manager aborts boot without it). `LICENSE_KEY` (with `common.license.organizationIds`) in every environment: the app refuses to boot without a license and there is no unlicensed mode. In `production` (the default environment): `POSTGRES_PASSWORD` (external Postgres) and `RABBITMQ_DEFAULT_PASS` (or a full `RABBITMQ_URL`). `STREAMING_SASL_PASSWORD` when a SASL mechanism is set (streaming is on by default); `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `MULTI_TENANT_SERVICE_API_KEY` when multi-tenancy is on; `RABBITMQ_DEFAULT_PASS` + `RABBITMQ_ERLANG_COOKIE` with the bundled RabbitMQ. The chart fails the render with the exact key to set when one is missing. With `common.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql` / `valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
-- Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `rabbitmq` (groundhog2k 2.1.11), `seaweedfs` (4.0.393) and `redpanda` (26.2.4, dev only) subcharts, plus an optional mock STA server (dev only), are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, RabbitMQ, S3 and Kafka are the production path; Redpanda and the mock STA are refused outside a development-class environment. plugin-access-manager, the tenant manager and BACEN STA itself are external services.
+- Required secrets: `common.secrets.MASTER_KEYS` always (credential envelope-encryption key material; the manager aborts boot without it). `LICENSE_KEY` (with `common.license.organizationIds`) in every environment: the app refuses to boot without a license and there is no unlicensed mode. In `production` (the default environment): `POSTGRES_PASSWORD` (external Postgres) and `RABBITMQ_DEFAULT_PASS` (or a full `RABBITMQ_URL`). `STREAMING_SASL_PASSWORD` when a SASL mechanism is set (streaming is on by default); `IDP_M2M_CLIENT_SECRET` when the access-manager declaration publisher is on; `RABBITMQ_DEFAULT_PASS` + `RABBITMQ_ERLANG_COOKIE` with the bundled RabbitMQ. The chart fails the render with the exact key to set when one is missing. With `common.useExistingSecret`, the operator Secret must carry them. With the bundled `postgresql` / `valkey` subcharts, their passwords are single-sourced from the subchart Secrets (`secretKeyRef`). No credential is ever placed in a ConfigMap.
+- Dependency notes: `lerian-common-helm` (library, env contracts and masks). Bundled `postgresql` (16.3.5), `valkey` (2.4.7), `rabbitmq` (groundhog2k 2.1.11), `seaweedfs` (4.0.393) and `redpanda` (26.2.4, dev only) subcharts, plus an optional mock STA server (dev only), are declared but **disabled by default** (`values-dev.yaml` turns them all on). Bundled infrastructure is for development and quickstart only. Production installs must use external, managed infrastructure. External PostgreSQL, Valkey/Redis, RabbitMQ, S3 and Kafka are the production path; Redpanda and the mock STA are refused outside a development-class environment. plugin-access-manager and BACEN STA itself are external services.
 - Production overrides: `global.datastores` (postgres, redis, broker), `global.objectStorage` (sta, staAuditExports), `global.kms`, `global.auth`, `global.streaming`, `global.env`, the Secret keys above (or per-key `common.secretRefs`, `common.useExistingSecret`/`existingSecretName`, and `migrations.useExistingSecret`), `common.cors.allowedOrigins`, `common.license.organizationIds`, `common.bacen.environment`, ingress, resources and autoscaling.
 - Source/license: Source is in `github.com/LerianStudio/helm`; chart license is Elastic License 2.0. The br-sta service itself is proprietary (Lerian Studio); its images are public on GHCR.
 
@@ -15,10 +15,11 @@ Deploys **br-sta**, the Lerian BACEN STA (Sistema de Transferência de Arquivos)
 | Component | Image | Role |
 |-----------|-------|------|
 | `manager` | `ghcr.io/lerianstudio/br-sta-manager` | HTTP API (`:4028`): transfers (`POST /v1/transfers`), inbound transfers, credentials, audit read API, connectivity probe |
-| `worker` | `ghcr.io/lerianstudio/br-sta-worker` | Background process (probe server `:4029`): the BACEN outbound scheduler (the **only** path that uploads to BACEN), inbound polling, audit publisher/consumer, business-event delivery, partition manager, verifier, export generator, reporter bridge. Exactly one replica, `Recreate` |
-| migrations | `ghcr.io/lerianstudio/br-sta-migrations` | Applies the SQL schema (single-tenant) |
+| `worker` | `ghcr.io/lerianstudio/br-sta-worker` | Background process (probe server `:4029`): the BACEN outbound scheduler (the **only** path that uploads to BACEN), inbound polling, outbox delivery of audit and business facts, audit consumer, partition manager, verifier, export generator, reporter bridge. Exactly one replica, `Recreate` |
+| migrations | `ghcr.io/lerianstudio/br-sta-migrations` | Applies the SQL schema |
+| `mockSta` (dev only, off by default) | `ghcr.io/lerianstudio/mock-sta-server` | BACEN STA simulator for a dev install (not a public image) |
 
-The chart tracks application **1.2.0** (`appVersion`); the three images follow `appVersion` unless pinned.
+The chart tracks application **1.2.0** (`appVersion`); the four images (manager, worker, migrations, mockSta) follow `appVersion` unless pinned (`manager.image.tag`, `worker.image.tag`, `migrations.image.tag`, `mockSta.image.tag`; the worker falls back to `manager.image.tag` first). One installation serves one client: app 1.2.0 has no multi-tenant mode.
 
 ---
 
@@ -34,7 +35,6 @@ The chart tracks application **1.2.0** (`appVersion`); the three images follow `
 | plugin-access-manager | Inbound JWT validation (mandatory outside a development-class env), permission declaration | `global.auth`, `common.identity` |
 | Lerian license | Runtime license validation (enforced in every environment; the app refuses to boot without it) | `secrets.LICENSE_KEY`, `common.license.organizationIds` |
 | BACEN STA (RSFN) | The upstream: `sta-h.bcb.gov.br` (homologation) / `sta.bcb.gov.br` (production) | `common.bacen.environment` |
-| Tenant manager (optional) | Multi-tenancy | `global.multiTenant` + `secrets.MULTI_TENANT_SERVICE_API_KEY` |
 
 The BACEN operator credentials and the inbound-source configs are **not** configured through this chart: they are registered through the API (`/v1/credentials`, the config API). The credentials are stored envelope-encrypted under `MASTER_KEYS`.
 
@@ -55,6 +55,31 @@ Start `my-values.yaml` from [`values-template.yaml`](values-template.yaml). It i
 ```console
 $ helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version <new-version> -n br-sta -f my-values.yaml
 ```
+
+### Upgrading the app from 1.0.x to 1.2.0
+
+App 1.2.0 ships migration `000021_replace_audit_outbox_with_outbox_events`, which **drops the `audit_outbox` table** and moves audit and business facts onto `outbox_events`, drained by the lib-commons outbox dispatcher. No rows are copied: a fact still pending in `audit_outbox` when the migrations Job runs is lost, on both channels (`target` `audit`, the audit trail, and `business`, the outbound result delivery). Drain it before upgrading:
+
+1. Stop new facts: scale the manager to 0 and, on the worker, pause the jobs that change transfer state (`common.transfer.schedulerEnabled: false`, `common.transfer.inboundEnabled: false`, `worker.scheduler.enabled: false`), keeping RabbitMQ up and the 1.0.x audit and business publishers on.
+2. Wait until nothing is pending:
+
+   ```sql
+   SELECT target, count(*) FROM audit_outbox WHERE published_at IS NULL GROUP BY target;
+   ```
+
+3. A 1.0.x drain stops selecting a row after its last failed publish, so a row that stays pending will never leave. Export what is left before you upgrade, so it can be replayed or reconciled by hand:
+
+   ```sql
+   \copy (SELECT * FROM audit_outbox WHERE published_at IS NULL) TO 'audit_outbox_pending.csv' CSV HEADER
+   ```
+
+4. Upgrade the chart (the migrations Job applies `000021` before the app boots), then revert the pauses from step 1.
+
+The down migration recreates `audit_outbox` empty: facts pending in `outbox_events` are not moved back.
+
+Settings app 1.2.0 no longer reads are no longer rendered, and the chart drops them from `common.configmap`, `common.secrets` and `worker.configmap` with a NOTES warning: every `MULTI_TENANT_*` and `OUTBOX_*` key, `M2M_TARGET_SERVICE`, `M2M_CREDENTIAL_CACHE_TTL_SEC`, `DEFAULT_TENANT_ID`, `DB_METRICS_INTERVAL_SEC`, `IDEMPOTENCY_RETRY_WINDOW_SEC`, `RABBITMQ_EXCHANGE`, `MAX_PAGINATION_*`, `AUDIT_API_*`, `SWAGGER_TITLE` / `_VERSION` / `_DESCRIPTION` / `_BASE_PATH` / `_LEFT_DELIM` / `_RIGHT_DELIM`, the `AUDIT_PUBLISHER_*` and `BUSINESS_EVENTS_*` drain knobs (`INTERVAL_SEC`, `BATCH_SIZE`, `MAX_ATTEMPTS`, `LOCK_CLASS_ID`), `AUDIT_CLEANUP_*`, `AUDIT_CONSUMER_DEDUP_TTL_SEC`, `SCHEDULER_STALE_CLEANUP_INTERVAL_HOURS` and the `*_SERVICE_NAME` knobs. The values that fed them go too: `global.multiTenant`, `common.multiTenant`, `common.outbox`, `common.m2m`, `common.pagination`, `common.auditApi`, `worker.auditCleanup` and the matching fields of `common.app`, `common.rabbitmq`, `common.swagger`, `common.businessEvents`, `worker.scheduler` and `worker.audit*`. A values file that still sets them renders unchanged (the blocks are ignored). With the multi-tenant switch gone, the migrations Job always renders when `migrations.enabled`, and `POSTGRES_HOST` / `REDIS_HOST` are always required.
+
+### From the pre-release charts
 
 Coming from the pre-release `br-sta-helm` 1.0.0-beta.x charts: the values moved to the productized shape. The app block `br-sta:` becomes `common:` (shared config and secrets) plus `manager:` (the Deployment), the worker keeps `worker:`, and every native env key under `br-sta.configmap` / `br-sta.secrets` goes to `common.configmap` / `common.secrets` (or, better, to the matching `global.*` mask / grouped parameter). The manager Service is `<fullname>-manager` on port `4028`, and `otel-collector-lerian.enabled` is replaced by `global.observability.enabled`.
 
@@ -104,13 +129,12 @@ Every application env key is resolved with this precedence (lerian-common):
 | `global.env` | `name` | `ENV_NAME`, default of `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` |
 | `global.datastores.postgres` | `host`, `port`, `user`, `name`, `ssl`, `replicaHost` | `POSTGRES_HOST/PORT/USER/NAME/SSLMODE`, `POSTGRES_REPLICA_*` |
 | `global.datastores.redis` | `host` (`host:port`), `tls`, `caCert` | `REDIS_HOST`, `REDIS_TLS`, `REDIS_CA_CERT` |
-| `global.datastores.broker` | `host`, `amqpPort`, `port` (management), `user`, `scheme` | `RABBITMQ_HOST`, `RABBITMQ_PORT_AMQP`, `RABBITMQ_PORT_HOST`, `RABBITMQ_DEFAULT_USER`, `RABBITMQ_SCHEME` |
+| `global.datastores.broker` | `host`, `amqpPort`, `port` (management), `user`, `scheme` | `RABBITMQ_HOST`, `RABBITMQ_PORT_AMQP`, `RABBITMQ_DEFAULT_USER`, `RABBITMQ_SCHEME`; `port` (default `15672`) only feeds the `RABBITMQ_HEALTH_CHECK_URL` default |
 | `global.objectStorage.sta` | `endpoint`, `region`, `bucket`, `usePathStyle` | `TRANSFER_S3_ENDPOINT`, `TRANSFER_S3_REGION`, `TRANSFER_OBJECT_STORAGE_BUCKET`, `TRANSFER_S3_PATH_STYLE` |
 | `global.objectStorage.staAuditExports` | `endpoint`, `region`, `bucket`, `usePathStyle` (default to `sta`, except the bucket) | `AUDIT_EXPORT_GENERATOR_S3_*` |
 | `global.kms` | `vendor` (`envvar` \| `aws`), `keyId`, `awsRegion` | `MASTER_KEY_PROVIDER` (`envvar` \| `aws-kms`), `MASTER_KEY_KMS_KEY_ID`, `MASTER_KEY_KMS_REGION` |
 | `global.auth` | `enabled`, `host` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` |
 | `global.streaming` | `enabled`, `brokers`, `tlsEnabled`, `saslMechanism`, `saslUsername`, `saslAllowPlaintext`, `compression`, `requiredAcks`, `batchLingerMs`, `importantEmitTimeoutMs`, `topicAutoProvision` | `STREAMING_ENABLED` + `STREAMING_*` transport keys + `STREAMING_TOPIC_AUTO_PROVISION` |
-| `global.multiTenant` | `enabled`, `url`, `redisHost`, `redisPort`, `redisTls`, `redisCaCert` | `MULTI_TENANT_*` |
 | `global.observability` | `enabled`, `otlpEndpoint`, `deploymentEnvironment` | `ENABLE_TELEMETRY`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` |
 | `global.cloud` | `aws` \| `gcp` \| `azure` | TLS/ssl/scheme defaults for the masks above |
 
@@ -118,7 +142,7 @@ Every application env key is resolved with this precedence (lerian-common):
 
 | `ENV_NAME` | Effect |
 |------------|--------|
-| `production` (default) | The app's production gates: `POSTGRES_PASSWORD`, no `sslmode=disable`, mandatory RabbitMQ + outbox, transfer bucket, business channel; Swagger forced off, rate limiting forced on. The chart mirrors them as render failures. |
+| `production` (default) | The app's production gates: `POSTGRES_PASSWORD`, no `sslmode=disable`, mandatory RabbitMQ, transfer bucket, business channel; Swagger forced off, rate limiting forced on. The chart mirrors them as render failures. |
 | `development`, `develop`, `dev`, `local`, `test` | Development class: `PLUGIN_AUTH_ENABLED=false` is accepted (it is the chart default there), dev-only bundles allowed. The license is still required (`LICENSE_KEY` + `ORGANIZATION_IDS`). |
 | anything else (e.g. `staging`) | Not production (no production gates; the license is still required), but inbound auth stays mandatory (`PLUGIN_AUTH_ENABLED` defaults to `true`) and dev-only bundles are refused. |
 
@@ -128,10 +152,10 @@ Shared (`common.*`):
 
 | Parameter | Env key | Default |
 |-----------|---------|---------|
-| `app.logLevel` / `defaultTenantId` | `LOG_LEVEL` / `DEFAULT_TENANT_ID` | `info` / `11111111-1111-1111-1111-111111111111` |
+| `app.logLevel` | `LOG_LEVEL` | `info` |
 | `app.deploymentMode` / `configApiEnabled` | `DEPLOYMENT_MODE` / `CONFIG_API_ENABLED` | `byoc` (`saas` \| `local` selectable; `saas` makes the app refuse every non-TLS dependency) / unset (app: `true`) |
 | `app.systemplaneEnabled` / `circuitBreakerEnabled` | `SYSTEMPLANE_ENABLED` / `CIRCUIT_BREAKER_ENABLED` | `false` / `false` |
-| `app.infraConnectTimeoutSec` / `dbMetricsIntervalSec` / `idempotencyRetryWindowSec` | `INFRA_CONNECT_TIMEOUT_SEC` / `DB_METRICS_INTERVAL_SEC` / `IDEMPOTENCY_RETRY_WINDOW_SEC` | `30` / `15` / `300` |
+| `app.infraConnectTimeoutSec` | `INFRA_CONNECT_TIMEOUT_SEC` | `30` |
 | `server.address` | `SERVER_ADDRESS` | `0.0.0.0:<manager.containerPort>` (worker: `0.0.0.0:<worker.port>`) |
 | `server.bodyLimitBytes` / `tlsTerminatedUpstream` | `HTTP_BODY_LIMIT_BYTES` / `TLS_TERMINATED_UPSTREAM` | `104857600` / `false` |
 | `server.tlsCertFile` / `tlsKeyFile` | `SERVER_TLS_CERT_FILE` / `SERVER_TLS_KEY_FILE` | unset (both or neither) |
@@ -145,14 +169,10 @@ Shared (`common.*`):
 | `redis.db` / `protocol` / `poolSize` / `minIdleConns` | `REDIS_DB` / `REDIS_PROTOCOL` / `REDIS_POOL_SIZE` / `REDIS_MIN_IDLE_CONNS` | `0` / `3` / `10` / `2` |
 | `redis.readTimeout` / `writeTimeout` / `dialTimeout` / `poolTimeout` | `REDIS_READ_TIMEOUT` / `REDIS_WRITE_TIMEOUT` / `REDIS_DIAL_TIMEOUT` / `REDIS_POOL_TIMEOUT` | `3` / `3` / `5` / `2` |
 | `redis.maxRetries` / `minRetryBackoff` / `maxRetryBackoff` / `masterName` | `REDIS_MAX_RETRIES` / `REDIS_MIN_RETRY_BACKOFF` / `REDIS_MAX_RETRY_BACKOFF` / `REDIS_MASTER_NAME` | `3` / `8` / `1` / unset |
-| `rabbitmq.enabled` / `vhost` / `exchange` / `queue` | `RABBITMQ_ENABLED` / `RABBITMQ_VHOST` / `RABBITMQ_EXCHANGE` / `RABBITMQ_QUEUE` | `true` / `/` / `events` / unset |
+| `rabbitmq.enabled` / `vhost` / `queue` | `RABBITMQ_ENABLED` / `RABBITMQ_VHOST` / `RABBITMQ_QUEUE` | `true` / `/` / unset |
 | `rabbitmq.healthCheckUrl` / `healthCheckAllowedHosts` | `RABBITMQ_HEALTH_CHECK_URL` / `RABBITMQ_HEALTH_CHECK_ALLOWED_HOSTS` | `<http\|https>://<broker host>:<broker port>/api/health/checks/alarms` (https for an `amqps` broker) / the broker host. lib-commons checks the management API on every connect and refuses an empty URL |
 | `rabbitmq.requireHealthAllowedHosts` / `allowInsecureHealthCheck` / `allowInsecureTls` | `RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS` / `RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK` / `RABBITMQ_ALLOW_INSECURE_TLS` | `false` / `true` only with the bundled (plain-HTTP) broker, else `false` / `false` |
 | `rabbitmq.publisherConfirmTimeoutMs` / `publisherRecoveryInitialMs` / `publisherRecoveryMaxMs` / `publisherMaxRecoveries` | `RABBITMQ_PUBLISHER_*` | `5000` / `1000` / `30000` / `10` |
-| `outbox.enabled` / `tableName` / `allowEmptyTenant` | `OUTBOX_ENABLED` / `OUTBOX_TABLE_NAME` / `OUTBOX_ALLOW_EMPTY_TENANT` | `true` / `outbox_events` / `true` |
-| `outbox.dispatchIntervalSec` / `batchSize` / `publishMaxAttempts` / `publishBackoffMs` | `OUTBOX_DISPATCH_INTERVAL_SEC` / `OUTBOX_BATCH_SIZE` / `OUTBOX_PUBLISH_MAX_ATTEMPTS` / `OUTBOX_PUBLISH_BACKOFF_MS` | `2` / `50` / `3` / `200` |
-| `outbox.retryWindowSec` / `maxDispatchAttempts` / `processingTimeoutSec` / `maxFailedPerBatch` | `OUTBOX_RETRY_WINDOW_SEC` / `OUTBOX_MAX_DISPATCH_ATTEMPTS` / `OUTBOX_PROCESSING_TIMEOUT_SEC` / `OUTBOX_MAX_FAILED_PER_BATCH` | `300` / `10` / `600` / `25` |
-| `outbox.includeTenantMetrics` / `priorityEventTypes` | `OUTBOX_INCLUDE_TENANT_METRICS` / `OUTBOX_PRIORITY_EVENT_TYPES` | `false` / unset |
 | (global.streaming.enabled) | `STREAMING_ENABLED` | `true` (brokers then required; `false` only for an install with no broker — facts produced while off are never re-sent) |
 | (global.streaming.topicAutoProvision) | `STREAMING_TOPIC_AUTO_PROVISION` | `true` (lib-streaming: both binaries create `lerian.streaming.br-sta` + `.dlq` at boot when the principal has CreateTopics; a denied create is a WARN, not a boot failure. `false` for IaC-provisioned topics, which must then exist first) |
 | `streaming.cloudeventsSource` / `clientId` | `STREAMING_CLOUDEVENTS_SOURCE` / `STREAMING_CLIENT_ID` | unset (the app pins `br-sta`; any other ce-source is refused) |
@@ -160,19 +180,12 @@ Shared (`common.*`):
 | (global.auth.enabled) | `PLUGIN_AUTH_ENABLED` | `false` in a development-class env, `true` elsewhere |
 | `auth.trustedProxies` | `TRUSTED_PROXIES` (lib-auth client-IP forwarding) | `""` |
 | `identity.declarationEnabled` / `host` / `m2mClientId` | `IDP_DECLARATION_ENABLED` / `IDP_HOST` / `IDP_M2M_CLIENT_ID` | `false` / unset / unset |
-| `m2m.targetService` / `credentialCacheTtlSec` | `M2M_TARGET_SERVICE` / `M2M_CREDENTIAL_CACHE_TTL_SEC` | unset / `300` |
 | `aws.region` | `AWS_REGION` | `us-east-1` |
-| `multiTenant.poolMaxConns` / `poolMaxIdleConns` | `MULTI_TENANT_POOL_MAX_CONNS` / `MULTI_TENANT_POOL_MAX_IDLE_CONNS` | `20` / `5` (only with multi-tenancy) |
-| `multiTenant.maxTenantPools` / `idleTimeoutSec` / `timeoutSec` / `cacheTtlSec` / `connectionsCheckIntervalSec` | `MULTI_TENANT_MAX_TENANT_POOLS` / `..._IDLE_TIMEOUT_SEC` / `MULTI_TENANT_TIMEOUT` / `..._CACHE_TTL_SEC` / `..._CONNECTIONS_CHECK_INTERVAL_SEC` | `100` / `300` / `30` / `120` / `30` (only with multi-tenancy) |
-| `multiTenant.circuitBreakerThreshold` / `circuitBreakerTimeoutSec` / `allowInsecureHttp` | `MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD` / `..._TIMEOUT_SEC` / `MULTI_TENANT_ALLOW_INSECURE_HTTP` | `5` / `30` / `false` (only with multi-tenancy) |
 | `observability.serviceName` / `libraryName` | `OTEL_RESOURCE_SERVICE_NAME` / `OTEL_LIBRARY_NAME` | unset (each binary seeds `br-sta-manager` / `br-sta-worker`) |
 | `rateLimit.enabled` / `max` / `windowSec` | `RATE_LIMIT_ENABLED` / `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_SEC` | `true` / `100` / `60` |
 | `rateLimit.aggressiveMax` / `aggressiveWindowSec` / `relaxedMax` / `relaxedWindowSec` | `AGGRESSIVE_RATE_LIMIT_*` / `RELAXED_RATE_LIMIT_*` | `100` / `60` / `1000` / `60` |
 | `rateLimit.auditExportMax` / `auditExportWindowSec` | `AUDIT_EXPORT_RATE_LIMIT_MAX` / `..._WINDOW_SEC` | `10` / `60` |
-| `swagger.enabled` / `title` / `version` / `basePath` | `SWAGGER_ENABLED` / `SWAGGER_TITLE` / `SWAGGER_VERSION` / `SWAGGER_BASE_PATH` | `false` / `BR-STA Service API` / image tag / `/` |
-| `swagger.leftDelim` / `rightDelim` / `description` / `host` / `schemes` | `SWAGGER_LEFT_DELIM` / `SWAGGER_RIGHT_DELIM` / `SWAGGER_DESCRIPTION` / `SWAGGER_HOST` / `SWAGGER_SCHEMES` | `{{` / `}}` / unset |
-| `pagination.maxLimit` / `maxMonthDateRange` | `MAX_PAGINATION_LIMIT` / `MAX_PAGINATION_MONTH_DATE_RANGE` | `100` / `3` |
-| `auditApi.defaultPageSize` / `maxPageSize` / `maxExportDateRangeDays` | `AUDIT_API_*` | unset (app: `25` / `100` / `365`) |
+| `swagger.enabled` / `host` / `schemes` | `SWAGGER_ENABLED` / `SWAGGER_HOST` / `SWAGGER_SCHEMES` | `false` / unset / unset (app: `https`) |
 | (global.kms.vendor) / `credentials.masterKeyVersion` | `MASTER_KEY_PROVIDER` / `MASTER_KEY_VERSION` | `envvar` / `v1` |
 | `bacen.environment` | `BACEN_ENVIRONMENT` | `homologation` |
 | `sta.scheme` / `fileHost` / `passwordHost` | `STA_SCHEME` / `STA_FILE_HOST` / `STA_PASSWORD_HOST` | unset (the bundled mock when `mockSta.enabled`); dev/test only |
@@ -180,7 +193,7 @@ Shared (`common.*`):
 | `transfer.maxFileSizeBytes` / `inboundMaxFileSizeBytes` / `inboundExtractMaxExpansionRatio` / `inboundExtractMaxExtractedBytes` | `TRANSFER_MAX_FILE_SIZE_BYTES` / `TRANSFER_INBOUND_MAX_FILE_SIZE_BYTES` / `TRANSFER_INBOUND_EXTRACT_*` | unset (app defaults: 5 GiB / 5 GiB / 100 / 5 GiB) |
 | `transfer.chunkSizeBytes` / `maxAttempts` / `ttlHours` / `pollIntervalSeconds` / `workerConcurrency` / `inboundLockClassId` | `TRANSFER_CHUNK_SIZE_BYTES` / `TRANSFER_MAX_ATTEMPTS` / `TRANSFER_TTL_HOURS` / `TRANSFER_POLL_INTERVAL_SECONDS` / `TRANSFER_WORKER_CONCURRENCY` / `TRANSFER_INBOUND_LOCK_CLASS_ID` | unset (app defaults) |
 | `businessEvents.enabled` / `exchange` | `BUSINESS_EVENTS_ENABLED` / `BUSINESS_EVENTS_EXCHANGE` | `true` / `sta.business.events` |
-| `businessEvents.intervalSec` / `batchSize` / `maxAttempts` / `serviceName` / `lockClassId` / `confirmTimeoutSec` | `BUSINESS_EVENTS_*` | unset (app defaults) |
+| `businessEvents.confirmTimeoutSec` | `BUSINESS_EVENTS_CONFIRM_TIMEOUT_SEC` | unset (app default). Delivery cadence and retries belong to the lib-commons outbox dispatcher |
 | `reporterEvents.consumerEnabled` | `REPORTER_EVENTS_CONSUMER_ENABLED` | `false` |
 | `reporterEvents.exchange` / `doctypeResolver` | `REPORTER_EVENTS_CONSUMER_EXCHANGE` / `REPORTER_EVENTS_DOCTYPE_RESOLVER` | unset (both required when the consumer is on; `payload` in production) |
 | `reporterEvents.queue` / `dlqExchange` / `alternateExchange` / `idleWindowSec` / `dedupTtlSec` / `reconciliationWindowSec` / `redeliveryWindowSec` / `doctypeMap` | `REPORTER_EVENTS_*` | unset (app defaults) |
@@ -194,15 +207,15 @@ Worker-only (`worker.*`, rendered into the worker ConfigMap):
 | `scheduler.enabled` | `SCHEDULER_ENABLED` | `true` (BACEN verdict polling + maintenance jobs) |
 | `scheduler.filingSweepEnabled` | `SCHEDULER_FILING_SWEEP_ENABLED` | `false` (a deliberate decision: it auto-closes stranded reporter filings) |
 | `scheduler.filingSweepAgeMinutes` | `SCHEDULER_FILING_SWEEP_AGE_MINUTES` | unset (app: `120`). A **safety** knob: do not tune it down to make the sweep responsive |
-| `scheduler.{serviceName,leaderTtlSeconds,heartbeatSeconds,credentialIntervalHours,staleCleanupIntervalHours,retentionIntervalHours,quarantineRetentionDays,filingSweepIntervalMinutes,filingSweepBatchLimit}` | `SCHEDULER_*` | unset (app defaults) |
+| `scheduler.{leaderTtlSeconds,heartbeatSeconds,credentialIntervalHours,retentionIntervalHours,quarantineRetentionDays,filingSweepIntervalMinutes,filingSweepBatchLimit}` | `SCHEDULER_*` | unset (app defaults) |
 | `credentials.recoveryOnBoot` | `CREDENTIALS_RECOVERY_ON_BOOT` | `true` |
 | `auditPublisher.enabled` / `auditConsumer.enabled` | `AUDIT_PUBLISHER_ENABLED` / `AUDIT_CONSUMER_ENABLED` | `true` / `true` |
 | `auditPartition.enabled` | `AUDIT_PARTITION_MANAGER_ENABLED` | `true` (leave it on: it is the only forward creator of the audit partitions) |
-| `auditCleanup.enabled` / `auditVerifier.enabled` | `AUDIT_CLEANUP_ENABLED` / `AUDIT_VERIFIER_ENABLED` | `false` / `true` |
+| `auditVerifier.enabled` | `AUDIT_VERIFIER_ENABLED` | `true` |
 | `auditExportGenerator.enabled` | `AUDIT_EXPORT_GENERATOR_ENABLED` | `true` when an audit-export bucket is set, else `false` |
-| every other `audit*` field (interval, batch, exchange, queue, lock class, service name, ...) | `AUDIT_*` | unset (app defaults) |
+| every other `audit*` field (exchange, alternate exchange, confirm timeout, queue, DLQ exchange, lock class, retries, interval, batch, sample rows, object prefix) | `AUDIT_*` | unset (app defaults) |
 
-Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`, `REDIS_URL`) and `MASTER_ENCRYPTION_KEY` (documented in the app's `.env.example`, not read by the service), `LICENSE_SERVICE_ADDRESS` (reserved, not consumed), `MIGRATIONS_PATH` (the app does not run migrations; the Job sets it). The docker-compose server tuning (`POSTGRES_MAX_CONNECTIONS`, `POSTGRES_SHARED_BUFFERS`) and the inert keys from earlier pre-releases (`REPORTER_EVENTS_CONSUMER_ROUTING_KEY`, `REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY`, `REPORTER_EVENTS_EXPECTED_TENANT`, `TRUST_STORE_*`) are dropped from the escape hatch with a NOTES warning.
+Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`, `REDIS_URL`) and `MASTER_ENCRYPTION_KEY` (documented in the app's `.env.example`, not read by the service), `LICENSE_SERVICE_ADDRESS` (reserved, not consumed), `MIGRATIONS_PATH` (the app does not run migrations; the Job sets it). The docker-compose server tuning (`POSTGRES_MAX_CONNECTIONS`, `POSTGRES_SHARED_BUFFERS`) the inert keys from earlier pre-releases (`REPORTER_EVENTS_CONSUMER_ROUTING_KEY`, `REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY`, `REPORTER_EVENTS_EXPECTED_TENANT`, `TRUST_STORE_*`) and the settings app 1.2.0 stopped reading (listed under [Upgrading the app from 1.0.x to 1.2.0](#upgrading-the-app-from-10x-to-120)) are dropped from the escape hatches with a NOTES warning.
 
 ### Secrets
 
@@ -219,7 +232,6 @@ Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`,
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | The object store needs static credentials (not with IRSA / workload identity) |
 | `STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` | SASL mechanism set / broker CA not in the system pool |
 | `IDP_M2M_CLIENT_SECRET` | `identity.declarationEnabled` |
-| `MULTI_TENANT_SERVICE_API_KEY` / `MULTI_TENANT_REDIS_PASSWORD` | Multi-tenancy on / tenant Redis requires auth |
 
 The Deployments list the shared ConfigMap before the Secret in `envFrom`, so a Secret key wins over a shared ConfigMap key of the same name.
 
@@ -231,14 +243,13 @@ The render fails with the exact value to set (mirroring the app's boot validatio
 
 - `MASTER_KEYS` is missing, malformed (not `version:key`, or not hex under `envvar`), or `MASTER_KEY_VERSION` is not one of its versions; `MASTER_KEY_KMS_KEY_ID` is missing under `aws-kms`;
 - `PLUGIN_AUTH_ENABLED` is `false` outside a development-class environment (or with `DEPLOYMENT_MODE=saas`), or `true` without `PLUGIN_AUTH_HOST`;
-- `POSTGRES_HOST` / `REDIS_HOST` are empty in single-tenant mode; RabbitMQ is enabled without a host or `RABBITMQ_URL`, without a management health-check URL, or with a plain-`http` health-check URL but no `allowInsecureHealthCheck`;
+- `POSTGRES_HOST` / `REDIS_HOST` are empty; RabbitMQ is enabled without a host or `RABBITMQ_URL`, without a management health-check URL, or with a plain-`http` health-check URL but no `allowInsecureHealthCheck`;
 - `LICENSE_KEY` or `ORGANIZATION_IDS` is missing (in every environment: the app refuses to boot without a license);
-- production lacks `POSTGRES_PASSWORD`, `RABBITMQ_DEFAULT_PASS` or the transfer bucket, uses `sslmode=disable`, disables RabbitMQ, the outbox or the business channel, or allows insecure RabbitMQ TLS / health checks;
+- production lacks `POSTGRES_PASSWORD`, `RABBITMQ_DEFAULT_PASS` or the transfer bucket, uses `sslmode=disable`, disables RabbitMQ or the business channel, or allows insecure RabbitMQ TLS / health checks;
 - streaming is on (the default) without `STREAMING_BROKERS`, a SASL mechanism is set without a username/password or without TLS, streaming is on with `DEPLOYMENT_MODE=saas` and TLS off, or `STREAMING_CLOUDEVENTS_SOURCE` is anything but `br-sta`;
-- `DEPLOYMENT_MODE` is anything but `byoc`, `saas` or `local` (the app's other `saas` TLS rules — Postgres, Redis, RabbitMQ, S3, tenant manager — are enforced at boot, not at render);
-- multi-tenancy is on without the tenant-manager URL, its Redis host, the service API key or inbound auth;
+- `DEPLOYMENT_MODE` is anything but `byoc`, `saas` or `local` (the app's other `saas` TLS rules — Postgres, Redis, RabbitMQ, S3 — are enforced at boot, not at render);
 - the declaration publisher or the reporter bridge is on without its host / credentials / exchange / resolver (`static` is refused in production and outside homologation);
-- the CORS origin is `*` without `security.allowCorsWildcard` (and, in production, is a wildcard at all), the server TLS cert/key are not set together, or `M2M_TARGET_SERVICE` contains `:`.
+- the CORS origin is `*` without `security.allowCorsWildcard` (and, in production, is a wildcard at all), or the server TLS cert/key are not set together.
 
 A value supplied through `extraEnvVars` (or `common.secretRefs`, which reaches both pods) satisfies the gate only when it is set, with the same value, on both `manager.extraEnvVars` and `worker.extraEnvVars` (or the worker is disabled). An empty literal for a required key in either pod's `extraEnvVars` fails the render, since it would override the ConfigMap/Secret for that pod. With `common.useExistingSecret`, the gates skip the Secret keys.
 
@@ -254,14 +265,13 @@ br-sisbajud is an STA client: it submits its return files through `POST /v1/tran
 | `STA_OBJECT_STORAGE_ENDPOINT` (defaults to its S3 endpoint) | `global.objectStorage.sta.endpoint` — the same S3 backend |
 | `brSisbajud.sta.transfersBaseUrl` | `http://<fullname>-manager.<namespace>.svc.cluster.local:4028` (printed in NOTES) |
 | `brSisbajud.sta.consumerEnabled` + `brSisbajud.sta.stream` (it never falls back to `global.streaming`) | `global.streaming.enabled: true` (the default) + the same brokers; the topics `lerian.streaming.br-sta` and `.dlq` must exist (br-sta creates them when `topicAutoProvision` is on and its principal has CreateTopics) |
-| `brSisbajud.sta.expectedTenantSt` | br-sta's `DEFAULT_TENANT_ID` (`common.app.defaultTenantId`) in single-tenant mode |
 | `STA_CLIENT_ID` / `STA_CLIENT_SECRET` (m2m bearer from `global.auth.host`) | the same plugin-access-manager (`global.auth.host`) |
 
 ---
 
 ## Detached migrations
 
-`migrations.enabled` (default `true`, single-tenant only — the runner refuses `MULTI_TENANT_ENABLED=true`) runs `ghcr.io/lerianstudio/br-sta-migrations` (golang-migrate). The Job follows the app's resolved Postgres connection; `migrations.postgres.*` overrides it field by field.
+`migrations.enabled` (default `true`) runs `ghcr.io/lerianstudio/br-sta-migrations` (golang-migrate). The Job follows the app's resolved Postgres connection; `migrations.postgres.*` overrides it field by field.
 
 - **External Postgres**: a Helm **pre-install/pre-upgrade** + ArgoCD **PreSync** hook Secret (`hook-weight: -2`) and Job (`-1`), so the app never boots unmigrated under either tool. Helm deletes both after the hook phase succeeds; ArgoCD keeps the Secret until the next hook run (`BeforeHookCreation`). The password comes from that Secret, `migrations.useExistingSecret`, or the app's existing Secret (`common.useExistingSecret`).
 - **Bundled Postgres**: the database is created in the same sync, so the Job is a regular resource created with the release; its initContainer waits for Postgres and the password comes from the subchart Secret.
@@ -298,7 +308,7 @@ It bundles, in the release namespace:
 | redpanda | 26.2.4 | `redpandaBundle.enabled` | 1 broker, no TLS, no SASL, no external listener |
 | mock STA server | app tag | `mockSta.enabled` | BACEN STA simulator over HTTP; every upload ends in `defaultTerminalStatus` |
 
-It runs with `ENV_NAME=development`: inbound auth off, license still enforced, plaintext datastores and broker allowed, streaming on. The reporter bridge, the declaration publisher and multi-tenancy are off.
+It runs with `ENV_NAME=development`: inbound auth off, license still enforced, plaintext datastores and broker allowed, streaming on. The reporter bridge and the declaration publisher are off.
 
 ### Derived connections
 

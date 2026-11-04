@@ -53,10 +53,6 @@ global:
     topicAutoProvision: true
   observability:
     enabled: false                     # true => node-local collector http://$(HOST_IP):4317
-  multiTenant:
-    enabled: false
-    # url: "http://tenant-manager.tenant-manager.svc.cluster.local:4026"
-    # redisHost: "valkey.internal"
 
 # The images are public on GHCR. Set a pull secret only for a private mirror/registry:
 # imagePullSecrets: [{name: my-registry-credential}]
@@ -111,7 +107,6 @@ common:
     STREAMING_SASL_PASSWORD: ""        # <- REQUIRED (global.streaming.saslMechanism is set)
     STREAMING_TLS_CA_CERT: ""          # <- REQUIRED when the broker CA is not in the system pool (PEM)
     # IDP_M2M_CLIENT_SECRET: ""        # <- REQUIRED when identity.declarationEnabled
-    # MULTI_TENANT_SERVICE_API_KEY: "" # <- REQUIRED when multi-tenancy is on
   # Or reference single keys of a Secret the chart does not manage (ESO/Vault);
   # a reference counts as set for the checks above:
   # secretRefs:
@@ -124,7 +119,7 @@ serviceAccount:
   annotations: {}                      # e.g. IRSA: eks.amazonaws.com/role-arn: <role-arn>
 
 migrations:
-  enabled: true                        # single-tenant only; connection follows global.datastores.postgres
+  enabled: true                        # connection follows global.datastores.postgres
 
 # External infra is the production path. For a fully self-contained dev install
 # (PostgreSQL, Valkey, RabbitMQ, SeaweedFS, Redpanda, mock STA) use

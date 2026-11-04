@@ -17,11 +17,7 @@ BACEN, polls verdicts and delivers business events: transfers accepted by the
 API are persisted but never transmitted.
 {{- end }}
 {{- if .Values.migrations.enabled }}
-{{- if eq (include "br-sta.multiTenantEnabled" .) "true" }}
-
-Migrations: not rendered — the runner is single-tenant only (tenant schemas are
-provisioned through the tenant manager).
-{{- else if eq (include "br-sta.postgresInternal" .) "true" }}
+{{- if eq (include "br-sta.postgresInternal" .) "true" }}
 
 Migrations: a Job applies the SQL schema to the bundled Postgres alongside the release.
 {{- else }}
@@ -43,10 +39,9 @@ STREAMING_TOPIC_AUTO_PROVISION=false: both topics must exist on the broker befor
 The redpanda-topics Job creates them on the bundled Redpanda.
 {{- end }}
 {{- end }}
-{{- $removed := include "br-sta.removedKeys" . | fromJsonArray }}
 {{- $set := list }}
-{{- range $k := $removed }}
-{{- if or (hasKey ($.Values.common.configmap | default dict) $k) (hasKey ($.Values.common.secrets | default dict) $k) }}
+{{- range $k := concat (keys ($.Values.common.configmap | default dict)) (keys ($.Values.common.secrets | default dict)) (keys ($.Values.worker.configmap | default dict)) | uniq | sortAlpha }}
+{{- if include "br-sta.removedKey" (dict "root" $ "key" $k) }}
 {{- $set = append $set $k }}
 {{- end }}
 {{- end }}

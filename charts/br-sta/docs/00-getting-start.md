@@ -39,7 +39,7 @@ chart falha de propósito até as conexões externas e os secrets estarem setado
 
 | Dependência | Quando é necessária | Como o chart recebe |
 |---|---|---|
-| PostgreSQL | Sempre (single-tenant: o chart exige o host) | `global.datastores.postgres` + `common.secrets.POSTGRES_PASSWORD`. DB/usuário default `br_sta` |
+| PostgreSQL | Sempre (o chart exige o host) | `global.datastores.postgres` + `common.secrets.POSTGRES_PASSWORD`. DB/usuário default `br_sta` |
 | Valkey / Redis | Sempre (rate limit, idempotência, leader election do scheduler) | `global.datastores.redis` (`host:porta`) + `common.secrets.REDIS_PASSWORD` |
 | RabbitMQ | Sempre em produção (transporte de auditoria + canal de business events; a app recusa produção sem ele) | `global.datastores.broker` + `common.secrets.RABBITMQ_DEFAULT_PASS` (ou um `RABBITMQ_URL` completo). A API de management precisa estar acessível: a app faz health check nela a cada conexão |
 | Object storage S3 | Sempre em produção (o bucket de transfer guarda as duas direções) | `global.objectStorage.sta` (+ `staAuditExports` para exports de auditoria) + `common.secrets.AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` ou anotação IRSA / workload identity no `serviceAccount` |
@@ -47,10 +47,9 @@ chart falha de propósito até as conexões externas e os secrets estarem setado
 | plugin-access-manager | Obrigatório fora da classe de desenvolvimento (a app só aceita `PLUGIN_AUTH_ENABLED=false` em development/develop/dev/local/test) | `global.auth.enabled` + `global.auth.host` |
 | Gateway de licença Lerian | Todos os ambientes (`LICENSE_KEY` + `ORGANIZATION_IDS`; a app recusa o boot sem licença, não há modo sem licença); os pods precisam de egress até ele | `common.secrets.LICENSE_KEY`, `common.license.organizationIds` |
 | BACEN STA | O upstream real (host de homologação ou produção) | `common.bacen.environment` (default `homologation`) |
-| Tenant manager | Só com multi-tenancy | `global.multiTenant` + `common.secrets.MULTI_TENANT_SERVICE_API_KEY` |
 
 Contra infra externa o chart não cria bancos, usuários/vhosts do RabbitMQ nem buckets;
-ele roda as migrations SQL (single-tenant). A app declara as próprias exchanges e filas
+ele roda as migrations SQL. A app declara as próprias exchanges e filas
 do RabbitMQ no boot.
 
 ---
@@ -202,18 +201,17 @@ global:
 |---|---|---|
 | `global.env.name` | `ENV_NAME` | `production` liga os gates de produção da app; nomes da classe dev permitem auth desligado e os bundles só-dev |
 | `global.datastores.postgres.*` | `POSTGRES_HOST/PORT/USER/NAME/SSLMODE`, chaves de réplica | `sslmode=disable` é recusado em produção |
-| `global.datastores.broker.*` | `RABBITMQ_HOST/PORT_AMQP/PORT_HOST/DEFAULT_USER/SCHEME` | A URL do health check de management deriva de host + `port` (https com `amqps`) |
+| `global.datastores.broker.*` | `RABBITMQ_HOST/PORT_AMQP/DEFAULT_USER/SCHEME` | A URL do health check de management deriva de host + `port` (https com `amqps`) |
 | `global.objectStorage.sta.*` | `TRANSFER_OBJECT_STORAGE_BUCKET`, `TRANSFER_S3_*` | Mantenha idêntico ao `global.objectStorage.sta` do br-sisbajud |
 | `global.kms.*` | `MASTER_KEY_PROVIDER`, `MASTER_KEY_KMS_KEY_ID`, `MASTER_KEY_KMS_REGION` | `MASTER_KEYS` é sempre secret |
 | `global.auth.*` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | Default `true` fora da classe dev |
 | `global.streaming.*` | chaves de transporte `STREAMING_*` | `STREAMING_SASL_USERNAME` pode ficar no Secret |
-| `global.multiTenant.*` | `MULTI_TENANT_*` | Ajustes finos em `common.multiTenant.*` |
 | `global.observability.*` | `ENABLE_TELEMETRY`, `OTEL_*` | Telemetria ligada sem endpoint => `http://$(HOST_IP):4317` (collector do nó) |
 
 Knobs de compatibilidade (só values): mantenha um endereço existente no cluster, como
 `br-sta:8080`, com `manager.service.name: br-sta`, `manager.service.port: 8080` e
 `manager.containerPort: 4028` (o Ingress segue o nome da Service). Knobs só do worker
-ficam em `worker.*` (scheduler, audit publisher/consumer/partition/cleanup/verifier/
+ficam em `worker.*` (scheduler, audit publisher/consumer/partition/verifier/
 export generator).
 
 ---
@@ -222,7 +220,7 @@ export generator).
 
 | Tema | O que saber | Antes de habilitar / como confirmar |
 |---|---|---|
-| Render fail-fast | O chart espelha a validação de boot da app: `MASTER_KEYS` (formato e versão), switch de auth, host de Postgres/Redis em single-tenant, host do RabbitMQ + URL do health check, licença em todos os ambientes (`LICENSE_KEY` + `ORGANIZATION_IDS`), gates de produção (senha do Postgres, sem `sslmode=disable`, RabbitMQ + outbox + canal de negócio ligados, bucket de transfer, sem CORS wildcard), brokers/SASL do streaming, exchange + resolver do reporter bridge | Leia o erro do render: ele diz exatamente o valor a setar |
+| Render fail-fast | O chart espelha a validação de boot da app: `MASTER_KEYS` (formato e versão), switch de auth, host de Postgres/Redis, host do RabbitMQ + URL do health check, licença em todos os ambientes (`LICENSE_KEY` + `ORGANIZATION_IDS`), gates de produção (senha do Postgres, sem `sslmode=disable`, RabbitMQ + canal de negócio ligados, bucket de transfer, sem CORS wildcard), brokers/SASL do streaming, exchange + resolver do reporter bridge | Leia o erro do render: ele diz exatamente o valor a setar |
 | Guarda de produção | `redpandaBundle` e `mockSta` são recusados fora da classe dev | `helm template ... --set global.env.name=staging` falha citando os dois |
 | Worker de réplica única | Não há leader election para todos os loops: exatamente uma réplica, `Recreate` | Não escale o worker; escale o manager |
 | Scheduler de transfer | `TRANSFER_SCHEDULER_ENABLED` (default `true`) é o único caminho que envia ao BACEN | Log do worker `Transfers outbound fanout started` |

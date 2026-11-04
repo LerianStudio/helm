@@ -1,7 +1,0 @@
-{{- if .Values.identity.autoscaling.enabled }}
-{{- include "lerian-common.hpa" (dict
-      "autoscaling" .Values.identity.autoscaling
-      "name" (include "plugin-identity.fullname" .)
-      "labels" (printf "%s " (include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name)))
-    ) }}
-{{- end }}

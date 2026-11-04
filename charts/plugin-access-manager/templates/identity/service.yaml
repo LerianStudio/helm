@@ -1,6 +1,0 @@
-{{- include "lerian-common.service" (dict
-      "service" .Values.identity.service
-      "name" (include "plugin-identity.fullname" .)
-      "labels" (printf "%s " (include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name)))
-      "selector" (include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name))
-    ) }}

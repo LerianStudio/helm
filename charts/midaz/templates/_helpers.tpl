@@ -587,7 +587,7 @@ supplied through values; an existing Secret is opaque to the chart.
 {{- /* Skip validation when the value is a secret-manager INJECTION PLACEHOLDER, not the literal
    key: ArgoCD-Vault-Plugin `<path:secret/...#K>`, envsubst `${VAR}`, or any `<...>` token. The
    real hex key is substituted AFTER `helm template`, so hex-validating the placeholder would
-   hard-fail the render in every Vault/AVP-backed environment (benedita, etc.). Literal values
+   hard-fail the render in every Vault/AVP-backed environment. Literal values
    (operator-supplied or the CI fixture) are still validated. */ -}}
 {{- if or (hasPrefix "<" $key) (contains "<path:" $key) (contains "${" $key) -}}
 {{- /* injected at deploy time — trust the secret manager */ -}}

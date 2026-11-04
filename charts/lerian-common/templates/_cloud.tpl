@@ -52,10 +52,9 @@ access (SDK, not the S3 mask) is a separate integration this chart doesn't
 model yet.
 
 AWS preset: ElastiCache TransitEncryptionEnabled=true+required, RDS ForceSSL
-default "1". AmazonMQ: the broker security group opens 5671 (AMQPS)/15671/443,
-and the preset uses RABBITMQ_PORT_AMQP=443 (+ RABBITMQ_PROTOCOL=https)
-— not 15671 — so `broker.port` here is 443, even though AWS's own docs call
-443/15671 interchangeable. DocumentDB EnableTLS default "enabled" — the
+default "1". AmazonMQ for RabbitMQ: AMQPS on 5671, management API on 443 (AWS also
+accepts 15671), so `amqpPort` is 5671 and the management `port` is 443.
+DocumentDB EnableTLS default "enabled" — the
 mongo.params below are the connection-string shape used for DocumentDB:
 tlsInsecure (DocumentDB doesn't ship AWS's public CA in every client trust
 store by default), directConnection (skip replica-set topology discovery,

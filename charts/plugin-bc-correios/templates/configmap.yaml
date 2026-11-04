@@ -69,7 +69,9 @@ data:
   PLUGIN_AUTH_CLIENT_ID: {{ $component.configmap.PLUGIN_AUTH_CLIENT_ID | default "plugin-bc-correios" | quote }}
 
   # License
+  {{- if not (and $component.useExistingSecret (not $component.configmap.LICENSE_KEY)) }}
   LICENSE_KEY: {{ $component.configmap.LICENSE_KEY | default "" | quote }}
+  {{- end }}
 
   # AI Insights
   FEATURE_AI_INSIGHTS_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.FEATURE_AI_INSIGHTS_ENABLED | quote }}

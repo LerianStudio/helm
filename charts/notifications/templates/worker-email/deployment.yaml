@@ -19,7 +19,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "notifications.labels" (dict "context" . "name" .Values.workerEmail.name) | nindent 8 }}
+        {{- include "notifications.podLabels" (dict "context" . "name" .Values.workerEmail.name) | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- if not .Values.secretRef.name }}

@@ -18,7 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "notifications.labels" (dict "context" . "name" .Values.api.name) | nindent 8 }}
+        {{- include "notifications.podLabels" (dict "context" . "name" .Values.api.name) | nindent 8 }}
       annotations:
         # Force pod restart on ConfigMap/Secret change.
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}

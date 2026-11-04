@@ -81,6 +81,14 @@ LABEL HELPERS (parametric: pass dict with "context" and "name")
 
 {{- define "notifications.labels" -}}
 helm.sh/chart: {{ include "notifications.chart" .context }}
+{{ include "notifications.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart every pod each time.
+*/}}
+{{- define "notifications.podLabels" -}}
 {{ include "notifications.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "notifications.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}

@@ -310,8 +310,8 @@ ledger:
   # health via exit codes (0 healthy/unpartitioned, 1 attention, 2 invalid).
   # It visits every active tenant in multi-tenant mode.
   partition:
-    # -- Run the scheduled runner. Unset enables stable tags >= 4.5.0 only;
-    # pre-release, older and non-SemVer tags default off. Set true or false to override.
+    # -- Run the scheduled runner. Unset enables tags >= 4.5.0-beta.1 (every ledger
+    # image from that tag on ships the runner); older and non-SemVer tags default off. Set true or false to override.
     enabled:
     # -- Cron schedule in `timeZone`, defaulting to 06:00 outside common managed
     # PostgreSQL maintenance windows; choose a time outside your database's windows.

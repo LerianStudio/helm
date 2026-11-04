@@ -166,7 +166,7 @@ plugin-br-ted-lerian:
     # -- Additional ingress annotations
     annotations: {}
     hosts:
-      - host: "plugin-br-ted-lerian.lerian.net"
+      - host: "plugin-br-ted-lerian.example.com"
         paths:
           - path: /
             pathType: Prefix

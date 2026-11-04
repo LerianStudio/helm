@@ -515,25 +515,15 @@ jobs:
           RELEASE_RUN_ID: ${{ inputs.release_run_id }}
         with:
           script: |
-            const valid = (id, run, repo) => /^[1-9][0-9]*$/.test(id) &&
-              run.repository?.full_name === repo && run.head_repository?.full_name === repo &&
-              run.event === 'push' && run.head_branch === 'main' &&
-              run.path === '.github/workflows/release.yml';
-            const repo = `${context.repo.owner}/${context.repo.repo}`;
-            const example = {repository: {full_name: repo}, head_repository: {full_name: repo},
-              event: 'push', head_branch: 'main', path: '.github/workflows/release.yml'};
-            if (!valid('1', example, repo) || valid('0', example, repo) ||
-                valid('1x', example, repo) || valid('1', {...example, event: 'pull_request'}, repo) ||
-                valid('1', {...example, head_branch: 'other'}, repo) ||
-                valid('1', {...example, path: '.github/workflows/other.yml'}, repo) ||
-                valid('1', {...example, repository: {full_name: 'other/repo'}}, repo) ||
-                valid('1', {...example, head_repository: {full_name: 'other/repo'}}, repo)) {
-              throw new Error('Recovery source validation self-check failed');
-            }
             const id = process.env.RELEASE_RUN_ID;
             if (!/^[1-9][0-9]*$/.test(id)) throw new Error('Release run ID must be a positive integer');
+            const repo = `${context.repo.owner}/${context.repo.repo}`;
             const {data: run} = await github.rest.actions.getWorkflowRun({...context.repo, run_id: id});
-            if (!valid(id, run, repo)) throw new Error('Recovery source is not a push to main by this release workflow');
+            if (run.repository?.full_name !== repo || run.head_repository?.full_name !== repo ||
+                run.event !== 'push' || run.head_branch !== 'main' ||
+                run.path !== '.github/workflows/release.yml') {
+              throw new Error('Recovery source is not a push to main by this release workflow');
+            }
 
       # No checkout: every version comes from the leg that published it.
       - name: Download what each leg published
@@ -631,6 +621,24 @@ jobs:
           set -euo pipefail
           if [[ -z "${ARGOCD_URL:-}" || -z "${ARGOCD_TOKEN:-}" ]]; then
             echo '::error::ARGOCD_URL or ARGOCD_TOKEN is empty'
+            exit 1
+          fi
+
+      - name: Set up Helm for recovery
+        if: github.event_name == 'workflow_dispatch'
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+
+      - name: Require the current published chart version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          CHART_ARTIFACT: ${{ matrix.chart.artifact }}
+          CHART_VERSION: ${{ matrix.chart.version }}
+        run: |
+          set -euo pipefail
+          latest=$(helm show chart "oci://ghcr.io/lerianstudio/${CHART_ARTIFACT}" | awk '/^version: / {print $2}')
+          if [[ -z "$latest" || "$latest" != "$CHART_VERSION" ]]; then
+            echo '::error::Recovery chart version is not the current published stable version'
             exit 1
           fi
 

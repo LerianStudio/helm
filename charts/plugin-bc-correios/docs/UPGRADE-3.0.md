@@ -6,7 +6,7 @@
 - **[Overview](#overview)**
 - **[Breaking Changes](#breaking-changes)**
   - [1. Plugin authentication now enabled by default](#1-plugin-authentication-now-enabled-by-default)
-  - [2. Environment variable renamed: APP_ENV to ENV_NAME](#2-environment-variable-renamed-app_env-to-env_name)
+  - [2. Environment variable added: ENV_NAME](#2-environment-variable-added-env_name)
   - [3. Plugin auth host variable renamed: PLUGIN_AUTH_HOST to PLUGIN_AUTH_ADDRESS](#3-plugin-auth-host-variable-renamed-plugin_auth_host-to-plugin_auth_address)
   - [4. Bitnami image repositories replaced with bitnamilegacy](#4-bitnami-image-repositories-replaced-with-bitnamilegacy)
   - [5. Bundled RabbitMQ no longer creates default user credentials](#5-bundled-rabbitmq-no-longer-creates-default-user-credentials)
@@ -63,9 +63,9 @@ bc-correios:
 
 > **Warning:** If you upgrade without adjusting authentication settings and do not have Access Manager deployed, the plugin pods will fail health checks and enter a crash loop. Review [Deployment Scenarios](#deployment-scenarios) before upgrading.
 
-### 2. Environment variable renamed: APP_ENV to ENV_NAME
+### 2. Environment variable added: ENV_NAME
 
-The environment variable controlling the deployment environment has been renamed from `APP_ENV` to `ENV_NAME`, and the default value has changed from `"development"` to `"production"`.
+The chart now renders `ENV_NAME` (default `"production"`) for the libraries. `APP_ENV` is still the variable the application reads for its own environment.
 
 **Before (v2.2.0):**
 
@@ -81,6 +81,7 @@ bc-correios:
 bc-correios:
   configmap:
     ENV_NAME: "production"
+    APP_ENV: "production"   # set it to run the application's production checks
 ```
 
 **Operational impact:**
@@ -183,11 +184,11 @@ When `rabbitmq.authentication.existingSecret` is set, the bundled RabbitMQ start
 
 **Operational impact:**
 
-- You must manually provision the RabbitMQ user account that `bc-correios.secrets.RABBITMQ_URL` references
+- Without `bc-correios.useExistingSecret`, the chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS` (`templates/rabbitmq_load_definitions.yaml`), so no manual provisioning is needed. With `bc-correios.useExistingSecret` or an external broker, you must provision the RabbitMQ user account that `bc-correios.secrets.RABBITMQ_URL` references
 - The Erlang cookie (`RABBITMQ_ERLANG_COOKIE`) is still required in the application Secret when `rabbitmq.enabled` is `true` (see `bc-correios.rabbitmqErlangCookieRequired` helper)
 - If you do not provision the user account, the plugin will fail to connect to RabbitMQ and enter a crash loop
 
-> **Warning:** The bundled RabbitMQ will start with no user accounts. You must create the user referenced in `RABBITMQ_URL` before the plugin can connect. See [Scenario 4](#scenario-4-bundled-rabbitmq-with-manual-user-provisioning) for instructions.
+> **Warning:** With `bc-correios.useExistingSecret`, the bundled RabbitMQ starts with no user accounts. You must create the user referenced in `RABBITMQ_URL` before the plugin can connect. See [Scenario 4](#scenario-4-bundled-rabbitmq-with-manual-user-provisioning) for instructions.
 
 ### 6. RabbitMQ bootstrap job no longer creates users or permissions
 
@@ -318,6 +319,7 @@ If you run a production environment with the Access Manager deployed, verify tha
 bc-correios:
   configmap:
     ENV_NAME: "production"
+    APP_ENV: "production"
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
 ```
@@ -370,7 +372,7 @@ global:
 
 ### Scenario 4: Bundled RabbitMQ with manual user provisioning
 
-If you use the bundled RabbitMQ, you must manually provision the user account referenced in `bc-correios.secrets.RABBITMQ_URL` because the broker starts without default credentials when `rabbitmq.authentication.existingSecret` is set.
+Without `bc-correios.useExistingSecret`, the chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS` and you need no manual provisioning. If you use the bundled RabbitMQ with `bc-correios.useExistingSecret`, you must manually provision the user account referenced in `bc-correios.secrets.RABBITMQ_URL` because the broker starts without default credentials when `rabbitmq.authentication.existingSecret` is set.
 
 **Required configuration:**
 
@@ -443,7 +445,8 @@ The following table describes the RabbitMQ user provisioning behavior.
 | Configuration | Behavior |
 |---------------|----------|
 | Bundled RabbitMQ without `existingSecret` | The subchart creates a default user based on `rabbitmq.authentication.user.value` and `rabbitmq.authentication.password.value`. |
-| Bundled RabbitMQ with `existingSecret` | The broker starts without default credentials. You must manually provision the user account referenced in `bc-correios.secrets.RABBITMQ_URL`. |
+| Bundled RabbitMQ with `existingSecret`, without `bc-correios.useExistingSecret` | The chart declares the `RABBITMQ_USER` account with `RABBITMQ_PASS`; no manual provisioning is needed. |
+| Bundled RabbitMQ with `existingSecret` and `bc-correios.useExistingSecret` | The broker starts without default credentials. You must manually provision the user account referenced in `bc-correios.secrets.RABBITMQ_URL`. |
 | External RabbitMQ | The user account referenced in `bc-correios.secrets.RABBITMQ_URL` must already exist with appropriate permissions. |
 
 **Example: Bundled RabbitMQ with manual user provisioning:**
@@ -512,7 +515,7 @@ Determine whether you run a development or production environment and whether yo
 
 **Step 2: Update environment variable names in your values file**
 
-If you have custom values that set `APP_ENV` or `PLUGIN_AUTH_HOST`, rename them:
+Keep `APP_ENV` in your values file; the application still reads it. `PLUGIN_AUTH_HOST` still works and takes precedence; `PLUGIN_AUTH_ADDRESS` is the values key the chart renders as `PLUGIN_AUTH_HOST`:
 
 ```yaml
 # Before (v2.2.0)
@@ -525,12 +528,13 @@ bc-correios:
 bc-correios:
   configmap:
     ENV_NAME: "production"
+    APP_ENV: "production"
     PLUGIN_AUTH_ADDRESS: "http://my-access-manager:4000"
 ```
 
 **Step 3: Provision RabbitMQ user accounts**
 
-If you use the bundled RabbitMQ with `rabbitmq.authentication.existingSecret` set, or if you use an external RabbitMQ, ensure the user account referenced in `bc-correios.secrets.RABBITMQ_URL` exists with appropriate permissions.
+If you use the bundled RabbitMQ with `rabbitmq.authentication.existingSecret` and `bc-correios.useExistingSecret` set, or if you use an external RabbitMQ, ensure the user account referenced in `bc-correios.secrets.RABBITMQ_URL` exists with appropriate permissions.
 
 - **Bundled RabbitMQ:** Follow [Scenario 4](#scenario-4-bundled-rabbitmq-with-manual-user-provisioning)
 - **External RabbitMQ:** Follow [Scenario 3](#scenario-3-external-rabbitmq-with-existing-user-accounts)

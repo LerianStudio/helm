@@ -189,7 +189,7 @@ ALLOWED_ORIGINS empty or "*".
 {{- if eq (default "disable" $cm.POSTGRES_SSLMODE) "disable" -}}
 {{- fail "\n\nERROR: bc-correios.configmap.POSTGRES_SSLMODE must not be \"disable\" when APP_ENV is not \"development\" (the app refuses to start).\n   Set a TLS mode such as \"require\".\n" -}}
 {{- end -}}
-{{- if has (default "*" $cm.ALLOWED_ORIGINS) (list "*" "") -}}
+{{- if has (default "*" $cm.ALLOWED_ORIGINS) (list "*") -}}
 {{- fail "\n\nERROR: bc-correios.configmap.ALLOWED_ORIGINS must be set to explicit origins, not \"*\", when APP_ENV is not \"development\" (the app refuses to start).\n   Example: \"https://app.example.com\".\n" -}}
 {{- end -}}
 {{- end -}}

@@ -5,7 +5,7 @@ description: Helm chart for BC Correios Plugin — Brazilian Central Bank mail
 type: application
 annotations:
   lerian.studio/chart-type: single-service
-home: https://github.com/LerianStudio/helm/tree/main/charts/plugin-bc-correios
+home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-bc-correios
 maintainers:

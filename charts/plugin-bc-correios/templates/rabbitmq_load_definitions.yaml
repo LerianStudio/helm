@@ -4,7 +4,7 @@
 {{- /* The broker imports these definitions at boot and then creates no default user, so the app
    account is declared here from RABBITMQ_USER and RABBITMQ_PASS. With an existing app Secret the
    password is not known to the chart and no user is declared. */ -}}
-{{- if and $component.secrets.RABBITMQ_PASS (not $component.useExistingSecret) }}
+{{- if not $component.useExistingSecret }}
 {{- $user := $component.configmap.RABBITMQ_USER | default "plugin-bc-correios" -}}
 {{- $_ := set $defs "users" (list (dict "name" $user "password" $component.secrets.RABBITMQ_PASS "tags" "")) -}}
 {{- $_ = set $defs "permissions" (list (dict "user" $user "vhost" "/" "configure" ".*" "write" ".*" "read" ".*")) -}}

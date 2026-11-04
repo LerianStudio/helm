@@ -86,7 +86,7 @@ bc-correios:
     SERVER_SHUTDOWN_TIMEOUT_SEC: "30"
 
     # CORS / Proxy
-    ALLOWED_ORIGINS: "https://app.example.com"   # explicit origins; "*" is refused when APP_ENV is not "development"
+    ALLOWED_ORIGINS: "*"   # the app refuses "*" when APP_ENV is not "development"; set explicit origins there
     TRUSTED_PROXIES: "127.0.0.1,::1"
 
     # PostgreSQL - REQUIRED

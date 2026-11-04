@@ -171,7 +171,7 @@ system-facts:
     # -- Additional ingress annotations
     annotations: {}
     hosts:
-      - host: "system-facts.lerian.net"
+      - host: "system-facts.example.com"
         paths:
           - path: /
             pathType: Prefix

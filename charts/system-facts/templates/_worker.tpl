@@ -32,6 +32,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{- define "system-facts.worker.labels" -}}
 helm.sh/chart: {{ include "system-facts.chart" . }}
+{{ include "system-facts.worker.podLabels" . }}
+{{- end -}}
+
+{{/* Worker labels without helm.sh/chart, for the pod template (see system-facts.podLabels). */}}
+{{- define "system-facts.worker.podLabels" -}}
 {{ include "system-facts.worker.selectorLabels" . }}
 app.kubernetes.io/component: worker
 app.kubernetes.io/version: {{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "system-facts.worker.tag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}

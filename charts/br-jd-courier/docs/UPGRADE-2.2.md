@@ -6,6 +6,8 @@
 - **[Features](#features)**
   - [Shutdown drain delay configuration](#shutdown-drain-delay-configuration)
   - [Extended termination grace period](#extended-termination-grace-period)
+- **[Upgrade notes](#upgrade-notes)**
+  - [Migration Job runs on every upgrade](#migration-job-runs-on-every-upgrade)
 
 ---
 
@@ -68,7 +70,8 @@ If you have overridden the default SPB timing values in your `config` block, ens
 config:
   SPB_TAKE_BUDGET_SEC: "30"      # Increased from 15
   SPB_PERSIST_TIMEOUT_SEC: "90"  # Increased from 60
-  SPB_LEASE_TTL_SEC: "45"        # Must exceed SPB_TAKE_BUDGET_SEC + 10, or the spb-consumer refuses to start
+  SPB_LEASE_TTL_SEC: "45"        # Must exceed SPB_TAKE_BUDGET_SEC + max(SPB_IDLE_INTERVAL_SEC, SPB_EMPTY_BACKOFF_CAP_SEC), or the spb-consumer refuses to start
+                                 # (app defaults 5 and 10: 30 + 10 = 40 < 45)
 
 # You must also increase the grace period:
 terminationGracePeriodSeconds: 160  # 15 (drain delay) + 30 (take) + 90 (persist) + 5 (routing) + 10 (workers) + 10 (margin)
@@ -91,21 +94,33 @@ With defaults:
 
 ---
 
+## Upgrade notes
+
+### Migration Job runs on every upgrade
+
+With `migrations.enabled: true` (the default), the chart renders the `br-jd-courier-migrate` Job as a `pre-install,pre-upgrade` hook. It runs `migrate up` against the Courier database on every `helm upgrade`, before the Deployments change, including this one. If the Job fails, Helm marks the upgrade as failed and does not apply the new Deployments.
+
+The Job name follows the release fullname: with a different release name, it is `<fullname>-migrate`.
+
+---
+
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.2.0 -n br-jd-courier
+helm diff upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --version 2.2.0 -n br-jd-courier -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
-> **Note:** An anonymous pull from `registry-1.docker.io` is refused with `401`. Without Docker Hub access, use the GHCR reference `oci://ghcr.io/lerianstudio/br-jd-courier-helm` in both commands.
+> **Note:** Pass the values file of your release (`values.yaml` here, with any `config` or `terminationGracePeriodSeconds` change from this guide). Without `-f` or `--set`, Helm reuses the values stored in the release and ignores the edited file.
+
+> **Note:** The commands use GHCR, as the chart README does. An anonymous pull from `oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm` is refused with `401`.
 
 ---
 
 ## Command to upgrade
 
 ```bash
-helm upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.2.0 -n br-jd-courier
+helm upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --version 2.2.0 -n br-jd-courier -f values.yaml
 ```
 <!-- {% endraw %} -->

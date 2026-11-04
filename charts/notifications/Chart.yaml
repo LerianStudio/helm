@@ -6,9 +6,9 @@ type: application
 annotations:
   lerian.studio/chart-type: multi-component
 kubeVersion: ">=1.24.0-0"
-home: https://github.com/LerianStudio/helm
+home: https://github.com/LerianStudio/helm/tree/main/charts/notifications
 sources:
-  - https://github.com/LerianStudio/notifications
+  - https://github.com/LerianStudio/helm/tree/main/charts/notifications
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"

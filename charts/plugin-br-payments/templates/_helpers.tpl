@@ -302,9 +302,9 @@ plugin-br-payments README.
 {{- if not .Values.app.configmap.WEBHOOK_PUBLIC_BASE_URL }}
 {{- fail "\n\nERROR: app.configmap.WEBHOOK_PUBLIC_BASE_URL is REQUIRED when MULTI_TENANT_ENABLED=true and SERVICE_TYPE serves the API.\n   The connect flow composes each tenant's webhook URL from it.\n" }}
 {{- end }}
-{{- end }}
 {{- if or (eq (include "postgresql.enabled" .) "true") (not .Values.app.controlplaneMigrations.enabled) }}
 {{- fail "\n\nERROR: multi-tenant needs the control-plane tables that the controlplane-migrations Job creates; the app refuses to boot without them.\n   Use an external Postgres (postgresql.enabled=false, app.configmap.POSTGRES_HOST) and keep app.controlplaneMigrations.enabled=true.\n" }}
+{{- end }}
 {{- end }}
 {{- end }}
 

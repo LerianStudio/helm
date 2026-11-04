@@ -8,7 +8,7 @@ home: https://github.com/LerianStudio/helm/tree/main/charts/fetcher
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 4.1.1
+version: 4.1.2
 appVersion: "4.1.0"
 keywords:
   - midaz

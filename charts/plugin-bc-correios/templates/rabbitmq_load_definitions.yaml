@@ -5,8 +5,8 @@
    account is declared here from RABBITMQ_USER and RABBITMQ_PASS. With an existing app Secret the
    password is not known to the chart and no user is declared. */ -}}
 {{- if not $component.useExistingSecret }}
-{{- $user := $component.configmap.RABBITMQ_USER | default "plugin-bc-correios" -}}
-{{- $_ := set $defs "users" (list (dict "name" $user "password" $component.secrets.RABBITMQ_PASS "tags" "")) -}}
+{{- $user := toString ($component.configmap.RABBITMQ_USER | default "plugin-bc-correios") -}}
+{{- $_ := set $defs "users" (list (dict "name" $user "password" (toString $component.secrets.RABBITMQ_PASS) "tags" "")) -}}
 {{- $_ = set $defs "permissions" (list (dict "user" $user "vhost" "/" "configure" ".*" "write" ".*" "read" ".*")) -}}
 {{- end }}
 kind: Secret

@@ -232,13 +232,8 @@ The endpoint AS IT GOES INTO THE PUBLISHED CONFIGURATION.
 
 ⚠️ WHY THIS IS NOT SIMPLY `destinationEndpoint`.
 
-The configuration published to Fleet is ONE, shared by every client. The endpoint
-was the last thing still baked into its text, and that made the sharing work only
-by coincidence: every BYOC client happens to use the same public gateway. Our own
-internal environments do NOT — they reach an internal load balancer that bypasses
-the gateway entirely, and MEASURED, a configuration carrying the public endpoint
-gets `403 PermissionDenied` there, which is a PERMANENT failure: dropped on the
-spot, no retry.
+The configuration published to Fleet is ONE, shared by every install, so the
+endpoint cannot be baked into its text: the destination can differ per install.
 
 So the published text carries a reference, and the pod supplies the value.
 

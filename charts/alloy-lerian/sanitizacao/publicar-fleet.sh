@@ -148,7 +148,7 @@ echo "[3/5] Montar o envio"
 # MEDIDO em um ambiente interno: o agente que ja carregou um modulo NAO LIBERA o nome, nem
 # depois de o modulo ser deletado do Fleet. Republicar com o MESMO nome trava:
 #
-#   err="a loader exists already for remotecfg/config_aws_devops.default"
+#   err="a loader exists already for remotecfg/config_<origem>.default"
 #
 # E o agente fica preso a config anterior, sem erro visivel fora do log dele.
 #

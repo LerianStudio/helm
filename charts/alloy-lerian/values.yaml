@@ -66,12 +66,7 @@ destination:
   # vazio e obrigava cada consumidor a repetir o mesmo valor — e repetir um valor
   # que é igual em todos os lugares é onde o erro de digitação nasce.
   #
-  # ⚠️ Os ambientes internos SOBRESCREVEM: eles entregam a um balanceador
-  # interno que não passa pelo gateway, e portanto não usa api-key. MEDIDO: uma
-  # configuração com o endereço público recebe 403 lá, que é falha PERMANENTE —
-  # descarta na hora, sem reenvio.
-  #
-  # Ao sobrescrever, os DOIS lugares precisam mudar juntos: esta entrada e a
+  # Para usar outro destino, os DOIS lugares precisam mudar juntos: esta entrada e a
   # variável `ALLOY_DESTINATION_ENDPOINT` no `extraEnv` do papel. A variável é o
   # que chega ao agente; esta entrada é o que o chart valida (recusa http quando o
   # perfil envia credencial). Uma guarda recusa o render se faltar a variável.
@@ -81,16 +76,8 @@ destination:
     # Derivado do perfil: ausente em `own`, obrigatório em `client`. Defina
     # explicitamente para sobrescrever.
     #
-    # POR QUE `own` NÃO AUTENTICA — é topologia, não relaxamento:
-    # nos ambientes internos a entrega vai por um LOAD BALANCER INTERNO E
-    # PRIVADO, dentro da VPC. A autenticação da plataforma vive na borda, no API
-    # Gateway; o tráfego de telemetria não sai para a internet. Autenticar neste
-    # salto significaria sair e voltar só para validar credencial — latência e um
-    # ponto de falha a mais, sem ganhar isolamento, porque quem alcança o LB
-    # privado já está dentro do perímetro.
-    #
-    # Confirmado no estado atual: o otel-collector-client de staging exporta com
-    # `headers: []` e funciona.
+    # Em `own` a autenticação do destino fica desligada por padrão; defina
+    # `enabled: true` para exigi-la.
     #
     # Em `client` (BYOC) o cluster é de terceiro e a entrega cruza a internet
     # pública — daí a credencial ser obrigatória, e 401 ser descarte permanente.

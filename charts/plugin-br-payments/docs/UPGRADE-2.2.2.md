@@ -30,6 +30,8 @@ No operator action is required beyond the upgrade command. Your values overlay k
 
 ## Preview changes before upgrading
 
+The commands below use `plugin-br-payments` as the release name and the namespace. Replace both with the ones you used at install time.
+
 ```bash
 helm diff upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --version 2.2.2 -n plugin-br-payments -f <your-values>.yaml
 ```
@@ -46,7 +48,7 @@ helm upgrade plugin-br-payments oci://ghcr.io/lerianstudio/plugin-br-payments-he
 
 ```bash
 kubectl rollout status deployment/plugin-br-payments -n plugin-br-payments
-kubectl get pods -n plugin-br-payments
+kubectl get pods -n plugin-br-payments -l app.kubernetes.io/instance=plugin-br-payments
 ```
 
-All pods must reach `Running` and `Ready`.
+All pods of this release must reach `Running` and `Ready`.

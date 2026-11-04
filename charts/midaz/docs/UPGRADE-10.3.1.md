@@ -61,7 +61,7 @@ In single-tenant mode, the runner uses the same PostgreSQL password as migration
 
 #### Operational impact
 
-- The CronJob is created automatically on upgrade when `ledger.enabled: true` and the image tag is a stable version >= 4.5.0 (e.g. `4.5.0`, `4.5.1`, `4.6.0`).
+- The CronJob is created automatically on upgrade when `ledger.enabled: true` and the image tag is a stable version >= 4.5.0 (a SemVer tag without a pre-release suffix).
 - Pre-release tags (e.g. `4.5.0-beta.94`) default to disabled; set `ledger.partition.enabled: true` to enable explicitly.
 - The chart's default ledger image tag, `4.5.0-beta.94`, is a pre-release, so with default values neither the CronJob nor the reconcile Job is created. If your transaction database uses the partitioned layout, set `ledger.partition.enabled: true` (Scenario 4): without the runner, new rows eventually land in the DEFAULT partition.
 - The default schedule (`0 6 * * *`) runs at 06:00 in the configured time zone, chosen to avoid common managed PostgreSQL maintenance windows.
@@ -255,8 +255,10 @@ kubectl get jobs -n midaz -l app.kubernetes.io/component=ledger-partition-reconc
 
 ## Preview changes before upgrading
 
+> **Important:** If you changed `ledger.partition` in the scenarios above, pass that `values.yaml` with `-f` on both commands. Without `-f` or `--set`, `helm upgrade` reuses the values stored in the release and ignores the edited file. With `-f`, Helm does not merge the stored values, so the file must hold all your overrides for this release. If you do not keep one, export it with `helm get values midaz -n midaz -o yaml > values.yaml` and apply your changes to it.
+
 ```bash
-helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.3.1 -n midaz
+helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.3.1 -n midaz -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -264,5 +266,5 @@ helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --ver
 ## Command to upgrade
 
 ```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.3.1 -n midaz
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 10.3.1 -n midaz -f values.yaml
 ```

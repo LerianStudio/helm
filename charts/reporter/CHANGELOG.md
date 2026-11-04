@@ -1,5 +1,326 @@
 # Reporter Changelog
 
+## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.2)
+
+Fixes:
+- Verify DocumentDB certificates on the AWS preset to enhance security. (@fredcamaral)
+- Gate certificate verification on app image and hash data only to ensure proper validation. (@fredcamaral)
+- Accept regulatory catalog keys and mount a catalog directory for improved compliance handling. (@fredcamaral)
+- Word roles neutrally and remove hints about organization IDs to improve clarity and neutrality in text. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides to enhance clarity and accuracy. (@dy-shimizu, @gandalf-at-lerian)
+- Warn users that the upgrade process deletes running KEDA worker Jobs, providing important information for planning upgrades. (@gandalf-at-lerian)
+- Add the verified `5.3.1` upgrade guide to assist users in transitioning to the new version smoothly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.1...reporter-v5.3.2)
+
+---
+
+## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.2)
+
+Fixes:
+- Verify DocumentDB certificates on the AWS preset to ensure secure connections. (@fredcamaral)
+- Gate certificate verification based on application image and hash data only, enhancing security measures. (@fredcamaral)
+- Accept regulatory catalog keys and mount a catalog directory for improved compliance handling. (@fredcamaral)
+- Use neutral wording for roles and remove hints about organization IDs to ensure clarity and neutrality. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides, ensuring clarity and accuracy. (@dy-shimizu, @gandalf-at-lerian)
+- Warn users that the upgrade process deletes running KEDA worker Jobs, providing important upgrade information. (@gandalf-at-lerian)
+- Add the verified `5.3.1` upgrade guide to assist users with the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.1...reporter-v5.3.2)
+
+---
+
+## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.2)
+
+Fixes:
+- Verify DocumentDB certificates on the AWS preset to ensure secure connections. (@fredcamaral)
+- Gate certificate verification on app image and hash data only, improving security checks. (@fredcamaral)
+- Accept regulatory catalog keys and mount a catalog directory for better compliance handling. (@fredcamaral)
+- Use neutral language for roles and remove hints about organization IDs to ensure clarity and neutrality. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides, enhancing clarity and accuracy. (@dy-shimizu, @gandalf-at-lerian)
+- Warn users that the upgrade process deletes running KEDA worker Jobs, providing important upgrade information. (@gandalf-at-lerian)
+- Add the verified `5.3.1` upgrade guide to assist users with the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.1...reporter-v5.3.2)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for the reporter to ensure reliability and consistency. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` for the reporter. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for the reporter. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for the reporter to ensure consistent and reliable builds. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0`, providing users with clear instructions for updating the reporter. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, enhancing the accuracy and usability of the reporter's documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images to ensure consistent behavior in the reporter. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` in the reporter documentation. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for the reporter. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for the reporter to enhance reliability. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` in the reporter documentation. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for the reporter. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for the reporter to ensure reliability and consistency. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` to assist users in the upgrade process. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for improved accuracy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for the reporter to ensure consistent performance and reliability. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` in the reporter documentation. (@fredcamaral)
+- Correct the chart documentation to align with templates and application code for the reporter. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for reporter to ensure consistent performance and reliability. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` to assist users in upgrading smoothly. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images in the reporter. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` in the reporter documentation. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for the reporter. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images to ensure consistent behavior and reliability. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0`, providing clearer instructions and reducing potential upgrade issues. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images in the reporter to ensure consistent performance and reliability. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` in the reporter documentation. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for the reporter. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for the reporter to ensure consistent performance and reliability. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` to assist users in updating their systems smoothly. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, enhancing clarity and accuracy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for the reporter to ensure reliability and consistency. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` to assist users in updating their systems smoothly. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images in the reporter to ensure consistent performance. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` in the reporter documentation. (@fredcamaral)
+- Correct chart documentation to align with templates and application code in the reporter. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for reporter to ensure consistent performance and reliability. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` in the reporter documentation. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for reporter. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images to improve reliability and consistency. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images to ensure consistent performance and reliability. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images to enhance reliability and consistency in deployments. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0`, providing clear instructions for users. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.1)
+
+Fixes:
+- Use stable images for the reporter to ensure reliability and consistency. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `5.1.0` to `5.3.0` to assist users in updating the reporter smoothly. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity in the reporter's documentation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.0...reporter-v5.3.1)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset, enhancing the reporter's functionality. (@fredcamaral)
+
+Fixes:
+- Render the manager PDB only when the health preset returns one, ensuring correct behavior. (@fredcamaral)
+- Default the API to two replicas and remove the job drain for improved stability. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release, providing clarity in documentation. (@fredcamaral)
+- Pin test fixtures to the image serving the `health-port`, ensuring consistent testing environments. (@fredcamaral)
+- Revert the removal of the redundant `LICENSE_KEY` from CRM secrets fixture to maintain test integrity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.2.0...reporter-v5.3.0)
+
+---
+
+## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset, enhancing the reporter's functionality. (@fredcamaral)
+
+Fixes:
+- Render the manager PDB only when the health preset provides one, ensuring proper configuration. (@fredcamaral)
+- Default the API to two replicas and remove the job drain, optimizing resource allocation. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release, providing clarity in documentation. (@fredcamaral)
+- Pin test fixtures to the image serving the `health port`, ensuring consistency in testing environments. (@fredcamaral)
+- Revert the removal of the redundant `LICENSE_KEY` from CRM secrets fixture, restoring previous test conditions. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.2.0...reporter-v5.3.0)
+
+---
+
 ## [5.3.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.0)
 
 Features:

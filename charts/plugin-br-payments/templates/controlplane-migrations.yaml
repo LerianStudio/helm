@@ -19,8 +19,7 @@ Renders ONLY when all three are true:
     global.externalPostgresDefinitions.enabled: that flag owns the optional
     database/role bootstrap Job and is normally false for an already
     provisioned database. Coupling control-plane migrations to it prevented
-    migrations from running in established environments such as Benedita
-    stg-mt, even though the application was already connected to the external
+    migrations from running in established environments, even though the application was already connected to the external
     control-plane database. The migration Job reads the same POSTGRES_* values
     as the app, so it needs an external connection, not bootstrap ownership.
 
@@ -121,7 +120,6 @@ spec:
       # traffic. Mirrors plugin-br-bank-transfer's component-scoped
       # selector labels, which exclude its own migration pod the same way.
       labels:
-        helm.sh/chart: {{ include "plugin-br-payments.chart" . }}
         app.kubernetes.io/version: {{ include "plugin-br-payments.versionLabelValue" . }}
         app.kubernetes.io/managed-by: {{ .Release.Service }}
         app.kubernetes.io/part-of: plugin-br-payments

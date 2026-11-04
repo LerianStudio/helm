@@ -124,10 +124,10 @@ global:
   streaming: { brokers: "redpanda:9092" }
 ```
 
-- `cloud` sets only the PostgreSQL SSL mode here; the ENDPOINTS (host/port/user)
-  come from `global.datastores` — a cloud preset can't know your RDS host. This
-  chart renders no `REDIS_TLS`: for a TLS-only Redis, set `REDIS_TLS: "true"`
-  through `system-facts.extraEnvVars`.
+- `cloud` sets the PostgreSQL SSL mode here; the ENDPOINTS (host/port/user)
+  come from `global.datastores` — a cloud preset can't know your RDS host. `REDIS_TLS`
+  is rendered only when you set `global.datastores.redis.tls` (or `system-facts.configmap.REDIS_TLS`);
+  otherwise the Secret or the application default applies.
 - `datastores` only declares `postgres`/`redis` sub-keys — this chart has no
   Mongo or message-broker datastore, so `mongo`/`broker` sub-keys are not
   applicable here (don't set them, they're inert).

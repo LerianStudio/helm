@@ -1,4 +1,124 @@
-# Lerian Consul Changelog
+# Lerian-consul Changelog
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.1.1)
+
+Features:
+- State the `lerian-consul` `1.0.0` move as the chart's own path. (@fredcamaral)
+
+Fixes:
+- Disable Consul DNS in `lerian-consul`. (@fredcamaral)
+- Add gossip encryption to `lerian-consul` HA hint. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for `1.1.0`. (@fredcamaral)
+- Correct chart documentation against templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-consul-v1.1.0...lerian-consul-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.1.1)
+
+Features:
+- State the `lerian-consul` `1.0.0` move as the chart's own path. (@fredcamaral)
+
+Fixes:
+- Disable Consul DNS in `lerian-consul`. (@fredcamaral)
+- Add gossip encryption to `lerian-consul` HA hint. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for `1.1.0`. (@fredcamaral)
+- Correct chart documentation against templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-consul-v1.1.0...lerian-consul-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.1.1)
+
+Features:
+- State the `lerian-consul` `1.0.0` move as the chart's own path. (@fredcamaral)
+
+Fixes:
+- Disable Consul DNS in `lerian-consul`. (@fredcamaral)
+- Add gossip encryption to `lerian-consul` HA hint. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for `1.1.0`. (@fredcamaral)
+- Correct chart documentation against templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-consul-v1.1.0...lerian-consul-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.1.1)
+
+Features:
+- State the `lerian-consul` `1.0.0` move as the chart's own path. (@fredcamaral)
+
+Fixes:
+- Disable Consul DNS in `lerian-consul`. (@fredcamaral)
+- Add gossip encryption to `lerian-consul` HA hint. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for `1.1.0`. (@fredcamaral)
+- Correct chart documentation against templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-consul-v1.1.0...lerian-consul-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.1.1)
+
+Features:
+- State the `lerian-consul` `1.0.0` move as the chart's own path. (@fredcamaral)
+
+Fixes:
+- Disable Consul DNS in `lerian-consul`. (@fredcamaral)
+- Add gossip encryption to `lerian-consul` HA hint. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for `1.1.0`. (@fredcamaral)
+- Correct chart documentation against templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-consul-v1.1.0...lerian-consul-v1.1.1)
+
+---
+
+## [1.1.1](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.1.1)
+
+Features:
+- State the `lerian-consul` `1.0.0` move as the chart's own path. (@fredcamaral)
+
+Fixes:
+- Disable Consul DNS in `lerian-consul`. (@fredcamaral)
+- Add gossip encryption to `lerian-consul` HA hint. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for `1.1.0`. (@fredcamaral)
+- Correct chart documentation against templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-consul-v1.1.0...lerian-consul-v1.1.1)
+
+---
+
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.1.0)
+
+Features:
+- Deploy lerian-consul using Consul `2.1.0`. (@fredcamaral)
+
+Improvements:
+- Remove the bootstrap secret during a fresh installation of lerian-consul. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-consul-v1.0.0...lerian-consul-v1.1.0)
+
+---
 
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.0.0)
 
@@ -10,3 +130,4 @@
   - TLS off by default with a documented enable path; ClusterIP-only services (no LoadBalancer/NodePort/Ingress).
 
 -----------------
+

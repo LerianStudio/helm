@@ -165,8 +165,7 @@ Input: the root context ($).
     "MONGO_URI" "MONGO_HOST" "MONGO_NAME" "MONGO_PORT" "MONGO_MAX_POOL_SIZE"
     "MONGO_PARAMETERS" "MONGO_TLS_CA_CERT"
     "RABBITMQ_URI" "RABBITMQ_HOST" "RABBITMQ_PORT_AMQP" "RABBITMQ_PORT_HOST" "RABBITMQ_HEALTH_CHECK_URL"
-    "SEAWEEDFS_HOST" "SEAWEEDFS_FILER_PORT" "SEAWEEDFS_TTL"
-    "REDIS_HOST" "REDIS_PORT" "REDIS_DB"
+    "REDIS_HOST" "REDIS_PORT" "REDIS_DB" "REDIS_TLS"
     "OTEL_RESOURCE_SERVICE_NAME" "OTEL_LIBRARY_NAME" "OTEL_RESOURCE_SERVICE_VERSION"
     "OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT" "OTEL_EXPORTER_OTLP_ENDPOINT_PORT"
     "OTEL_EXPORTER_OTLP_ENDPOINT" "ENABLE_TELEMETRY" "OTEL_INSECURE_EXPORTER"
@@ -198,16 +197,11 @@ RABBITMQ_PORT_HOST: {{ $rmqMgmtPort | quote }}
    configmap override still wins. Previously an independent hardcoded literal
    that could silently drift from RABBITMQ_HOST/_PORT_HOST. */}}
 RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default (printf "%s://%s:%s" $rmqMgmtScheme $rmqHost $rmqMgmtPort) | quote }}
-{{- /* SeaweedFS filer wire protocol — no lerian-common mask models this (it is
-   NOT the S3-shaped objectStorage mask; that is worker's OBJECT_STORAGE_* for
-   the extraction bucket). Passthrough only. */}}
-SEAWEEDFS_HOST: {{ $cm.SEAWEEDFS_HOST | default "seaweedfs-filer" | quote }}
-SEAWEEDFS_FILER_PORT: {{ $cm.SEAWEEDFS_FILER_PORT | default "8888" | quote }}
-SEAWEEDFS_TTL: {{ $cm.SEAWEEDFS_TTL | default "6M" | quote }}
 {{- /* Redis/Valkey connection via datastore mask. */}}
 REDIS_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" "valkey") | quote }}
 REDIS_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "port" "nativeKey" "REDIS_PORT" "default" "6379") | quote }}
 REDIS_DB: {{ $cm.REDIS_DB | default "0" | quote }}
+REDIS_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "redis" "field" "tls" "nativeKey" "REDIS_TLS" "default" "false") | quote }}
 {{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env
    (global.observability); identity (library/service-name/port/insecure) stays
    inline. configmap.<KEY> still overrides via otel.env. */}}

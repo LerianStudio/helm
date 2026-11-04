@@ -374,14 +374,14 @@ and a stale value earns one WARN per boot.
 |-----|---------|-------------|
 | `streamingHub.mode` | `all` | Topology switch: `all` \| `split`. Schema-enforced enum. |
 | `streamingHub.image.repository` | `ghcr.io/lerianstudio/streaming-hub` | Image repo. |
-| `streamingHub.image.tag` | `"3.0.0"` | Empty falls back to `Chart.appVersion`. |
+| `streamingHub.image.tag` | `"3.1.0"` | Empty falls back to `Chart.appVersion`. |
 | `streamingHub.image.pullPolicy` | `IfNotPresent` | |
 | `streamingHub.imagePullSecrets` | `[]` | Private registry pull secrets. |
 | `streamingHub.service.type` | `ClusterIP` | Lerian convention (Ingress fronts external). |
 | `streamingHub.service.port` | `8080` | Control-plane HTTP port. |
 | `streamingHub.ingress.enabled` | `false` | Control-plane API ingress (opt-in per env). |
 | `streamingHub.serviceAccount.create` | `true` | |
-| `streamingHub.terminationGracePeriodSeconds` | `80` | Set at least `87` (the drain ceiling at the shipped timeouts); keep at or above it. |
+| `streamingHub.terminationGracePeriodSeconds` | `90` | Above `87`, the drain ceiling at the shipped timeouts; keep at or above the ceiling if you tune them. |
 | `streamingHub.securityContext` | nonroot 65532, drop ALL, RO rootfs, RuntimeDefault | Distroless:nonroot. |
 | `streamingHub.useExistingSecret` | `false` | `true` = Vault/gitops path. |
 | `streamingHub.existingSecretName` | `""` | Required when `useExistingSecret`. |

@@ -1,5 +1,255 @@
 # System-facts Changelog
 
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Ensure the system-facts values template initializes correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Make the system-facts values template boot. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Make the system-facts values template boot. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Ensure the system-facts values template boots correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Ensure the system-facts values template boots correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Make the system-facts values template boot. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Make the system-facts values template boot. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Ensure the system-facts values template boots correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Ensure the system-facts values template boots correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Ensure the system-facts values template boots correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+
+- Ensure the system-facts values template boots correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.3)
+
+Fixes:
+- Ensure the system-facts values template boots correctly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.2...system-facts-v1.1.3)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+- Adjusted the API grace period to accommodate a `15s` drain delay. (@fredcamaral)
+- Set the API pod shutdown grace period to `52s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+- Adjusted the API grace period to accommodate a `15s` drain delay. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay for system-facts. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s` for system-facts. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay, ensuring smoother shutdowns. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s` for improved shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay. (@fredcamaral)
+- Set the API pod shutdown grace period to `52s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay, ensuring smoother shutdowns. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s` for improved termination handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay, ensuring smoother shutdowns. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s` to allow for a more graceful termination process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay, ensuring smoother shutdowns. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s` for improved termination handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay, ensuring smoother shutdowns. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s` to allow for more graceful termination. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay, ensuring smoother shutdowns. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s` for improved shutdown handling. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
+
+Fixes:
+
+- Adjusted the API grace period to accommodate a `15s` drain delay. (@fredcamaral)
+- Extended the API pod shutdown grace period to `52s`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.1.1...system-facts-v1.1.2)
+
+---
+
 ## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.1.2)
 
 Fixes:

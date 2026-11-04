@@ -217,6 +217,38 @@ Resolved value of one key (same precedence as kv), for gates.
 {{- include "lerian-common.cfgValue" (dict "configmap" .cm "nativeKey" .k "params" .p "field" .f "default" (toString (.d | default ""))) -}}
 {{- end -}}
 
+{{- /* streamingEnabled — STREAMING_ENABLED resolved extraEnvVars (the container env
+   overrides the ConfigMap envFrom, so it is the value the pod reads) › configmap › the DIRECT permanent
+   block (on by default) unless global.streaming.enabled is explicitly false (then the
+   render fails, _validate.tpl) › global.streaming.enabled explicitly true › "false",
+   trimmed. An explicit true keeps the stream with the permanent block off: the
+   maintenance of ACTIVE permanents (capture, expiry, results) needs it after a
+   rollback, and the app refuses that boot without it. A brokers block alone never
+   turns the executor's stream on. */ -}}
+{{- define "plugin-br-sisbajud.streamingEnabled" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- $extra := .Values.sisbajud.extraEnvVars | default dict -}}
+{{- if hasKey $extra "STREAMING_ENABLED" -}}
+{{- index $extra "STREAMING_ENABLED" | toString | trim -}}
+{{- else if hasKey $cm "STREAMING_ENABLED" -}}
+{{- index $cm "STREAMING_ENABLED" | toString | trim -}}
+{{- else -}}
+{{- $gs := (.Values.global | default dict).streaming | default dict -}}
+{{- $pb := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.direct | default dict) "f" "permanentBlockEnabled" "d" "true") | trim -}}
+{{- $set := hasKey $gs "enabled" -}}
+{{- $on := and $set (eq (toString $gs.enabled) "true") -}}
+{{- ternary "true" "false" (or $on (and (eq $pb "true") (not $set))) -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* streamingBrokers — STREAMING_BROKERS resolved configmap › global.streaming.brokers
+   (the same precedence as lerian-common.streaming.env), trimmed. */ -}}
+{{- define "plugin-br-sisbajud.streamingBrokers" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- $gs := (.Values.global | default dict).streaming | default dict -}}
+{{- (hasKey $cm "STREAMING_BROKERS" | ternary (index $cm "STREAMING_BROKERS") ($gs.brokers | default "")) | toString | trim -}}
+{{- end -}}
+
 {{- define "plugin-br-sisbajud.multiTenantEnabled" -}}
 {{- $cm := .Values.sisbajud.configmap | default dict -}}
 {{- include "plugin-br-sisbajud.isTrue" (include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false")) -}}
@@ -226,8 +258,35 @@ Resolved value of one key (same precedence as kv), for gates.
 {{- include "plugin-br-sisbajud.val" (dict "cm" (.Values.sisbajud.configmap | default dict) "k" "EXECUTOR_TRANSPORT" "p" .Values.sisbajud.executor "f" "transport" "d" "webhook") -}}
 {{- end -}}
 
+{{/*
+executorEnabled — EXECUTOR_ENABLED as the app reads it: trimmed, case-sensitive
+(config_executor.go validateExecutorEnabledSwitch). "" = absent = the legacy
+signal. Source: sisbajud.executor.enabled (string or boolean) or the configmap.
+*/}}
+{{- define "plugin-br-sisbajud.executorEnabled" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- $ex := .Values.sisbajud.executor | default dict -}}
+{{- $raw := ternary (toString (index $cm "EXECUTOR_ENABLED")) (ternary (toString $ex.enabled) "" (hasKey $ex "enabled")) (hasKey $cm "EXECUTOR_ENABLED") -}}
+{{- if eq $raw "<nil>" }}{{ $raw = "" }}{{ end -}}
+{{- trim $raw -}}
+{{- end -}}
+
+{{/*
+executorMode — the app's executor mode (extensions_executor.go ExecutorEnabled /
+MensageriaConfigured): "mensageria" when MENSAGERIA_BASE_URL is non-blank
+(EXECUTOR_ENABLED=false never turns it off), "direct" when EXECUTOR_ENABLED=true
+without it (DIRECT-only), "" otherwise (the chart refuses that render).
+*/}}
+{{- define "plugin-br-sisbajud.executorMode" -}}
+{{- $cm := .Values.sisbajud.configmap | default dict -}}
+{{- $base := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "MENSAGERIA_BASE_URL" "p" .Values.sisbajud.mensageria "f" "baseUrl" "d" "") | trim -}}
+{{- if $base -}}mensageria
+{{- else if eq (include "plugin-br-sisbajud.executorEnabled" .) "true" -}}direct
+{{- end -}}
+{{- end -}}
+
 {{- define "plugin-br-sisbajud.webhookEnabled" -}}
-{{- ternary "true" "" (eq (include "plugin-br-sisbajud.transport" .) "webhook") -}}
+{{- ternary "true" "" (and (eq (include "plugin-br-sisbajud.executorMode" .) "mensageria") (eq (include "plugin-br-sisbajud.transport" .) "webhook")) -}}
 {{- end -}}
 
 {{/*

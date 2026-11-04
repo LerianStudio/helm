@@ -39,7 +39,11 @@ brSisbajud:
   execution:
     tls:
       generate: true
-  # development: an empty LICENSE_KEY is the Mensageria's dev bypass.
+  # The app requires a license key in every environment. install-test.sh writes
+  # HELM_CI_LICENSE_KEY_BR_SISBAJUD over this placeholder; the repo has no such
+  # secret yet, so the placeholder only satisfies the render.
+  secrets:
+    LICENSE_KEY: "IT_LICENSE_KEY"
   license:
     organizationIds: "global"
 

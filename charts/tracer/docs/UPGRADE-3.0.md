@@ -15,7 +15,7 @@
 
 ## Overview
 
-This guide covers the `tracer` chart upgrade from `2.1.4` to `3.0.0`. This major version bump changes the default PodDisruptionBudget values (the chart no longer sets `minAvailable` by default) and changes how boolean values for TLS-related settings are rendered. The application version remains unchanged at `1.0.0`.
+This guide covers the `tracer` chart upgrade from `2.1.4` to `3.0.0`. This major version bump changes the default PodDisruptionBudget values (the chart no longer sets `minAvailable` by default) and accepts boolean values for TLS-related settings. The application version remains unchanged at `1.0.0`.
 
 | Field | v2.1.4 | v3.0.0 |
 |-------|--------|--------|
@@ -141,7 +141,7 @@ If you have not customized the PDB configuration, no action is required. The cha
 
 ### 1. Boolean flag handling for TLS settings
 
-The chart introduces a new helper template `tracer.flagDefaultTrue` to render boolean flags that default to `true`. An explicit boolean `false` in your values file is rendered as `"false"`.
+The chart renders both flags with the `tracer.flagDefaultTrue` helper. Each defaults to `true`; an explicit boolean `false` in your values file renders as `"false"`.
 
 **Affected configuration keys:**
 
@@ -154,7 +154,7 @@ The chart introduces a new helper template `tracer.flagDefaultTrue` to render bo
 
 To set either flag to `false`, use boolean `false` or the string `"false"`. Both forms render `"false"`.
 
-**Production configuration example:**
+**Example configuration:**
 
 ```yaml
 tracer:
@@ -188,7 +188,7 @@ tracer:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `ALLOW_INSECURE_TLS` | `true` | When `false`, enforces TLS certificate validation for all outbound connections. Set to `false` in production. |
+| `ALLOW_INSECURE_TLS` | `true` | Passed to the application as `ALLOW_INSECURE_TLS`. |
 | `MULTI_TENANT_REDIS_TLS` | `true` | When `true`, uses TLS for Redis connections in multi-tenant mode. Set to `false` only for local development. |
 
 **Example configuration:**
@@ -233,7 +233,7 @@ This upgrade needs no mandatory changes. Review your PodDisruptionBudget configu
        maxUnavailable: 1
    ```
 
-4. For the TLS flags, you can use boolean values. String values keep working:
+4. To set a TLS flag to `false`, use boolean `false` or the string `"false"`:
 
    ```yaml
    tracer:

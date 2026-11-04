@@ -1,5 +1,347 @@
 # Midaz Changelog
 
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+- Add the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+- Default ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Align `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+- Scope the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reword a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+
+- Add the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+
+- Default ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Align `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+
+- Scope the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reword a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+
+- Add the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+
+- Default ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Align `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+
+- Scope the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reword a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+
+- Added the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+
+- Defaulted ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Aligned `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+
+- Scoped the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reworded a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Fixes:
+- Default ledger and tracer set to stable `4.4.0`. (@fredcamaral)
+- Aligned `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+- Added the verified `10.3.2` upgrade guide. (@fredcamaral)
+- Scoped the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reworded a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+- Added the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+- Defaulted ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Aligned `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+- Scoped the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reworded a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+
+- Add the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+
+- Default ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Align `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+
+- Scope the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reword a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+
+- Add the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+
+- Default ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Align `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+
+- Scope the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reword a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `midaz` `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner starting from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner starting from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and specify the bundled RabbitMQ version in the documentation. (@fredcamaral)
+- Correct the `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `midaz` `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner starting from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner starting from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner starting from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions from `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner starting from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+- Preserve the partition runner to ensure consistent behavior in `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+- Preserve the partition runner to ensure consistent behavior in `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+- Preserve the partition runner to ensure consistent behavior in `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+- Preserve the partition runner in midaz to ensure consistent functionality. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+- Preserve the partition runner to ensure consistent behavior in `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+- Preserve the partition runner to ensure consistent behavior in `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+
+- Preserve the partition runner to ensure consistent behavior in `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+- Preserve the partition runner to ensure consistent behavior during execution. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
 ## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
 
 Fixes:

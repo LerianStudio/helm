@@ -1,9 +1,91 @@
-# Changelog
+# Plugin-br-payments Changelog
 
-All notable changes to this chart will be documented in this file.
+## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.2)
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Fixes:
+
+- Keep control-plane guard on API pods and trim comments. (@fredcamaral)
+- Align starter overlay, schema, and pod labels for consistency. (@fredcamaral)
+
+Improvements:
+
+- Fix secret commands for `plugin-br-payments` `1.1.2`. (@fredcamaral)
+- Correct the upgrade guide for `plugin-br-payments` `1.1.2`. (@fredcamaral)
+- Add verified upgrade guides for versions `1.1.3` to `2.2.1`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.1...plugin-br-payments-v2.2.2)
+
+---
+
+## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.2)
+
+Fixes:
+- Keep control-plane guard on API pods and trim comments for improved clarity. (@fredcamaral)
+- Align starter overlay, schema, and pod labels for consistency. (@fredcamaral)
+
+Improvements:
+- Fix secret commands for `plugin-br-payments` `1.1.2` to ensure accuracy. (@fredcamaral)
+- Correct the upgrade guide for `plugin-br-payments` `1.1.2` to provide clear instructions. (@fredcamaral)
+- Add verified upgrade guides for versions from `1.1.3` to `2.2.1` to assist users in transitioning smoothly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.1...plugin-br-payments-v2.2.2)
+
+---
+
+## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.2)
+
+Fixes:
+
+- Keep control-plane guard on API pods and trim comments for better clarity. (@fredcamaral)
+- Align starter overlay, schema, and pod labels to ensure consistency. (@fredcamaral)
+
+Improvements:
+
+- Fix secret commands in the `plugin-br-payments` `1.1.2` documentation to ensure accuracy. (@fredcamaral)
+- Correct the `plugin-br-payments` `1.1.2` upgrade guide for improved clarity. (@fredcamaral)
+- Add verified upgrade guides for versions `1.1.3` to `2.2.1` to assist users in the upgrade process. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.1...plugin-br-payments-v2.2.2)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
+
+Fixes:
+- Updated charts to use stable payments `1.2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
+
+Fixes:
+- Updated charts to use stable payments version `1.2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
+
+Fixes:
+
+- Use stable payments `1.2.0` in charts. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
+
+Fixes:
+
+- Use stable payments `1.2.0` in charts. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
+
+---
 
 ## [1.0.0-beta.2] — Unreleased
 
@@ -64,3 +146,4 @@ helm lint passes; helm install succeeds end-to-end; deployment reaches
 `2/2 Ready`; `/health`, `/readyz`, and `/version` all return 200 via the
 generated Service; the readyz response reports `postgres`, `midaz`, and
 `provider` checks all `up`.
+

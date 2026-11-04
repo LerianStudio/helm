@@ -11,8 +11,8 @@ sources:
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-version: 3.0.4
-appVersion: "3.4.0"
+version: 3.0.5
+appVersion: "3.5.0"
 keywords:
   - bank-transfer
   - ted

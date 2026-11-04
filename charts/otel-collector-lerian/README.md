@@ -47,7 +47,7 @@ $ rm -f "$KEYFILE"; unset OTEL_API_KEY
 
 The Secret must be named `otel-api-key` and carry the key `api-key`; the collector pod does not start without it.
 
-You must also set your own `client.id` (see [Customizing the Client ID](#customizing-the-client-id)). The chart default is the placeholder `Firmino`, and nothing validates it: if you do not override it, all telemetry is stamped with that placeholder.
+You must also set your own `client.id` (see [Customizing the Client ID](#customizing-the-client-id)). The chart default is the placeholder `change-me`, and nothing validates it: if you do not override it, all telemetry is stamped with that placeholder.
 
 ---
 
@@ -140,7 +140,7 @@ This chart provides a pre-configured OpenTelemetry Collector with the following 
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `opentelemetry-collector.config.processors.resource/add_client_id.attributes[0].value` | Client ID for multi-tenancy. **Placeholder default: set your own value.** The chart does not validate it. | `Firmino` |
+| `opentelemetry-collector.config.processors.resource/add_client_id.attributes[0].value` | Client ID for multi-tenancy. **Placeholder default: set your own value.** The chart does not validate it. | `change-me` |
 
 ---
 

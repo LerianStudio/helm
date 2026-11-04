@@ -77,8 +77,8 @@ helm install br-sisbajud charts/br-sisbajud -n sisb-dev \
 ```
 
 A licença é obrigatória aqui também. A app 1.1.0 exige a licença em todo ambiente,
-`development` incluído (sem bypass de dev). O `values-dev.yaml` não traz chave: o chart
-renderiza, mas o pod não sobe até uma chave real ser configurada.
+`development` incluído (sem bypass de dev). O `values-dev.yaml` não traz chave: sem o `secretRefs`
+acima, o render falha e diz qual chave falta.
 
 As imagens são públicas, então não é preciso pull secret (o `imagePullSecrets` de topo
 é só para um mirror/registry privado). Com as
@@ -251,7 +251,7 @@ Ligação com o br-sta (valores agrupados em `brSisbajud.sta`): `consumerEnabled
 
 | Tema | O que saber | Antes de habilitar / como confirmar |
 |---|---|---|
-| Render fail-fast | Espelha a validação de boot da app: `STA_INBOUND_BUCKET` sempre; host de Postgres/Redis em single-tenant; provider do KMS + credenciais; brokers/SASL/TLS do streaming; `LICENSE_KEY` em ambiente tipo produção (a app exige em todo ambiente); senha do Postgres em ambiente tipo produção; credenciais do cliente de transfers do STA / auth de entrada / publisher de declaração; URL/Redis/API key do multi-tenant; `ORGANIZATION_IDS` obrigatório e `global` | Leia o erro do render: ele diz exatamente o valor |
+| Render fail-fast | Espelha a validação de boot da app: `STA_INBOUND_BUCKET` sempre; host de Postgres/Redis em single-tenant; provider do KMS + credenciais; brokers/SASL/TLS do streaming; `LICENSE_KEY` em todo ambiente; senha do Postgres em ambiente tipo produção; credenciais do cliente de transfers do STA / auth de entrada / publisher de declaração; URL/Redis/API key do multi-tenant; `ORGANIZATION_IDS` obrigatório e `global` | Leia o erro do render: ele diz exatamente o valor |
 | Guarda dos bundles dev-only | `openbao` (modo dev, chaves em memória) e `redpandaBundle` são recusados fora de `local`/`development`/`develop`/`dev`/`test`/`e2e` (staging também é recusado). Independe dos relaxamentos da própria app, que `staging` continua tendo | `helm template ... --set global.env.name=production` com o dev bundle falha citando os dois |
 | OpenBao modo dev | Reiniciar o pod do OpenBao perde todas as chaves Transit: linhas criptografadas antes ficam ilegíveis | Só dev/avaliação; resete o banco junto |
 | Cliente de transfers do STA | Precisa de um plugin-access-manager acessível para emitir o bearer m2m | Sem ele, o envio de arquivo de retorno ao br-sta falha |
@@ -270,7 +270,7 @@ Ligação com o br-sta (valores agrupados em `brSisbajud.sta`): `consumerEnabled
 | Gateway | `https://license.lerian.io`, `POST /licenses/validate`. O egress até ele é obrigatório e a URL não é configurável. Chaves emitidas para staging foram validadas neste gateway de produção. |
 | Refresh e carência | A chave é revalidada a cada 6 h. Quando o gateway não responde (erro de rede ou 5xx) depois de ter confirmado a chave uma vez, o processo segue servindo em janelas de carência decrescentes (2 d, 1 d, 12 h, 6 h, no máximo 3 d 18 h) e depois sai. Um processo que nunca foi confirmado ganha só 6 h. Uma recusa 4xx encerra a carência na hora. As janelas vivem em memória: um pod reiniciado durante uma queda começa sem confirmação |
 | Offline | Não há modo de licença offline nesta versão da app |
-| Gate de render | Um ambiente tipo produção falha o render sem `LICENSE_KEY` (valor no Secret, `secretRefs`, `extraEnvVars` ou `useExistingSecret`); em `local`/`development`/`staging`/`e2e`/`test` o render passa e o pod não sobe. `ORGANIZATION_IDS` precisa ser `global` |
+| Gate de render | Todo ambiente falha o render sem `LICENSE_KEY` (valor no Secret, `secretRefs`, `extraEnvVars` ou `useExistingSecret`). `ORGANIZATION_IDS` precisa ser `global` |
 | Como confirmar | Não há check de licença no `/readyz`: procure no log de boot as linhas `Organization global has a valid license` e `license validation enabled` |
 
 ---

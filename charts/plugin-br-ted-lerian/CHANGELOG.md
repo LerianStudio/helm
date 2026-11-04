@@ -1,5 +1,277 @@
 # Plugin-br-ted-lerian Changelog
 
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the application reads to ensure consistency. (@fredcamaral)
+- Maintain validity of zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for clarity. (@gandalf-at-lerian)
+- Streamline the `1.0` upgrade guide to reflect the chart's actual behavior. (@fredcamaral)
+- Add verified upgrade guides for transitioning from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain validity for zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for better clarity. (@gandalf-at-lerian)
+- Streamline the `1.0` upgrade guide to focus on chart-specific changes. (@fredcamaral)
+- Add verified upgrade guides for transitions from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to accurately reflect templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain the validity of zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for clarity. (@gandalf-at-lerian)
+- Streamline the `1.0` upgrade guide to reflect the actual chart functionality. (@fredcamaral)
+- Add verified upgrade guides for transitions from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain validity for zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for clarity and accuracy. (@gandalf-at-lerian)
+- Streamline the `1.0` upgrade guide to reflect the chart's actual functionality. (@fredcamaral)
+- Add verified upgrade guides for transitioning from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain the validity of zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for clarity and accuracy. (@gandalf-at-lerian)
+- Streamline the `1.0` upgrade guide to reflect the actual chart behavior. (@fredcamaral)
+- Add verified upgrade guides for transitioning from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain the validity of zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for better clarity. (@gandalf-at-lerian)
+- Update the `1.0` upgrade guide to reflect the actual functionality of the chart. (@fredcamaral)
+- Add verified upgrade guides for transitioning from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain the validity of zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Streamline the `1.0` upgrade guide to reflect the chart's actual functionality. (@fredcamaral)
+- Add verified upgrade guides for transitioning from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain the validity of zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Refine the `1.0` upgrade guide to focus on what the chart accomplishes. (@fredcamaral)
+- Add verified upgrade guides for transitions from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.3)
+
+Fixes:
+- Align the rendered configuration with what the app reads to ensure consistency. (@fredcamaral)
+- Maintain validity of zero-surge rollouts and environment overrides. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for better clarity. (@gandalf-at-lerian)
+- Update the `1.0` upgrade guide to reflect the actual chart behavior. (@fredcamaral)
+- Add verified upgrade guides for transitioning from `1.0.1` to `1.1.2`. (@fredcamaral)
+- Correct chart documentation to align with templates and app code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.2...plugin-br-ted-lerian-v1.1.3)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values to enhance security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values for `plugin-br-ted-lerian`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values for improved security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values to ensure secure handling of sensitive information. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values for improved security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values to enhance security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values for improved security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+
+- Carry CRM M2M credentials in secrets and install values to enhance security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values for improved security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values for improved security and deployment consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values to enhance security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+
+- Carry CRM M2M credentials in secrets and install values to enhance security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values for improved security and configuration management. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
+## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
+
+Fixes:
+- Carry CRM M2M credentials in secrets and install values for `plugin-br-ted-lerian`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.1...plugin-br-ted-lerian-v1.1.2)
+
+---
+
 ## [1.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.2)
 
 Fixes:

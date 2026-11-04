@@ -63,7 +63,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "br-sisbajud.serviceAccountName" . }}
       automountServiceAccountToken: false
-      terminationGracePeriodSeconds: {{ .Values.brSisbajud.terminationGracePeriodSeconds | default 55 }}
+      terminationGracePeriodSeconds: {{ ternary 55 .Values.brSisbajud.terminationGracePeriodSeconds (kindIs "invalid" .Values.brSisbajud.terminationGracePeriodSeconds) }}
       {{- /* The Secret files (execution TLS, client CA, JWT PEM) are mounted 0440:
          the non-root app (GID 65532) reads them through fsGroup, injected when
          podSecurityContext does not set one. */}}

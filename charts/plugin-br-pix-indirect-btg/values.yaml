@@ -745,6 +745,7 @@ postgresql:
     username: "pix_btg"
     password: ""
     database: "pix_btg"
+  primary:
     persistence:
       size: 8Gi
     resourcesPreset: large
@@ -769,8 +770,6 @@ postgresql:
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
   auth:
     enabled: false

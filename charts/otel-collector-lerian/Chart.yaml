@@ -7,10 +7,10 @@ type: application
 annotations:
   lerian.studio/chart-type: dependency-wrapper
 
-home: https://github.com/LerianStudio/otel-collector-lerian
+home: https://github.com/LerianStudio/helm/tree/main/charts/otel-collector-lerian
 
 sources:
-  - https://github.com/LerianStudio/otel-collector-lerian/tree/main/charts/otel-collector-lerian
+  - https://github.com/LerianStudio/helm/tree/main/charts/otel-collector-lerian
 
 # A list of maintainers who are responsible for the chart
 maintainers:
@@ -20,7 +20,7 @@ maintainers:
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 
-version: 5.0.0
+version: 5.0.1
 
 # This is the version number of the application being deployed.
 appVersion: "0.1.0"
@@ -37,8 +37,6 @@ keywords:
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 
 # This Helm chart includes multiple dependencies required for the application.
-# To understand the purpose and configuration of each dependency, visit:
-# https://docs.lerian.studio/docs/midaz-components
 dependencies:
   - name: opentelemetry-collector
     version: 0.178.1

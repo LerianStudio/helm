@@ -1,5 +1,334 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Fixes:
+- Default the `pixauto SPI_BASE_URL` to the SPI port, ensuring correct configuration. (@fredcamaral)
+- Ensure the global authentication settings are respected in the pixauto ingress guard. (@fredcamaral)
+- Enable authentication on every workload within the template to enhance security. (@fredcamaral)
+- Correct the `pixauto SPI_BASE_URL` to point at the SPI service port for accurate service routing. (@fredcamaral)
+
+Improvements:
+- Document the requirement for a pull credential when using the mock image, providing clarity for users. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides, enhancing clarity and accuracy. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`, aiding users in seamless updates. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Defaulted `SPI_BASE_URL` to the SPI port for pixauto. (@fredcamaral)
+- Ensured global authentication settings are respected in the pixauto ingress guard. (@fredcamaral)
+- Enabled authentication on every workload within the template. (@fredcamaral)
+- Updated `SPI_BASE_URL` to point at the SPI service port for pixauto. (@fredcamaral)
+
+Improvements:
+- Documented that the mock image requires a pull credential. (@fredcamaral)
+- Applied review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Added verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Corrected chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default `SPI_BASE_URL` to the SPI port for pixauto. (@fredcamaral)
+- Ensure global authentication settings are respected in the pixauto ingress guard. (@fredcamaral)
+- Enable authentication on every workload in the template. (@fredcamaral)
+- Point `SPI_BASE_URL` at the SPI service port for pixauto. (@fredcamaral)
+
+Improvements:
+- Document that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Fixes:
+- Set the default `SPI_BASE_URL` to the SPI port for pixauto. (@fredcamaral)
+- Ensure that `global.auth` is respected in the pixauto ingress guard. (@fredcamaral)
+- Enable authentication on every workload within the template. (@fredcamaral)
+- Redirect the `SPI_BASE_URL` for pixauto to the SPI service port. (@fredcamaral)
+
+Improvements:
+- Document that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Defaulted `pixauto SPI_BASE_URL` to the SPI port. (@fredcamaral)
+- Ensured that `global.auth` is honored in the pixauto ingress guard. (@fredcamaral)
+- Enabled authentication on every workload in the template. (@fredcamaral)
+- Pointed `pixauto SPI_BASE_URL` at the SPI service port. (@fredcamaral)
+
+Improvements:
+- Documented the requirement for a pull credential for the mock image. (@fredcamaral)
+- Applied review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Added verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Corrected chart documentation against templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Defaulted `pixauto SPI_BASE_URL` to the SPI service port. (@fredcamaral)
+- Ensured `global.auth` is respected in the `pixauto` ingress guard. (@fredcamaral)
+- Enabled authentication on every workload in the template. (@fredcamaral)
+- Corrected the `pixauto SPI_BASE_URL` to point at the SPI service port. (@fredcamaral)
+
+Improvements:
+- Documented that the mock image requires a pull credential. (@fredcamaral)
+- Applied review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Added verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Corrected chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default `pixauto SPI_BASE_URL` to the SPI port. (@fredcamaral)
+- Ensure the global authentication configuration is respected in the pixauto ingress guard. (@fredcamaral)
+- Enable authentication on every workload in the template. (@fredcamaral)
+- Redirect `pixauto SPI_BASE_URL` to the SPI service port. (@fredcamaral)
+
+Improvements:
+- Document that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default `pixauto SPI_BASE_URL` to the SPI port. (@fredcamaral)
+- Honor `global.auth` in the `pixauto` ingress guard. (@fredcamaral)
+- Enable authentication on every workload in the template. (@fredcamaral)
+- Point `pixauto SPI_BASE_URL` at the SPI service port. (@fredcamaral)
+
+Improvements:
+- Document that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default `pixauto` SPI_BASE_URL to the SPI port. (@fredcamaral)
+- Honor `global.auth` in the `pixauto` ingress guard. (@fredcamaral)
+- Enable authentication on every workload in the template. (@fredcamaral)
+- Point `pixauto` SPI_BASE_URL at the SPI service port. (@fredcamaral)
+
+Improvements:
+- Document that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`. (@fredcamaral)
+- Correct chart documentation against templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default the `pixauto` `SPI_BASE_URL` to the SPI port, ensuring correct configuration. (@fredcamaral)
+- Ensure the global authentication settings are respected in the `pixauto` ingress guard. (@fredcamaral)
+- Enable authentication on every workload within the template to enhance security. (@fredcamaral)
+- Correct the `pixauto` `SPI_BASE_URL` to point at the SPI service port for accurate routing. (@fredcamaral)
+
+Improvements:
+- Document the requirement for a pull credential for the mock image, providing clarity for users. (@fredcamaral)
+- Apply review fixes to the chart documentation and upgrade guides, improving clarity and accuracy. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3`, assisting users in seamless updates. (@fredcamaral)
+- Correct the chart documentation to align with templates and application code, ensuring consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.4)
+
+Features:
+
+Fixes:
+- Default `pixauto SPI_BASE_URL` to the SPI port to ensure correct configuration. (@fredcamaral)
+- Honor `global.auth` in the `pixauto` ingress guard to maintain security settings. (@fredcamaral)
+- Enable authentication on every workload in the template to enhance security. (@fredcamaral)
+- Point `pixauto SPI_BASE_URL` at the SPI service port for accurate service routing. (@fredcamaral)
+
+Improvements:
+- Update documentation to indicate that the mock image requires a pull credential. (@fredcamaral)
+- Apply review fixes to chart documentation and upgrade guides for better clarity. (@gandalf-at-lerian)
+- Add verified upgrade guides for transitioning from `2.0.2` to `2.0.3` to assist users with updates. (@fredcamaral)
+- Correct chart documentation to align with templates and application code for consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.3...plugin-br-pix-lerian-v2.0.4)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
+## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
+
+Fixes:
+
+- Increased the default probe timeout to `3s` to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.2...plugin-br-pix-lerian-v2.0.3)
+
+---
+
 ## [2.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.3)
 
 Fixes:

@@ -6,15 +6,15 @@ type: application
 annotations:
   lerian.studio/chart-type: multi-component
 kubeVersion: ">=1.24.0-0"
-home: https://github.com/LerianStudio/helm
+home: https://github.com/LerianStudio/helm/tree/main/charts/notifications
 sources:
-  - https://github.com/LerianStudio/notifications
+  - https://github.com/LerianStudio/helm/tree/main/charts/notifications
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 1.0.0
+version: 1.0.1
 # This is the version number of the application being deployed.
 appVersion: "1.1.0"
 keywords:

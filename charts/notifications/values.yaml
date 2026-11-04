@@ -95,8 +95,8 @@ config:
   # -- Only the exact value `production` turns on the app's production checks
   #    (Swagger forced off, rate limiting forced on, POSTGRES_PASSWORD required,
   #    sslmode=disable and dev encryption keys refused). Any other value,
-  #    including the default `firmino`, leaves them off.
-  ENV_NAME: "firmino"
+  #    including the default `development`, leaves them off.
+  ENV_NAME: "development"
   LOG_LEVEL: "info"
   SERVER_ADDRESS: "0.0.0.0:8080"
   HTTP_BODY_LIMIT_BYTES: "104857600"
@@ -215,7 +215,7 @@ config:
   OTEL_RESOURCE_SERVICE_NAME: "notifications"
   OTEL_RESOURCE_SERVICE_VERSION: "0.1.0"
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "firmino"
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
 
   # ---- Rate Limiting ----
   RATE_LIMIT_ENABLED: "true"

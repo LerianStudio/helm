@@ -10,7 +10,7 @@ bc-correios:
   image:
     repository: ghcr.io/lerianstudio/plugin-bc-correios
     pullPolicy: IfNotPresent
-    tag: "1.0.0"  # REQUIRED - Set the image version
+    tag: "1.1.0"  # REQUIRED - Set the image version
 
   imagePullSecrets: []
 
@@ -22,7 +22,7 @@ bc-correios:
       alb.ingress.kubernetes.io/scheme: internet-facing
       alb.ingress.kubernetes.io/target-type: ip
     hosts:
-      - host: ""  # REQUIRED - Set your hostname (e.g., bc-correios.prod.lerian.io)
+      - host: ""  # REQUIRED - Set your hostname (e.g., bc-correios.example.com)
         paths:
           - path: /
             pathType: Prefix
@@ -76,9 +76,8 @@ bc-correios:
   configmap:
     # Application Settings
     ALLOW_INSECURE_TLS: "true"
-    ENV_NAME: "production"   # "development" (with PLUGIN_AUTH_ENABLED "false") for a dev install
+    ENV_NAME: "production"   # "development" skips the production checks on POSTGRES_SSLMODE and ALLOWED_ORIGINS
     APP_NAME: "plugin-bc-correios"
-    APP_VERSION: ""   # REQUIRED - matches image tag
     LOG_LEVEL: "info"
     SERVER_PORT: "9090"
     SERVER_READ_TIMEOUT_SEC: "30"
@@ -86,7 +85,7 @@ bc-correios:
     SERVER_SHUTDOWN_TIMEOUT_SEC: "30"
 
     # CORS / Proxy
-    ALLOWED_ORIGINS: "*"
+    ALLOWED_ORIGINS: "*"   # explicit origins are required unless ENV_NAME is "development"; "*" is refused
     TRUSTED_PROXIES: "127.0.0.1,::1"
 
     # PostgreSQL - REQUIRED
@@ -98,9 +97,11 @@ bc-correios:
     POSTGRES_MAX_CONNS: "50"
     POSTGRES_MIN_CONNS: "5"
 
-    # RabbitMQ - REQUIRED
-    RABBITMQ_USER: "plugin-bc-correios"
-    RABBITMQ_URL: ""  # REQUIRED - amqp://plugin-bc-correios:$(RABBITMQ_PASS)@<host>:5672/
+    # Streaming broker (Kafka API) - REQUIRED
+    STREAMING_BROKERS: ""   # REQUIRED - e.g., broker.example.com:9092
+    STREAMING_TLS_ENABLED: "false"
+    # STREAMING_SASL_MECHANISM: "SCRAM-SHA-512"
+    # STREAMING_SASL_USERNAME: ""
 
     # Cache (Valkey) - REQUIRED
     CACHE_ADDR: ""    # REQUIRED - e.g., bc-correios-valkey:6379
@@ -116,27 +117,20 @@ bc-correios:
     BC_CORREIO_ENVIRONMENT: ""    # REQUIRED - homologation or production
     BC_CORREIO_RATE_LIMIT_PER_MINUTE: "50"
     BC_CORREIO_RATE_LIMIT_PER_HOUR: "2700"
-    BC_CORREIO_RETRY_MAX_RETRIES: "3"
     BC_CORREIO_TLS_MIN_VERSION: "TLSv1.2"
+    RATE_LIMIT_ENABLED: "true"
 
     # Plugin Auth
-    PLUGIN_AUTH_ENABLED: "true"   # "false" is refused unless ENV_NAME is development-class
+    PLUGIN_AUTH_ENABLED: "true"   # "false" is refused unless ENV_NAME is a development name (development, develop, dev, local, test)
     PLUGIN_AUTH_ADDRESS: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
-    PLUGIN_AUTH_CLIENT_ID: "plugin-bc-correios"
 
     # License
-    LICENSE_KEY: ""   # REQUIRED in production
+    LICENSE_KEY: ""   # REQUIRED in every environment
 
     # AI Insights
     FEATURE_AI_INSIGHTS_ENABLED: "true"
-    AI_TENANT_RATE_LIMIT_PER_MIN: "50"
-    AI_TENANT_MAX_CONCURRENT: "3"
-    AI_GLOBAL_MAX_CONCURRENT: "15"
-
-    # Multi-tenancy
-    MULTI_TENANT_ENABLED: "false"
-    MULTI_TENANT_URL: ""          # REQUIRED when MULTI_TENANT_ENABLED=true
-    DEFAULT_TENANT_ID: ""         # REQUIRED - default tenant UUID
+    AI_RATE_LIMIT_PER_MIN: "50"
+    AI_MAX_CONCURRENT: "3"
 
     # Observability
     TRACING_ENABLED: "false"
@@ -146,9 +140,6 @@ bc-correios:
   secrets:
     # PostgreSQL - REQUIRED
     POSTGRES_PASSWORD: ""  # REQUIRED - PostgreSQL password
-
-    # RabbitMQ - REQUIRED
-    RABBITMQ_PASS: ""      # REQUIRED - RabbitMQ password
 
     # Encryption - REQUIRED (AES-256, exactly 32 bytes)
     ENCRYPTION_KEY: ""     # REQUIRED - override dev placeholder
@@ -162,8 +153,8 @@ bc-correios:
     OBJECT_STORAGE_ACCESS_KEY: ""
     OBJECT_STORAGE_SECRET_KEY: ""
 
-    # Plugin Auth M2M client secret (required when PLUGIN_AUTH_ENABLED=true)
-    # PLUGIN_AUTH_CLIENT_SECRET: ""
+    # Streaming broker SASL password (optional)
+    # STREAMING_SASL_PASSWORD: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -178,14 +169,9 @@ bc-correios:
 #   - User: plugin-bc-correios (with full privileges)
 #   - Schema: public
 #
-# RabbitMQ:
-#   - User: the account in RABBITMQ_URL (with full permissions on / vhost); the chart does not create it
-#   - Exchanges: bc-correios.audit, bc-correios.audit.dlx, bc-correios.mail-events,
-#     bc-correios.webhook.dlx
-#   - Queues: bc-correios.audit.events, bc-correios.audit.dead, bc-correios.webhook.dispatch,
-#     bc-correios.webhook.dead
-#   (exchanges/queues/bindings come from files/rabbitmq/load_definitions.json: bundled broker
-#   or global.externalRabbitmqDefinitions.enabled)
+# Streaming broker (Kafka API):
+#   - The app publishes to the topic lerian.streaming.br-correios and its dead-letter topic
+#     lerian.streaming.br-correios.dlq. Provision both.
 #
 # Valkey (Redis-compatible):
 #   - Used for: caching, rate limiting
@@ -201,10 +187,6 @@ valkey:
   external: true
 
 postgresql:
-  enabled: false
-  external: true
-
-rabbitmq:
   enabled: false
   external: true
 

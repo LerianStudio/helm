@@ -99,17 +99,7 @@ cluster de cliente não faz sentido.
 
 ## node-exporter — métricas de host
 
-**Ressalva honesta: este é o menos privilegiado dos DaemonSets desta lista.**
-Roda não-root, sem eBPF, sem `privileged`, com filesystem somente leitura. Pede
-`hostPID` e monta o rootfs do nó em leitura.
-
-**Está fora por ESCOPO, não por risco proibitivo:** métricas de host descrevem o
-nó, e no perfil de cliente o nó pertence ao cliente. Não temos competência para
-agir sobre ele.
-
-Se algum dia precisarmos de saturação de nó nos **nossos** ambientes, este é o
-candidato defensável — e o perfil `own` permite habilitar. Justificar sua exclusão
-com o mesmo peso de Beyla ou Kepler seria vender demais a decisão.
+Não está fora: é dependência **opcional** do chart (alias `node-exporter`, `node-exporter.enabled: false` por padrão). A coleta só acontece com `collection.nodeInfrastructure: true`, que o render recusa no perfil `client`. Ligado, o node-exporter roda não-root, sem `privileged` e com raiz somente leitura, mas com `hostPID` e `hostNetwork`, e monta o rootfs do nó em leitura.
 
 ---
 
@@ -145,7 +135,7 @@ para a decisão ser explícita em vez de herdada.
 
 ## Resumo da postura
 
-| Aspecto | Este chart |
+| Aspecto | Este chart (padrão, `node-exporter` desligado) |
 |---|---|
 | CRDs instaladas | zero |
 | Usuário do agente | **uid 473, não-root** (medido: `uid=473(alloy)`) |

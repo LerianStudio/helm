@@ -15,7 +15,7 @@ maintainers:
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 
-version: 2.0.3
+version: 2.0.4
 
 # This is the version number of the application being deployed.
 appVersion: "1.3.0-beta.26"
@@ -33,8 +33,7 @@ keywords:
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 
 # This Helm chart includes multiple dependencies required for the application.
-# To understand the purpose and configuration of each dependency, visit:
-# https://docs.lerian.studio/docs/midaz-components
+# The purpose and configuration of each dependency is documented in its own chart.
 dependencies:
   # Library chart — renders nothing on its own; provides the shared workload
   # fragments (service, hpa, serviceAccount, scheduling) whose output is

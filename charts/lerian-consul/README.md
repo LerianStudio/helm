@@ -92,7 +92,7 @@ light — the BYOC "facilitator, not blocker" stance — because the client owns
 cluster and its trust boundary:
 
 - ACL system **on**. Workloads must get a scoped SD token that the operator mints (never the bootstrap token) — see below.
-- Non-root server, in-cluster Services only: the server Service is headless (`clusterIP: None`) and the `-dns` Service is `ClusterIP`. No LoadBalancer/NodePort/Ingress.
+- Non-root server, in-cluster Services only: the server Service is headless (`clusterIP: None`). No LoadBalancer/NodePort/Ingress.
 - DNS listener **off**, gossip/RPC host ports **off**, unused components disabled. See [Known limitations](#known-limitations) for the DNS ports that are still declared.
 
 TLS and a NetworkPolicy are **client-owned opt-ins**, NOT forced defaults — a
@@ -161,6 +161,25 @@ Store each SecretID in that workload's own Secret and pass it as `SD_TOKEN` — 
 5. With `consul.global.acls.manageSystemACLs=true`, the new install bootstraps a new ACL system: re-mint the per-workload SD tokens (see [ACL tokens](#acl-tokens--bootstrap-is-admin-only)) and update each workload's `SD_TOKEN`.
 6. Restart the consuming workloads if they do not re-register on their own.
 
+## Upgrading an existing 1.1.x install
+
+With `consul.dns.enabled=false` (the default), the ACL bootstrap job no longer passes `-allow-dns`, so a new install gives the anonymous token no policy. The job does not detach a policy from an install that already has one. After `helm upgrade` of an existing 1.1.x install with ACLs on, remove the policy with the bootstrap (management) token.
+
+Before you run it, give every workload that has `SD_ENABLED=true` its own `SD_TOKEN` (see [ACL tokens](#acl-tokens--bootstrap-is-admin-only)). A workload with an empty `SD_TOKEN` uses the anonymous token and finds no services after this step.
+
+The commands run in a server pod, so they use the pod's own address and CA and work with TLS on or off. The token goes in on stdin, not on the command line:
+
+```console
+$ MGMT_TOKEN=$(kubectl get secret -n <namespace> <consul-fullname>-bootstrap-acl-token \
+    -o jsonpath='{.data.token}' | base64 -d)
+$ printf '%s' "$MGMT_TOKEN" | kubectl exec -i -n <namespace> <consul-fullname>-server-0 -- \
+    consul acl policy delete -name anonymous-token-policy -token-file /dev/stdin
+$ printf '%s' "$MGMT_TOKEN" | kubectl exec -i -n <namespace> <consul-fullname>-server-0 -- \
+    consul acl token read -accessor-id 00000000-0000-0000-0000-000000000002 -token-file /dev/stdin
+```
+
+The second command must list no `anonymous-token-policy`. With `consul.dns.enabled=false` the ACL bootstrap job does not recreate it.
+
 ---
 
 ## Building the chart locally
@@ -190,9 +209,9 @@ $ helm dependency build charts/lerian-consul
 - **DNS ports are still declared although the DNS listener is off.**
   `consul.server.extraConfig` sets `ports.dns` to `-1`, so the agent does not
   listen on DNS. The upstream chart still declares port `8600` (`dns-tcp` /
-  `dns-udp`) on the server Service and the container, and renders a separate
-  `<consul-fullname>-dns` Service on port `53`. Nothing answers on them; consumers
-  use the HTTP API. This is documented here rather than changed.
+  `dns-udp`) on the server Service and the container. Nothing answers on them;
+  consumers use the HTTP API. `consul.dns.enabled` is `false`, so the chart
+  renders no `<consul-fullname>-dns` Service.
 - **The server Service is headless** (`clusterIP: None`). Consumers resolve
   `<consul-fullname>-server.<namespace>.svc` to the server pod IPs.
 

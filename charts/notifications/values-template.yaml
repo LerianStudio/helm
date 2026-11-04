@@ -1,4 +1,4 @@
-# Per-environment values template. Copy and override per env (firmino, staging,
+# Per-environment values template. Copy and override per env (development, staging,
 # production). Sensitive values should be left empty here and injected via
 # gitops + ArgoCD Vault Plugin, or replaced entirely with `secretRef.name`
 # pointing at a pre-existing Secret.
@@ -43,7 +43,7 @@ secretRef:
 config:
   # Only `production` enables the application's production checks (Swagger off,
   # rate limiting forced on, dev encryption keys and sslmode=disable refused).
-  ENV_NAME: "firmino"
+  ENV_NAME: "development"
   LOG_LEVEL: "info"
   POSTGRES_HOST: ""
   POSTGRES_PORT: "5432"

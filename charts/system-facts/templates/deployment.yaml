@@ -38,7 +38,7 @@ spec:
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
       serviceAccountName: {{ include "system-facts.serviceAccountName" . }}
-      terminationGracePeriodSeconds: {{ (index .Values "system-facts").terminationGracePeriodSeconds | default 55 }}
+      terminationGracePeriodSeconds: {{ dig "terminationGracePeriodSeconds" 55 (index .Values "system-facts") | int }}
       {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" (index .Values "system-facts").podSecurityContext) | nindent 6 }}
       containers:
         - name: {{ include "system-facts.fullname" . }}

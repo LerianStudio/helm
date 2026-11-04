@@ -36,15 +36,18 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
         {{- if not $s.useExistingSecret }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/secrets.yaml") . | fromYaml).stringData | toYaml | sha256sum }}
         {{- end }}
         {{- with $s.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud") | nindent 8 }}
+        {{- include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud") | nindent 8 }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/part-of: {{ include "plugin-br-sisbajud.name" . }}
     spec:
       {{- with (include "plugin-br-sisbajud.pullSecrets" (dict "context" $ "list" $s.imagePullSecrets)) }}
       {{- . | nindent 6 }}

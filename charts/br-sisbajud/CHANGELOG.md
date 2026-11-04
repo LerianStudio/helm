@@ -1,5 +1,266 @@
 # Br-sisbajud Changelog
 
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure compliance and proper functionality. (@fredcamaral)
+- Render an explicit zero grace period to clarify system behavior. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, providing users with clear instructions for updates. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure compliance. (@fredcamaral)
+- Render an explicit zero grace period to improve clarity. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure proper licensing. (@fredcamaral)
+- Render an explicit zero grace period to improve clarity in the system's behavior. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, providing users with clear instructions for updating. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure proper configuration. (@fredcamaral)
+- Render an explicit zero grace period to address potential misinterpretations. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, providing clearer instructions for users. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring consistency and accuracy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure proper configuration. (@fredcamaral)
+- Render an explicit zero grace period to address potential misinterpretations. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, providing clear instructions for users. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring consistency and accuracy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Features:
+
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`. (@fredcamaral)
+
+Fixes:
+
+- Require `LICENSE_KEY` in every environment to ensure consistent licensing checks. (@fredcamaral)
+- Render an explicit zero grace period to address potential misinterpretations in the system behavior. (@fredcamaral)
+
+Improvements:
+
+- Correct chart documentation to align with templates and application code, ensuring accuracy and clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure proper configuration. (@fredcamaral)
+- Render an explicit zero grace period to improve clarity in the system's behavior. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, providing users with clear instructions for updates. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring consistency and accuracy. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure compliance. (@fredcamaral)
+- Render an explicit zero grace period to clarify default settings. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, enhancing documentation for smoother updates. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring accuracy and consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
+
+Fixes:
+- Require `LICENSE_KEY` in every environment to ensure compliance. (@fredcamaral)
+- Render an explicit zero grace period to clarify the system behavior. (@fredcamaral)
+
+Improvements:
+- Add verified upgrade guides for transitioning from `1.4.1` to `1.4.3`, providing clearer instructions for users. (@fredcamaral)
+- Correct chart documentation to align with templates and application code, ensuring consistency. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.3...br-sisbajud-v1.4.4)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Prevent the rendering of `IS_DEVELOPMENT` in the application. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+
+- Stopped rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the application to prevent unnecessary exposure of development flags. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the br-sisbajud component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` in the `br-sisbajud` component. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Prevent the rendering of `IS_DEVELOPMENT` in the application to ensure it does not appear in production environments. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
+## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
+
+Fixes:
+- Stop rendering `IS_DEVELOPMENT` to ensure the correct environment configuration. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.2...br-sisbajud-v1.4.3)
+
+---
+
 ## [1.4.3](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.3)
 
 Fixes:

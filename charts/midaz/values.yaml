@@ -235,7 +235,8 @@ ledger:
     # timeout. See docs/UPGRADE-9.1.md section 6.
     timeoutSeconds: 300
   # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout
-  # strategy and PDB are owned by the chart. Only these keys are values.
+  # strategy and PDB are owned by the chart. Only these keys are values. Applies when
+  # image.tag is 4.5.0-beta.94 or later; a lower tag ignores it and keeps the 4.4 layout.
   health:
     # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
     stack: go
@@ -254,8 +255,10 @@ ledger:
     repository: lerianstudio/midaz-ledger
     # -- Image pull policy
     pullPolicy: IfNotPresent
-    # -- Image tag used for deployment
-    tag: "4.5.0-beta.94"
+    # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
+    # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
+    # rollout); the partition runner is on from 4.5.0-beta.1; a lower tag keeps the 4.4 probes and ports.
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -310,8 +313,8 @@ ledger:
   # health via exit codes (0 healthy/unpartitioned, 1 attention, 2 invalid).
   # It visits every active tenant in multi-tenant mode.
   partition:
-    # -- Run the scheduled runner. Unset enables stable tags >= 4.5.0 only;
-    # pre-release, older and non-SemVer tags default off. Set true or false to override.
+    # -- Run the scheduled runner. Unset enables tags >= 4.5.0-beta.1 (every ledger
+    # image from that tag on ships the runner); older and non-SemVer tags default off. Set true or false to override.
     enabled:
     # -- Cron schedule in `timeZone`, defaulting to 06:00 outside common managed
     # PostgreSQL maintenance windows; choose a time outside your database's windows.
@@ -370,7 +373,7 @@ ledger:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration (the spec comes from the health preset; setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
+  # -- PodDisruptionBudget configuration (from image tag 4.5.0-beta.94 the spec comes from the health preset, and setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -764,7 +767,8 @@ crm:
   existingSecretName: ""
 tracer:
   # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout
-  # strategy and PDB are owned by the chart. Only these keys are values.
+  # strategy and PDB are owned by the chart. Only these keys are values. Applies when
+  # image.tag is 4.5.0-beta.94 or later; a lower tag ignores it and keeps the 4.4 layout.
   health:
     # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
     stack: go
@@ -784,8 +788,10 @@ tracer:
     repository: lerianstudio/midaz-tracer
     # -- Image pull policy
     pullPolicy: Always
-    # -- Image tag used for deployment
-    tag: "4.5.0-beta.94"
+    # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
+    # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
+    # rollout); a lower tag keeps the 4.4 probes and ports.
+    tag: "4.4.0"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -862,7 +868,7 @@ tracer:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration (the spec comes from the health preset; setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
+  # -- PodDisruptionBudget configuration (from image tag 4.5.0-beta.94 the spec comes from the health preset, and setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true

@@ -202,7 +202,7 @@ bankTransfer:
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
 | `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `bankTransfer.image.tag` | Image tag used for deployment | `3.4.0` |
+| `bankTransfer.image.tag` | Image tag used for deployment | `3.5.0` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `bankTransfer.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
 | `nameOverride` | Overrides the default generated name | `bank-transfer` |

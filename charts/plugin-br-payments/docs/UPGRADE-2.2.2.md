@@ -17,7 +17,7 @@ No operator action is required beyond the upgrade command. Your values overlay k
 ## Changes
 
 1. **Pod labels.** The Deployment pod template no longer carries the `helm.sh/chart` label. Because the pod template changes, Kubernetes rolls the pods once. The selector labels do not change.
-2. **`REQUEST_TIMEOUT_SEC`.** `app.configmap.REQUEST_TIMEOUT_SEC` is now accepted by `values.schema.json`, and the chart renders it in the ConfigMap when you set it. Application `1.2.0` reads this variable. If you do not set it, the ConfigMap is unchanged.
+2. **`REQUEST_TIMEOUT_SEC`.** `app.configmap.REQUEST_TIMEOUT_SEC` is now accepted by `values.schema.json`, and the chart renders it in the ConfigMap when you set it. Application `1.2.0` reads this variable. If you set it, it must be at least four times `BTG_HTTP_TIMEOUT`, or the application refuses to start. If you do not set it, the ConfigMap data is unchanged.
 3. **Starter overlay.** `values-template.yaml` now pins `app.image.tag` to `1.2.0`, so the starter overlay renders with the current application version.
 4. **Bundled PostgreSQL certificate rotation.** `values.yaml` now documents how to rotate the auto-generated TLS certificate: delete the `<release>-postgresql-crt` Secret, run `helm upgrade`, then restart the PostgreSQL pods and the application pods. The certificate is valid for 365 days and is kept across upgrades. This is a comment only; no value changed.
 5. **Chart metadata.** The `sources` list in `Chart.yaml` and the Source section of `NOTES.txt` now list only the chart source in the Helm repository.

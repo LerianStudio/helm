@@ -36,15 +36,15 @@ None. Existing custom values files work without edits.
 3. Verify that the five Deployments finish their rollout and the pods are ready:
 
 ```bash
-kubectl get pods -n plugin-br-pix-indirect-btg
+kubectl rollout status deployment -n midaz-plugins -l app.kubernetes.io/instance=plugin-br-pix-indirect-btg
 ```
 
-> **Note:** With more than one replica per component, the rolling update keeps the service available. With a single replica, expect a short interruption while the new pod becomes ready.
+> **Note:** The rollout keeps each old pod running until its replacement is ready (RollingUpdate, `maxUnavailable: 0`).
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.3 -n plugin-br-pix-indirect-btg
+helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.3 -n midaz-plugins
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -52,6 +52,6 @@ helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianst
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.3 -n plugin-br-pix-indirect-btg
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.3 -n midaz-plugins
 ```
 <!-- {% endraw %} -->

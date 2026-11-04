@@ -575,7 +575,7 @@ preset so its minImage guard also covers a tag inherited from appVersion.
 
 Usage: include "plugin-br-pix-lerian.health" (dict "context" $ "component" $component "values" $values) | fromYaml
 */}}
-{{/* First image that serves HEALTH_PORT: the Pix release that introduced it. */}}
+{{/* First stable Pix release that serves HEALTH_PORT; its pre-releases are refused. */}}
 {{- define "plugin-br-pix-lerian.minImage" -}}1.3.0{{- end -}}
 {{- define "plugin-br-pix-lerian.health" -}}
 {{- range $key := list "HEALTH_PORT" "SHUTDOWN_DRAIN_DELAY" "SHUTDOWN_TIMEOUT" -}}

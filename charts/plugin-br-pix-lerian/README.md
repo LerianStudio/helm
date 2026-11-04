@@ -20,6 +20,7 @@ This chart manages 14 independently deployable Pix Lerian workloads. Each gets i
 
 | Chart version | App image tag |
 |---|---|
+| 2.1.x | 1.3.0 |
 | 1.0.2, 2.0.x | 1.1.0 |
 | 1.0.0, 1.0.1 | 1.0.0 |
 
@@ -570,9 +571,9 @@ A proxy workload your topology requires is configuration only — it gains no bu
 
 ## Health and readiness reference
 
-Every workload serves its probes on the internal **health port 8099** (`HEALTH_PORT`), a ClusterIP Service port that no Ingress ever routes to: `/health` (liveness and startup, constant), `/readyz` (readiness) and `/metrics`. The chart owns the probe paths, the drain and the grace period: `startupProbe` and `livenessProbe` hit `/health`, `readinessProbe` hits `/readyz`, both on the named container port `health`. Shutdown drains `SHUTDOWN_DRAIN_DELAY` (15 s), then budgets `SHUTDOWN_TIMEOUT` (30 s), inside `terminationGracePeriodSeconds: 55`. Tune them per component with `<component>.health.drainSeconds` / `shutdownSeconds`; setting `livenessProbe`, `readinessProbe`, `startupProbe`, `terminationGracePeriodSeconds` or `HEALTH_PORT` / `SHUTDOWN_*` in `configmap` fails the render.
+Every workload serves its probes on the internal **health port 8099** (`HEALTH_PORT`), a ClusterIP Service port that no Ingress ever routes to: `/health` (liveness and startup, constant), `/readyz` (readiness) and `/metrics`. The chart owns the probe paths, the drain and the grace period: `startupProbe` and `livenessProbe` hit `/health`, `readinessProbe` hits `/readyz`, both on the named container port `health`. Shutdown drains `SHUTDOWN_DRAIN_DELAY` (15 s), then budgets `SHUTDOWN_TIMEOUT` (30 s), inside `terminationGracePeriodSeconds: 55`. Tune them per component with `<component>.health.drainSeconds` / `shutdownSeconds`; setting `<component>.livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePeriodSeconds`, or `HEALTH_PORT` / `SHUTDOWN_*` in `configmap` or `extraEnvVars`, fails the render.
 
-The main port still answers a constant `<prefix>/health` and `<prefix>/version` (for `dictHubVsync`, at the root); its `<prefix>/readyz` is transitional and a later Pix release removes it, so do not build on it. The chart refuses a component whose `image.tag` is below `1.3.0` (the first image that serves the health port) and reads the tag from `Chart.appVersion` when you set none. The `readyz` response is the authoritative list for the active version, tenant mode, and configuration.
+The main port still answers a constant `<prefix>/health` and `<prefix>/version` (for `dictHubVsync`, at the root); its `<prefix>/readyz` is transitional and a later Pix release removes it, so do not build on it. The chart refuses a component whose `image.tag` is below `1.3.0` (the first stable release that serves the health port; its pre-releases are refused too) and reads the tag from `Chart.appVersion` when you set none. The `readyz` response is the authoritative list for the active version, tenant mode, and configuration.
 
 | Workload | Service ports | Startup checks (`readyz` is 503 until each first passes) | Report-only checks (named in the body, never turn `readyz` red) |
 |---|---|---|---|

@@ -154,7 +154,7 @@ The chart renders both flags with the `tracer.flagDefaultTrue` helper. Each defa
 
 To set either flag to `false`, use boolean `false` or the string `"false"`. Both forms render `"false"`.
 
-**Production configuration example:**
+**Example configuration:**
 
 ```yaml
 tracer:
@@ -188,7 +188,7 @@ tracer:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `ALLOW_INSECURE_TLS` | `true` | Passed to the application as `ALLOW_INSECURE_TLS`. Set to `false` in production. |
+| `ALLOW_INSECURE_TLS` | `true` | Passed to the application as `ALLOW_INSECURE_TLS`. |
 | `MULTI_TENANT_REDIS_TLS` | `true` | When `true`, uses TLS for Redis connections in multi-tenant mode. Set to `false` only for local development. |
 
 **Example configuration:**

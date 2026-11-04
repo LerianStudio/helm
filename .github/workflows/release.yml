@@ -354,7 +354,7 @@ jobs:
 
       # semantic-release exits 0 without publishing when the branch moved after the
       # checkout. A leg that published nothing while behind origin is a dropped
-      # release: fail it so the job is re-run (a re-run catches up first).
+      # release: fail it so the dropped release is visible (a re-run checks out the original SHA and is refused again).
       - name: Fail when the release was skipped because the branch moved
         if: steps.semantic_changelog.outputs.new_release_published != 'true'
         env:
@@ -364,7 +364,7 @@ jobs:
           set -euo pipefail
           git fetch --quiet origin "$BRANCH"
           if ! git merge-base --is-ancestor "origin/$BRANCH" HEAD; then
-            echo "::error::$BRANCH moved during the run and ${CHART_NAME} published nothing; re-run this job to release it"
+            echo "::error::$BRANCH moved during the run and ${CHART_NAME} published nothing; it releases with the next change merged under charts/${CHART_NAME}"
             exit 1
           fi
 

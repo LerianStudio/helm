@@ -140,6 +140,7 @@ Shared (`common.*`):
 | `cors.exposeHeaders` / `allowCredentials` | `CORS_EXPOSE_HEADERS` / `CORS_ALLOW_CREDENTIALS` | `""` / `false` |
 | `security.allowInsecureTls` | `ALLOW_INSECURE_TLS` | `true` only with a bundled plaintext datastore, else `false` |
 | `security.allowCorsWildcard` / `allowInsecureOtel` | `ALLOW_CORS_WILDCARD` / `ALLOW_INSECURE_OTEL` | unset |
+| `license.organizationIds` | `ORGANIZATION_IDS` | unset. App 1.3.0 ignores it (global licence); set it only for a manager/worker image pinned below 1.3.0 |
 | `postgres.maxOpenConns` / `maxIdleConns` / `connMaxLifetimeMins` / `connMaxIdleTimeMins` / `connectTimeoutSec` | `POSTGRES_MAX_OPEN_CONNS` / `..._MAX_IDLE_CONNS` / `..._CONN_MAX_LIFETIME_MINS` / `..._CONN_MAX_IDLE_TIME_MINS` / `..._CONNECT_TIMEOUT_SEC` | `25` / `5` / `30` / `5` / `10` |
 | `redis.db` / `protocol` / `poolSize` / `minIdleConns` | `REDIS_DB` / `REDIS_PROTOCOL` / `REDIS_POOL_SIZE` / `REDIS_MIN_IDLE_CONNS` | `0` / `3` / `10` / `2` |
 | `redis.readTimeout` / `writeTimeout` / `dialTimeout` / `poolTimeout` | `REDIS_READ_TIMEOUT` / `REDIS_WRITE_TIMEOUT` / `REDIS_DIAL_TIMEOUT` / `REDIS_POOL_TIMEOUT` | `3` / `3` / `5` / `2` |
@@ -213,6 +214,7 @@ Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`,
 | `RABBITMQ_DEFAULT_PASS` / `RABBITMQ_URL` | Production (password, or a full DSN that overrides the parts) / the bundled RabbitMQ (password) |
 | `RABBITMQ_ERLANG_COOKIE` | The bundled RabbitMQ (stable across upgrades) |
 | `LICENSE_KEY` | Always (every environment; the app refuses to boot without a license) |
+| `ORGANIZATION_IDS` | Optional: only for a manager/worker image pinned below 1.3.0 (app 1.3.0 ignores it); same as `common.license.organizationIds` |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | The object store needs static credentials (not with IRSA / workload identity) |
 | `STREAMING_SASL_PASSWORD` / `STREAMING_TLS_CA_CERT` | SASL mechanism set / broker CA not in the system pool |
 | `IDP_M2M_CLIENT_SECRET` | `identity.declarationEnabled` |

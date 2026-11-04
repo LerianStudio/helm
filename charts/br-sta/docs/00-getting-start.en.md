@@ -10,7 +10,7 @@
 
 | Field | Value |
 |---|---|
-| Product / Chart | `br-sta-helm` (first release **1.0.0**) / app **1.0.0** |
+| Product / Chart | `br-sta-helm` (first release **1.0.0**) / app **1.3.0** |
 | Components | `manager` (HTTP API, `:4028`), `worker` (background process, probe server `:4029`, exactly one replica), migrations Job |
 | Images | `ghcr.io/lerianstudio/br-sta-manager`, `br-sta-worker`, `br-sta-migrations` (all public on GHCR); dev only: `mock-sta-server` (not public: ask Lerian for read access) |
 | Last review of this runbook | 2026-10-01 |

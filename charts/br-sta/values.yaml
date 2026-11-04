@@ -177,8 +177,9 @@ common:
   # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
   # a bundled plaintext datastore is enabled), allowCorsWildcard, allowInsecureOtel.
   security: {}
-  # -- Retired: app 1.3.0 no longer reads ORGANIZATION_IDS (the licence is global).
-  # A license.organizationIds still set here is ignored. LICENSE_KEY is a secret.
+  # -- organizationIds (ORGANIZATION_IDS). App 1.3.0 ignores it (the licence is
+  # global); set it only for a manager/worker image pinned below 1.3.0, which
+  # requires it. LICENSE_KEY is a secret.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
   # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
@@ -268,7 +269,9 @@ common:
   # (required in every environment),
   # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, IDP_M2M_CLIENT_SECRET,
   # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
-  # MULTI_TENANT_REDIS_PASSWORD. Any other key is emitted verbatim.
+  # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, for an image pinned below
+  # 1.3.0). Any other key is emitted verbatim, except the retired keys that NOTES
+  # names (br-sta.removedKeys).
   secrets: {}
   # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
   # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit

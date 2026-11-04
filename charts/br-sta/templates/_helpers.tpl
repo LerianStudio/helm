@@ -605,6 +605,10 @@ ENV_NAME: {{ $envName | quote }}
 ALLOW_INSECURE_TLS: {{ include "br-sta.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowCorsWildcard" "k" "ALLOW_CORS_WILDCARD" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowInsecureOtel" "k" "ALLOW_INSECURE_OTEL" "opt" true) }}
+# --- License (lib-license-go); LICENSE_KEY lives in the Secret ------------------
+{{- /* ORGANIZATION_IDS: app 1.3.0 ignores it (the licence is global). Still rendered
+   when set, for a manager/worker image pinned below 1.3.0, which requires it. */}}
+{{ include $kv (dict "cm" $cm "p" $c.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "opt" true) }}
 # --- Multi-tenant (lerian-common.multiTenant.env; secrets via multiTenant.secret) --
 MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
 {{- /* Tenant-manager client tuning as grouped params (common.multiTenant.*): the
@@ -934,6 +938,8 @@ REDIS_PASSWORD: {{ $s.REDIS_PASSWORD | quote }}
 {{- /* Bundled broker (Pattern B): the broker's initial user is read from here. */}}
 RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{- end }}
+{{- /* ORGANIZATION_IDS is also accepted in common.secrets (verbatim pass-through
+   below) for a manager/worker image pinned below 1.3.0; app 1.3.0 ignores it. */}}
 {{- range $k := list "RABBITMQ_DEFAULT_PASS" "RABBITMQ_URL" "RABBITMQ_ERLANG_COOKIE" "POSTGRES_REPLICA_PASSWORD" "MASTER_KEYS" "LICENSE_KEY" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "IDP_M2M_CLIENT_SECRET" }}
 {{- with index $s $k }}
 {{ $k }}: {{ . | quote }}
@@ -1303,11 +1309,11 @@ dropped from the ConfigMap/Secret escape hatch; NOTES.txt lists any still set.
 The reporter-events routing key became a code constant; the ACOS010 producer
 category moved into a code table; the expected-tenant comparison was removed;
 the POSTGRES_* server-tuning pair is docker-compose only; the TRUST_STORE_* knobs
-are not read by the current service. App 1.3.0 retired ORGANIZATION_IDS (the
-licence is global, a compiled constant), the RABBITMQ_PUBLISHER_* knobs (the
-publisher they tuned is gone) and SCHEDULER_CREDENTIAL_INTERVAL_HOURS (the
-credential recovery sweep now runs every 5 minutes).
+are not read by the current service. App 1.3.0 retired the RABBITMQ_PUBLISHER_*
+knobs (the publisher they tuned is gone) and SCHEDULER_CREDENTIAL_INTERVAL_HOURS
+(the credential recovery sweep now runs every 5 minutes); 1.2.0 read them with
+the same defaults. ORGANIZATION_IDS is NOT listed: images below 1.3.0 need it.
 */}}
 {{- define "br-sta.removedKeys" -}}
-{{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" "ORGANIZATION_IDS" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "SCHEDULER_CREDENTIAL_INTERVAL_HOURS" | toJson -}}
+{{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "SCHEDULER_CREDENTIAL_INTERVAL_HOURS" | toJson -}}
 {{- end -}}

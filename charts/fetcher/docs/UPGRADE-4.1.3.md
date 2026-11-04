@@ -4,7 +4,7 @@
 
 - **[Overview](#overview)**
 - **[Fixes](#fixes)**
-  - [1. MONGO_PARAMETERS no longer disables certificate checks on global.cloud: aws](#1-mongo_parameters-no-longer-disables-certificate-checks-on-globalcloud-aws)
+  - [1. Default MONGO_PARAMETERS on global.cloud: aws drops tlsInsecure=true](#1-default-mongo_parameters-on-globalcloud-aws-drops-tlsinsecuretrue)
   - [2. Pod templates no longer carry the chart version](#2-pod-templates-no-longer-carry-the-chart-version)
 - **[Configuration Changes](#configuration-changes)**
 - **[Migration Steps](#migration-steps)**
@@ -19,9 +19,11 @@ No action is required before the upgrade. The `manager` and `worker` pods restar
 
 ## Fixes
 
-### 1. MONGO_PARAMETERS no longer disables certificate checks on global.cloud: aws
+### 1. Default MONGO_PARAMETERS on global.cloud: aws drops tlsInsecure=true
 
-With `global.cloud: aws`, the default `MONGO_PARAMETERS` no longer includes `tlsInsecure=true`. The application verifies the DocumentDB server certificate against the AWS RDS CA bundle that ships in its image.
+With `global.cloud: aws` and no explicit params value, the default `MONGO_PARAMETERS` no longer includes `tlsInsecure=true`. DocumentDB connections use the AWS RDS CA set that ships in the application image.
+
+On `global.cloud: aws`, check the `MONGO_PARAMETERS` line in the `helm diff` output before you upgrade.
 
 **Rendered `MONGO_PARAMETERS` with `global.cloud: aws` and no explicit params value:**
 
@@ -45,7 +47,7 @@ An explicitly set value renders unchanged, whether you set it in `global.datasto
 
 The `helm.sh/chart` label is removed from the `manager` and `worker` pod templates. It stays on every other resource. The `checksum/*` annotations now hash only the `data` of the ConfigMaps and Secrets, so a chart version bump alone no longer changes them.
 
-The pod template changes in this release, so the `manager` and `worker` Deployments each roll once. Later chart-only patch releases do not restart the pods.
+The pod template changes in this release, so the `manager` and `worker` Deployments each roll once. From this release on, a chart version bump alone does not restart the pods.
 
 ## Configuration Changes
 
@@ -73,7 +75,7 @@ kubectl logs -n fetcher -l app.kubernetes.io/component=manager --tail=50
 kubectl logs -n fetcher -l app.kubernetes.io/component=worker --tail=50
 ```
 
-If either component logs a certificate verification error against DocumentDB, set `MONGO_PARAMETERS` explicitly for your environment and upgrade again.
+If either component logs a certificate verification error against DocumentDB, set `global.datastores.mongo.params` explicitly for your environment and upgrade again.
 
 ## Preview changes before upgrading
 

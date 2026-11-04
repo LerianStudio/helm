@@ -18,6 +18,8 @@ The `appVersion` serves as the default image tag for three components:
 - Worker deployment
 - Migrations job
 
+The mock STA Deployment (`mockSta.enabled: true`, off by default) also uses `appVersion` when `mockSta.image.tag` is not set.
+
 Unless you have explicitly overridden image tags in your `values.yaml`, this upgrade will pull and deploy version 1.2.0 of the br-sta application images.
 
 ### Action Required
@@ -26,7 +28,12 @@ In 1.2.0, `POST /v1/transfers` and `POST /v1/inbound-source-configs/{id}/trigger
 
 In 1.2.0, br-sta stamps every business fact with the tenant `default` and ignores `common.app.defaultTenantId`. If br-sisbajud consumes br-sta facts (`brSisbajud.sta.consumerEnabled: true`), upgrade br-sisbajud to chart 1.4.0 or later: earlier versions refuse a fact whose tenant differs from `brSisbajud.sta.expectedTenantSt`.
 
-The 1.2.0 migrations drop the `audit_outbox` table and keep none of its rows. Before you upgrade, make sure `audit_outbox` has no pending row (`published_at` empty): a row still pending when the migrations run is never delivered.
+The 1.2.0 migrations drop the `audit_outbox` table and keep none of its rows: a row still pending (`published_at` empty) when the migrations run is never delivered. The 1.0.0 manager and worker write that table, so stop them before you check it:
+
+1. Scale the manager Deployment to 0 replicas, then wait for the worker to publish the pending rows.
+2. Scale the worker Deployment to 0 replicas.
+3. Check that `audit_outbox` has no row with `published_at` empty.
+4. Run the upgrade. It sets the replicas back from your values. With `manager.autoscaling.enabled: true` the chart sets no manager replicas, so scale the manager back to `manager.autoscaling.minReplicas` after the upgrade.
 
 **If you have NOT overridden image tags:**
 

@@ -48,7 +48,7 @@ No action is required.
 
 #### If you enable adapterProviderMock
 
-Set `PROVIDER_BASE_URL` to your mock provider server. The component needs it, together with `PROVIDER_CLIENT_ID` and `PROVIDER_CLIENT_SECRET`, which you already set.
+Set `PROVIDER_BASE_URL` to your mock provider server URL, which Lerian issues with your sandbox access. To keep the URL you use today, read it before you upgrade with the `kubectl` command under [Verify](#verify). The component needs it, together with `PROVIDER_CLIENT_ID` and `PROVIDER_CLIENT_SECRET`, which you already set.
 
 ```yaml
 adapterProviderMock:
@@ -70,13 +70,15 @@ helm diff upgrade plugin-br-pix-lerian oci://ghcr.io/lerianstudio/plugin-br-pix-
 helm upgrade plugin-br-pix-lerian oci://ghcr.io/lerianstudio/plugin-br-pix-lerian-helm --namespace plugin-br-pix-lerian --version 2.0.5
 ```
 
+If you set `PROVIDER_BASE_URL` in a values file, append `--reuse-values -f <your-values.yaml>` to this command.
+
 ## Verify
 
 ```bash
 kubectl rollout status deployment -n plugin-br-pix-lerian -l app.kubernetes.io/instance=plugin-br-pix-lerian
 ```
 
-If you enabled `adapterProviderMock`, confirm it is running and that its ConfigMap holds your URL:
+If you enabled `adapterProviderMock`, confirm that its ConfigMap holds your URL:
 
 ```bash
 kubectl get configmap -n plugin-br-pix-lerian plugin-br-pix-lerian-adapter-provider-mock -o jsonpath='{.data.PROVIDER_BASE_URL}'

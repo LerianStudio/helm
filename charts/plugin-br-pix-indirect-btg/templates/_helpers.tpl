@@ -631,6 +631,8 @@ Validate required configuration fields
 {{- fail "\n\nERROR: pix.configmap.MIDAZ_LEDGER_ID is required. Set your Midaz ledger ID.\n" }}
 {{- end }}
 
+{{/* Required while the chart renders any Secret that reads them; only all-existing-Secrets frees them */}}
+{{- if not (and .Values.pix.useExistingSecrets .Values.inbound.useExistingSecrets .Values.outbound.useExistingSecrets .Values.reconciliation.useExistingSecrets .Values.schedule.useExistingSecrets) }}
 {{/* BTG Secrets - Required */}}
 {{- if not .Values.pix.secrets.BTG_CLIENT_ID }}
 {{- fail "\n\nERROR: pix.secrets.BTG_CLIENT_ID is required. Set your BTG client ID in secrets section.\n" }}
@@ -657,6 +659,7 @@ Validate required configuration fields
 {{/* License - Required */}}
 {{- if not .Values.pix.secrets.LICENSE_KEY }}
 {{- fail "\n\nERROR: pix.secrets.LICENSE_KEY is required. Set your license key in secrets section.\n" }}
+{{- end }}
 {{- end }}
 
 {{/* Organization IDs - Required */}}

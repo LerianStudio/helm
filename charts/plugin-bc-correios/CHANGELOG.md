@@ -2,6 +2,25 @@
 
 ## [4.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-bc-correios-v4.0.2)
 
+Features:
+
+Fixes:
+- Run the `plugin-bc-correios` migrations in a job to ensure proper execution. (@fredcamaral)
+- Provide the migrations container only with its Postgres settings to enhance security and efficiency. (@fredcamaral)
+- Rename the migrations job when there is a connection change to maintain consistency. (@fredcamaral)
+- Schedule the migrations job in alignment with the app while keeping ArgoCD clean to avoid unnecessary clutter. (@fredcamaral)
+- Exclude the migrations pod from app selectors to prevent unintended interactions. (@fredcamaral)
+- Run database migrations before the app starts to ensure the app operates on the latest schema. (@fredcamaral)
+
+Improvements:
+- Describe when the migrations job runs to provide better documentation and understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-bc-correios-v4.0.1...plugin-bc-correios-v4.0.2)
+
+---
+
+## [4.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-bc-correios-v4.0.2)
+
 Fixes:
 - Run the `plugin-bc-correios` migrations in a job to ensure proper execution. (@fredcamaral)
 - Provide the migrations container with only its necessary Postgres settings to enhance security and efficiency. (@fredcamaral)

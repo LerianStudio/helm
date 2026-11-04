@@ -3,6 +3,23 @@
 ## [3.0.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.0.6)
 
 Fixes:
+
+- Drop unread keys and the pod chart label to prevent unnecessary data from being processed. (@fredcamaral)
+- Stop rendering keys that are not read by the application image, optimizing performance. (@fredcamaral)
+- Prevent chart releases from restarting pods to maintain stability. (@fredcamaral)
+
+Improvements:
+
+- Fix the install command and update chart sources in the documentation for better clarity. (@fredcamaral)
+- Add the verified upgrade guide for `3.0.5` to assist users in updating smoothly. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.0.5...plugin-br-bank-transfer-v3.0.6)
+
+---
+
+## [3.0.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.0.6)
+
+Fixes:
 - Drop unread keys and the pod chart label to prevent unnecessary data retention. (@fredcamaral)
 - Stop rendering keys that are not utilized by the application image, optimizing performance. (@fredcamaral)
 - Prevent chart releases from causing pod restarts, ensuring stability in deployments. (@fredcamaral)

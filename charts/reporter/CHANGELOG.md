@@ -4,6 +4,23 @@
 
 Fixes:
 - Verify DocumentDB certificates on the AWS preset to ensure secure connections. (@fredcamaral)
+- Gate certificate verification based on app image and hash data only, enhancing security checks. (@fredcamaral)
+- Accept regulatory catalog keys and mount a catalog directory to support compliance requirements. (@fredcamaral)
+- Use neutral wording for roles and remove hints about organization IDs to improve clarity. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides for better clarity and accuracy. (@dy-shimizu, @gandalf-at-lerian)
+- Warn users that the upgrade process deletes running KEDA worker Jobs, providing important upgrade information. (@gandalf-at-lerian)
+- Add the verified `5.3.1` upgrade guide to assist users in transitioning to the new version. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.1...reporter-v5.3.2)
+
+---
+
+## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.2)
+
+Fixes:
+- Verify DocumentDB certificates on the AWS preset to ensure secure connections. (@fredcamaral)
 - Gate certificate verification based on app image and hash data only, enhancing security measures. (@fredcamaral)
 - Accept regulatory catalog keys and mount a catalog directory, improving compliance support. (@fredcamaral)
 - Use neutral wording for roles and remove hints about organization IDs for clarity. (@fredcamaral)

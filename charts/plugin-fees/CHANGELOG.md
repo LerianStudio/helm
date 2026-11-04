@@ -3,6 +3,24 @@
 ## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
 
 Features:
+- Mark the plugin-fees chart as deprecated in favor of the Midaz ledger. (@fredcamaral)
+
+Improvements:
+- Update documentation to guide the transition to Midaz, ensuring fee data is preserved during the move. (@fredcamaral)
+- Provide instructions for deferring the move to Midaz with a dedicated fees migration guide. (@fredcamaral)
+- Include steps to maintain fee calculation until bank transfer functionality is fully integrated natively. (@fredcamaral)
+- Pin bank transfer operations to legacy fees before the Midaz upgrade. (@fredcamaral)
+- Specify the password Midaz requires for accessing an external MongoDB. (@fredcamaral)
+- Organize the transition to Midaz to prevent any loss of fees. (@fredcamaral)
+- Replace existing installation and upgrade steps with instructions for transitioning to Midaz. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-fees-v9.0.1...plugin-fees-v9.0.2)
+
+---
+
+## [9.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-fees-v9.0.2)
+
+Features:
 - Marked the chart as deprecated in favor of the `midaz` ledger. (@fredcamaral)
 
 Improvements:

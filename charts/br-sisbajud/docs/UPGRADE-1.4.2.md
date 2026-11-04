@@ -38,23 +38,7 @@ brSisbajud:
 
 #### Validation changes
 
-The chart's validation error message has been reworded; the check itself (a whole number below 30) is unchanged:
-
-**Before (v1.4.1):**
-
-```yaml
-{{- if or (not (regexMatch "^[0-9]+$" $closeS)) (ge (atoi $closeS) 30) -}}
-{{- fail (printf "\n\nERROR: br-sisbajud: STREAMING_CLOSE_TIMEOUT_S must be a whole number of seconds below the pod terminationGracePeriodSeconds (Kubernetes default 30; this chart does not override it), got %q.\n  set: brSisbajud.streaming.closeTimeoutS (default \"20\")\n" $closeS) -}}
-{{- end -}}
-```
-
-**After (v1.4.2):**
-
-```yaml
-{{- if or (not (regexMatch "^[0-9]+$" $closeS)) (ge (atoi $closeS) 30) -}}
-{{- fail (printf "\n\nERROR: br-sisbajud: STREAMING_CLOSE_TIMEOUT_S must be a whole number of seconds below the 30s shutdown budget that runs inside terminationGracePeriodSeconds, got %q.\n  set: brSisbajud.streaming.closeTimeoutS (default \"20\")\n" $closeS) -}}
-{{- end -}}
-```
+The chart's `STREAMING_CLOSE_TIMEOUT_S` validation error message has been reworded; the check itself (a whole number below 30) is unchanged.
 
 `STREAMING_CLOSE_TIMEOUT_S` must stay below the 30-second shutdown budget, not the full `terminationGracePeriodSeconds`.
 

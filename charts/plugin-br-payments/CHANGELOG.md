@@ -1,9 +1,14 @@
-# Changelog
+# Plugin-br-payments Changelog
 
-All notable changes to this chart will be documented in this file.
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Fixes:
+
+- Use stable payments `1.2.0` in charts. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
+
+---
 
 ## [1.0.0-beta.2] — Unreleased
 
@@ -64,3 +69,4 @@ helm lint passes; helm install succeeds end-to-end; deployment reaches
 `2/2 Ready`; `/health`, `/readyz`, and `/version` all return 200 via the
 generated Service; the readyz response reports `postgres`, `midaz`, and
 `provider` checks all `up`.
+

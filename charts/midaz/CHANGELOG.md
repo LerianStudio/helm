@@ -1,5 +1,25 @@
 # Midaz Changelog
 
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+
+- Add the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+
+- Default ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Align `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+
+- Scope the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reword a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
 ## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
 
 Features:

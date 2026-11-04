@@ -1,4 +1,16 @@
-# Lerian Consul Changelog
+# Lerian-consul Changelog
+
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.1.0)
+
+Features:
+- Deploy lerian-consul using Consul `2.1.0`. (@fredcamaral)
+
+Improvements:
+- Remove the bootstrap secret during a fresh installation of lerian-consul. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-consul-v1.0.0...lerian-consul-v1.1.0)
+
+---
 
 ## [1.0.0](https://github.com/LerianStudio/helm/releases/tag/lerian-consul-v1.0.0)
 
@@ -10,3 +22,4 @@
   - TLS off by default with a documented enable path; ClusterIP-only services (no LoadBalancer/NodePort/Ingress).
 
 -----------------
+

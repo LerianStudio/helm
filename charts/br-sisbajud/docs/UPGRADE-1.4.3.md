@@ -82,7 +82,9 @@ brSisbajud:
    helm get values br-sisbajud -n br-sisbajud
    ```
 
-   Look for `brSisbajud.license.isDevelopment`, `brSisbajud.secrets.LICENSE_KEY`, `brSisbajud.secretRefs`, `brSisbajud.extraEnvVars`, and `brSisbajud.useExistingSecret` with `brSisbajud.existingSecretName`.
+   Look for `brSisbajud.license.isDevelopment`, `brSisbajud.secrets.LICENSE_KEY`, `brSisbajud.configmap.LICENSE_KEY`, `brSisbajud.secretRefs`, `brSisbajud.extraEnvVars`, and `brSisbajud.useExistingSecret` with `brSisbajud.existingSecretName`.
+
+   `brSisbajud.configmap.LICENSE_KEY` is not in the chart's `removedKeys`: the ConfigMap escape hatch emits it verbatim, so the license key sits in clear text in the ConfigMap.
 
    `helm get values` does not show the content of a Secret the chart does not generate. With `useExistingSecret: true`, the chart does not render its own Secret: the pod loads the operator Secret with `envFrom`, unfiltered. List its keys (values stay hidden):
 
@@ -117,11 +119,16 @@ brSisbajud:
 
 3. **Update LICENSE_KEY at its effective source**
 
-   The pod needs a key the production license gateway accepts, in every environment. Change the key where the pod really reads it:
+   The pod needs a key the production license gateway accepts, in every environment. App 1.1.0 refuses to boot with an empty `LICENSE_KEY` whatever `ENVIRONMENT_NAME` says (`validateLicenseConfig`: `LICENSE_KEY is required`). The render checks the key only in a production-like environment: in `local`, `development`, `staging`, `e2e` and `test` an empty key renders and the pod does not start. The `values.yaml`, `values-dev.yaml` and `_helpers.tpl` comments of chart 1.4.3 that call an empty key a dev bypass describe app 1.0.0, not app 1.1.0.
+
+   Change the key where the pod really reads it:
 
    - `brSisbajud.extraEnvVars` or `brSisbajud.secretRefs.LICENSE_KEY`, when present: these render as explicit `env` and win over `envFrom`.
    - Otherwise the operator Secret, when `useExistingSecret: true`.
    - Otherwise `brSisbajud.secrets.LICENSE_KEY`.
+   - Otherwise `brSisbajud.configmap.LICENSE_KEY`: `envFrom` loads the ConfigMap before the Secret, so this value counts only when no Secret or explicit `env` carries the key.
+
+   Do not keep the key in `brSisbajud.configmap`. Move it to `brSisbajud.secrets.LICENSE_KEY`, `brSisbajud.secretRefs.LICENSE_KEY` or the operator Secret, and delete `brSisbajud.configmap.LICENSE_KEY`. The render gate of a production-like environment does not count the ConfigMap copy as a key.
 
    Change an external Secret before the upgrade. The chart does not hash a Secret it does not generate, so a later change to it does not restart the pod.
 

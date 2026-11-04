@@ -147,6 +147,8 @@ secrets:
   OBJECT_STORAGE_SECRET_KEY: ""
   # Fetcher integration — base64-encoded 32-byte encryption key:
   APP_ENC_KEY: ""
+  # Lerian license key. REQUIRED for app >= 4.6.0 (the chart refuses to render without it):
+  LICENSE_KEY: ""
   # Required (fail-fast) once manager/worker image.tag is app >= 3.0.0 — at-rest encryption
   # of registered data-source credentials; both components refuse to boot without it.
   # Generate once (openssl rand -hex 32), use the SAME value for manager and worker, and do

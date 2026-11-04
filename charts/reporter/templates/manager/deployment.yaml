@@ -93,6 +93,10 @@ spec:
           {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
           {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}
           {{- end }}
+          {{- with .Values.manager.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.manager.resources | nindent 12 }}
           startupProbe:
@@ -104,8 +108,15 @@ spec:
         {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
         {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
         {{- end }}
-      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
-      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "reporter-iam-tls") | nindent 6 }}
+      {{- $raVolume := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- if or .Values.manager.extraVolumes $raVolume }}
+      volumes:
+        {{- with .Values.manager.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if $raVolume }}
+        {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "reporter-iam-tls") | trimPrefix "volumes:\n" | nindent 6 }}
+        {{- end }}
       {{- end }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, manager.spread, manager.topologySpreadConstraints).

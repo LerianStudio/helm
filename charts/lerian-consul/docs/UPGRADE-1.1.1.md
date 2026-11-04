@@ -22,7 +22,7 @@ The chart already turned off the DNS listener of the Consul agent (`ports.dns: -
 
 **What you need to do:**
 
-- Nothing, unless a workload in your cluster calls the `<consul-fullname>-dns` Service. The upgrade deletes that Service, so move those callers to the HTTP API on port 8500.
+- Nothing, unless a workload in your cluster calls the `<consul-fullname>-dns` Service. The upgrade deletes that Service, so move those callers to the HTTP API: port 8500, or port 8501 with `SD_TLS=true` when `consul.global.tls.enabled` is `true`.
 - If your values set `consul.dns.enabled: true`, your value still applies and the DNS objects stay.
 
 ---
@@ -38,10 +38,13 @@ The post-install notes of a single-server install now add `--set consul.global.g
 
 ```bash
 helm upgrade lerian-consul oci://ghcr.io/lerianstudio/lerian-consul --version 1.1.1 -n lerian-consul \
+  --reset-then-reuse-values \
   --set consul.server.replicas=3 \
   --set consul.server.bootstrapExpect=3 \
   --set consul.global.gossipEncryption.autoGenerate=true
 ```
+
+`--reset-then-reuse-values` (Helm 3.14 or later) keeps the values of your release: with `--set` and no values flag, `helm upgrade` drops them.
 
 - If you already run several servers without gossip encryption, do not turn it on with a plain `helm upgrade`. Follow HashiCorp's procedure to [enable gossip encryption on an existing datacenter](https://developer.hashicorp.com/consul/docs/secure/encryption/gossip/enable).
 

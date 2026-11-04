@@ -23,7 +23,7 @@ This is a patch release that updates the `plugin-br-pix-jd` chart from version 0
 
 ## What Changed
 
-1. **Pod templates no longer carry the `helm.sh/chart` label.** The API Deployment, the worker Deployment and the migrations Job set this label on their pods. It changed on every chart release, so every release restarted the pods. It stays on the other chart objects. Selectors do not change.
+1. **Pod templates no longer carry the `helm.sh/chart` label.** The API Deployment, the worker Deployment and the migrations Job set this label on their pods. It stays on the other chart objects. Selectors do not change.
 2. **Example in a render error.** The error shown when `STREAMING_ENABLED=true` and `STREAMING_BROKERS` is empty now uses `redpanda.example.com:9092` as the example broker list.
 3. **Chart metadata.** `Chart.yaml` `sources` lists only the chart path in this repository.
 
@@ -33,7 +33,7 @@ No value is added, removed or renamed.
 
 **No configuration changes required.** Apply this upgrade directly to v0.6.2 installations with your existing values.
 
-The pod-template label change alters the pod templates, so the API and worker pods restart once during this upgrade. From this release on, a chart version bump alone does not change the pod templates. Plan the upgrade as you plan any rollout of these pods.
+The pod-template label change alters the pod templates, so the API pods restart once during this upgrade (rolling update). The worker pods restart too when `worker.enabled=true` (Recreate strategy: the old worker stops before the new one starts). Plan the upgrade as you plan any rollout of these pods.
 
 The migrations Job runs as in v0.6.2 (same image, same hook phase).
 
@@ -58,8 +58,8 @@ If you set the payment signing key and certificate with `--set-file`, add the sa
 ## Verify
 
 ```bash
-kubectl -n midaz-plugins get pods -l app.kubernetes.io/component=api
-kubectl -n midaz-plugins get pods -l app.kubernetes.io/component=worker
+kubectl -n midaz-plugins get pods -l app.kubernetes.io/instance=<pix-release>,app.kubernetes.io/component=api
+kubectl -n midaz-plugins get pods -l app.kubernetes.io/instance=<pix-release>,app.kubernetes.io/component=worker
 ```
 
 All pods must reach `Running` and `Ready`. The chart label is no longer on the pods; the Deployments and other objects still carry `helm.sh/chart: plugin-br-pix-jd-helm-0.6.3`.

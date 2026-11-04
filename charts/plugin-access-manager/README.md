@@ -113,7 +113,22 @@ valkey:
 # identity.useExistingSecret to true and point auth.existingSecretName and
 # identity.existingSecretName at pre-created Secrets with the same keys):
 # ENV_NAME "production" also needs an https AUTHORIZER_ADDRESS, or the render
-# fails (see "Production: reach Caradhras over HTTPS" below):
+# fails. Caradhras serves plain http, so publish it through an internal ingress
+# with a public-CA certificate and point both AUTHORIZER_ADDRESS at that URL
+# (see "Production: reach Caradhras over HTTPS" below):
+caradhras:
+  ingress:
+    enabled: true
+    className: "nginx"            # prefer an internal-only ingress class
+    hosts:
+      - host: caradhras.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: caradhras-tls   # certificate issued by a public CA
+        hosts:
+          - caradhras.example.com
 auth:
   configmap:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"

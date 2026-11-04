@@ -336,7 +336,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | System-Facts Version |
 | :---: | :---: |
-| `1.1.2` | 1.1.0 |
+| `1.1.3` | 1.1.0 |
 -----------------
 
 ### Lerian Consul

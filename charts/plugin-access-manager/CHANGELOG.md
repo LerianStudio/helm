@@ -1,5 +1,21 @@
 # Plugin-access-manager Changelog
 
+## [11.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.1.0)
+
+Features:
+- Add license file mount and key to migrate. (@fredcamaral)
+
+Fixes:
+- Project only the license key in the license file volume. (@fredcamaral)
+
+Improvements:
+- Name each private registry and the checksums that change. (@fredcamaral)
+- Add verified `11.0` and `11.0.1` upgrade guides. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.0.1...plugin-access-manager-v11.1.0)
+
+---
+
 ## [11.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.0.1)
 
 Fixes:

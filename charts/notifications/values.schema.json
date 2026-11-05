@@ -42,6 +42,13 @@
       "type": "integer",
       "minimum": 0
     },
+    "licenseFile": {
+      "type": "object",
+      "properties": {
+        "existingSecret": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "secrets": {
       "type": "object",
       "additionalProperties": true

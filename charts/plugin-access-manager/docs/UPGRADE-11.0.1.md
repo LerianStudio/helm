@@ -26,7 +26,7 @@ With `caradhras.builtInAdminPassword.enabled: false`, the default, nothing chang
 
 ## Action required
 
-None. The rendered manifests are the same as v11.0.0 except for the `helm.sh/chart` label and what follows from it: the config and secret checksums of the `auth`, `identity` and `caradhras` pod templates change. These pods restart once, with the usual rolling update.
+None. The rendered manifests are the same as v11.0.0 except for the `helm.sh/chart` label and what follows from it: the pod-template checksums that hash a chart ConfigMap or Secret with that label change. The `auth` and `identity` ConfigMaps always carry the label, and the `caradhras` pod template also hashes the `auth` ConfigMap, so the `auth`, `identity` and `caradhras` pods restart once, with the usual rolling update.
 
 ## Preview changes before upgrading
 

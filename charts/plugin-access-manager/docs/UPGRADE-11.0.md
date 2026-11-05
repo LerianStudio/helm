@@ -78,7 +78,7 @@ The commands in this guide are examples. Replace `plugin-access-manager` (releas
    Choose one path:
 
    - **Move Caradhras to 2.1.0** (the v11.0.0 default):
-     1. If `caradhras.image.repository`, `caradhras.migrations.image.repository` or `auth.backend.migrations.image.repository` points at a private registry, copy `ghcr.io/lerianstudio/caradhras:2.1.0` and `ghcr.io/lerianstudio/caradhras-migrations:2.1.0` into it. Copy both: the `migrate` init container runs before the server image is pulled.
+     1. If `caradhras.image.repository` points at a private registry, copy `ghcr.io/lerianstudio/caradhras:2.1.0` to that repository. If `caradhras.migrations.image.repository` or the legacy `auth.backend.migrations.image.repository` points at a private registry, copy `ghcr.io/lerianstudio/caradhras-migrations:2.1.0` to that repository. The two values are independent: each image comes from its own repository value, or from `ghcr.io/lerianstudio` when that value is empty. Copy the images before the upgrade: the `migrate` init container runs before the server image is pulled.
      2. Get a license key for the product `caradhras` from Lerian.
      3. If the release sets `caradhras.useExistingSecret: true`, do not add the key to the file. Add a `LICENSE_KEY` key to the Secret that `caradhras.existingSecretName` names. Otherwise, add the key under `secrets` inside the `caradhras:` block of `am-values.yaml`:
 
@@ -95,7 +95,7 @@ The commands in this guide are examples. Replace `plugin-access-manager` (releas
 
 3. Find `caradhras.migrations.image.tag` and `auth.backend.migrations.image.tag` in `am-values.yaml`. Remove `auth.backend.migrations.image.tag`. Remove `caradhras.migrations.image.tag` too, unless it carries an `@sha256:` digest that you want to keep. The migrations tag then follows the server tag, without a digest. To keep a migrations tag or digest, set `caradhras.migrations.image.tag` to the same release as `caradhras.image.tag`, with the digest of the `caradhras-migrations` image.
 
-With the pin to `1.8.6`, the rendered manifests are the same as v10.5.1 except for the `helm.sh/chart` label and what follows from it: the label leaves the pod templates, and the config and secret checksums of the `auth`, `identity` and `caradhras` pod templates change. The `auth`, `identity` and `caradhras` pods, and the `caradhras-ui` pod when it is enabled, restart once with the usual rolling update. The bundled PostgreSQL and Valkey pods do not restart.
+With the pin to `1.8.6`, the rendered manifests are the same as v10.5.1 except for the `helm.sh/chart` label and what follows from it: the label leaves the pod templates, and the pod-template checksums that hash a chart ConfigMap or Secret with that label change. The `auth` and `identity` ConfigMaps always carry the label, and the `caradhras` pod template also hashes the `auth` ConfigMap, so the `auth`, `identity` and `caradhras` pod templates always change. The `auth`, `identity` and `caradhras` pods, and the `caradhras-ui` pod when it is enabled, restart once with the usual rolling update. The bundled PostgreSQL and Valkey pods do not restart.
 
 ## Preview changes before upgrading
 

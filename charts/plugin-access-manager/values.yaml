@@ -427,14 +427,9 @@ auth:
     # the bundled subchart. Only set this for an EXTERNAL database (auth-database.external=true)
     # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
     DB_PASSWORD: ""
-    # -- app-lerian client secret. Required for GitOps/ArgoCD/helm template (no cluster lookup: every render
-    # would mint a new one); leave empty only with helm install/upgrade on Caradhras at or above the floor,
-    # where the chart keeps a generated one per install (or the value already in the cluster). Otherwise use
-    # auth.useExistingSecret with AUTHORIZER_CLIENT_SECRET in that Secret. The generated secret applies
-    # to a NEW Caradhras database only: an install whose database already exists must set this (or
-    # useExistingSecret) to the secret app-lerian already holds. The generated one lives in Secret
-    # <auth fullname>-app-client-secret (e.g. pam-auth-app-client-secret), key AUTHORIZER_CLIENT_SECRET;
-    # Console, plugin-fees and Tenant Manager must be given that same value.
+    # -- app-lerian client secret. Required for helm template/GitOps (no lookup: every render mints a new one).
+    # Empty: helm install/upgrade generates and keeps one, needs Caradhras >= 2.4.0-beta.4 (default 2.1.0 is below it).
+    # See README "Required secrets".
     AUTHORIZER_CLIENT_SECRET: ""
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""

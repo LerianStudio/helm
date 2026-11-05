@@ -118,7 +118,7 @@ must satisfy.
 */}}
 {{- define "streaming-hub.secretName" -}}
 {{- if .Values.streamingHub.useExistingSecret -}}
-{{- required "\n\nERROR: streamingHub.existingSecretName is required when streamingHub.useExistingSecret=true. The referenced Secret MUST carry the keys STREAMING_HUB_POSTGRES_DSN, STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY and LICENSE_KEY — the Deployments consume all three via explicit secretKeyRefs, and a Secret missing any of them fails container creation (CreateContainerConfigError) instead of starting the app." .Values.streamingHub.existingSecretName -}}
+{{- required "\n\nERROR: streamingHub.existingSecretName is required when streamingHub.useExistingSecret=true. The referenced Secret MUST carry the keys STREAMING_HUB_POSTGRES_DSN and STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY, plus LICENSE_KEY unless streamingHub.licenseFile.existingSecret is set (file mode, which needs an image on lib-license-go v5) — the Deployments consume them via explicit secretKeyRefs, and a Secret missing a required one fails container creation (CreateContainerConfigError) instead of starting the app." .Values.streamingHub.existingSecretName -}}
 {{- else -}}
 {{- include "streaming-hub.fullname" . -}}
 {{- end -}}

@@ -220,7 +220,11 @@ spec:
       {{- if $licenseSecret }}
         - name: license-file
           secret:
-            secretName: {{ $licenseSecret }}
+            secretName: {{ $licenseSecret | quote }}
+            defaultMode: 0444
+            items:
+              - key: license
+                path: license
       {{- end }}
       {{- end }}
       {{- /* Scheduling: a component's nodeSelector / affinity / tolerations replace

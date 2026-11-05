@@ -1,5 +1,30 @@
 # Plugin-access-manager Changelog
 
+## [11.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.0.0)
+
+Features:
+- Move Caradhras to `2.1.0` with its own key, requiring a Caradhras license key. (@fredcamaral)
+
+Fixes:
+- Refuse a Caradhras server and migrations major mismatch. (@fredcamaral)
+- Default the migrations tag to the server tag. (@fredcamaral)
+- Anchor the Caradhras license gate on plain semver. (@fredcamaral)
+- Default the Caradhras image to `2.1.0`. (@fredcamaral)
+- Keep chart version off pod template labels. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart docs and upgrade guides. (@bedatty, @gandalf-at-lerian)
+- Make managed-cloud README example render and boot. (@gandalf-at-lerian)
+- Clarify Caradhras ingress class and TLS secret comments. (@gandalf-at-lerian)
+- Publish Caradhras ingress in managed-cloud README example. (@gandalf-at-lerian)
+- Note Caradhras `2.x` tags and `LICENSE_KEY` in `10.3` guide. (@gandalf-at-lerian)
+- Add the verified `10.5.1` upgrade guide. (@fredcamaral)
+- Remove repeated release sections from the changelogs. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v10.5.1...plugin-access-manager-v11.0.0)
+
+---
+
 ## [10.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v10.5.1)
 
 Fixes:
@@ -1092,3 +1117,4 @@ This changelog highlights the key feature introduced in this release, focusing o
 ### Bug Fixes
 
 * generate multiples CHANGELOG's ([3f60787](https://github.com/LerianStudio/helm/commit/3f607875b618db474e4055c44a2cffd8216f4261))
+

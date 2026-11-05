@@ -1,5 +1,20 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.1.1)
+
+Features:
+
+- Wrap the upgrade guides in raw blocks for liquid to improve documentation clarity. (@bedatty)
+
+Fixes:
+
+- Bump the worker image tags to `1.11.1` to ensure compatibility and stability. (@bedatty)
+- Update `plugin-br-pix-indirect-btg` to `1.11.1` to address various issues and improve functionality. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.1.0...plugin-br-pix-indirect-btg-v5.1.1)
+
+---
+
 ## [5.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.0.0)
 
 Fixes:

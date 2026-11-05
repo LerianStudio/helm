@@ -617,7 +617,7 @@ class StartupContract(unittest.TestCase):
             self.assertIn(mount, c['volumeMounts'])
             self.assertIn({'name': 'LICENSE_FILE_PATH', 'value': '/etc/lerian/license/license'}, c['env'])
             self.assertNotIn('LICENSE_KEY', [e['name'] for e in c['env']])
-        self.assertIn({'name': 'license-file', 'secret': {'secretName': 'lic'}}, spec['volumes'])
+        self.assertIn({'name': 'license-file', 'secret': {'secretName': 'lic', 'items': [{'key': 'license', 'path': 'license'}]}}, spec['volumes'])
 
     def test_licence_file_null_keeps_key_mode(self):
         docs = self.succeeds({'caradhras': {'licenseFile': None}})

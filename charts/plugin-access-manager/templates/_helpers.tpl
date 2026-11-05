@@ -1037,5 +1037,8 @@ licenseFile.existingSecret is mounted as a directory (never subPath) at /etc/ler
 - name: license-file
   secret:
     secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
 {{- end }}
 {{- end -}}

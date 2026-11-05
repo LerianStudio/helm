@@ -50,6 +50,9 @@ SERVER_ADDRESS: {{ (hasKey $cm "SERVER_ADDRESS" | ternary (index $cm "SERVER_ADD
 {{- end }}
 # --- License (LICENSE_KEY lives in the Secret) ---------------------------------
 {{- include $kv (dict "cm" $cm "p" $s.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "d" "global") }}
+{{- if include "plugin-br-sisbajud.licenseSecret" $ }}
+LICENSE_FILE_PATH: "/etc/lerian/license/license"
+{{- end }}
 # --- Executor: Sisbajud Mensageria (TLS; mTLS behind MENSAGERIA_MTLS_ENABLED) ------
 {{- include $kv (dict "cm" $cm "p" $s.mensageria "f" "baseUrl" "k" "MENSAGERIA_BASE_URL" "d" "") }}
 {{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml }}

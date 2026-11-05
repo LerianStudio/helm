@@ -354,3 +354,39 @@ cannot judge it at render time.
 {{- define "plugin-br-sisbajud.isAvpPlaceholder" -}}
 {{- if hasPrefix "<path:" (trim (toString .)) -}}true{{- end -}}
 {{- end -}}
+
+{{/*
+Optional signed licence file: the Secret is mounted as a DIRECTORY at
+/etc/lerian/license (never subPath, so rotations propagate).
+*/}}
+{{- define "plugin-br-sisbajud.licenseSecret" -}}
+{{- ((.Values.sisbajud.licenseFile | default dict).existingSecret | default "") -}}
+{{- end -}}
+
+{{/*
+LICENSE_KEY as the app receives it from values (secrets, else extraEnvVars). The
+PreSync migrator cannot read the app Secret yet, so the hook Secret copies it.
+*/}}
+{{- define "plugin-br-sisbajud.licenseKeyValue" -}}
+{{- (($.Values.sisbajud.secrets | default dict).LICENSE_KEY | default (get ($.Values.sisbajud.extraEnvVars | default dict) "LICENSE_KEY") | default "" | toString) -}}
+{{- end -}}
+
+{{- define "plugin-br-sisbajud.licenseHookName" -}}
+{{- printf "%s-license-hook" (include "plugin-br-sisbajud.fullname" . | trunc 49 | trimSuffix "-") -}}
+{{- end -}}
+
+{{- define "plugin-br-sisbajud.licenseFileMount" -}}
+{{- if include "plugin-br-sisbajud.licenseSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-br-sisbajud.licenseFileVolume" -}}
+{{- with include "plugin-br-sisbajud.licenseSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+{{- end }}
+{{- end -}}

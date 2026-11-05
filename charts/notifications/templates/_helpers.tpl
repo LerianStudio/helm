@@ -180,5 +180,8 @@ volumes:
   - name: license-file
     secret:
       secretName: {{ . | quote }}
+      items:
+        - key: license
+          path: license
 {{- end }}
 {{- end }}

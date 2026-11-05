@@ -90,7 +90,7 @@ helm install notifications ./charts/notifications \
 | `config.REDIS_HOST`                | External Redis host                              |
 | `config.RABBITMQ_HOST`             | External RabbitMQ host                           |
 | `secrets.LICENSE_KEY`              | Required: render fails without it (unless `secretRef.name` or `licenseFile.existingSecret` is set) |
-| `licenseFile.existingSecret`       | Optional Secret with a signed licence file, mounted as a directory on the api and workers; sets `LICENSE_FILE_PATH` to `/etc/lerian/license/license`; file mode needs an image on lib-license-go v5 |
+| `licenseFile.existingSecret`       | Optional Secret with a signed licence file under the `license` key, mounted as a directory on the api and workers; sets `LICENSE_FILE_PATH` to `/etc/lerian/license/license`; file mode needs an image on lib-license-go v5 |
 | `secrets.POSTGRES_PASSWORD`        | Required by the app when `ENV_NAME=production`   |
 | `secrets.DATABASE_URL`             | Required by the migrations Job (pre-built DSN)   |
 | `secrets.NOTIFICATION_ENCRYPTION_KEY` | Required: app will not boot without it (base64, 32 bytes) |

@@ -39,7 +39,7 @@ tests:
           content: {name: license-file, mountPath: /etc/lerian/license, readOnly: true}
       - contains:
           path: spec.template.spec.volumes
-          content: {name: license-file, secret: {secretName: lic}}
+          content: {name: license-file, secret: {secretName: lic, items: [{key: license, path: license}]}}
   - it: exposes LICENSE_FILE_PATH in the ConfigMap
     set: {app.licenseFile.existingSecret: lic}
     template: templates/configmap.yaml

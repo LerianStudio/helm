@@ -692,6 +692,7 @@ dictHubVsync:
   #    templates/dict-hub-vsync/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
   #    through too. Credentials are NOT configmap -- see `secrets` below.
+  #    VSYNC_GATE_TTL_SEC has no chart default: unset, VSync uses its own 57600.
   configmap: {}
   # -- Credentials (never rendered in the ConfigMap). Provide via a
   #    protected values source or useExistingSecret. DATABASE_URL is a

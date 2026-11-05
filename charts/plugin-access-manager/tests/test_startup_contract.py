@@ -14,7 +14,7 @@ CHART = Path(__file__).resolve().parents[1]
 BASE = {
     'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'},
              'initUser': {'enabled': False}},
-    'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'}},
+    'identity': {'secrets': {'LICENSE_KEY': 'render-only'}},
     'caradhras': {'secrets': {'LICENSE_KEY': 'render-only'}},
 }
 PRE_LICENSE = {'image': {'tag': '1.8.6'}}

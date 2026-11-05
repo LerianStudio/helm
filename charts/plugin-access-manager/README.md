@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `identity.secrets.LICENSE_KEY` and `auth.secrets.LICENSE_KEY` (auth and identity refuse to boot with an empty key), `caradhras.secrets.LICENSE_KEY`, `caradhras.useExistingSecret` or `caradhras.licenseFile.existingSecret` (a Secret holding a signed licence file under the key `license`, mounted as a read-only directory at `/etc/lerian/license` on the server and its `migrate` init container; needs an image on lib-license-go v5; Caradhras needs its own key, issued for the `caradhras` product; the chart fails to render without it unless `caradhras.image.tag` is a semver tag below 2.0.0; 2.0.0 prereleases need the key), `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` when `auth.initUser.enabled` uses a generated Secret (or select an external Secret with `auth.initUser.useExistingSecret=true` and `auth.initUser.adminPasswordSecretName`). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
+- Required secrets: `identity.secrets.LICENSE_KEY` and `auth.secrets.LICENSE_KEY` (auth and identity refuse to boot with an empty key), `caradhras.secrets.LICENSE_KEY`, `caradhras.useExistingSecret` or `caradhras.licenseFile.existingSecret` (a Secret holding a signed licence file under the key `license`, mounted as a read-only directory at `/etc/lerian/license` on the server and its `migrate` init container; needs an image on lib-license-go v5; Caradhras needs its own key, issued for the `caradhras` product; the chart fails to render without it unless `caradhras.image.tag` is a semver tag below 2.0.0; 2.0.0 prereleases need the key), and `auth.initUser.adminPassword` when `auth.initUser.enabled` uses a generated Secret (or select an external Secret with `auth.initUser.useExistingSecret=true` and `auth.initUser.adminPasswordSecretName`). app-lerian's client secret is `auth.secrets.AUTHORIZER_CLIENT_SECRET` when set, else the value already kept in the cluster, else a generated one (kept across upgrades and reinstalls; needs Caradhras >= 2.4.0-beta.4); `auth.useExistingSecret` reads it from the key `AUTHORIZER_CLIENT_SECRET` of that Secret. `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - External bootstrap Secret: needed only for an organization Caradhras has never initialized; create it before identity starts (changes or late creation require an identity rollout restart). An initialized organization needs no password.
@@ -133,15 +133,15 @@ caradhras:
 # instances' credentials explicitly (or set auth.useExistingSecret and
 # identity.useExistingSecret to true and point auth.existingSecretName and
 # identity.existingSecretName at pre-created Secrets with the same keys).
-# LICENSE_KEY and AUTHORIZER_CLIENT_SECRET are required for auth and identity:
-# the render fails without AUTHORIZER_CLIENT_SECRET, and both refuse to boot
-# with an empty LICENSE_KEY. Caradhras 2.x needs its own LICENSE_KEY (above).
+# LICENSE_KEY is required for auth and identity: both refuse to boot with an empty
+# one. Caradhras 2.x needs its own LICENSE_KEY (above). app-lerian's client secret
+# is generated and kept per install; a renderer without cluster access sets
+# auth.secrets.AUTHORIZER_CLIENT_SECRET (or auth.useExistingSecret) instead.
 auth:
   configmap:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"
   secrets:
     LICENSE_KEY: "CHANGE_ME"
-    AUTHORIZER_CLIENT_SECRET: "CHANGE_ME"
     DB_PASSWORD: "CHANGE_ME"
     REDIS_PASSWORD: "CHANGE_ME"
 identity:
@@ -149,7 +149,6 @@ identity:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"
   secrets:
     LICENSE_KEY: "CHANGE_ME"
-    AUTHORIZER_CLIENT_SECRET: "CHANGE_ME"
     REDIS_PASSWORD: "CHANGE_ME"
 ```
 

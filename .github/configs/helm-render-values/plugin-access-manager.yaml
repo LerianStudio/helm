@@ -1,6 +1,5 @@
 identity:
   secrets:
-    AUTHORIZER_CLIENT_SECRET: "sample"
     LICENSE_KEY: "sample"
 auth:
   secrets:

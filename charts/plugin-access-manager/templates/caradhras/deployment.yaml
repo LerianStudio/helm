@@ -200,6 +200,7 @@ spec:
           {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
           {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}
           {{- end }}
+          {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "appLerianClientSecret") | nindent 10 }}
           {{- if include "plugin-caradhras.builtInAdminPasswordEnabled" . }}
           {{- include "plugin-caradhras.builtInAdminPasswordEnv" . | nindent 10 }}
           {{- end }}

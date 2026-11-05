@@ -620,6 +620,42 @@ creates carries this key.
 {{- end }}
 
 {{/*
+plugin-access-manager.appClientSecretName — the Secret holding app-lerian's client
+secret (key AUTHORIZER_CLIENT_SECRET): the operator's auth Secret, else the one this chart keeps.
+*/}}
+{{- define "plugin-access-manager.appClientSecretName" -}}
+{{- if .Values.auth.useExistingSecret -}}
+{{- .Values.auth.existingSecretName -}}
+{{- else -}}
+{{- include "plugin-auth.fullname" . }}-app-client-secret
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.appClientSecretEnv — AUTHORIZER_CLIENT_SECRET (or another
+env name) by secretKeyRef on that one source.
+*/}}
+{{- define "plugin-access-manager.appClientSecretEnv" -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "plugin-access-manager.appClientSecretName" .context }}
+      key: AUTHORIZER_CLIENT_SECRET
+{{- end }}
+
+{{/*
+plugin-access-manager.appClientSecretGate — a generated secret is seeded only by
+Caradhras >= 2.4.0-beta.4; an older image seeds its own literal and
+introspection would silently fail against the generated value.
+*/}}
+{{- define "plugin-access-manager.appClientSecretGate" -}}
+{{- $tag := regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "" -}}
+{{- if and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (not (semverCompare ">=2.4.0-beta.4" $tag)) -}}
+{{- fail (printf "\n\nERROR: no app-lerian client secret is set and the Caradhras image tag %q cannot seed a generated one.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET, use auth.useExistingSecret, or use Caradhras >= 2.4.0-beta.4.\n" $tag) -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 plugin-access-manager.ssoCallbackPath — the console route the identity provider
 sends the browser back to. This path is OUR contract, not the operator's: it is
 the Next.js route src/app/(auth-routes)/signin/sso/callback in product-console.

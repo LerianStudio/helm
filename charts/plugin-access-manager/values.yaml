@@ -264,7 +264,6 @@ identity:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/identity/secrets.yaml
   secrets:
-    AUTHORIZER_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
     # -- Consul ACL token for service discovery (empty = no ACL)
@@ -428,6 +427,9 @@ auth:
     # the bundled subchart. Only set this for an EXTERNAL database (auth-database.external=true)
     # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
     DB_PASSWORD: ""
+    # -- Optional app-lerian client secret. Empty: the chart keeps a generated one per install (or the
+    # value already in the cluster). A renderer without cluster access (no lookup) must set it, or use
+    # auth.useExistingSecret with AUTHORIZER_CLIENT_SECRET in that Secret.
     AUTHORIZER_CLIENT_SECRET: ""
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""

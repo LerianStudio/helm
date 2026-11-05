@@ -49,6 +49,9 @@ spec:
               name: {{ include "plugin-identity.fullname" . }}
           env:
             {{- toYaml $h.env | nindent 12 }}
+            {{- if not .Values.identity.useExistingSecret }}
+            {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "AUTHORIZER_CLIENT_SECRET") | nindent 12 }}
+            {{- end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
             - name: "HOST_IP"
               valueFrom:

@@ -10,7 +10,6 @@ release:
   name: pam
   namespace: pam
 set:
-  identity.secrets.AUTHORIZER_CLIENT_SECRET: x
   identity.secrets.LICENSE_KEY: x
   auth.secrets.AUTHORIZER_CLIENT_SECRET: x
   auth.secrets.LICENSE_KEY: x

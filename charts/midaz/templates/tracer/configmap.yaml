@@ -34,7 +34,7 @@ data:
   {{- if hasKey $cm "API_KEY_ENABLED_ONLY_VALIDATION" }}
   # Read only by tracer images before 4.5.0-beta.180; later images ignore it and log a warning.
   # Rendered only when set, so the default leaves it out on every image.
-  API_KEY_ENABLED_ONLY_VALIDATION: {{ $cm.API_KEY_ENABLED_ONLY_VALIDATION | quote }}
+  API_KEY_ENABLED_ONLY_VALIDATION: {{ $cm.API_KEY_ENABLED_ONLY_VALIDATION | default "false" | quote }}
   {{- end }}
 
   # CORS

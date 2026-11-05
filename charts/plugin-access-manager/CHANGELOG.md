@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [11.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.1.1)
+
+Fixes:
+- Quote the Caradhras database password in its DSN to ensure proper handling of special characters. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.1.0...plugin-access-manager-v11.1.1)
+
+---
+
 ## [11.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.1.0)
 
 Features:

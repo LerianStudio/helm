@@ -34,7 +34,7 @@ tests:
           content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
       - contains:
           path: spec.template.spec.volumes
-          content: {name: license-file, secret: {secretName: lic}}
+          content: {name: license-file, secret: {secretName: lic, items: [{key: license, path: license}]}}
   - it: renders key mode with no licence volume when licenseFile is null (--reuse-values shape)
     template: templates/schedule/deployment.yaml
     set: {licenseFile: null, pix.secrets.LICENSE_KEY: k}

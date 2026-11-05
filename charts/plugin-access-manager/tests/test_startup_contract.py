@@ -11,12 +11,13 @@ import unittest
 import yaml
 
 CHART = Path(__file__).resolve().parents[1]
-CARADHRAS_2_1 = {'image': {'tag': '2.1.0'}, 'migrations': {'image': {'tag': '2.1.0'}}}
 BASE = {
     'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'},
              'initUser': {'enabled': False}},
     'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'}},
+    'caradhras': {'secrets': {'LICENSE_KEY': 'render-only'}},
 }
+PRE_LICENSE = {'image': {'tag': '1.8.6'}}
 
 
 class UniqueLoader(yaml.SafeLoader):
@@ -100,6 +101,34 @@ class StartupContract(unittest.TestCase):
         for d in docs:
             if d['kind'] == 'HorizontalPodAutoscaler':
                 self.assertGreaterEqual(d['spec']['minReplicas'], 1)
+
+    def test_migrations_tag_follows_the_server_tag(self):
+        def migrate_image(caradhras):
+            d = next(d for d in self.succeeds({'caradhras': caradhras}) if d['kind'] == 'Deployment'
+                     and d['metadata']['name'].endswith('-caradhras'))
+            return next(c for c in d['spec']['template']['spec']['initContainers']
+                        if c['name'] == 'migrate')['image'].rsplit(':', 1)[1]
+        digest = '@sha256:' + 'a' * 64
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        self.assertEqual(migrate_image({}), '2.1.0')
+        self.assertEqual(migrate_image({**no_key, 'image': {'tag': '1.8.6'}}), '1.8.6')
+        self.assertEqual(migrate_image({'image': {'tag': '2.1.0' + digest}}), '2.1.0')
+        self.assertEqual(migrate_image({**no_key, **PRE_LICENSE,
+                                        'migrations': {'image': {'tag': '1.8.5'}}}), '1.8.5')
+        legacy = {'auth': {'backend': {'migrations': {'image': {'tag': '2.0.1'}}}}}
+        d = next(d for d in self.succeeds({'caradhras': {}, **legacy}) if d['kind'] == 'Deployment'
+                 and d['metadata']['name'].endswith('-caradhras'))
+        self.assertTrue(next(c for c in d['spec']['template']['spec']['initContainers']
+                             if c['name'] == 'migrate')['image'].endswith(':2.0.1'))
+
+    def test_caradhras_server_and_migrations_majors_must_match(self):
+        mig = lambda t: {'migrations': {'image': {'tag': t}}}
+        self.fails({'caradhras': mig('1.8.6')}, 'different major versions')
+        self.fails({'auth': {'backend': {'migrations': {'image': {'tag': '1.8.6'}}}}}, 'different major versions')
+        self.fails({'caradhras': {'image': {'tag': '1.8.6'}, **mig('2.1.0')}}, 'different major versions')
+        self.succeeds({'caradhras': {'image': {'tag': '1.8.6'}, **mig('1.8.5')}})
+        self.succeeds({'caradhras': mig('2.1.1')})
+        self.succeeds({'caradhras': {'image': {'tag': 'latest'}, **mig('1.8.6')}})
 
     def test_probes_use_the_health_port_and_caradhras_drains(self):
         docs = self.succeeds({'caradhras': {'ui': {'enabled': True}}})
@@ -413,8 +442,7 @@ class StartupContract(unittest.TestCase):
             on = {'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
                 'enabled': True, 'secretName': 'operator-admin'}}}
             self.fails(on, 'pin a Caradhras tag >= 1.9.0-beta.25')
-        self.fails({'caradhras': {'builtInAdminPassword': {'enabled': True, 'secretName': 'x'}}},
-                   'pin a Caradhras tag >= 1.9.0-beta.25')
+        self.succeeds({'caradhras': {'builtInAdminPassword': {'enabled': True, 'secretName': 'x'}}})
         for tag in ('1.9.0-beta.25', '1.9.0-rc.1', '2.0.0'):
             self.succeeds({'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
                 'enabled': True, 'secretName': 'operator-admin'}}})
@@ -424,6 +452,23 @@ class StartupContract(unittest.TestCase):
             self.fails({c: {'secrets': {'LICENSE_KEY': ''}}}, f'{c}.secrets.LICENSE_KEY is required')
             self.succeeds({c: {'secrets': {'LICENSE_KEY': ''}, 'useExistingSecret': True,
                                'existingSecretName': 'x'}})
+
+    def test_caradhras_license_key_required(self):
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        self.fails({'caradhras': no_key}, 'caradhras.secrets.LICENSE_KEY')
+        self.succeeds({'caradhras': {'secrets': {'LICENSE_KEY': 'k'}}})
+        self.succeeds({'caradhras': {**no_key, **PRE_LICENSE}})
+        self.fails({'caradhras': {**no_key, 'image': {'tag': '2.0.0-beta.1'}}}, 'caradhras.secrets.LICENSE_KEY')
+
+    def test_caradhras_license_key_with_digest_pinned_tags(self):
+        digest = '@sha256:' + 'a' * 64
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        pin = lambda t: {'image': {'tag': t}}
+        self.succeeds({'caradhras': {'secrets': {'LICENSE_KEY': 'k'}, **pin('2.1.0' + digest)}})
+        self.succeeds({'caradhras': {**no_key, **pin('1.8.6' + digest)}})
+        self.fails({'caradhras': {**no_key, **pin('2.1.0' + digest)}}, 'caradhras.secrets.LICENSE_KEY')
+        self.succeeds({'caradhras': {**no_key, **pin('2.1.0' + digest),
+                                     'useExistingSecret': True, 'existingSecretName': 'x'}})
 
     def test_ingress_falls_back_to_global(self):
         glob = {'global': {'ingress': {'className': 'nginx', 'domain': 'example.test',
@@ -450,7 +495,7 @@ class StartupContract(unittest.TestCase):
         self.assertEqual(by_name['health'], 8099)
 
     def identity_env(self, init_user):
-        docs = self.succeeds({'auth': {'initUser': init_user}, 'caradhras': CARADHRAS_2_1})
+        docs = self.succeeds({'auth': {'initUser': init_user}})
         deployment = next(d for d in docs if d['kind'] == 'Deployment'
                           and d['metadata']['name'].endswith('identity'))
         env = deployment['spec']['template']['spec']['containers'][0].get('env', [])
@@ -520,7 +565,7 @@ class StartupContract(unittest.TestCase):
         disabled, _ = self.identity_env({'enabled': False, 'useExistingSecret': True,
                                          'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})
         self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == 'mine' for d in disabled))
-        self.fails({'auth': {'initUser': {'enabled': True, 'useExistingSecret': True}}, 'caradhras': CARADHRAS_2_1},
+        self.fails({'auth': {'initUser': {'enabled': True, 'useExistingSecret': True}}},
                    'adminPasswordSecretName must be specified')
 
     def test_init_user_needs_the_ensure_first_admin_contract(self):
@@ -627,12 +672,12 @@ class StartupContract(unittest.TestCase):
         self.assertEqual(configmap['data']['redisEndpoint'], 'valkey:6379')
 
     def test_caradhras_without_license_key_renders_no_env(self):
-        env, secret = self.caradhras_license()
+        env, secret = self.caradhras_license({'LICENSE_KEY': ''}, **PRE_LICENSE)
         self.assertIsNone(env)
         self.assertIsNone(secret)
 
     def test_caradhras_redis_endpoint_only_secret_has_no_license_key(self):
-        env, secret = self.caradhras_license({'redisEndpoint': 'valkey:6379,100,pw'})
+        env, secret = self.caradhras_license({'LICENSE_KEY': '', 'redisEndpoint': 'valkey:6379,100,pw'}, **PRE_LICENSE)
         self.assertIsNone(env)
         self.assertEqual(list(secret['data']), ['redisEndpoint'])
 

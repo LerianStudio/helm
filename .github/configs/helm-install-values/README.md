@@ -53,6 +53,10 @@ one key per app, production gateway), listed in the install step's env of
 reaches the gateway and is refused, so the chart keeps its allow-list line until a
 run with its key reaches Ready.
 
+A chart that bundles a second licensed product takes a second placeholder, e.g.
+`"IT_LICENSE_KEY_CARADHRAS"` in `plugin-access-manager`, filled from the repository
+secret `HELM_CI_LICENSE_KEY_CARADHRAS` (one key issued for that product).
+
 ## What does not
 
 Do not use these files to paper over a chart defect. If a chart cannot install

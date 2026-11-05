@@ -3,11 +3,12 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `identity.secrets.LICENSE_KEY` and `auth.secrets.LICENSE_KEY` (auth and identity refuse to boot with an empty key), `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` when `auth.initUser.enabled` uses a generated Secret (or select an external Secret with `auth.initUser.useExistingSecret=true` and `auth.initUser.adminPasswordSecretName`). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
+- Required secrets: `identity.secrets.LICENSE_KEY` and `auth.secrets.LICENSE_KEY` (auth and identity refuse to boot with an empty key), `caradhras.secrets.LICENSE_KEY` or `caradhras.useExistingSecret` (Caradhras needs its own key, issued for the `caradhras` product; the chart fails to render without it unless `caradhras.image.tag` is a semver tag below 2.0.0; 2.0.0 prereleases need the key), `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` when `auth.initUser.enabled` uses a generated Secret (or select an external Secret with `auth.initUser.useExistingSecret=true` and `auth.initUser.adminPasswordSecretName`). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - External bootstrap Secret: needed only for an organization Caradhras has never initialized; create it before identity starts (changes or late creation require an identity rollout restart). An initialized organization needs no password.
 - Initial admin: with `auth.initUser.enabled` in single-tenant mode, identity >= 3.17.0 calls Caradhras >= 2.1.0 `ensure-first-admin`. Caradhras creates the first Console admin (`admin`, in `admin-group`) only for an organization never initialized: one that did not exist when migration 000029 ran and never had a non-internal user. Deleting every user never re-seeds it. The render refuses `auth.initUser.enabled` with older tags. One upgrade can roll all three: identity keeps retrying, unready, until Caradhras 2.1.0 answers. Caradhras must trust the application behind identity's `AUTHORIZER_CLIENT_ID` (a `trustedServiceApplications` entry `admin/<app>:<organization>`); the default `app-lerian` client is trusted. For another client, set `caradhras.extraEnvVars.trustedServiceApplications` to the full comma-separated list: it replaces the image default `admin/app-lerian:lerian,admin/app-built-in:built-in`, so keep those entries. Without the entry, identity gets 403 and stays unready. The former `caradhras-user-init` post-install Job and its image, timeout and resource keys are gone; leftover keys are ignored. The `-init-user` Secret is no longer a hook, so it stays after install. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow.
+- Caradhras 2.x: moving to Caradhras 2.x is one-way. Its migrations move the database forward, and a 1.8.x Caradhras pod then refuses to start. Back up the Caradhras database before the upgrade: restoring that backup is the only way back to 1.x.
 - Legacy upgrade: if a failed legacy install left its generated bootstrap Secret behind, inspect the namespace, release, Secret name and `helm.sh/hook` metadata to confirm it is that obsolete hook resource. Remove only that generated bootstrap Secret before upgrading, and provide the intended password or external Secret selection. Never remove an external Secret, database Secret or account data for this step.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
@@ -112,6 +113,8 @@ valkey:
 # with a public-CA certificate and point both AUTHORIZER_ADDRESS at that URL
 # (see "Production: reach Caradhras over HTTPS" below):
 caradhras:
+  secrets:
+    LICENSE_KEY: "CHANGE_ME"
   ingress:
     enabled: true
     className: "nginx"            # use an internal-only class: this exposes the Caradhras admin panel and API
@@ -130,9 +133,9 @@ caradhras:
 # instances' credentials explicitly (or set auth.useExistingSecret and
 # identity.useExistingSecret to true and point auth.existingSecretName and
 # identity.existingSecretName at pre-created Secrets with the same keys).
-# LICENSE_KEY and AUTHORIZER_CLIENT_SECRET are required for both components:
-# the render fails without AUTHORIZER_CLIENT_SECRET, and auth and identity
-# refuse to boot with an empty LICENSE_KEY.
+# LICENSE_KEY and AUTHORIZER_CLIENT_SECRET are required for auth and identity:
+# the render fails without AUTHORIZER_CLIENT_SECRET, and both refuse to boot
+# with an empty LICENSE_KEY. Caradhras 2.x needs its own LICENSE_KEY (above).
 auth:
   configmap:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"
@@ -540,14 +543,14 @@ probe `timeoutSeconds` (see `docs/UPGRADE-8.6-to-9.2.md`).
 | `caradhras.replicaCount` | Number of replicas | `1` |
 | `caradhras.name` | Name of the caradhras component | `<release>-caradhras` |
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
-| `caradhras.image.tag` | Image tag used for deployment | `1.8.6` |
+| `caradhras.image.tag` | Image tag used for deployment | `2.1.0` |
 | `caradhras.service.port` | Service port | `8000` |
 | `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). `nodeSelector` / `affinity` / `tolerations` for caradhras still come from `auth.*` | `{}` |
 | `caradhras.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
-| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions. `auth.initUser` needs both Caradhras tags >= 2.1.0 (the default 1.8.6 is refused) | `1.8.6` |
+| `caradhras.migrations.image.tag` | Image tag; defaults to the server tag (`caradhras.image.tag`). `auth.initUser` needs both Caradhras tags >= 2.1.0 | `2.1.0` |
 | `caradhras.migrations.skipRBACChain` | Render `MIGRATIONS_SKIP_RBAC_CHAIN=true` on the migrate init container and on the caradhras container: the migrate applies the schema chain and skips the `migrations-rbac` chain (Lerian product permissions/roles/groups under owner `lerian`), and the caradhras boot schema check skips the same chain. For installs whose permissions arrive only via RI manifests. Needs caradhras and caradhras-migrations images that understand the variable; `false` renders nothing | `false` |
 | `caradhras.migrations.extraEnvVars` | Extra `NAME: value` env vars for the migrate init container only, rendered as name/value pairs. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused; names must be valid env var names (`[-._a-zA-Z][-._a-zA-Z0-9]*`); not for secrets | `{}` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
@@ -559,13 +562,13 @@ probe `timeoutSeconds` (see `docs/UPGRADE-8.6-to-9.2.md`).
 | `caradhras.ui.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | unset (`[]`) |
 | `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |
 | `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
-| `caradhras.secrets.LICENSE_KEY` | Caradhras license key (env `LICENSE_KEY`, by Secret). Required by images with the license gate, which refuse to boot without it. Issued for product `caradhras`, not the auth/identity key | `""` |
+| `caradhras.secrets.LICENSE_KEY` | Caradhras license key (env `LICENSE_KEY`, by Secret). Required: the chart fails to render without it (or `caradhras.useExistingSecret`) unless `caradhras.image.tag` is a semver tag below 2.0.0 (2.0.0 prereleases need the key). Issued for product `caradhras`, not the auth/identity key | `""` |
 | `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
 | `caradhras.existingSecretName` | Name of that Secret. Carries `LICENSE_KEY`, plus `redisEndpoint` unless `caradhras.configmap.redisEndpoint` is set | `""` |
 | `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
-| `caradhras.builtInAdminPassword.enabled` | Inject the `built-in/admin` password as the `builtInAdminPassword` config key, by `secretKeyRef`. Read only when the built-in organization is first created (fresh database); it never changes an existing admin. Unset, a new admin gets the public default `123` and Caradhras warns every hour; over 72 bytes fails the boot before seeding. Needs Caradhras >= 1.9.0-beta.25: the render fails unless `caradhras.image.tag` is a semver tag >= 1.9.0-beta.25 (the default 1.8.6 ignores the key) | `false` |
+| `caradhras.builtInAdminPassword.enabled` | Inject the `built-in/admin` password as the `builtInAdminPassword` config key, by `secretKeyRef`. Read only when the built-in organization is first created (fresh database); it never changes an existing admin. Unset, a new admin gets the public default `123` and Caradhras warns every hour; over 72 bytes fails the boot before seeding. Needs Caradhras >= 1.9.0-beta.25: the render fails unless `caradhras.image.tag` is a semver tag >= 1.9.0-beta.25 | `false` |
 | `caradhras.builtInAdminPassword.secretName` | Secret holding that password. Required when enabled | `""` |
 | `caradhras.builtInAdminPassword.secretKey` | Key inside that Secret | `builtInAdminPassword` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |

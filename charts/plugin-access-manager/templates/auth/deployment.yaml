@@ -21,7 +21,7 @@ spec:
         checksum/secret: {{ include (print $.Template.BasePath "/auth/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/auth/configmap.yaml") . | sha256sum }}
       labels:
-        {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 8 }}
+        {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name "pod" true) | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.auth.imagePullSecrets }}

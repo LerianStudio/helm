@@ -124,7 +124,7 @@ jobs:
           python3 .github/scripts/changed-charts.py
 
       - name: Setup Helm
-        if: steps.scope.outputs.has-charts == 'true'
+        if: steps.scope.outputs.has-charts == 'true' || steps.scope.outputs.fixtures != ''
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
       # Both logins write to the runner's docker config, which the script turns into
@@ -147,24 +147,26 @@ jobs:
           username: lerianstudio
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # By convention: charts/<c>/tests/test_*.py run as scripts, charts/<c>/tests/*_test.yaml via helm-unittest.
+      # By convention: <dir>/tests/test_*.py run as scripts, <dir>/tests/*_test.yaml via helm-unittest,
+      # for each changed chart and for the fixture charts of a changed library.
       - name: Run chart tests
-        if: steps.scope.outputs.has-charts == 'true'
+        if: steps.scope.outputs.has-charts == 'true' || steps.scope.outputs.fixtures != ''
         shell: bash
         env:
           CHARTS: ${{ steps.scope.outputs.charts-list }}
+          FIXTURES: ${{ steps.scope.outputs.fixtures }}
         run: |
           set -euo pipefail
           shopt -s nullglob
-          for c in $CHARTS; do
-            py=(charts/"$c"/tests/test_*.py); suites=(charts/"$c"/tests/*_test.yaml)
+          for d in $(for c in $CHARTS; do echo "charts/$c"; done) $FIXTURES; do
+            py=("$d"/tests/test_*.py); suites=("$d"/tests/*_test.yaml)
             (( ${#py[@]} + ${#suites[@]} )) || continue
-            helm dependency update "charts/$c"
+            helm dependency update "$d"
             for t in "${py[@]}"; do python3 "$t"; done
             (( ${#suites[@]} )) || continue
             # helm-unittest v1.1.2, pinned by commit like the actions above.
             helm plugin list | grep -q '^unittest' || helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 33c48cac798e465deda9a66c8e6c07c0973cf53d --verify=false
-            helm unittest "charts/$c"
+            helm unittest "$d"
           done
 
       - name: Create kind cluster

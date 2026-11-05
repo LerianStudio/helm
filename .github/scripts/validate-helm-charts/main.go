@@ -1205,6 +1205,15 @@ func buildRenderRows(root string, chartSelection map[string]bool, sampleValuesDi
 			continue
 		}
 
+		if msg := healthPortExposureMessage(normalOut); msg != "" {
+			row.Status = "fail"
+			row.Class = "health-port-exposure"
+			row.Detail = appendDetail(row.Detail, "release "+chartName+": "+msg)
+			rows = append(rows, row)
+			_ = os.RemoveAll(tmpRoot)
+			continue
+		}
+
 		// H1: Bitnami release-name collapse. When the release name equals a
 		// bundled Bitnami subchart name (or alias), common.names.dependency.fullname
 		// collapses <release>-<subchart> to just <subchart>; any app helper that

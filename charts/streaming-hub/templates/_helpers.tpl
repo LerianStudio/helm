@@ -112,7 +112,7 @@ Input: root context (.).
 The existing-Secret path carries a KEY contract, not just a name: the
 Deployments pin STREAMING_HUB_POSTGRES_DSN,
 STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY and LICENSE_KEY via secretKeyRef
-(_deployment.tpl),
+(_deployment.tpl; LICENSE_KEY optional in licence-file mode),
 so the `required` message below states the full contract the external Secret
 must satisfy.
 */}}
@@ -224,6 +224,12 @@ Input: none. Caller: nindent 12.
 - name: postgres-ca
   mountPath: /etc/streaming-hub/postgres-ca
   readOnly: true
+{{- end -}}
+
+{{/* Optional signed licence file Secret ("" = key mode). Nil-safe so
+     --reuse-values over an old release cannot nil-pointer. */}}
+{{- define "streaming-hub.licenseFileSecret" -}}
+{{- ((.Values.streamingHub.licenseFile | default dict).existingSecret | default "") -}}
 {{- end -}}
 
 {{/*

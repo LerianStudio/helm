@@ -61,6 +61,11 @@ lib-license-go convention, so a `STREAMING_HUB_`-prefixed spelling reads empty.
 the effective value there too. It also refuses `extraEnvVars.LICENSE_KEY`,
 because that would put the license in plaintext on the Deployment spec.
 
+**Licence file (optional).** `streamingHub.licenseFile.existingSecret` names a Secret
+holding a signed licence file under the key `license`. It is mounted read-only as the
+directory `/etc/lerian/license` on every Deployment and `LICENSE_FILE_PATH` points at
+it; the `LICENSE_KEY` `secretKeyRef` then becomes `optional`. File mode needs an image on lib-license-go v5.
+
 > **Rollout order on the `useExistingSecret` path.** From this chart version on,
 > every Deployment pins `LICENSE_KEY` by name, whatever the image tag. Add the key
 > to the Vault/ExternalSecret source **before** you roll the chart out. That
@@ -392,6 +397,7 @@ and a stale value earns one WARN per boot.
 | `streamingHub.secrets` | (all `""`) | Shared sensitive env. DSN always emitted; other empty values skipped. |
 | `streamingHub.secrets.STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` | `""` | Dashboard cursor signing key, 32 bytes base64. Mandatory from `appVersion 2.x`; always emitted and pinned via `secretKeyRef`. |
 | `streamingHub.secrets.LICENSE_KEY` | `""` | Lerian license key (lib-license-go, GLOBAL mode). Mandatory in every environment on a license-gated image; always emitted and pinned via `secretKeyRef`. See [License](#license-lib-license-go-global-mode). |
+| `streamingHub.licenseFile.existingSecret` | `""` | Optional Secret with a signed licence file under the key `license`, mounted read-only as the directory `/etc/lerian/license`; sets `LICENSE_FILE_PATH`. Replaces `LICENSE_KEY`. File mode needs an image on lib-license-go v5. |
 | `streamingHub.configmap.ORGANIZATION_IDS` | `global` (template default) | License mode. Must be exactly `global`; any other value fails the render. |
 | `streamingHub.configmap.IS_DEVELOPMENT` | unset | Deprecated and ignored: accepted, never rendered. |
 | `streamingHub.secrets.STREAMING_HUB_REDIS_PASSWORD` | `""` | Rate-limiter Redis AUTH password. Emit-when-set; may stay empty. |

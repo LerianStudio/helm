@@ -1,5 +1,22 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.1.0)
+
+Features:
+- Add migrator license key and file mount. (@fredcamaral)
+
+Fixes:
+- Project only the license key in the license file volume. (@fredcamaral)
+
+Improvements:
+- Keep the `2.0` upgrade guide free of environment names. (@fredcamaral)
+- Add the `3.0.6` upgrade guide. (@fredcamaral)
+- Use the README namespace in the `3.0.6` guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.0.6...plugin-br-bank-transfer-v3.1.0)
+
+---
+
 ## [3.0.6](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.0.6)
 
 Fixes:
@@ -29,3 +46,4 @@ Improvements:
 - Correct chart documentation to align with templates and application code for better user guidance. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.0.4...plugin-br-bank-transfer-v3.0.5)
+

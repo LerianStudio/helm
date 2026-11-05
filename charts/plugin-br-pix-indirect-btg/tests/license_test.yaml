@@ -1,0 +1,46 @@
+suite: licence key or file
+templates:
+  - templates/pix/deployment.yaml
+  - templates/pix/configmap.yaml
+  - templates/pix/secrets.yaml
+  - templates/schedule/deployment.yaml
+  - templates/schedule/configmap.yaml
+  - templates/schedule/secrets.yaml
+set:
+  pix.configmap.BTG_BASE_URL: https://btg.example.test
+  pix.configmap.PIX_ISPB: "12345678"
+  pix.configmap.MIDAZ_ORGANIZATION_ID: org
+  pix.configmap.MIDAZ_LEDGER_ID: ledger
+  pix.secrets.BTG_CLIENT_ID: x
+  pix.secrets.BTG_CLIENT_SECRET: x
+  pix.secrets.INTERNAL_WEBHOOK_SECRET: "0123456789abcdef0123456789abcdef"
+  pix.secrets.MIDAZ_CLIENT_ID: x
+  pix.secrets.MIDAZ_CLIENT_SECRET: x
+tests:
+  - it: refuses to render with neither LICENSE_KEY nor a licence file
+    template: templates/pix/deployment.yaml
+    asserts:
+      - failedTemplate:
+          errorPattern: "pix.secrets.LICENSE_KEY is required unless licenseFile.existingSecret is set"
+  - it: mounts the licence Secret as a directory on a worker and sets LICENSE_FILE_PATH
+    template: templates/schedule/deployment.yaml
+    set: {licenseFile.existingSecret: lic}
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: license-file, mountPath: /etc/lerian/license, readOnly: true}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
+      - contains:
+          path: spec.template.spec.volumes
+          content: {name: license-file, secret: {secretName: lic}}
+  - it: renders key mode with no licence volume when licenseFile is null (--reuse-values shape)
+    template: templates/schedule/deployment.yaml
+    set: {licenseFile: null, pix.secrets.LICENSE_KEY: k}
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}

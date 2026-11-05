@@ -359,6 +359,41 @@ true
 {{- end -}}
 {{- end -}}
 
+{{/*
+Licence file (optional). licenseFile.existingSecret is mounted as a directory (never
+subPath, so rotations propagate) at /etc/lerian/license; LICENSE_FILE_PATH points at its key.
+Called with a component's values (.Values.ledger / .Values.tracer).
+*/}}
+{{- define "midaz.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{- define "midaz.licenseFileEnv" -}}
+{{- if include "midaz.licenseFileSecret" . -}}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end }}
+
+{{- define "midaz.licenseFileVolumeMount" -}}
+{{- if include "midaz.licenseFileSecret" . -}}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "midaz.licenseFileVolume" -}}
+{{- with include "midaz.licenseFileSecret" . -}}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end }}
+
 {{/* Both partition workloads use ledger connections and migration credentials. */}}
 {{- define "midaz-ledger.partitionPodSpec" -}}
 {{- $ctx := .context -}}
@@ -389,6 +424,18 @@ containers:
       - configMapRef:
           name: {{ include "midaz-ledger.fullname" $ctx }}
     env:
+      {{- with include "midaz.licenseFileEnv" $values.ledger }}
+      {{- . | nindent 6 }}
+      {{- end }}
+      {{- /* The reconcile hook runs before the chart Secret is updated: read the key from its hook Secret. */}}
+      {{- if and .licenseHook $values.ledger.secrets.LICENSE_KEY (not $values.ledger.useExistingSecret) }}
+      - name: LICENSE_KEY
+        valueFrom:
+          secretKeyRef:
+            name: {{ include "midaz-ledger.licenseHookSecretName" $ctx }}
+            key: LICENSE_KEY
+            optional: true
+      {{- end }}
       {{- /* Inline settings override stale ConfigMaps during pre-upgrade hooks. */}}
       {{- range $name, $value := include "midaz-ledger.partitionInlineEnv" $ctx | fromYaml }}
       - name: {{ $name }}
@@ -405,9 +452,24 @@ containers:
             name: {{ $secretName }}
             key: DB_TRANSACTION_PASSWORD
       {{- end }}
+      {{- else }}
+      {{- /* Multi-tenant: the licence store lives in Valkey, as for the ledger Deployment. */}}
+      {{- $vk := $values.valkey | default dict }}
+      {{- $vkAuth := $vk.auth | default dict }}
+      {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+      {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 6 }}
       {{- end }}
+      {{- end }}
+    {{- with include "midaz.licenseFileVolumeMount" $values.ledger }}
+    volumeMounts:
+      {{- . | nindent 6 }}
+    {{- end }}
     resources:
       {{- toYaml $partition.resources | nindent 6 }}
+{{- with include "midaz.licenseFileVolume" $values.ledger }}
+volumes:
+  {{- . | nindent 2 }}
+{{- end }}
 {{- with $values.ledger.nodeSelector }}
 nodeSelector:
   {{- toYaml . | nindent 2 }}
@@ -435,6 +497,10 @@ DB_TRANSACTION_USER: {{ include $dv (dict "context" . "dedicated" $dsl "configma
 DB_TRANSACTION_SSLMODE: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
 MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
 {{ include "lerian-common.multiTenant.env" (dict "context" . "configmap" $cm "enabled" $mtEnabled "serviceName" "ledger" "emitRedis" true "requiredUrl" true "requiredRedisHost" true) }}
+{{- end -}}
+
+{{- define "midaz-ledger.licenseHookSecretName" -}}
+{{- printf "%s-license-hook" (include "midaz-ledger.fullname" .) -}}
 {{- end -}}
 
 {{/* Include the image tag in the immutable reconcile Job name. */}}

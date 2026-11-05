@@ -1,5 +1,21 @@
 # Midaz Changelog
 
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.0)
+
+Features:
+- Add an optional license file mount for `lib-license-go` `v5`. (@fredcamaral)
+
+Improvements:
+- Scope the `10.3.3` pin notes per component. (@fredcamaral)
+- Add the verified `10.3.3` upgrade guide. (@fredcamaral)
+- Add the `10.3.4` upgrade guide. (@fredcamaral)
+- Name which migrations Jobs run in the `10.3.4` guide. (@fredcamaral)
+- Correct the `10.3.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.4...midaz-v10.4.0)
+
+---
+
 ## [10.3.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.4)
 
 Fixes:
@@ -1319,3 +1335,4 @@ In this release, the key focus is on improving documentation to help users bette
 ### Bug Fixes
 
 * generate multiples CHANGELOG's ([3f60787](https://github.com/LerianStudio/helm/commit/3f607875b618db474e4055c44a2cffd8216f4261))
+

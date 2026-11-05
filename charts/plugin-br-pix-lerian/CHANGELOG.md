@@ -1,5 +1,30 @@
 # Plugin-br-pix-lerian Changelog
 
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.1.0)
+
+Features:
+- Serve health on port `8099` and ship PIX `1.3.0`. (@fredcamaral)
+- Pin the health chart to PIX `1.3.0`. (@fredcamaral)
+- Put `dictHubVsync` on the go health stack. (@fredcamaral)
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Seed gate TTL only when set. (@fredcamaral)
+- Inherit gate TTL. (@fredcamaral)
+- Guard health inputs. (@fredcamaral)
+
+Improvements:
+- State the vsync TTL fallback in full. (@fredcamaral)
+- Indicate that vsync gate TTL has no chart default. (@fredcamaral)
+- Add the `2.0.5` upgrade guide. (@fredcamaral)
+- Document the `2.0.x` values cleanup and gate TTL fix. (@fredcamaral)
+- Align the health chart docs with the `1.3.0` floor. (@fredcamaral)
+- Say where the mock provider URL comes from in the `2.0.5` guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-lerian-v2.0.5...plugin-br-pix-lerian-v2.1.0)
+
+---
+
 ## [2.0.5](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-lerian-v2.0.5)
 
 Features:
@@ -152,3 +177,4 @@ Improvements:
 - Add render assertions and a CI fixture for pix-lerian. (@Leonardox7)
 
 [View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-pix-lerian-v1.0.0)
+

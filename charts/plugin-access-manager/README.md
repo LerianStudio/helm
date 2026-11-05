@@ -134,9 +134,7 @@ caradhras:
 # identity.useExistingSecret to true and point auth.existingSecretName and
 # identity.existingSecretName at pre-created Secrets with the same keys).
 # LICENSE_KEY is required for auth and identity: both refuse to boot with an empty
-# one. Caradhras 2.x needs its own LICENSE_KEY (above). app-lerian's client secret
-# is generated and kept per install; a renderer without cluster access sets
-# auth.secrets.AUTHORIZER_CLIENT_SECRET (or auth.useExistingSecret) instead.
+# one. Caradhras 2.x needs its own LICENSE_KEY (above).
 auth:
   configmap:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"
@@ -144,6 +142,9 @@ auth:
     LICENSE_KEY: "CHANGE_ME"
     DB_PASSWORD: "CHANGE_ME"
     REDIS_PASSWORD: "CHANGE_ME"
+    # Required for GitOps/ArgoCD/helm template. Leave empty only with helm install/upgrade
+    # on Caradhras at or above the floor (see Required secrets).
+    AUTHORIZER_CLIENT_SECRET: "CHANGE_ME"
 identity:
   configmap:
     AUTHORIZER_ADDRESS: "https://caradhras.example.com"

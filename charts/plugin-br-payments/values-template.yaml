@@ -91,7 +91,7 @@ app:
     # breaks line_fp correlation with older audit records (no _PREVIOUS key).
     # Generate with: openssl rand -hex 32
     CONSULT_AUDIT_HMAC_KEY: ""
-    LICENSE_KEY: ""
+    LICENSE_KEY: ""              # REQUIRED unless app.licenseFile.existingSecret (needs lib-license-go v5)
     # Outbound M2M credentials for the Midaz client
     PLUGIN_AUTH_CLIENT_ID: ""
     PLUGIN_AUTH_CLIENT_SECRET: ""

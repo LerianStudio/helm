@@ -264,8 +264,8 @@ plugin-br-payments README.
 {{- if not .Values.app.configmap.ORGANIZATION_IDS }}
 {{- fail "\n\nERROR: app.configmap.ORGANIZATION_IDS is REQUIRED.\n   Set \"global\" or the comma-separated organization UUIDs the license covers.\n" }}
 {{- end }}
-{{- if and $ownSecret (not .Values.app.secrets.LICENSE_KEY) }}
-{{- fail "\n\nERROR: app.secrets.LICENSE_KEY is REQUIRED.\n   The app refuses to boot without a license in every environment.\n" }}
+{{- if and $ownSecret (not .Values.app.secrets.LICENSE_KEY) (not (include "plugin-br-payments.licenseSecret" .)) }}
+{{- fail "\n\nERROR: app.secrets.LICENSE_KEY is REQUIRED unless app.licenseFile.existingSecret is set.\n   The app refuses to boot without a license in every environment.\n" }}
 {{- end }}
 
 {{/* PostgreSQL password is single-sourced from the postgresql subchart Secret
@@ -397,4 +397,27 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
+{{/* Optional signed licence file: the Secret is mounted as a DIRECTORY (never
+     subPath, so rotations propagate). Nil-safe for --reuse-values over old releases. */}}
+{{- define "plugin-br-payments.licenseSecret" -}}
+{{- (.Values.app.licenseFile | default dict).existingSecret | default "" -}}
+{{- end -}}
+
+{{- define "plugin-br-payments.licenseFileMount" -}}
+{{- with include "plugin-br-payments.licenseSecret" . }}
+volumeMounts:
+  - name: license-file
+    mountPath: /etc/lerian/license
+    readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-br-payments.licenseFileVolume" -}}
+{{- with include "plugin-br-payments.licenseSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+{{- end }}
 {{- end -}}

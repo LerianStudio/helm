@@ -1,5 +1,21 @@
 # Alloy-lerian Changelog
 
+## [2.0.10](https://github.com/LerianStudio/helm/releases/tag/alloy-lerian-v2.0.10)
+
+Features:
+
+- Added an upgrade guide for `2.0.9`. (@fredcamaral)
+
+Improvements:
+
+- Explained why span metrics are off by default. (@fredcamaral)
+- Clarified that the fleet guard checks only enabled roles. (@fredcamaral)
+- Named both roles that the fleet guard checks in the `2.0.9` guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/alloy-lerian-v2.0.9...alloy-lerian-v2.0.10)
+
+---
+
 ## [2.0.9](https://github.com/LerianStudio/helm/releases/tag/alloy-lerian-v2.0.9)
 
 Features:
@@ -50,3 +66,4 @@ Fixes:
 - Dropped installation names and internal examples from the chart. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/alloy-lerian-v2.0.6...alloy-lerian-v2.0.7)
+

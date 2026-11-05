@@ -503,8 +503,8 @@ caradhras:
     # caradhras.configmap.redisEndpoint.
     redisEndpoint: ""
     # -- Caradhras license key, injected as env LICENSE_KEY by secretKeyRef.
-    # Required for Caradhras 2.x (it refuses to boot without it, and the render
-    # fails without it or useExistingSecret). Issued for product `caradhras`;
+    # Required for Caradhras 2.x (it refuses to boot without it or a licence file, and the
+    # render fails without it, useExistingSecret or licenseFile.existingSecret). Issued for product `caradhras`;
     # not the auth/identity key.
     LICENSE_KEY: ""
   # -- Set true to manage the caradhras Secret yourself: the chart creates none
@@ -512,6 +512,11 @@ caradhras:
   # configmap.redisEndpoint is set.
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license on the server and its `migrate` init container; replaces LICENSE_KEY.
+  # File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- Redis/Valkey AUTH password, injected as the beego config key
   # `redisPassword` by secretKeyRef — the same delivery DB_PASSWORD already uses
   # on this workload. Caradhras hands it to both redis consumers (the session

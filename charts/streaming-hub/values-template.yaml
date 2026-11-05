@@ -25,7 +25,8 @@ streamingHub:
     PLUGIN_AUTH_ENABLED: "true"
     PLUGIN_AUTH_ADDRESS: ""
     STREAMING_HUB_TENANT_ID: default
-    # License (lib-license-go, GLOBAL mode). The key is a secret (below).
+    # License (lib-license-go, GLOBAL mode). The key is a secret (below), or set
+    # streamingHub.licenseFile.existingSecret for a mounted licence file (needs v5).
     ORGANIZATION_IDS: global                # must be EXACTLY "global" (the chart default)
     # Multi-tenant: the switch plus the values it REQUIRES when true. The hub
     # refuses to boot with an empty or "local" ENV_NAME, and the credential sweep

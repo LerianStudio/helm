@@ -1,0 +1,28 @@
+suite: caradhras dsn quotes the database password
+templates:
+  - templates/caradhras/deployment.yaml
+  - templates/caradhras/secrets.yaml
+  - templates/auth/secrets.yaml
+  - templates/auth-database/secrets.yaml
+  - templates/caradhras/configmap.yaml
+  - templates/auth/configmap.yaml
+release:
+  name: pam
+  namespace: pam
+set:
+  identity.secrets.AUTHORIZER_CLIENT_SECRET: x
+  identity.secrets.LICENSE_KEY: x
+  auth.secrets.AUTHORIZER_CLIENT_SECRET: x
+  auth.secrets.LICENSE_KEY: x
+  caradhras.secrets.LICENSE_KEY: x
+tests:
+  - it: escapes the password for libpq and single-quotes it in the dsn
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: "sed -e 's/\\[\\\\\\\\'\"'\"'\\]/\\\\\\\\&/g'"
+        template: templates/caradhras/deployment.yaml
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: "password='\\$\\{DB_PASSWORD_DSN\\}' host="
+        template: templates/caradhras/deployment.yaml

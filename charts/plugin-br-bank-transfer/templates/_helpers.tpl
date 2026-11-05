@@ -223,5 +223,8 @@ PreSync migrator cannot read the app Secret yet, so the hook Secret below copies
 - name: license-file
   secret:
     secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
 {{- end }}
 {{- end }}

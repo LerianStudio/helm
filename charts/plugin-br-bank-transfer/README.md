@@ -342,7 +342,7 @@ bankTransfer:
 
 > **Note:** Newer app images never skip the licence: in every environment, development included, they refuse to boot without `bankTransfer.secrets.LICENSE_KEY` and `ORGANIZATION_IDS`.
 >
-> `bankTransfer.licenseFile.existingSecret` (a Secret holding the file under the key `license`) mounts a signed licence file at `/etc/lerian/license` on the app and the migrations runner and sets `LICENSE_FILE_PATH`; file mode needs an image on lib-license-go v5. The external-Postgres migrations Job (PreSync) mounts it too, so that Secret must exist before the sync.
+> `bankTransfer.licenseFile.existingSecret` (a Secret holding the file under the key `license`; only that key is mounted) mounts a signed licence file at `/etc/lerian/license` on the app and the migrations runner and sets `LICENSE_FILE_PATH`; file mode needs an image on lib-license-go v5. The external-Postgres migrations Job (PreSync) mounts it too, so that Secret must exist before the sync.
 
 ---
 

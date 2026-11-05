@@ -20,7 +20,7 @@ spec:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/identity/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
-        checksum/app-client-secret: {{ include (print $.Template.BasePath "/caradhras/app-client-secret.yaml") . | sha256sum }}
+        checksum/app-client-secret: {{ .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET | toString | sha256sum }}
         checksum/init-user: {{ include (print $.Template.BasePath "/auth/init_user.yaml") . | sha256sum }}
       labels:
        {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name "pod" true) | nindent 8 }} 
@@ -50,9 +50,7 @@ spec:
               name: {{ include "plugin-identity.fullname" . }}
           env:
             {{- toYaml $h.env | nindent 12 }}
-            {{- if not .Values.identity.useExistingSecret }}
             {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "AUTHORIZER_CLIENT_SECRET") | nindent 12 }}
-            {{- end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
             - name: "HOST_IP"
               valueFrom:

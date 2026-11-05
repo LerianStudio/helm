@@ -198,8 +198,14 @@ app:
     # CONSULT_RATE_LIMIT_MAX: "100"
     # CONSULT_RATE_LIMIT_WINDOW_SEC: "60"
 
+  # -- Optional signed licence file, an alternative to secrets.LICENSE_KEY. The Secret
+  # is mounted read-only as a directory on the app and the control-plane migrations
+  # Job at /etc/lerian/license (key `license`). File mode needs lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
+
   # -- Per-key Secret values, each rendered only when set (templates/secrets.yaml).
-  # Required: LICENSE_KEY; POSTGRES_PASSWORD and INTERNAL_API_KEY (>= 32 chars) when
+  # Required: LICENSE_KEY (unless app.licenseFile.existingSecret is set); POSTGRES_PASSWORD and INTERNAL_API_KEY (>= 32 chars) when
   # SERVICE_TYPE runs the worker ("both"/"worker"); CREDENTIAL_ENCRYPTION_KEY when
   # SERVICE_TYPE runs the worker, multi-tenant serves the API, or ENV_NAME is
   # production; BTG_WEBHOOK_HMAC_SECRET (>= 32 chars) wherever the API is served

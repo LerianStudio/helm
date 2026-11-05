@@ -311,7 +311,7 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.12.0"
+    tag: "1.12.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -457,7 +457,7 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.12.0"
+    tag: "1.12.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -616,7 +616,7 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.12.0"
+    tag: "1.12.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -773,7 +773,7 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.12.0"
+    tag: "1.12.1"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -937,19 +937,3 @@ mongodb:
 otel-collector-lerian:
   enabled: true
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)
-
-plugin-br-pix-indirect-btg-worker-reconciliation:
-  image:
-    tag: 1.12.1
-plugin-br-pix-indirect-btg-worker-schedule:
-  image:
-    tag: 1.12.1
-plugin-br-pix-indirect-btg-worker-inbound:
-  image:
-    tag: 1.12.1
-plugin-br-pix-indirect-btg-worker-outbound:
-  image:
-    tag: 1.12.1
-mock-btg-server:
-  image:
-    tag: 1.12.1

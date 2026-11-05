@@ -15,7 +15,7 @@ This guide covers the upgrade from `alloy-lerian` chart version **2.0.8** to **2
 
 ## Changes
 
-- With Fleet Management enabled and no `ALLOY_FLEET_POD_NAME` in `node.alloy.extraEnv` or `singleton.alloy.extraEnv`, the render still fails. The error message no longer ends with a stray `%!(EXTRA ...)` text.
+- With Fleet Management enabled, the render still fails when an enabled `node` or `singleton` role has no `ALLOY_FLEET_POD_NAME` in its `alloy.extraEnv`. A disabled role can leave it out. The error message no longer ends with a stray `%!(EXTRA ...)` text.
 - One description in `values.schema.json` and some comments in `values.yaml` are reworded.
 - The rendered manifests are the same except for the `helm.sh/chart` label. No pod template changes, so no pod restarts.
 

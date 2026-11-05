@@ -9,7 +9,15 @@ name: Markdown Liquid Guard
 # Pages build only reports it after the merge. See .github/scripts/liquid-guard.py.
 #
 # NO `paths:` FILTER, DELIBERATELY: a required check that does not run leaves the pull
-# request pending forever. The scan covers every tracked .md and takes seconds.
+# request pending forever. The job always runs; what changes is the scope.
+#
+# SCOPE FOLLOWS THE BASE BRANCH. Pages publishes main only (repo settings: legacy build,
+# source main /). Into main: every tracked .md, because that is what the site builds.
+# Into anything else (maintenance/<chart>-<X.Y>.x lines): only the .md files the pull
+# request adds, modifies or renames. Those lines are seeded from an old chart tag that
+# predates the raw-wrapping, so a full scan fails every pull request on docs it never
+# touched (LerianStudio/helm#3093). If Pages ever publishes from another branch, that
+# branch needs the full scan too: update PAGES_BRANCH below.
 
 on:
   pull_request:
@@ -28,6 +36,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # The changed-files scan diffs BASE_SHA...HEAD, which needs the merge base.
+          fetch-depth: 0
 
       - name: Check markdown for Liquid outside raw blocks
-        run: python3 .github/scripts/liquid-guard.py
+        env:
+          PAGES_BRANCH: main
+          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$BASE_REF" = "$PAGES_BRANCH" ]; then
+            python3 .github/scripts/liquid-guard.py
+          else
+            python3 .github/scripts/liquid-guard.py --changed-since "$BASE_SHA"
+          fi

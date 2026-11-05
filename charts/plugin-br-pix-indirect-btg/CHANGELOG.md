@@ -1,5 +1,15 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.2.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.4)
+
+Fixes:
+- Bumped the worker image tags to `1.12.1`. (@bedatty)
+- Updated `plugin-br-pix-indirect-btg` to `1.12.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.2.3...plugin-br-pix-indirect-btg-v5.2.4)
+
+---
+
 ## [5.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.2.2)
 
 Fixes:

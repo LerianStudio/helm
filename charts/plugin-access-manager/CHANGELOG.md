@@ -1,5 +1,15 @@
 # Plugin-access-manager Changelog
 
+## [11.0.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.0.1)
+
+Fixes:
+
+- Strip the digest in the admin password gate to ensure proper functionality. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.0.0...plugin-access-manager-v11.0.1)
+
+---
+
 ## [11.0.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.0.0)
 
 Features:

@@ -645,8 +645,8 @@ env name) by secretKeyRef on that one source.
 
 {{/*
 plugin-access-manager.appClientSecretValue — app-lerian's client secret in clear: the operator's value, else the
-one already in the cluster, else (chart-kept Secret only) a generated one, cached on .Values so the kept Secret
-and the identity Secret carry the same value within one render. Empty when an existing Secret is not readable.
+one already in the cluster, else (chart-kept Secret only) a generated one. Empty when an existing Secret is not
+readable. Called only from app-client-secret.yaml.
 */}}
 {{- define "plugin-access-manager.appClientSecretValue" -}}
 {{- $kept := dig "data" "AUTHORIZER_CLIENT_SECRET" "" (lookup "v1" "Secret" .Release.Namespace (include "plugin-access-manager.appClientSecretName" .) | default dict) | b64dec -}}
@@ -657,11 +657,8 @@ and the identity Secret carry the same value within one render. Empty when an ex
 {{- else if $kept -}}
 {{- $kept -}}
 {{- else -}}
-{{- if not (hasKey .Values.auth.secrets "_generatedAppClientSecret") -}}
 {{- include "plugin-access-manager.appClientSecretGate" . -}}
-{{- $_ := set .Values.auth.secrets "_generatedAppClientSecret" (randAlphaNum 40) -}}
-{{- end -}}
-{{- .Values.auth.secrets._generatedAppClientSecret -}}
+{{- randAlphaNum 40 -}}
 {{- end -}}
 {{- end }}
 

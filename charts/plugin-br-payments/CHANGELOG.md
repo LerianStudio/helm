@@ -1,5 +1,22 @@
 # Plugin-br-payments Changelog
 
+## [2.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.3.0)
+
+Features:
+- Added a license file mount and migrator key to `plugin-br-payments`. (@fredcamaral)
+
+Fixes:
+- Projected only the license key in the license file volume for `plugin-br-payments`. (@fredcamaral)
+
+Improvements:
+- Added the `plugin-br-payments` `2.2.2` upgrade guide. (@fredcamaral)
+- Marked the release and namespace as examples in the `2.2.2` guide for `plugin-br-payments`. (@fredcamaral)
+- Stated the `REQUEST_TIMEOUT_SEC` floor in the `2.2.2` guide for `plugin-br-payments`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.2...plugin-br-payments-v2.3.0)
+
+---
+
 ## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.2)
 
 Fixes:
@@ -85,3 +102,4 @@ helm lint passes; helm install succeeds end-to-end; deployment reaches
 `2/2 Ready`; `/health`, `/readyz`, and `/version` all return 200 via the
 generated Service; the readyz response reports `postgres`, `midaz`, and
 `provider` checks all `up`.
+

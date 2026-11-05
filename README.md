@@ -16,7 +16,7 @@ CI enforces the static contract and render gate. Required production secrets are
 
 ### Midaz Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/deploy-midaz-using-helm) for deployment guides.
+See the [official documentation](https://docs.lerian.studio/en/products/midaz/deployment) for deployment guides.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/midaz).
 
@@ -24,12 +24,12 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `10.3.1` | 4.5.0-beta.94 | 3.8.4 |
+| `10.3.4` | 4.4.0 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/access-manager) for details.
+See the [official documentation](https://docs.lerian.studio/en/platform/access-manager) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-access-manager).
 
@@ -37,12 +37,12 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `10.5.0` | 3.17.0 | 3.17.0 | 1.8.6 |
+| `11.1.0` | 3.17.0 | 3.17.0 | 2.1.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/fees/fees-overview) for details.
+> **Deprecated.** Fees run inside the Midaz ledger: install the `midaz` chart instead. Before you remove an existing release, follow "Moving to Midaz" in the chart README below.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-fees).
 
@@ -50,13 +50,13 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `9.0.2` | 3.4.0 | `3.0.0` |
+| `9.0.3` | 3.4.0 | `3.0.0` |
 
 -----------------
 
 ### Reporter
 
-See the [official documentation](https://docs.lerian.studio/en/reporter) for details.
+See the [official documentation](https://docs.lerian.studio/en/products/reporter/what-is-reporter) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/reporter).
 
@@ -64,12 +64,12 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `5.3.0` | 4.7.0-beta.1 | 4.7.0-beta.1 |
+| `5.3.2` | 4.8.0 | 4.8.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/bank-transfer/bank-transfer) for details.
+See the [official documentation](https://docs.lerian.studio/en/interfaces/ted/ted-overview) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-bank-transfer).
 
@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `3.0.4` | 3.4.0 |
+| `3.1.0` | 3.5.0 |
 -----------------
 
 
@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.6.2` | 1.6.1 | 1.6.1 |
+| `0.6.3` | 1.6.1 | 1.6.1 |
 -----------------
 
 ### BR JD Courier
@@ -121,12 +121,12 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.3` | 1.1.0 |
+| `2.1.0` | 1.3.0 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg) for details.
+See the [official documentation](https://docs.lerian.studio/en/interfaces/pix-btg/indirect-pix-overview) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-indirect-btg).
 
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.3.1` | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 |
+| `5.4.0` | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 |
 
 -----------------
 
@@ -146,12 +146,10 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.2.1` | 1.2.0 |
+| `2.3.0` | 1.2.0 |
 -----------------
 
 ### Fetcher
-
-See the [official documentation](https://docs.lerian.studio/en/fetcher) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/fetcher).
 
@@ -159,12 +157,14 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `4.1.1` | 4.1.0 | 4.1.0 |
+| `4.1.3` | 4.1.0 | 4.1.0 |
 -----------------
 
 ### Tracer
 
-For more details, check out the [official documentation](https://docs.lerian.studio/en/tracer).
+> **Deprecated.** Enable Tracer in the `midaz` chart (`tracer.enabled: true`) instead. This chart receives no further Tracer image versions.
+
+For more details, check out the [official documentation](https://docs.lerian.studio/en/products/tracer/what-is-tracer).
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/tracer).
 
@@ -185,7 +185,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Alloy Version |
 | :---: | :---: |
-| `2.0.6` | 1.18.1 |
+| `2.0.10` | 1.18.1 |
 -----------------
 
 ### Otel Collector Lerian
@@ -201,12 +201,12 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `5.0.0` | 0.142.0 |
+| `5.0.1` | 0.142.0 |
 -----------------
 
 ### Product Console
 
-See the [official documentation](https://docs.lerian.studio/en/console) for details.
+See the [official documentation](https://docs.lerian.studio/en/platform/console/about-lerian-console) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/product-console).
 
@@ -214,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `4.5.0` | 3.0.0 |
+| `4.5.2` | 3.0.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -225,7 +225,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `3.0.2` | 1.2.0 |
+| `4.0.2` | 1.1.0 |
 
 -----------------
 
@@ -237,7 +237,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | 1.1.0 |
+| `1.1.0` | 1.1.0 |
 -----------------
 
 ### BR SISBAJUD
@@ -248,7 +248,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version | Migrations Version |
 | :---: | :---: | :---: |
-| `1.4.3` | 1.1.0 | 1.1.0 |
+| `1.4.4` | 1.1.0 | 1.1.0 |
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------
 
@@ -262,7 +262,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Sisbajud Version | Migrations Version |
 | :---: | :---: | :---: |
-| `1.2.0` | 1.1.0 | 1.1.0 |
+| `1.4.0` | 1.2.0 | 1.2.0 |
 -----------------
 
 ### Plugin BR TED Lerian
@@ -275,20 +275,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.2` | 1.0.0-beta.64 |
------------------
-
-### BR Consignado GW
-
-API gateway and same-origin operator console for the Dataprev consignado rail.
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-consignado-gw).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `1.1.0` | `1.3.0-beta.36` |
+| `1.1.4` | 1.0.0-beta.64 |
 -----------------
 
 ### BR STA
@@ -301,7 +288,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version | Migrations Version |
 | :---: | :---: | :---: | :---: |
-| `1.0.4` | 1.0.0 | 1.0.0 | 1.0.0 |
+| `1.0.6` | 1.2.0 | 1.2.0 | 1.2.0 |
 -----------------
 
 ### Agent
@@ -314,7 +301,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Agent Version |
 | :---: | :---: |
-| `1.0.3` | 1.0.2 |
+| `1.0.5` | 1.0.2 |
 -----------------
 
 ### Streaming Hub
@@ -327,7 +314,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.2` | 3.0.0 |
+| `2.0.4` | 3.1.0 |
 -----------------
 
 ### Lerian Common (Library)
@@ -340,7 +327,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `2.6.0` |
+| `2.6.1` |
 -----------------
 
 ### System Facts
@@ -351,7 +338,20 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | System-Facts Version |
 | :---: | :---: |
-| `1.1.2` | 1.1.0 |
+| `1.1.3` | 1.1.0 |
+-----------------
+
+### Lerian Consul
+
+Single-node Consul service-discovery backend for lib-service-discovery in BYOC deployments, wrapping the official HashiCorp Consul chart.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-consul).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.1.0` | 2.1.0 |
 -----------------
 
 ## License

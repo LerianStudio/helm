@@ -1,6 +1,6 @@
 # br-jd-courier
 
-Helm chart for [`br-jd-courier`](https://github.com/LerianStudio/br-jd-courier), the
+Helm chart for `br-jd-courier`, the
 Lerian JD Courier: it carries SPB and Pix traffic between JD Consultores and the
 Lerian rail engines.
 
@@ -10,7 +10,7 @@ Lerian rail engines.
 - Required secrets: one existing Secret, named by `secrets.existingSecret` (default: the release fullname), carrying `LICENSE_KEY`, `POSTGRES_PASSWORD`, `DATABASE_URL` for the migration Job and, single-tenant, `IDP_M2M_CLIENT_SECRET` and `JD_PASSWORD`. The chart renders no Secret and no secret value, and refuses the render when any of them is given as a plain value.
 - Dependency notes: no subcharts. PostgreSQL, the Access Manager and the licence gateway are external services.
 - Production overrides: `jd-courier.image.tag`, `secrets.existingSecret`; under `config`: `ENVIRONMENT_NAME=production` ([Environment](#environment)), `ORGANIZATION_IDS`, `POSTGRES_*` (`POSTGRES_SSLMODE=verify-full`), `PLUGIN_AUTH_HOST`, `AWS_REGION` ([AWS identity](#aws-identity)); single-tenant, `IDP_HOST`, `IDP_M2M_CLIENT_ID` ([Access Manager](#access-manager)) and `JD_BASE_URL`, `JD_LEGACY_CODE`, `JD_USER_CODE` for the SPB roles; `roles.spbSender` TLS ([SOAP TLS](#soap-tls-spb-sender)); JD's partner and address ([Pix ingress (JD)](#pix-ingress-jd)); `serviceAccount` ([AWS identity](#aws-identity)). Multi-tenant installs must set `migrations.enabled=false`.
-- Source/license: [LerianStudio/br-jd-courier](https://github.com/LerianStudio/br-jd-courier). The Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
+- Source/license: the Courier is closed source; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).
 
 ## Install
 
@@ -251,8 +251,7 @@ queue (same ISPB and legacy code) erases messages the Courier would have read:
 the legacy core's own receive, an engine, or another environment sharing the
 credentials. Installing is safe: the drain reads only tenants whose
 SPB channel is `ACTIVE`. Activate the SPB channel only after the client confirms
-in writing that every other reader of that queue has stopped (the Courier's
-`docs/runbooks/legacy-core-cutover.md`, "One reader").
+in writing that every other reader of that queue has stopped.
 
 ## Secrets
 
@@ -350,7 +349,7 @@ the guard can read it.
 Metrics and traces leave over OTLP only; nothing is scraped. Every role sends
 to `telemetry.otlpEndpoint`, by default `$(NODE_IP):4317`, the collector on the
 pod's own node. `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT` follows
-`config.ENVIRONMENT_NAME` unless `config` sets it. The chart sets it in the pod env, where Kubernetes expands
+`config.ENVIRONMENT_NAME` unless `config` sets it. The chart sets the endpoint in the pod env, where Kubernetes expands
 `$(NODE_IP)`, and refuses `config.OTEL_EXPORTER_OTLP_ENDPOINT`, which the pod
 env would silently shadow. **Production boots with the defaults:** that hop never
 leaves the node, so for the default endpoint alone the chart sets

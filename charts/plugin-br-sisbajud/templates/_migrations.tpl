@@ -53,6 +53,36 @@ Input: dict "context" $ "hook" bool.
 {{- end -}}
 
 {{/*
+LICENSE_KEY env entry for the gated runner. Input: dict "context" $ "hook" bool.
+App on an operator-managed Secret: that Secret. Else the PreSync hook Secret (Job)
+or the app Secret, which exists before the pod (init container). Optional: file mode.
+*/}}
+{{- define "plugin-br-sisbajud.migrationsLicenseEnv" -}}
+{{- $ctx := .context -}}
+{{- $s := $ctx.Values.sisbajud -}}
+{{- $key := include "plugin-br-sisbajud.licenseKeyValue" $ctx -}}
+{{- $name := "" -}}
+{{- if $s.useExistingSecret -}}
+{{- $name = include "plugin-br-sisbajud.secretName" $ctx -}}
+{{- else if .hook -}}
+{{- if $key }}{{- $name = include "plugin-br-sisbajud.licenseHookName" $ctx -}}{{- end -}}
+{{- else if ($s.secrets | default dict).LICENSE_KEY -}}
+{{- $name = include "plugin-br-sisbajud.fullname" $ctx -}}
+{{- end -}}
+{{- if $name }}
+- name: LICENSE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ $name }}
+      key: LICENSE_KEY
+      optional: true
+{{- else if $key }}
+- name: LICENSE_KEY
+  value: {{ $key | quote }}
+{{- end }}
+{{- end -}}
+
+{{/*
 The runner container. Input: dict "context" $ "name" <container name> "hook" bool.
 */}}
 {{- define "plugin-br-sisbajud.migrationsContainer" -}}
@@ -85,6 +115,17 @@ The runner container. Input: dict "context" $ "name" <container name> "hook" boo
     {{- fail "plugin-br-sisbajud: migrations need a Postgres password (the runner refuses to start without POSTGRES_PASSWORD, in every environment). Set sisbajud.secrets.POSTGRES_PASSWORD, migrations.existingSecret, sisbajud.useExistingSecret, or enable the bundled postgresql." }}
     {{- end }}
     {{- $pwEnv | nindent 4 }}
+    {{- with (include "plugin-br-sisbajud.migrationsLicenseEnv" (dict "context" $ctx "hook" .hook) | trim) }}
+    {{- . | nindent 4 }}
+    {{- end }}
+    {{- if include "plugin-br-sisbajud.licenseSecret" $ctx }}
+    - name: LICENSE_FILE_PATH
+      value: "/etc/lerian/license/license"
+    {{- end }}
+  {{- with (include "plugin-br-sisbajud.licenseFileMount" $ctx | trim) }}
+  volumeMounts:
+    {{- . | nindent 4 }}
+  {{- end }}
   securityContext:
     {{- toYaml $ctx.Values.sisbajud.securityContext | nindent 4 }}
   {{- with $m.resources }}

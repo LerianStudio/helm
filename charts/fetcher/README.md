@@ -3,8 +3,8 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: None enforced at render time: the default render succeeds with no secret set (only `rabbitmq.enabled=true` fails at render, unless `manager.secrets` sets `RABBITMQ_DEFAULT_USER: plugin` and a non-default `RABBITMQ_DEFAULT_PASS`). The application still needs `APP_ENC_KEY`, `MONGO_USER`/`MONGO_PASSWORD` and `RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS` at runtime (plus `LICENSE_KEY` for licensed deployments), see [Secrets](#secrets). Production credentials must not be committed in values files.
-- Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
+- Required secrets: None enforced at render time: the default render succeeds with no secret set (only `rabbitmq.enabled=true` fails at render, unless `manager.secrets` sets `RABBITMQ_DEFAULT_USER: plugin` and a non-default `RABBITMQ_DEFAULT_PASS`). The application still needs `APP_ENC_KEY`, `MONGO_USER`/`MONGO_PASSWORD` and `RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS` and `LICENSE_KEY` at runtime, see [Secrets](#secrets). Production credentials must not be committed in values files.
+- Dependency notes: The bundled MongoDB, RabbitMQ, Valkey, SeaweedFS and KEDA subcharts are off by default (`<name>.enabled: false`); point the app at external services through `common.configmap` or `global.datastores`.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override manager/worker image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
@@ -27,7 +27,7 @@ Fetcher is a data extraction service for Lerian Studio that enables automated da
         v                                               v
 +-------+--------+                              +-------+--------+
 |                |                              |                |
-|    MongoDB     |                              |   SeaweedFS    |
+|    MongoDB     |                              | Object storage |
 |                |                              |                |
 +----------------+                              +----------------+
         ^
@@ -41,9 +41,9 @@ Fetcher is a data extraction service for Lerian Studio that enables automated da
 
 ## Prerequisites
 
-- Kubernetes 1.19+
-- Helm 3.2.0+
-- PV provisioner support in the underlying infrastructure (for MongoDB, SeaweedFS, and RabbitMQ persistence)
+- Kubernetes 1.27+
+- Helm 3.8.0+
+- PV provisioner support in the underlying infrastructure (for MongoDB and SeaweedFS persistence)
 - Optional: KEDA 2.0+, only if you create your own `ScaledObject` (the chart installs the KEDA operator with `keda.enabled` but ships no `ScaledObject`)
 
 ## Installing the Chart
@@ -99,8 +99,8 @@ global:
     url: "http://tenant-manager:8080"
 ```
 
-`global.cloud` sets the connection TOPOLOGY (TLS, AMQP scheme/ports, S3
-path-style) for the masks above; only the ENDPOINTS (host/port) still come
+`global.cloud` sets the connection TOPOLOGY (MongoDB TLS parameters, AMQP scheme/ports, S3
+path-style) for the masks above; it sets Redis TLS (`REDIS_TLS`) too. Only the ENDPOINTS (host/port) still come
 from `global.datastores`/`global.objectStorage` — a cloud preset can't know
 your DocumentDB/ElastiCache/AmazonMQ host. A native `common.configmap.<KEY>`
 (or `manager.configmap.<KEY>` / `worker.configmap.<KEY>` for their own masked
@@ -128,7 +128,7 @@ so there is nothing to migrate onto that mask.
 | `manager.name` | Manager component name | `fetcher-manager` |
 | `manager.replicaCount` | Number of manager replicas | `2` |
 | `manager.image.repository` | Manager image repository | `lerianstudio/fetcher-manager` |
-| `manager.image.tag` | Manager image tag (not below `fetcher.minImage`) | `4.1.0-beta.1` |
+| `manager.image.tag` | Manager image tag (not below `fetcher.minImage`) | `4.1.0` |
 | `manager.image.pullPolicy` | Manager image pull policy | `IfNotPresent` |
 | `manager.service.type` | Kubernetes Service type | `ClusterIP` |
 | `manager.service.port` | Service HTTP port | `4006` |
@@ -148,7 +148,7 @@ so there is nothing to migrate onto that mask.
 | `worker.name` | Worker component name | `fetcher-worker` |
 | `worker.replicaCount` | Number of worker replicas | `2` |
 | `worker.image.repository` | Worker image repository | `lerianstudio/fetcher-worker` |
-| `worker.image.tag` | Worker image tag (not below `fetcher.minImage`) | `4.1.0-beta.1` |
+| `worker.image.tag` | Worker image tag (not below `fetcher.minImage`) | `4.1.0` |
 | `worker.health.stack` | Health preset stack, `go-worker` (no Service, no main port) | `go-worker` |
 | `worker.health.shutdownSeconds` | `SHUTDOWN_TIMEOUT` of the pod (the worker drain is 0) | `30` |
 | `worker.image.pullPolicy` | Worker image pull policy | `IfNotPresent` |
@@ -174,12 +174,11 @@ Both deployables render probes, `terminationGracePeriodSeconds`, the drain env (
 | `common.configmap.MONGO_PORT` | MongoDB port | `27017` |
 | `common.configmap.RABBITMQ_HOST` | RabbitMQ host | `rabbitmq` |
 | `common.configmap.RABBITMQ_PORT_AMQP` | RabbitMQ AMQP port | `5672` |
-| `common.configmap.SEAWEEDFS_HOST` | SeaweedFS host | `seaweedfs-filer` |
 | `common.configmap.REDIS_HOST` | Redis/Valkey host | `valkey` |
 | `common.configmap.REDIS_PORT` | Redis/Valkey port | `6379` |
-| `common.configmap.REDIS_TLS` | Connect to Redis/Valkey over TLS. The app reads it, but no datastore mask (`global.datastores.redis.tls`, `global.cloud`) emits it: set it here. Passes through as-is when set. | unset (app default `false`) |
+| `common.configmap.REDIS_TLS` | Connect to Redis/Valkey over TLS. Resolves from `global.datastores.redis.tls` or the `global.cloud` preset; set it here to override. | `false` |
 | `common.configmap.RABBITMQ_TLS` | Connect to RabbitMQ over TLS. The app reads it, but no datastore mask (`global.datastores.broker.scheme`, `global.cloud`) emits it: set it here. Passes through as-is when set. | unset (app default `false`) |
-| `common.configmap.ALLOW_INSECURE_TLS` | Skip TLS certificate validation for MongoDB/RabbitMQ/Redis connections. Bundled dev-mode dependencies have no TLS, so the app refuses to connect unless this is `"true"`. Set to `"false"` in production with TLS-terminated backends. | `"true"` |
+| `common.configmap.ALLOW_INSECURE_TLS` | Allow plaintext (non-TLS) connections to MongoDB/RabbitMQ/Redis. Bundled dev-mode dependencies have no TLS, so the app refuses to connect unless this is `"true"`. Set to `"false"` in production with TLS-terminated backends. | `"true"` |
 | `global.streaming.enabled` | Enables lib-streaming (CloudEvents) job notifications for the worker. When unset, the template defaults `STREAMING_ENABLED` to `"true"`. `worker.configmap.STREAMING_ENABLED` overrides it. With streaming on, the worker needs a reachable broker. | unset (template default `"true"`) |
 | `worker.configmap.STREAMING_BROKERS` | **REQUIRED when the worker is deployed** - Kafka/Redpanda bootstrap address(es), e.g. `redpanda.<namespace>:9092`. No working default; not bundled by this chart. | `""` |
 
@@ -196,7 +195,7 @@ to start without `IDP_HOST` and the `manager.secrets.IDP_M2M_*` pair.
 
 ### Secrets
 
-"**REQUIRED**" below means the application needs the value at runtime. The chart does **not** enforce it at render time (the default render works with every one of them empty); the only render-time checks are the bundled-RabbitMQ ones (`rabbitmq.enabled=true`, see Full Installation). `LICENSE_KEY` is enforced by the application only outside local deployment mode, and the chart sets no `DEPLOYMENT_MODE`.
+"**REQUIRED**" below means the application needs the value at runtime. The chart does **not** enforce it at render time (the default render works with every one of them empty); the only render-time checks are the bundled-RabbitMQ ones (`rabbitmq.enabled=true`, see Full Installation).
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -209,7 +208,7 @@ to start without `IDP_HOST` and the `manager.secrets.IDP_M2M_*` pair.
 | `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
 | `manager.secrets.IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the manager publishes its permission manifest with. Required by the app only when `IDP_DECLARATION_ENABLED="true"`. Each is rendered only when set. Keep it in `manager.secrets`: the top-level `secrets` Secret also reaches the worker | unset |
 
-The top-level `secrets.*` block renders a shared `<release>-common` Secret with its
+The top-level `secrets.*` block renders a shared `<fullname>-common` Secret (default `fetcher-common`) with its
 non-empty keys only. Both Deployments load it **before** their own Secret
 (`manager.secrets` / `worker.secrets`, or `existingSecretName` when
 `useExistingSecret=true`), so the component Secret wins on any key both define.
@@ -222,10 +221,10 @@ When using an external RabbitMQ instance, you can enable the bootstrap job to au
 |-----------|-------------|---------|
 | `externalRabbitmqDefinitions.enabled` | Enable RabbitMQ bootstrap job | `false` |
 | `externalRabbitmqDefinitions.connection.protocol` | API protocol (http/https) | `http` |
-| `externalRabbitmqDefinitions.connection.host` | RabbitMQ management API host | `""` |
+| `externalRabbitmqDefinitions.connection.host` | RabbitMQ management API host | `rabbitmq` |
 | `externalRabbitmqDefinitions.connection.port` | Management API port | `15672` |
 | `externalRabbitmqDefinitions.connection.portAmqp` | AMQP port for health check | `5672` |
-| `externalRabbitmqDefinitions.rabbitmqAdminLogin.username` | Admin username | `""` |
+| `externalRabbitmqDefinitions.rabbitmqAdminLogin.username` | Admin username | `guest` |
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin.password` | Admin password | `""` |
 | `externalRabbitmqDefinitions.rabbitmqAdminLogin.useExistingSecret.name` | Use existing secret for admin credentials | `""` |
 | `externalRabbitmqDefinitions.appCredentials.pluginPassword` | Password for plugin user | `""` |
@@ -301,8 +300,6 @@ drained) from counting as domains.
 ```yaml
 # values-minimal.yaml
 manager:
-  image:
-    tag: "1.0.0"
   secrets:
     APP_ENC_KEY: "<your-base64-32byte-key>"  # Generate with: openssl rand -base64 32
   ingress:
@@ -314,17 +311,20 @@ manager:
             pathType: Prefix
 
 worker:
-  image:
-    tag: "1.0.0"
+  configmap:
+    STREAMING_BROKERS: "redpanda.<namespace>:9092"  # required: the worker does not boot without it
+    OBJECT_STORAGE_ENDPOINT: "https://my-s3.example.com"
+    OBJECT_STORAGE_BUCKET: "my-bucket"
   secrets:
     APP_ENC_KEY: "<your-base64-32byte-key>"  # Same key as manager
+    OBJECT_STORAGE_ACCESS_KEY_ID: "<access-key-id>"
+    OBJECT_STORAGE_SECRET_KEY: "<secret-key>"
 
 common:
   configmap:
     MONGO_HOST: "my-mongodb.database.svc"
     RABBITMQ_HOST: "my-rabbitmq.messaging.svc"
     RABBITMQ_HEALTH_CHECK_URL: "http://my-rabbitmq.messaging.svc:15672"
-    SEAWEEDFS_HOST: "my-seaweedfs.storage.svc"
     REDIS_HOST: "my-redis.cache.svc"
 
 secrets:
@@ -347,7 +347,6 @@ common:
     RABBITMQ_HOST: "fetcher-rabbitmq"
     RABBITMQ_HEALTH_CHECK_URL: "http://fetcher-rabbitmq:15672"
     REDIS_HOST: "fetcher-valkey"
-    SEAWEEDFS_HOST: "seaweedfs-filer"
 
 manager:
   secrets:
@@ -356,10 +355,16 @@ manager:
     RABBITMQ_DEFAULT_PASS: "<your-rabbitmq-password>"
 
 worker:
+  configmap:
+    STREAMING_BROKERS: "redpanda.<namespace>:9092"  # required: the worker does not boot without it
+    OBJECT_STORAGE_ENDPOINT: "https://my-s3.example.com"
+    OBJECT_STORAGE_BUCKET: "my-bucket"
   secrets:
     APP_ENC_KEY: "<your-base64-32byte-key>"  # Same key as manager
     RABBITMQ_DEFAULT_USER: "plugin"
     RABBITMQ_DEFAULT_PASS: "<your-rabbitmq-password>"  # Same password as manager
+    OBJECT_STORAGE_ACCESS_KEY_ID: "<access-key-id>"
+    OBJECT_STORAGE_SECRET_KEY: "<secret-key>"
 
 mongodb:
   enabled: true
@@ -370,17 +375,15 @@ mongodb:
 rabbitmq:
   enabled: true
 
-seaweedfs:
-  enabled: true
-
 valkey:
   enabled: true
 
-keda:
-  enabled: true
+secrets:
+  MONGO_PASSWORD: securepassword  # same as mongodb.auth.rootPassword
+  LICENSE_KEY: "<your-license-key>"
 ```
 
-The bundled RabbitMQ's only login is `plugin` with the manager's `RABBITMQ_DEFAULT_PASS`, taken from `manager.secrets` or, with `manager.useExistingSecret`, read from that Secret at render (`helm template` and Argo CD cannot read it, so that render is refused). An empty password and `Lerian@123`, the public password earlier versions shipped, are refused. The broker keeps no volume and takes the password only when its pod starts: after changing it, or after upgrading from a version that shipped `Lerian@123`, run `kubectl -n <namespace> rollout restart statefulset/<release>-rabbitmq` (queued messages are lost).
+The bundled RabbitMQ's only login is `plugin` with the manager's `RABBITMQ_DEFAULT_PASS`, taken from `manager.secrets` or, with `manager.useExistingSecret`, read from that Secret at render (`helm template` and Argo CD cannot read it, so that render is refused). An empty password and `Lerian@123` are refused. The broker keeps no volume and takes the password only when its pod starts: after changing it, run `kubectl -n <namespace> rollout restart statefulset/<release>-rabbitmq` (queued messages are lost).
 
 ### External RabbitMQ with Bootstrap
 
@@ -390,14 +393,6 @@ Use this approach when connecting to an external RabbitMQ instance that doesn't 
 
 ```yaml
 # values-external-rabbitmq.yaml
-manager:
-  image:
-    tag: "1.0.0"
-
-worker:
-  image:
-    tag: "1.0.0"
-
 common:
   configmap:
     RABBITMQ_HOST: "my-rabbitmq.messaging.svc"
@@ -458,7 +453,6 @@ common:
     MONGO_HOST: "fetcher-mongodb"        # Not just "mongodb"
     RABBITMQ_HOST: "fetcher-rabbitmq"    # Not just "rabbitmq"
     REDIS_HOST: "fetcher-valkey"         # Not just "valkey"
-    SEAWEEDFS_HOST: "seaweedfs-filer"    # SeaweedFS doesn't use release prefix
 ```
 
 ### Encryption Key
@@ -471,7 +465,7 @@ openssl rand -base64 32
 
 ### SeaweedFS Configuration
 
-SeaweedFS is a distributed file system used for storing extracted files. When enabling SeaweedFS:
+The worker stores extracted files through the S3 API only. Set `global.objectStorage.fetcher` (`endpoint`, `region`, `bucket`) or `worker.configmap.OBJECT_STORAGE_ENDPOINT` / `OBJECT_STORAGE_REGION` / `OBJECT_STORAGE_BUCKET`, and `worker.secrets.OBJECT_STORAGE_ACCESS_KEY_ID` / `OBJECT_STORAGE_SECRET_KEY`. The bundled SeaweedFS subchart ships with its S3 gateway off. When enabling SeaweedFS:
 
 **Prerequisites:**
 - Kubernetes cluster with dynamic PV provisioning (StorageClass) OR pre-created PersistentVolumes
@@ -519,7 +513,7 @@ curl http://localhost:8888/
 
 1. **Manager pod not starting**: Check if MongoDB and RabbitMQ are accessible
 2. **Worker not processing jobs**: Verify RabbitMQ connection and queue configuration
-3. **File upload failures**: Ensure SeaweedFS is properly configured and accessible
+3. **File upload failures**: Ensure the object storage endpoint, bucket and keys (`OBJECT_STORAGE_*`) are set and reachable
 4. **Invalid encryption key error**: The `APP_ENC_KEY` must be a valid base64-encoded 32-byte key
 5. **MongoDB/RabbitMQ host not found**: When using embedded dependencies, service names include the release prefix (e.g., `fetcher-mongodb` instead of `mongodb`)
 6. **SeaweedFS pods pending**: Check if PVCs can be bound (requires StorageClass or pre-created PVs)

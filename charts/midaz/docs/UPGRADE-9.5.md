@@ -27,7 +27,7 @@ The Midaz application components have been upgraded from version `4.1.2` to `4.2
 | Ledger image tag | 4.1.2 | 4.2.0 |
 | Tracer image tag | 4.1.2 | 4.2.0 |
 
-For application-level changes, refer to the [Midaz changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+For application-level changes, refer to the Midaz changelog.
 
 ### 2. Multi-tenant configuration expansion
 

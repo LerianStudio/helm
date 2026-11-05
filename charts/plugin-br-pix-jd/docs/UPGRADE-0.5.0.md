@@ -19,8 +19,7 @@ worker and migrations images all exist at `1.1.1`.
   signature circuit breaker (`JDPISPI018`), which blocks every debit of the
   participant until JD's recovery window closes. With the signing key and
   certificate set, the app signs each order with the paying participant's key; with
-  neither, it sends unsigned orders as before
-  ([plugin-br-pix-jd#378](https://github.com/LerianStudio/plugin-br-pix-jd/issues/378)).
+  neither, it sends unsigned orders as before.
 - **`JDPISPI017` and `JDPISPI018` are final refusals.** Whatever HTTP status carries
   them, including `429`, the order is never re-sent and the hold is released.
   `JDPISPI018` has its own message.

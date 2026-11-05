@@ -31,7 +31,7 @@ The `appVersion` field in `Chart.yaml` and the default `ledger.image.tag` in `va
 
 **Why it matters:**
 
-This release includes bug fixes, performance improvements, or minor enhancements in the midaz application. For detailed application-level changes, refer to the [midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+This release includes bug fixes, performance improvements, or minor enhancements in the midaz application. For detailed application-level changes, refer to the midaz application changelog.
 
 **Impact:**
 
@@ -48,7 +48,7 @@ No migration steps are required for this upgrade. The chart maintains full backw
 
 **Recommended pre-upgrade checklist:**
 
-1. Review the [midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md) for application-level changes in version 3.8.3
+1. Review the midaz application changelog for application-level changes in version 3.8.3
 2. Preview the upgrade using the helm-diff plugin (see below)
 3. Ensure your Helm values are backed up
 4. Proceed with the upgrade command

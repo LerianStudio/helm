@@ -28,7 +28,7 @@ The midaz application components have been updated from version `4.1.0` to `4.1.
 | ledger.image.tag | 4.1.0 | 4.1.2 |
 | tracer.image.tag | 4.1.0 | 4.1.2 |
 
-This is a patch release that includes bug fixes and improvements. Refer to the [midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md) for detailed application-level changes.
+This is a patch release that includes bug fixes and improvements. Refer to the midaz application changelog for detailed application-level changes.
 
 ### 2. Common library update to 2.1.2
 
@@ -301,7 +301,7 @@ This is a minor version upgrade with no breaking changes. Follow these steps to 
 
 5. **Run the upgrade command** (see final section)
 
-> **Note:** The application version bump from 4.1.0 to 4.1.2 is a patch release. Review the [midaz changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md) for application-specific changes.
+> **Note:** The application version bump from 4.1.0 to 4.1.2 is a patch release. Review the midaz changelog for application-specific changes.
 
 ## Preview changes before upgrading
 

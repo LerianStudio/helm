@@ -151,8 +151,8 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 Identity Common labels
 */}}
 {{- define "plugin-identity.labels" -}}
-helm.sh/chart: {{ include "plugin-identity.chart" .context }}
-{{ include "plugin-identity.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-identity.chart" .context }}
+{{ end }}{{ include "plugin-identity.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -161,8 +161,8 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 Auth Common labels
 */}}
 {{- define "plugin-auth.labels" -}}
-helm.sh/chart: {{ include "plugin-auth.chart" .context }}
-{{ include "plugin-auth.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-auth.chart" .context }}
+{{ end }}{{ include "plugin-auth.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -171,8 +171,8 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 Caradhras Common labels
 */}}
 {{- define "plugin-caradhras.labels" -}}
-helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
-{{ include "plugin-caradhras.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
+{{ end }}{{ include "plugin-caradhras.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -196,8 +196,8 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
 {{- define "plugin-caradhras-ui.labels" -}}
-helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
-{{ include "plugin-caradhras-ui.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
+{{ end }}{{ include "plugin-caradhras-ui.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -214,7 +214,7 @@ legacy overrides and then the defaults below.
 {{- end }}
 
 {{- define "caradhras.imageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.8.6") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "2.1.0") -}}
 {{- end }}
 
 {{- define "caradhras.imagePullPolicy" -}}
@@ -248,7 +248,7 @@ legacy overrides remain visible, including to the repository guard below.
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.8.6") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" (regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "")) -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImagePullPolicy" -}}
@@ -576,6 +576,23 @@ never has to be spliced into a connection string.
 {{- end }}
 
 {{/*
+plugin-access-manager.ingress — the component ingress map for lerian-common.ingress.
+The shipped className "", tls [] and a single empty host are placeholders: an empty
+one is left out so global.ingress supplies it. An explicit value always wins.
+Input (dict): ingress (component .ingress), global (.Values.global.ingress).
+*/}}
+{{- define "plugin-access-manager.ingress" -}}
+{{- $i := deepCopy .ingress -}}
+{{- $g := .global | default dict -}}
+{{- if not $i.className -}}{{- $_ := unset $i "className" -}}{{- end -}}
+{{- if not $i.tls -}}{{- $_ := unset $i "tls" -}}{{- end -}}
+{{- $named := false -}}
+{{- range $i.hosts | default list -}}{{- if .host -}}{{- $named = true -}}{{- end -}}{{- end -}}
+{{- if and (not $named) $g.domain -}}{{- $_ := unset $i "hosts" -}}{{- end -}}
+{{- toYaml $i -}}
+{{- end }}
+
+{{/*
 plugin-caradhras.builtInAdminPasswordEnabled — "true" when the operator opted in
 to giving a new built-in/admin its password from a Secret.
 */}}
@@ -591,9 +608,9 @@ creates carries this key.
 */}}
 {{- define "plugin-caradhras.builtInAdminPasswordEnv" -}}
 {{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
-{{- $tag := include "caradhras.imageTag" . -}}
-{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare ">=1.9.0-beta.25" $tag)) -}}
-{{- fail (printf "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but the Caradhras image tag %q does not read it.\n   Caradhras reads builtInAdminPassword from 1.9.0-beta.25 on; older images seed the public default password.\n   Set caradhras.image.tag to a semver tag and pin a Caradhras tag >= 1.9.0-beta.25 (a digest or latest cannot be checked).\n" $tag) -}}
+{{- $tag := regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "" -}}
+{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (semverCompare ">=1.9.0-beta.25" $tag)) -}}
+{{- fail (printf "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but the Caradhras image tag %q does not read it.\n   Caradhras reads builtInAdminPassword from 1.9.0-beta.25 on; older images seed the public default password.\n   Set caradhras.image.tag to a semver tag and pin a Caradhras tag >= 1.9.0-beta.25 (a bare digest or latest cannot be checked).\n" $tag) -}}
 {{- end -}}
 - name: builtInAdminPassword
   valueFrom:
@@ -981,4 +998,47 @@ PDB spec and rollout strategy come from the health preset; an operator override 
       "name" "identity" "component" .Values.identity "health" .Values.identity.health
       "port" .Values.identity.service.port "minImage" (include "plugin-access-manager.minImage" .)
       "replicas" .Values.identity.replicaCount "autoscaling" .Values.identity.autoscaling) -}}
+{{- end -}}
+
+{{/*
+Caradhras licence env for the server and the migrate init container (input: dict "context" $ "licensed" bool).
+licenseFile.existingSecret is mounted as a directory (never subPath) at /etc/lerian/license.
+*/}}
+{{- define "plugin-caradhras.licenseFileSecret" -}}
+{{- (.Values.caradhras.licenseFile | default dict).existingSecret | default "" -}}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseEnv" -}}
+{{- $ctx := .context -}}
+{{- if .licensed }}
+- name: LICENSE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "plugin-caradhras.secretName" $ctx }}
+      key: LICENSE_KEY
+      optional: true
+{{- end }}
+{{- if include "plugin-caradhras.licenseFileSecret" $ctx }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseFileMount" -}}
+{{- if include "plugin-caradhras.licenseFileSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseFileVolume" -}}
+{{- with include "plugin-caradhras.licenseFileSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
 {{- end -}}

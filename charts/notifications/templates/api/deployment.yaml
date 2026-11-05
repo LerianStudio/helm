@@ -18,7 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "notifications.labels" (dict "context" . "name" .Values.api.name) | nindent 8 }}
+        {{- include "notifications.podLabels" (dict "context" . "name" .Values.api.name) | nindent 8 }}
       annotations:
         # Force pod restart on ConfigMap/Secret change.
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
@@ -54,13 +54,16 @@ spec:
                 name: {{ include "notifications.configMapName" . }}
             - secretRef:
                 name: {{ include "notifications.secretName" . }}
-          {{- with .Values.api.extraEnvVars }}
+          {{- $licenseEnv := include "notifications.licenseFileEnv" . }}
+          {{- if or $licenseEnv .Values.api.extraEnvVars }}
           env:
-            {{- range $key, $value := . }}
+            {{- with $licenseEnv }}{{ . | nindent 12 }}{{ end }}
+            {{- range $key, $value := .Values.api.extraEnvVars }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
           {{- end }}
+          {{- with (include "notifications.licenseFileVolumeMount" . | trim) }}{{ . | nindent 10 }}{{ end }}
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
           {{- if .Values.api.probes.startup.enabled }}
@@ -89,6 +92,7 @@ spec:
             periodSeconds: {{ .Values.api.probes.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.api.probes.liveness.timeoutSeconds }}
             failureThreshold: {{ .Values.api.probes.liveness.failureThreshold }}
+      {{- with (include "notifications.licenseFileVolume" . | trim) }}{{ . | nindent 6 }}{{ end }}
       {{- with .Values.api.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

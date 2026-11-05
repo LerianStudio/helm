@@ -15,7 +15,7 @@
 
 ## Overview
 
-This is a minor release that upgrades the application version from `1.11.0` to `1.12.0` and introduces optional event streaming support for the `pix` component. The streaming feature is disabled by default, so existing deployments will continue to work without any configuration changes.
+This is a minor release that upgrades the application version from `1.11.0` to `1.12.0` and introduces optional event streaming support for the `pix` component. The streaming feature is disabled by default, so existing deployments need no streaming values.
 
 The expected upgrade path is an in-place Helm upgrade. If you want to enable the new streaming feature, you must provide broker connection details and credentials before upgrading.
 
@@ -44,8 +44,15 @@ Event streaming enables real-time integration with downstream systems by publish
 
 **Operational impact:**
 
-- If you **do not set** `STREAMING_ENABLED` to `"true"`, the upgrade has **no runtime impact** — the `pix` service will continue to operate exactly as before.
+- If you **do not set** `STREAMING_ENABLED` to `"true"`, the `pix` service publishes no events and needs no streaming values. Database migration `000056` still runs at boot (see the required action below).
 - If you **enable streaming**, you must provide valid broker connection details (`STREAMING_BROKERS`) and, if your broker requires SASL authentication, the `STREAMING_SASL_PASSWORD` secret.
+
+**Required action: database privileges.** Application migration `000056` runs at boot even when streaming is disabled. The database role that runs the `pix` migrations needs `CREATE` on the database (for schema `streaming`) and `CREATE` on schema `public` (for the type `public.outbox_event_status`). Before upgrading, confirm both grants, or give them:
+
+```sql
+GRANT CREATE ON DATABASE <pix_database> TO <migration_role>;
+GRANT CREATE ON SCHEMA public TO <migration_role>;
+```
 
 **Template changes:**
 
@@ -169,7 +176,7 @@ pix:
 
 ## Migration Steps
 
-This upgrade requires no destructive migration steps. The streaming feature is disabled by default, so existing deployments will continue to work without changes.
+This upgrade requires no destructive migration steps. The streaming feature is disabled by default, so you need no streaming values. Application migration `000056` still runs at boot and creates the `streaming` schema and the `public.outbox_event_status` type, so the grants under "Required action: database privileges" apply to every upgrade.
 
 **Recommended upgrade process:**
 

@@ -51,9 +51,15 @@
               "DB_METRICS_INTERVAL_SEC",
               "DEFAULT_TENANT_ID",
               "DEPLOYMENT_MODE",
+              "DIRECT_PERMANENT_BLOCK_ENABLED",
+              "DIRECT_PERMANENT_REFRESH_EVERY",
               "ENABLE_TELEMETRY",
               "ENVIRONMENT_NAME",
               "ENV_NAME",
+              "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD",
+              "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER",
+              "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY",
+              "EXECUTOR_ENABLED",
               "EXECUTOR_HEARTBEAT_EVERY",
               "EXECUTOR_HUB_WEBHOOK_ADDRESS",
               "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS",
@@ -64,7 +70,10 @@
               "EXECUTOR_HUB_WEBHOOK_UPSTREAM_TLS_VALIDATED",
               "EXECUTOR_HUMAN_DECISION_AFTER_BEATS",
               "EXECUTOR_M2M_SUBJECT",
+              "EXECUTOR_ORDER_SWEEP_ENABLED",
               "EXECUTOR_ORPHAN_RECONCILE_WINDOW",
+              "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED",
+              "EXECUTOR_RESULT_MAX_ATTEMPTS",
               "EXECUTOR_SETTLE_WINDOW",
               "EXECUTOR_SQS_MAX_MESSAGES",
               "EXECUTOR_SQS_MAX_RECEIVE_COUNT",
@@ -157,8 +166,12 @@
               "SERVER_TLS_KEY_FILE",
               "SISBAJUD_DEK_CACHE_TTL",
               "SISBAJUD_HMAC_COEXISTENCE_WINDOW",
+              "STREAMING_BROKERS",
               "STREAMING_ENABLED",
               "STREAMING_HUB_TENANT_ID",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_USERNAME",
+              "STREAMING_TLS_ENABLED",
               "SWAGGER_BASE_PATH",
               "SWAGGER_DESCRIPTION",
               "SWAGGER_ENABLED",
@@ -177,6 +190,60 @@
               "VAULT_TOKEN_RENEW_MIN_INTERVAL_SEC",
               "VAULT_TRANSIT_MOUNT_PATH"
             ]
+          },
+          "properties": {
+            "EXECUTOR_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "DIRECT_PERMANENT_BLOCK_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "EXECUTOR_RESULT_MAX_ATTEMPTS": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$"
+            },
+            "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$"
+            },
+            "DIRECT_PERMANENT_REFRESH_EVERY": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$"
+            },
+            "EXECUTOR_ORDER_SWEEP_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            }
           }
         },
         "secrets": {
@@ -197,6 +264,121 @@
         },
         "extraEnvVars": {
           "type": "object"
+        },
+        "executor": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "EXECUTOR_ENABLED: \"\" (unset) | true | false. true without mensageria.baseUrl = DIRECT-only executor."
+            },
+            "resultMaxAttempts": {
+              "type": [
+                "string",
+                "integer"
+              ],
+              "pattern": "^[0-9]+$",
+              "minimum": 0,
+              "description": "EXECUTOR_RESULT_MAX_ATTEMPTS (0 = app default 12)."
+            },
+            "orderSweepEnabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "EXECUTOR_ORDER_SWEEP_ENABLED (default false)."
+            },
+            "direct": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "drainerInfraAlarmThreshold": {
+                  "type": [
+                    "string",
+                    "integer"
+                  ],
+                  "pattern": "^[1-9][0-9]*$",
+                  "minimum": 1,
+                  "description": "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD (>= 1)."
+                },
+                "purgeEligibleAlarmAfter": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$",
+                  "description": "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER (Go duration > 0)."
+                },
+                "purgeRefreshEvery": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$",
+                  "description": "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY (Go duration > 0; default 15m)."
+                }
+              }
+            }
+          }
+        },
+        "direct": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "permanentBlockEnabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "DIRECT_PERMANENT_BLOCK_ENABLED (default true; needs global.streaming.brokers, inbound auth on and single tenant; false otherwise)."
+            },
+            "permanentRefreshEvery": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*([0-9]*[1-9][0-9]*(\\.[0-9]+)?|[0-9]+\\.[0-9]*[1-9][0-9]*)(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$",
+              "description": "DIRECT_PERMANENT_REFRESH_EVERY (Go duration from 1m to 15m; default 15m; the app refuses the boot outside that range)."
+            },
+            "permanentResultEmitterEnabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED (default \"\": follows STREAMING_ENABLED; true needs the stream on)."
+            }
+          }
         }
       },
       "additionalProperties": true

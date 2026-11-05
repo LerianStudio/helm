@@ -1,7 +1,7 @@
 # plugin-br-bank-transfer — values-template.yaml (the operator fill-in surface)
 #
 # Copy this file, fill the REQUIRED fields + CHANGE_ME credentials, and
-# install: helm install bank-transfer lerian/plugin-br-bank-transfer -f values-template.yaml
+# install: helm install plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version <version> -f values-template.yaml
 #
 # Documents every knob an operator sets, with safe defaults + empty credential
 # placeholders. This is the ONLY starter file for this chart — the full

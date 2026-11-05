@@ -122,14 +122,10 @@ remotecfg {
     // diferentes; sem isto um pipeline cairia nos dois, e o de escopo de cluster
     // replicado no DaemonSet é exatamente a duplicação que esta migração corrigiu.
     "role"         = {{ $papel | quote }},
-    // Separa o universo BYOC do interno. FIXO no chart, NAO parametrizavel: este
-    // chart E o agente dos clientes; os ambientes da propria Lerian rodam
-    // `alloy-lerian-internal` (k8s-monitoring), que nao passa por aqui.
-    //
-    // POR QUE EXISTE: sem ele os matchers disponiveis sao genericos
-    // (`collector.os="linux"`, `role="node"`, `platform="kubernetes"`) e um
-    // agente interno que subisse com esse par casaria a config dos clientes. A
-    // separacao hoje vive so no NOME do pipeline, e nome nao e matcher.
+    // Marca este agente como BYOC. FIXO no chart, NAO parametrizavel: este chart
+    // E o agente dos clientes. Os demais atributos sao genericos
+    // (`collector.os="linux"`, `role="node"`, `platform="kubernetes"`); este
+    // permite um matcher que alcance so os agentes deste chart.
     //
     // ⚠️ NAO E FRONTEIRA DE SEGURANCA. Atributos de remotecfg sao
     // auto-declarados e nao autenticados (ver docs/FLEET-MANAGEMENT.md): servem
@@ -180,7 +176,7 @@ mistake impossible rather than merely unlikely.
 {{- $nomes := list -}}
 {{- range $e := $env -}}{{- $nomes = append $nomes $e.name -}}{{- end -}}
 {{- if not (has "ALLOY_FLEET_POD_NAME" $nomes) -}}
-{{- fail (printf "\n\nalloy-lerian: fleetManagement está habilitado, mas `%s.alloy.extraEnv` não\ndeclara ALLOY_FLEET_POD_NAME.\n\nO bloco remotecfg lê essa variável. Sem ela o agente não inicia, e a falha só\napareceria no log do pod.\n\nAcrescente ao values do papel %s:\n\n  %s:\n    alloy:\n      extraEnv:\n        - name: ALLOY_FLEET_POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: ALLOY_FLEET_TOKEN\n          valueFrom:\n            secretKeyRef:\n              name: alloy-lerian\n              key: fleet-token\n" $papel $papel $papel (include "alloy-lerian.originId" $)) -}}
+{{- fail (printf "\n\nalloy-lerian: fleetManagement está habilitado, mas `%s.alloy.extraEnv` não\ndeclara ALLOY_FLEET_POD_NAME.\n\nO bloco remotecfg lê essa variável. Sem ela o agente não inicia, e a falha só\napareceria no log do pod.\n\nAcrescente ao values do papel %s:\n\n  %s:\n    alloy:\n      extraEnv:\n        - name: ALLOY_FLEET_POD_NAME\n          valueFrom:\n            fieldRef:\n              fieldPath: metadata.name\n        - name: ALLOY_FLEET_TOKEN\n          valueFrom:\n            secretKeyRef:\n              name: alloy-lerian\n              key: fleet-token\n" $papel $papel $papel) -}}
 {{- end -}}
 {{/*
 Declaring the token is not enough: it must be REQUIRED.
@@ -218,16 +214,17 @@ than there, because the decision belongs to the PROFILE and static YAML cannot
 ask which profile is active.
 
 Why this direction and not the other. The first version defaulted to
-`optional: false` and made this guard reject own environments. MEASURED on
-benedita: every own environment then failed with CreateContainerConfigError,
-"secret alloy-lerian not found", over a variable the rendered config never even
-references — and the only fix was to repeat ~20 lines of extraEnv to undo the
+`optional: false` and made this guard reject own environments. Those then failed
+with CreateContainerConfigError over a destination credential the rendered config
+never references, and the only fix was to repeat ~20 lines of extraEnv to undo the
 default. A default the simplest case has to override is the wrong default.
 
-Inverted, both cases are served: own environments install with no Secret and no
-overrides, and the client profile — where 401 is a PERMANENT failure and a pod
-that starts without a credential loses data silently and continuously — is held
-to the strict requirement by this guard.
+Inverted, the destination credential is optional in the own profile and, in the
+client profile — where 401 is a PERMANENT failure and a pod that starts without a
+credential loses data silently and continuously — held to the strict requirement
+by this guard. The `alloy-lerian` Secret must still exist in both profiles:
+ALLOY_FLEET_TOKEN (key `fleet-token`) is required by default in both profiles,
+with Fleet Management on or off.
 */}}
 {{- define "alloy-lerian.assertCredentialEnv" -}}
 {{- if eq (include "alloy-lerian.destinationAuthenticated" .) "true" -}}
@@ -338,7 +335,7 @@ vazio nao recusa a config — ele tenta, falha, e a telemetria fica na fila ate
 estourar. O sintoma e "nao chega nada", sem nenhum erro que aponte a causa.
 */}}
 {{- if not (has "ALLOY_DESTINATION_ENDPOINT" $nomes) -}}
-{{- fail (printf "\n\nalloy-lerian: `%s.alloy.extraEnv` nao declara ALLOY_DESTINATION_ENDPOINT.\n\nO destino saiu do texto da configuracao publicada e passou a vir do ambiente do\npod, porque a configuracao no Fleet e UMA para todos e o destino NAO e igual para\ntodos: os ambientes internos entregam a um balanceador interno que nao passa pelo\ngateway.\n\nMEDIDO: com o endpoint errado o ponto de entrada responde 403, que e falha\nPERMANENTE — o dado e descartado na hora, sem reenvio.\n\nAcrescente em `%s.alloy.extraEnv`:\n\n  - name: ALLOY_DESTINATION_ENDPOINT\n    value: <o mesmo valor de destination.endpoint>\n\n⚠️ O valor de `destination.endpoint` no values CONTINUA sendo obrigatorio: e ele\nque o chart valida (recusa http quando o perfil envia credencial). A variavel e o\nque chega ao agente; a entrada do values e o que e conferido. Os dois precisam\ndizer a mesma coisa.\n\nVer examples/values-cliente.yaml.\n" $papel $papel) -}}
+{{- fail (printf "\n\nalloy-lerian: `%s.alloy.extraEnv` nao declara ALLOY_DESTINATION_ENDPOINT.\n\nO destino saiu do texto da configuracao publicada e passou a vir do ambiente do\npod, porque a configuracao no Fleet e UMA para todos e o destino pode diferir por\ninstalacao.\n\nAcrescente em `%s.alloy.extraEnv`:\n\n  - name: ALLOY_DESTINATION_ENDPOINT\n    value: <o mesmo valor de destination.endpoint>\n\n⚠️ O valor de `destination.endpoint` no values CONTINUA sendo obrigatorio: e ele\nque o chart valida (recusa http quando o perfil envia credencial). A variavel e o\nque chega ao agente; a entrada do values e o que e conferido. Os dois precisam\ndizer a mesma coisa.\n\nVer examples/values-cliente.yaml.\n" $papel $papel) -}}
 {{- end -}}
 {{/*
 Mesma conferencia de divergencia, para o destino. O custo de errar aqui esta

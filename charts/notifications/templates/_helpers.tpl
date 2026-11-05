@@ -81,6 +81,14 @@ LABEL HELPERS (parametric: pass dict with "context" and "name")
 
 {{- define "notifications.labels" -}}
 helm.sh/chart: {{ include "notifications.chart" .context }}
+{{ include "notifications.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart every pod each time.
+*/}}
+{{- define "notifications.podLabels" -}}
 {{ include "notifications.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "notifications.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
@@ -140,4 +148,40 @@ NAMESPACE HELPER
 
 {{- define "notifications.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+LICENCE FILE (optional). licenseFile.existingSecret is mounted as a directory (never
+subPath, so rotations propagate) at /etc/lerian/license; LICENSE_FILE_PATH points at its key.
+*/}}
+{{- define "notifications.licenseFileSecret" -}}
+{{- (.Values.licenseFile | default dict).existingSecret | default "" -}}
+{{- end }}
+
+{{- define "notifications.licenseFileEnv" -}}
+{{- if include "notifications.licenseFileSecret" . }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end }}
+
+{{- define "notifications.licenseFileVolumeMount" -}}
+{{- if include "notifications.licenseFileSecret" . }}
+volumeMounts:
+  - name: license-file
+    mountPath: /etc/lerian/license
+    readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "notifications.licenseFileVolume" -}}
+{{- with include "notifications.licenseFileSecret" . }}
+volumes:
+  - name: license-file
+    secret:
+      secretName: {{ . | quote }}
+      items:
+        - key: license
+          path: license
+{{- end }}
 {{- end }}

@@ -104,7 +104,7 @@ data:
   # stays listed in the $enumerated suppression list below so the escape hatch
   # cannot leak it back either -- same treatment as the other superseded names.
   {{- /* SWAGGER_ENABLED is not emitted, so the app default applies (docs only in local/development); a set value passes through the escape hatch below. */}}
-  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default "http://plugin-br-pix-lerian-spi:4000/spi" | quote }}
+  SPI_BASE_URL: {{ $cm.SPI_BASE_URL | default (printf "http://plugin-br-pix-lerian-spi:%v/spi" .Values.spi.service.port) | quote }}
   SPI_CLIENT_ID: {{ $cm.SPI_CLIENT_ID | default "" | quote }}
   # -- Regulatory-intent drain to the counterparty adapter (v1.1.0). OFF by
   # default; flip REGULATORY_DISPATCH_ENABLED=true to turn it on. Once on in a

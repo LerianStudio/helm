@@ -47,7 +47,7 @@ dependencies:
     repository: "oci://ghcr.io/lerianstudio"
 ```
 
-> **Note:** The `lerian-common-helm` library chart contains shared template helpers and does not deploy any resources directly. Changes in this dependency may include bug fixes, template improvements, or new helper functions that improve chart maintainability. Consult the [lerian-common-helm changelog](https://github.com/lerianstudio/lerian-common-helm) for details on what changed between `2.0.0` and `2.1.2`.
+> **Note:** The `lerian-common-helm` library chart contains shared template helpers and does not deploy any resources directly. Changes in this dependency may include bug fixes, template improvements, or new helper functions that improve chart maintainability. Consult the [lerian-common upgrade guides](https://github.com/LerianStudio/helm/tree/main/charts/lerian-common/docs) for details on what changed between `2.0.0` and `2.1.2`.
 
 The upgrade is transparent to operators — no values.yaml changes are required, and no behavioral changes are expected in the deployed resources.
 

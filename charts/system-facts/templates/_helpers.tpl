@@ -39,6 +39,14 @@ Common labels
 */}}
 {{- define "system-facts.labels" -}}
 helm.sh/chart: {{ include "system-facts.chart" .context }}
+{{ include "system-facts.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart every pod each time.
+*/}}
+{{- define "system-facts.podLabels" -}}
 {{ include "system-facts.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "system-facts.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}

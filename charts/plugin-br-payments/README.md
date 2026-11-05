@@ -3,18 +3,18 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render, and `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.LICENSE_KEY` in every environment (unless `app.licenseFile.existingSecret` mounts a signed licence file); `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render; `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`); and `PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` in single-tenant while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
-A Helm chart for [plugin-br-payments](https://github.com/LerianStudio/plugin-br-payments) — Lerian Studio's plugin for Brazilian payment operations: boleto issuance, bill payments (bankslip, utilities, DARF), settlement via webhooks, and periodic reconciliation.
+A Helm chart for [plugin-br-payments](https://docs.lerian.studio/en/interfaces/payments-btg/boleto-and-bill-payment) — Lerian Studio's plugin for Brazilian payment operations: boleto issuance, bill payments (bankslip, utilities, DARF), settlement via webhooks, and periodic reconciliation.
 
 ## TL;DR
 
 ```bash
-helm repo add lerian https://lerianstudio.github.io/helm
-helm install my-payments lerian/plugin-br-payments-helm \
+helm install my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm \
+  --version <chart version> \
   --namespace midaz-plugins --create-namespace \
   -f values-prod.yaml
 ```
@@ -23,7 +23,7 @@ The default image is the stable `1.2.0` release. The health-port compatibility f
 
 ## Prerequisites
 
-- Kubernetes 1.23+
+- Kubernetes 1.27+
 - Helm 3.10+
 - Either:
   - the in-cluster PostgreSQL subchart (default, `postgresql.enabled=true`), or
@@ -31,6 +31,7 @@ The default image is the stable `1.2.0` release. The health-port compatibility f
 - A reachable `plugin-auth` (lib-auth) deployment when `PLUGIN_AUTH_ENABLED=true`.
 - A reachable Midaz onboarding/transaction stack.
 - A configured Brazilian payment provider (BTG is the first supported adapter).
+- Pull access to the application image `ghcr.io/lerianstudio/plugin-br-payments`, which is not public: list a registry Secret in `app.imagePullSecrets` (the control-plane migrations Job uses the same list).
 
 ## Architecture
 
@@ -59,7 +60,8 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.configmap.BTG_AUTH_URL` | BTG OAuth2 token URL. |
 | `app.configmap.MIDAZ_LEDGER_URL` | Midaz Ledger service URL: one URL serves onboarding and transaction. Must be `https://` under `ENV_NAME=production` (the default). The former `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair is refused at render with the rename named. |
 | `app.configmap.ORGANIZATION_IDS` | `"global"` or the comma-separated organization UUIDs the license covers. The app validates its license at startup in every environment. |
-| `app.secrets.LICENSE_KEY` | License key. Required in every environment. |
+| `app.secrets.LICENSE_KEY` | License key. Required in every environment unless `app.licenseFile.existingSecret` is set. The control-plane migrations Job receives it too. |
+| `app.licenseFile.existingSecret` | Optional Secret holding a signed licence file under the key `license`, mounted read-only as the directory `/etc/lerian/license` on the app and the control-plane migrations Job; sets `LICENSE_FILE_PATH`. Replaces `LICENSE_KEY`. The Secret must exist before the sync: the PreSync migrations Job mounts it. File mode needs an image on lib-license-go v5. |
 | `app.secrets.PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` | Access Manager client credentials of the Midaz client. Single-tenant, while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). |
 | `app.secrets.PROVIDER_CLIENT_ID` | Provider OAuth2 client ID. **Single-tenant only** — in multi-tenant it is resolved per tenant and must be left empty. Named for the role rather than the vendor; renamed from `BTG_CLIENT_ID`. |
 | `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. Same conditionality as above; renamed from `BTG_CLIENT_SECRET`. |
@@ -128,8 +130,7 @@ is no longer needed.
 
 ## Configuration keys
 
-The ConfigMap and Secret are **template-owned**: they render exactly the keys below (the
-application 1.0.2 contract), and `values.schema.json` refuses any other key under
+The ConfigMap and Secret are **template-owned**: they render exactly the keys below, and `values.schema.json` refuses any other key under
 `app.configmap` / `app.secrets`. Set `app.configmap.<KEY>` to override a key; a key marked
 *unset* is rendered only when you set it, so the application default applies otherwise. A
 `null` counts as unset. Connection endpoints resolve through the lerian-common masks, native
@@ -142,7 +143,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 |-----|---------|
 | `ENV_NAME` | `global.env.name`, else `"production"` |
 | `LOG_LEVEL` | `"info"` |
-| `DEPLOYMENT_MODE` | `"byoc"` (`"saas"` refuses to boot unless every configured endpoint, OTLP included, uses TLS) |
+| `DEPLOYMENT_MODE` | `"byoc"` |
 | `SERVICE_TYPE` | `"both"` |
 | `SWAGGER_ENABLED` | `"false"` |
 | `VERSION` | the image tag |
@@ -286,6 +287,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_COMMON_BASE_URL` | `""` |
 | `BTG_TOKEN_REFRESH_INTERVAL` | `"4m"` |
 | `BTG_HTTP_TIMEOUT` | unset (app default) |
+| `REQUEST_TIMEOUT_SEC` | unset (app default; app 1.2.0 and later; must be at least four `BTG_HTTP_TIMEOUT`s) |
 | `BTG_CREDENTIAL_SYNC_INTERVAL` | unset (app default) |
 | `PROVIDER_CREDENTIAL_CLAIM_LEASE` | unset (app default) |
 | `BTG_MTLS_OUTBOUND_ENABLED` | unset (app default) |
@@ -425,13 +427,13 @@ app:
     MULTI_TENANT_SERVICE_API_KEY: "<api key>"
 ```
 
-When enabled, `/readyz/tenant/:id` becomes available and the provider credential is read per tenant, so use the per-tenant probe for it. Do not set `app.secrets.PROVIDER_CLIENT_ID` or `app.secrets.PROVIDER_CLIENT_SECRET`; the application resolves those credentials from each tenant's control-plane record. The control-plane migrations Job (`app.controlplaneMigrations.enabled`, required for multi-tenant) runs before each install and upgrade; the render fails if it cannot (bundled Postgres, or the Job disabled).
+When enabled, `/readyz/tenant/:id` becomes available and the provider credential is read per tenant, so use the per-tenant probe for it. Do not set `app.secrets.PROVIDER_CLIENT_ID` or `app.secrets.PROVIDER_CLIENT_SECRET`; the application resolves those credentials per tenant. The control-plane migrations Job (`app.controlplaneMigrations.enabled`, required for multi-tenant) runs before each install and upgrade; the render fails if it cannot (bundled Postgres, or the Job disabled).
 
 ### AWS credentials for Secrets Manager (`aws.rolesAnywhere`)
 
 Multi-tenant mode with `MULTI_TENANT_CREDENTIAL_SOURCE: "vault"` calls AWS Secrets
 Manager to read each tenant's integrations bundle. On a cluster that already runs on
-AWS (IRSA), the pod gets credentials for free. On a **non-AWS cluster** (on-prem,
+AWS (IRSA), annotate the ServiceAccount with the IAM role through `app.serviceAccount.annotations`. On a **non-AWS cluster** (on-prem,
 Proxmox, another cloud) there is no such mechanism, so enable IAM Roles Anywhere: an
 `aws-signing-helper` sidecar exchanges an X.509 client certificate for temporary AWS
 credentials and serves them on a local metadata endpoint the app reads via the

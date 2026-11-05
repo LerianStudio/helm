@@ -74,6 +74,14 @@
     "app": {
       "type": "object",
       "properties": {
+        "licenseFile": {
+          "type": "object",
+          "description": "Optional signed licence file: an existing Secret mounted as a directory; replaces secrets.LICENSE_KEY.",
+          "properties": {
+            "existingSecret": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
         "configmap": {
           "type": "object",
           "description": "Per-key overrides of the template-owned ConfigMap. Keys outside this list are not rendered by the chart; renamed/retired keys are accepted here only so the render can name their replacement.",
@@ -228,6 +236,7 @@
               "RECONCILIATION_WEBHOOK_SILENCE_WINDOW",
               "RELAXED_RATE_LIMIT_MAX",
               "RELAXED_RATE_LIMIT_WINDOW_SEC",
+              "REQUEST_TIMEOUT_SEC",
               "SERVER_ADDRESS",
               "SERVER_TLS_CERT_FILE",
               "SERVER_TLS_KEY_FILE",

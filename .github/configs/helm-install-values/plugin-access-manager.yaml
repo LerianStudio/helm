@@ -14,3 +14,6 @@ identity:
   secrets:
     ORGANIZATION_IDS: "global"
     LICENSE_KEY: "IT_LICENSE_KEY"
+caradhras:
+  secrets:
+    LICENSE_KEY: "IT_LICENSE_KEY_CARADHRAS"

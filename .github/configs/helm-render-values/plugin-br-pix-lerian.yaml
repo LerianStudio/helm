@@ -10,7 +10,7 @@
 #     a string field, so an unquoted render is rejected by the API server;
 #   * explicit 0 on every knob where Go's `default` would swallow it
 #     (migrations.backoffLimit, migrations.ttlSecondsAfterFinished,
-#     readiness/livenessProbe.initialDelaySeconds);
+#     health.drainSeconds, the one health preset knob that takes 0);
 #   * extraEnvVars claiming HOST_IP and OTEL_EXPORTER_OTLP_ENDPOINT, the two
 #     names the deployment template also emits from the downward API;
 #   * the Postgres bootstrap Jobs, under the current credentials key.
@@ -53,10 +53,8 @@ spi:
   enabled: true
   secrets:
     DATABASE_URL: "postgres://pixswitch:render-fixture-only@postgres.example.invalid:5432/pix-spi?sslmode=disable"
-  readinessProbe:
-    initialDelaySeconds: 0
-  livenessProbe:
-    initialDelaySeconds: 0
+  health:
+    drainSeconds: 0
   migrations:
     backoffLimit: 0
     ttlSecondsAfterFinished: 0

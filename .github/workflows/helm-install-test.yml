@@ -183,6 +183,7 @@ jobs:
           # One CI license per license-gated chart (helm-install-values/README.md).
           HELM_CI_LICENSE_KEY_BR_STA: ${{ secrets.HELM_CI_LICENSE_KEY_BR_STA }}
           HELM_CI_LICENSE_KEY_PLUGIN_ACCESS_MANAGER: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_ACCESS_MANAGER }}
+          HELM_CI_LICENSE_KEY_CARADHRAS: ${{ secrets.HELM_CI_LICENSE_KEY_CARADHRAS }}
           HELM_CI_LICENSE_KEY_PLUGIN_BC_CORREIOS: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_BC_CORREIOS }}
           HELM_CI_LICENSE_KEY_PLUGIN_BR_BANK_TRANSFER: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_BR_BANK_TRANSFER }}
           HELM_CI_LICENSE_KEY_PLUGIN_BR_PIX_JD: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_BR_PIX_JD }}
@@ -207,7 +208,7 @@ jobs:
             echo "::group::install-test $c"
             kv="HELM_CI_LICENSE_KEY_${c//-/_}"; kv="${kv^^}"  # this chart's license, if any
             [[ -v "$kv" ]] && echo "  license: $kv $([[ -n "${!kv}" ]] && echo set || echo 'not set')"
-            if IT_LICENSE_KEY="${!kv:-}" bash .github/scripts/install-test.sh "charts/$c"; then
+            if IT_LICENSE_KEY="${!kv:-}" IT_LICENSE_KEY_CARADHRAS="${HELM_CI_LICENSE_KEY_CARADHRAS:-}" bash .github/scripts/install-test.sh "charts/$c"; then
               echo "::endgroup::"
               # A chart that reached Ready no longer needs its exemption.
               if [[ -n "$IT_PULL_SECRET" && -n "$(awk -v c="$c" '$1 == c' <<< "$ALLOW")" ]]; then

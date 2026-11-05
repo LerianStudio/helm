@@ -3,11 +3,12 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` when `auth.initUser.enabled` uses a generated Secret (or select an external Secret with `auth.initUser.useExistingSecret=true` and `auth.initUser.adminPasswordSecretName`). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
+- Required secrets: `identity.secrets.LICENSE_KEY` and `auth.secrets.LICENSE_KEY` (auth and identity refuse to boot with an empty key), `caradhras.secrets.LICENSE_KEY`, `caradhras.useExistingSecret` or `caradhras.licenseFile.existingSecret` (a Secret holding a signed licence file under the key `license`, mounted as a read-only directory at `/etc/lerian/license` on the server and its `migrate` init container; needs an image on lib-license-go v5; Caradhras needs its own key, issued for the `caradhras` product; the chart fails to render without it unless `caradhras.image.tag` is a semver tag below 2.0.0; 2.0.0 prereleases need the key), `identity.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.secrets.AUTHORIZER_CLIENT_SECRET`, and `auth.initUser.adminPassword` when `auth.initUser.enabled` uses a generated Secret (or select an external Secret with `auth.initUser.useExistingSecret=true` and `auth.initUser.adminPasswordSecretName`). `auth.secrets.DB_PASSWORD` is single-sourced from the `<release>-auth-database` Secret this chart keeps for the bundled database (read via `secretKeyRef`) and is only required when the database is **external** (`auth-database.external=true`/disabled) without an `auth-database.auth.existingSecret` override — in that case install fails loud if it is unset. With `identity.configmap.GOOGLE_DIRECTORY_ENABLED: "true"`, also `identity.secrets.GOOGLE_DIRECTORY_CLIENT_SECRET` and `identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY` (or the same two keys in the Secret named by `identity.existingSecretName`).
 - Dependency notes: Uses local PostgreSQL/Valkey dependencies for auth services unless external services are configured.
 - Production overrides: Provide authorizer and database credentials through chart secrets or existing Secrets where supported; override identity/auth/caradhras image tags, ingress, resources, and persistence. When `ENV_NAME` is not `development`, `staging` or `local`, reach Caradhras over https (`caradhras.ingress` with a public-CA certificate) and set `auth.configmap.AUTHORIZER_ADDRESS` and `identity.configmap.AUTHORIZER_ADDRESS` to that same `https` URL; the chart refuses to render the combinations it can detect (see [Production: reach Caradhras over HTTPS](#production-reach-caradhras-over-https)).
 - External bootstrap Secret: needed only for an organization Caradhras has never initialized; create it before identity starts (changes or late creation require an identity rollout restart). An initialized organization needs no password.
 - Initial admin: with `auth.initUser.enabled` in single-tenant mode, identity >= 3.17.0 calls Caradhras >= 2.1.0 `ensure-first-admin`. Caradhras creates the first Console admin (`admin`, in `admin-group`) only for an organization never initialized: one that did not exist when migration 000029 ran and never had a non-internal user. Deleting every user never re-seeds it. The render refuses `auth.initUser.enabled` with older tags. One upgrade can roll all three: identity keeps retrying, unready, until Caradhras 2.1.0 answers. Caradhras must trust the application behind identity's `AUTHORIZER_CLIENT_ID` (a `trustedServiceApplications` entry `admin/<app>:<organization>`); the default `app-lerian` client is trusted. For another client, set `caradhras.extraEnvVars.trustedServiceApplications` to the full comma-separated list: it replaces the image default `admin/app-lerian:lerian,admin/app-built-in:built-in`, so keep those entries. Without the entry, identity gets 403 and stays unready. The former `caradhras-user-init` post-install Job and its image, timeout and resource keys are gone; leftover keys are ignored. The `-init-user` Secret is no longer a hook, so it stays after install. Treat any account seeded by the Caradhras image as existing state: verify and rotate bootstrap credentials through the supported authenticated flow.
+- Caradhras 2.x: moving to Caradhras 2.x is one-way. Its migrations move the database forward, and a 1.8.x Caradhras pod then refuses to start. Back up the Caradhras database before the upgrade: restoring that backup is the only way back to 1.x.
 - Legacy upgrade: if a failed legacy install left its generated bootstrap Secret behind, inspect the namespace, release, Secret name and `helm.sh/hook` metadata to confirm it is that obsolete hook resource. Remove only that generated bootstrap Secret before upgrading, and provide the intended password or external Secret selection. Never remove an external Secret, database Secret or account data for this step.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
@@ -22,15 +23,11 @@
 
 This retires the chart's bootstrap inputs, not the account. Leaving only `ADMIN_EMAIL` or `ADMIN_DISPLAY_NAME` keeps the startup check enabled; on Caradhras >= 2.1.0 identity stays ready for an initialized organization and stays unready only for a never-initialized organization without a password; on an older Caradhras any leftover `ADMIN_*` keeps identity 3.17.0 unready (404), and the render does not check them. Helm release history and backups may retain old values; this procedure does not purge them.
 
-This helm chart installs [Plugin Access Manager](https://docs.lerian.studio/docs/auth-identity) for Midaz, a high-performance ledger.
+This helm chart installs [Plugin Access Manager](https://docs.lerian.studio/en/platform/access-manager) for Midaz, a high-performance ledger.
 
 ---
 
-## Startup validation (chart source after 9.5.8)
-
-The published `9.5.8` package does not contain these render-time guards. A new
-chart release is required to distribute them; changing this repository does not
-mutate that package.
+## Startup validation
 
 - **JWKS over HTTPS.** Outside `development`, `staging` or `local`, auth and
   identity must reach Caradhras over `https`; the chart refuses to render the
@@ -61,8 +58,8 @@ mutate that package.
   end-to-end upgrade, TLS trust, licenses, or existing users' MFA recovery paths.
   See the [9.5.8 upgrade guide](docs/UPGRADE-9.5.8.md) before rollout.
 
-The offline regression suite in `tests/` is not wired into CI yet. Run it from the
-repository root; it needs Helm 3 and PyYAML, no cluster:
+Run the offline regression suite in `tests/` from the repository root. It needs
+Helm 3 and PyYAML, no cluster:
 
 ```bash
 helm dependency build charts/plugin-access-manager
@@ -89,7 +86,7 @@ $ helm list -n midaz-plugins
 ## Managed Cloud (`global.cloud`)
 
 Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
-bundled in-cluster Caradhras/Postgres/Redis with one knob:
+bundled in-cluster Postgres/Redis with one knob:
 
 ```yaml
 global:
@@ -111,13 +108,48 @@ auth-database:
 valkey:
   enabled: false
 
-# auth.secrets.DB_PASSWORD/REDIS_PASSWORD are normally single-sourced from the
-# bundled datastores' Secrets. With both disabled above, supply the managed
-# instances' credentials explicitly (or point auth.existingSecretName at a
-# pre-created Secret with the same keys instead of inlining them here):
-auth:
+# ENV_NAME "production" also needs an https AUTHORIZER_ADDRESS, or the render
+# fails. Caradhras serves plain http, so publish it through an internal ingress
+# with a public-CA certificate and point both AUTHORIZER_ADDRESS at that URL
+# (see "Production: reach Caradhras over HTTPS" below):
+caradhras:
   secrets:
+    LICENSE_KEY: "CHANGE_ME"
+  ingress:
+    enabled: true
+    className: "nginx"            # use an internal-only class: this exposes the Caradhras admin panel and API
+    hosts:
+      - host: caradhras.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: caradhras-tls   # create it before the install (or let cert-manager issue it), public-CA certificate
+        hosts:
+          - caradhras.example.com
+
+# auth.secrets.DB_PASSWORD is normally single-sourced from the bundled
+# database's Secret. With both datastores disabled above, supply the managed
+# instances' credentials explicitly (or set auth.useExistingSecret and
+# identity.useExistingSecret to true and point auth.existingSecretName and
+# identity.existingSecretName at pre-created Secrets with the same keys).
+# LICENSE_KEY and AUTHORIZER_CLIENT_SECRET are required for auth and identity:
+# the render fails without AUTHORIZER_CLIENT_SECRET, and both refuse to boot
+# with an empty LICENSE_KEY. Caradhras 2.x needs its own LICENSE_KEY (above).
+auth:
+  configmap:
+    AUTHORIZER_ADDRESS: "https://caradhras.example.com"
+  secrets:
+    LICENSE_KEY: "CHANGE_ME"
+    AUTHORIZER_CLIENT_SECRET: "CHANGE_ME"
     DB_PASSWORD: "CHANGE_ME"
+    REDIS_PASSWORD: "CHANGE_ME"
+identity:
+  configmap:
+    AUTHORIZER_ADDRESS: "https://caradhras.example.com"
+  secrets:
+    LICENSE_KEY: "CHANGE_ME"
+    AUTHORIZER_CLIENT_SECRET: "CHANGE_ME"
     REDIS_PASSWORD: "CHANGE_ME"
 ```
 
@@ -137,12 +169,12 @@ This chart has no top-level `ingress:` block: a top-level `ingress.*` value is i
 
 | Component | Values key | Service port | Host derived from `global.ingress.domain` |
 | --- | --- | --- | --- |
-| Auth | `auth.ingress` | `auth.service.port` (`4000`) | `auth.<domain>` |
-| Identity | `identity.ingress` | `identity.service.port` (`4001`) | `identity.<domain>` |
+| Auth | `auth.ingress` | `auth.service.port` (`4000`) | none: set `hosts` |
+| Identity | `identity.ingress` | `identity.service.port` (`4001`) | none: set `hosts` |
 | Caradhras (API and admin panel) | `caradhras.ingress` | `8000` | `caradhras.<domain>` |
 | Caradhras UI (needs `caradhras.ui.enabled`) | `caradhras.ui.ingress` | `caradhras.ui.service.port` (`8080`) | `caradhras.<domain>` |
 
-Ingresses are off by default. To set `className`, `annotations`, `tls` and the host domain once for all of them, use `global.ingress` (`className`, `annotations`, `tls`, `domain`); a per-component value always wins. With `global.ingress.domain` set and no explicit `hosts`, the host is `<subdomain>.<domain>` as in the last column. The caradhras UI Ingress derives the same `caradhras.<domain>` host as `caradhras.ingress`, so give one of them explicit `hosts` when you enable both.
+Ingresses are off by default. `global.ingress.annotations` applies to every Ingress. `global.ingress` `className`, `tls` and `domain` apply only to `caradhras.ingress` and `caradhras.ui.ingress`. `auth.ingress` and `identity.ingress` ship their own `className`, `tls` and `hosts` defaults, and a per-component value always wins, so set those three per component. With `global.ingress.domain` set and no explicit `hosts`, the Caradhras host is `caradhras.<domain>`. The caradhras UI Ingress derives the same `caradhras.<domain>` host as `caradhras.ingress`, so give one of them explicit `hosts` when you enable both.
 
 **Keep Caradhras internal.** `caradhras.ingress` and `caradhras.ui.ingress` must be internal only, on an internal
 load balancer or a private network, never internet-facing. On AWS ALB that means `alb.ingress.kubernetes.io/scheme: internal`.
@@ -300,8 +332,6 @@ required. To keep the previous pod template exactly, set
 | `image.tag` | Image tag used for deployment | `3.17.0` |
 | `health.stack` | Health preset (lerian-common.health): probes, `HEALTH_PORT` 8099, drain and shutdown env, grace, rollout and PDB; tune only `health.drainSeconds` and `health.shutdownSeconds` | `go` |
 | `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
-| `nameOverride` | Overrides the default generated name by Helm | `""` |
-| `fullnameOverride` | Overrides the full name generated by Helm | `""` |
 | `ingress.enabled` | Enable or disable ingress | `false` |
 | `ingress.className` | Ingress class name | `""` |
 | `ingress.annotations` | Additional ingress annotations | `{}` |
@@ -344,9 +374,6 @@ required. To keep the previous pod template exactly, set
 | `image.tag` | Image tag used for deployment | `3.17.0` |
 | `health.stack` | Health preset (lerian-common.health): probes, `HEALTH_PORT` 8099, drain and shutdown env, grace, rollout and PDB; tune only `health.drainSeconds` and `health.shutdownSeconds` | `go` |
 | `imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
-| `nameOverride` | Overrides the default generated name by Helm | `""` |
-| `fullnameOverride` | Overrides the full name generated by Helm | `""` |
-| `namespaceOverride` | Overrides the namespace for the service | `""` |
 | `ingress.enabled` | Enable or disable ingress | `false` |
 | `ingress.className` | Ingress class name | `""` |
 | `ingress.annotations` | Additional ingress annotations | `{}` |
@@ -508,23 +535,23 @@ auth:
 Caradhras is a top-level component, sibling to `identity`/`auth` (formerly the
 nested `auth.backend`, which ran the legacy Casdoor image). A legacy
 `auth.backend.*` override in your OWN values file is still honored as a
-fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
-`replicaCount` — see `docs/UPGRADE-8.6-to-9.2.md`.
+fallback for `name`, `service.port`, `replicaCount`, `migrations.image.*` and the
+probe `timeoutSeconds` (see `docs/UPGRADE-8.6-to-9.2.md`).
 
 | Parameter | Description | Default |
 | --- | --- | --- |
 | `caradhras.replicaCount` | Number of replicas | `1` |
 | `caradhras.name` | Name of the caradhras component | `<release>-caradhras` |
 | `caradhras.image.repository` | Repository for the caradhras container image | `ghcr.io/lerianstudio/caradhras` |
-| `caradhras.image.tag` | Image tag used for deployment | `1.8.6` |
+| `caradhras.image.tag` | Image tag used for deployment | `2.1.0` |
 | `caradhras.service.port` | Service port | `8000` |
 | `caradhras.ingress.enabled` | Expose Caradhras itself (API and admin panel, port 8000) through an Ingress; `className`/`annotations`/`hosts`/`tls` take the same shape as `auth.ingress`. The way to reach it over https in production — see below | `false` |
 | `caradhras.autoscaling` | Autoscaling configuration | See `values.yaml` |
 | `caradhras.spread` | Per-component override of `global.scheduling.spread` (fields: enabled, hostname, zone, maxSkew). `nodeSelector` / `affinity` / `tolerations` for caradhras still come from `auth.*` | `{}` |
 | `caradhras.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | `[]` |
 | `caradhras.migrations.image.repository` | Repository for the caradhras-migrations container image | `ghcr.io/lerianstudio/caradhras-migrations` |
-| `caradhras.migrations.image.tag` | Image tag — independent of `caradhras.image.tag`: override both when changing versions. `auth.initUser` needs both Caradhras tags >= 2.1.0 (the default 1.8.6 is refused) | `1.8.6` |
-| `caradhras.migrations.skipRBACChain` | Render `MIGRATIONS_SKIP_RBAC_CHAIN=true` on the migrate init container and on the caradhras container: the migrate applies the schema chain and skips the `migrations-rbac` chain (Lerian product permissions/roles/groups under owner `lerian`), and the caradhras boot schema check skips the same chain. For installs whose permissions arrive only via RI manifests (e.g. cross). Needs caradhras and caradhras-migrations images that understand the variable; `false` renders nothing | `false` |
+| `caradhras.migrations.image.tag` | Image tag; defaults to the server tag (`caradhras.image.tag`). `auth.initUser` needs both Caradhras tags >= 2.1.0 | `2.1.0` |
+| `caradhras.migrations.skipRBACChain` | Render `MIGRATIONS_SKIP_RBAC_CHAIN=true` on the migrate init container and on the caradhras container: the migrate applies the schema chain and skips the `migrations-rbac` chain (Lerian product permissions/roles/groups under owner `lerian`), and the caradhras boot schema check skips the same chain. For installs whose permissions arrive only via RI manifests. Needs caradhras and caradhras-migrations images that understand the variable; `false` renders nothing | `false` |
 | `caradhras.migrations.extraEnvVars` | Extra `NAME: value` env vars for the migrate init container only, rendered as name/value pairs. Chart-owned names (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_SSLMODE`, `MIGRATIONS_SKIP_RBAC_CHAIN`) are refused; names must be valid env var names (`[-._a-zA-Z][-._a-zA-Z0-9]*`); not for secrets | `{}` |
 | `caradhras.ui.enabled` | Enable the Caradhras UI (SPA console) sub-resource | `false` |
 | `caradhras.ui.image.repository` | Repository for the caradhras-ui container image | `ghcr.io/lerianstudio/caradhras-ui` |
@@ -535,13 +562,13 @@ fallback for `image.repository`/`image.tag`/`image.pullPolicy`/`service.port`/
 | `caradhras.ui.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the spread preset | unset (`[]`) |
 | `caradhras.configmap.redisEndpoint` | Shared session store for a Redis **without AUTH**, `host:port` with no space. Empty keeps sessions in a file on each pod's own filesystem. **Required above one replica** — see below. Refused when it carries a password | `""` |
 | `caradhras.secrets.redisEndpoint` | Shared session store for a Redis **with AUTH**: the full beego connection string `host:port,poolsize,password[,dbnum]`. Delivered by Secret, never by ConfigMap | `""` |
-| `caradhras.secrets.LICENSE_KEY` | Caradhras license key (env `LICENSE_KEY`, by Secret). Required by images with the license gate, which refuse to boot without it. Issued for product `caradhras`, not the auth/identity key | `""` |
+| `caradhras.secrets.LICENSE_KEY` | Caradhras license key (env `LICENSE_KEY`, by Secret). Required: the chart fails to render without it (or `caradhras.useExistingSecret`) unless `caradhras.image.tag` is a semver tag below 2.0.0 (2.0.0 prereleases need the key). Issued for product `caradhras`, not the auth/identity key | `""` |
 | `caradhras.useExistingSecret` | Manage the caradhras Secret yourself; the chart creates none | `false` |
 | `caradhras.existingSecretName` | Name of that Secret. Carries `LICENSE_KEY`, plus `redisEndpoint` unless `caradhras.configmap.redisEndpoint` is set | `""` |
 | `caradhras.redisPassword.enabled` | Inject the Redis AUTH password as the `redisPassword` config key, by `secretKeyRef`. Lets the endpoint stay a bare `host:port` | `false` |
 | `caradhras.redisPassword.secretName` | Secret holding that password. Empty uses the auth Secret | `""` |
 | `caradhras.redisPassword.secretKey` | Key inside that Secret | `REDIS_PASSWORD` |
-| `caradhras.builtInAdminPassword.enabled` | Inject the `built-in/admin` password as the `builtInAdminPassword` config key, by `secretKeyRef`. Read only when the built-in organization is first created (fresh database); it never changes an existing admin. Unset, a new admin gets the public default `123` and Caradhras warns every hour; over 72 bytes fails the boot before seeding. Needs Caradhras >= 1.9.0-beta.25: the render fails unless `caradhras.image.tag` is a semver tag >= 1.9.0-beta.25 (the default 1.8.6 ignores the key) | `false` |
+| `caradhras.builtInAdminPassword.enabled` | Inject the `built-in/admin` password as the `builtInAdminPassword` config key, by `secretKeyRef`. Read only when the built-in organization is first created (fresh database); it never changes an existing admin. Unset, a new admin gets the public default `123` and Caradhras warns every hour; over 72 bytes fails the boot before seeding. Needs Caradhras >= 1.9.0-beta.25: the render fails unless `caradhras.image.tag` is a semver tag >= 1.9.0-beta.25, with or without an `@sha256:` digest | `false` |
 | `caradhras.builtInAdminPassword.secretName` | Secret holding that password. Required when enabled | `""` |
 | `caradhras.builtInAdminPassword.secretKey` | Key inside that Secret | `builtInAdminPassword` |
 | `caradhras.configmap.redisTls` | Reach the session store over TLS (`"true"`/`"false"`). Only emitted when an endpoint is configured; also settable once for every component via `global.datastores.redis.tls` | `""` (resolves to `false`) |
@@ -603,8 +630,7 @@ Secret.** Caradhras reads `redisPassword` as its own config key and resolves the
 session store and the rate limiter from that one reading, so the credential never
 has to be spliced into a connection string — and the endpoint, carrying no
 password, can ride the ConfigMap. The password defaults to the auth Secret's
-`REDIS_PASSWORD` key, which is where the caradhras `DB_PASSWORD` already reads
-from; point `caradhras.redisPassword.secretName`/`.secretKey` elsewhere for a
+`REDIS_PASSWORD` key; point `caradhras.redisPassword.secretName`/`.secretKey` elsewhere for a
 different topology.
 
 That channel requires the endpoint to be a **bare `host:port`**, and the chart
@@ -688,7 +714,6 @@ caradhras both.
 - **Repository:** https://charts.bitnami.com/bitnami
 - **How to disable:** Set `auth-database.enabled` to `false` in the values file.
 - **Note:** If you have an existing PostgreSQL instance, you can disable this dependency and configure Midaz Components to use your external PostgreSQL, like this:
-- **Important:** When using an external Postgres instance, make sure to load the init SQL file [`00_init.sql`](https://github.com/LerianStudio/midaz-helm/blob/main/charts/plugin-access-manager/files/00_init.sql) into your database.
 
   ```yaml
   auth:
@@ -711,6 +736,15 @@ caradhras both.
 
   ```yaml
   auth:
+    configmap:
+      REDIS_HOST: { your-host }
+      REDIS_PORT: { your-host-port }
+      REDIS_USER: { your-host-user }
+
+    secrets:
+      REDIS_PASSWORD: { your-host-pass }
+
+  identity:
     configmap:
       REDIS_HOST: { your-host }
       REDIS_PORT: { your-host-port }

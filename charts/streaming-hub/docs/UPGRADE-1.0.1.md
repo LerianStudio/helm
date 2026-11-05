@@ -54,7 +54,7 @@ The chart source files have been cleaned up to remove trailing blank lines in `C
 helm diff upgrade streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version 1.0.1 -n streaming-hub
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+> **Note:** Requires the helm-diff plugin. Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ---
 

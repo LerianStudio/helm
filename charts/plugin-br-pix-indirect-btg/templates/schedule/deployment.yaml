@@ -22,7 +22,7 @@ spec:
         checksum/secret: {{ include (print $.Template.BasePath "/schedule/secrets.yaml") . | sha256sum }}
         {{- end }}
       labels:
-        {{- include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | nindent 8 }}
+        {{- omit (include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | fromYaml) "helm.sh/chart" | toYaml | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.schedule.imagePullSecrets }}
@@ -47,6 +47,7 @@ spec:
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
           env:
           {{- toYaml $h.env | nindent 10 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileEnv" . | trim) }}{{ . | nindent 10 }}{{- end }}
           {{- if $otelEnabled }}
           - name: "HOST_IP"
             valueFrom:
@@ -60,6 +61,10 @@ spec:
           startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
           livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileMount" . | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
       {{- with .Values.schedule.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -71,4 +76,8 @@ spec:
       {{- with .Values.schedule.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (include "plugin-br-pix-indirect-btg.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
       {{- end }}

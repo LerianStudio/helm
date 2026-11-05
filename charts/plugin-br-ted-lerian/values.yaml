@@ -149,7 +149,8 @@ plugin-br-ted-lerian:
     # -- Maximum number of pods that can be created over the desired number of pods
     maxSurge: 1
     # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 1
+    # (0 keeps the old pod serving until the surged pod is ready)
+    maxUnavailable: 0
   # ----- Workload · networking -----------------------------------------------
   service:
     # -- Kubernetes service type
@@ -165,7 +166,7 @@ plugin-br-ted-lerian:
     # -- Additional ingress annotations
     annotations: {}
     hosts:
-      - host: "plugin-br-ted-lerian.lerian.net"
+      - host: "plugin-br-ted-lerian.example.com"
         paths:
           - path: /
             pathType: Prefix
@@ -254,9 +255,9 @@ plugin-br-ted-lerian:
     protocol: "3" # → REDIS_PROTOCOL
     poolSize: "10" # → REDIS_POOL_SIZE
     minIdleConns: "2" # → REDIS_MIN_IDLE_CONNS
-    readTimeoutMs: "3000" # → REDIS_READ_TIMEOUT_MS
-    writeTimeoutMs: "3000" # → REDIS_WRITE_TIMEOUT_MS
-    dialTimeoutMs: "5000" # → REDIS_DIAL_TIMEOUT_MS
+    readTimeoutMs: "3000" # → REDIS_READ_TIMEOUT (whole seconds, minimum 1)
+    writeTimeoutMs: "3000" # → REDIS_WRITE_TIMEOUT (whole seconds, minimum 1)
+    dialTimeoutMs: "5000" # → REDIS_DIAL_TIMEOUT (whole seconds, minimum 1)
   # --- Rate limiting ---------------------------------------------------------
   rateLimit:
     enabled: "true" # → RATE_LIMIT_ENABLED
@@ -268,8 +269,10 @@ plugin-br-ted-lerian:
     title: "Plugin Br Ted Lerian" # → SWAGGER_TITLE
   # -- Raw env override (advanced escape hatch). EMPTY by default — everything a
   #    client tunes is a clean param above; connection host/user/port/ssl comes from
-  #    global.datastores. Any key set here WINS (backward-compatible) — e.g.
-  #    POSTGRES_HOST, REDIS_HOST, PLUGIN_AUTH_HOST, OTEL_EXPORTER_OTLP_ENDPOINT.
+  #    global.datastores. A key set here WINS over the param that renders the same
+  #    variable — e.g. POSTGRES_HOST, REDIS_HOST, PLUGIN_AUTH_HOST,
+  #    OTEL_EXPORTER_OTLP_ENDPOINT. Keys the ConfigMap does not render are
+  #    dropped: add those through extraEnvVars or secrets.
   # @default -- templates/configmap.yaml
   configmap: {}
   # -- Secrets for storing sensitive data
@@ -342,14 +345,13 @@ aws:
 # =============================================================================
 # BUNDLED INFRA SUBCHARTS — DISABLED by default.
 #
-# On benedita, Postgres and Valkey are external, pre-provisioned services: the
+# Postgres and Valkey are normally external, pre-provisioned services: the
 # host comes from `global.datastores.*` (or an explicit
 # `plugin-br-ted-lerian.configmap.POSTGRES_HOST` / `REDIS_HOST`) and the password from
 # `plugin-br-ted-lerian.secrets.*`, typically Vault-templated by the GitOps layer.
 #
 # Enable these for a SELF-CONTAINED install, where the app brings its own
-# datastores instead of sharing cluster-wide ones — the anacleto chaos/fuzzing
-# pattern. When enabled:
+# datastores instead of sharing cluster-wide ones. When enabled:
 #   - POSTGRES_HOST / REDIS_HOST default to the in-cluster subchart Services
 #     (templates/configmap.yaml resolves them), so no host needs to be set.
 #   - POSTGRES_PASSWORD / REDIS_PASSWORD are read straight from the subchart's

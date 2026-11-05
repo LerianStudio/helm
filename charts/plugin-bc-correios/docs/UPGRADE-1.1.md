@@ -41,7 +41,7 @@ bc-correios:
     tag: "1.2.0"
 ```
 
-> **Note:** For application-level changes included in version 1.2.0, refer to the [plugin-bc-correios changelog](https://github.com/LerianStudio/plugin-bc-correios).
+> **Note:** For application-level changes included in version 1.2.0, refer to the plugin-bc-correios changelog.
 
 ### 2. br-spb-bc-correios sibling image tag pinned
 

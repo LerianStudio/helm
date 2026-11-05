@@ -18,7 +18,7 @@ Deploys **br-sta**, the Lerian BACEN STA (Sistema de Transferência de Arquivos)
 | `worker` | `ghcr.io/lerianstudio/br-sta-worker` | Background process (probe server `:4029`): the BACEN outbound scheduler (the **only** path that uploads to BACEN), inbound polling, audit publisher/consumer, business-event delivery, partition manager, verifier, export generator, reporter bridge. Exactly one replica, `Recreate` |
 | migrations | `ghcr.io/lerianstudio/br-sta-migrations` | Applies the SQL schema (single-tenant) |
 
-The chart tracks application **1.0.0** (`appVersion`); the three images follow `appVersion` unless pinned.
+The chart tracks application **1.2.0** (`appVersion`); the three images follow `appVersion` unless pinned.
 
 ---
 
@@ -36,7 +36,7 @@ The chart tracks application **1.0.0** (`appVersion`); the three images follow `
 | BACEN STA (RSFN) | The upstream: `sta-h.bcb.gov.br` (homologation) / `sta.bcb.gov.br` (production) | `common.bacen.environment` |
 | Tenant manager (optional) | Multi-tenancy | `global.multiTenant` + `secrets.MULTI_TENANT_SERVICE_API_KEY` |
 
-The BACEN operator credentials and the document-type configs are **not** configured through this chart: they are registered through the API (`/v1/credentials`, the config API) and stored envelope-encrypted under `MASTER_KEYS`.
+The BACEN operator credentials and the inbound-source configs are **not** configured through this chart: they are registered through the API (`/v1/credentials`, the config API). The credentials are stored envelope-encrypted under `MASTER_KEYS`.
 
 ---
 
@@ -56,7 +56,7 @@ Start `my-values.yaml` from [`values-template.yaml`](values-template.yaml). It i
 $ helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm --version <new-version> -n br-sta -f my-values.yaml
 ```
 
-Coming from the pre-release `br-sta-helm` 1.0.0-beta.x charts: the values moved to the productized shape. The app block `br-sta:` becomes `common:` (shared config and secrets) plus `manager:` (the Deployment), the worker keeps `worker:`, and every native env key under `br-sta.configmap` / `br-sta.secrets` goes to `common.configmap` / `common.secrets` (or, better, to the matching `global.*` mask / grouped parameter). The manager Service is `<release-name-base>-manager` on port `4028`, and `otel-collector-lerian.enabled` is replaced by `global.observability.enabled`.
+Coming from the pre-release `br-sta-helm` 1.0.0-beta.x charts: the values moved to the productized shape. The app block `br-sta:` becomes `common:` (shared config and secrets) plus `manager:` (the Deployment), the worker keeps `worker:`, and every native env key under `br-sta.configmap` / `br-sta.secrets` goes to `common.configmap` / `common.secrets` (or, better, to the matching `global.*` mask / grouped parameter). The manager Service is `<fullname>-manager` on port `4028`, and `otel-collector-lerian.enabled` is replaced by `global.observability.enabled`.
 
 ### Keeping an existing in-cluster address
 
@@ -204,25 +204,6 @@ Worker-only (`worker.*`, rendered into the worker ConfigMap):
 
 Keys the chart does not render: the composite DSN forms (`DB_CONNECTION_STRING`, `REDIS_URL`) and `MASTER_ENCRYPTION_KEY` (documented in the app's `.env.example`, not read by the service), `LICENSE_SERVICE_ADDRESS` (reserved, not consumed), `MIGRATIONS_PATH` (the app does not run migrations; the Job sets it). The docker-compose server tuning (`POSTGRES_MAX_CONNECTIONS`, `POSTGRES_SHARED_BUFFERS`) and the inert keys from earlier pre-releases (`REPORTER_EVENTS_CONSUMER_ROUTING_KEY`, `REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY`, `REPORTER_EVENTS_EXPECTED_TENANT`, `TRUST_STORE_*`) are dropped from the escape hatch with a NOTES warning.
 
-#### `TRUST_STORE_*` and images built from the application source
-
-The chart drops every `TRUST_STORE_*` key (`br-sta.removedKeys`) because the published images at `appVersion` 1.0.0 do not read them: the `ghcr.io/lerianstudio/br-sta-manager:1.0.0` binary (image revision `9b19bd4c`) contains no `TRUST_STORE_S3_BUCKET` string and no `/v1/certificates` route. The application source differs: the `v1.0.0` tag (`0a3d9d4e`) and `main` (checked at `7d275b65`) still require `TRUST_STORE_S3_BUCKET` at boot (`internal/bootstrap/config_validation.go`, `validateTrustStoreConfig`: `TRUST_STORE_S3_BUCKET is required`). An image built from either ref therefore refuses to start with this chart's ConfigMap alone.
-
-With the published images no action is needed. If you run an image built from the `v1.0.0` tag or from `main`, pass the key as a pod env entry on **both** components. `common.configmap` and `common.secrets` do not work for it: the chart drops the key there and prints the NOTES warning.
-
-```yaml
-manager:
-  extraEnvVars:
-    - name: TRUST_STORE_S3_BUCKET
-      value: <trust-store-bucket>
-worker:
-  extraEnvVars:
-    - name: TRUST_STORE_S3_BUCKET
-      value: <trust-store-bucket>
-```
-
-`TRUST_STORE_S3_REGION` (app default `us-east-1`), `TRUST_STORE_S3_ENDPOINT` and `TRUST_STORE_S3_PATH_STYLE` are optional and go through `extraEnvVars` the same way when the bucket is not on the default AWS S3 endpoint. The chart does not create this bucket. Whether the chart should model these keys again depends on which application ref is released next; until then `removedKeys` follows the published image.
-
 ### Secrets
 
 | Key | Required when |
@@ -240,7 +221,7 @@ worker:
 | `IDP_M2M_CLIENT_SECRET` | `identity.declarationEnabled` |
 | `MULTI_TENANT_SERVICE_API_KEY` / `MULTI_TENANT_REDIS_PASSWORD` | Multi-tenancy on / tenant Redis requires auth |
 
-The Deployments list the ConfigMap before the Secret in `envFrom`, so a Secret key always wins over a ConfigMap key of the same name.
+The Deployments list the shared ConfigMap before the Secret in `envFrom`, so a Secret key wins over a shared ConfigMap key of the same name.
 
 To take a single key from a Secret the chart does not manage (ESO/Vault), use `common.secretRefs.<KEY>: {name, key[, optional]}` instead of `common.secrets.<KEY>`: it renders a `secretKeyRef` env entry on the manager and worker pods (a component's own `extraEnvVars` entry of the same name wins), counts as set for the fail-fast gates, and `common.secretRefs.POSTGRES_PASSWORD` also feeds the migrations Job (the Secret must exist before the hook runs).
 
@@ -272,11 +253,9 @@ br-sisbajud is an STA client: it submits its return files through `POST /v1/tran
 | `global.objectStorage.sta.bucket` (→ `STA_INBOUND_BUCKET` / `TRANSFER_OBJECT_STORAGE_BUCKET`) | `global.objectStorage.sta.bucket` (→ `TRANSFER_OBJECT_STORAGE_BUCKET`) — the same bucket |
 | `STA_OBJECT_STORAGE_ENDPOINT` (defaults to its S3 endpoint) | `global.objectStorage.sta.endpoint` — the same S3 backend |
 | `brSisbajud.sta.transfersBaseUrl` | `http://<fullname>-manager.<namespace>.svc.cluster.local:4028` (printed in NOTES) |
-| `brSisbajud.sta.consumerEnabled` + `global.streaming` | `global.streaming.enabled: true` (the default) + the same brokers; the topics `lerian.streaming.br-sta` and `.dlq` must exist (br-sta creates them when `topicAutoProvision` is on and its principal has CreateTopics) |
+| `brSisbajud.sta.consumerEnabled` + `brSisbajud.sta.stream` (it never falls back to `global.streaming`) | `global.streaming.enabled: true` (the default) + the same brokers; the topics `lerian.streaming.br-sta` and `.dlq` must exist (br-sta creates them when `topicAutoProvision` is on and its principal has CreateTopics) |
 | `brSisbajud.sta.expectedTenantSt` | br-sta's `DEFAULT_TENANT_ID` (`common.app.defaultTenantId`) in single-tenant mode |
 | `STA_CLIENT_ID` / `STA_CLIENT_SECRET` (m2m bearer from `global.auth.host`) | the same plugin-access-manager (`global.auth.host`) |
-
-Set these once in an umbrella `global:` block and both charts agree.
 
 ---
 
@@ -298,6 +277,7 @@ The Job is named after a hash of its spec (`<fullname>-migrations-<hash>`): a ne
 ```console
 $ kubectl create namespace sta-dev
 $ kubectl create secret generic br-sta-license -n sta-dev --from-file=LICENSE_KEY=./br-sta.license
+$ helm dependency update charts/br-sta
 $ helm install br-sta charts/br-sta -f charts/br-sta/values-dev.yaml -n sta-dev \
     --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}' \
     --set common.license.organizationIds=<your-organization-id>
@@ -351,6 +331,6 @@ The render **fails** when `redpandaBundle` or `mockSta` is enabled outside a dev
 - **Every credential in `values-dev.yaml` is a public dev-only value** (including an all-zero `MASTER_KEYS`). The explicit Postgres/Valkey passwords keep a GitOps render (no Helm `lookup`) stable.
 - **S3 auth is OFF** (`seaweedfs.s3.enableAuth: false`). The AWS SDK still signs requests, so `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` are set to dummy values.
 - **Images.** The `bitnami/*` tags that postgresql 16.3.5 / valkey 2.4.7 default to were removed from Docker Hub. The chart pins the same tags from `bitnamilegacy/*` (`postgresql:17.2.0-debian-12-r5`, `valkey:8.0.2-debian-12-r6`) by tag, with `global.security.allowInsecureImages: true`. RabbitMQ runs `rabbitmq:4.1.4` (init `busybox:1.36`); SeaweedFS and the bucket Job run `chrislusf/seaweedfs:3.93`; Redpanda and the topics Job run `docker.redpanda.com/redpandadata/redpanda:v26.2.3`.
-- **The app, worker, migrations and mock STA images** (`ghcr.io/lerianstudio/br-sta-*`, `mock-sta-server`) are public on GHCR: no pull secret is needed. `imagePullSecrets` (default `[]`) is only for a private mirror or registry.
+- **The app, worker and migrations images** (`ghcr.io/lerianstudio/br-sta-*`) are public on GHCR: no pull secret is needed. `imagePullSecrets` (default `[]`) is only for a private mirror or registry. **The mock STA image** (`ghcr.io/lerianstudio/mock-sta-server`) is not public: to enable `mockSta`, ask Lerian for read access and name a ghcr.io pull secret in `imagePullSecrets` (or `mockSta.imagePullSecrets`).
 
 {% endraw %}

@@ -35,7 +35,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "system-facts.worker.labels" . | nindent 8 }}
+        {{- include "system-facts.worker.podLabels" . | nindent 8 }}
     spec:
       {{- with $w.imagePullSecrets }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}

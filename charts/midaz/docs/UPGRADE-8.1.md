@@ -43,7 +43,7 @@ crm:
 
 #### Application changelog
 
-For detailed information about application-level changes in version 3.7.3, refer to the [midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+For detailed information about application-level changes in version 3.7.3, refer to the midaz application changelog.
 
 ## Preview changes before upgrading
 

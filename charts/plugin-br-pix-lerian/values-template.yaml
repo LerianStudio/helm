@@ -25,11 +25,17 @@
 #
 #   spi:
 #     image:
-#       tag: "1.0.0-beta.101"
+#       tag: "1.3.1-beta.1"
 #       pullPolicy: IfNotPresent
 global:
   imagePullSecrets:
     - name: ghcr-credential
+  # Auth for every workload, Systemplanes included: the Systemplane workloads
+  # seed auth.enabled and auth.url, and the API workloads read those keys back
+  # in single-tenant mode.
+  auth:
+    enabled: true
+    host: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
 
 # ------------------------------------------------------------
 # spi/api — PIX SPI (single-tenant identity REQUIRED)
@@ -42,8 +48,6 @@ spi:
     # /docs and /openapi.json when SWAGGER_ENABLED is unset), set "local" or
     # "development" on every enabled component, Systemplanes included.
     ENV_NAME: "production"
-    PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     # ORGANIZATION_IDS is the LICENSE allow-list and is required on every
     # workload that receives a LICENSE_KEY: the license client refuses to
     # initialise with a key and no allow-list, and the workload exits at boot.
@@ -148,8 +152,6 @@ dictHub:
     DEPLOYMENT_MODE: "byoc"
     # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
-    PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
@@ -267,8 +269,6 @@ cobHub:
     DEPLOYMENT_MODE: "byoc"
     # Production environment gate, also the chart default. See spi above.
     ENV_NAME: "production"
-    PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     # License allow-list, required alongside LICENSE_KEY. See spi above.
     ORGANIZATION_IDS: "global"
     ORGANIZATION_ID: "<your-org-id>"
@@ -347,8 +347,6 @@ adapterLerian:
   enabled: false
   configmap:
     DEPLOYMENT_MODE: "local"
-    PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
   secrets:
     DATABASE_URL: "postgres://pixswitch:<password>@postgres-host:5432/pix-adapter-lerian?sslmode=require"
@@ -400,8 +398,6 @@ pixauto:
   enabled: true
   configmap:
     DEPLOYMENT_MODE: "byoc"
-    PLUGIN_AUTH_ENABLED: "true"
-    PLUGIN_AUTH_HOST: "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000"
     ORGANIZATION_IDS: "global"
     # Single-tenant business identity, and a DIFFERENT key from
     # ORGANIZATION_IDS above (that one is the license allow-list). The

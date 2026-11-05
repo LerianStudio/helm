@@ -92,7 +92,7 @@ pix:
     MIDAZ_CLIENT_SECRET: ""
     FEE_CLIENT_ID: ""
     FEE_CLIENT_SECRET: ""
-    LICENSE_KEY: ""
+    LICENSE_KEY: ""   # required unless licenseFile.existingSecret (needs lib-license-go v5)
     PLUGIN_CRM_CLIENT_ID: ""
     PLUGIN_CRM_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""

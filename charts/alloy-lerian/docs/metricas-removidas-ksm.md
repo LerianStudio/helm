@@ -6,7 +6,7 @@ informação por outro caminho. Se alguma passar a fazer falta, **habilitar é
 acrescentar o nome em `collection.clusterObjectAllowlist`** — e aqui está o que isso
 custa.
 
-Medição de referência: **aws-devops, 2026-08-25**, 3 nós, ~57 pods. O
+Medição de referência: **2026-08-25**, um cluster de 3 nós, ~57 pods. O
 kube-state-metrics 2.19.1 entrega por padrão **184 famílias / 5.272 séries**. A
 allowlist mantém **46 famílias / 1.254 séries** — corte de **76%**.
 
@@ -129,5 +129,5 @@ Este documento cobre apenas o kube-state-metrics. Outras allowlists do chart:
 | Fonte | Parâmetro | Documentação |
 |---|---|---|
 | cAdvisor (consumo por contêiner) | `collection.containerUsageAllowlist` | comentários no `values.yaml` — 16 de 78 famílias, medido −94,6% |
-| node-exporter (infra de nó) | `collection.nodeAllowlist` | `nodeInfrastructure: false` por padrão — 612 famílias / 46.575 séries se ligado sem filtro |
+| node-exporter (infra de nó) | nenhum — lista fixa em `templates/_config.tpl` | `collection.nodeInfrastructure: false` por padrão — 612 famílias / 46.575 séries se ligado sem filtro |
 | Auto-observação do agente | `collection.selfMetricsAllowlist` | 21 métricas |

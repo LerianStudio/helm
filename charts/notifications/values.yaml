@@ -95,8 +95,8 @@ config:
   # -- Only the exact value `production` turns on the app's production checks
   #    (Swagger forced off, rate limiting forced on, POSTGRES_PASSWORD required,
   #    sslmode=disable and dev encryption keys refused). Any other value,
-  #    including the default `firmino`, leaves them off.
-  ENV_NAME: "firmino"
+  #    including the default `development`, leaves them off.
+  ENV_NAME: "development"
   LOG_LEVEL: "info"
   SERVER_ADDRESS: "0.0.0.0:8080"
   HTTP_BODY_LIMIT_BYTES: "104857600"
@@ -215,7 +215,7 @@ config:
   OTEL_RESOURCE_SERVICE_NAME: "notifications"
   OTEL_RESOURCE_SERVICE_VERSION: "0.1.0"
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "firmino"
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
 
   # ---- Rate Limiting ----
   RATE_LIMIT_ENABLED: "true"
@@ -258,12 +258,21 @@ extraConfig: {}
 terminationGracePeriodSeconds: 52
 
 #==============================================================================
+# Licence file (optional alternative to secrets.LICENSE_KEY)
+#==============================================================================
+licenseFile:
+  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license on the api and workers; secrets.LICENSE_KEY is then not required.
+  # File mode needs an image on lib-license-go v5.
+  existingSecret: ""
+
+#==============================================================================
 # Shared environment (Secret)
 #==============================================================================
 # Sensitive env vars. Leave empty here; populate per-env via gitops + AVP, or
 # point `secretRef.name` at an externally-managed Secret to skip this entirely.
 secrets:
-  # -- REQUIRED: licence key; the api and every worker refuse to boot without it.
+  # -- REQUIRED unless `licenseFile.existingSecret` is set: licence key; the api and every worker refuse to boot without a licence.
   LICENSE_KEY: ""
   # -- DATABASE_URL is the pre-built, URL-escaped Postgres DSN consumed
   # by the migrations Job (templates/migrations-job.yaml). Required when

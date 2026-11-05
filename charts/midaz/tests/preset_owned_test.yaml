@@ -5,6 +5,9 @@ templates:
 release:
   name: midaz
   namespace: midaz
+set:
+  ledger.image.tag: 4.5.0-beta.94
+  tracer.image.tag: 4.5.0-beta.94
 tests:
   - it: renders with the defaults
     set:

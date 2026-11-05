@@ -29,3 +29,53 @@ tests:
           path: data.SHUTDOWN_DRAIN_DELAY
           value: "15s"
         template: templates/configmap.yaml
+
+  - it: keeps an explicit 0 grace period
+    set:
+      system-facts.terminationGracePeriodSeconds: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 0
+        template: templates/deployment.yaml
+
+  - it: never renders LICENSE_ENABLED from extraEnvVars
+    set:
+      system-facts.extraEnvVars:
+        - name: LICENSE_ENABLED
+          value: "false"
+    asserts:
+      - notExists:
+          path: data.LICENSE_ENABLED
+        template: templates/configmap.yaml
+
+  - it: leaves REDIS_TLS unset under a cloud preset
+    set:
+      global.cloud: aws
+    asserts:
+      - notExists:
+          path: data.REDIS_TLS
+        template: templates/configmap.yaml
+
+  - it: renders REDIS_TLS from global.datastores.redis.tls
+    set:
+      global.datastores.redis.tls: true
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "true"
+        template: templates/configmap.yaml
+
+  - it: never renders LICENSE_ENABLED from secrets
+    set:
+      system-facts.secrets.LICENSE_ENABLED: "false"
+    asserts:
+      - notExists:
+          path: stringData.LICENSE_ENABLED
+        template: templates/secrets.yaml
+
+  - it: renders no SD_ keys
+    asserts:
+      - notExists:
+          path: data.SD_ENABLED
+        template: templates/configmap.yaml

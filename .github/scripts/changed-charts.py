@@ -12,6 +12,9 @@ changed, never against the repository. Three things put a chart in scope:
   helm-render-values/<name>.yaml       that chart — it is what the chart renders with
   helm-install-values/<name>.yaml      likewise
 
+A chart's README, CHANGELOG and docs/ are left out: they never reach a rendered
+manifest, and release.yml ignores the same paths.
+
 A changed library chart is the one indirection. It has no images and cannot be
 installed, so it is replaced by the charts that consume it from the working tree —
 and only those. A chart pinning `oci://ghcr.io/lerianstudio` receives the published
@@ -34,6 +37,7 @@ import yaml
 CHARTS = Path("charts")
 VALUES = re.compile(r"^\.github/configs/helm-(?:render|install)-values/(.+)\.ya?ml$")
 CHART_PATH = re.compile(r"^charts/([^/]+)/")
+CHART_DOCS = re.compile(r"^charts/[^/]+/(?:README(?:\.params)?\.md|CHANGELOG\.md|docs/.*)$")
 
 
 def load(path):
@@ -88,6 +92,8 @@ def main():
 
     scope = set()
     for path in changed:
+        if CHART_DOCS.match(path):
+            continue
         for pattern in (CHART_PATH, VALUES):
             m = pattern.match(path)
             if m:

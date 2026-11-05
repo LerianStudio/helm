@@ -50,6 +50,12 @@ global:
   #    plugin-br-sisbajud also reads awsKeyMode, awsKeyArn and awsCredentialsKeyArn
   #    here when vendor=aws (precedence: sisbajud.kms > global.kms; see sisbajud.kms).
   kms: {}
+  # -- Streaming (lib-streaming / RedPanda): enabled | brokers | tlsEnabled |
+  #    saslMechanism | saslUsername (+ compression, requiredAcks, ...; see
+  #    lerian-common.streaming.env). Off by default; required by
+  #    sisbajud.direct.permanentBlockEnabled (the balance-change stream).
+  #    STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT go in sisbajud.secrets.
+  streaming: {}
 
 # =============================================================================
 # sisbajud — the executor service.
@@ -199,6 +205,12 @@ sisbajud:
   license:
     organizationIds: "global"
 
+  # -- Optional signed licence file, an alternative to LICENSE_KEY: a Secret holding
+  #    the file under the key `license`, mounted at /etc/lerian/license. Needs an
+  #    image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
+
   # ---------------------------------------------------------------------------
   # Sisbajud Mensageria (execution contract). Setting baseUrl is what turns the
   # process into the executor. The transport is always TLS; mutual TLS is
@@ -234,6 +246,14 @@ sisbajud:
       mountPath: "/etc/plugin-br-sisbajud/mensageria"
 
   executor:
+    # -- EXECUTOR_ENABLED: "" (default, not emitted) | "true" | "false". Blank or
+    #    false = the legacy signal: a non-blank mensageria.baseUrl runs the
+    #    executor (false never turns it off). "true" WITHOUT mensageria.baseUrl
+    #    boots a DIRECT-only executor (no Mensageria, no Hub webhook / SQS
+    #    intake): only m2mSubject, responseDeadlineMargin, heartbeatEvery and
+    #    tickEvery are required; transport, webhook.* (except maxHandleAttempts),
+    #    sqs.*, streamingHubTenantId and MENSAGERIA_CLIENT_ID/SECRET are not used.
+    enabled: ""
     # -- EXECUTOR_M2M_SUBJECT: `sub` of the executor's M2M token (required).
     #    MENSAGERIA_CLIENT_ID / MENSAGERIA_CLIENT_SECRET go in secrets.
     m2mSubject: ""
@@ -250,6 +270,27 @@ sisbajud:
     settleWindow: ""
     tickEvery: "30s"
     orphanReconcileWindow: "48h"
+    # -- EXECUTOR_RESULT_MAX_ATTEMPTS: result drainer attempt cap per outbox row
+    #    (>= 1; "0" = app default 12). Exhausted = human decision + alarm.
+    resultMaxAttempts: "12"
+    # -- EXECUTOR_ORDER_SWEEP_ENABLED: the sweep that closes done
+    #    execution_order revisions (true | false; app default false).
+    orderSweepEnabled: "false"
+    # -- Direct channel drainer alarms (every executor mode).
+    direct:
+      # -- EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD: alarm at every multiple
+      #    of this many consecutive infra errors of a revision (integer >= 1).
+      drainerInfraAlarmThreshold: "3"
+      # -- EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER: ERROR log once the oldest
+      #    direct order eligible for a MANUAL purge is this old (Go duration > 0).
+      #    No automatic purge: a person decides, through the audited erase
+      #    (purge preview + erase by order). A BLOCK order is kept at least one
+      #    CALENDAR year after its first ledger effect; an ACTIVE permanent block
+      #    is never eligible.
+      purgeEligibleAlarmAfter: "168h"
+      # -- EXECUTOR_DIRECT_PURGE_REFRESH_EVERY: how often the purge-eligible
+      #    count behind that alarm is refreshed (Go duration > 0; app default 15m).
+      purgeRefreshEvery: "15m"
     # -- EXECUTOR_TRANSPORT: webhook (default) | sqs.
     transport: "webhook"
 
@@ -259,6 +300,10 @@ sisbajud:
       port: 9082
       path: "/v1/webhooks/hub"
       maxSkewSec: "300"
+      # -- EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS (>= 1). Also the direct
+      #    drainer's attempt cap in every executor mode; in a DIRECT-only executor
+      #    it is the only webhook.* key emitted. Must cover the settle wait:
+      #    >= 1 + ceil(settleWindow / tickEvery).
       maxHandleAttempts: "5"
       # -- Outside DEPLOYMENT_MODE=local the listener needs its own TLS pair
       #    (tls.existingSecret) or TLS terminated in front of it (true).
@@ -290,10 +335,41 @@ sisbajud:
       visibilityTimeoutSeconds: "300"
       maxReceiveCount: "5"
 
+  # -- Direct channel (POST /v1/institutions/{id}/executor/...).
+  direct:
+    # -- DIRECT_PERMANENT_BLOCK_ENABLED: true (default) | false. true takes
+    #    permanent blocks (SISBAJUD "P"/"D") and needs the balance-change stream:
+    #    global.streaming.brokers (+ tlsEnabled/SASL in production), or the render
+    #    fails. It also needs inbound auth on and a single-tenant install. An
+    #    install without brokers (e.g. Mensageria-only), with auth off or
+    #    multi-tenant sets false:
+    #    the direct POST then refuses permanent blocks with 422 SBJ-0027
+    #    (audited, nothing recorded); cancellations and UNBLOCK/TRANSFER of a
+    #    permanent parent are always taken. Any other value refuses the render
+    #    (and the boot). Rollback with ACTIVE permanents: false here AND
+    #    global.streaming.enabled: true (with the brokers), so they keep running.
+    permanentBlockEnabled: true
+    # -- DIRECT_PERMANENT_REFRESH_EVERY: how often the accounts of ACTIVE
+    #    permanent blocks are refreshed (Go duration from 1m to 15m; app default 15m).
+    permanentRefreshEvery: "15m"
+    # -- EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED: publish a result for each
+    #    subsequent block of a permanent: "" (default: follows STREAMING_ENABLED,
+    #    so true by default) | "true" | "false". Without it the captures of a
+    #    permanent are never published, also those of ACTIVE permanents after
+    #    the switch is turned off. "true" needs the stream on (the render and the
+    #    app refuse it otherwise).
+    permanentResultEmitterEnabled: ""
+
   # -- Midaz connector default. Ledger URL and credentials are per institution
   #    (institution config, sealed in the database), not env.
   midaz:
-    crmMode: "legacy"
+    # -- MIDAZ_CRM_MODE: legacy | embedded. Match the institution's Midaz:
+    #    Midaz v4 serves the CRM embedded in the ledger and no longer has the
+    #    legacy /v1/holders surface, so it needs "embedded"; Midaz v3 needs
+    #    "legacy". The default is "embedded" (Midaz v4): an install on Midaz v3
+    #    must set "legacy" explicitly, also on upgrade. Symptom of the wrong
+    #    mode: every holder read fails.
+    crmMode: "embedded"
 
   # -- Inbound auth extras. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST come from
   #    global.auth (or configmap).
@@ -335,7 +411,7 @@ sisbajud:
 
   observability:
     serviceName: "plugin-br-sisbajud"
-    libraryName: "github.com/LerianStudio/plugin-br-sisbajud"
+    libraryName: "github.com/LerianStudio/br-sisbajud"
 
   swagger:
     enabled: "false"
@@ -357,6 +433,7 @@ sisbajud:
 
   # -- Escape hatch: native env keys. Only the executor's non-credential keys
   #    are accepted (values.schema.json); credentials go in `secrets`.
+  #    ALLOW_RATELIMIT_DISABLED is accepted for compatibility; the plugin ignores it.
   configmap: {}
   # -- Credentials, emitted only when set: LICENSE_KEY, MENSAGERIA_CLIENT_ID,
   #    MENSAGERIA_CLIENT_SECRET, EXECUTOR_HUB_WEBHOOK_SECRET(_PREVIOUS),

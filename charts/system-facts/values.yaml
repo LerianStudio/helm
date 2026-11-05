@@ -53,11 +53,7 @@ global:
   # overrides.)
   # Example: multiTenant: { url: "http://tenant-manager:8080", redisHost: "my-elasticache.example.com" }
   multiTenant: {}
-  # -- Env-wide service discovery (Consul), consumed by
-  # lerian-common.serviceDiscovery.env when boilerplate.serviceDiscovery.enabled=true.
-  # Fields: address, tls, tlsSkipVerify, workload, preferView, internalScheme,
-  # externalPort. (configmap.SD_* overrides.)
-  # Example: serviceDiscovery: { address: "consul.internal:8500", tls: "true" }
+  # -- Accepted for compatibility; System Facts has no service-discovery client, so nothing is rendered from it.
   serviceDiscovery: {}
   # -- Env-wide streaming backend (lib-streaming/RedPanda), consumed by
   # lerian-common.streaming.env when boilerplate.streaming.enabled=true and
@@ -175,7 +171,7 @@ system-facts:
     # -- Additional ingress annotations
     annotations: {}
     hosts:
-      - host: "system-facts.lerian.net"
+      - host: "system-facts.example.com"
         paths:
           - path: /
             pathType: Prefix
@@ -216,7 +212,7 @@ system-facts:
     # -- Enable lib-commons/multitenancy for this component (emits MULTI_TENANT_ENABLED + config)
     enabled: false
   serviceDiscovery:
-    # -- Enable lib-service-discovery for this component (emits SD_ENABLED + derives SD_* from global.serviceDiscovery)
+    # -- Accepted for compatibility. System Facts has no service-discovery client, so no SD_* keys are rendered.
     enabled: false
   streaming:
     # -- Enable lib-streaming for this component (emits STREAMING_ENABLED + STREAMING_* from global.streaming)
@@ -407,14 +403,13 @@ aws:
 # =============================================================================
 # BUNDLED INFRA SUBCHARTS — DISABLED by default.
 #
-# On benedita, Postgres and Valkey are external, pre-provisioned services: the
+# By default, Postgres and Valkey are external, pre-provisioned services: the
 # host comes from `global.datastores.*` (or an explicit
 # `boilerplate.configmap.POSTGRES_HOST` / `REDIS_HOST`) and the password from
 # `boilerplate.secrets.*`, typically Vault-templated by the GitOps layer.
 #
 # Enable these for a SELF-CONTAINED install, where the app brings its own
-# datastores instead of sharing cluster-wide ones — the anacleto chaos/fuzzing
-# pattern. When enabled:
+# datastores instead of sharing cluster-wide ones. When enabled:
 #   - POSTGRES_HOST / REDIS_HOST default to the in-cluster subchart Services
 #     (templates/configmap.yaml resolves them), so no host needs to be set.
 #   - POSTGRES_PASSWORD / REDIS_PASSWORD are read straight from the subchart's

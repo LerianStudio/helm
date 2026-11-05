@@ -165,8 +165,16 @@ spec:
             timeoutSeconds: {{ .Values.bankTransfer.readinessProbe.timeoutSeconds | default 5 }}
             successThreshold: {{ .Values.bankTransfer.readinessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.bankTransfer.readinessProbe.failureThreshold | default 3 }}
+          {{- with (include "bank-transfer.licenseFileMount" . | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.bankTransfer.resources | nindent 12 }}
+      {{- with (include "bank-transfer.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, bankTransfer.spread, bankTransfer.topologySpreadConstraints).
              selectorLabels MUST equal spec.selector.matchLabels above. */}}

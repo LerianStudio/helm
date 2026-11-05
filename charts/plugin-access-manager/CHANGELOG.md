@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [11.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.1.2)
+
+Fixes:
+- Stop shipping an unused seed that carries a client secret. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.1.1...plugin-access-manager-v11.1.2)
+
+---
+
 ## [11.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.1.1)
 
 Fixes:

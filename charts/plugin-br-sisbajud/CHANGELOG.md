@@ -1,5 +1,21 @@
 # Plugin-br-sisbajud Changelog
 
+## [1.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.4.0)
+
+Features:
+- Add license file mount and pass the license key to migrators. (@fredcamaral)
+
+Fixes:
+- Project only the license key in the license file volume. (@fredcamaral)
+
+Improvements:
+- Add the `1.3.1` upgrade guide. (@fredcamaral)
+- Name the removed readiness note in the `1.3.1` guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.3.1...plugin-br-sisbajud-v1.4.0)
+
+---
+
 ## [1.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.3.1)
 
 Fixes:
@@ -112,3 +128,4 @@ Fixes:
 - Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
 
 [View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+

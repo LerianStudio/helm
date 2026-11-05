@@ -1,0 +1,59 @@
+suite: licence key or file
+templates:
+  - templates/api/deployment.yaml
+  - templates/api/configmap.yaml
+  - templates/api/secrets.yaml
+  - templates/worker/deployment.yaml
+  - templates/worker/configmap.yaml
+  - templates/worker/secrets.yaml
+release:
+  name: pix-jd
+  namespace: pix-jd
+set:
+  api.configmap.REDIS_HOST: "valkey:6379"
+  api.configmap.POSTGRES_HOST: postgresql
+  api.configmap.ENVIRONMENT_NAME: development
+  api.secrets.POSTGRES_PASSWORD: x
+  worker.enabled: true
+tests:
+  - it: renders key mode with no licence volume when licenseFile is null (--reuse-values shape)
+    set: {api.licenseFile: null, worker.licenseFile: null, api.secrets.LICENSE_KEY: x}
+    template: templates/api/deployment.yaml
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
+  - it: mounts the licence Secret as a directory on the api
+    set: {api.licenseFile.existingSecret: lic, worker.licenseFile.existingSecret: lic}
+    template: templates/api/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: license-file, mountPath: /etc/lerian/license, readOnly: true}
+      - contains:
+          path: spec.template.spec.volumes
+          content: {name: license-file, secret: {secretName: lic, items: [{key: license, path: license}]}}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
+  - it: mounts the licence Secret on the worker
+    set: {api.licenseFile.existingSecret: lic, worker.licenseFile.existingSecret: lic}
+    template: templates/worker/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content: {name: license-file, secret: {secretName: lic, items: [{key: license, path: license}]}}
+  - it: file mode waives the api LICENSE_KEY gate
+    set: {api.licenseFile.existingSecret: lic, worker.licenseFile.existingSecret: lic}
+    template: templates/api/secrets.yaml
+    asserts:
+      - notExists:
+          path: data.LICENSE_KEY
+  - it: refuses the api without a key or a licence file
+    set: {worker.licenseFile.existingSecret: lic}
+    template: templates/api/secrets.yaml
+    asserts:
+      - failedTemplate:
+          errorPattern: "api.secrets.LICENSE_KEY is required unless api.licenseFile.existingSecret is set"

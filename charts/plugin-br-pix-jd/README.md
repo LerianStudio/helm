@@ -29,7 +29,7 @@ The chart **refuses to render** without these:
 | `api.configmap.POSTGRES_HOST` | host of the external PostgreSQL | empty | the render fails |
 | `api.secrets.POSTGRES_PASSWORD` | password of the external PostgreSQL | empty | the render fails. Or supply it through `api.existingSecret.name` |
 | `api.configmap.REDIS_HOST` | `host:port` of the Valkey or Redis | empty | the render fails. The rate limiter is fail-closed: without Redis it refuses every request |
-| `api.secrets.LICENSE_KEY` | your license key | empty | the render fails. The API and the worker validate it at startup in every mode. Or supply it through `api.existingSecret.name`, and `worker.existingSecret.name` when the worker runs |
+| `api.secrets.LICENSE_KEY` | your license key | empty | the render fails. The API and the worker validate it at startup. Or supply it through `api.existingSecret.name`, and `worker.existingSecret.name` when the worker runs. Or set `api.licenseFile.existingSecret` (and `worker.licenseFile.existingSecret`): a Secret with a signed licence file under the key `license`, mounted as the directory `/etc/lerian/license` with `LICENSE_FILE_PATH` set; file mode needs an image on lib-license-go v5 |
 
 The chart **renders** without the values below, but the service does not work without them:
 
@@ -164,7 +164,7 @@ Per-version notes: [0.1](docs/UPGRADE-0.1.md) · [0.2](docs/UPGRADE-0.2.md) · [
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name` (and `worker.existingSecret.name` when the worker runs), all of them come from that Secret.
+- Required secrets: `api.secrets.POSTGRES_PASSWORD` and `api.secrets.LICENSE_KEY` (the render fails without them; `LICENSE_KEY` is waived by `licenseFile.existingSecret`); the JD, Midaz and CRM client credentials for a working install. With `api.existingSecret.name` (and `worker.existingSecret.name` when the worker runs), all of them come from that Secret.
 - Dependency notes: `lerian-common-helm` (library chart, renders nothing); `postgresql` (Bitnami `16.3.5`) and `valkey` (Bitnami `2.4.7`), both disabled by default — the chart expects an external PostgreSQL and Valkey or Redis.
 - Production overrides: `api.image.tag`, `worker.image.tag`, `migrations.image.tag`, `api.configmap.ENVIRONMENT_NAME=production`, `api.configmap.POSTGRES_SSLMODE`, `api.configmap.PLUGIN_AUTH_ENABLED` / `PLUGIN_AUTH_HOST`, `api.configmap.REDIS_HOST`, `api.existingSecret.name`, and `api.ingress.*`.
 - Source/license: the plugin is closed source and requires an Enterprise license; this chart is published from [LerianStudio/helm](https://github.com/LerianStudio/helm).

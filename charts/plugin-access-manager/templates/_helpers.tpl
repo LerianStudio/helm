@@ -644,14 +644,38 @@ env name) by secretKeyRef on that one source.
 {{- end }}
 
 {{/*
+plugin-access-manager.appClientSecretValue — app-lerian's client secret in clear: the operator's value, else the
+one already in the cluster, else (chart-kept Secret only) a generated one, cached on .Values so the kept Secret
+and the identity Secret carry the same value within one render. Empty when an existing Secret is not readable.
+*/}}
+{{- define "plugin-access-manager.appClientSecretValue" -}}
+{{- $kept := dig "data" "AUTHORIZER_CLIENT_SECRET" "" (lookup "v1" "Secret" .Release.Namespace (include "plugin-access-manager.appClientSecretName" .) | default dict) | b64dec -}}
+{{- if .Values.auth.useExistingSecret -}}
+{{- $kept -}}
+{{- else if .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET -}}
+{{- .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET -}}
+{{- else if $kept -}}
+{{- $kept -}}
+{{- else -}}
+{{- if not (hasKey .Values.auth.secrets "_generatedAppClientSecret") -}}
+{{- include "plugin-access-manager.appClientSecretGate" . -}}
+{{- $_ := set .Values.auth.secrets "_generatedAppClientSecret" (randAlphaNum 40) -}}
+{{- end -}}
+{{- .Values.auth.secrets._generatedAppClientSecret -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 plugin-access-manager.appClientSecretGate — a generated secret is seeded only by
 Caradhras >= 2.4.0-beta.4; an older image seeds its own literal and
 introspection would silently fail against the generated value.
 */}}
 {{- define "plugin-access-manager.appClientSecretGate" -}}
+{{- /* Floor: must be the first Caradhras tag containing the seed change (caradhras PR #619, not yet tagged). */ -}}
+{{- $floor := ">=2.4.0-beta.4" -}}
 {{- $tag := regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "" -}}
-{{- if and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (not (semverCompare ">=2.4.0-beta.4" $tag)) -}}
-{{- fail (printf "\n\nERROR: no app-lerian client secret is set and the Caradhras image tag %q cannot seed a generated one.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET, use auth.useExistingSecret, or use Caradhras >= 2.4.0-beta.4.\n" $tag) -}}
+{{- if and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (not (semverCompare $floor $tag)) -}}
+{{- fail (printf "\n\nERROR: no app-lerian client secret is set and the Caradhras image tag %q cannot seed a generated one.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET, use auth.useExistingSecret, or use Caradhras %s.\n" $tag $floor) -}}
 {{- end -}}
 {{- end }}
 

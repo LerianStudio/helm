@@ -999,3 +999,43 @@ PDB spec and rollout strategy come from the health preset; an operator override 
       "port" .Values.identity.service.port "minImage" (include "plugin-access-manager.minImage" .)
       "replicas" .Values.identity.replicaCount "autoscaling" .Values.identity.autoscaling) -}}
 {{- end -}}
+
+{{/*
+Caradhras licence env for the server and the migrate init container (input: dict "context" $ "licensed" bool).
+licenseFile.existingSecret is mounted as a directory (never subPath) at /etc/lerian/license.
+*/}}
+{{- define "plugin-caradhras.licenseFileSecret" -}}
+{{- (.Values.caradhras.licenseFile | default dict).existingSecret | default "" -}}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseEnv" -}}
+{{- $ctx := .context -}}
+{{- if .licensed }}
+- name: LICENSE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "plugin-caradhras.secretName" $ctx }}
+      key: LICENSE_KEY
+      optional: true
+{{- end }}
+{{- if include "plugin-caradhras.licenseFileSecret" $ctx }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseFileMount" -}}
+{{- if include "plugin-caradhras.licenseFileSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseFileVolume" -}}
+{{- with include "plugin-caradhras.licenseFileSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+{{- end }}
+{{- end -}}

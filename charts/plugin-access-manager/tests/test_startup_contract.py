@@ -599,10 +599,37 @@ class StartupContract(unittest.TestCase):
     def test_migrate_skip_rbac_chain_only_when_true(self):
         default = self.migrate_env({})
         self.assertEqual(set(default), {'POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB',
-                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE'})
+                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE',
+                                        'LICENSE_KEY'})
         self.assertEqual(self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': False}}}), default)
         env = self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
         self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def test_licence_file_mounts_as_directory_on_server_and_migrate(self):
+        docs = self.succeeds({'caradhras': {'secrets': {'LICENSE_KEY': ''},
+                                            'licenseFile': {'existingSecret': 'lic'}}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        spec = deployment['spec']['template']['spec']
+        mount = {'name': 'license-file', 'mountPath': '/etc/lerian/license', 'readOnly': True}
+        init = next(c for c in spec['initContainers'] if c['name'] == 'migrate')
+        for c in (init, spec['containers'][0]):
+            self.assertIn(mount, c['volumeMounts'])
+            self.assertIn({'name': 'LICENSE_FILE_PATH', 'value': '/etc/lerian/license/license'}, c['env'])
+            self.assertNotIn('LICENSE_KEY', [e['name'] for e in c['env']])
+        self.assertIn({'name': 'license-file', 'secret': {'secretName': 'lic'}}, spec['volumes'])
+
+    def test_licence_file_null_keeps_key_mode(self):
+        docs = self.succeeds({'caradhras': {'licenseFile': None}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        spec = deployment['spec']['template']['spec']
+        self.assertNotIn('volumes', spec)
+        for c in (next(c for c in spec['initContainers'] if c['name'] == 'migrate'), spec['containers'][0]):
+            self.assertNotIn('volumeMounts', c)
+            names = [e['name'] for e in c['env']]
+            self.assertIn('LICENSE_KEY', names)
+            self.assertNotIn('LICENSE_FILE_PATH', names)
 
     def server_env(self, patch):
         docs = self.succeeds(patch)

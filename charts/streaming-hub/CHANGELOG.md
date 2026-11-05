@@ -1,5 +1,20 @@
 # Streaming-hub Changelog
 
+## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.1.0)
+
+Features:
+- Mounted an optional `lib-license-go` `v5` license file. (@fredcamaral)
+
+Fixes:
+- Projected only the license key in the license file volume. (@fredcamaral)
+
+Improvements:
+- Added the verified `2.0.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v2.0.4...streaming-hub-v2.1.0)
+
+---
+
 ## [2.0.4](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.0.4)
 
 Fixes:
@@ -68,3 +83,4 @@ Improvements:
 - Add a Helm upgrade guide for streaming-hub `v1.1.0`. (@guimoreirar)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v1.1.1...streaming-hub-v2.0.0)
+

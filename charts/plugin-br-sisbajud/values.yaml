@@ -377,6 +377,11 @@ sisbajud:
     #    must set "legacy" explicitly, also on upgrade. Symptom of the wrong
     #    mode: every holder read fails.
     crmMode: "embedded"
+    # -- MIDAZ_CRM_BASE_URL: the standalone CRM root (Midaz v3), only with
+    #    crmMode "legacy"; required there with the CRM client pair, refused
+    #    with "embedded" (the CRM is the ledger). https; http only to a
+    #    loopback host, or outside production.
+    crmBaseUrl: ""
 
   # -- Inbound auth extras. PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST come from
   #    global.auth (or configmap).

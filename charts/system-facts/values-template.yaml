@@ -119,7 +119,7 @@ system-facts:
   secrets:
     POSTGRES_PASSWORD: ""
     REDIS_PASSWORD: ""
-    # Required: the application refuses to boot without a valid license.
+    # Required unless licenseFile.existingSecret is set.
     LICENSE_KEY: ""
     # Required in production: the reference protection keys.
     FACTS_REFERENCE_HASH_KEY: ""
@@ -131,6 +131,10 @@ system-facts:
       value: "true"
     - name: AUTH_M2M_PRODUCT_FORWARD_ENABLED
       value: "true"
+
+  # Signed licence file Secret (key `license`), mounted at /etc/lerian/license. File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
 
   useExistingSecret: false
   existingSecretName: ""

@@ -52,6 +52,7 @@ spec:
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
           env:
           {{- toYaml $h.env | nindent 10 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileEnv" . | trim) }}{{ . | nindent 10 }}{{- end }}
           {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
           {{- if $otelEnabled }}
           - name: "HOST_IP"
@@ -66,6 +67,10 @@ spec:
           startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
           livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileMount" . | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
       {{- with .Values.outbound.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -77,4 +82,8 @@ spec:
       {{- with .Values.outbound.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (include "plugin-br-pix-indirect-btg.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
       {{- end }}

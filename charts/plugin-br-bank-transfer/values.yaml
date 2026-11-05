@@ -576,6 +576,11 @@ bankTransfer:
     # STREAMING_CB_MIN_REQUESTS: ""
     # STREAMING_CB_TIMEOUT_S: ""
     # STREAMING_CLOSE_TIMEOUT_S: ""
+  # -- Optional signed licence file, an alternative to secrets.LICENSE_KEY: a Secret
+  # holding the file under the key `license`, mounted at /etc/lerian/license. Needs an
+  # image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- Secrets for storing sensitive data
   # @default -- templates/secrets.yaml
   secrets:

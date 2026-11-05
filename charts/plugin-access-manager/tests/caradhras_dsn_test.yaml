@@ -2,6 +2,7 @@ suite: caradhras dsn quotes the database password
 templates:
   - templates/caradhras/deployment.yaml
   - templates/caradhras/secrets.yaml
+  - templates/caradhras/app-client-secret.yaml
   - templates/auth/secrets.yaml
   - templates/auth-database/secrets.yaml
   - templates/caradhras/configmap.yaml

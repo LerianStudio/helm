@@ -429,7 +429,11 @@ auth:
     DB_PASSWORD: ""
     # -- Optional app-lerian client secret. Empty: the chart keeps a generated one per install (or the
     # value already in the cluster). A renderer without cluster access (no lookup) must set it, or use
-    # auth.useExistingSecret with AUTHORIZER_CLIENT_SECRET in that Secret.
+    # auth.useExistingSecret with AUTHORIZER_CLIENT_SECRET in that Secret. The generated secret applies
+    # to a NEW Caradhras database only: an install whose database already exists must set this (or
+    # useExistingSecret) to the secret app-lerian already holds. The generated one lives in Secret
+    # <auth fullname>-app-client-secret (e.g. pam-auth-app-client-secret), key AUTHORIZER_CLIENT_SECRET;
+    # Console, plugin-fees and Tenant Manager must be given that same value.
     AUTHORIZER_CLIENT_SECRET: ""
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""

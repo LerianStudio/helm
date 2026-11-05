@@ -20,6 +20,7 @@ spec:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/identity/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
+        checksum/app-client-secret: {{ include (print $.Template.BasePath "/caradhras/app-client-secret.yaml") . | sha256sum }}
         checksum/init-user: {{ include (print $.Template.BasePath "/auth/init_user.yaml") . | sha256sum }}
       labels:
        {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name "pod" true) | nindent 8 }} 

@@ -51,7 +51,7 @@ The 4.4 layout also adds these ConfigMap keys:
 
 2. Find `ledger.image.tag` in `midaz-values.yaml`. If the file sets it, the release already runs `4.5.0-beta.94` or later, because v10.3.2 refused a lower tag. Do the same check for `tracer.image.tag` when the tracer is enabled.
 
-3. For each tag the file does not set, add `tag: "4.5.0-beta.94"` under `image` inside the `ledger:` or `tracer:` block that the file already has. Do not add a second `ledger:` or `tracer:` key: Helm keeps only the last one and drops the rest of that block, for example `tracer.enabled`.
+3. For each tag the file does not set, add `tag: "4.5.0-beta.94"` under `image` inside the `ledger:` or `tracer:` block of the file. Add the block when the file has none. Do not add a second `ledger:` or `tracer:` key: Helm keeps only the last one and drops the rest of that block, for example `tracer.enabled`.
 
    ```yaml
    ledger:
@@ -66,7 +66,7 @@ The 4.4 layout also adds these ConfigMap keys:
 
 With the pin, the rendered manifests are the same as v10.3.2 except for the `helm.sh/chart` label and what follows from it: the config checksums of the CRM and the tracer, and the name suffix of the tracer migrations Job. The pods restart once, with the usual rolling update.
 
-Setting `ledger.migrations.enabled: false` or `tracer.migrations.enabled: false` removes that migrations Job. With Argo CD, an empty `deploymentSyncWave` lets the Deployment apply even when the Job fails. In both cases nothing stops the upgrade, and the Deployment moves to `4.4.0` on a schema that `4.4.0` does not support. Pin those installs too. With Argo CD, add the pin to the values of the Application.
+Setting `ledger.migrations.enabled: false` or `tracer.migrations.enabled: false` removes only the migrations Job of that component. With Argo CD, an empty `deploymentSyncWave` puts the Deployment in the same wave as its migrations Job, so the Deployment applies even when the Job fails and the sync reports the failure. In these installs a Deployment can move to `4.4.0` on a schema that `4.4.0` does not support. Pin every enabled component in those installs too. With Argo CD, add the pin to the values of the Application.
 
 A release that sets every tag it runs needs no change before the upgrade.
 
@@ -111,7 +111,7 @@ kubectl get deployment midaz-ledger -n midaz -o jsonpath='{.spec.template.spec.c
 helm status midaz -n midaz
 ```
 
-The ledger and tracer Deployments keep the names `midaz-ledger` and `midaz-tracer` whatever the release is called.
+With the default `nameOverride` and `fullnameOverride` values, the ledger and tracer Deployments are named `midaz-ledger` and `midaz-tracer` whatever the release is called.
 
 All pods reach `Running` and `Ready`, and `helm status` shows `deployed`. The ledger image keeps the tag it ran before the upgrade. When the tracer is enabled, run the same `rollout status` and image checks for `deployment/midaz-tracer`. A migrations Job is deleted when it succeeds. Only a failed one stays, and a failed one also makes `helm upgrade` fail.
 <!-- {% endraw %} -->

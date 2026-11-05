@@ -1,5 +1,21 @@
 # Plugin-br-pix-indirect-btg Changelog
 
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.4.0)
+
+Features:
+- Add an optional license file mount to enhance flexibility in handling license files. (@fredcamaral)
+
+Fixes:
+- Project only the license key in the license file volume to ensure proper handling of license data. (@fredcamaral)
+
+Improvements:
+- Add an upgrade guide for `5.3.3`, including detailed instructions for a seamless transition. (@fredcamaral)
+- Enhance the `5.3.3` upgrade guide by fixing namespace issues, improving rollout check instructions, and adding a clarifying note. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v5.3.3...plugin-br-pix-indirect-btg-v5.4.0)
+
+---
+
 ## [5.3.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-indirect-btg-v5.3.3)
 
 Fixes:
@@ -595,3 +611,4 @@ Contributors: @gui.rodrigues, @guimoreirar, @leonardoz5z
 Contributors: @gui.rodrigues
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-indirect-btg-v1.0.0...plugin-br-pix-indirect-btg-v1.1.0)
+

@@ -1,5 +1,11 @@
 name: Update Helm Chart from Dispatch
 
+# Names the run after what it updates. Severino follows each maintenance line it opened and
+# replies in that request's Slack thread; for a failed run it finds the line by this title,
+# because a workflow_dispatch run does not expose its inputs through the API. The format
+# `<chart> <source_repo>@<source_ref>` is that contract: change it together with Severino.
+run-name: "Update Helm Chart from Dispatch: ${{ fromJSON(inputs.payload).chart }} ${{ fromJSON(inputs.payload).source_repo }}@${{ fromJSON(inputs.payload).source_ref }}"
+
 on:
   workflow_dispatch:
     inputs:

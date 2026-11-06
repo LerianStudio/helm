@@ -32,8 +32,10 @@ jobs:
       # and would otherwise create a second, duplicate line off main.
       legacy_branch_prefix: maintenance
       slack_notification: true
-      # The update card goes to the SLACK_CHANNEL_DEVOPS_NOTIFICATIONS variable's channel;
-      # SLACK_CHANNEL_DEVOPS keeps only the Severino mention, which becomes the review ticket.
+      # Channel IDs are not secrets, so both come from variables. The update card goes to
+      # SLACK_CHANNEL_DEVOPS_NOTIFICATIONS; SLACK_CHANNEL_DEVOPS keeps only the Severino
+      # mention, which becomes the review ticket.
+      slack_channel: ${{ vars.SLACK_CHANNEL_DEVOPS }}
       slack_notification_channel: ${{ vars.SLACK_CHANNEL_DEVOPS_NOTIFICATIONS }}
     secrets:
       APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
@@ -43,6 +45,5 @@ jobs:
       GIT_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
       GIT_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
-      SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
       SLACK_GROUP_DEVOPS_SRE: ${{ secrets.SLACK_GROUP_DEVOPS_SRE }}
       SLACK_BOT_SEVERINO: ${{ secrets.SLACK_BOT_SEVERINO }}

@@ -316,6 +316,23 @@
         "existingSecretName": {
           "default": ""
         },
+        "licenseFile": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Optional signed licence file (needs lib-license-go v5).",
+          "properties": {
+            "existingSecret": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Secret holding the licence file under the key `license`, mounted as the directory /etc/lerian/license."
+            }
+          },
+          "additionalProperties": false
+        },
         "datastores": {
           "type": "object",
           "additionalProperties": {

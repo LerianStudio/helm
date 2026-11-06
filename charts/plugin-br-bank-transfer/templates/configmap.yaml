@@ -210,6 +210,9 @@ data:
   {{- if and .Values.bankTransfer.configmap.ORGANIZATION_IDS (not (.Values.bankTransfer.secrets.ORGANIZATION_IDS | default "")) }}
   ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
   {{- end }}
+  {{- if include "bank-transfer.licenseSecret" $ }}
+  LICENSE_FILE_PATH: "/etc/lerian/license/license"
+  {{- end }}
 
   # =====================================================================
   # OPENTELEMETRY — the app derives service name, version and environment

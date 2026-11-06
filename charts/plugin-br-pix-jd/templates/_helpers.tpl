@@ -1311,3 +1311,11 @@ The minImage guard compares one semver: a tier on another line (rc, v2.0.0-*) mu
       "name" "plugin-br-pix-jd-worker" "component" .Values.worker "health" .Values.worker.health
       "minImage" (include "plugin-br-pix-jd.minImage" .) "replicas" .Values.worker.replicaCount) -}}
 {{- end -}}
+
+{{/*
+Licence file (optional): licenseFile.existingSecret, mounted as a directory (never subPath)
+at /etc/lerian/license, key `license`. Input: a component (.Values.api or .Values.worker).
+*/}}
+{{- define "plugin-br-pix-jd.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}

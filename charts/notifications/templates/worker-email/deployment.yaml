@@ -55,6 +55,7 @@ spec:
             - secretRef:
                 name: {{ include "notifications.secretName" . }}
           env:
+            {{- with (include "notifications.licenseFileEnv" . | trim) }}{{ . | nindent 12 }}{{ end }}
             # Worker binds /health and /readyz on this address (overrides the
             # shared ConfigMap default to match this worker's containerPort).
             - name: WORKER_HEALTH_ADDRESS
@@ -63,6 +64,7 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+          {{- with (include "notifications.licenseFileVolumeMount" . | trim) }}{{ . | nindent 10 }}{{ end }}
           resources:
             {{- toYaml .Values.workerEmail.resources | nindent 12 }}
           {{- if .Values.workerEmail.probes.startup.enabled }}
@@ -91,6 +93,7 @@ spec:
             periodSeconds: {{ .Values.workerEmail.probes.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.workerEmail.probes.liveness.timeoutSeconds }}
             failureThreshold: {{ .Values.workerEmail.probes.liveness.failureThreshold }}
+      {{- with (include "notifications.licenseFileVolume" . | trim) }}{{ . | nindent 6 }}{{ end }}
       {{- with .Values.workerEmail.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -189,3 +189,42 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Optional signed licence file: the Secret is mounted as a DIRECTORY at
+/etc/lerian/license (never subPath, so rotations propagate).
+*/}}
+{{- define "bank-transfer.licenseSecret" -}}
+{{- ((.Values.bankTransfer.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{/*
+LICENSE_KEY as the app receives it from values (secrets, else extraEnvVars). The
+PreSync migrator cannot read the app Secret yet, so the hook Secret below copies it.
+*/}}
+{{- define "bank-transfer.licenseKeyValue" -}}
+{{- ((.Values.bankTransfer.secrets | default dict).LICENSE_KEY | default (get (.Values.bankTransfer.extraEnvVars | default dict) "LICENSE_KEY") | default "" | toString) -}}
+{{- end }}
+
+{{- define "bank-transfer.licenseHookName" -}}
+{{- printf "%s-license-hook" (include "bank-transfer.fullname" . | trunc 50 | trimSuffix "-") -}}
+{{- end }}
+
+{{- define "bank-transfer.licenseFileMount" -}}
+{{- if include "bank-transfer.licenseSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "bank-transfer.licenseFileVolume" -}}
+{{- with include "bank-transfer.licenseSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end }}

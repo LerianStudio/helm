@@ -183,8 +183,27 @@ spec:
                   name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
                   key: POSTGRES_PASSWORD
             {{- end }}
+            {{- /* Licence-gated migrator: LICENSE_KEY comes from the app Secret (operator's under
+                 useExistingSecret, else the pre-install hook Secret); optional keeps v4 images unaffected. */}}
+            {{- if or .Values.app.useExistingSecret .Values.app.secrets.LICENSE_KEY }}
+            - name: LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
+                  key: LICENSE_KEY
+                  optional: true
+            {{- end }}
+            {{- if include "plugin-br-payments.licenseSecret" . }}
+            - name: LICENSE_FILE_PATH
+              value: "/etc/lerian/license/license"
+            {{- end }}
+          {{- with (include "plugin-br-payments.licenseFileMount" . | trim) }}{{ . | nindent 10 }}{{- end }}
           resources:
             {{- toYaml (.Values.app.controlplaneMigrations.resources | default $defaultMigrationResources) | nindent 12 }}
+      {{- with (include "plugin-br-payments.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- with .Values.app.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

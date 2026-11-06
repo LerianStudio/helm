@@ -205,6 +205,12 @@ sisbajud:
   license:
     organizationIds: "global"
 
+  # -- Optional signed licence file, an alternative to LICENSE_KEY: a Secret holding
+  #    the file under the key `license`, mounted at /etc/lerian/license. Needs an
+  #    image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
+
   # ---------------------------------------------------------------------------
   # Sisbajud Mensageria (execution contract). Setting baseUrl is what turns the
   # process into the executor. The transport is always TLS; mutual TLS is

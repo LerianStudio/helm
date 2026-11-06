@@ -151,8 +151,8 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 Identity Common labels
 */}}
 {{- define "plugin-identity.labels" -}}
-helm.sh/chart: {{ include "plugin-identity.chart" .context }}
-{{ include "plugin-identity.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-identity.chart" .context }}
+{{ end }}{{ include "plugin-identity.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -161,8 +161,8 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 Auth Common labels
 */}}
 {{- define "plugin-auth.labels" -}}
-helm.sh/chart: {{ include "plugin-auth.chart" .context }}
-{{ include "plugin-auth.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-auth.chart" .context }}
+{{ end }}{{ include "plugin-auth.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -171,8 +171,8 @@ app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 Caradhras Common labels
 */}}
 {{- define "plugin-caradhras.labels" -}}
-helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
-{{ include "plugin-caradhras.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
+{{ end }}{{ include "plugin-caradhras.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -196,8 +196,8 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
 {{- define "plugin-caradhras-ui.labels" -}}
-helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
-{{ include "plugin-caradhras-ui.selectorLabels" (dict "context" .context "name" .name) }}
+{{ if not .pod }}helm.sh/chart: {{ include "plugin-caradhras.chart" .context }}
+{{ end }}{{ include "plugin-caradhras-ui.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -214,7 +214,7 @@ legacy overrides and then the defaults below.
 {{- end }}
 
 {{- define "caradhras.imageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "1.8.6") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.image.tag "oldVal" (dig "backend" "image" "tag" "" .Values.auth) "default" "2.1.0") -}}
 {{- end }}
 
 {{- define "caradhras.imagePullPolicy" -}}
@@ -248,7 +248,7 @@ legacy overrides remain visible, including to the repository guard below.
 {{- end }}
 
 {{- define "caradhras.migrationsImageTag" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" "1.8.6") -}}
+{{- include "caradhras.value" (dict "newVal" .Values.caradhras.migrations.image.tag "oldVal" (dig "backend" "migrations" "image" "tag" "" .Values.auth) "default" (regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "")) -}}
 {{- end }}
 
 {{- define "caradhras.migrationsImagePullPolicy" -}}
@@ -608,15 +608,66 @@ creates carries this key.
 */}}
 {{- define "plugin-caradhras.builtInAdminPasswordEnv" -}}
 {{- $bp := .Values.caradhras.builtInAdminPassword | default dict -}}
-{{- $tag := include "caradhras.imageTag" . -}}
-{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare ">=1.9.0-beta.25" $tag)) -}}
-{{- fail (printf "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but the Caradhras image tag %q does not read it.\n   Caradhras reads builtInAdminPassword from 1.9.0-beta.25 on; older images seed the public default password.\n   Set caradhras.image.tag to a semver tag and pin a Caradhras tag >= 1.9.0-beta.25 (a digest or latest cannot be checked).\n" $tag) -}}
+{{- $tag := regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "" -}}
+{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (semverCompare ">=1.9.0-beta.25" $tag)) -}}
+{{- fail (printf "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but the Caradhras image tag %q does not read it.\n   Caradhras reads builtInAdminPassword from 1.9.0-beta.25 on; older images seed the public default password.\n   Set caradhras.image.tag to a semver tag and pin a Caradhras tag >= 1.9.0-beta.25 (a bare digest or latest cannot be checked).\n" $tag) -}}
 {{- end -}}
 - name: builtInAdminPassword
   valueFrom:
     secretKeyRef:
       name: {{ required "\n\nERROR: caradhras.builtInAdminPassword.enabled is true but caradhras.builtInAdminPassword.secretName is empty.\n   No Secret this chart creates carries the built-in/admin password.\n   Name the Secret holding it in caradhras.builtInAdminPassword.secretName (key: caradhras.builtInAdminPassword.secretKey).\n" $bp.secretName | quote }}
       key: {{ $bp.secretKey | default "builtInAdminPassword" | quote }}
+{{- end }}
+
+{{/*
+plugin-access-manager.appClientSecretName — the Secret holding app-lerian's client
+secret (key AUTHORIZER_CLIENT_SECRET): the operator's auth Secret, else the one this chart keeps.
+*/}}
+{{- define "plugin-access-manager.appClientSecretName" -}}
+{{- if .Values.auth.useExistingSecret -}}
+{{- .Values.auth.existingSecretName -}}
+{{- else -}}
+{{- include "plugin-auth.fullname" . }}-app-client-secret
+{{- end -}}
+{{- end }}
+
+{{/*
+plugin-access-manager.appClientSecretEnv — AUTHORIZER_CLIENT_SECRET (or another
+env name) by secretKeyRef on that one source.
+*/}}
+{{- define "plugin-access-manager.appClientSecretEnv" -}}
+- name: {{ .envName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "plugin-access-manager.appClientSecretName" .context }}
+      key: AUTHORIZER_CLIENT_SECRET
+{{- end }}
+
+{{/*
+plugin-access-manager.appClientSecretValue — app-lerian's client secret in clear: the operator's value, else the
+one already in the cluster, else a generated one (fresh installs only: an upgrade fails), and only when Caradhras at or above $floor seeds it (an older image seeds its own literal). Called only from app-client-secret.yaml.
+*/}}
+{{- define "plugin-access-manager.appClientSecretValue" -}}
+{{- $kept := dig "data" "AUTHORIZER_CLIENT_SECRET" "" (lookup "v1" "Secret" .Release.Namespace (include "plugin-access-manager.appClientSecretName" .)) | b64dec -}}
+{{- if .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET -}}
+{{- .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET -}}
+{{- else if $kept -}}
+{{- $kept -}}
+{{- else -}}
+{{- if not (lookup "v1" "Secret" .Release.Namespace "") -}}
+{{- fail (printf "\n\nERROR: no app-lerian client secret is set and this render cannot read the cluster (helm template, ArgoCD, helmfile, client --dry-run), so a generated secret would change on every render.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret. On an existing install, use the value app-lerian already holds; if this chart generated it, it is in Secret %s, key AUTHORIZER_CLIENT_SECRET.\n" (include "plugin-access-manager.appClientSecretName" .)) -}}
+{{- end -}}
+{{- if .Release.IsUpgrade -}}
+{{- fail "\n\nERROR: no app-lerian client secret is set on an upgrade. An existing Caradhras database keeps the secret app-lerian already holds, so a generated one would break auth silently.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret to the current value. To change it, rotate it with Caradhras POST /api/regenerate-application-secret?id=admin/app-lerian, then update the value and restart auth, identity and Caradhras in the same window (Console, plugin-fees and Tenant Manager need the new value too).\n" -}}
+{{- end -}}
+{{- /* Floor: must be the first Caradhras tag containing the seed change (caradhras PR #619, not yet tagged). */ -}}
+{{- $floor := ">=2.4.0-beta.4" -}}
+{{- $tag := regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "" -}}
+{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (semverCompare $floor $tag)) -}}
+{{- fail (printf "\n\nERROR: no app-lerian client secret is set and the Caradhras image tag %q cannot seed a generated one.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET, use auth.useExistingSecret, or pin a semver Caradhras tag %s (a bare digest or latest cannot be checked).\n" $tag $floor) -}}
+{{- end -}}
+{{- randAlphaNum 40 -}}
+{{- end -}}
 {{- end }}
 
 {{/*
@@ -998,4 +1049,81 @@ PDB spec and rollout strategy come from the health preset; an operator override 
       "name" "identity" "component" .Values.identity "health" .Values.identity.health
       "port" .Values.identity.service.port "minImage" (include "plugin-access-manager.minImage" .)
       "replicas" .Values.identity.replicaCount "autoscaling" .Values.identity.autoscaling) -}}
+{{- end -}}
+
+{{/*
+Caradhras licence env for the server and the migrate init container (input: dict "context" $ "licensed" bool).
+licenseFile.existingSecret is mounted as a directory (never subPath) at /etc/lerian/license.
+*/}}
+{{- define "plugin-caradhras.licenseFileSecret" -}}
+{{- (.Values.caradhras.licenseFile | default dict).existingSecret | default "" -}}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseEnv" -}}
+{{- $ctx := .context -}}
+{{- if .licensed }}
+- name: LICENSE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "plugin-caradhras.secretName" $ctx }}
+      key: LICENSE_KEY
+      optional: true
+{{- end }}
+{{- if include "plugin-caradhras.licenseFileSecret" $ctx }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseFileMount" -}}
+{{- if include "plugin-caradhras.licenseFileSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-caradhras.licenseFileVolume" -}}
+{{- with include "plugin-caradhras.licenseFileSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end -}}
+
+{{/*
+Licence file for auth and identity (input: the component values, .Values.auth or .Values.identity).
+licenseFile.existingSecret is mounted as a directory (never subPath) at /etc/lerian/license.
+*/}}
+{{- define "plugin-access-manager.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end -}}
+
+{{- define "plugin-access-manager.licenseFileEnv" -}}
+{{- if include "plugin-access-manager.licenseFileSecret" . }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-access-manager.licenseFileMount" -}}
+{{- if include "plugin-access-manager.licenseFileSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-access-manager.licenseFileVolume" -}}
+{{- with include "plugin-access-manager.licenseFileSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
 {{- end -}}

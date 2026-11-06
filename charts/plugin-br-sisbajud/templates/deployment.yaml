@@ -129,8 +129,12 @@ spec:
           {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "http" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
           resources:
             {{- toYaml $s.resources | nindent 12 }}
-          {{- if or $mt.caSecret $mountPair (and $webhookOn $whTls.existingSecret) $s.extraVolumeMounts }}
+          {{- $licMount := include "plugin-br-sisbajud.licenseFileMount" . | trim }}
+          {{- if or $mt.caSecret $mountPair (and $webhookOn $whTls.existingSecret) $s.extraVolumeMounts $licMount }}
           volumeMounts:
+            {{- with $licMount }}
+            {{- . | nindent 12 }}
+            {{- end }}
             {{- if $mt.caSecret }}
             - name: mensageria-ca
               mountPath: {{ $mt.caMount }}
@@ -166,6 +170,7 @@ spec:
       {{- if $raOn }}
       {{- $volumes = concat $volumes ((include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" (printf "%s-iam-tls" $fullname)) | fromYaml).volumes) }}
       {{- end }}
+      {{- $volumes = concat $volumes (include "plugin-br-sisbajud.licenseFileVolume" . | fromYamlArray) }}
       {{- $volumes = concat $volumes ($s.extraVolumes | default list) }}
       {{- with $volumes }}
       volumes:

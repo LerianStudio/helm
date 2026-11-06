@@ -79,3 +79,33 @@ tests:
       - notExists:
           path: data.SD_ENABLED
         template: templates/configmap.yaml
+
+  - it: mounts no licence file with licenseFile null
+    set:
+      system-facts.licenseFile: null
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+        template: templates/deployment.yaml
+
+  - it: mounts the licence Secret as a directory in file mode
+    set:
+      system-facts.licenseFile.existingSecret: sf-license
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: sf-license
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_FILE_PATH
+            value: /etc/lerian/license/license
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: license-file
+            mountPath: /etc/lerian/license
+            readOnly: true
+        template: templates/deployment.yaml

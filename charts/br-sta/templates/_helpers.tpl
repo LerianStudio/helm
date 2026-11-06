@@ -606,6 +606,8 @@ ALLOW_INSECURE_TLS: {{ include "br-sta.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowCorsWildcard" "k" "ALLOW_CORS_WILDCARD" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowInsecureOtel" "k" "ALLOW_INSECURE_OTEL" "opt" true) }}
 # --- License (lib-license-go); LICENSE_KEY lives in the Secret ------------------
+{{- /* ORGANIZATION_IDS: app 1.3.0 ignores it (the licence is global). Still rendered
+   when set, for a manager/worker image pinned below 1.3.0, which requires it. */}}
 {{ include $kv (dict "cm" $cm "p" $c.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "opt" true) }}
 # --- Multi-tenant (lerian-common.multiTenant.env; secrets via multiTenant.secret) --
 MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
@@ -692,10 +694,13 @@ RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "requireHealthAllowedHosts" "k" "RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureHealthCheck" "k" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" "d" (ternary "true" "false" $rmqBundled)) }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "allowInsecureTls" "k" "RABBITMQ_ALLOW_INSECURE_TLS" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherConfirmTimeoutMs" "k" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "d" "5000") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryInitialMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "d" "1000") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryMaxMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "d" "30000") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherMaxRecoveries" "k" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "d" "10") }}
+{{- /* RABBITMQ_PUBLISHER_*: app 1.3.0 ignores them (the publisher is gone). Rendered
+   only when set, for a manager/worker image pinned below 1.3.0 (1.2.0 defaults:
+   5000 / 1000 / 30000 / 10). */}}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherConfirmTimeoutMs" "k" "RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryInitialMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryMaxMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "opt" true) }}
+{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherMaxRecoveries" "k" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "opt" true) }}
 # --- Outbox (lib-commons; production requires it) -----------------------------
 {{ include $kv (dict "cm" $cm "p" $c.outbox "f" "enabled" "k" "OUTBOX_ENABLED" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $c.outbox "f" "tableName" "k" "OUTBOX_TABLE_NAME" "d" "outbox_events") }}
@@ -859,6 +864,7 @@ envDefaults apply otherwise).
 {{ include $kv (dict "cm" $cm "p" $s "f" "serviceName" "k" "SCHEDULER_SERVICE_NAME" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "leaderTtlSeconds" "k" "SCHEDULER_LEADER_TTL_SECONDS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "heartbeatSeconds" "k" "SCHEDULER_HEARTBEAT_SECONDS" "opt" true) }}
+{{- /* Read only by a worker image pinned below 1.3.0; 1.3.0 sweeps every 5 minutes. */}}
 {{ include $kv (dict "cm" $cm "p" $s "f" "credentialIntervalHours" "k" "SCHEDULER_CREDENTIAL_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "staleCleanupIntervalHours" "k" "SCHEDULER_STALE_CLEANUP_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "retentionIntervalHours" "k" "SCHEDULER_RETENTION_INTERVAL_HOURS" "opt" true) }}
@@ -941,10 +947,8 @@ REDIS_PASSWORD: {{ $s.REDIS_PASSWORD | quote }}
 {{- /* Bundled broker (Pattern B): the broker's initial user is read from here. */}}
 RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{- end }}
-{{- /* ORGANIZATION_IDS (an identifier whose home is common.license.organizationIds)
-   is also accepted in common.secrets for tiers that source it from the secret
-   store: it flows through the verbatim pass-through below, and the license
-   gate counts it there. */}}
+{{- /* ORGANIZATION_IDS is also accepted in common.secrets (verbatim pass-through
+   below) for a manager/worker image pinned below 1.3.0; app 1.3.0 ignores it. */}}
 {{- range $k := list "RABBITMQ_DEFAULT_PASS" "RABBITMQ_URL" "RABBITMQ_ERLANG_COOKIE" "POSTGRES_REPLICA_PASSWORD" "MASTER_KEYS" "LICENSE_KEY" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "IDP_M2M_CLIENT_SECRET" }}
 {{- with index $s $k }}
 {{ $k }}: {{ . | quote }}
@@ -1173,7 +1177,6 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- /* License: required in EVERY environment (bootstrap/license.go
    errLicenseNotConfigured). The published image has no unlicensed mode. */ -}}
 {{- include $req (dict "context" $ "key" "LICENSE_KEY" "secret" true "why" "in every environment (the app refuses to boot without a license; there is no unlicensed mode)" "set" "common.secrets.LICENSE_KEY") -}}
-{{- include $req (dict "context" $ "key" "ORGANIZATION_IDS" "value" (index $data "ORGANIZATION_IDS") "secret" true "why" "in every environment (the app refuses to boot without a license; there is no unlicensed mode)" "set" "common.license.organizationIds") -}}
 {{- /* DEPLOYMENT_MODE vocabulary (normalizeDeploymentMode: trimmed, case-insensitive;
    empty means local): any other value refuses boot. */ -}}
 {{- $deployMode := lower (trim (toString (index $data "DEPLOYMENT_MODE" | default ""))) -}}

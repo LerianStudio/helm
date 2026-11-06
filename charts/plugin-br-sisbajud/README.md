@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `LICENSE_KEY`, `MENSAGERIA_CLIENT_ID`, `MENSAGERIA_CLIENT_SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` (webhook transport), the KMS credential (`VAULT_TOKEN` or `VAULT_APPROLE_SECRET_ID`; none for AWS KMS), `POSTGRES_PASSWORD` / `REDIS_PASSWORD` for external infra, plus, as existing Secrets, the Mensageria server CA (`ca.crt`; optional in one-way TLS) and, with mTLS only, the executor client pair (`tls.crt`, `tls.key`). The default render fails on purpose and names the first missing value.
+- Required secrets: `LICENSE_KEY` (unless `sisbajud.licenseFile.existingSecret` mounts a signed licence file; the migrations runner receives it too, from the app Secret or the `<fullname>-license-hook` PreSync Secret), `MENSAGERIA_CLIENT_ID`, `MENSAGERIA_CLIENT_SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` (webhook transport), the KMS credential (`VAULT_TOKEN` or `VAULT_APPROLE_SECRET_ID`; none for AWS KMS), `POSTGRES_PASSWORD` / `REDIS_PASSWORD` for external infra, plus, as existing Secrets, the Mensageria server CA (`ca.crt`; optional in one-way TLS) and, with mTLS only, the executor client pair (`tls.crt`, `tls.key`). The default render fails on purpose and names the first missing value.
 - Dependency notes: PostgreSQL and Valkey ship as Bitnami subcharts, **disabled by default** and development-only. Production uses external, managed PostgreSQL and Redis/Valkey, a Vault Transit or AWS KMS, plugin-access-manager and the Sisbajud Mensageria (br-sfn).
 - Production overrides: `global.datastores`, `global.kms`, `global.auth.host`, `sisbajud.mensageria.*`, `sisbajud.executor.*`, and `sisbajud.useExistingSecret` + `existingSecretName` (an existing Secret **replaces** the chart Secret; it is not merged).
 - Source/license: chart source in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm) (Elastic License 2.0); application in `LerianStudio/plugin-br-sisbajud`.
@@ -77,6 +77,7 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `global.datastores.postgres/redis` | `POSTGRES_*`, `REDIS_*` | `REDIS_HOST` is rendered as `host:port` |
 | `sisbajud.app.defaultTenantId` | `DEFAULT_TENANT_ID` | must be a UUID |
 | `sisbajud.license.organizationIds` | `ORGANIZATION_IDS` | must be `global` |
+| `sisbajud.licenseFile.existingSecret` | `LICENSE_FILE_PATH` | optional signed licence file (key `license`), mounted at `/etc/lerian/license` on the app and the migrations runner; replaces `LICENSE_KEY`. Needs an image on lib-license-go v5. The external-Postgres migrations Job (PreSync) mounts it too, so that Secret must exist before the sync |
 | `global.auth.*` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | |
 
 Liveness probes `/version` (static build info, always 200): the app's `/health` stays 503 until its startup self-probe passes. Readiness stays on `/readyz`.

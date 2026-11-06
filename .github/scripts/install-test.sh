@@ -22,12 +22,17 @@ REL="$CHART"
 NS="it-${CHART}"          # release namespace (helm -n); also created
 TARGETS=""                # every distinct namespace the chart's manifests reference (created too)
 
-# Writes IT_LICENSE_KEY over the "IT_LICENSE_KEY" placeholder (helm-install-values/README.md).
+# Writes IT_LICENSE_KEY and IT_LICENSE_KEY_CARADHRAS over their quoted placeholders (helm-install-values/README.md).
 with_license() { # <values-file>: prints the file helm reads
-  local ph='"IT_LICENSE_KEY"' out v
-  if [[ -z "${IT_LICENSE_KEY:-}" ]] || ! grep -qF "$ph" "$1"; then echo "$1"; return; fi
-  out="$(mktemp)"; v="$(<"$1")"
-  printf '%s\n' "${v//"$ph"/"\"$IT_LICENSE_KEY\""}" > "$out"; echo "$out"
+  local out v n ph k
+  out="$1"
+  for n in IT_LICENSE_KEY IT_LICENSE_KEY_CARADHRAS; do
+    ph="\"$n\""; k="${!n:-}"
+    if [[ -z "$k" ]] || ! grep -qF "$ph" "$out"; then continue; fi
+    v="$(<"$out")"; out="$(mktemp)"
+    printf '%s\n' "${v//"$ph"/"\"$k\""}" > "$out"
+  done
+  echo "$out"
 }
 
 # Values: an explicit argument replaces everything. Otherwise the render gate's

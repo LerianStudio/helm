@@ -60,8 +60,8 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if ne $org "global" -}}
 {{- include $f (dict "msg" "ORGANIZATION_IDS must be \"global\" (the app supports GLOBAL license mode only)." "set" "sisbajud.license.organizationIds=global") -}}
 {{- end -}}
-{{- if not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" "LICENSE_KEY")) -}}
-{{- include $f (dict "msg" "LICENSE_KEY is required in every environment (the app has no unlicensed mode)." "set" "sisbajud.secrets.LICENSE_KEY (or sisbajud.useExistingSecret)") -}}
+{{- if not (or (include "plugin-br-sisbajud.provided" (dict "context" $ "key" "LICENSE_KEY")) (include "plugin-br-sisbajud.licenseSecret" $)) -}}
+{{- include $f (dict "msg" "LICENSE_KEY is required in every environment (the app has no unlicensed mode)." "set" "sisbajud.secrets.LICENSE_KEY (or sisbajud.useExistingSecret), or sisbajud.licenseFile.existingSecret") -}}
 {{- end -}}
 
 {{- /* --- executor switches (closed sets, trimmed, case-sensitive) ----------- */ -}}

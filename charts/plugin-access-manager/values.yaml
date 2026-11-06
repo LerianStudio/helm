@@ -264,7 +264,6 @@ identity:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/identity/secrets.yaml
   secrets:
-    AUTHORIZER_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
     # -- Consul ACL token for service discovery (empty = no ACL)
@@ -432,6 +431,9 @@ auth:
     # the bundled subchart. Only set this for an EXTERNAL database (auth-database.external=true)
     # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
     DB_PASSWORD: ""
+    # -- app-lerian client secret. Required for helm template/GitOps (no cluster read: the render refuses to generate).
+    # Empty on a FRESH helm install: generates and keeps one, needs Caradhras >= 2.4.0-beta.4.
+    # An install whose Caradhras database already exists must set the value app-lerian already holds (or auth.useExistingSecret).
     AUTHORIZER_CLIENT_SECRET: ""
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""

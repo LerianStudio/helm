@@ -21,7 +21,7 @@ jobs:
     # "<component>:" block older runs left) instead of .<component>.image.tag, which no
     # template reads: product-console bumps moved appVersion but kept shipping the old
     # image. Inputs and secrets are unchanged from v1.55.0.
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@tier-2
+    uses: LerianStudio/shared-workflows-public/.github/workflows/helm-update-chart.yml@tier-1
     with:
       payload: ${{ inputs.payload }}
       # develop is retired for this repo (see the PR template): mainline updates belong on main.

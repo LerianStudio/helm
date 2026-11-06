@@ -17,8 +17,8 @@
 # RabbitMQ / broker are allowed, and the production gates (mandatory audit
 # transport, transfer bucket, business channel) are off. Features that need
 # services this bundle does not provide are OFF: inbound auth
-# (plugin-access-manager), the access-manager declaration publisher,
-# multi-tenancy, the reporter -> BACEN bridge.
+# (plugin-access-manager), the access-manager declaration publisher and the
+# reporter -> BACEN bridge.
 #
 # The license is NOT relaxed: the app refuses to boot in every ENV_NAME without
 # LICENSE_KEY and ORGANIZATION_IDS. The values below are placeholders so the
@@ -33,8 +33,6 @@ global:
   env:
     name: "development"
   auth:
-    enabled: false
-  multiTenant:
     enabled: false
   observability:
     enabled: false

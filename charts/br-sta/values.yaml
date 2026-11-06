@@ -1,8 +1,8 @@
 # Default values for the br-sta (BACEN STA) chart.
 # Multi-component chart: the MANAGER (cmd/manager — HTTP API: transfers,
 # credentials, audit read API) and the WORKER (cmd/worker — the BACEN transfer
-# scheduler, inbound polling, audit publisher/consumer, business-event delivery,
-# scheduled jobs). Both binaries read the SAME configuration, so the app
+# scheduler, inbound polling, outbox delivery (audit + business facts), audit
+# consumer, scheduled jobs). Both binaries read the SAME configuration, so the app
 # environment is one shared ConfigMap + one shared Secret (the `common` block);
 # the worker layers a small ConfigMap of worker-only keys on top.
 #
@@ -101,10 +101,6 @@ global:
   #   streaming: { enabled: true, brokers: "redpanda.internal:9093", tlsEnabled: true, saslMechanism: "SCRAM-SHA-256", saslUsername: "br-sta" }
   streaming:
     enabled: true
-  # -- Env-wide multi-tenant (tenant-manager): enabled | url | redisHost | redisPort | redisTls | redisCaCert.
-  # The service API key is a secret: common.secrets.MULTI_TENANT_SERVICE_API_KEY.
-  # Example: multiTenant: { enabled: true, url: "http://tenant-manager:4026", redisHost: "valkey.internal" }
-  multiTenant: {}
   # -- Env-wide KMS for the credential envelope-encryption master key:
   # vendor | keyId | awsRegion. vendor: envvar (default — MASTER_KEYS carries hex
   # keys) | aws (MASTER_KEYS carries base64 KMS ciphertext wrapped by the CMK keyId).
@@ -159,13 +155,12 @@ common:
   # the defaults are in templates/_helpers.tpl and listed in README.md. Leave a
   # group empty to keep every default.
   # ---------------------------------------------------------------------------
-  # -- ENV_NAME comes from global.env.name. Fields: logLevel, defaultTenantId,
-  # deploymentMode, systemplaneEnabled, infraConnectTimeoutSec,
-  # dbMetricsIntervalSec, idempotencyRetryWindowSec, circuitBreakerEnabled,
+  # -- ENV_NAME comes from global.env.name. Fields: logLevel, deploymentMode,
+  # systemplaneEnabled, infraConnectTimeoutSec, circuitBreakerEnabled,
   # configApiEnabled. deploymentMode (DEPLOYMENT_MODE) defaults to "byoc" (the
   # customer's cloud); "saas" makes the app refuse any non-TLS dependency
-  # (Postgres, Redis, RabbitMQ, S3, broker, tenant manager); "local" for a
-  # workstation. Any other value is refused at render.
+  # (Postgres, Redis, RabbitMQ, S3, broker); "local" for a workstation. Any
+  # other value is refused at render.
   app: {}
   # -- address (defaults to 0.0.0.0:<manager containerPort>), bodyLimitBytes,
   # tlsTerminatedUpstream, tlsCertFile, tlsKeyFile, trustedProxies
@@ -187,17 +182,13 @@ common:
   # maxRetryBackoff, masterName. Connection identity lives in datastores.
   redis: {}
   # -- RabbitMQ (audit transport + business-event channel): enabled, vhost,
-  # exchange, queue, healthCheckUrl, healthCheckAllowedHosts,
+  # queue, healthCheckUrl, healthCheckAllowedHosts,
   # requireHealthAllowedHosts, allowInsecureHealthCheck, allowInsecureTls,
   # publisherConfirmTimeoutMs, publisherRecoveryInitialMs, publisherRecoveryMaxMs,
-  # publisherMaxRecoveries. host/ports/user/scheme live in datastores.broker;
+  # publisherMaxRecoveries. host/ports/user/scheme live in datastores.broker
+  # (the management port only feeds the health-check URL default);
   # RABBITMQ_DEFAULT_PASS (or a full RABBITMQ_URL) is a secret.
   rabbitmq: {}
-  # -- Transactional outbox: enabled, tableName, dispatchIntervalSec, batchSize,
-  # publishMaxAttempts, publishBackoffMs, retryWindowSec, maxDispatchAttempts,
-  # processingTimeoutSec, maxFailedPerBatch, includeTenantMetrics,
-  # priorityEventTypes, allowEmptyTenant.
-  outbox: {}
   # -- Per-app streaming identity: cloudeventsSource (leave unset — the app pins
   # "br-sta" and refuses anything else), clientId, cbFailureRatio, cbMinRequests,
   # cbTimeoutSec, closeTimeoutSec. Brokers/TLS/SASL come from global.streaming.
@@ -208,27 +199,16 @@ common:
   # -- Access-manager permission declaration publisher (lib-auth WireFromEnv,
   # manager only): declarationEnabled, host, m2mClientId. IDP_M2M_CLIENT_SECRET is a secret.
   identity: {}
-  # -- M2M credential provider (multi-tenant): targetService, credentialCacheTtlSec.
-  m2m: {}
-  # -- AWS SDK: region (AWS_REGION — S3 signing region fallback, M2M, KMS region fallback).
+  # -- AWS SDK: region (AWS_REGION — S3 signing region fallback, KMS region fallback).
   aws: {}
-  # -- Multi-tenant client tuning (only when multi-tenancy is on; url / redis come
-  # from global.multiTenant): poolMaxConns, poolMaxIdleConns, maxTenantPools,
-  # idleTimeoutSec, timeoutSec, cacheTtlSec, connectionsCheckIntervalSec,
-  # circuitBreakerThreshold, circuitBreakerTimeoutSec, allowInsecureHttp.
-  multiTenant: {}
   # -- OTEL identity: serviceName (unset: each binary seeds br-sta-manager /
   # br-sta-worker), libraryName. enabled/endpoint come from global.observability.
   observability: {}
   # -- Rate limiting: enabled, max, windowSec, aggressiveMax, aggressiveWindowSec,
   # relaxedMax, relaxedWindowSec, auditExportMax, auditExportWindowSec.
   rateLimit: {}
-  # -- Swagger: enabled, title, description, version, host, schemes, basePath, leftDelim, rightDelim.
+  # -- Swagger: enabled, host, schemes.
   swagger: {}
-  # -- Pagination: maxLimit, maxMonthDateRange.
-  pagination: {}
-  # -- Audit read API (manager): defaultPageSize, maxPageSize, maxExportDateRangeDays.
-  auditApi: {}
   # -- Credential envelope encryption: masterKeyVersion (MASTER_KEY_VERSION, the
   # active version inside MASTER_KEYS). The provider and the KMS key come from
   # the kms mask. MASTER_KEYS is ALWAYS required (the manager aborts boot without it).
@@ -248,8 +228,8 @@ common:
   # region and path style come from objectStorage.sta.
   transfer: {}
   # -- Business-event delivery channel (worker publishes, production requires it):
-  # enabled, exchange, intervalSec, batchSize, maxAttempts, serviceName,
-  # lockClassId, confirmTimeoutSec.
+  # enabled, exchange, confirmTimeoutSec. Delivery cadence and retries belong to
+  # the lib-commons outbox dispatcher (not configurable through env).
   businessEvents: {}
   # -- Reporter -> BACEN bridge consumer (worker): consumerEnabled, exchange
   # (required when on), queue, dlqExchange, alternateExchange, idleWindowSec,
@@ -267,9 +247,9 @@ common:
   # RABBITMQ_ERLANG_COOKIE (bundled rabbitmq only), MASTER_KEYS, LICENSE_KEY
   # (required in every environment),
   # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, IDP_M2M_CLIENT_SECRET,
-  # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
-  # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, when a tier sources it from
-  # the secret store). Any other key is emitted verbatim.
+  # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT (and ORGANIZATION_IDS, when a
+  # tier sources it from the secret store). Any other key is emitted verbatim,
+  # except the keys the app no longer reads (MULTI_TENANT_*, OUTBOX_*, ...).
   secrets: {}
   # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
   # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
@@ -380,8 +360,8 @@ manager:
 
 # =============================================================================
 # worker — cmd/worker: the background process (BACEN outbound scheduler, inbound
-# polling, audit publisher/consumer, business-event delivery, partition manager,
-# verifier, export generator, reporter bridge). It has NO leader election for
+# polling, outbox delivery of audit + business facts, audit consumer, partition
+# manager, verifier, export generator, reporter bridge). It has NO leader election for
 # every job, so it runs as exactly ONE replica with a Recreate strategy.
 # =============================================================================
 worker:
@@ -430,28 +410,27 @@ worker:
   # over the shared one). Defaults in templates/_helpers.tpl / README.md.
   # ---------------------------------------------------------------------------
   # -- Leader-gated scheduler (BACEN verdict polling + maintenance jobs):
-  # enabled, serviceName, leaderTtlSeconds, heartbeatSeconds,
-  # credentialIntervalHours, staleCleanupIntervalHours, retentionIntervalHours,
-  # quarantineRetentionDays, filingSweepEnabled, filingSweepIntervalMinutes,
-  # filingSweepAgeMinutes (a SAFETY knob — see README), filingSweepBatchLimit.
+  # enabled, leaderTtlSeconds, heartbeatSeconds, credentialIntervalHours,
+  # retentionIntervalHours, quarantineRetentionDays, filingSweepEnabled,
+  # filingSweepIntervalMinutes, filingSweepAgeMinutes (a SAFETY knob — see
+  # README), filingSweepBatchLimit.
   scheduler: {}
   # -- Credential recovery sweep at boot: recoveryOnBoot.
   credentials: {}
-  # -- Audit outbox publisher: enabled, intervalSec, batchSize, maxAttempts,
-  # exchange, lockClassId, serviceName, alternateExchange, confirmTimeoutSec.
+  # -- Audit channel of the outbox dispatcher: enabled, exchange,
+  # alternateExchange, confirmTimeoutSec. Cadence, retries and the 30-day purge of
+  # published rows belong to the lib-commons outbox dispatcher.
   auditPublisher: {}
-  # -- Audit consumer: enabled, queue, exchange, dedupTtlSec, lockClassId,
-  # maxRetryAttempts, dlqExchange, serviceName, alternateExchange.
+  # -- Audit consumer: enabled, queue, exchange, lockClassId, maxRetryAttempts,
+  # dlqExchange, alternateExchange.
   auditConsumer: {}
   # -- Audit partition manager (LEAVE ON — the only forward creator of the audit
-  # partitions): enabled, intervalHours, lookaheadMonths, serviceName.
+  # partitions): enabled, intervalHours, lookaheadMonths.
   auditPartition: {}
-  # -- Audit outbox cleanup: enabled, intervalHours, retentionDays, serviceName.
-  auditCleanup: {}
-  # -- Audit hash-chain verifier: enabled, intervalHours, sampleRows, serviceName.
+  # -- Audit hash-chain verifier: enabled, intervalHours, sampleRows.
   auditVerifier: {}
   # -- Audit export generator: enabled (defaults to "true" when an audit export
-  # bucket is configured), intervalSec, batchSize, objectPrefix, serviceName.
+  # bucket is configured), intervalSec, batchSize, objectPrefix.
   # Bucket/endpoint/region/path style come from objectStorage.staAuditExports.
   auditExportGenerator: {}
 
@@ -468,9 +447,6 @@ worker:
 # Detached migrations — the br-sta-migrations image applies the SQL schema to the
 # br_sta database before the app boots (golang-migrate via lib-commons). The
 # connection follows the app's resolved POSTGRES_* values unless overridden here.
-# SINGLE-TENANT ONLY: the runner refuses MULTI_TENANT_ENABLED=true, so the Job is
-# not rendered when multi-tenancy is on (tenant schemas are provisioned by the
-# tenant manager).
 #   External Postgres: Helm pre-install/pre-upgrade + ArgoCD PreSync Secret + Job
 #                      (the app never boots unmigrated).
 #   Bundled Postgres:  a regular Job created with the release (see README).

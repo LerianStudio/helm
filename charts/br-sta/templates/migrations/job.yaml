@@ -1,8 +1,8 @@
 {{- /*
 Migrations Job. Runs the dedicated br-sta-migrations image, whose entrypoint
 applies the golang-migrate SQL migrations (lib-commons migrator) against the
-br_sta database and exits. SINGLE-TENANT ONLY (the runner refuses
-MULTI_TENANT_ENABLED=true).
+br_sta database and exits (one installation serves one client: app 1.2.0 has
+no multi-tenant mode, and the runner no longer reads MULTI_TENANT_ENABLED).
 
 Connection: migrations.postgres.* override > the app's resolved POSTGRES_*
 (br-sta.postgres: configmap > datastores > global > cloud > default), so the Job
@@ -139,7 +139,7 @@ template:
         resources:
           {{- toYaml .Values.migrations.resources | nindent 10 }}
 {{- end -}}
-{{- if and .Values.migrations.enabled (ne (include "br-sta.multiTenantEnabled" .) "true") }}
+{{- if .Values.migrations.enabled }}
 {{- $spec := include "br-sta.migrationsJobSpec" . -}}
 {{- $bundled := eq (include "br-sta.postgresInternal" .) "true" }}
 apiVersion: batch/v1

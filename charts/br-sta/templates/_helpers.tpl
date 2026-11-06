@@ -411,11 +411,6 @@ key off that literal.
 {{- ternary "true" "false" (has (toString .) (list "true" "1" "t" "T" "TRUE" "True")) -}}
 {{- end -}}
 
-{{- define "br-sta.multiTenantEnabled" -}}
-{{- $cm := .Values.common.configmap | default dict -}}
-{{- include "br-sta.isTrue" (include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false")) -}}
-{{- end -}}
-
 {{/*
 br-sta.streamingEnabledRaw — STREAMING_ENABLED. configmap > global.streaming.enabled
 > "true": br-sta's business facts on lerian.streaming.br-sta are what br-sisbajud
@@ -545,7 +540,7 @@ worker), as ConfigMap `data` lines (blank lines are dropped by the caller).
 Dependency connections go through the lerian-common masks/env helpers; every
 other key goes through lerian-common.cfgValue (via br-sta.kv). Contract source:
 the STA service config/.env.example + internal/bootstrap/config.go
-(app sta-v1.0.0; identical to the sta-v1.2.0-beta.16 contract).
+(app sta-v1.2.0).
 */}}
 {{- define "br-sta.configmapData" -}}
 {{- $ := . -}}
@@ -555,9 +550,7 @@ the STA service config/.env.example + internal/bootstrap/config.go
 {{- $kv := "br-sta.kv" -}}
 {{- $kmsDed := $c.kms | default dict -}}
 {{- $dsDed := $c.datastores | default dict -}}
-{{- $imageTag := .Values.manager.image.tag | default .Chart.AppVersion | toString -}}
 {{- $envName := include "br-sta.envName" . -}}
-{{- $mtOn := eq (include "br-sta.multiTenantEnabled" .) "true" -}}
 {{- $pg := include "br-sta.postgres" . | fromYaml -}}
 {{- $os := include "br-sta.objectStorage" . | fromYaml -}}
 {{- $streamingRaw := include "br-sta.streamingEnabledRaw" . -}}
@@ -567,11 +560,8 @@ the STA service config/.env.example + internal/bootstrap/config.go
 ENV_NAME: {{ $envName | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "logLevel" "k" "LOG_LEVEL" "d" "info") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "deploymentMode" "k" "DEPLOYMENT_MODE" "d" "byoc") }}
-{{ include $kv (dict "cm" $cm "p" $c.app "f" "defaultTenantId" "k" "DEFAULT_TENANT_ID" "d" "11111111-1111-1111-1111-111111111111") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "systemplaneEnabled" "k" "SYSTEMPLANE_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "infraConnectTimeoutSec" "k" "INFRA_CONNECT_TIMEOUT_SEC" "d" "30") }}
-{{ include $kv (dict "cm" $cm "p" $c.app "f" "dbMetricsIntervalSec" "k" "DB_METRICS_INTERVAL_SEC" "d" "15") }}
-{{ include $kv (dict "cm" $cm "p" $c.app "f" "idempotencyRetryWindowSec" "k" "IDEMPOTENCY_RETRY_WINDOW_SEC" "d" "300") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "circuitBreakerEnabled" "k" "CIRCUIT_BREAKER_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.app "f" "configApiEnabled" "k" "CONFIG_API_ENABLED" "opt" true) }}
 # --- HTTP server + CORS --------------------------------------------------------
@@ -607,22 +597,6 @@ ALLOW_INSECURE_TLS: {{ include "br-sta.allowInsecureTLS" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.security "f" "allowInsecureOtel" "k" "ALLOW_INSECURE_OTEL" "opt" true) }}
 # --- License (lib-license-go); LICENSE_KEY lives in the Secret ------------------
 {{ include $kv (dict "cm" $cm "p" $c.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "opt" true) }}
-# --- Multi-tenant (lerian-common.multiTenant.env; secrets via multiTenant.secret) --
-MULTI_TENANT_ENABLED: {{ include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false") | quote }}
-{{- /* Tenant-manager client tuning as grouped params (common.multiTenant.*): the
-   library helper reads only native keys, so a set field is injected as its
-   native key unless common.configmap already carries it (native still wins). */}}
-{{- $mtCm := deepCopy $cm }}
-{{- range $pair := list (list "maxTenantPools" "MULTI_TENANT_MAX_TENANT_POOLS") (list "idleTimeoutSec" "MULTI_TENANT_IDLE_TIMEOUT_SEC") (list "timeoutSec" "MULTI_TENANT_TIMEOUT") (list "cacheTtlSec" "MULTI_TENANT_CACHE_TTL_SEC") (list "connectionsCheckIntervalSec" "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC") (list "circuitBreakerThreshold" "MULTI_TENANT_CIRCUIT_BREAKER_THRESHOLD") (list "circuitBreakerTimeoutSec" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC") (list "allowInsecureHttp" "MULTI_TENANT_ALLOW_INSECURE_HTTP") }}
-{{- if and (hasKey ($c.multiTenant | default dict) (index $pair 0)) (not (hasKey $cm (index $pair 1))) }}
-{{- $_ := set $mtCm (index $pair 1) (toString (index $c.multiTenant (index $pair 0))) }}
-{{- end }}
-{{- end }}
-{{ include "lerian-common.multiTenant.env" (dict "context" $ "configmap" $mtCm "enabled" $mtOn "requiredUrl" true "requiredRedisHost" true "emitRedis" true "emitRedisCaCert" true "emitPool" true "emitCache" true "emitAllowInsecure" true) }}
-{{- if $mtOn }}
-{{ include $kv (dict "cm" $cm "p" $c.multiTenant "f" "poolMaxConns" "k" "MULTI_TENANT_POOL_MAX_CONNS" "d" "20") }}
-{{ include $kv (dict "cm" $cm "p" $c.multiTenant "f" "poolMaxIdleConns" "k" "MULTI_TENANT_POOL_MAX_IDLE_CONNS" "d" "5") }}
-{{- end }}
 # --- PostgreSQL (lerian-common.datastore.value) ------------------------------
 POSTGRES_HOST: {{ $pg.host | quote }}
 POSTGRES_PORT: {{ $pg.port | quote }}
@@ -675,10 +649,8 @@ REDIS_CA_CERT: {{ $redisCa | quote }}
 RABBITMQ_HOST: {{ $rmqHost | quote }}
 RABBITMQ_SCHEME: {{ $rmqScheme | quote }}
 RABBITMQ_PORT_AMQP: {{ include $dv (dict "context" $ "dedicated" $dsDed "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "5672") | quote }}
-RABBITMQ_PORT_HOST: {{ $rmqMgmtPort | quote }}
 RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "vhost" "k" "RABBITMQ_VHOST" "d" "/") }}
-{{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "exchange" "k" "RABBITMQ_EXCHANGE" "d" "events") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "queue" "k" "RABBITMQ_QUEUE" "opt" true) }}
 {{- /* lib-commons dials the management API health check on EVERY connect and
    refuses an empty URL, so it defaults to the broker's own management endpoint
@@ -696,20 +668,6 @@ RABBITMQ_DEFAULT_USER: {{ include "br-sta.rabbitmqUser" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryInitialMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS" "d" "1000") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherRecoveryMaxMs" "k" "RABBITMQ_PUBLISHER_RECOVERY_MAX_MS" "d" "30000") }}
 {{ include $kv (dict "cm" $cm "p" $c.rabbitmq "f" "publisherMaxRecoveries" "k" "RABBITMQ_PUBLISHER_MAX_RECOVERIES" "d" "10") }}
-# --- Outbox (lib-commons; production requires it) -----------------------------
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "enabled" "k" "OUTBOX_ENABLED" "d" "true") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "tableName" "k" "OUTBOX_TABLE_NAME" "d" "outbox_events") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "dispatchIntervalSec" "k" "OUTBOX_DISPATCH_INTERVAL_SEC" "d" "2") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "batchSize" "k" "OUTBOX_BATCH_SIZE" "d" "50") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "publishMaxAttempts" "k" "OUTBOX_PUBLISH_MAX_ATTEMPTS" "d" "3") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "publishBackoffMs" "k" "OUTBOX_PUBLISH_BACKOFF_MS" "d" "200") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "retryWindowSec" "k" "OUTBOX_RETRY_WINDOW_SEC" "d" "300") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "maxDispatchAttempts" "k" "OUTBOX_MAX_DISPATCH_ATTEMPTS" "d" "10") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "processingTimeoutSec" "k" "OUTBOX_PROCESSING_TIMEOUT_SEC" "d" "600") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "maxFailedPerBatch" "k" "OUTBOX_MAX_FAILED_PER_BATCH" "d" "25") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "includeTenantMetrics" "k" "OUTBOX_INCLUDE_TENANT_METRICS" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "priorityEventTypes" "k" "OUTBOX_PRIORITY_EVENT_TYPES" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.outbox "f" "allowEmptyTenant" "k" "OUTBOX_ALLOW_EMPTY_TENANT" "d" "true") }}
 # --- Streaming: business facts on lerian.streaming.br-sta (lerian-common.streaming.env) --
 STREAMING_ENABLED: {{ $streamingRaw | quote }}
 {{- /* lib-streaming (v4, internal/kafkasec) reads STREAMING_TOPIC_AUTO_PROVISION
@@ -741,9 +699,7 @@ PLUGIN_AUTH_HOST: {{ include "lerian-common.globalValue" (dict "context" $ "conf
 {{ include $kv (dict "cm" $cm "p" $c.identity "f" "declarationEnabled" "k" "IDP_DECLARATION_ENABLED" "d" "false") }}
 {{ include $kv (dict "cm" $cm "p" $c.identity "f" "host" "k" "IDP_HOST" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.identity "f" "m2mClientId" "k" "IDP_M2M_CLIENT_ID" "opt" true) }}
-# --- M2M credential provider + AWS SDK ------------------------------------------
-{{ include $kv (dict "cm" $cm "p" $c.m2m "f" "targetService" "k" "M2M_TARGET_SERVICE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.m2m "f" "credentialCacheTtlSec" "k" "M2M_CREDENTIAL_CACHE_TTL_SEC" "d" "300") }}
+# --- AWS SDK (S3 signing region fallback, KMS region fallback) -----------------
 {{ include $kv (dict "cm" $cm "p" $c.aws "f" "region" "k" "AWS_REGION" "d" "us-east-1") }}
 # --- OpenTelemetry (lerian-common.otel.env) ------------------------------------
 {{ include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "false" "endpointDefault" "localhost:4317" "deploymentEnvironmentDefault" $envName) }}
@@ -761,20 +717,8 @@ PLUGIN_AUTH_HOST: {{ include "lerian-common.globalValue" (dict "context" $ "conf
 {{ include $kv (dict "cm" $cm "p" $c.rateLimit "f" "auditExportWindowSec" "k" "AUDIT_EXPORT_RATE_LIMIT_WINDOW_SEC" "d" "60") }}
 # --- Swagger (the app forces it off in production) ----------------------------
 {{ include $kv (dict "cm" $cm "p" $c.swagger "f" "enabled" "k" "SWAGGER_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $c.swagger "f" "title" "k" "SWAGGER_TITLE" "d" "BR-STA Service API") }}
-{{ include $kv (dict "cm" $cm "p" $c.swagger "f" "version" "k" "SWAGGER_VERSION" "d" $imageTag) }}
-{{ include $kv (dict "cm" $cm "p" $c.swagger "f" "basePath" "k" "SWAGGER_BASE_PATH" "d" "/") }}
-{{ include $kv (dict "cm" $cm "p" $c.swagger "f" "leftDelim" "k" "SWAGGER_LEFT_DELIM" "d" "{{") }}
-{{ include $kv (dict "cm" $cm "p" $c.swagger "f" "rightDelim" "k" "SWAGGER_RIGHT_DELIM" "d" "}}") }}
-{{ include $kv (dict "cm" $cm "p" $c.swagger "f" "description" "k" "SWAGGER_DESCRIPTION" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.swagger "f" "host" "k" "SWAGGER_HOST" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.swagger "f" "schemes" "k" "SWAGGER_SCHEMES" "opt" true) }}
-# --- Pagination + audit read API ------------------------------------------------
-{{ include $kv (dict "cm" $cm "p" $c.pagination "f" "maxLimit" "k" "MAX_PAGINATION_LIMIT" "d" "100") }}
-{{ include $kv (dict "cm" $cm "p" $c.pagination "f" "maxMonthDateRange" "k" "MAX_PAGINATION_MONTH_DATE_RANGE" "d" "3") }}
-{{ include $kv (dict "cm" $cm "p" $c.auditApi "f" "defaultPageSize" "k" "AUDIT_API_DEFAULT_PAGE_SIZE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.auditApi "f" "maxPageSize" "k" "AUDIT_API_MAX_PAGE_SIZE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.auditApi "f" "maxExportDateRangeDays" "k" "AUDIT_API_MAX_EXPORT_DATE_RANGE_DAYS" "opt" true) }}
 # --- Credential envelope encryption (KMS mask); MASTER_KEYS lives in the Secret --
 MASTER_KEY_PROVIDER: {{ include "br-sta.kmsProvider" . | quote }}
 {{ include $kv (dict "cm" $cm "p" $c.credentials "f" "masterKeyVersion" "k" "MASTER_KEY_VERSION" "d" "v1") }}
@@ -819,11 +763,6 @@ AUDIT_EXPORT_GENERATOR_S3_PATH_STYLE: {{ $os.auditPathStyle | quote }}
 # --- Business-event delivery channel (RedPanda + RabbitMQ; production requires it) --
 {{ include $kv (dict "cm" $cm "p" $c.businessEvents "f" "enabled" "k" "BUSINESS_EVENTS_ENABLED" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $c.businessEvents "f" "exchange" "k" "BUSINESS_EVENTS_EXCHANGE" "d" "sta.business.events") }}
-{{ include $kv (dict "cm" $cm "p" $c.businessEvents "f" "intervalSec" "k" "BUSINESS_EVENTS_INTERVAL_SEC" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.businessEvents "f" "batchSize" "k" "BUSINESS_EVENTS_BATCH_SIZE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.businessEvents "f" "maxAttempts" "k" "BUSINESS_EVENTS_MAX_ATTEMPTS" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.businessEvents "f" "serviceName" "k" "BUSINESS_EVENTS_SERVICE_NAME" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $c.businessEvents "f" "lockClassId" "k" "BUSINESS_EVENTS_LOCK_CLASS_ID" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $c.businessEvents "f" "confirmTimeoutSec" "k" "BUSINESS_EVENTS_CONFIRM_TIMEOUT_SEC" "opt" true) }}
 # --- Reporter -> BACEN bridge consumer ----------------------------------------------
 {{ include $kv (dict "cm" $cm "p" $c.reporterEvents "f" "consumerEnabled" "k" "REPORTER_EVENTS_CONSUMER_ENABLED" "d" "false") }}
@@ -856,11 +795,9 @@ envDefaults apply otherwise).
 # --- Scheduler (leader-gated BACEN verdict polling + maintenance jobs) -----------
 {{- $s := $w.scheduler | default dict }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "enabled" "k" "SCHEDULER_ENABLED" "d" "true") }}
-{{ include $kv (dict "cm" $cm "p" $s "f" "serviceName" "k" "SCHEDULER_SERVICE_NAME" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "leaderTtlSeconds" "k" "SCHEDULER_LEADER_TTL_SECONDS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "heartbeatSeconds" "k" "SCHEDULER_HEARTBEAT_SECONDS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "credentialIntervalHours" "k" "SCHEDULER_CREDENTIAL_INTERVAL_HOURS" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $s "f" "staleCleanupIntervalHours" "k" "SCHEDULER_STALE_CLEANUP_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "retentionIntervalHours" "k" "SCHEDULER_RETENTION_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "quarantineRetentionDays" "k" "SCHEDULER_QUARANTINE_RETENTION_DAYS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "filingSweepEnabled" "k" "SCHEDULER_FILING_SWEEP_ENABLED" "d" "false") }}
@@ -868,48 +805,33 @@ envDefaults apply otherwise).
 {{ include $kv (dict "cm" $cm "p" $s "f" "filingSweepAgeMinutes" "k" "SCHEDULER_FILING_SWEEP_AGE_MINUTES" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $s "f" "filingSweepBatchLimit" "k" "SCHEDULER_FILING_SWEEP_BATCH_LIMIT" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $w.credentials "f" "recoveryOnBoot" "k" "CREDENTIALS_RECOVERY_ON_BOOT" "d" "true") }}
-# --- Audit trail (publisher -> RabbitMQ -> consumer -> hash-chained tables) ------
+# --- Audit trail (outbox_events -> RabbitMQ -> consumer -> hash-chained tables) --
 {{- $ap := $w.auditPublisher | default dict }}
 {{ include $kv (dict "cm" $cm "p" $ap "f" "enabled" "k" "AUDIT_PUBLISHER_ENABLED" "d" "true") }}
-{{ include $kv (dict "cm" $cm "p" $ap "f" "intervalSec" "k" "AUDIT_PUBLISHER_INTERVAL_SEC" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $ap "f" "batchSize" "k" "AUDIT_PUBLISHER_BATCH_SIZE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $ap "f" "maxAttempts" "k" "AUDIT_PUBLISHER_MAX_ATTEMPTS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ap "f" "exchange" "k" "AUDIT_PUBLISHER_EXCHANGE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $ap "f" "lockClassId" "k" "AUDIT_PUBLISHER_LOCK_CLASS_ID" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $ap "f" "serviceName" "k" "AUDIT_PUBLISHER_SERVICE_NAME" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ap "f" "alternateExchange" "k" "AUDIT_PUBLISHER_ALTERNATE_EXCHANGE" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ap "f" "confirmTimeoutSec" "k" "AUDIT_PUBLISHER_CONFIRM_TIMEOUT_SEC" "opt" true) }}
 {{- $ac := $w.auditConsumer | default dict }}
 {{ include $kv (dict "cm" $cm "p" $ac "f" "enabled" "k" "AUDIT_CONSUMER_ENABLED" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $ac "f" "queue" "k" "AUDIT_CONSUMER_QUEUE" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ac "f" "exchange" "k" "AUDIT_CONSUMER_EXCHANGE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $ac "f" "dedupTtlSec" "k" "AUDIT_CONSUMER_DEDUP_TTL_SEC" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ac "f" "lockClassId" "k" "AUDIT_CONSUMER_LOCK_CLASS_ID" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ac "f" "maxRetryAttempts" "k" "AUDIT_CONSUMER_MAX_RETRY_ATTEMPTS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ac "f" "dlqExchange" "k" "AUDIT_CONSUMER_DLQ_EXCHANGE" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $ac "f" "serviceName" "k" "AUDIT_CONSUMER_SERVICE_NAME" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ac "f" "alternateExchange" "k" "AUDIT_CONSUMER_ALTERNATE_EXCHANGE" "opt" true) }}
 {{- $apm := $w.auditPartition | default dict }}
 {{ include $kv (dict "cm" $cm "p" $apm "f" "enabled" "k" "AUDIT_PARTITION_MANAGER_ENABLED" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $apm "f" "intervalHours" "k" "AUDIT_PARTITION_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $apm "f" "lookaheadMonths" "k" "AUDIT_PARTITION_LOOKAHEAD_MONTHS" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $apm "f" "serviceName" "k" "AUDIT_PARTITION_SERVICE_NAME" "opt" true) }}
-{{- $acl := $w.auditCleanup | default dict }}
-{{ include $kv (dict "cm" $cm "p" $acl "f" "enabled" "k" "AUDIT_CLEANUP_ENABLED" "d" "false") }}
-{{ include $kv (dict "cm" $cm "p" $acl "f" "intervalHours" "k" "AUDIT_CLEANUP_INTERVAL_HOURS" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $acl "f" "retentionDays" "k" "AUDIT_CLEANUP_RETENTION_DAYS" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $acl "f" "serviceName" "k" "AUDIT_CLEANUP_SERVICE_NAME" "opt" true) }}
 {{- $av := $w.auditVerifier | default dict }}
 {{ include $kv (dict "cm" $cm "p" $av "f" "enabled" "k" "AUDIT_VERIFIER_ENABLED" "d" "true") }}
 {{ include $kv (dict "cm" $cm "p" $av "f" "intervalHours" "k" "AUDIT_VERIFIER_INTERVAL_HOURS" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $av "f" "sampleRows" "k" "AUDIT_VERIFIER_SAMPLE_ROWS" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $av "f" "serviceName" "k" "AUDIT_VERIFIER_SERVICE_NAME" "opt" true) }}
 {{- $ae := $w.auditExportGenerator | default dict }}
 {{ include $kv (dict "cm" $cm "p" $ae "f" "enabled" "k" "AUDIT_EXPORT_GENERATOR_ENABLED" "d" (ternary "true" "false" (ne $os.auditBucket ""))) }}
 {{ include $kv (dict "cm" $cm "p" $ae "f" "intervalSec" "k" "AUDIT_EXPORT_GENERATOR_INTERVAL_SEC" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ae "f" "batchSize" "k" "AUDIT_EXPORT_GENERATOR_BATCH_SIZE" "opt" true) }}
 {{ include $kv (dict "cm" $cm "p" $ae "f" "objectPrefix" "k" "AUDIT_EXPORT_GENERATOR_OBJECT_PREFIX" "opt" true) }}
-{{ include $kv (dict "cm" $cm "p" $ae "f" "serviceName" "k" "AUDIT_EXPORT_GENERATOR_SERVICE_NAME" "opt" true) }}
 {{- end -}}
 
 {{/*
@@ -918,9 +840,8 @@ Infra passwords are written only for EXTERNAL infra without an
 <subchart>.auth.existingSecret (the bundled Bitnami path is single-sourced from
 the subchart Secret via secretKeyRef on the Deployments). With the bundled
 RabbitMQ the broker reads RABBITMQ_DEFAULT_USER / _PASS / RABBITMQ_ERLANG_COOKIE
-from THIS Secret (Pattern B). Streaming and multi-tenant keys come from the
-lerian-common companion helpers, which also fail fast when a required one is
-missing.
+from THIS Secret (Pattern B). Streaming keys come from the lerian-common
+companion helper, which also fails fast when a required one is missing.
 */}}
 {{- define "br-sta.secretData" -}}
 {{- $c := .Values.common -}}
@@ -967,15 +888,6 @@ STREAMING_TLS_CA_CERT: {{ . | quote }}
 {{- else }}
 {{- if eq (include "br-sta.saslUserFromSecret" .) "true" }}{{- $saslUser = "from-secret" }}{{- end }}
 {{ include "lerian-common.streaming.secret" (dict "context" . "secrets" $s "secretName" (include "br-sta.fullname" .) "valuesPrefix" "common.secrets." "mode" "stringData" "enabled" $streamingOn "useExistingSecret" false "saslMechanism" $saslMech "saslUsername" $saslUser) }}
-{{- end }}
-{{- /* Multi-tenant service API key (required when MT is on) + tenant Redis password. */}}
-{{- $mtOn := eq (include "br-sta.multiTenantEnabled" .) "true" }}
-{{- if hasKey $x "MULTI_TENANT_SERVICE_API_KEY" }}
-{{- with $s.MULTI_TENANT_REDIS_PASSWORD }}
-MULTI_TENANT_REDIS_PASSWORD: {{ . | quote }}
-{{- end }}
-{{- else }}
-{{ include "lerian-common.multiTenant.secret" (dict "context" . "secrets" $s "secretName" (include "br-sta.fullname" .) "valuesPrefix" "common.secrets." "mode" "stringData" "enabled" $mtOn "useExistingSecret" false) }}
 {{- end }}
 {{- end -}}
 
@@ -1037,7 +949,6 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- $prod := eq (include "br-sta.production" .) "true" -}}
 {{- $devClass := eq (include "br-sta.devClass" .) "true" -}}
 {{- $envName := include "br-sta.envName" . -}}
-{{- $mtOn := eq (include "br-sta.multiTenantEnabled" .) "true" -}}
 {{- $isTrue := "br-sta.isTrue" -}}
 {{- /* Inbound auth switch (shared/envclass.ResolveAuthSwitch). */ -}}
 {{- $auth := toString (index $data "PLUGIN_AUTH_ENABLED") -}}
@@ -1053,9 +964,6 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- end -}}
 {{- else -}}
 {{- include $req (dict "context" $ "key" "PLUGIN_AUTH_HOST" "value" (index $data "PLUGIN_AUTH_HOST") "why" (printf "when PLUGIN_AUTH_ENABLED=true (the chart default outside a development-class environment; ENV_NAME=%q)" $envName) "set" "global.auth.host") -}}
-{{- end -}}
-{{- if and $mtOn (ne $auth "true") -}}
-{{- fail "\n\nERROR: br-sta: PLUGIN_AUTH_ENABLED must be true when MULTI_TENANT_ENABLED=true.\n  set: global.auth.enabled=true + global.auth.host\n" -}}
 {{- end -}}
 {{- /* CORS origin. The middleware treats an empty origin as "*". In production a
    wildcard is refused outright (explicit trusted origins only), opt-in or not;
@@ -1108,11 +1016,9 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- if eq $provider "aws-kms" -}}
 {{- include $req (dict "context" $ "key" "MASTER_KEY_KMS_KEY_ID" "value" (index $data "MASTER_KEY_KMS_KEY_ID") "why" "when MASTER_KEY_PROVIDER=aws-kms" "set" "global.kms.keyId (or common.kms.keyId)") -}}
 {{- end -}}
-{{- /* Single-tenant datastores. */ -}}
-{{- if not $mtOn -}}
-{{- include $req (dict "context" $ "key" "POSTGRES_HOST" "value" (index $data "POSTGRES_HOST") "why" "when multi-tenancy is off (or enable the bundled postgresql subchart)" "set" "global.datastores.postgres.host") -}}
-{{- include $req (dict "context" $ "key" "REDIS_HOST" "value" (index $data "REDIS_HOST") "why" "when multi-tenancy is off (or enable the bundled valkey subchart)" "set" "global.datastores.redis.host (host:port)") -}}
-{{- end -}}
+{{- /* Datastores (one installation serves one client: no tenant-manager path). */ -}}
+{{- include $req (dict "context" $ "key" "POSTGRES_HOST" "value" (index $data "POSTGRES_HOST") "why" "(or enable the bundled postgresql subchart)" "set" "global.datastores.postgres.host") -}}
+{{- include $req (dict "context" $ "key" "REDIS_HOST" "value" (index $data "REDIS_HOST") "why" "(or enable the bundled valkey subchart)" "set" "global.datastores.redis.host (host:port)") -}}
 {{- $pgAuth := (.Values.postgresql | default dict).auth | default dict -}}
 {{- $pgExternal := and (ne (include "br-sta.postgresInternal" .) "true") (not $pgAuth.existingSecret) -}}
 {{- if $prod -}}
@@ -1152,9 +1058,6 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- if $prod -}}
 {{- if not $rmqOn -}}
 {{- fail "\n\nERROR: br-sta: RABBITMQ_ENABLED must be true in production (the audit transport is mandatory).\n  set: common.rabbitmq.enabled=true\n" -}}
-{{- end -}}
-{{- if ne (include $isTrue (index $data "OUTBOX_ENABLED")) "true" -}}
-{{- fail "\n\nERROR: br-sta: OUTBOX_ENABLED must be true in production (the audit transport is mandatory).\n  set: common.outbox.enabled=true\n" -}}
 {{- end -}}
 {{- range $k := list "RABBITMQ_ALLOW_INSECURE_TLS" "RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK" -}}
 {{- if eq (include $isTrue (index $data $k)) "true" -}}
@@ -1198,10 +1101,6 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 {{- include $req (dict "context" $ "key" "IDP_M2M_CLIENT_ID" "value" (index $data "IDP_M2M_CLIENT_ID") "why" "when IDP_DECLARATION_ENABLED=true" "set" "common.identity.m2mClientId") -}}
 {{- include $req (dict "context" $ "key" "IDP_M2M_CLIENT_SECRET" "secret" true "why" "when IDP_DECLARATION_ENABLED=true" "set" "common.secrets.IDP_M2M_CLIENT_SECRET") -}}
 {{- end -}}
-{{- /* M2M target service is interpolated into a Valkey key suffix. */ -}}
-{{- if contains ":" (toString (index $data "M2M_TARGET_SERVICE" | default "")) -}}
-{{- fail "\n\nERROR: br-sta: M2M_TARGET_SERVICE must not contain ':' (it is interpolated into the Valkey credential key suffix).\n" -}}
-{{- end -}}
 {{- /* Reporter -> BACEN bridge: no default exchange or resolver by design. */ -}}
 {{- if eq (include $isTrue (index $data "REPORTER_EVENTS_CONSUMER_ENABLED")) "true" -}}
 {{- include $req (dict "context" $ "key" "REPORTER_EVENTS_CONSUMER_EXCHANGE" "value" (index $data "REPORTER_EVENTS_CONSUMER_EXCHANGE") "why" "when the reporter-events consumer is on (no default by design)" "set" "common.reporterEvents.exchange") -}}
@@ -1217,7 +1116,7 @@ CrashLooping the pods. Invoked from the shared ConfigMap.
 
 {{/*
 br-sta.waitScript — the wait-for-dependencies initContainer script: Postgres,
-Redis and RabbitMQ, each skipped when its host is empty (multi-tenant / URL).
+Redis and RabbitMQ, each skipped when its host is empty (e.g. a full RABBITMQ_URL).
 */}}
 {{- define "br-sta.waitScript" -}}
 if [ -n "$POSTGRES_HOST" ]; then
@@ -1310,13 +1209,40 @@ config.alpha.linkerd.io/proxy-enable-native-sidecar: "true"
 {{- end -}}
 
 {{/*
-br-sta.removedKeys — env keys the app (>= 1.2.0-beta.16 / 1.0.0) no longer reads (inert). They are
-dropped from the ConfigMap/Secret escape hatch; NOTES.txt lists any still set.
-The reporter-events routing key became a code constant; the ACOS010 producer
-category moved into a code table; the expected-tenant comparison was removed;
-the POSTGRES_* server-tuning pair is docker-compose only; the TRUST_STORE_* knobs
-are not read by the current service.
+br-sta.removedKeys — env keys the app (>= 1.2.0) no longer reads (inert). They are
+dropped from the ConfigMap/Secret escape hatches (common.configmap,
+common.secrets, worker.configmap); NOTES.txt lists any still set. Every
+MULTI_TENANT_* and OUTBOX_* key is dropped too (br-sta.removedKey).
+- earlier pre-releases: the reporter-events routing key became a code constant;
+  the ACOS010 producer category moved into a code table; the POSTGRES_*
+  server-tuning pair is docker-compose only; the TRUST_STORE_* knobs are not read.
+- app 1.2.0 (br-sfn, sta-v1.0.0..sta-v1.2.0):
+  8685fd1e04 removed the multi-tenant mode: MULTI_TENANT_*, M2M_*,
+    REPORTER_EVENTS_EXPECTED_TENANT, OUTBOX_ALLOW_EMPTY_TENANT,
+    OUTBOX_INCLUDE_TENANT_METRICS and the *_SERVICE_NAME knobs;
+  0657de32c2 deleted the unwired lib-commons outbox config (OUTBOX_*);
+  4b0478c595 moved the audit/business drains onto the lib-commons outbox
+    dispatcher (AUDIT_PUBLISHER_/BUSINESS_EVENTS_ INTERVAL_SEC, BATCH_SIZE,
+    MAX_ATTEMPTS, LOCK_CLASS_ID; AUDIT_CLEANUP_*);
+  0785852d97 AUDIT_CONSUMER_DEDUP_TTL_SEC; e64fc0e4f9 DEFAULT_TENANT_ID;
+  959c49a535 IDEMPOTENCY_RETRY_WINDOW_SEC;
+  7cebf11236 AUDIT_API_*, DB_METRICS_INTERVAL_SEC, MAX_PAGINATION_*,
+    RABBITMQ_EXCHANGE, SCHEDULER_STALE_CLEANUP_INTERVAL_HOURS and the
+    SWAGGER_ title/version/description/base path/delimiters.
 */}}
 {{- define "br-sta.removedKeys" -}}
-{{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" | toJson -}}
+{{- list "REPORTER_EVENTS_CONSUMER_ROUTING_KEY" "REPORTER_EVENTS_ACOS010_PRODUCER_CATEGORY" "REPORTER_EVENTS_EXPECTED_TENANT" "POSTGRES_MAX_CONNECTIONS" "POSTGRES_SHARED_BUFFERS" "TRUST_STORE_DEFAULT_PAGE_SIZE" "TRUST_STORE_EXPIRING_SOON_DAYS" "TRUST_STORE_MAX_CERT_SIZE_BYTES" "TRUST_STORE_MAX_PAGE_SIZE" "TRUST_STORE_S3_BUCKET" "TRUST_STORE_S3_ENDPOINT" "TRUST_STORE_S3_PATH_STYLE" "TRUST_STORE_S3_REGION" "M2M_TARGET_SERVICE" "M2M_CREDENTIAL_CACHE_TTL_SEC" "DEFAULT_TENANT_ID" "DB_METRICS_INTERVAL_SEC" "IDEMPOTENCY_RETRY_WINDOW_SEC" "RABBITMQ_EXCHANGE" "MAX_PAGINATION_LIMIT" "MAX_PAGINATION_MONTH_DATE_RANGE" "AUDIT_API_DEFAULT_PAGE_SIZE" "AUDIT_API_MAX_PAGE_SIZE" "AUDIT_API_MAX_EXPORT_DATE_RANGE_DAYS" "SWAGGER_TITLE" "SWAGGER_VERSION" "SWAGGER_DESCRIPTION" "SWAGGER_BASE_PATH" "SWAGGER_LEFT_DELIM" "SWAGGER_RIGHT_DELIM" "BUSINESS_EVENTS_INTERVAL_SEC" "BUSINESS_EVENTS_BATCH_SIZE" "BUSINESS_EVENTS_MAX_ATTEMPTS" "BUSINESS_EVENTS_LOCK_CLASS_ID" "BUSINESS_EVENTS_SERVICE_NAME" "SCHEDULER_SERVICE_NAME" "SCHEDULER_STALE_CLEANUP_INTERVAL_HOURS" "AUDIT_PUBLISHER_INTERVAL_SEC" "AUDIT_PUBLISHER_BATCH_SIZE" "AUDIT_PUBLISHER_MAX_ATTEMPTS" "AUDIT_PUBLISHER_LOCK_CLASS_ID" "AUDIT_PUBLISHER_SERVICE_NAME" "AUDIT_CONSUMER_DEDUP_TTL_SEC" "AUDIT_CONSUMER_SERVICE_NAME" "AUDIT_PARTITION_SERVICE_NAME" "AUDIT_CLEANUP_ENABLED" "AUDIT_CLEANUP_INTERVAL_HOURS" "AUDIT_CLEANUP_RETENTION_DAYS" "AUDIT_CLEANUP_SERVICE_NAME" "AUDIT_VERIFIER_SERVICE_NAME" "AUDIT_EXPORT_GENERATOR_SERVICE_NAME" | toJson -}}
+{{- end -}}
+
+{{/*
+br-sta.removedKey — "true" when env key `key` is inert for the app: listed in
+br-sta.removedKeys, or a MULTI_TENANT_* / OUTBOX_* key. Input: dict root, key.
+*/}}
+{{- define "br-sta.removedKey" -}}
+{{- $k := toString .key -}}
+{{- $out := has $k (include "br-sta.removedKeys" .root | fromJsonArray) -}}
+{{- range $p := list "MULTI_TENANT_" "OUTBOX_" -}}
+{{- if hasPrefix $p $k -}}{{- $out = true -}}{{- end -}}
+{{- end -}}
+{{- if $out -}}true{{- end -}}
 {{- end -}}

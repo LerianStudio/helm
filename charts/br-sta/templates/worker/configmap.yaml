@@ -1,7 +1,8 @@
 {{- if .Values.worker.enabled -}}
 {{- /* Worker-only keys, loaded AFTER the shared ConfigMap (a key here wins for the
    worker). Chart-modeled keys (br-sta.workerConfigmapData), then any other
-   worker.configmap key verbatim. */ -}}
+   worker.configmap key verbatim, except the keys the app no longer reads
+   (br-sta.removedKey). */ -}}
 {{- $body := include "br-sta.workerConfigmapData" . -}}
 {{- $emitted := fromYaml $body -}}
 kind: ConfigMap
@@ -19,7 +20,7 @@ data:
   {{- end }}
   {{- $extra := list }}
   {{- range $k, $v := (.Values.worker.configmap | default dict) }}
-  {{- if not (hasKey $emitted $k) }}
+  {{- if and (not (hasKey $emitted $k)) (not (include "br-sta.removedKey" (dict "root" $ "key" $k))) }}
   {{- $extra = append $extra $k }}
   {{- end }}
   {{- end }}

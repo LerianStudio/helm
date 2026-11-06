@@ -21,6 +21,12 @@ name: Markdown Liquid Guard
 
 on:
   pull_request:
+    # `edited` is the event GitHub sends when a pull request is retargeted. The scope
+    # depends on the base, so a pull request checked in changed-files mode against a
+    # maintenance line and then moved to main must be scanned again in full; without
+    # `edited` it would keep its green result. Title and body edits rerun it too, which
+    # costs seconds.
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -39,6 +45,9 @@ jobs:
         with:
           # The changed-files scan diffs BASE_SHA...HEAD, which needs the merge base.
           fetch-depth: 0
+
+      - name: Test the changed-files selection
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
 
       - name: Check markdown for Liquid outside raw blocks
         env:

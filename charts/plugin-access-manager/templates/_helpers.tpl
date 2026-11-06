@@ -654,8 +654,11 @@ one already in the cluster, else a generated one (fresh installs only: an upgrad
 {{- else if $kept -}}
 {{- $kept -}}
 {{- else -}}
+{{- if not (lookup "v1" "Secret" .Release.Namespace "") -}}
+{{- fail "\n\nERROR: no app-lerian client secret is set and this render cannot read the cluster (helm template, ArgoCD, helmfile, client --dry-run), so a generated secret would change on every render.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret.\n" -}}
+{{- end -}}
 {{- if .Release.IsUpgrade -}}
-{{- fail "\n\nERROR: no app-lerian client secret is set on an upgrade. An existing Caradhras database keeps the secret app-lerian already holds, so a generated one would break auth silently.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret to the current value (or rotate it through the Caradhras API first, then update the Secret).\n" -}}
+{{- fail "\n\nERROR: no app-lerian client secret is set on an upgrade. An existing Caradhras database keeps the secret app-lerian already holds, so a generated one would break auth silently.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret to the current value. To change it, rotate it with Caradhras POST /api/regenerate-application-secret?id=admin/app-lerian, then update the value and restart auth, identity and Caradhras in the same window (Console, plugin-fees and Tenant Manager need the new value too).\n" -}}
 {{- end -}}
 {{- include "plugin-access-manager.appClientSecretGate" . -}}
 {{- randAlphaNum 40 -}}

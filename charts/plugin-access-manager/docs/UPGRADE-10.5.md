@@ -330,7 +330,7 @@ caradhras:
 
 > **Note:** Caradhras 2.x requires a license key. Ensure you have `caradhras.secrets.LICENSE_KEY` set or `caradhras.useExistingSecret=true` with a valid license Secret.
 
-Identity always authenticates as `app-lerian` with the same client secret as auth (`auth.secrets.AUTHORIZER_CLIENT_SECRET`, `auth.useExistingSecret` or the generated one); it has no secret of its own. Leave `identity.configmap.AUTHORIZER_CLIENT_ID` at its default (the same client auth uses): another client ID would be sent with app-lerian's secret and identity would stay unready.
+Identity always authenticates as `app-lerian` with the same client secret as auth (`auth.secrets.AUTHORIZER_CLIENT_SECRET` or `auth.useExistingSecret`); it has no secret of its own. Leave `identity.configmap.AUTHORIZER_CLIENT_ID` at its default (the same client auth uses): another client ID would be sent with app-lerian's secret and identity would stay unready.
 
 #### Option 2: Disable init user feature
 

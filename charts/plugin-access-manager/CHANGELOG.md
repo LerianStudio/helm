@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [11.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.2)
+
+Fixes:
+- Update `plugin-auth` to `3.19.0` and `plugin-identity` to `3.19.0`. (@bedatty, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.2.1...plugin-access-manager-v11.2.2)
+
+---
+
 ## [11.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.1)
 
 Features:

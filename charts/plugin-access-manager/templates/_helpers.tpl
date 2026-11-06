@@ -645,37 +645,28 @@ env name) by secretKeyRef on that one source.
 
 {{/*
 plugin-access-manager.appClientSecretValue — app-lerian's client secret in clear: the operator's value, else the
-one already in the cluster, else a generated one (fresh installs only: an upgrade fails). Called only from app-client-secret.yaml.
+one already in the cluster, else a generated one (fresh installs only: an upgrade fails), and only when Caradhras at or above $floor seeds it (an older image seeds its own literal). Called only from app-client-secret.yaml.
 */}}
 {{- define "plugin-access-manager.appClientSecretValue" -}}
-{{- $kept := dig "data" "AUTHORIZER_CLIENT_SECRET" "" (lookup "v1" "Secret" .Release.Namespace (include "plugin-access-manager.appClientSecretName" .) | default dict) | b64dec -}}
+{{- $kept := dig "data" "AUTHORIZER_CLIENT_SECRET" "" (lookup "v1" "Secret" .Release.Namespace (include "plugin-access-manager.appClientSecretName" .)) | b64dec -}}
 {{- if .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET -}}
 {{- .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET -}}
 {{- else if $kept -}}
 {{- $kept -}}
 {{- else -}}
 {{- if not (lookup "v1" "Secret" .Release.Namespace "") -}}
-{{- fail "\n\nERROR: no app-lerian client secret is set and this render cannot read the cluster (helm template, ArgoCD, helmfile, client --dry-run), so a generated secret would change on every render.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret.\n" -}}
+{{- fail (printf "\n\nERROR: no app-lerian client secret is set and this render cannot read the cluster (helm template, ArgoCD, helmfile, client --dry-run), so a generated secret would change on every render.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret. On an existing install, use the value app-lerian already holds; if this chart generated it, it is in Secret %s, key AUTHORIZER_CLIENT_SECRET.\n" (include "plugin-access-manager.appClientSecretName" .)) -}}
 {{- end -}}
 {{- if .Release.IsUpgrade -}}
 {{- fail "\n\nERROR: no app-lerian client secret is set on an upgrade. An existing Caradhras database keeps the secret app-lerian already holds, so a generated one would break auth silently.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret to the current value. To change it, rotate it with Caradhras POST /api/regenerate-application-secret?id=admin/app-lerian, then update the value and restart auth, identity and Caradhras in the same window (Console, plugin-fees and Tenant Manager need the new value too).\n" -}}
 {{- end -}}
-{{- include "plugin-access-manager.appClientSecretGate" . -}}
-{{- randAlphaNum 40 -}}
-{{- end -}}
-{{- end }}
-
-{{/*
-plugin-access-manager.appClientSecretGate — a generated secret is seeded only by
-Caradhras at or above $floor; an older image seeds its own literal and
-introspection would silently fail against the generated value.
-*/}}
-{{- define "plugin-access-manager.appClientSecretGate" -}}
 {{- /* Floor: must be the first Caradhras tag containing the seed change (caradhras PR #619, not yet tagged). */ -}}
 {{- $floor := ">=2.4.0-beta.4" -}}
 {{- $tag := regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "" -}}
 {{- if and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (not (semverCompare $floor $tag)) -}}
 {{- fail (printf "\n\nERROR: no app-lerian client secret is set and the Caradhras image tag %q cannot seed a generated one.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET, use auth.useExistingSecret, or use Caradhras %s.\n" $tag $floor) -}}
+{{- end -}}
+{{- randAlphaNum 40 -}}
 {{- end -}}
 {{- end }}
 

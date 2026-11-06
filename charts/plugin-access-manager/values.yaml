@@ -429,7 +429,7 @@ auth:
     DB_PASSWORD: ""
     # -- app-lerian client secret. Required for helm template/GitOps (no cluster read: the render refuses to generate).
     # Empty on a FRESH helm install: generates and keeps one, needs Caradhras >= 2.4.0-beta.4.
-    # An install upgraded from a chart that required this value must set the value app-lerian already holds (or auth.useExistingSecret): the upgrade fails otherwise.
+    # An install whose Caradhras database already exists must set the value app-lerian already holds (or auth.useExistingSecret).
     AUTHORIZER_CLIENT_SECRET: ""
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""

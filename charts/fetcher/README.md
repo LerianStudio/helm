@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: None enforced at render time: the default render succeeds with no secret set (only `rabbitmq.enabled=true` fails at render, unless `manager.secrets` sets `RABBITMQ_DEFAULT_USER: plugin` and a non-default `RABBITMQ_DEFAULT_PASS`). The application still needs `APP_ENC_KEY`, `MONGO_USER`/`MONGO_PASSWORD` and `RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS` and `LICENSE_KEY` at runtime, see [Secrets](#secrets). Production credentials must not be committed in values files.
+- Required secrets: None enforced at render time: the default render succeeds with no secret set (only `rabbitmq.enabled=true` fails at render, unless `manager.secrets` sets `RABBITMQ_DEFAULT_USER: plugin` and a non-default `RABBITMQ_DEFAULT_PASS`). The application still needs `APP_ENC_KEY`, `MONGO_USER`/`MONGO_PASSWORD` and `RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS` and `LICENSE_KEY` (or a signed licence file via `licenseFile.existingSecret`) at runtime, see [Secrets](#secrets). Production credentials must not be committed in values files.
 - Dependency notes: The bundled MongoDB, RabbitMQ, Valkey, SeaweedFS and KEDA subcharts are off by default (`<name>.enabled: false`); point the app at external services through `common.configmap` or `global.datastores`.
 - Production overrides: Provide production MongoDB credentials through chart secrets or dependency Secret settings; override manager/worker image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
@@ -205,7 +205,8 @@ to start without `IDP_HOST` and the `manager.secrets.IDP_M2M_*` pair.
 | `secrets.MONGO_PASSWORD` | **REQUIRED** - MongoDB password | `""` |
 | `manager.secrets.RABBITMQ_DEFAULT_USER`, `worker.secrets.RABBITMQ_DEFAULT_USER` | **REQUIRED** - RabbitMQ username (`plugin` with the bundled broker) | unset |
 | `manager.secrets.RABBITMQ_DEFAULT_PASS`, `worker.secrets.RABBITMQ_DEFAULT_PASS` | **REQUIRED** - RabbitMQ password | unset |
-| `secrets.LICENSE_KEY` | **REQUIRED** - Lerian license key | `""` |
+| `secrets.LICENSE_KEY` | **REQUIRED** unless `manager.licenseFile.existingSecret` / `worker.licenseFile.existingSecret` is set - Lerian license key | `""` |
+| `manager.licenseFile.existingSecret`, `worker.licenseFile.existingSecret` | Optional Secret with a signed licence file under the key `license`, mounted read-only as the directory `/etc/lerian/license`; sets `LICENSE_FILE_PATH`. Replaces `LICENSE_KEY`. File mode needs an image on lib-license-go v5. | `""` |
 | `manager.secrets.IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the manager publishes its permission manifest with. Required by the app only when `IDP_DECLARATION_ENABLED="true"`. Each is rendered only when set. Keep it in `manager.secrets`: the top-level `secrets` Secret also reaches the worker | unset |
 
 The top-level `secrets.*` block renders a shared `<fullname>-common` Secret (default `fetcher-common`) with its

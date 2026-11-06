@@ -51,6 +51,7 @@ spec:
           env:
             {{- toYaml $h.env | nindent 12 }}
             {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "AUTHORIZER_CLIENT_SECRET") | nindent 12 }}
+            {{- with (include "plugin-access-manager.licenseFileEnv" .Values.identity | trim) }}{{ . | nindent 12 }}{{ end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
             - name: "HOST_IP"
               valueFrom:
@@ -71,6 +72,10 @@ spec:
             - name: ADMIN_DISPLAY_NAME
               value: {{ .Values.auth.initUser.adminDisplayName | default "Admin" | quote }}
           {{- end }}
+          {{- with (include "plugin-access-manager.licenseFileMount" .Values.identity | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.identity.resources | nindent 12 }}
           startupProbe:
@@ -79,6 +84,10 @@ spec:
             {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml $h.readinessProbe | nindent 12 }}
+      {{- with (include "plugin-access-manager.licenseFileVolume" .Values.identity | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, identity.spread, identity.topologySpreadConstraints).
              selectorLabels MUST equal spec.selector.matchLabels above. */}}

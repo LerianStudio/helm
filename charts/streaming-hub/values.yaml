@@ -271,6 +271,11 @@ streamingHub:
   # ===========================================================================
   useExistingSecret: false
   existingSecretName: ""
+  # -- Optional signed licence file, an alternative to secrets.LICENSE_KEY. The Secret
+  # (key `license`) is mounted read-only as the directory /etc/lerian/license on every
+  # Deployment. File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # ===========================================================================
   # Dedicated datastore masks (lerian-common.datastore.value). Empty by default →
   # the template ships the defaults. Set a field here to override THIS component

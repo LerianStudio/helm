@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `11.1.1` | 3.17.0 | 3.17.0 | 2.1.0 |
+| `11.2.0` | 3.17.0 | 3.17.0 | 2.1.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `5.3.2` | 4.8.0 | 4.8.0 |
+| `5.4.0` | 4.8.0 | 4.8.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -157,7 +157,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `4.1.3` | 4.1.0 | 4.1.0 |
+| `4.2.0` | 4.1.0 | 4.1.0 |
 -----------------
 
 ### Tracer
@@ -314,7 +314,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.4` | 3.1.0 |
+| `2.1.0` | 3.1.0 |
 -----------------
 
 ### Lerian Common (Library)

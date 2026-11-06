@@ -280,6 +280,10 @@ identity:
   # GOOGLE_DIRECTORY_ENCRYPTION_KEY to your own Secret (existingSecretName).
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license; replaces LICENSE_KEY. File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
 auth:
   # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain and shutdown env, grace, rollout and PDB.
   # stack go; tune only health.drainSeconds (default 15) and health.shutdownSeconds (default 30).
@@ -440,6 +444,10 @@ auth:
     SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license; replaces LICENSE_KEY. File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- Identity >= 3.17.0 asks Caradhras >= 2.1.0 (server and migrations) to create the first Console admin at most once, and only for an organization Caradhras never initialized (see README); deleting users never re-seeds it.
   # -- Set adminPassword or useExistingSecret + adminPasswordSecretName; adminEmail and adminDisplayName are optional.
   initUser:

@@ -144,6 +144,9 @@ subjects:
 # cannot restrict `create` by resourceNames, so letting the agent create it
 # would necessarily let it create any Secret in this namespace. With the object
 # already present the agent needs only get/update, both pinned to its exact name.
+# The same two verbs carry a rotation of the agent's renewal secret: the agent
+# parks the new one as token-next and later promotes or discards it, each a
+# read then a full update of this Secret. No patch, no delete.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:

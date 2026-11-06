@@ -63,6 +63,21 @@ that moment. The agent keeps the issued identity in the
 replacement pod reuses it instead of presenting a spent token. That Secret is
 kept when the release is uninstalled.
 
+An enrolled agent also rotates its own secret when the control plane asks it
+to: it parks the new secret in that Secret as `token-next`, then promotes or
+discards it, with the same `get`/`update` grant pinned to that one name. An
+agent installed with a per-agent token from registration cannot rotate: its
+secret lives in the chart's credential Secret, which it never rewrites.
+
+### How the agent authenticates
+
+By default (`AGENT_AUTH_PREFER` empty, which means `jwt`) the agent trades its
+secret for short-lived access tokens when the control plane issues them, and
+sends the secret itself when the control plane answers that it does not,
+asking again later. The default therefore works against a control plane in
+either mode. `AGENT_AUTH_PREFER: "token"` never asks for an access token and
+never rotates the secret.
+
 ### Using your own Secret
 
 Set `agent.useExistingSecret: true` and `agent.existingSecretName` to a Secret
@@ -82,6 +97,7 @@ and the agent applies its own default.
 | --- | --- | --- |
 | `agent.configmap.CONTROL_PLANE_URL` | `""` | Base URL of the control plane. Required, and must be `https://` |
 | `agent.configmap.AGENT_ALLOW_INSECURE_HTTP` | `"false"` | Accept an `http://` control plane URL. Isolated dev/test clusters only |
+| `agent.configmap.AGENT_AUTH_PREFER` | agent default (`jwt`) | `jwt` or `token`; see [How the agent authenticates](#how-the-agent-authenticates) |
 | `agent.configmap.HELM_TIMEOUT` | `"15m"` | How long one install/upgrade may take. Raise `agent.terminationGracePeriodSeconds` with it |
 | `agent.configmap.AGENT_ALLOWED_CHART_REGISTRIES` | agent default | Comma-separated registries charts may be pulled from |
 | `agent.configmap.AGENT_ALLOWED_IMAGE_REGISTRIES` | agent default | Registries the agent may pull its own image from |
@@ -163,6 +179,12 @@ the tag and walks the agent back:
 kubectl -n lerian-system get deploy lerian-agent \
   -o jsonpath='{.spec.template.spec.containers[0].image}'
 ```
+
+The image moved from `ghcr.io/lerianstudio/agent` to
+`ghcr.io/lerianstudio/control-plane-agent`. A digest recorded from the old
+repository does not exist in the new one: clear `agent.image.digest`, or set
+`agent.image.repository` to the repository the digest came from, before
+upgrading.
 
 ## What leaves your cluster
 

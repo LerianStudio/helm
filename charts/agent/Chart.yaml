@@ -8,7 +8,7 @@ type: application
 annotations:
   lerian.studio/chart-type: single-service
 version: 1.0.5
-appVersion: "1.0.2"
+appVersion: "3.31.0-beta.9"
 # The floor is the oldest Kubernetes the fleet actually boots and installs
 # this chart on, not the oldest one its API versions would tolerate
 # (autoscaling/v2 in hpa.yaml is stable since 1.23, policy/v1 in pdb.yaml

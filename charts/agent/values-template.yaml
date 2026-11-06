@@ -7,7 +7,7 @@ agent:
   enabled: true
 
   image:
-    repository: ghcr.io/lerianstudio/agent
+    repository: ghcr.io/lerianstudio/control-plane-agent
     pullPolicy: IfNotPresent
     tag: ""
     digest: ""

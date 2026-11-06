@@ -180,12 +180,6 @@ kubectl -n lerian-system get deploy lerian-agent \
   -o jsonpath='{.spec.template.spec.containers[0].image}'
 ```
 
-The image moved from `ghcr.io/lerianstudio/agent` to
-`ghcr.io/lerianstudio/control-plane-agent`. A digest recorded from the old
-repository does not exist in the new one: clear `agent.image.digest`, or set
-`agent.image.repository` to the repository the digest came from, before
-upgrading.
-
 ## What leaves your cluster
 
 This is the list of what this agent sends Lerian, grouped by what

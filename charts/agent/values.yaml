@@ -25,13 +25,13 @@ agent:
     # LerianStudio/tenant-manager (components/agent). The host is written out:
     # a host-less name means Docker Hub, and the agent refuses a self-update
     # from a registry outside AGENT_ALLOWED_IMAGE_REGISTRIES.
-    repository: ghcr.io/lerianstudio/control-plane-agent
+    repository: ghcr.io/lerianstudio/agent
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment. Kept equal to appVersion, and bumped
     # by hand: tenant-manager releases tag every component alike and do not
     # dispatch to this chart.
-    tag: "3.31.0-beta.9"
+    tag: "3.31.0-beta.11"
     # -- Image digest ("sha256:..."), wins over tag. Set it after the control
     # plane moved the agent to a newer build, so a routine `helm upgrade` does
     # not walk it back.

@@ -59,10 +59,10 @@ out of the box, so they work across namespaces with no mesh/DNS wiring — overr
 ## 3. Installation order
 
 1. Decide the MongoDB story: bundled (`mongodb.enabled: true`, demo only) **or**
-   external (`mongodb.enabled: false` + a real `MONGO_HOST` + `MONGODB_PASS`; `MONGODB_URI` is only the scheme, `mongodb` or `mongodb+srv`).
+   external (`mongodb.enabled: false` + a real `MONGO_HOST` + `MONGODB_PASS`; `MONGODB_URI` is only the scheme: `mongodb`. The console always adds `MONGO_PORT`, which a `mongodb+srv` URI refuses).
    For managed Mongo (DocumentDB) also set `global.cloud: aws` so the TLS connection
    string shape is applied automatically (section 5).
-2. Provide the required production secrets **before** `helm install`: `secrets.NEXTAUTH_SECRET` (NextAuth signing key — the console refuses to start without it), `secrets.MONGODB_PASS` for an external MongoDB only (with the bundled MongoDB, leave it empty: the chart wires the password), and — when auth is on — `PLUGIN_AUTH_CLIENT_ID`/`_SECRET`.
+2. Provide the required production secrets **before** `helm install`: `secrets.NEXTAUTH_SECRET` (NextAuth signing key — the console refuses to start without it), `secrets.MONGODB_PASS` for an external MongoDB only (with the bundled MongoDB, leave it empty: the chart wires the password, except with `useExistingSecret: true`, where your Secret must carry `MONGODB_PASS` set to the bundled MongoDB root password), and — when auth is on — `PLUGIN_AUTH_CLIENT_ID`/`_SECRET`.
 3. Turn authorization **on explicitly** for any exposed environment:
    `global.auth.enabled: "true"` (or `configmap.PLUGIN_AUTH_ENABLED: "true"`). The
    published console image refuses to start with authorization off (it exits 1) — see section 5.
@@ -100,6 +100,9 @@ global:
   # Managed-cloud preset (AWS DocumentDB TLS connection string), applied when no
   # more specific override is set. gcp/azure have no Mongo preset today.
   cloud: "aws"
+# Telemetry on needs an exporter, or the render fails (section 5)
+otel:
+  external: true
 ```
 
 | Global field | Effect (env var) | Overriding native key |

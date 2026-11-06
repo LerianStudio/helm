@@ -1,5 +1,6 @@
 {{- if .Values.worker.enabled }}
 {{- $h := include "plugin-br-pix-jd.worker.health" . | fromYaml }}
+{{- $lic := include "plugin-br-pix-jd.licenseFileSecret" .Values.worker }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,7 +35,7 @@ spec:
         {{- . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "worker") | nindent 8 }}
+        {{- include "plugin-br-pix-jd.componentPodLabels" (dict "root" $ "name" "worker") | nindent 8 }}
     spec:
       serviceAccountName: {{ include "plugin-br-pix-jd.serviceAccountName" . }}
       {{- with (.Values.worker.imagePullSecrets | default (.Values.api.imagePullSecrets | default (.Values.global).imagePullSecrets)) }}
@@ -91,6 +92,10 @@ spec:
             {{- if include "plugin-br-pix-jd.rolesAnywhereEnabled" . }}
             {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 12 }}
             {{- end }}
+            {{- if $lic }}
+            - name: LICENSE_FILE_PATH
+              value: /etc/lerian/license/license
+            {{- end }}
             {{- with .Values.worker.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -100,6 +105,12 @@ spec:
             {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml $h.readinessProbe | nindent 12 }}
+          {{- if $lic }}
+          volumeMounts:
+            - name: license-file
+              mountPath: /etc/lerian/license
+              readOnly: true
+          {{- end }}
           {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
@@ -111,8 +122,19 @@ spec:
         {{- if include "plugin-br-pix-jd.rolesAnywhereEnabled" . }}
         {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.aws) | nindent 8 }}
         {{- end }}
-      {{- if include "plugin-br-pix-jd.rolesAnywhereEnabled" . }}
-      {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" (printf "%s-iam-tls" (include "plugin-br-pix-jd.fullname" .))) | nindent 6 }}
+      {{- if or $lic (include "plugin-br-pix-jd.rolesAnywhereEnabled" .) }}
+      volumes:
+        {{- with $lic }}
+        - name: license-file
+          secret:
+            secretName: {{ . | quote }}
+            items:
+              - key: license
+                path: license
+        {{- end }}
+        {{- if include "plugin-br-pix-jd.rolesAnywhereEnabled" . }}
+        {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" (printf "%s-iam-tls" (include "plugin-br-pix-jd.fullname" .))) | trimPrefix "volumes:\n" | nindent 6 }}
+        {{- end }}
       {{- end }}
       {{- if or .Values.worker.nodeSelector .Values.worker.affinity .Values.worker.tolerations }}
       {{- include "lerian-common.scheduling" .Values.worker | nindent 6 }}

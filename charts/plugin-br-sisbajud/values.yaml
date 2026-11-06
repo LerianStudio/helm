@@ -205,6 +205,12 @@ sisbajud:
   license:
     organizationIds: "global"
 
+  # -- Optional signed licence file, an alternative to LICENSE_KEY: a Secret holding
+  #    the file under the key `license`, mounted at /etc/lerian/license. Needs an
+  #    image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
+
   # ---------------------------------------------------------------------------
   # Sisbajud Mensageria (execution contract). Setting baseUrl is what turns the
   # process into the executor. The transport is always TLS; mutual TLS is
@@ -267,8 +273,8 @@ sisbajud:
     # -- EXECUTOR_RESULT_MAX_ATTEMPTS: result drainer attempt cap per outbox row
     #    (>= 1; "0" = app default 12). Exhausted = human decision + alarm.
     resultMaxAttempts: "12"
-    # -- EXECUTOR_ORDER_SWEEP_ENABLED: the execution_order sweep that closes
-    #    stale orders (true | false; app default false).
+    # -- EXECUTOR_ORDER_SWEEP_ENABLED: the sweep that closes done
+    #    execution_order revisions (true | false; app default false).
     orderSweepEnabled: "false"
     # -- Direct channel drainer alarms (every executor mode).
     direct:
@@ -280,7 +286,7 @@ sisbajud:
       #    No automatic purge: a person decides, through the audited erase
       #    (purge preview + erase by order). A BLOCK order is kept at least one
       #    CALENDAR year after its first ledger effect; an ACTIVE permanent block
-      #    is never eligible (runbook direct-channel-operations.md § 10).
+      #    is never eligible.
       purgeEligibleAlarmAfter: "168h"
       # -- EXECUTOR_DIRECT_PURGE_REFRESH_EVERY: how often the purge-eligible
       #    count behind that alarm is refreshed (Go duration > 0; app default 15m).

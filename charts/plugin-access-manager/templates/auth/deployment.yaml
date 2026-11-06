@@ -20,8 +20,9 @@ spec:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/auth/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/auth/configmap.yaml") . | sha256sum }}
+        checksum/app-client-secret: {{ .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET | toString | sha256sum }}
       labels:
-        {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 8 }}
+        {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name "pod" true) | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.auth.imagePullSecrets }}
@@ -48,6 +49,8 @@ spec:
               name: {{ include "plugin-auth.fullname" . }}
           env:
             {{- toYaml $h.env | nindent 12 }}
+            {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "AUTHORIZER_CLIENT_SECRET") | nindent 12 }}
+            {{- with (include "plugin-access-manager.licenseFileEnv" .Values.auth | trim) }}{{ . | nindent 12 }}{{ end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
             - name: "HOST_IP"
               valueFrom:
@@ -55,6 +58,10 @@ spec:
                   fieldPath: status.hostIP
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
               value: "$(HOST_IP):4317"
+          {{- end }}
+          {{- with (include "plugin-access-manager.licenseFileMount" .Values.auth | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
           {{- end }}
           resources:
             {{- toYaml .Values.auth.resources | nindent 12 }}
@@ -64,6 +71,10 @@ spec:
             {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml $h.readinessProbe | nindent 12 }}
+      {{- with (include "plugin-access-manager.licenseFileVolume" .Values.auth | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, auth.spread, auth.topologySpreadConstraints).
              selectorLabels MUST equal spec.selector.matchLabels above. */}}

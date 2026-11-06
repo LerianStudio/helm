@@ -6,6 +6,8 @@
 - **[Features](#features)**
   - [Shutdown drain delay configuration](#shutdown-drain-delay-configuration)
   - [Extended termination grace period](#extended-termination-grace-period)
+- **[Upgrade notes](#upgrade-notes)**
+  - [Migration Job runs on every upgrade](#migration-job-runs-on-every-upgrade)
 
 ---
 
@@ -21,24 +23,7 @@
 
 The chart now sets a new environment variable `SHUTDOWN_DRAIN_DELAY` to `15s` for all role Deployments (`spb-consumer`, `spb-sender`, `pix-ingress`, `admin`).
 
-**Before (v2.1.2):**
-
-```yaml
-env:
-  - name: COURIER_ROLES
-    value: {{ .role | quote }}
-  # No SHUTDOWN_DRAIN_DELAY
-```
-
-**After (v2.2.0):**
-
-```yaml
-env:
-  - name: SHUTDOWN_DRAIN_DELAY
-    value: "15s"
-  - name: COURIER_ROLES
-    value: {{ .role | quote }}
-```
+The variable takes effect only on images built on lib-commons v7.21.0-beta.20 or later. The chart's default image `1.2.1` is built on lib-commons v7.19.0, which does not read `SHUTDOWN_DRAIN_DELAY`, so with the default image the shutdown sequence is unchanged.
 
 **Migration action:**
 
@@ -46,8 +31,7 @@ No action required. The environment variable is set automatically by the chart.
 
 **If you need to adjust the delay:**
 
-The drain delay is currently hardcoded in the chart templates.
-
+The drain delay is hardcoded in the chart templates. `config.SHUTDOWN_DRAIN_DELAY` does not change it: the pod env wins over the ConfigMap.
 
 ### Extended termination grace period
 
@@ -68,8 +52,8 @@ The termination grace period must be long enough to accommodate the entire grace
 | Time | Event |
 |------|-------|
 | t=0 | SIGTERM received; rail stop starts immediately |
-| t≤80 | Rail finishes |
 | t=12 | Readiness drain ends; HTTP drain starts (runs alongside rail stop) |
+| t≤80 | Rail finishes |
 | After HTTP drain | Lifecycle hooks wait for rail, then 10s for workers |
 | t=100 | SIGKILL if not exited |
 
@@ -86,6 +70,8 @@ If you have overridden the default SPB timing values in your `config` block, ens
 config:
   SPB_TAKE_BUDGET_SEC: "30"      # Increased from 15
   SPB_PERSIST_TIMEOUT_SEC: "90"  # Increased from 60
+  SPB_LEASE_TTL_SEC: "45"        # Must exceed SPB_TAKE_BUDGET_SEC + max(SPB_IDLE_INTERVAL_SEC, SPB_EMPTY_BACKOFF_CAP_SEC), or the spb-consumer refuses to start
+                                 # (app defaults 5 and 10: 30 + 10 = 40 < 45)
 
 # You must also increase the grace period:
 terminationGracePeriodSeconds: 160  # 15 (drain delay) + 30 (take) + 90 (persist) + 5 (routing) + 10 (workers) + 10 (margin)
@@ -108,21 +94,33 @@ With defaults:
 
 ---
 
+## Upgrade notes
+
+### Migration Job runs on every upgrade
+
+With `migrations.enabled: true` (the default), the chart renders the `br-jd-courier-migrate` Job as a `pre-install,pre-upgrade` hook. It runs `migrate up` against the Courier database on every `helm upgrade`, before the Deployments change, including this one. If the Job fails, Helm marks the upgrade as failed and does not apply the new Deployments.
+
+The Job name follows the release fullname: with a different release name, it is `<fullname>-migrate`.
+
+---
+
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.2.0 -n br-jd-courier
+helm diff upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --version 2.2.0 -n br-jd-courier -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
-> **Note:** An anonymous pull from `registry-1.docker.io` is refused with `401`. Without Docker Hub access, use the GHCR reference `oci://ghcr.io/lerianstudio/br-jd-courier-helm` in both commands.
+> **Note:** Pass the values file of your release (`values.yaml` here, with any `config` or `terminationGracePeriodSeconds` change from this guide). Without `-f` or `--set`, Helm reuses the values stored in the release and ignores the edited file.
+
+> **Note:** The commands use GHCR, as the chart README does. An anonymous pull from `oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm` is refused with `401`.
 
 ---
 
 ## Command to upgrade
 
 ```bash
-helm upgrade br-jd-courier oci://registry-1.docker.io/lerianstudio/br-jd-courier-helm --version 2.2.0 -n br-jd-courier
+helm upgrade br-jd-courier oci://ghcr.io/lerianstudio/br-jd-courier-helm --version 2.2.0 -n br-jd-courier -f values.yaml
 ```
 <!-- {% endraw %} -->

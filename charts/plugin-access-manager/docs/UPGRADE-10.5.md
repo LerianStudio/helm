@@ -50,31 +50,6 @@ The chart deployed a post-install Kubernetes Job (`<release>-auth-init-user`) th
 - Was deleted automatically after success
 - Used a separate `caradhras-user-init` container image
 
-```yaml
-# v10.4.1 - Separate Job resource
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: {{ printf "%s-init-user" (include "plugin-auth.fullname" .) }}
-  annotations:
-    helm.sh/hook: post-install
-    helm.sh/hook-weight: "10"
-    helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
-spec:
-  template:
-    spec:
-      containers:
-        - name: init-user
-          image: "ghcr.io/lerianstudio/caradhras-user-init:3.14.0"
-          env:
-            - name: DB_HOST
-              # ... database connection details
-            - name: CASDOOR_URL
-              # ... Caradhras URL
-            - name: ADMIN_PASSWORD
-              # ... admin credentials
-```
-
 **After (v10.5.0):**
 
 The identity service deployment now includes the admin password and credentials as environment variables, and the service itself calls Caradhras's `ensure-first-admin` endpoint:
@@ -233,6 +208,16 @@ auth:
     adminPassword: "your-secure-password-here"
     adminEmail: "admin@example.com"
     adminDisplayName: "System Administrator"
+caradhras:
+  # The check needs Caradhras server and migrations >= 2.1.0 (see Version Requirements).
+  image:
+    tag: "2.1.0"
+  migrations:
+    image:
+      tag: "2.1.0"
+  # Caradhras 2.x refuses to boot without its own license key.
+  secrets:
+    LICENSE_KEY: "your-caradhras-license-key"
 ```
 
 **Example: Enable init user with existing Secret**
@@ -245,6 +230,16 @@ auth:
     adminPasswordSecretName: "my-admin-credentials"
     adminPasswordSecretKey: "password"
     adminEmail: "admin@example.com"
+caradhras:
+  # The check needs Caradhras server and migrations >= 2.1.0 (see Version Requirements).
+  image:
+    tag: "2.1.0"
+  migrations:
+    image:
+      tag: "2.1.0"
+  # Caradhras 2.x refuses to boot without its own license key.
+  secrets:
+    LICENSE_KEY: "your-caradhras-license-key"
 ```
 
 > **Note:** If you set `useExistingSecret=true`, you **must** also set `adminPasswordSecretName`. The chart will fail to render if this requirement is not met.
@@ -385,6 +380,16 @@ auth:
     adminPassword: "your-secure-password"
     adminEmail: "admin@example.com"
     adminDisplayName: "Administrator"
+caradhras:
+  # The check needs Caradhras server and migrations >= 2.1.0 (see Version Requirements).
+  image:
+    tag: "2.1.0"
+  migrations:
+    image:
+      tag: "2.1.0"
+  # Caradhras 2.x refuses to boot without its own license key.
+  secrets:
+    LICENSE_KEY: "your-caradhras-license-key"
 ```
 
 ### Step 3: Upgrade the Chart

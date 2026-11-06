@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), `secrets.DATASOURCE_ONBOARDING_PASSWORD`, and `secrets.LICENSE_KEY` (app 4.6.0 and later, which includes the default image: the render fails without it, and the manager and the worker refuse to boot without it). The MongoDB password is **not** operator-provided with the bundled subchart: it is generated into the `<release>-mongodb` Secret (key `mongodb-root-password`), which this chart owns and keeps across uninstall, and read via `secretKeyRef`.
+- Required secrets: `secrets.RABBITMQ_DEFAULT_PASS`, `secrets.RABBITMQ_ERLANG_COOKIE` (required when the bundled RabbitMQ subchart is enabled — must be stable across upgrades), `secrets.DATASOURCE_ONBOARDING_PASSWORD`, and `secrets.LICENSE_KEY` (app 4.6.0 and later, which includes the default image: the render fails without it, and the manager and the worker refuse to boot without it; not needed when `manager.licenseFile.existingSecret` and `worker.licenseFile.existingSecret` are set). The MongoDB password is **not** operator-provided with the bundled subchart: it is generated into the `<release>-mongodb` Secret (key `mongodb-root-password`), which this chart owns and keeps across uninstall, and read via `secretKeyRef`.
 - Required from app 3.0.0 on: `secrets.DATASOURCE_CRED_ENC_KEY` — a hex-encoded AES key (16/24/32 bytes; `openssl rand -hex 32`) that both components use to encrypt registered data-source credentials at rest. It must be **identical** on the manager and the worker, and it **cannot be rotated** in that release. The render fails when either component's `image.tag` is `>= 3.0.0` and the key is empty; the default image (`4.7.0-beta.1`) needs it. See `docs/UPGRADE-4.1.md`.
 - Single-source infra secrets: MongoDB follows Pattern A, except that the chart, not the subchart, owns the `<release>-mongodb` Secret; the subchart reads it through `mongodb.auth.existingSecret`. RabbitMQ follows Pattern B (the groundhog2k broker is pointed at the application `reporter-manager` Secret via `rabbitmq.authentication.existingSecret`, so the broker password lives only in `secrets.RABBITMQ_DEFAULT_PASS`; this also removes the prior `midaz`-vs-`plugin` user mismatch). Valkey: the valkey.io subchart exposes no Secret-based password mechanism (auth is an inline ACL) and ships with `auth.enabled: false`, so there is no single-source wiring for it here. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
 - Release name: the hardcoded infra hosts assume the release is installed as `reporter`; the `<release>-mongodb` Secret reference follows the release name. If you override `manager.name`/`manager.existingSecretName`, set `rabbitmq.authentication.existingSecret` to match.
@@ -226,6 +226,7 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 | `manager.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `manager.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `manager.existingSecretName` | Name of the existing secret to use | `""` |
+| `manager.licenseFile.existingSecret` | Secret holding the signed licence file (key `license`), mounted as a directory at `/etc/lerian/license` and replacing `LICENSE_KEY`; file mode needs an image on lib-license-go v5 | `""` |
 | `manager.clusterRole.create` | Enable or disable ClusterRole and ClusterRoleBinding creation | `true` |
 | `manager.keda.scaledObject` | KEDA ScaledObject configuration | See `values.yaml` |
 
@@ -239,6 +240,7 @@ template exactly, set `global.scheduling.spread.enabled: false`.
 | `worker.resources` | CPU/Memory resource requests/limits | See `values.yaml` |
 | `worker.useExistingSecret` | Use an existing secret instead of creating a new one | `false` |
 | `worker.existingSecretName` | Name of the existing secret to use | `""` |
+| `worker.licenseFile.existingSecret` | Secret holding the signed licence file (key `license`), mounted as a directory at `/etc/lerian/license` and replacing `LICENSE_KEY`; file mode needs an image on lib-license-go v5 | `""` |
 | `worker.keda.scaledJob` | KEDA ScaledJob configuration | See `values.yaml` |
 
 ### Dependency Settings

@@ -23,13 +23,22 @@ Fleet Management: ATIVO
   endpoint: {{ .Values.fleetManagement.url }}
   intervalo: {{ .Values.fleetManagement.pollFrequency | default "1m" }}
 
-  A configuração remota roda em controlador SEPARADO da local. As regras de
-  sanitização, que vivem na config local, não podem ser desligadas remotamente.
+  Papel node: o ConfigMap local traz só `logging` e `remotecfg`. A coleta e as
+  regras de sanitização do node vêm da configuração publicada no Fleet
+  (`sanitizacao/publicar-fleet.sh`, renderizada a partir deste chart).
+  Papel singleton: a coleta e a sanitização de eventos ficam no ConfigMap local,
+  junto do `remotecfg`.
 
-  Atenção: uma pipeline remota com exportador próprio teria caminho de saída
-  que NÃO passa pelo mascaramento local. Mantenha a exportação local.
+  O Secret `alloy-lerian` precisa da chave `fleet-token` nos dois perfis.
 {{- else -}}
 Fleet Management: inativo (fleetManagement.enabled: false)
+  Os dois papéis renderizam a corrente completa de coleta e sanitização no
+  ConfigMap local.
+{{- end }}
+{{- if and .Values.global.imageRegistry (not ((.Values.global.image).registry)) }}
+
+Atenção: `global.imageRegistry` vale para kube-state-metrics e node-exporter. As
+imagens do agente e do config-reloader usam `global.image.registry`.
 {{- end }}
 
 Sanitização de dado regulado: SEMPRE ativa, não configurável.

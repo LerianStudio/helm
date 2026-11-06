@@ -1,38 +1,43 @@
 # Plugin-br-payments Changelog
 
+## [2.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.3.0)
+
+Features:
+- Added a license file mount and migrator key to `plugin-br-payments`. (@fredcamaral)
+
+Fixes:
+- Projected only the license key in the license file volume for `plugin-br-payments`. (@fredcamaral)
+
+Improvements:
+- Added the `plugin-br-payments` `2.2.2` upgrade guide. (@fredcamaral)
+- Marked the release and namespace as examples in the `2.2.2` guide for `plugin-br-payments`. (@fredcamaral)
+- Stated the `REQUEST_TIMEOUT_SEC` floor in the `2.2.2` guide for `plugin-br-payments`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.2...plugin-br-payments-v2.3.0)
+
+---
+
+## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.2)
+
+Fixes:
+
+- Keep control-plane guard on API pods and trim comments to ensure proper functionality. (@fredcamaral)
+- Align starter overlay, schema, and pod labels for consistency. (@fredcamaral)
+
+Improvements:
+
+- Fix secret commands in the `plugin-br-payments` `1.1.2` documentation to ensure accuracy. (@fredcamaral)
+- Correct the upgrade guide for `plugin-br-payments` `1.1.2` to provide clear instructions. (@fredcamaral)
+- Add verified upgrade guides for versions `1.1.3` to `2.2.1` to assist users in transitioning between versions. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.1...plugin-br-payments-v2.2.2)
+
+---
+
 ## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
 
 Fixes:
 - Updated charts to use stable payments `1.2.0`. (@fredcamaral)
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
-
----
-
-## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
-
-Fixes:
-- Updated charts to use stable payments version `1.2.0`. (@fredcamaral)
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
-
----
-
-## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
-
-Fixes:
-
-- Use stable payments `1.2.0` in charts. (@fredcamaral)
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
-
----
-
-## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
-
-Fixes:
-
-- Use stable payments `1.2.0` in charts. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
 

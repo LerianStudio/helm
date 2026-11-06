@@ -190,3 +190,121 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+bc-correios.postgresPasswordEnv — the POSTGRES_PASSWORD env entry shared by the app and the migrations
+Job: a secretKeyRef to the PostgreSQL subchart Secret, or to the app Secret when set in secrets.
+Renders nothing when the password comes from the app Secret through envFrom.
+*/}}
+{{- define "bc-correios.postgresPasswordEnv" -}}
+{{- $component := index .Values "bc-correios" -}}
+{{- $secretName := ternary $component.existingSecretName (include "bc-correios.fullname" .) $component.useExistingSecret -}}
+{{- $pg := .Values.postgresql | default dict -}}
+{{- $pgAuth := $pg.auth | default dict -}}
+{{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret -}}
+{{- include "bc-correios.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") -}}
+{{- else if $component.secrets.POSTGRES_PASSWORD -}}
+- name: POSTGRES_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: POSTGRES_PASSWORD
+{{- end -}}
+{{- end }}
+
+{{/*
+bc-correios.migrationsJobSpec — the migrations Job spec (see templates/migrations-job.yaml).
+*/}}
+{{- define "bc-correios.migrationsJobSpec" -}}
+{{- $component := index .Values "bc-correios" -}}
+{{- $m := $component.migrations -}}
+{{- $secretName := include "bc-correios.fullname" . -}}
+{{- if $component.useExistingSecret -}}
+{{- $secretName = required "bc-correios.existingSecretName is required when bc-correios.useExistingSecret is true" $component.existingSecretName -}}
+{{- end -}}
+backoffLimit: {{ $m.backoffLimit }}
+activeDeadlineSeconds: {{ $m.activeDeadlineSeconds }}
+template:
+  spec:
+    restartPolicy: Never
+    automountServiceAccountToken: false
+    securityContext:
+      {{- toYaml $component.podSecurityContext | nindent 6 }}
+    {{- with $component.nodeSelector }}
+    nodeSelector:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $component.affinity }}
+    affinity:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $component.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $component.hostAliases }}
+    hostAliases:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $component.imagePullSecrets }}
+    imagePullSecrets:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.37
+        envFrom:
+          - configMapRef:
+              name: {{ include "bc-correios.fullname" . }}
+        command:
+          - /bin/sh
+          - -c
+          - |
+            until nc -z "$POSTGRES_HOST" "$POSTGRES_PORT"; do
+              echo "$POSTGRES_HOST:$POSTGRES_PORT is not ready yet, waiting..."; sleep 5
+            done
+      - name: copy-migrations
+        image: "{{ $component.image.repository }}:{{ $component.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ $component.image.pullPolicy }}
+        command: ["cp", "-r", "/migrations/.", "/work/"]
+        volumeMounts:
+          - name: migrations
+            mountPath: /work
+    containers:
+      - name: migrate
+        image: "{{ $m.image.repository }}:{{ $m.image.tag }}"
+        imagePullPolicy: {{ $m.image.pullPolicy }}
+        env:
+          {{- range $k := list "POSTGRES_HOST" "POSTGRES_PORT" "POSTGRES_USER" "POSTGRES_NAME" "POSTGRES_SSLMODE" }}
+          - name: {{ $k }}
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "bc-correios.fullname" $ }}
+                key: {{ $k }}
+          {{- end }}
+          {{- with include "bc-correios.postgresPasswordEnv" . }}
+          {{- . | nindent 10 }}
+          {{- else }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: POSTGRES_PASSWORD
+                optional: true
+          {{- end }}
+        args:
+          - -path=/migrations
+          - -database=postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_NAME)?sslmode=$(POSTGRES_SSLMODE)
+          - up
+        securityContext:
+          {{- toYaml $component.securityContext | nindent 10 }}
+        volumeMounts:
+          - name: migrations
+            mountPath: /migrations
+            readOnly: true
+        resources:
+          {{- toYaml $m.resources | nindent 10 }}
+    volumes:
+      - name: migrations
+        emptyDir: {}
+{{- end }}

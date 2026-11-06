@@ -27,10 +27,12 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "plugin-worker.labels" (dict "context" . "name" .Values.worker.name ) | nindent 8 }}
+        {{- include "plugin-worker.selectorLabels" (dict "context" . "name" .Values.worker.name) | nindent 8 }}
+        app.kubernetes.io/version: {{ include "plugin.version" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
       annotations:
-        checksum/secret: {{ include (print $.Template.BasePath "/worker/secrets.yaml") . | sha256sum }}
-        checksum/config: {{ include (print $.Template.BasePath "/worker/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/worker/secrets.yaml") . | fromYaml).data | toYaml | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/worker/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
         {{- range $key, $value := .Values.worker.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
@@ -80,6 +82,9 @@ spec:
             {{- with .Values.worker.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+            {{- with (include "reporter.licenseFileMount" .Values.worker | trim) }}
+            {{- . | nindent 12 }}
+            {{- end }}
           ports:
             {{- toYaml $h.ports | nindent 12 }}
           envFrom:
@@ -92,6 +97,9 @@ spec:
           - name: HOME
             value: /tmp
           {{- include "reporter.mongoPasswordEnv" (dict "context" $ "secretName" (ternary .Values.worker.existingSecretName (include "plugin-worker.fullname" .) .Values.worker.useExistingSecret)) | nindent 10 }}
+          {{- with (include "reporter.licenseFileEnv" .Values.worker | trim) }}
+          {{- . | nindent 10 }}
+          {{- end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
           - name: "HOST_IP"
             valueFrom:
@@ -119,6 +127,9 @@ spec:
           emptyDir: {}
       {{- with .Values.worker.extraVolumes }}
       {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (include "reporter.licenseFileVolume" .Values.worker | trim) }}
+      {{- . | nindent 8 }}
       {{- end }}
       {{- if and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled }}
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" "reporter-iam-tls") | trimPrefix "volumes:\n" | nindent 6 }}

@@ -32,7 +32,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "system-facts.labels" (dict "context" . "component" (index .Values "system-facts").name "name" (index .Values "system-facts").name) | nindent 8 }}
+        {{- include "system-facts.podLabels" (dict "context" . "component" (index .Values "system-facts").name "name" (index .Values "system-facts").name) | nindent 8 }}
     spec:
       {{- with (index .Values "system-facts").imagePullSecrets }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
@@ -60,13 +60,17 @@ spec:
           {{- $vk := .Values.valkey | default dict }}
           {{- $vkAuth := $vk.auth | default dict }}
           {{- $vkInternal := and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled }}
+          {{- $licenseSecret := include "system-facts.licenseFileSecret" (index .Values "system-facts") }}
           envFrom:
           - secretRef:
               name: {{ if (index .Values "system-facts").useExistingSecret }}{{ (index .Values "system-facts").existingSecretName }}{{ else }}{{ include "system-facts.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "system-facts.fullname" . }}
-          {{- if or $otelEnabled $rolesAnywhereEnabled $pgInternal $vkInternal }}
+          {{- if or $otelEnabled $rolesAnywhereEnabled $pgInternal $vkInternal $licenseSecret }}
           env:
+          {{- if $licenseSecret }}
+          {{- include "system-facts.licenseFileEnv" . | nindent 10 }}
+          {{- end }}
           {{- if $pgInternal }}
           {{- include "system-facts.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
           {{- end }}
@@ -94,6 +98,9 @@ spec:
                 "port" (index .Values "system-facts").service.port
                 "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
               ) | nindent 10 }}
+          {{- if $licenseSecret }}
+          {{- include "system-facts.licenseFileVolumeMount" . | nindent 10 }}
+          {{- end }}
           resources:
             {{- toYaml (index .Values "system-facts").resources | nindent 12 }}
         {{- if $rolesAnywhereEnabled }}
@@ -101,6 +108,11 @@ spec:
         {{- end }}
       {{- if $rolesAnywhereEnabled }}
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "system-facts-iam-tls") | nindent 6 }}
+      {{- else if $licenseSecret }}
+      volumes:
+      {{- end }}
+      {{- if $licenseSecret }}
+      {{- include "system-facts.licenseFileVolume" $licenseSecret | nindent 8 }}
       {{- end }}
       {{- if or (index .Values "system-facts").nodeSelector (index .Values "system-facts").affinity (index .Values "system-facts").tolerations }}
       {{- include "lerian-common.scheduling" (index .Values "system-facts") | nindent 6 }}

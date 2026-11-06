@@ -4,7 +4,7 @@
 
 - Chart type: `multi-component`
 - Images: ghcr `notifications` 1.1.0; the api binds `0.0.0.0:8080`.
-- Required secrets: `secrets.LICENSE_KEY` is enforced at render time (the render refuses without it, unless `secretRef.name` points at an existing Secret). The application will not start without `secrets.NOTIFICATION_ENCRYPTION_KEY` and `secrets.NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY` (each a base64-encoded 32-byte key), and `secrets.POSTGRES_PASSWORD` is required when `config.ENV_NAME` is `production`. `secrets.DATABASE_URL` is required by the migrations Job while `migrations.enabled` is `true`. See [Required secrets](#required-secrets).
+- Required secrets: `secrets.LICENSE_KEY` is enforced at render time (the render refuses without it, unless `secretRef.name` points at an existing Secret or `licenseFile.existingSecret` mounts a signed licence file). The application will not start without `secrets.NOTIFICATION_ENCRYPTION_KEY` and `secrets.NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY` (each a base64-encoded 32-byte key), and `secrets.POSTGRES_PASSWORD` is required when `config.ENV_NAME` is `production`. `secrets.DATABASE_URL` is required by the migrations Job while `migrations.enabled` is `true`. See [Required secrets](#required-secrets).
 - Dependency notes: No local dependency charts are bundled. PostgreSQL, Redis, and RabbitMQ are external (provided by the target environment); migrations run as a Helm pre-install/pre-upgrade Job against the external PostgreSQL.
 - Production overrides: Override API/worker image tags, ingress, and resources.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
@@ -47,7 +47,7 @@ The chart refuses to render without `LICENSE_KEY` (unless `secretRef.name` is se
 
 | Key | Consumed by | Notes |
 |-----|-------------|-------|
-| `LICENSE_KEY` | API and workers | Licence key; every component refuses to boot without it. Render fails if it is empty and `secretRef.name` is unset. With `secretRef.name`, the external Secret must contain a `LICENSE_KEY` key. |
+| `LICENSE_KEY` | API and workers | Licence key; every component refuses to boot without it. Render fails if it is empty and neither `secretRef.name` nor `licenseFile.existingSecret` is set. With `secretRef.name`, the external Secret must contain a `LICENSE_KEY` key. |
 | `NOTIFICATION_ENCRYPTION_KEY` | API and workers | Base64-encoded 32-byte key (AES-256) that encrypts delivery-profile credentials at rest. The application refuses to boot in every environment if it is empty or malformed. Not declared in the chart's default `secrets` map; add it under `secrets` (or `extraSecrets`, or in the external Secret). |
 | `NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY` | API and workers | Base64-encoded 32-byte key for the destination auth cache stored in Redis. Required in every environment; boot fails if empty or malformed. |
 | `DATABASE_URL` | Migrations Job | Pre-built, URL-escaped Postgres DSN (`postgres://USER:PASSWORD@HOST:PORT/DB?sslmode=...`). Required while `migrations.enabled` is `true`. If it is empty the render still succeeds and the Job receives an empty `-database` argument and fails at run time. With `secretRef.name`, the external Secret must contain a `DATABASE_URL` key. |
@@ -89,7 +89,8 @@ helm install notifications ./charts/notifications \
 | `config.POSTGRES_HOST`             | External Postgres host                           |
 | `config.REDIS_HOST`                | External Redis host                              |
 | `config.RABBITMQ_HOST`             | External RabbitMQ host                           |
-| `secrets.LICENSE_KEY`              | Required: render fails without it (unless `secretRef.name` is set) |
+| `secrets.LICENSE_KEY`              | Required: render fails without it (unless `secretRef.name` or `licenseFile.existingSecret` is set) |
+| `licenseFile.existingSecret`       | Optional Secret with a signed licence file under the `license` key, mounted as a directory on the api and workers; sets `LICENSE_FILE_PATH` to `/etc/lerian/license/license`; file mode needs an image on lib-license-go v5 |
 | `secrets.POSTGRES_PASSWORD`        | Required by the app when `ENV_NAME=production`   |
 | `secrets.DATABASE_URL`             | Required by the migrations Job (pre-built DSN)   |
 | `secrets.NOTIFICATION_ENCRYPTION_KEY` | Required: app will not boot without it (base64, 32 bytes) |

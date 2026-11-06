@@ -62,7 +62,7 @@ shapes are rejected.
 {{- $path := trimSuffix "/" (toString $route.path) }}
 {{- $prefixLike := ne (toString (default "Prefix" $route.pathType)) "Exact" }}
 {{- if or (hasPrefix "/pixauto/internal" $path) (and $prefixLike (or (eq $path "/pixauto") (eq $path ""))) }}
-{{- fail (printf "plugin-br-pix-lerian: appsIngress route %q (pathType %s) publishes the Pix Automatico internal M2M group /pixauto/internal/v1/* on the apps host. Those endpoints take inbound recurrence callbacks and drive the scheduler sweep and must not be externally routed. Use %q for the client-facing surface, plus an Exact route for /pixauto/readyz if the dashboard link is needed - that is what values.yaml ships by default." $route.path (default "Prefix" $route.pathType) "/pixauto/v1") }}
+{{- fail (printf "plugin-br-pix-lerian: appsIngress route %q (pathType %s) publishes the Pix Automatico internal M2M group /pixauto/internal/v1/* on the apps host. Those endpoints take inbound recurrence callbacks and drive the scheduler sweep and must not be externally routed. Use %q for the client-facing surface, plus an Exact route for /pixauto/health if the dashboard link is needed - that is what values.yaml ships by default." $route.path (default "Prefix" $route.pathType) "/pixauto/v1") }}
 {{- end }}
 {{- end }}
 {{- /*

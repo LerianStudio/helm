@@ -3,7 +3,7 @@
 # the migrations pre-install hook failed with
 #   failed to open database: dial tcp: lookup postgresql ... server misbehaving
 # The gate installs the chart's other supported topology instead — bundled Postgres
-# and Valkey, the one the anacleto chaos lane runs — so the hook, the app and the
+# and Valkey, the topology a self-contained install runs — so the hook, the app and the
 # upgrade all meet a database that exists.
 #
 # null removes a key the render fixture set: on the bundled path the chart derives

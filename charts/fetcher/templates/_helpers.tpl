@@ -38,7 +38,15 @@ Manager fullname
 Manager labels
 */}}
 {{- define "fetcher-manager.labels" -}}
-{{ include "fetcher.labels" . }}
+helm.sh/chart: {{ include "fetcher.chart" . }}
+{{ include "fetcher-manager.podLabels" . }}
+{{- end }}
+
+{{/*
+Manager pod-template labels: the chart label is left out so a chart release does not restart pods.
+*/}}
+{{- define "fetcher-manager.podLabels" -}}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/name: {{ include "fetcher-manager.fullname" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: manager
@@ -66,7 +74,15 @@ Worker fullname
 Worker labels
 */}}
 {{- define "fetcher-worker.labels" -}}
-{{ include "fetcher.labels" . }}
+helm.sh/chart: {{ include "fetcher.chart" . }}
+{{ include "fetcher-worker.podLabels" . }}
+{{- end }}
+
+{{/*
+Worker pod-template labels: the chart label is left out so a chart release does not restart pods.
+*/}}
+{{- define "fetcher-worker.podLabels" -}}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/name: {{ include "fetcher-worker.fullname" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: worker
@@ -182,7 +198,11 @@ MONGO_HOST: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_NAME: {{ $cm.MONGO_NAME | default "fetcher-db" | quote }}
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
 MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "1000" | quote }}
-MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") | quote }}
+{{- /* The aws preset's tlsInsecure is dropped: the app trusts the AWS RDS CA bundle, so DocumentDB certificates are verified. An explicitly set params value (any source) is untouched. */ -}}
+{{- $mongoParams := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "") -}}
+{{- $set := or (hasKey $cm "MONGO_PARAMETERS") (hasKey ($ded.mongo | default dict) "params") (hasKey (($.Values.global.datastores | default dict).mongo | default dict) "params") -}}
+{{- if and (eq (($.Values.global | default dict).cloud | default "") "aws") (not $set) }}{{- $mongoParams = replace "tlsInsecure=true&" "" $mongoParams -}}{{- end }}
+MONGO_PARAMETERS: {{ $mongoParams | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
 {{- /* RabbitMQ broker connection via datastore mask. host/port(mgmt) plus the
    topology fields scheme (amqp|amqps) and amqpPort — so a managed-broker
@@ -278,4 +298,12 @@ Health preset of the worker: no Service and no main port, HEALTH_PORT is its onl
       "minImage" (include "fetcher.minImage" .)
       "replicas" .Values.worker.replicaCount
     ) -}}
+{{- end }}
+
+{{/*
+Optional signed licence file Secret of a component ("" = key mode). Input: the
+component values. Nil-safe so --reuse-values over an old release cannot nil-pointer.
+*/}}
+{{- define "fetcher.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
 {{- end }}

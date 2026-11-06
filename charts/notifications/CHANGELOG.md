@@ -1,30 +1,24 @@
 # Notifications Changelog
 
-## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.0.1)
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.1.0)
 
-Fixes:
+Features:
+- Add an optional license file mount to notifications. (@fredcamaral)
 
-- No changes related to notifications were made in the provided commits.
+Improvements:
+- Correct the `notifications` `1.0.2` restart claim in the documentation. (@fredcamaral)
+- Add an upgrade guide for `notifications` `1.0.2`. (@fredcamaral)
 
-[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.0...notifications-v1.0.1)
-
----
-
-## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.0.1)
-
-Fixes:
-- Ensure notifications handle migration DSN securely by keeping it in a Secret and using a neutral environment name. (@fredcamaral)
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.0...notifications-v1.0.1)
+[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.2...notifications-v1.1.0)
 
 ---
 
-## [1.0.1](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.0.1)
+## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.0.2)
 
 Fixes:
-- No changes related to notifications were made in the provided commits.
+- Removed the `helm.sh/chart` label from the notifications pod template labels. (@fredcamaral)
 
-[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.0...notifications-v1.0.1)
+[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.1...notifications-v1.0.2)
 
 ---
 
@@ -32,7 +26,7 @@ Fixes:
 
 Fixes:
 
-- Ensure notifications are correctly displayed without errors. (@fredcamaral)
+- Ensure notifications properly handle edge cases related to user preferences. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.0...notifications-v1.0.1)
 

@@ -134,7 +134,7 @@ secrets:
   RABBITMQ_DEFAULT_PASS: ""  # REQUIRED - RabbitMQ password
   REDIS_USER: ""
   REDIS_PASSWORD: ""
-  LICENSE_KEY: ""  # REQUIRED - Lerian license key
+  LICENSE_KEY: ""  # Lerian license key, required unless licenseFile.existingSecret is set
 
 # External RabbitMQ Bootstrap - Apply definitions to external RabbitMQ
 externalRabbitmqDefinitions:

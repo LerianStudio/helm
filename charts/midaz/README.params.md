@@ -123,6 +123,7 @@
 | `ledger.datastores` | object | `templates/ledger/configmap.yaml` | Dedicated datastore masks for this component (override global.datastores). Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/replicaHost). The Postgres `ssl` field is read from the generic `postgres` key (`postgres.ssl`), not from `postgresOnboarding`/`postgresTransaction`: those keys' `ssl` is ignored. |
 | `ledger.configmap` | object | `{}` | Escape hatch: any native env var (e.g. DB_ONBOARDING_MAX_OPEN_CONNS) overrides the template default. |
 | `ledger.useExistingSecret` | bool | `false` | Existing secrets name |
+| `ledger.licenseFile.existingSecret` | string | `""` | Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license; `ledger.secrets.LICENSE_KEY` is then not required. Needs an image on lib-license-go v5. |
 | `ledger.extraEnvVars` | object | `{}` | Extra environment variables |
 | `ledger.secrets` | object | `templates/ledger/secrets.yaml` | Secrets for storing sensitive data |
 | `ledger.secrets.DB_ONBOARDING_PASSWORD` | string | `""` | Onboarding module passwords. DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from the Bitnami postgresql subchart Secret (key `password`, replicas included) and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret (key `mongodb-root-password`). Only set these for an EXTERNAL backend (subchart disabled / .external=true) without an existingSecret override. |
@@ -130,7 +131,7 @@
 | `ledger.secrets.MONGO_CRM_PASSWORD` | string | `""` | CRM and Fees module passwords. The unified ledger binary (midaz v4) opens these Mongo databases in-process; same single-source rule as the modules above. Rendered into the ledger Secret, never the ConfigMap. |
 | `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` | string | `""` | CRM holder-field crypto (lib-crypto). Operator-provided key material protecting PII at rest. Required when the ledger serves CRM and KMS_VENDOR is unset or "none" (legacy mode, local symmetric keys). |
 | `ledger.secrets.KMS_VAULT_SECRET_ID` | string | `""` | Vault AppRole SecretID, the credential half of the KMS auth pair. Only set when ledger.configmap.KMS_VENDOR="hashicorp-vault" (envelope encryption). The RoleID counterpart is not secret and stays in the ConfigMap. |
-| `ledger.secrets.LICENSE_KEY` | string | `""` | Product license key. Required: the ledger refuses to boot when empty. |
+| `ledger.secrets.LICENSE_KEY` | string | `""` | Product license key. Required unless `ledger.licenseFile.existingSecret` is set. |
 | `ledger.secrets.REDIS_PASSWORD` | string | `""` | Shared passwords. REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an existingSecret override. RABBITMQ_* are operator-provided; the bundled RabbitMQ gives them to its `transaction` and `consumer` users. |
 | `ledger.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Rendered into the ledger Secret. |
 | `ledger.secrets.STREAMING_SASL_PASSWORD` | string | `""` | Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set when the streaming backend uses SASL auth and/or a private TLS CA. When set, they are rendered into the ledger Secret (never the ConfigMap). |
@@ -178,8 +179,8 @@
 | `crm.ingress.className` | string | `""` | Ingress class name |
 | `crm.ingress.annotations` | object | `{}` | Additional ingress annotations |
 | `crm.ingress.tls` | list | `[]` | TLS configuration for ingress |
-| `crm.resources.limits` | string | See `values.yaml` | CPU and memory limits for pods |
-| `crm.resources.requests` | string | See `values.yaml` | Minimum CPU and memory requests |
+| `crm.resources.limits` | object | See `values.yaml` | CPU and memory limits for pods |
+| `crm.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests |
 | `crm.autoscaling.enabled` | bool | `true` | Enable or disable horizontal pod autoscaling |
 | `crm.autoscaling.minReplicas` | int | `1` | Minimum number of replicas |
 | `crm.autoscaling.maxReplicas` | int | `3` | Maximum number of replicas |
@@ -253,11 +254,12 @@
 | `tracer.affinity` | object | `{}` | Affinity rules for pod scheduling |
 | `tracer.datastores` | object | `templates/tracer/configmap.yaml` | Dedicated datastore mask (override global.datastores). Sub-key: postgres (host/port/user/ssl). |
 | `tracer.configmap` | object | `{}` | Escape hatch: any native env var overrides the template default. |
+| `tracer.licenseFile.existingSecret` | string | `""` | Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license; `tracer.secrets.LICENSE_KEY` is then not required. Needs an image on lib-license-go v5. |
 | `tracer.extraEnvVars` | object | `{}` | Extra environment variables |
 | `tracer.secrets` | object | `templates/tracer/secrets.yaml` | Secrets for storing sensitive data |
 | `tracer.secrets.DB_PASSWORD` | string | `""` | PostgreSQL password. Single-sourced from the Bitnami postgresql subchart Secret (key `password`) when internal; only set for an EXTERNAL PostgreSQL (subchart disabled / .external=true) without an existingSecret override. |
 | `tracer.secrets.API_KEY` | string | `""` | API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true). |
-| `tracer.secrets.LICENSE_KEY` | string | `""` | Product license key. Required: the tracer refuses to boot when empty. |
+| `tracer.secrets.LICENSE_KEY` | string | `""` | Product license key. Required unless `tracer.licenseFile.existingSecret` is set. |
 | `tracer.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set. |
 | `otel-collector-lerian` | object | `{}` | OTEL exporter configuration for midaz services. When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES are injected into the `ledger`, `crm` and `tracer` deployments. Port is fixed at 4317. If you need a different collector endpoint, leave enabled=false and configure OTEL env vars directly in the application configmap (ledger.configmap / crm.configmap). |
 | `otel-collector-lerian.enabled` | bool | `true` | Inject OTEL env vars into the midaz ledger, crm and tracer deployments |

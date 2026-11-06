@@ -171,7 +171,7 @@ system-facts:
     # -- Additional ingress annotations
     annotations: {}
     hosts:
-      - host: "system-facts.lerian.net"
+      - host: "system-facts.example.com"
         paths:
           - path: /
             pathType: Prefix
@@ -310,6 +310,10 @@ system-facts:
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
+  licenseFile:
+    # -- Secret holding a signed licence file under the key `license`, mounted as a directory at
+    # /etc/lerian/license. LICENSE_KEY is then optional. File mode needs an image on lib-license-go v5.
+    existingSecret: ""
   # -- Extra environment variables
   extraEnvVars: []
   serviceAccount:
@@ -600,10 +604,17 @@ worker:
   # Application that targets it all of its roles, so nothing extra is granted per app today.
   # STREAMING_SASL_PASSWORD required with a SASL mechanism. STREAMING_TLS_CA_CERT is
   # base64 PEM; empty means the system pool.
+  # LICENSE_KEY: the worker's licence key, the same product key as the service
+  # (optional when licenseFile.existingSecret is set).
   secrets:
     SYSTEM_FACTS_CLIENT_ID: ""
     SYSTEM_FACTS_CLIENT_SECRET: ""
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
+    LICENSE_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
+  licenseFile:
+    # -- Secret holding a signed licence file under the key `license`, mounted as a directory at
+    # /etc/lerian/license. LICENSE_KEY is then optional. File mode needs an image on lib-license-go v5.
+    existingSecret: ""

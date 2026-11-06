@@ -919,6 +919,16 @@
         "existingSecretName": {
           "default": ""
         },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": "",
+              "description": "Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license. Needs an image on lib-license-go v5."
+            }
+          }
+        },
         "extraEnvVars": {
           "type": "object",
           "additionalProperties": true,
@@ -2302,6 +2312,16 @@
         },
         "existingSecretName": {
           "default": ""
+        },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": "",
+              "description": "Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license. Needs an image on lib-license-go v5."
+            }
+          }
         },
         "health": {
           "type": "object",

@@ -26,52 +26,6 @@ The default timeout values for CRM readiness and liveness probes have been incre
 
 With a 1-second timeout, Kubernetes would mark the probe as failed even when the CRM service was healthy but simply took slightly longer to respond. This could lead to unnecessary pod restarts (liveness probe) or premature removal from service endpoints (readiness probe), causing service disruptions.
 
-**Before (v10.1.0):**
-
-```yaml
-readinessProbe:
-  httpGet:
-    path: {{ .Values.crm.readinessProbe.path | default "/readyz" }}
-    port: {{ .Values.crm.service.port }}
-  initialDelaySeconds: {{ .Values.crm.readinessProbe.initialDelaySeconds | default 10 }}
-  periodSeconds: {{ .Values.crm.readinessProbe.periodSeconds | default 5 }}
-  timeoutSeconds: {{ .Values.crm.readinessProbe.timeoutSeconds | default 1 }}
-  successThreshold: {{ .Values.crm.readinessProbe.successThreshold | default 1 }}
-  failureThreshold: {{ .Values.crm.readinessProbe.failureThreshold | default 3 }}
-livenessProbe:
-  httpGet:
-    path: {{ .Values.crm.livenessProbe.path | default "/health" }}
-    port: {{ .Values.crm.service.port }}
-  initialDelaySeconds: {{ .Values.crm.livenessProbe.initialDelaySeconds | default 10 }}
-  periodSeconds: {{ .Values.crm.livenessProbe.periodSeconds | default 5 }}
-  timeoutSeconds: {{ .Values.crm.livenessProbe.timeoutSeconds | default 1 }}
-  successThreshold: {{ .Values.crm.livenessProbe.successThreshold | default 1 }}
-  failureThreshold: {{ .Values.crm.livenessProbe.failureThreshold | default 3 }}
-```
-
-**After (v10.1.1):**
-
-```yaml
-readinessProbe:
-  httpGet:
-    path: {{ .Values.crm.readinessProbe.path | default "/readyz" }}
-    port: {{ .Values.crm.service.port }}
-  initialDelaySeconds: {{ .Values.crm.readinessProbe.initialDelaySeconds | default 10 }}
-  periodSeconds: {{ .Values.crm.readinessProbe.periodSeconds | default 5 }}
-  timeoutSeconds: {{ .Values.crm.readinessProbe.timeoutSeconds | default 3 }}
-  successThreshold: {{ .Values.crm.readinessProbe.successThreshold | default 1 }}
-  failureThreshold: {{ .Values.crm.readinessProbe.failureThreshold | default 3 }}
-livenessProbe:
-  httpGet:
-    path: {{ .Values.crm.livenessProbe.path | default "/health" }}
-    port: {{ .Values.crm.service.port }}
-  initialDelaySeconds: {{ .Values.crm.livenessProbe.initialDelaySeconds | default 10 }}
-  periodSeconds: {{ .Values.crm.livenessProbe.periodSeconds | default 5 }}
-  timeoutSeconds: {{ .Values.crm.livenessProbe.timeoutSeconds | default 3 }}
-  successThreshold: {{ .Values.crm.livenessProbe.successThreshold | default 1 }}
-  failureThreshold: {{ .Values.crm.livenessProbe.failureThreshold | default 3 }}
-```
-
 > **Note:** This change only affects the **default** timeout value. If you have explicitly set `crm.readinessProbe.timeoutSeconds` or `crm.livenessProbe.timeoutSeconds` in your values overrides, your custom values will continue to be used.
 
 ### 2. Ledger probe timeout adjustments
@@ -90,52 +44,6 @@ The ledger service has more complex health check requirements than other compone
   - Database connectivity checks to multiple datastores (MongoDB for CRM/Fees, PostgreSQL for ledger data)
   - Message broker connectivity verification
   - Dependency health validation
-
-**Before (v10.1.0):**
-
-```yaml
-livenessProbe:
-  httpGet:
-    path: {{ .Values.ledger.livenessProbe.path | default "/health" }}
-    port: http
-  initialDelaySeconds: {{ .Values.ledger.livenessProbe.initialDelaySeconds | default 0 }}
-  periodSeconds: {{ .Values.ledger.livenessProbe.periodSeconds | default 10 }}
-  timeoutSeconds: {{ .Values.ledger.livenessProbe.timeoutSeconds | default 1 }}
-  successThreshold: {{ .Values.ledger.livenessProbe.successThreshold | default 1 }}
-  failureThreshold: {{ .Values.ledger.livenessProbe.failureThreshold | default 3 }}
-readinessProbe:
-  httpGet:
-    path: {{ .Values.ledger.readinessProbe.path | default "/readyz" }}
-    port: http
-  initialDelaySeconds: {{ .Values.ledger.readinessProbe.initialDelaySeconds | default 0 }}
-  periodSeconds: {{ .Values.ledger.readinessProbe.periodSeconds | default 10 }}
-  timeoutSeconds: {{ .Values.ledger.readinessProbe.timeoutSeconds | default 1 }}
-  successThreshold: {{ .Values.ledger.readinessProbe.successThreshold | default 1 }}
-  failureThreshold: {{ .Values.ledger.readinessProbe.failureThreshold | default 3 }}
-```
-
-**After (v10.1.1):**
-
-```yaml
-livenessProbe:
-  httpGet:
-    path: {{ .Values.ledger.livenessProbe.path | default "/health" }}
-    port: http
-  initialDelaySeconds: {{ .Values.ledger.livenessProbe.initialDelaySeconds | default 0 }}
-  periodSeconds: {{ .Values.ledger.livenessProbe.periodSeconds | default 10 }}
-  timeoutSeconds: {{ .Values.ledger.livenessProbe.timeoutSeconds | default 3 }}
-  successThreshold: {{ .Values.ledger.livenessProbe.successThreshold | default 1 }}
-  failureThreshold: {{ .Values.ledger.livenessProbe.failureThreshold | default 3 }}
-readinessProbe:
-  httpGet:
-    path: {{ .Values.ledger.readinessProbe.path | default "/readyz" }}
-    port: http
-  initialDelaySeconds: {{ .Values.ledger.readinessProbe.initialDelaySeconds | default 0 }}
-  periodSeconds: {{ .Values.ledger.readinessProbe.periodSeconds | default 10 }}
-  timeoutSeconds: {{ .Values.ledger.readinessProbe.timeoutSeconds | default 16 }}
-  successThreshold: {{ .Values.ledger.readinessProbe.successThreshold | default 1 }}
-  failureThreshold: {{ .Values.ledger.readinessProbe.failureThreshold | default 3 }}
-```
 
 > **Note:** The 16-second readiness probe timeout is intentionally much higher than the liveness probe timeout. Readiness probes determine when a pod can receive traffic, so a longer timeout prevents premature removal from service endpoints. Liveness probes determine when to restart a pod, so a shorter timeout allows faster recovery from true failures.
 
@@ -158,7 +66,7 @@ readinessProbe:
 
 No action is required. The new probe timeout defaults will be applied automatically during the upgrade.
 
-The upgrade will trigger rolling restarts of CRM and ledger pods due to the Deployment template changes. This is expected behavior and the restarts will follow the standard Kubernetes rolling update strategy:
+The upgrade will trigger rolling restarts of the Midaz pods: the CRM and ledger probe settings change, and the chart version is part of the `helm.sh/chart` label in every pod template. This is expected behavior and the restarts will follow the standard Kubernetes rolling update strategy:
 - New pods will wait for readiness probes to pass before receiving traffic
 - Old pods will continue serving traffic until new pods are ready
 

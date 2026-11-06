@@ -3,6 +3,7 @@
 {{- $w := .Values.worker }}
 {{- $img := $w.image | default dict }}
 {{- $port := $w.port | default 8080 }}
+{{- $licenseSecret := include "system-facts.licenseFileSecret" $w }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,7 +36,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "system-facts.worker.labels" . | nindent 8 }}
+        {{- include "system-facts.worker.podLabels" . | nindent 8 }}
     spec:
       {{- with $w.imagePullSecrets }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
@@ -61,6 +62,10 @@ spec:
                 name: {{ include "system-facts.worker.secretName" . }}
             - configMapRef:
                 name: {{ include "system-facts.worker.fullname" . }}
+          {{- if $licenseSecret }}
+          env:
+            {{- include "system-facts.licenseFileEnv" . | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ $port }}
@@ -75,8 +80,15 @@ spec:
                 "port" $port
                 "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
               ) | nindent 10 }}
+          {{- if $licenseSecret }}
+          {{- include "system-facts.licenseFileVolumeMount" . | nindent 10 }}
+          {{- end }}
           resources:
             {{- toYaml $w.resources | nindent 12 }}
+      {{- if $licenseSecret }}
+      volumes:
+        {{- include "system-facts.licenseFileVolume" $licenseSecret | nindent 8 }}
+      {{- end }}
       {{- if or $w.nodeSelector $w.affinity $w.tolerations }}
       {{- include "lerian-common.scheduling" $w | nindent 6 }}
       {{- end }}

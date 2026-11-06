@@ -1,3 +1,5 @@
+{{- $licensed := or (.Values.caradhras.secrets | default dict).LICENSE_KEY .Values.caradhras.useExistingSecret }}
+{{- $licenseFile := include "plugin-caradhras.licenseFileSecret" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,9 +27,10 @@ spec:
         checksum/auth-secret: {{ include (print $.Template.BasePath "/auth/secrets.yaml") . | sha256sum }}
         checksum/auth-database-secret: {{ include (print $.Template.BasePath "/auth-database/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/caradhras/configmap.yaml") . | sha256sum }}
+        checksum/app-client-secret: {{ .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET | toString | sha256sum }}
         checksum/auth-config: {{ include (print $.Template.BasePath "/auth/configmap.yaml") . | sha256sum }}
       labels:
-        {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 8 }}
+        {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name "pod" true) | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: 55
       {{- with .Values.auth.imagePullSecrets }}
@@ -93,6 +96,10 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_SSLMODE
+            {{- /* The migrator is licence-gated and, on a fresh install, the first process to
+                 fetch the licence file: it needs the key (or file) and, behind a proxy,
+                 caradhras.migrations.extraEnvVars (HTTPS_PROXY). */}}
+            {{- with (include "plugin-caradhras.licenseEnv" (dict "context" $ "licensed" $licensed) | trim) }}{{ . | nindent 12 }}{{ end }}
             {{- with .Values.caradhras.migrations }}
             {{- if .skipRBACChain }}
             # Schema chain only; RBAC arrives via RI manifests. Needs an image that reads it.
@@ -107,6 +114,10 @@ spec:
               value: {{ $value | toString | quote }}
             {{- end }}
             {{- end }}
+          {{- with (include "plugin-caradhras.licenseFileMount" $ | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
       containers:
         - name: {{ include "plugin-caradhras.fullname" . }}
           # Caradhras (beego) writes to its working dir at runtime — logs/caradhras.log and
@@ -126,7 +137,8 @@ spec:
             - /bin/sh
             - -c
             - |
-              export dataSourceName="user=${DB_USER} password=${DB_PASSWORD} host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} connect_timeout=5 dbname=${DB_NAME}"
+              DB_PASSWORD_DSN=$(printf '%s' "$DB_PASSWORD" | sed -e 's/[\\'"'"']/\\&/g')
+              export dataSourceName="user=${DB_USER} password='${DB_PASSWORD_DSN}' host=${DB_HOST} port=${DB_PORT} sslmode=${DB_SSLMODE} connect_timeout=5 dbname=${DB_NAME}"
               exec /server --createDatabase={{- if hasKey .Values.caradhras "createDatabase" }}{{ .Values.caradhras.createDatabase }}{{- else }}false{{- end }}
           envFrom:
           - configMapRef:
@@ -173,20 +185,23 @@ spec:
                 name: {{ include "plugin-caradhras.secretName" . }}
                 key: redisEndpoint
           {{- end }}
-          {{- if or (.Values.caradhras.secrets | default dict).LICENSE_KEY .Values.caradhras.useExistingSecret }}
-          # Caradhras refuses to boot without its own license key (product
-          # `caradhras`, not the auth/identity key). optional: a Secret lacking
-          # the key renders no env, so older images keep booting on upgrade.
-          - name: LICENSE_KEY
-            valueFrom:
-              secretKeyRef:
-                name: {{ include "plugin-caradhras.secretName" . }}
-                key: LICENSE_KEY
-                optional: true
+          {{- $tag := regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "" }}
+          {{- if not (or $licensed $licenseFile (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (semverCompare "<2.0.0-0" $tag))) }}
+          {{- fail "\n\nERROR: Caradhras refuses to boot without its own license key.\n   Set caradhras.secrets.LICENSE_KEY, set caradhras.useExistingSecret=true with caradhras.existingSecretName naming a Secret that holds LICENSE_KEY, or mount a signed licence file with caradhras.licenseFile.existingSecret.\n   The key is issued for the product `caradhras`; the auth and identity key does not license it.\n" }}
           {{- end }}
+          {{- $semver := "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" }}
+          {{- $migTag := regexReplaceAll "@.*$" (include "caradhras.migrationsImageTag" .) "" }}
+          {{- if and (regexMatch $semver $tag) (regexMatch $semver $migTag) (ne (regexFind "[0-9]+" $tag) (regexFind "[0-9]+" $migTag)) }}
+          {{- fail (printf "\n\nERROR: the Caradhras server tag %q and the migrations tag %q are on different major versions.\n   A server refuses a schema that is behind or ahead of its own release.\n   Set caradhras.image.tag and caradhras.migrations.image.tag to the same release (the legacy auth.backend.migrations.image.tag counts as the migrations tag).\n" $tag $migTag) }}
+          {{- end }}
+          # Caradhras 2.x refuses to boot without its own license key (product
+          # `caradhras`, not the auth/identity key). optional: a pre-2.0 image
+          # with an existing Secret lacking the key keeps booting.
+          {{- with (include "plugin-caradhras.licenseEnv" (dict "context" $ "licensed" $licensed) | trim) }}{{ . | nindent 10 }}{{ end }}
           {{- if include "plugin-caradhras.redisPasswordEnabled" . }}
           {{- include "plugin-caradhras.redisPasswordEnv" . | nindent 10 }}
           {{- end }}
+          {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "appLerianClientSecret") | nindent 10 }}
           {{- if include "plugin-caradhras.builtInAdminPasswordEnabled" . }}
           {{- include "plugin-caradhras.builtInAdminPasswordEnv" . | nindent 10 }}
           {{- end }}
@@ -201,6 +216,10 @@ spec:
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
           {{ end }}
+          {{- with (include "plugin-caradhras.licenseFileMount" $ | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.caradhras.resources | nindent 12 }}
           # Serve 15s before SIGTERM while endpoints deregister; grace = 15 + SHUTDOWN_DRAIN_DELAY (5) + SHUTDOWN_TIMEOUT_SEC (30) + 5.
@@ -226,6 +245,10 @@ spec:
             timeoutSeconds: {{ include "caradhras.livenessProbeTimeoutSeconds" . }}
             successThreshold: {{ .Values.caradhras.livenessProbe.successThreshold | default 1 }}
             failureThreshold: {{ .Values.caradhras.livenessProbe.failureThreshold | default 3 }}
+      {{- with (include "plugin-caradhras.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- /* nodeSelector / affinity / tolerations stay on auth.* (unchanged: caradhras has
              always been placed with auth); spreading is caradhras' own
              (global.scheduling.spread preset, caradhras.spread, caradhras.topologySpreadConstraints).

@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `app.secrets.LICENSE_KEY` in every environment; `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render; `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`); and `PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` in single-tenant while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
+- Required secrets: `app.secrets.LICENSE_KEY` in every environment (unless `app.licenseFile.existingSecret` mounts a signed licence file); `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `INTERNAL_API_KEY`, `CREDENTIAL_ENCRYPTION_KEY` and `BTG_WEBHOOK_HMAC_SECRET` (at least 32 characters) for the default production worker-enabled render; `CONSULT_AUDIT_HMAC_KEY` wherever the API is served (`SERVICE_TYPE` `both`, the default, or `api`); and `PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` in single-tenant while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). The `PROVIDER_CLIENT_*` pair is required in **single-tenant only**; in multi-tenant it is resolved per tenant and must be left empty. With the bundled PostgreSQL subchart the database password is auto-generated and read via `secretKeyRef` — only supply `POSTGRES_PASSWORD` for an external Postgres without `postgresql.auth.existingSecret`.
 - Dependency notes: Uses a local PostgreSQL dependency chart unless external PostgreSQL is configured.
 - Production overrides: Provide provider and database credentials through chart secrets or an existing Secret where supported; override BTG/Midaz URLs, image tags, ingress, resources, and persistence.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
@@ -60,7 +60,8 @@ The chart **fails fast** on `helm install` if any of the following are missing:
 | `app.configmap.BTG_AUTH_URL` | BTG OAuth2 token URL. |
 | `app.configmap.MIDAZ_LEDGER_URL` | Midaz Ledger service URL: one URL serves onboarding and transaction. Must be `https://` under `ENV_NAME=production` (the default). The former `MIDAZ_ONBOARDING_URL` / `MIDAZ_TRANSACTION_URL` pair is refused at render with the rename named. |
 | `app.configmap.ORGANIZATION_IDS` | `"global"` or the comma-separated organization UUIDs the license covers. The app validates its license at startup in every environment. |
-| `app.secrets.LICENSE_KEY` | License key. Required in every environment. |
+| `app.secrets.LICENSE_KEY` | License key. Required in every environment unless `app.licenseFile.existingSecret` is set. The control-plane migrations Job receives it too. |
+| `app.licenseFile.existingSecret` | Optional Secret holding a signed licence file under the key `license`, mounted read-only as the directory `/etc/lerian/license` on the app and the control-plane migrations Job; sets `LICENSE_FILE_PATH`. Replaces `LICENSE_KEY`. The Secret must exist before the sync: the PreSync migrations Job mounts it. File mode needs an image on lib-license-go v5. |
 | `app.secrets.PLUGIN_AUTH_CLIENT_ID` / `PLUGIN_AUTH_CLIENT_SECRET` | Access Manager client credentials of the Midaz client. Single-tenant, while `MIDAZ_AUTH_ENABLED` is `"true"` (the default). |
 | `app.secrets.PROVIDER_CLIENT_ID` | Provider OAuth2 client ID. **Single-tenant only** — in multi-tenant it is resolved per tenant and must be left empty. Named for the role rather than the vendor; renamed from `BTG_CLIENT_ID`. |
 | `app.secrets.PROVIDER_CLIENT_SECRET` | Provider OAuth2 client secret. Same conditionality as above; renamed from `BTG_CLIENT_SECRET`. |
@@ -272,6 +273,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_COMMON_BASE_URL` | `""` |
 | `BTG_TOKEN_REFRESH_INTERVAL` | `"4m"` |
 | `BTG_HTTP_TIMEOUT` | unset (app default) |
+| `REQUEST_TIMEOUT_SEC` | unset (app default; app 1.2.0 and later; must be at least four `BTG_HTTP_TIMEOUT`s) |
 | `BTG_CREDENTIAL_SYNC_INTERVAL` | unset (app default) |
 | `PROVIDER_CREDENTIAL_CLAIM_LEASE` | unset (app default) |
 | `BTG_MTLS_OUTBOUND_ENABLED` | unset (app default) |

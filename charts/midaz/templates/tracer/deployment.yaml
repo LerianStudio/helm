@@ -30,7 +30,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 8 }}
+        {{- include "midaz-tracer.podLabels" (dict "context" . "name" .Values.tracer.name ) | nindent 8 }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/tracer/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/tracer/configmap.yaml") . | sha256sum }}
@@ -80,6 +80,9 @@ spec:
               name: {{ include "midaz-tracer.fullname" . }}
           env:
             {{- toYaml $h.env | nindent 12 }}
+            {{- with include "midaz.licenseFileEnv" .Values.tracer }}
+            {{- . | nindent 12 }}
+            {{- end }}
             {{/* existingSecretName presence is enforced by midaz-tracer.validate; ternary
                  cannot carry `required` because Go templates evaluate both arms. */}}
             {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
@@ -111,6 +114,10 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.tracer.resources | nindent 12 }}
+          {{- with include "midaz.licenseFileVolumeMount" .Values.tracer }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
           {{- with $h.startupProbe }}
           startupProbe:
             {{- toYaml . | nindent 12 }}
@@ -119,6 +126,10 @@ spec:
             {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml $h.readinessProbe | nindent 12 }}
+      {{- with include "midaz.licenseFileVolume" .Values.tracer }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, tracer.spread, tracer.topologySpreadConstraints).
              selectorLabels MUST equal spec.selector.matchLabels above. */}}

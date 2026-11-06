@@ -39,6 +39,14 @@ Common labels
 */}}
 {{- define "system-facts.labels" -}}
 helm.sh/chart: {{ include "system-facts.chart" .context }}
+{{ include "system-facts.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart every pod each time.
+*/}}
+{{- define "system-facts.podLabels" -}}
 {{ include "system-facts.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "system-facts.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
@@ -152,3 +160,33 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+system-facts.licenseFileSecret — a component's licenseFile.existingSecret, "" when unset.
+Takes the component values dict. Mounted as a directory (never subPath, so rotations
+propagate) at /etc/lerian/license; LICENSE_FILE_PATH points at its `license` key.
+*/}}
+{{- define "system-facts.licenseFileSecret" -}}
+{{- ((. | default dict).licenseFile | default dict).existingSecret | default "" -}}
+{{- end }}
+
+{{- define "system-facts.licenseFileEnv" -}}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+
+{{- define "system-facts.licenseFileVolumeMount" -}}
+volumeMounts:
+  - name: license-file
+    mountPath: /etc/lerian/license
+    readOnly: true
+{{- end }}
+
+{{- define "system-facts.licenseFileVolume" -}}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}

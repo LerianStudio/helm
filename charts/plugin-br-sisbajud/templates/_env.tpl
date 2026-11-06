@@ -4,7 +4,7 @@ plugin-br-sisbajud.configmapData — every env key the chart models, as
 ConfigMap `data` lines. Contract source: LerianStudio/plugin-br-sisbajud
 internal/bootstrap/config*.go (env tags + validations), restricted to what the
 process reads in EXECUTOR mode: MENSAGERIA_BASE_URL set, or EXECUTOR_ENABLED=true
-without it (DIRECT-only, DR-07: no transport / Hub webhook / SQS keys). Dependency
+without it (DIRECT-only: no transport / Hub webhook / SQS keys). Dependency
 connections go through the lerian-common masks/env helpers; the rest through
 lerian-common.cfgValue (plugin-br-sisbajud.kv). No credential is emitted here.
 ==============================================================================
@@ -50,6 +50,9 @@ SERVER_ADDRESS: {{ (hasKey $cm "SERVER_ADDRESS" | ternary (index $cm "SERVER_ADD
 {{- end }}
 # --- License (LICENSE_KEY lives in the Secret) ---------------------------------
 {{- include $kv (dict "cm" $cm "p" $s.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "d" "global") }}
+{{- if include "plugin-br-sisbajud.licenseSecret" $ }}
+LICENSE_FILE_PATH: "/etc/lerian/license/license"
+{{- end }}
 # --- Executor: Sisbajud Mensageria (TLS; mTLS behind MENSAGERIA_MTLS_ENABLED) ------
 {{- include $kv (dict "cm" $cm "p" $s.mensageria "f" "baseUrl" "k" "MENSAGERIA_BASE_URL" "d" "") }}
 {{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml }}

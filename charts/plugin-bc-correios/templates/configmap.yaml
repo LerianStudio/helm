@@ -61,6 +61,9 @@ data:
   BC_CORREIO_RATE_LIMIT_PER_HOUR: {{ $component.configmap.BC_CORREIO_RATE_LIMIT_PER_HOUR | default "2700" | quote }}
   BC_CORREIO_TLS_MIN_VERSION: {{ $component.configmap.BC_CORREIO_TLS_MIN_VERSION | default "TLSv1.2" | quote }}
 
+  # Distributed HTTP rate limiting (the limiter is off unless RATE_LIMIT_ENABLED is true)
+  RATE_LIMIT_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.RATE_LIMIT_ENABLED | quote }}
+
   # Plugin Auth
   PLUGIN_AUTH_ENABLED: {{ include "bc-correios.flagDefaultTrue" $component.configmap.PLUGIN_AUTH_ENABLED | quote }}
   {{- $authHost := $component.configmap.PLUGIN_AUTH_HOST | default $component.configmap.PLUGIN_AUTH_ADDRESS | default "http://plugin-access-manager-auth.midaz-plugins.svc.cluster.local:4000" }}

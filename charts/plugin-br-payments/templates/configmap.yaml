@@ -181,6 +181,9 @@ data:
   {{- if hasKey $cm "BTG_HTTP_TIMEOUT" }}
   BTG_HTTP_TIMEOUT: {{ index $cm "BTG_HTTP_TIMEOUT" | quote }}
   {{- end }}
+  {{- if hasKey $cm "REQUEST_TIMEOUT_SEC" }}
+  REQUEST_TIMEOUT_SEC: {{ index $cm "REQUEST_TIMEOUT_SEC" | quote }}
+  {{- end }}
   {{- if hasKey $cm "BTG_CREDENTIAL_SYNC_INTERVAL" }}
   BTG_CREDENTIAL_SYNC_INTERVAL: {{ index $cm "BTG_CREDENTIAL_SYNC_INTERVAL" | quote }}
   {{- end }}
@@ -246,6 +249,9 @@ data:
   {{- end }}
   {{- if hasKey $cm "ORGANIZATION_IDS" }}
   ORGANIZATION_IDS: {{ index $cm "ORGANIZATION_IDS" | quote }}
+  {{- end }}
+  {{- if include "plugin-br-payments.licenseSecret" . }}
+  LICENSE_FILE_PATH: "/etc/lerian/license/license"
   {{- end }}
   {{- if hasKey $cm "ACCOUNT_VALIDATION_DISABLED" }}
   ACCOUNT_VALIDATION_DISABLED: {{ index $cm "ACCOUNT_VALIDATION_DISABLED" | quote }}

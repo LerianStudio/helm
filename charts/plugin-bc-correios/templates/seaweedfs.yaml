@@ -34,7 +34,9 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "bc-correios.labels" (dict "context" . "component" "seaweedfs" "name" "seaweedfs") | nindent 8 }}
+        {{- include "bc-correios.selectorLabels" (dict "context" . "component" "seaweedfs" "name" "seaweedfs") | nindent 8 }}
+        app.kubernetes.io/version: {{ include "bc-correios.versionLabelValue" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
     spec:
       securityContext:
         runAsUser: 1000

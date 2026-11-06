@@ -486,6 +486,10 @@ ledger:
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with a signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license; secrets.LICENSE_KEY is then not required. Needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -520,7 +524,7 @@ ledger:
     # encryption). The RoleID counterpart is not secret and stays in the
     # ConfigMap.
     KMS_VAULT_SECRET_ID: ""
-    # -- Product license key. Required: the ledger refuses to boot when empty.
+    # -- Product license key. Required unless licenseFile.existingSecret is set.
     LICENSE_KEY: ""
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
@@ -958,7 +962,7 @@ tracer:
     DB_PASSWORD: ""
     # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
     API_KEY: ""
-    # -- Product license key. Required: the tracer refuses to boot when empty.
+    # -- Product license key. Required unless licenseFile.existingSecret is set.
     LICENSE_KEY: ""
     # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
     # MULTI_TENANT_SERVICE_API_KEY: ""
@@ -979,6 +983,10 @@ tracer:
     STREAMING_TLS_CA_CERT: ""
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with a signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license; secrets.LICENSE_KEY is then not required. Needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
 valkey:
   # Valkey holds ledger state no other store has: balances not yet synced to PostgreSQL, idempotency keys,
   # engine receipts and open fee debts. It is a datastore, not a cache: nothing in it may be evicted.
@@ -1023,8 +1031,6 @@ valkey:
 postgresql:
   # PostgreSQL is the backbone of Midaz for managing structured data that demands transactional reliability and consistency.
   # This component is responsible for providing a robust relational database
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-postgresql
   enabled: true
   global:
     security:

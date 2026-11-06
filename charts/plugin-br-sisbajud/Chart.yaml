@@ -13,13 +13,12 @@ home: https://github.com/LerianStudio/helm
 
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-br-sisbajud
-  - https://github.com/LerianStudio/plugin-br-sisbajud
 
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 1.3.0
+version: 1.4.0
 
 # Default image tag for the service AND the migrations Job (override with
 # sisbajud.image.tag / migrations.image.tag).

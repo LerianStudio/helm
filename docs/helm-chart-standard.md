@@ -392,6 +392,7 @@ The render gate runs `helm dependency build` + `helm template` per chart and ass
 - **Release-name collapse**: for each bundled Bitnami dependency, the chart is re-rendered with the release name set to that dependency's name (or alias). This reproduces the collapse where `common.names.dependency.fullname` shortens `<release>-<subchart>` to `<subchart>`; any helper that hardcoded `<release>-<subchart>` instead surfaces here as a dangling reference. This is why infra Secret names must be derived through the helper (see "Single-Source Infra Secrets").
 - **ServiceAccount namespace**: a workload and the ServiceAccount it names must render into the same namespace.
 - **Collapse hosts**: in the collapse renders, an in-cluster Service host that starts with the release name (ConfigMap data or a literal container `env` value) must name a Service rendered in the same release.
+- **Health port**: no Service or Ingress backend reaches port 8099 or a port named `health` except a ClusterIP Service port named `health`, and no Ingress path has a `readyz` or `metrics` segment.
 
 Library charts are not installable, so the render gate skips them.
 

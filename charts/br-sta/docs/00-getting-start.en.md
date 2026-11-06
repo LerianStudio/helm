@@ -69,8 +69,8 @@ helm install br-sta charts/br-sta -n sta-dev -f charts/br-sta/values-dev.yaml \
   --set-json 'common.secretRefs={"LICENSE_KEY":{"name":"br-sta-license","key":"LICENSE_KEY"}}'
 ```
 
-`values-dev.yaml` only carries placeholder license values: the manager and the worker
-do not boot until a real key and organization id are set.
+`values-dev.yaml` only carries a placeholder license key: the manager and the worker
+do not boot until a real `LICENSE_KEY` is set.
 
 The app images are public, so no pull secret is needed. For a private mirror, set
 `imagePullSecrets` (root key): the manager, worker, migrations Job and mock STA server

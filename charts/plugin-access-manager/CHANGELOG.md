@@ -1,5 +1,14 @@
 # Plugin-access-manager Changelog
 
+## [11.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.0)
+
+Features:
+- Add license file mount to auth and identity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.1.2...plugin-access-manager-v11.2.0)
+
+---
+
 ## [11.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.1.2)
 
 Fixes:

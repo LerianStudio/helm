@@ -663,8 +663,8 @@ one already in the cluster, else a generated one (fresh installs only: an upgrad
 {{- /* Floor: must be the first Caradhras tag containing the seed change (caradhras PR #619, not yet tagged). */ -}}
 {{- $floor := ">=2.4.0-beta.4" -}}
 {{- $tag := regexReplaceAll "@.*$" (include "caradhras.imageTag" .) "" -}}
-{{- if and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (not (semverCompare $floor $tag)) -}}
-{{- fail (printf "\n\nERROR: no app-lerian client secret is set and the Caradhras image tag %q cannot seed a generated one.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET, use auth.useExistingSecret, or use Caradhras %s.\n" $tag $floor) -}}
+{{- if not (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (semverCompare $floor $tag)) -}}
+{{- fail (printf "\n\nERROR: no app-lerian client secret is set and the Caradhras image tag %q cannot seed a generated one.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET, use auth.useExistingSecret, or pin a semver Caradhras tag %s (a bare digest or latest cannot be checked).\n" $tag $floor) -}}
 {{- end -}}
 {{- randAlphaNum 40 -}}
 {{- end -}}

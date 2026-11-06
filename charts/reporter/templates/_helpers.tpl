@@ -318,6 +318,42 @@ secret-manager inputs must not be blocked at render time.
 {{- end }}
 
 {{/*
+reporter.licenseFileSecret: the component's licence-file Secret name ("" when unset).
+Input: the component values. Trailing default required: include yields "<no value>" for a
+missing key; --reuse-values over an old release has no licenseFile.
+*/}}
+{{- define "reporter.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{- define "reporter.licenseFileEnv" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end }}
+
+{{- define "reporter.licenseFileMount" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "reporter.licenseFileVolume" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ include "reporter.licenseFileSecret" . | quote }}
+    defaultMode: 0444
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end }}
+
+{{/*
 reporter.licenseKeyRequired — refuse to render a reporter >= 4.6.0 without a license.
 
 Reporter 4.6.0 requires LICENSE_KEY in every run mode: the manager AND the worker refuse
@@ -329,8 +365,9 @@ Like reporter.datasourceCredEncKeyRequired, presence is enforced only when the
 COMPONENT'S OWN resolved image tag parses as semver and is >= 4.6.0-0, so a release that
 still runs 4.5.x keeps rendering, and a floating tag ("latest", a digest) is left alone.
 An argocd-vault-plugin reference (`<path:...>`) counts as set: it is resolved after the
-render, and the plugin fails closed when it cannot resolve it. Called only when the
-component does not use an existing Secret, whose contents the chart cannot see.
+render, and the plugin fails closed when it cannot resolve it. A component with licenseFile.existingSecret
+is exempt. Called only when the component does not use an existing Secret, whose contents
+the chart cannot see.
 
 Input (dict): context (root .), component ("manager"|"worker"), tag (resolved image tag).
 */}}
@@ -340,8 +377,8 @@ Input (dict): context (root .), component ("manager"|"worker"), tag (resolved im
 {{- /* Only tags Masterminds semver can parse reach semverCompare: prerelease and build
    metadata are [0-9A-Za-z-] dot-separated. Anything else (4.5.1-custom_1, latest, a digest)
    skips the gate, as a floating tag does. */ -}}
-{{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag) (semverCompare ">=4.6.0-0" $tag) -}}
-{{- fail (printf "\n\nERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (%s.image.tag is %q).\n   The manager AND the worker refuse to boot without a license.\n   Set secrets.LICENSE_KEY,\n   or set %s.useExistingSecret=true and %s.existingSecretName to a Secret that carries them.\n   See charts/reporter/docs/UPGRADE-5.1.md.\n" .component .tag .component .component) -}}
+{{- if and (not $key) (not (include "reporter.licenseFileSecret" (index .context.Values .component))) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag) (semverCompare ">=4.6.0-0" $tag) -}}
+{{- fail (printf "\n\nERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (%s.image.tag is %q).\n   The manager AND the worker refuse to boot without a license.\n   Set secrets.LICENSE_KEY, or %s.licenseFile.existingSecret (needs an image on lib-license-go v5),\n   or set %s.useExistingSecret=true and %s.existingSecretName to a Secret that carries them.\n   See charts/reporter/docs/UPGRADE-5.1.md.\n" .component .tag .component .component .component) -}}
 {{- end -}}
 {{- end -}}
 

@@ -645,7 +645,7 @@ env name) by secretKeyRef on that one source.
 
 {{/*
 plugin-access-manager.appClientSecretValue — app-lerian's client secret in clear: the operator's value, else the
-one already in the cluster, else a generated one. Called only from app-client-secret.yaml.
+one already in the cluster, else a generated one (fresh installs only: an upgrade fails). Called only from app-client-secret.yaml.
 */}}
 {{- define "plugin-access-manager.appClientSecretValue" -}}
 {{- $kept := dig "data" "AUTHORIZER_CLIENT_SECRET" "" (lookup "v1" "Secret" .Release.Namespace (include "plugin-access-manager.appClientSecretName" .) | default dict) | b64dec -}}
@@ -654,6 +654,9 @@ one already in the cluster, else a generated one. Called only from app-client-se
 {{- else if $kept -}}
 {{- $kept -}}
 {{- else -}}
+{{- if .Release.IsUpgrade -}}
+{{- fail "\n\nERROR: no app-lerian client secret is set on an upgrade. An existing Caradhras database keeps the secret app-lerian already holds, so a generated one would break auth silently.\n   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret to the current value (or rotate it through the Caradhras API first, then update the Secret).\n" -}}
+{{- end -}}
 {{- include "plugin-access-manager.appClientSecretGate" . -}}
 {{- randAlphaNum 40 -}}
 {{- end -}}

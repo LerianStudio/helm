@@ -428,7 +428,8 @@ auth:
     # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
     DB_PASSWORD: ""
     # -- app-lerian client secret. Required for helm template/GitOps (no lookup: every render mints a new one).
-    # Empty: helm install/upgrade generates and keeps one, needs Caradhras >= 2.4.0-beta.4 (default 2.1.0 is below it).
+    # Empty on a FRESH helm install: generates and keeps one, needs Caradhras >= 2.4.0-beta.4 (default 2.1.0 is below it).
+    # An existing install must set its current value (or auth.useExistingSecret): the upgrade fails otherwise.
     # See README "Required secrets".
     AUTHORIZER_CLIENT_SECRET: ""
     REDIS_PASSWORD: ""

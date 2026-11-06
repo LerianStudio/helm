@@ -43,6 +43,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          # The pull request's head, not the merge ref: on an `edited` (retarget) run the merge
+          # ref can still be the merge with the OLD base (actions/checkout#919), and a pull
+          # request moved from a maintenance line to main would be scanned on the line's tree.
+          # The head is enough for both modes: main itself always passes the full scan, and the
+          # changed-files scan diffs against the merge base.
+          ref: ${{ github.event.pull_request.head.sha }}
           # The changed-files scan diffs BASE_SHA...HEAD, which needs the merge base.
           fetch-depth: 0
 

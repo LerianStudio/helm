@@ -15,6 +15,9 @@ import tempfile
 import unittest
 
 SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "liquid-guard.py")
+# The host's git config stays out: a global core.hooksPath hook can reject the seed commit and fail
+# every case before the guard runs. The guard itself only reads, so it can share this environment.
+GIT_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 SAFE = "# Upgrade\n\nPlain text.\n"
 UNSAFE = "# Upgrade\n\n    image: {{ .Values.image.tag }}\n"
 
@@ -37,7 +40,9 @@ class ChangedSince(unittest.TestCase):
         self.tmp.cleanup()
 
     def git(self, *args):
-        return subprocess.run(["git", *args], cwd=self.repo, check=True, capture_output=True, text=True).stdout
+        return subprocess.run(
+            ["git", *args], cwd=self.repo, env=GIT_ENV, check=True, capture_output=True, text=True
+        ).stdout
 
     def write(self, path, content):
         full = os.path.join(self.repo, path)
@@ -50,7 +55,9 @@ class ChangedSince(unittest.TestCase):
         self.git("commit", "-q", "--allow-empty", "-m", message)
 
     def guard(self, *args):
-        return subprocess.run([sys.executable, SCRIPT, *args], cwd=self.repo, capture_output=True, text=True)
+        return subprocess.run(
+            [sys.executable, SCRIPT, *args], cwd=self.repo, env=GIT_ENV, capture_output=True, text=True
+        )
 
     def test_full_scan_fails_on_inherited_doc(self):
         result = self.guard()
@@ -95,6 +102,9 @@ class ChangedSince(unittest.TestCase):
     def test_unknown_ref_fails(self):
         result = self.guard("--changed-since", "no-such-ref")
         self.assertNotEqual(result.returncode, 0)
+        # The failure is git's, surfaced as git_paths' CalledProcessError, and nothing was scanned.
+        self.assertIn("returned non-zero exit status", result.stderr)
+        self.assertNotIn("file(s) to check", result.stdout)
 
 
 if __name__ == "__main__":

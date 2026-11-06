@@ -13,7 +13,7 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 # This is the chart version. This version number should be incremented each time you make changes
-# to he chart and its templates, including the app version.
+# to the chart and its templates, including the app version.
 version: 9.1.2
 # This is the version number of the application being deployed.
 appVersion: "4.0.2"

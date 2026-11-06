@@ -97,6 +97,9 @@ spec:
               name: {{ include "midaz-ledger.fullname" . }}
           env:
             {{- toYaml $h.env | nindent 12 }}
+            {{- with include "midaz.licenseFileEnv" .Values.ledger }}
+            {{- . | nindent 12 }}
+            {{- end }}
             {{- $secretName := ternary .Values.ledger.existingSecretName (include "midaz-ledger.fullname" .) .Values.ledger.useExistingSecret }}
             {{/* PostgreSQL: single role `midaz` backs both modules, key `password`. The bundled read replica
                  copies the primary's roles, so its replicas use `password` too; an operator Secret for an
@@ -226,11 +229,22 @@ spec:
             {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.ledger.resources | nindent 12 }}
+          {{- with include "midaz.licenseFileVolumeMount" .Values.ledger }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
         {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
         {{- include "lerian-common.rolesAnywhere.sidecar" (dict "aws" .Values.ledger.aws) | nindent 8 }}
         {{- end }}
       {{- if include "midaz.ledgerRolesAnywhereEnabled" . }}
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.ledger.aws "iamTlsDefault" (printf "%s-iam-tls" (include "midaz-ledger.fullname" .))) | nindent 6 }}
+      {{- end }}
+      {{- /* The Roles Anywhere helper opens `volumes:`; the licence volume joins that list. */}}
+      {{- with include "midaz.licenseFileVolume" .Values.ledger }}
+      {{- if not (include "midaz.ledgerRolesAnywhereEnabled" $) }}
+      volumes:
+      {{- end }}
+      {{- . | nindent 8 }}
       {{- end }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, ledger.spread, ledger.topologySpreadConstraints).

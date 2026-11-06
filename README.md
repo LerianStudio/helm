@@ -24,7 +24,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `10.3.4` | 4.4.0 | 3.8.4 |
+| `10.4.0` | 4.4.0 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `11.1.0` | 3.17.0 | 3.17.0 | 2.1.0 |
+| `11.2.1` | 3.17.0 | 3.17.0 | 2.1.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `5.3.2` | 4.8.0 | 4.8.0 |
+| `5.4.0` | 4.8.0 | 4.8.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.6.3` | 1.6.1 | 1.6.1 |
+| `0.7.0` | 1.6.1 | 1.6.1 |
 -----------------
 
 ### BR JD Courier
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.4.0` | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 | 1.14.0 |
+| `5.4.1` | 1.14.1 | 1.14.1 | 1.14.1 | 1.14.1 | 1.14.1 |
 
 -----------------
 
@@ -157,7 +157,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `4.1.3` | 4.1.0 | 4.1.0 |
+| `4.2.0` | 4.1.0 | 4.1.0 |
 -----------------
 
 ### Tracer
@@ -314,7 +314,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.4` | 3.1.0 |
+| `2.1.0` | 3.1.0 |
 -----------------
 
 ### Lerian Common (Library)
@@ -338,7 +338,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | System-Facts Version |
 | :---: | :---: |
-| `1.1.3` | 1.1.0 |
+| `1.2.0` | 1.1.0 |
 -----------------
 
 ### Lerian Consul

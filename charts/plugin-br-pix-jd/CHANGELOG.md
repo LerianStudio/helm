@@ -1,5 +1,18 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.7.0)
+
+Features:
+- Add an optional license file mount. (@fredcamaral)
+
+Improvements:
+- Add the `0.6.3` upgrade guide. (@fredcamaral)
+- Correct restart notes in the `0.6.3` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.6.3...plugin-br-pix-jd-v0.7.0)
+
+---
+
 ## [0.6.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.6.3)
 
 Fixes:
@@ -356,3 +369,4 @@ Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
 Contributors: @ferr3ira-gabriel, @guimoreirar
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.0.0...plugin-br-pix-jd-v0.1.0)
+

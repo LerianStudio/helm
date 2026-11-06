@@ -14,7 +14,7 @@ CHART = Path(__file__).resolve().parents[1]
 BASE = {
     'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'},
              'initUser': {'enabled': False}},
-    'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'}},
+    'identity': {'secrets': {'LICENSE_KEY': 'render-only'}},
     'caradhras': {'secrets': {'LICENSE_KEY': 'render-only'}},
 }
 PRE_LICENSE = {'image': {'tag': '1.8.6'}}
@@ -453,6 +453,31 @@ class StartupContract(unittest.TestCase):
             self.fails({c: {'secrets': {'LICENSE_KEY': ''}}}, f'{c}.secrets.LICENSE_KEY is required')
             self.succeeds({c: {'secrets': {'LICENSE_KEY': ''}, 'useExistingSecret': True,
                                'existingSecretName': 'x'}})
+
+    def component_spec(self, docs, name):
+        d = next(d for d in docs if d['kind'] == 'Deployment' and d['metadata']['name'].endswith('-' + name))
+        return d['spec']['template']['spec']
+
+    def test_auth_identity_licence_file_mounts_as_directory(self):
+        for c in ('auth', 'identity'):
+            docs = self.succeeds({c: {'secrets': {'LICENSE_KEY': ''}, 'licenseFile': {'existingSecret': 'lic'}}})
+            spec = self.component_spec(docs, c)
+            ctr = spec['containers'][0]
+            self.assertIn({'name': 'license-file', 'mountPath': '/etc/lerian/license', 'readOnly': True}, ctr['volumeMounts'])
+            self.assertIn({'name': 'LICENSE_FILE_PATH', 'value': '/etc/lerian/license/license'}, ctr['env'])
+            self.assertIn({'name': 'license-file', 'secret': {'secretName': 'lic', 'items': [{'key': 'license', 'path': 'license'}]}}, spec['volumes'])
+            secret = next(d for d in docs if d['kind'] == 'Secret' and d['metadata']['name'].endswith('-' + c))
+            self.assertNotIn('LICENSE_KEY', secret['data'])
+
+    def test_auth_identity_licence_file_null_keeps_key_mode(self):
+        for c in ('auth', 'identity'):
+            docs = self.succeeds({c: {'licenseFile': None}})
+            spec = self.component_spec(docs, c)
+            self.assertNotIn('volumes', spec)
+            self.assertNotIn('volumeMounts', spec['containers'][0])
+            self.assertNotIn('LICENSE_FILE_PATH', [e['name'] for e in spec['containers'][0]['env']])
+            secret = next(d for d in docs if d['kind'] == 'Secret' and d['metadata']['name'].endswith('-' + c))
+            self.assertIn('LICENSE_KEY', secret['data'])
 
     def test_caradhras_license_key_required(self):
         no_key = {'secrets': {'LICENSE_KEY': ''}}

@@ -251,7 +251,7 @@ api:
   # credential lives in exactly one place. Set it here only for an external
   # Postgres that has no existingSecret of its own.
   secrets:
-    # Required, api and worker, every mode: the render fails without it.
+    # Required unless api.licenseFile.existingSecret is set: the render fails without it.
     LICENSE_KEY: ""
     # Optional — a Redis with no auth is a legitimate in-cluster setup.
     REDIS_PASSWORD: ""
@@ -274,6 +274,10 @@ api:
   existingSecret:
     # -- Read all Secret keys from this pre-existing Secret instead of rendering one
     name: ""
+  licenseFile:
+    # -- Secret holding a signed licence file under the key `license`, mounted at
+    # /etc/lerian/license; replaces LICENSE_KEY. File mode needs an image on lib-license-go v5.
+    existingSecret: ""
 worker:
   # -- Disabled by default: the worker is opt-in, not every install runs jobs.
   enabled: false
@@ -319,6 +323,9 @@ worker:
   extraSecrets: {}
   existingSecret:
     name: ""
+  licenseFile:
+    # -- Same as api.licenseFile.existingSecret, for the worker.
+    existingSecret: ""
 # -- Schema migrations, as a SEGREGATED Job (templates/common/migrations-job.yaml) —
 # the repository convention, matching plugin-br-bank-transfer, notifications,
 # plugin-access-manager and plugin-br-pix-switch.

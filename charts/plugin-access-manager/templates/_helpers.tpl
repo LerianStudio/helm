@@ -1042,3 +1042,37 @@ licenseFile.existingSecret is mounted as a directory (never subPath) at /etc/ler
         path: license
 {{- end }}
 {{- end -}}
+
+{{/*
+Licence file for auth and identity (input: the component values, .Values.auth or .Values.identity).
+licenseFile.existingSecret is mounted as a directory (never subPath) at /etc/lerian/license.
+*/}}
+{{- define "plugin-access-manager.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end -}}
+
+{{- define "plugin-access-manager.licenseFileEnv" -}}
+{{- if include "plugin-access-manager.licenseFileSecret" . }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-access-manager.licenseFileMount" -}}
+{{- if include "plugin-access-manager.licenseFileSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-access-manager.licenseFileVolume" -}}
+{{- with include "plugin-access-manager.licenseFileSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end -}}

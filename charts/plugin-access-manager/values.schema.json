@@ -33,6 +33,13 @@
         "configmap": {
           "type": "object"
         },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
         "secrets": {
           "type": "object"
         },
@@ -101,6 +108,13 @@
       "properties": {
         "configmap": {
           "type": "object"
+        },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": { "type": "string" }
+          },
+          "additionalProperties": false
         },
         "secrets": {
           "type": "object"

@@ -5,6 +5,6 @@
       "name" (include "bank-transfer.fullname" .)
       "namespace" (include "global.namespace" .)
       "labels" (include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name))
-      "selector" (include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name))
+      "selector" (include "bank-transfer.selectorLabels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name))
     ) }}
 {{- end }}

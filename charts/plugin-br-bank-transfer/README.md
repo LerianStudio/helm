@@ -194,15 +194,9 @@ bankTransfer:
 
 ## Probes and health port
 
-The `lerian-common.health` preset owns probes, ports, grace period, rollout strategy and PodDisruptionBudget; none is a value (the render refuses `readinessProbe`, `livenessProbe`, `startupProbe`, `terminationGracePeriodSeconds`, `HEALTH_PORT` and `SHUTDOWN_*` overrides). The app serves `/health`, `/readyz` and `/metrics` on the internal port 8099 (`HEALTH_PORT`), never through the Ingress.
+The `lerian-common.health` preset owns probes, ports, grace period, rollout strategy and PodDisruptionBudget; the render refuses probe, grace period and PDB value overrides, and `HEALTH_PORT` or `SHUTDOWN_*` in `bankTransfer.configmap`. The app serves `/health`, `/readyz` and `/metrics` on the internal port 8099, never through the Ingress.
 
-| Probe | Path (port 8099) |
-| --- | --- |
-| Startup | `/health` |
-| Liveness | `/health` |
-| Readiness | `/readyz` |
-
-Multi-tenant mode also serves `/readyz/tenant/:id` there (no JWT) and exposes the ClusterIP `health` port on the Service. The main port keeps only `/health` and `/version`: point load balancer checks at main `/health`. See [UPGRADE-3.2](docs/UPGRADE-3.2.md).
+Probes: startup and liveness `/health`, readiness `/readyz`, all on port 8099. See [UPGRADE-3.2](docs/UPGRADE-3.2.md) for the multi-tenant route, load balancer checks and rollback.
 
 ## Parameters
 

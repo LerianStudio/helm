@@ -276,6 +276,7 @@ data:
   RATE_LIMIT_ENABLED: {{ include "plugin-br-pix-indirect-btg.flagDefaultTrue" .Values.inbound.configmap.RATE_LIMIT_ENABLED | quote }}
   ALLOW_RATELIMIT_DISABLED: {{ .Values.inbound.configmap.ALLOW_RATELIMIT_DISABLED | default "" | quote }}
 
+  LICENSE_FILE_PATH: {{ .Values.inbound.configmap.LICENSE_FILE_PATH | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.inbound.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

@@ -20,7 +20,7 @@ Notices arrive through the Streaming Hub **webhook** (default, own listener on `
 
 | Resource | Notes |
 |---|---|
-| Deployment | `ghcr.io/lerianstudio/plugin-br-sisbajud`, HTTP API `:4029` (liveness `/version`, readiness `/readyz`), webhook `:9082` |
+| Deployment | `ghcr.io/lerianstudio/plugin-br-sisbajud`, HTTP API `:4029` (liveness `/version`), health port `:8099` (`HEALTH_PORT`: readiness `/readyz`, also `/health` and `/metrics`; not exposed by the Service), webhook `:9082` |
 | Service / Service `-webhook` | ClusterIP; the webhook Service exposes only the listener |
 | Ingress / Ingress `-webhook` | both optional; expose only the webhook path to the Streaming Hub |
 | Job `-migrations` | `ghcr.io/lerianstudio/plugin-br-sisbajud-migrations`, pre-install/pre-upgrade hook (ArgoCD PreSync, wave -5) |
@@ -79,7 +79,7 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.license.organizationIds` | `ORGANIZATION_IDS` | must be `global` |
 | `global.auth.*` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | |
 
-Liveness probes `/version` (static build info, always 200): the app's `/health` stays 503 until its startup self-probe passes. Readiness stays on `/readyz`.
+Liveness probes `/version` on the HTTP port (static build info, always 200): the app's `/health` stays 503 until its startup self-probe passes. Readiness probes `/readyz` on the health port (`sisbajud.healthPort`, default 8099, rendered as `HEALTH_PORT`): the app serves `/health`, `/readyz` and `/metrics` only there, and opens no health listener without `HEALTH_PORT`. `SHUTDOWN_TIMEOUT` (`sisbajud.shutdownTimeout`, default `80s`) is the shutdown budget after the 15s drain delay; `terminationGracePeriodSeconds` (105) covers both plus 10s.
 
 `VAULT_ADDR` and `MENSAGERIA_BASE_URL` must be https (`VAULT_ADDR` may be http only for a loopback host or `ENVIRONMENT_NAME` `local|development|test`); argocd-vault-plugin placeholders (`<path:...>`) are not checked at render.
 
@@ -141,6 +141,8 @@ In single tenant the executor reaches Midaz through the environment, not through
 A Midaz without auth needs only `baseUrl`. With auth, set `authAddress` and the ledger client pair together; a partial group is refused. The URLs are https (http only to a loopback host, or outside production), and each client pair is set whole. With `useExistingSecret: true` the chart cannot read the Secret: the group is decided by `authAddress`, and the Secret must carry the client pairs.
 
 **Upgrade note (breaking, plugin v2.0.0):** a single-tenant install must set `sisbajud.midaz.baseUrl` (and the auth group when its Midaz requires auth; with `crmMode: legacy`, or any institution row overriding `legacy`, also the CRM pair and `sisbajud.midaz.crmBaseUrl`, since a row's own CRM URL is no longer used) before upgrading; the render fails without `baseUrl`. Multi-tenant is unchanged: each institution keeps its own connection, and the render refuses any of these keys there.
+
+**Upgrade note (plugin v2.0.0, health port):** the app serves `/readyz` only on `HEALTH_PORT`. This chart sets it (8099) and moves the readiness probe there; an older chart with the v2.0.0 image never becomes Ready, so upgrade chart and image together. A scrape of `/metrics` must target the pod's `health` port, not the Service.
 
 ## Development profile
 

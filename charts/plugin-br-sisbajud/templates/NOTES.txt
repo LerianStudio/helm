@@ -13,8 +13,9 @@ plugin-br-sisbajud {{ .Values.sisbajud.image.tag | default .Chart.AppVersion }} 
 
 Verify:
   kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
-  kubectl -n {{ include "global.namespace" . }} port-forward svc/{{ include "plugin-br-sisbajud.fullname" . }} {{ .Values.sisbajud.service.port }}:{{ .Values.sisbajud.service.port }}
-  curl -s localhost:{{ .Values.sisbajud.service.port }}/readyz
+  # the probes are on the pod's health port, which no Service exposes
+  kubectl -n {{ include "global.namespace" . }} port-forward deploy/{{ include "plugin-br-sisbajud.fullname" . }} {{ .Values.sisbajud.healthPort | default 8099 }}:{{ .Values.sisbajud.healthPort | default 8099 }}
+  curl -s localhost:{{ .Values.sisbajud.healthPort | default 8099 }}/readyz
 
 {{- if eq (include "plugin-br-sisbajud.migrationsOn" .) "true" }}
 {{- if eq (include "plugin-br-sisbajud.postgresBundled" .) "true" }}

@@ -123,6 +123,7 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- end -}}
 
 {{- include "plugin-br-sisbajud.validateMidazConnection" . -}}
+{{- include "plugin-br-sisbajud.validateShutdownBudget" . -}}
 
 {{- if eq $mode "mensageria" -}}
 {{- /* --- Sisbajud Mensageria (executor mode) -------------------------------- */ -}}
@@ -427,5 +428,34 @@ Secret (useExistingSecret) is opaque: its keys are trusted.
 {{- if and $group $legacy (not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" (index $crm 0)))) -}}
 {{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET are required with MIDAZ_CRM_MODE=legacy when the Midaz auth group is set." "set" "sisbajud.secrets.MIDAZ_CRM_CLIENT_ID and sisbajud.secrets.MIDAZ_CRM_CLIENT_SECRET (or useExistingSecret with both keys)") -}}
 {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+validateShutdownBudget — the pod's grace must cover the whole SIGTERM sequence:
+SHUTDOWN_DRAIN_DELAY (15s, fixed in the deployment) + SHUTDOWN_TIMEOUT (the value
+the pod reads: extraEnvVars › configmap › sisbajud.shutdownTimeout) + 10s margin.
+A shorter grace lets the kubelet SIGKILL mid-drain and cut a claimed order.
+SHUTDOWN_TIMEOUT must be a whole-second Go duration (e.g. 80s, 2m, 1m30s).
+*/}}
+{{- define "plugin-br-sisbajud.validateShutdownBudget" -}}
+{{- $s := .Values.sisbajud -}}
+{{- $cm := $s.configmap | default dict -}}
+{{- $extra := $s.extraEnvVars | default dict -}}
+{{- $raw := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "SHUTDOWN_TIMEOUT" "p" $s "f" "shutdownTimeout" "d" "80s") | trim -}}
+{{- if hasKey $extra "SHUTDOWN_TIMEOUT" -}}{{- $raw = toString (index $extra "SHUTDOWN_TIMEOUT") | trim -}}{{- end -}}
+{{- if not (regexMatch "^([0-9]+h)?([0-9]+m)?([0-9]+s)?$" $raw) | or (eq $raw "") -}}
+{{- include "plugin-br-sisbajud.fail" (dict "msg" "SHUTDOWN_TIMEOUT must be a whole-second duration such as 80s, 2m or 1m30s." "set" "sisbajud.shutdownTimeout") -}}
+{{- end -}}
+{{- $secs := 0 -}}
+{{- range $part := regexFindAll "[0-9]+[hms]" $raw -1 -}}
+{{- $n := atoi (trimSuffix "h" (trimSuffix "m" (trimSuffix "s" $part))) -}}
+{{- $mul := ternary 3600 (ternary 60 1 (hasSuffix "m" $part)) (hasSuffix "h" $part) -}}
+{{- $secs = add $secs (mul $n $mul) -}}
+{{- end -}}
+{{- $need := add 15 $secs 10 -}}
+{{- $grace := int ($s.terminationGracePeriodSeconds | default 30) -}}
+{{- if lt $grace $need -}}
+{{- include "plugin-br-sisbajud.fail" (dict "msg" (printf "terminationGracePeriodSeconds (%d) must cover SHUTDOWN_DRAIN_DELAY 15s + SHUTDOWN_TIMEOUT %ds + 10s margin = %d: a shorter grace SIGKILLs the pod mid-drain." $grace $secs $need) "set" (printf "sisbajud.terminationGracePeriodSeconds>=%d, or a lower sisbajud.shutdownTimeout" $need)) -}}
 {{- end -}}
 {{- end -}}

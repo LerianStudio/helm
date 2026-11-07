@@ -69,9 +69,9 @@ tests:
   - it: keeps the health port off the Ingress
     template: templates/ingress.yaml
     asserts:
-      - notMatchRegex:
-          path: spec.rules[0].http.paths[0].backend.service.port.name
-          pattern: health
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 8080
 
   - it: refuses an image below the first one that serves the health port
     template: templates/service.yaml
@@ -103,7 +103,7 @@ tests:
       plugin-br-ted-lerian: {terminationGracePeriodSeconds: 90}
     asserts:
       - failedTemplate:
-          errorPattern: "owned by the health preset"
+          errorPattern: "terminationGracePeriodSeconds is owned by the health preset"
 
   - it: refuses HEALTH_PORT in the configmap
     template: templates/service.yaml
@@ -111,4 +111,4 @@ tests:
       plugin-br-ted-lerian: {configmap: {HEALTH_PORT: "9000"}}
     asserts:
       - failedTemplate:
-          errorPattern: "owned by the health preset"
+          errorPattern: "configmap[.]HEALTH_PORT is owned by the health preset"

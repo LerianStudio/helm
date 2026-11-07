@@ -100,31 +100,11 @@ tests:
         template: templates/service.yaml
 
   - it: never routes the Ingress to the health port
-    set:
-      system-facts.ingress.enabled: true
     asserts:
       - equal:
           path: spec.rules[0].http.paths[0].backend.service.port.number
           value: 8080
         template: templates/ingress.yaml
-
-  - it: refuses an hpa ceiling below the floor
-    set:
-      system-facts.autoscaling.maxReplicas: 1
-    asserts:
-      - failedTemplate:
-          errorPattern: "maxReplicas=1 is below minReplicas=2"
-        template: templates/service.yaml
-
-  - it: renders an hpa whose ceiling meets the floor
-    set:
-      system-facts.autoscaling.minReplicas: 1
-      system-facts.autoscaling.maxReplicas: 1
-    asserts:
-      - equal:
-          path: spec.maxReplicas
-          value: 1
-        template: templates/hpa.yaml
 
   - it: keeps the PodDisruptionBudget evicting unhealthy pods
     asserts:

@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.4.1` | 1.14.1 | 1.14.1 | 1.14.1 | 1.14.1 | 1.14.1 |
+| `5.5.0` | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 |
 
 -----------------
 

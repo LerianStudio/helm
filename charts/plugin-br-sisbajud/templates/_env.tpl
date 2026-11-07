@@ -128,6 +128,12 @@ EXECUTOR_HUB_WEBHOOK_TLS_KEY_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.moun
 {{- end }}
 # --- Midaz connector (ledger URL + credentials are per institution, in the DB) ----
 {{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "embedded") }}
+{{- /* Single-tenant Midaz connection (v2.0.0): the URLs here, the client pairs in the
+   Secret (sisbajud.secrets.MIDAZ_*_CLIENT_* or the existing Secret). Emitted only
+   when set; multi-tenant refuses them (_validate.tpl). */}}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "baseUrl" "k" "MIDAZ_BASE_URL" "opt" true) }}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "authAddress" "k" "MIDAZ_AUTH_ADDRESS" "opt" true) }}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmBaseUrl" "k" "MIDAZ_CRM_BASE_URL" "opt" true) }}
 # --- Inbound auth + token minting (lerian-common.auth.env) -----------------------
 {{ include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "") }}
 {{- include $kv (dict "cm" $cm "p" $s.auth "f" "productName" "k" "AUTH_PRODUCT_NAME" "opt" true) }}

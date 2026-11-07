@@ -122,6 +122,8 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- include $f (dict "msg" "MENSAGERIA_BASE_URL is required, or EXECUTOR_ENABLED=true for a DIRECT-only executor: one of them is what runs the process as the executor (without both the binary boots the retired monolith and refuses STA_INBOUND_BUCKET)." "set" "sisbajud.mensageria.baseUrl=https://<mensageria-host> (or sisbajud.executor.enabled=true)") -}}
 {{- end -}}
 
+{{- include "plugin-br-sisbajud.validateMidazConnection" . -}}
+
 {{- if eq $mode "mensageria" -}}
 {{- /* --- Sisbajud Mensageria (executor mode) -------------------------------- */ -}}
 {{- $base := include $val (dict "cm" $cm "k" "MENSAGERIA_BASE_URL" "p" $s.mensageria "f" "baseUrl" "d" "") | trim -}}
@@ -330,5 +332,100 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- end -}}
 {{- if not (include "plugin-br-sisbajud.redisHost" .) -}}
 {{- include $f (dict "msg" "REDIS_HOST is required (readiness is down without Redis/Valkey), or enable the bundled valkey (development only)." "set" "global.datastores.redis.host (or sisbajud.datastores.redis.host)") -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+validateMidazConnection — the Midaz connection from the environment (v2.0.0;
+the app's validateConnectorEnvConnection and its executor-mode requirement).
+Multi-tenant: every MIDAZ_* connection key is refused (each institution keeps
+its own connection). Single-tenant executor: MIDAZ_BASE_URL, MIDAZ_AUTH_ADDRESS
+and the ledger client pair are required, and the CRM pair too with
+MIDAZ_CRM_MODE=legacy; in either mode the CRM pair needs MIDAZ_CRM_BASE_URL,
+and with auth on that URL needs the pair (a row may override legacy); the URLs are https (http only outside production), and
+each client pair is whole. A refusal names the key, never the value. An external
+Secret (useExistingSecret) is opaque: its keys are trusted.
+*/}}
+{{- define "plugin-br-sisbajud.validateMidazConnection" -}}
+{{- $s := .Values.sisbajud -}}
+{{- $cm := $s.configmap | default dict -}}
+{{- $f := "plugin-br-sisbajud.fail" -}}
+{{- $val := "plugin-br-sisbajud.val" -}}
+{{- $midaz := $s.midaz | default dict -}}
+{{- $base := include $val (dict "cm" $cm "k" "MIDAZ_BASE_URL" "p" $midaz "f" "baseUrl" "d" "") | trim -}}
+{{- $authAddr := include $val (dict "cm" $cm "k" "MIDAZ_AUTH_ADDRESS" "p" $midaz "f" "authAddress" "d" "") | trim -}}
+{{- $crmBase := include $val (dict "cm" $cm "k" "MIDAZ_CRM_BASE_URL" "p" $midaz "f" "crmBaseUrl" "d" "") | trim -}}
+{{- $urlField := dict "MIDAZ_BASE_URL" "baseUrl" "MIDAZ_AUTH_ADDRESS" "authAddress" "MIDAZ_CRM_BASE_URL" "crmBaseUrl" -}}
+{{- $pairs := list (list "MIDAZ_LEDGER_CLIENT_ID" "MIDAZ_LEDGER_CLIENT_SECRET") (list "MIDAZ_CRM_CLIENT_ID" "MIDAZ_CRM_CLIENT_SECRET") -}}
+{{- if eq (include "plugin-br-sisbajud.multiTenantEnabled" .) "true" -}}
+{{- $sec := $s.secrets | default dict -}}
+{{- $extra := $s.extraEnvVars | default dict -}}
+{{- range $k, $v := dict "MIDAZ_BASE_URL" $base "MIDAZ_AUTH_ADDRESS" $authAddr "MIDAZ_CRM_BASE_URL" $crmBase -}}
+{{- if $v -}}
+{{- include $f (dict "msg" (printf "%s is single-tenant only: with multi-tenant on, each institution keeps its own Midaz connection." $k) "set" (printf "remove sisbajud.midaz.%s" (index $urlField $k))) -}}
+{{- end -}}
+{{- end -}}
+{{- range $pair := $pairs -}}
+{{- range $k := $pair -}}
+{{- if or (hasKey $extra $k) (ne (toString (index $sec $k | default "")) "") -}}
+{{- include $f (dict "msg" (printf "%s is single-tenant only: with multi-tenant on, each institution keeps its own Midaz credentials." $k) "set" (printf "remove sisbajud.secrets.%s" $k)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- else -}}
+{{- $insecureOK := eq (include "plugin-br-sisbajud.nonProduction" .) "true" -}}
+{{- if not $base -}}
+{{- include $f (dict "msg" "MIDAZ_BASE_URL is required in single-tenant (v2.0.0): the Midaz connection comes from the environment." "set" "sisbajud.midaz.baseUrl=https://<host>") -}}
+{{- end -}}
+{{- range $k, $v := dict "MIDAZ_BASE_URL" $base "MIDAZ_AUTH_ADDRESS" $authAddr "MIDAZ_CRM_BASE_URL" $crmBase -}}
+{{- $loopback := regexMatch "^(?i)http://(localhost|127\\.[0-9.]+|\\[::1\\])(:[0-9]+)?(/.*)?$" $v -}}
+{{- if and $v (not (or (include "plugin-br-sisbajud.isAvpPlaceholder" $v) (regexMatch "^(?i)https://[^/?#]+" $v) $loopback (and $insecureOK (regexMatch "^(?i)http://[^/?#]+" $v)))) -}}
+{{- include $f (dict "msg" (printf "%s must be an absolute https URL with a host (http only to a loopback host, or outside production)." $k) "set" (printf "sisbajud.midaz.%s" (index $urlField $k))) -}}
+{{- end -}}
+{{- end -}}
+{{- /* The auth group (MIDAZ_AUTH_ADDRESS + the ledger client pair) is optional and
+   all-or-nothing: Midaz without auth needs none of it. A key counts as set when
+   it is inline (secrets or extraEnvVars); an existing Secret is opaque, so there
+   the group is decided by MIDAZ_AUTH_ADDRESS and the Secret is trusted. */ -}}
+{{- $sec := $s.secrets | default dict -}}
+{{- $extra := $s.extraEnvVars | default dict -}}
+{{- $inline := dict -}}
+{{- range $pair := $pairs -}}
+{{- range $k := $pair -}}
+{{- $_ := set $inline $k (or (hasKey $extra $k) (ne (toString (index $sec $k | default "")) "")) -}}
+{{- end -}}
+{{- end -}}
+{{- $group := or (ne $authAddr "") (index $inline "MIDAZ_LEDGER_CLIENT_ID") (index $inline "MIDAZ_LEDGER_CLIENT_SECRET") -}}
+{{- if $group -}}
+{{- $missing := list -}}
+{{- if not $authAddr -}}{{- $missing = append $missing "MIDAZ_AUTH_ADDRESS (sisbajud.midaz.authAddress)" -}}{{- end -}}
+{{- range $k := index $pairs 0 -}}
+{{- if not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" $k)) -}}{{- $missing = append $missing (printf "%s (sisbajud.secrets.%s)" $k $k) -}}{{- end -}}
+{{- end -}}
+{{- if $missing -}}
+{{- include $f (dict "msg" "MIDAZ_AUTH_ADDRESS, MIDAZ_LEDGER_CLIENT_ID and MIDAZ_LEDGER_CLIENT_SECRET are set together or not at all (the Midaz auth group)." "set" (join ", " $missing)) -}}
+{{- end -}}
+{{- end -}}
+{{- $legacy := eq (include $val (dict "cm" $cm "k" "MIDAZ_CRM_MODE" "p" $midaz "f" "crmMode" "d" "embedded") | trim) "legacy" -}}
+{{- $crm := index $pairs 1 -}}
+{{- $crmID := index $inline (index $crm 0) -}}
+{{- if ne $crmID (index $inline (index $crm 1)) -}}
+{{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET must be set together." "set" "sisbajud.secrets.MIDAZ_CRM_CLIENT_ID and sisbajud.secrets.MIDAZ_CRM_CLIENT_SECRET") -}}
+{{- end -}}
+{{- if and $crmID (not $authAddr) -}}
+{{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID requires MIDAZ_AUTH_ADDRESS." "set" "sisbajud.midaz.authAddress") -}}
+{{- end -}}
+{{- /* A row may override crmMode=legacy under the embedded default, so the CRM
+   URL and pair are valid in either mode. An existing Secret is opaque: there
+   the auth group stands for the pair. */ -}}
+{{- if and $group $crmBase (not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" (index $crm 0)))) -}}
+{{- include $f (dict "msg" "MIDAZ_CRM_BASE_URL requires MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET when the Midaz auth group is set." "set" "sisbajud.secrets.MIDAZ_CRM_CLIENT_ID and sisbajud.secrets.MIDAZ_CRM_CLIENT_SECRET (or useExistingSecret with both keys)") -}}
+{{- end -}}
+{{- if and (not $crmBase) (or $crmID (and $legacy $group)) -}}
+{{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET require MIDAZ_CRM_BASE_URL: the CRM bearer only goes to the configured CRM." "set" "sisbajud.midaz.crmBaseUrl=https://<crm-host>") -}}
+{{- end -}}
+{{- if and $group $legacy (not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" (index $crm 0)))) -}}
+{{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET are required with MIDAZ_CRM_MODE=legacy when the Midaz auth group is set." "set" "sisbajud.secrets.MIDAZ_CRM_CLIENT_ID and sisbajud.secrets.MIDAZ_CRM_CLIENT_SECRET (or useExistingSecret with both keys)") -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

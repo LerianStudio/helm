@@ -211,3 +211,23 @@ tests:
             mountPath: /etc/lerian/license
             readOnly: true
         template: templates/deployment.yaml
+
+  # The migrations Job pod shares name+instance with the API pods. Without the
+  # component, the PDB fails SyncFailed (Job has no scale subresource) and the
+  # Service routes port 8099 to a pod with no readiness probe.
+  - it: selects only the API component in the PDB and the Service
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: system-facts
+            app.kubernetes.io/instance: system-facts
+            app.kubernetes.io/component: system-facts
+        template: templates/pdb.yaml
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: system-facts
+            app.kubernetes.io/instance: system-facts
+            app.kubernetes.io/component: system-facts
+        template: templates/service.yaml

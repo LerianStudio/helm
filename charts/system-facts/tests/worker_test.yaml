@@ -41,7 +41,7 @@ tests:
           of: ServiceAccount
         template: templates/worker-serviceaccount.yaml
 
-  # The API Service/HPA/PDB select on name+instance only. The worker must not
+  # The API Service/PDB select on name+instance+component. The worker must not
   # carry name=system-facts or it receives API traffic on its admin port.
   - it: selects on its own name label, never the API's
     template: templates/worker-deployment.yaml

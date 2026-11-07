@@ -1,4 +1,5 @@
 {{- if (index .Values "plugin-br-ted-lerian").enabled }}
+{{- $h := include "plugin-br-ted-lerian.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,17 +9,9 @@ metadata:
     {{- include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name) | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ (index .Values "plugin-br-ted-lerian").revisionHistoryLimit | default 10 }}
-  strategy:
-    type: {{ (index .Values "plugin-br-ted-lerian").deploymentUpdate.type }}
-    {{- if eq (index .Values "plugin-br-ted-lerian").deploymentUpdate.type "RollingUpdate" }}
-    rollingUpdate:
-      {{- $u := (index .Values "plugin-br-ted-lerian").deploymentUpdate }}
-      maxSurge: {{ $u.maxSurge }}
-      {{- /* Kubernetes refuses both limits at 0: a zero-surge rollout keeps one pod of headroom. */}}
-      maxUnavailable: {{ and (eq (toString $u.maxSurge) "0") (eq (toString $u.maxUnavailable) "0") | ternary 1 $u.maxUnavailable }}
-    {{- end }}
-  {{- if not (index .Values "plugin-br-ted-lerian").autoscaling.enabled }}
-  replicas: {{ (index .Values "plugin-br-ted-lerian").replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -36,7 +29,7 @@ spec:
       labels:
         {{- include "plugin-br-ted-lerian.podLabels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name) | nindent 8 }}
     spec:
-      terminationGracePeriodSeconds: {{ (index .Values "plugin-br-ted-lerian").terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- with (index .Values "plugin-br-ted-lerian").imagePullSecrets }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
@@ -68,8 +61,7 @@ spec:
           - configMapRef:
               name: {{ include "plugin-br-ted-lerian.fullname" . }}
           env:
-          - name: SHUTDOWN_DRAIN_DELAY
-            value: "15s"
+          {{- toYaml $h.env | nindent 10 }}
           {{- if $pgInternal }}
           {{- include "plugin-br-ted-lerian.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
           {{- end }}
@@ -86,16 +78,10 @@ spec:
             - name: http
               containerPort: {{ (index .Values "plugin-br-ted-lerian").service.port }}
               protocol: TCP
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "livenessProbe" "probe" (index .Values "plugin-br-ted-lerian").livenessProbe
-                "port" (index .Values "plugin-br-ted-lerian").service.port
-                "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "readinessProbe" "probe" (index .Values "plugin-br-ted-lerian").readinessProbe
-                "port" (index .Values "plugin-br-ted-lerian").service.port
-                "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml (index .Values "plugin-br-ted-lerian").resources | nindent 12 }}
         {{- if $rolesAnywhereEnabled }}

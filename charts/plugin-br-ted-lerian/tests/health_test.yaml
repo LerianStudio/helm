@@ -1,0 +1,114 @@
+suite: health preset
+templates:
+  - templates/deployment.yaml
+  - templates/service.yaml
+  - templates/pdb.yaml
+  - templates/hpa.yaml
+  - templates/ingress.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+tests:
+  - it: serves probes on the internal health port and derives the grace period
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: health}
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.httpGet
+          value: {path: /health, port: health}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 55
+      - equal:
+          path: spec.strategy.rollingUpdate.maxUnavailable
+          value: 0
+
+  - it: leaves replicas to the HPA, floored at 2
+    template: templates/hpa.yaml
+    asserts:
+      - equal:
+          path: spec.minReplicas
+          value: 2
+
+  - it: runs 2 replicas when autoscaling is off
+    template: templates/deployment.yaml
+    set:
+      plugin-br-ted-lerian.autoscaling.enabled: false
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 2
+
+  - it: gives the PodDisruptionBudget maxUnavailable 1 and AlwaysAllow
+    template: templates/pdb.yaml
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+      - equal:
+          path: spec.unhealthyPodEvictionPolicy
+          value: AlwaysAllow
+
+  - it: exposes the health port on the ClusterIP Service only as the named port
+    template: templates/service.yaml
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
+
+  - it: keeps the health port off the Ingress
+    template: templates/ingress.yaml
+    asserts:
+      - notMatchRegex:
+          path: spec.rules[0].http.paths[0].backend.service.port.name
+          pattern: health
+
+  - it: refuses an image below the first one that serves the health port
+    template: templates/service.yaml
+    set:
+      plugin-br-ted-lerian.image.tag: 1.0.0-beta.85
+    asserts:
+      - failedTemplate:
+          errorPattern: "below 1.0.0-beta.86"
+
+  - it: refuses the retired pdb key
+    template: templates/service.yaml
+    set:
+      plugin-br-ted-lerian: {pdb: {enabled: false}}
+    asserts:
+      - failedTemplate:
+          errorPattern: "pdb is owned by the health preset"
+
+  - it: refuses the retired deploymentUpdate key
+    template: templates/service.yaml
+    set:
+      plugin-br-ted-lerian: {deploymentUpdate: {type: Recreate}}
+    asserts:
+      - failedTemplate:
+          errorPattern: "deploymentUpdate is owned by the health preset"
+
+  - it: refuses a probe or grace override
+    template: templates/service.yaml
+    set:
+      plugin-br-ted-lerian: {terminationGracePeriodSeconds: 90}
+    asserts:
+      - failedTemplate:
+          errorPattern: "owned by the health preset"
+
+  - it: refuses HEALTH_PORT in the configmap
+    template: templates/service.yaml
+    set:
+      plugin-br-ted-lerian: {configmap: {HEALTH_PORT: "9000"}}
+    asserts:
+      - failedTemplate:
+          errorPattern: "owned by the health preset"

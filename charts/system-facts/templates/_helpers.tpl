@@ -201,6 +201,9 @@ The effective tag (explicit, else appVersion) is handed to the preset so a tag i
 
 {{- define "system-facts.health" -}}
 {{- $c := deepCopy .values -}}
+{{- with .values.autoscaling -}}{{- if and .enabled (lt (int .maxReplicas) (int (default 2 .minReplicas))) -}}
+{{- fail (printf "system-facts: %s autoscaling.maxReplicas=%v is below minReplicas=%v (the health preset floors an unset minReplicas at 2). Raise maxReplicas or set autoscaling.minReplicas to 1." $.name .maxReplicas (default 2 .minReplicas)) -}}
+{{- end -}}{{- end -}}
 {{- $_ := set $c "image" (dict "tag" (default .context.Chart.AppVersion ((.values.image | default dict).tag))) -}}
 {{- include "lerian-common.health" (dict
       "name" .name "component" $c "health" .values.health "port" .port

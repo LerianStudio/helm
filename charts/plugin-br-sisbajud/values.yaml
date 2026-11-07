@@ -151,7 +151,15 @@ sisbajud:
     successThreshold: 1
     failureThreshold: 3
 
-  # SHUTDOWN_DRAIN_DELAY 15s + 90s of shutdown stages (HTTP drain, closeResources, telemetry flush).
+  # -- HEALTH_PORT: the app serves /health, /readyz and /metrics only here
+  #    (lib-commons commons/health). Container port "health", never exposed
+  #    through the Service; the readiness probe uses it.
+  healthPort: 8099
+  # -- SHUTDOWN_TIMEOUT: one budget for the HTTP drain, closeResources and the
+  #    telemetry flush, after SHUTDOWN_DRAIN_DELAY. Keep it above the app's 30s
+  #    gracefulShutdownTimeout.
+  shutdownTimeout: "80s"
+  # SHUTDOWN_DRAIN_DELAY 15s + SHUTDOWN_TIMEOUT 80s + 10s margin.
   terminationGracePeriodSeconds: 105
   nodeSelector: {}
   tolerations: []

@@ -38,6 +38,11 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 {{- include $kv (dict "cm" $cm "p" $s.app "f" "infraConnectTimeoutSec" "k" "INFRA_CONNECT_TIMEOUT_SEC" "d" "30") }}
 # --- HTTP server + CORS --------------------------------------------------------
 SERVER_ADDRESS: {{ (hasKey $cm "SERVER_ADDRESS" | ternary (index $cm "SERVER_ADDRESS") (printf ":%v" $s.service.port)) | quote }}
+{{- /* The app serves /health, /readyz and /metrics only on HEALTH_PORT (no
+   listener when unset); the container port and the readiness probe use the same
+   value, so it is not a configmap key. */}}
+HEALTH_PORT: {{ $s.healthPort | default 8099 | toString | quote }}
+{{- include $kv (dict "cm" $cm "p" $s "f" "shutdownTimeout" "k" "SHUTDOWN_TIMEOUT" "d" "80s") }}
 {{- include $kv (dict "cm" $cm "p" $s.server "f" "bodyLimitBytes" "k" "HTTP_BODY_LIMIT_BYTES" "d" "104857600") }}
 {{- include $kv (dict "cm" $cm "p" $s.server "f" "tlsTerminatedUpstream" "k" "TLS_TERMINATED_UPSTREAM" "d" "false") }}
 {{- /* The app binds CORS_* (ServerConfig); the lib-commons CORS middleware reads

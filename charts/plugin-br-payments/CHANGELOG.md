@@ -1,5 +1,15 @@
 # Plugin-br-payments Changelog
 
+## [2.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.4.0)
+
+Features:
+
+- Update `plugin-br-payments` to `1.3.0`, introducing new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.3.1...plugin-br-payments-v2.4.0)
+
+---
+
 ## [2.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.3.1)
 
 Fixes:

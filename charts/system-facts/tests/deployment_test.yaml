@@ -101,9 +101,9 @@ tests:
 
   - it: never routes the Ingress to the health port
     asserts:
-      - notMatchRegex:
-          path: spec.rules[0].http.paths[0].backend.service.port.name
-          pattern: health
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 8080
         template: templates/ingress.yaml
 
   - it: keeps the PodDisruptionBudget evicting unhealthy pods

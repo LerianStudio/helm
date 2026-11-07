@@ -93,6 +93,9 @@ spec:
             - name: http
               containerPort: {{ $s.service.port }}
               protocol: TCP
+            - name: health
+              containerPort: {{ $s.healthPort | default 8099 }}
+              protocol: TCP
             {{- if $webhookOn }}
             - name: webhook
               containerPort: {{ $wh.port | default 9082 }}

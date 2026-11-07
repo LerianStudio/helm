@@ -56,20 +56,26 @@ tests:
           path: spec.template.metadata.labels["app.kubernetes.io/component"]
           value: worker
 
-  - it: runs the worker image on the tracked tag, probes /health and /readyz
+  - it: runs the worker image on the tracked tag, probes /health and /readyz on the health port
     template: templates/worker-deployment.yaml
     set:
-      worker.image.tag: 1.0.0-beta.9
+      worker.image.tag: 1.2.0-beta.9
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: ghcr.io/lerianstudio/system-facts-worker:1.0.0-beta.9
+          value: ghcr.io/lerianstudio/system-facts-worker:1.2.0-beta.9
       - equal:
-          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
-          value: /health
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: health}
       - equal:
-          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
-          value: /readyz
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value: [{name: health, containerPort: 8099}]
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
       - equal:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 60
@@ -81,7 +87,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: ghcr.io/lerianstudio/system-facts-worker:1.1.0
+          value: ghcr.io/lerianstudio/system-facts-worker:1.2.0-beta.4
 
   - it: turns the consumer on and never emits the producer variables or the fixed scope
     template: templates/worker-configmap.yaml
@@ -258,13 +264,39 @@ tests:
           path: spec.replicas
           value: 3
 
-  - it: refuses a shutdown budget below 60s
+  - it: refuses a shutdown budget that cannot cover the consumer close
     template: templates/worker-deployment.yaml
     set:
-      worker.terminationGracePeriodSeconds: 30
+      worker.health.shutdownSeconds: 30
     asserts:
       - failedTemplate:
-          errorPattern: "terminationGracePeriodSeconds must be >= 60"
+          errorPattern: "shutdownSeconds must be >= 50"
+
+  - it: rolls the worker with zero unavailable pods and no drain delay
+    template: templates/worker-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.strategy.rollingUpdate
+          value: {maxSurge: 25%, maxUnavailable: 0}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: SHUTDOWN_DRAIN_DELAY, value: 0s}
+
+  - it: refuses a worker image below the first one that serves the health port
+    template: templates/worker-deployment.yaml
+    set:
+      worker.image.tag: 1.2.0-beta.3
+    asserts:
+      - failedTemplate:
+          errorPattern: "below 1.2.0-beta.4"
+
+  - it: refuses a worker probe override
+    template: templates/worker-deployment.yaml
+    set:
+      worker.readinessProbe.periodSeconds: 30
+    asserts:
+      - failedTemplate:
+          errorPattern: "owned by the health preset"
 
   # A YAML boolean false is an operator decision, not a missing value: `default`
   # would rewrite it to "true" and the chart would report nothing.

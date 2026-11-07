@@ -28,6 +28,17 @@ Create bank-transfer app version
 {{- end -}}
 
 {{/*
+Health preset (probes, ports, env, grace, strategy, replicas, PDB, HPA floor). minImage is the first image
+that serves /health, /readyz and /metrics on the health port. The effective tag (explicit, else appVersion)
+is handed to the preset so a tag inherited from appVersion is guarded too.
+*/}}
+{{- define "bank-transfer.health" -}}
+{{- $c := deepCopy .Values.bankTransfer -}}
+{{- $_ := set $c "image" (dict "tag" (include "bank-transfer.defaultTag" .)) -}}
+{{- include "lerian-common.health" (dict "name" (include "bank-transfer.fullname" .) "component" $c "health" .Values.bankTransfer.health "port" .Values.bankTransfer.service.port "minImage" "3.6.0-beta.9" "replicas" .Values.bankTransfer.replicaCount "autoscaling" .Values.bankTransfer.autoscaling) -}}
+{{- end }}
+
+{{/*
 Return valid bank-transfer version label
 */}}
 {{- define "bank-transfer.versionLabelValue" -}}

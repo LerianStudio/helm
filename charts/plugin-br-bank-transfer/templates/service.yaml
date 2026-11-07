@@ -1,4 +1,5 @@
 {{- if .Values.bankTransfer.enabled }}
+{{- $h := include "bank-transfer.health" . | fromYaml }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -17,6 +18,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    {{- if eq (lower (toString (include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.bankTransfer.configmap "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false")))) "true" }}
+    {{- toYaml $h.servicePorts | nindent 4 }}
+    {{- end }}
   selector:
     {{- include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name) | nindent 4 }}
 {{- end }}

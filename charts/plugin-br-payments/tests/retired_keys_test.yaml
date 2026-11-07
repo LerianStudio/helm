@@ -35,3 +35,9 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "app.deploymentStrategy is owned by the health preset"
+  - it: refuses the retired main-listener TLS keys
+    template: templates/deployment.yaml
+    set: {app.configmap.SERVER_TLS_CERT_FILE: /certs/tls.crt}
+    asserts:
+      - failedTemplate:
+          errorPattern: "SERVER_TLS_CERT_FILE is no longer read"

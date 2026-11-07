@@ -13,6 +13,7 @@
 {{- /* Telemetry on and no explicit endpoint -> the node-local collector. */ -}}
 {{- $telemetry := eq (include "plugin-br-sisbajud.isTrue" (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" -}}
 {{- $explicitEndpoint := or (include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "observability" "field" "otlpEndpoint" "nativeKey" "OTEL_EXPORTER_OTLP_ENDPOINT" "default" "")) (hasKey $extra "OTEL_EXPORTER_OTLP_ENDPOINT") -}}
+{{- $h := include "plugin-br-sisbajud.health" . | fromYaml -}}
 {{- $bundledMigrations := and (eq (include "plugin-br-sisbajud.migrationsOn" .) "true") (eq (include "plugin-br-sisbajud.postgresBundled" .) "true") -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -23,13 +24,11 @@ metadata:
     {{- include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud") | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ $s.revisionHistoryLimit | default 10 }}
-  {{- if not $s.autoscaling.enabled }}
-  replicas: {{ ternary $s.replicaCount 1 (hasKey $s "replicaCount") }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
-  {{- include "lerian-common.deploymentStrategy" (dict
-        "type" ($s.deploymentStrategy.type | default "RollingUpdate")
-        "maxSurge" (dig "rollingUpdate" "maxSurge" 1 $s.deploymentStrategy)
-        "maxUnavailable" (dig "rollingUpdate" "maxUnavailable" 0 $s.deploymentStrategy)) | nindent 2 }}
+  strategy:
+    {{- toYaml $h.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud") | nindent 6 }}
@@ -54,7 +53,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "plugin-br-sisbajud.serviceAccountName" . }}
       automountServiceAccountToken: false
-      terminationGracePeriodSeconds: {{ $s.terminationGracePeriodSeconds | default 30 }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" $s.podSecurityContext) | nindent 6 }}
       initContainers:
         - name: wait-for-dependencies
@@ -93,6 +92,7 @@ spec:
             - name: http
               containerPort: {{ $s.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
             {{- if $webhookOn }}
             - name: webhook
               containerPort: {{ $wh.port | default 9082 }}
@@ -108,8 +108,7 @@ spec:
           {{- $pgRef := and (eq (include "plugin-br-sisbajud.postgresPasswordFromRef" .) "true") (not (hasKey $extra "POSTGRES_PASSWORD")) }}
           {{- $vkRef := and (eq (include "plugin-br-sisbajud.redisPasswordFromRef" .) "true") (not (hasKey $extra "REDIS_PASSWORD")) }}
           env:
-            - name: SHUTDOWN_DRAIN_DELAY
-              value: "15s"
+            {{- toYaml $h.env | nindent 12 }}
             {{- if $pgRef }}
             {{- include "lerian-common.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
             {{- end }}
@@ -125,8 +124,9 @@ spec:
             {{- with (include "plugin-br-sisbajud.extraEnv" . | trim) }}
             {{- . | nindent 12 }}
             {{- end }}
-          {{- include "lerian-common.httpProbe" (dict "kind" "livenessProbe" "probe" $s.livenessProbe "port" "http" "path" "/version" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "http" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml $s.resources | nindent 12 }}
           {{- if or $mt.caSecret $mountPair (and $webhookOn $whTls.existingSecret) $s.extraVolumeMounts }}

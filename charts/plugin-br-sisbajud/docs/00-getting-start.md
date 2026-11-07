@@ -47,8 +47,8 @@ O listener roda em `:9082` (Service `plugin-br-sisbajud-webhook`). Exponha só o
 
 ```bash
 kubectl -n sisbajud get pods,jobs
-kubectl -n sisbajud port-forward svc/plugin-br-sisbajud 4029:4029
-curl -s localhost:4029/readyz | jq .
+kubectl -n sisbajud port-forward svc/plugin-br-sisbajud 8099:8099
+curl -s localhost:8099/readyz | jq .
 ```
 
 `/readyz` lista cada dependência.

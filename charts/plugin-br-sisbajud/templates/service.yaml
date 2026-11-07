@@ -1,6 +1,8 @@
 {{- if .Values.sisbajud.enabled -}}
+{{- $h := include "plugin-br-sisbajud.health" . | fromYaml -}}
 {{- include "lerian-common.service" (dict
       "service" .Values.sisbajud.service
+      "ports" $h.servicePorts
       "name" (include "plugin-br-sisbajud.fullname" .)
       "namespace" (include "global.namespace" .)
       "labels" (include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud"))

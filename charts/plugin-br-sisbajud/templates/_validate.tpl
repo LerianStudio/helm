@@ -51,6 +51,13 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- $val := "plugin-br-sisbajud.val" -}}
 {{- $nonProd := eq (include "plugin-br-sisbajud.nonProduction" .) "true" -}}
 
+{{- /* --- values the health preset now owns ------------------------------------- */ -}}
+{{- range $k, $why := dict "pdb" "the preset renders the PodDisruptionBudget" "deploymentStrategy" "the preset sets the rollout (maxUnavailable 0)" "readinessProbe" "probes are served on the health port by the preset" "livenessProbe" "probes are served on the health port by the preset" "terminationGracePeriodSeconds" "the grace period is drain + health.shutdownSeconds + 10" -}}
+{{- if hasKey $s $k -}}
+{{- include $f (dict "msg" (printf "sisbajud.%s is owned by the health preset (%s)." $k $why) "set" (printf "remove sisbajud.%s from your values (tune sisbajud.health.shutdownSeconds)" $k)) -}}
+{{- end -}}
+{{- end -}}
+
 {{- /* --- tenant + license ------------------------------------------------- */ -}}
 {{- $tenant := include $val (dict "cm" $cm "k" "DEFAULT_TENANT_ID" "p" $s.app "f" "defaultTenantId" "d" "11111111-1111-1111-1111-111111111111") | trim -}}
 {{- if not (regexMatch "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" $tenant) -}}

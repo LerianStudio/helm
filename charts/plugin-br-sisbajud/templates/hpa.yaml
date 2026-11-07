@@ -1,7 +1,10 @@
-{{- if and .Values.sisbajud.enabled .Values.sisbajud.autoscaling.enabled -}}
+{{- if .Values.sisbajud.enabled -}}
+{{- $h := include "plugin-br-sisbajud.health" . | fromYaml -}}
+{{- if $h.autoscaling -}}
 {{- include "lerian-common.hpa" (dict
-      "autoscaling" .Values.sisbajud.autoscaling
+      "autoscaling" $h.autoscaling
       "name" (include "plugin-br-sisbajud.fullname" .)
       "namespace" (include "global.namespace" .)
       "labels" (include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud"))) }}
+{{- end -}}
 {{- end -}}

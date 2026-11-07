@@ -1,9 +1,12 @@
-{{- if and .Values.sisbajud.enabled .Values.sisbajud.pdb.enabled -}}
+{{- if .Values.sisbajud.enabled -}}
+{{- $h := include "plugin-br-sisbajud.health" . | fromYaml -}}
+{{- if $h.pdb -}}
 {{- include "lerian-common.pdb" (dict
-      "pdb" .Values.sisbajud.pdb
+      "pdb" $h.pdb
       "name" (include "plugin-br-sisbajud.fullname" .)
       "namespace" (include "global.namespace" .)
       "labels" (include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud"))
       "selector" (include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud"))
       "specStyle" "explicit") }}
+{{- end -}}
 {{- end -}}

@@ -1,0 +1,77 @@
+suite: health preset
+templates:
+  - templates/deployment.yaml
+  - templates/service.yaml
+  - templates/pdb.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+values:
+  - ../../../.github/configs/helm-render-values/plugin-br-sisbajud.yaml
+tests:
+  - it: serves probes on the health port and derives the grace period
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: SHUTDOWN_TIMEOUT, value: 80s}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: health}
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 105
+
+  - it: rolls one replica with a surge and no unavailable pod
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy
+          value: {type: RollingUpdate, rollingUpdate: {maxSurge: 25%, maxUnavailable: 0}}
+
+  - it: renders the PodDisruptionBudget with AlwaysAllow
+    template: templates/pdb.yaml
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+      - equal:
+          path: spec.unhealthyPodEvictionPolicy
+          value: AlwaysAllow
+
+  - it: exposes the health port only as the named ClusterIP Service port
+    template: templates/service.yaml
+    documentSelector:
+      path: metadata.name
+      value: plugin-br-sisbajud
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
+
+  - it: refuses an image below the first one that serves the health port
+    template: templates/service.yaml
+    set:
+      sisbajud.image.tag: 2.0.0-beta.5
+    asserts:
+      - failedTemplate:
+          errorPattern: "below 2.0.0-beta.6"
+
+  - it: refuses the retired pdb value
+    template: templates/deployment.yaml
+    set:
+      sisbajud.pdb.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "sisbajud.pdb is owned by the health preset"

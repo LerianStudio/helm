@@ -69,6 +69,23 @@ app.kubernetes.io/part-of: {{ include "plugin-br-sisbajud.name" .context }}
 {{- end }}
 
 {{/*
+Health preset (lerian-common.health), stack go: probes, HEALTH_PORT 8099,
+SHUTDOWN_*, grace (drain 15 + shutdownSeconds + 10), RollingUpdate maxUnavailable 0,
+PDB. minImage is the first image that serves the health port; the effective
+tag (sisbajud.image.tag, else Chart.appVersion) is what the preset guards.
+*/}}
+{{- define "plugin-br-sisbajud.minImage" -}}2.0.0-beta.6{{- end -}}
+{{- define "plugin-br-sisbajud.health" -}}
+{{- $s := .Values.sisbajud -}}
+{{- $v := deepCopy $s -}}
+{{- $_ := set $v "image" (dict "tag" ($s.image.tag | default .Chart.AppVersion | toString)) -}}
+{{- include "lerian-common.health" (dict
+      "name" (include "plugin-br-sisbajud.fullname" .) "component" $v "health" $s.health
+      "port" $s.service.port "minImage" (include "plugin-br-sisbajud.minImage" .)
+      "replicas" $s.replicaCount "autoscaling" $s.autoscaling) -}}
+{{- end -}}
+
+{{/*
 imagePullSecrets list: component list, else global.imagePullSecrets.
 Input: dict "context" $ "list" <component list>.
 */}}

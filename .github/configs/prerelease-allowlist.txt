@@ -7,3 +7,6 @@ plugin-br-ted-lerian
 reporter
 # midaz stays until the ledger team cuts 4.5.0.
 midaz
+
+# plugin-br-sisbajud pins the first app image that serves the health port (2.0.0-beta.6), still a beta.
+plugin-br-sisbajud

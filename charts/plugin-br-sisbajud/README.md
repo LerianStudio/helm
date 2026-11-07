@@ -20,7 +20,7 @@ Notices arrive through the Streaming Hub **webhook** (default, own listener on `
 
 | Resource | Notes |
 |---|---|
-| Deployment | `ghcr.io/lerianstudio/plugin-br-sisbajud`, HTTP API `:4029` (liveness `/version`, readiness `/readyz`), webhook `:9082` |
+| Deployment | `ghcr.io/lerianstudio/plugin-br-sisbajud`, HTTP API `:4029` (constant `/health` and `/version` only), webhook `:9082`, probes, `/readyz` and `/metrics` on the internal health port `:8099` |
 | Service / Service `-webhook` | ClusterIP; the webhook Service exposes only the listener |
 | Ingress / Ingress `-webhook` | both optional; expose only the webhook path to the Streaming Hub |
 | Job `-migrations` | `ghcr.io/lerianstudio/plugin-br-sisbajud-migrations`, pre-install/pre-upgrade hook (ArgoCD PreSync, wave -5) |
@@ -79,7 +79,7 @@ Precedence per env key: `sisbajud.configmap.<KEY>` > `sisbajud.<group>.<field>` 
 | `sisbajud.license.organizationIds` | `ORGANIZATION_IDS` | must be `global` |
 | `global.auth.*` | `PLUGIN_AUTH_ENABLED`, `PLUGIN_AUTH_HOST` | |
 
-Liveness probes `/version` (static build info, always 200): the app's `/health` stays 503 until its startup self-probe passes. Readiness stays on `/readyz`.
+The `lerian-common.health` preset owns probes, ports, grace period, rollout and the PodDisruptionBudget; none is a value, and the render refuses `sisbajud.readinessProbe`, `livenessProbe`, `terminationGracePeriodSeconds`, `pdb`, `deploymentStrategy` and `SHUTDOWN_*` / `HEALTH_PORT` overrides. The app serves `/health` (startup and liveness, process only) and `/readyz` (readiness) on `HEALTH_PORT` 8099, a ClusterIP Service port named `health`, never an Ingress backend. A rollout is `RollingUpdate` with `maxUnavailable` 0 (the running pod keeps serving until the new one is ready) and the PodDisruptionBudget allows one eviction (`AlwaysAllow`). `sisbajud.health.shutdownSeconds` (default 80) is `SHUTDOWN_TIMEOUT`, one budget for the HTTP drain, the order crons and the telemetry flush; the grace period is drain (15s) + that + 10s = 105s. The render refuses an image older than 2.0.0-beta.6, the first one that serves the health port: upgrade chart and image together (both move to the 2.0.0 line, which also needs `sisbajud.midaz.baseUrl` in single-tenant, see the upgrade note below), and roll both back together. Main-port `/readyz` answers 404; point load balancers and monitors at the main-port `/health`.
 
 `VAULT_ADDR` and `MENSAGERIA_BASE_URL` must be https (`VAULT_ADDR` may be http only for a loopback host or `ENVIRONMENT_NAME` `local|development|test`); argocd-vault-plugin placeholders (`<path:...>`) are not checked at render.
 

@@ -93,12 +93,6 @@ sisbajud:
     seccompProfile:
       type: RuntimeDefault
 
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-
   service:
     type: ClusterIP
     port: 4029
@@ -127,32 +121,16 @@ sisbajud:
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
 
-  pdb:
-    enabled: true
-    maxUnavailable: 1
-    annotations: {}
-
-  readinessProbe:
-    path: /readyz
-    initialDelaySeconds: 10
-    periodSeconds: 10
-    timeoutSeconds: 5
-    successThreshold: 1
-    failureThreshold: 3
-  # -- /version (static build info, always 200): the app's /health answers 503
-  #    until its startup self-probe passes, and that self-probe stays degraded
-  #    while no institution is routed (executor_institutions), so a /health
-  #    liveness probe would restart a fresh install in a loop.
-  livenessProbe:
-    path: /version
-    initialDelaySeconds: 15
-    periodSeconds: 20
-    timeoutSeconds: 5
-    successThreshold: 1
-    failureThreshold: 3
-
-  # SHUTDOWN_DRAIN_DELAY 15s + 90s of shutdown stages (HTTP drain, closeResources, telemetry flush).
-  terminationGracePeriodSeconds: 105
+  # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, SHUTDOWN_*,
+  #    grace, the zero-unavailable rollout and the PodDisruptionBudget are owned
+  #    by it. replicaCount stays 1; the executor coordinates replicas through
+  #    its lock, so a rollout surges a second pod before the first stops.
+  #    SHUTDOWN_TIMEOUT is one budget for the HTTP drain, closeResources (the
+  #    order crons drain up to 27s) and the telemetry flush; keep it above 30s.
+  #    Grace = drain 15 + shutdownSeconds + 10 = 105.
+  health:
+    stack: go
+    shutdownSeconds: 80
   nodeSelector: {}
   tolerations: []
   affinity: {}

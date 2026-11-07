@@ -65,6 +65,22 @@ tests:
           path: spec.ports
           content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
 
+  - it: keeps the health port off a LoadBalancer Service in multi-tenant mode
+    template: templates/service.yaml
+    set:
+      global.multiTenant.enabled: true
+      bankTransfer.service.type: LoadBalancer
+      bankTransfer.migrations.enabled: false
+      bankTransfer.configmap.MULTI_TENANT_URL: http://tm:4003
+      bankTransfer.configmap.AWS_REGION: us-east-2
+      bankTransfer.configmap.MULTI_TENANT_REDIS_HOST: valkey
+      bankTransfer.secrets.MULTI_TENANT_SERVICE_API_KEY: x
+      bankTransfer.secrets.MULTI_TENANT_REDIS_PASSWORD: x
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 1
+
   - it: refuses an image below the first one that serves the health port
     template: templates/service.yaml
     set:

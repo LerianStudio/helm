@@ -1,5 +1,14 @@
 # Plugin-br-payments Changelog
 
+## [2.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.3.1)
+
+Fixes:
+- Removed the main-listener native TLS keys from `plugin-br-payments`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.3.0...plugin-br-payments-v2.3.1)
+
+---
+
 ## [2.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.3.0)
 
 Features:

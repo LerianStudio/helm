@@ -1,5 +1,21 @@
 # Plugin-br-ted-lerian Changelog
 
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.2.0)
+
+Features:
+- Serve health on port `8099`. (@fredcamaral)
+
+Fixes:
+- Name the refused key and check the ingress port in tests. (@fredcamaral)
+
+Improvements:
+- Add the `1.1.4` upgrade guide. (@fredcamaral)
+- Fix host check in the `1.1.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-ted-lerian-v1.1.4...plugin-br-ted-lerian-v1.2.0)
+
+---
+
 ## [1.1.4](https://github.com/LerianStudio/helm/releases/tag/plugin-br-ted-lerian-v1.1.4)
 
 Fixes:
@@ -85,3 +101,4 @@ Features:
 - Add the TED plugin chart on lerian-common. (@ferr3ira-gabriel)
 
 [View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-ted-lerian-v1.0.0)
+

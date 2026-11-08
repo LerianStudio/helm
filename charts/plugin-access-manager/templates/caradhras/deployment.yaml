@@ -102,7 +102,6 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-caradhras.fullname" . }}
                   key: ALLOW_INSECURE_TLS
-                  optional: true
             {{- /* The migrator is licence-gated and, on a fresh install, the first process to
                  fetch the licence file: it needs the key (or file) and, behind a proxy,
                  caradhras.migrations.extraEnvVars (HTTPS_PROXY). */}}

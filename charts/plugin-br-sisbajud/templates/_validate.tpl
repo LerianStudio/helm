@@ -341,8 +341,8 @@ the app's validateConnectorEnvConnection and its executor-mode requirement).
 Multi-tenant: every MIDAZ_* connection key is refused (each institution keeps
 its own connection). Single-tenant executor: MIDAZ_BASE_URL, MIDAZ_AUTH_ADDRESS
 and the ledger client pair are required, and the CRM pair too with
-MIDAZ_CRM_MODE=legacy; the CRM pair needs MIDAZ_CRM_BASE_URL, which embedded
-refuses; the URLs are https (http only outside production), and
+MIDAZ_CRM_MODE=legacy; in either mode the CRM pair needs MIDAZ_CRM_BASE_URL,
+and with auth on that URL needs the pair (a row may override legacy); the URLs are https (http only outside production), and
 each client pair is whole. A refusal names the key, never the value. An external
 Secret (useExistingSecret) is opaque: its keys are trusted.
 */}}
@@ -412,16 +412,16 @@ Secret (useExistingSecret) is opaque: its keys are trusted.
 {{- if ne $crmID (index $inline (index $crm 1)) -}}
 {{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET must be set together." "set" "sisbajud.secrets.MIDAZ_CRM_CLIENT_ID and sisbajud.secrets.MIDAZ_CRM_CLIENT_SECRET") -}}
 {{- end -}}
-{{- if and $crmID (not $legacy) -}}
-{{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET are only for MIDAZ_CRM_MODE=legacy: the embedded CRM authenticates with the ledger pair." "set" "remove sisbajud.secrets.MIDAZ_CRM_CLIENT_*, or sisbajud.midaz.crmMode=legacy") -}}
-{{- end -}}
 {{- if and $crmID (not $authAddr) -}}
 {{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID requires MIDAZ_AUTH_ADDRESS." "set" "sisbajud.midaz.authAddress") -}}
 {{- end -}}
-{{- if and $crmBase (not $legacy) -}}
-{{- include $f (dict "msg" "MIDAZ_CRM_BASE_URL is only for MIDAZ_CRM_MODE=legacy: the embedded CRM is the ledger." "set" "remove sisbajud.midaz.crmBaseUrl, or sisbajud.midaz.crmMode=legacy") -}}
+{{- /* A row may override crmMode=legacy under the embedded default, so the CRM
+   URL and pair are valid in either mode. An existing Secret is opaque: there
+   the auth group stands for the pair. */ -}}
+{{- if and $group $crmBase (not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" (index $crm 0)))) -}}
+{{- include $f (dict "msg" "MIDAZ_CRM_BASE_URL requires MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET when the Midaz auth group is set." "set" "sisbajud.secrets.MIDAZ_CRM_CLIENT_ID and sisbajud.secrets.MIDAZ_CRM_CLIENT_SECRET (or useExistingSecret with both keys)") -}}
 {{- end -}}
-{{- if and $legacy (or $crmID $group) (not $crmBase) -}}
+{{- if and (not $crmBase) (or $crmID (and $legacy $group)) -}}
 {{- include $f (dict "msg" "MIDAZ_CRM_CLIENT_ID and MIDAZ_CRM_CLIENT_SECRET require MIDAZ_CRM_BASE_URL: the CRM bearer only goes to the configured CRM." "set" "sisbajud.midaz.crmBaseUrl=https://<crm-host>") -}}
 {{- end -}}
 {{- if and $group $legacy (not (include "plugin-br-sisbajud.provided" (dict "context" $ "key" (index $crm 0)))) -}}

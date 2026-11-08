@@ -1,4 +1,6 @@
-{{- if and .Values.bankTransfer.enabled .Values.bankTransfer.autoscaling.enabled }}
+{{- if .Values.bankTransfer.enabled }}
+{{- $h := include "bank-transfer.health" . | fromYaml }}
+{{- if $h.autoscaling }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -11,7 +13,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "bank-transfer.fullname" . }}
-  minReplicas: {{ .Values.bankTransfer.autoscaling.minReplicas }}
+  minReplicas: {{ $h.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.bankTransfer.autoscaling.maxReplicas }}
   metrics:
     {{- if .Values.bankTransfer.autoscaling.targetCPUUtilizationPercentage }}
@@ -30,4 +32,5 @@ spec:
           type: Utilization
           averageUtilization: {{ .Values.bankTransfer.autoscaling.targetMemoryUtilizationPercentage }}
     {{- end }}
+{{- end }}
 {{- end }}

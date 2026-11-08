@@ -201,16 +201,16 @@ global:
       # -- Password for bank_transfer user (ignored if useExistingSecret.name is set)
       password: ""
 bankTransfer:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
   # -- Service name
   name: bank-transfer
   # -- Enable or disable the bank-transfer service
   enabled: true
   # -- Number of replicas for the bank-transfer service
   replicaCount: 2
+  # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout strategy and PDB
+  # policy are owned by it. Tune only drainSeconds (default 15) and shutdownSeconds (default 30); grace = drain + shutdown + 10.
+  health:
+    stack: go
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   image:
@@ -219,7 +219,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.5.1"
+    tag: "3.6.0-beta.9"
   # -- PostgreSQL migrations. External Postgres: a Job (Helm hook pre-install,pre-upgrade;
   # ArgoCD PreSync). Bundled Postgres: an initContainer of each app pod, so no pod starts
   # on an unmigrated schema; the hook notes below apply to the external Job only.
@@ -281,31 +281,18 @@ bankTransfer:
     readOnlyRootFilesystem: true
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration
+  # -- PodDisruptionBudget configuration (budget and eviction policy come from the health preset)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods. Ignored while maxUnavailable is set
-    # (templates/pdb.yaml renders maxUnavailable first); clear maxUnavailable
-    # to use it.
-    minAvailable: 1
-    # -- Maximum number of unavailable pods. Takes precedence over minAvailable
-    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
-  # -- Deployment update strategy
-  deploymentUpdate:
-    # -- Type of deployment strategy
-    type: RollingUpdate
-    # -- Maximum number of pods that can be created over the desired number of pods
-    maxSurge: 100%
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 0
   service:
     # -- Kubernetes service type
     type: ClusterIP
     # -- Port for the HTTP API
     port: 4027
+    # -- The internal `health` port 8099 is added by the health preset on ClusterIP only (multi-tenant); never route an Ingress to it
     annotations: {}
   ingress:
     # -- Enable or disable ingress

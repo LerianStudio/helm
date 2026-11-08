@@ -129,7 +129,7 @@ With the wrong mode every holder read fails.
 
 ## Midaz connection (single tenant)
 
-In single tenant the executor reaches Midaz through the environment, not through each institution's row (plugin v2.0.0). The render fails naming the key:
+In single tenant the executor reaches Midaz through the environment, not through each institution's row (plugin v1.3.0). The render fails naming the key:
 
 | Value | Env | Where | Rule |
 |-------|-----|-------|------|
@@ -141,9 +141,9 @@ In single tenant the executor reaches Midaz through the environment, not through
 
 A Midaz without auth needs only `baseUrl`. With auth, set `authAddress` and the ledger client pair together; a partial group is refused. The URLs are https (http only to a loopback host, or outside production), and each client pair is set whole. With `useExistingSecret: true` the chart cannot read the Secret: the group is decided by `authAddress`, and the Secret must carry the client pairs.
 
-**Upgrade note (breaking, plugin v2.0.0):** a single-tenant install must set `sisbajud.midaz.baseUrl` (and the auth group when its Midaz requires auth; with `crmMode: legacy`, or any institution row overriding `legacy`, also the CRM pair and `sisbajud.midaz.crmBaseUrl`, since a row's own CRM URL is no longer used) before upgrading; the render fails without `baseUrl`. Multi-tenant is unchanged: each institution keeps its own connection, and the render refuses any of these keys there.
+**Upgrade note (plugin v1.3.0):** a single-tenant install must set `sisbajud.midaz.baseUrl` (and the auth group when its Midaz requires auth; with `crmMode: legacy`, or any institution row overriding `legacy`, also the CRM pair and `sisbajud.midaz.crmBaseUrl`, since a row's own CRM URL is no longer used) before upgrading; the render fails without `baseUrl`. Multi-tenant is unchanged: each institution keeps its own connection, and the render refuses any of these keys there.
 
-**Upgrade note (plugin v2.0.0, health port):** the app serves `/readyz` only on `HEALTH_PORT`. This chart sets it (8099) and moves the readiness probe there; an older chart with the v2.0.0 image never becomes Ready, so upgrade chart and image together. A scrape of `/metrics` must target the pod's `health` port, not the Service.
+**Upgrade note (plugin v1.3.0, health port):** the app serves `/readyz` only on `HEALTH_PORT`. This chart sets it (8099) and moves the readiness probe there; an older chart with the v1.3.0 image never becomes Ready, so upgrade chart and image together. A scrape of `/metrics` must target the pod's `health` port, not the Service.
 
 ## Development profile
 

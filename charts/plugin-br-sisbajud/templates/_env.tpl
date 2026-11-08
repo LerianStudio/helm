@@ -133,7 +133,7 @@ EXECUTOR_HUB_WEBHOOK_TLS_KEY_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.moun
 {{- end }}
 # --- Midaz connector (ledger URL + credentials are per institution, in the DB) ----
 {{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "embedded") }}
-{{- /* Single-tenant Midaz connection (v2.0.0): the URLs here, the client pairs in the
+{{- /* Single-tenant Midaz connection (v1.3.0): the URLs here, the client pairs in the
    Secret (sisbajud.secrets.MIDAZ_*_CLIENT_* or the existing Secret). Emitted only
    when set; multi-tenant refuses them (_validate.tpl). */}}
 {{- include $kv (dict "cm" $cm "p" $s.midaz "f" "baseUrl" "k" "MIDAZ_BASE_URL" "opt" true) }}

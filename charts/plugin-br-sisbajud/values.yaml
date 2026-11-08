@@ -368,7 +368,7 @@ sisbajud:
     #    app refuse it otherwise).
     permanentResultEmitterEnabled: ""
 
-  # -- Midaz connection. Single-tenant (v2.0.0): the connection comes from the
+  # -- Midaz connection. Single-tenant (v1.3.0): the connection comes from the
   #    environment. baseUrl is REQUIRED in executor mode. The auth group is
   #    optional and all-or-nothing: authAddress here plus
   #    MIDAZ_LEDGER_CLIENT_ID / MIDAZ_LEDGER_CLIENT_SECRET in `secrets` or the

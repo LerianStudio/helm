@@ -99,7 +99,7 @@ sisbajud:
   direct:
     permanentBlockEnabled: false
 
-  # Single tenant (v2.0.0): the Midaz connection comes from the environment.
+  # Single tenant (v1.3.0): the Midaz connection comes from the environment.
   # baseUrl is required in executor mode. With a Midaz that requires auth, set
   # authAddress AND the ledger client pair in the Secret below (and
   # MIDAZ_CRM_CLIENT_* plus midaz.crmBaseUrl for a legacy CRM, whatever

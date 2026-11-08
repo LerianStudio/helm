@@ -337,7 +337,7 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- end -}}
 
 {{/*
-validateMidazConnection — the Midaz connection from the environment (v2.0.0;
+validateMidazConnection — the Midaz connection from the environment (v1.3.0;
 the app's validateConnectorEnvConnection and its executor-mode requirement).
 Multi-tenant: every MIDAZ_* connection key is refused (each institution keeps
 its own connection). Single-tenant executor: MIDAZ_BASE_URL, MIDAZ_AUTH_ADDRESS
@@ -376,7 +376,7 @@ Secret (useExistingSecret) is opaque: its keys are trusted.
 {{- else -}}
 {{- $insecureOK := eq (include "plugin-br-sisbajud.nonProduction" .) "true" -}}
 {{- if not $base -}}
-{{- include $f (dict "msg" "MIDAZ_BASE_URL is required in single-tenant (v2.0.0): the Midaz connection comes from the environment." "set" "sisbajud.midaz.baseUrl=https://<host>") -}}
+{{- include $f (dict "msg" "MIDAZ_BASE_URL is required in single-tenant (v1.3.0): the Midaz connection comes from the environment." "set" "sisbajud.midaz.baseUrl=https://<host>") -}}
 {{- end -}}
 {{- range $k, $v := dict "MIDAZ_BASE_URL" $base "MIDAZ_AUTH_ADDRESS" $authAddr "MIDAZ_CRM_BASE_URL" $crmBase -}}
 {{- $loopback := regexMatch "^(?i)http://(localhost|127\\.[0-9.]+|\\[::1\\])(:[0-9]+)?(/.*)?$" $v -}}

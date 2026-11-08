@@ -131,12 +131,18 @@ jobs:
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     steps:
+      # Scoped to this repository and to contents: the token only checks out and
+      # pushes (the release commit, its tags and the README sync); the .releaserc
+      # has no @semantic-release/github plugin. The App bypasses the main ruleset,
+      # so an unscoped token would reach every repository the App is installed on.
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+          repositories: helm
+          permission-contents: write
 
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

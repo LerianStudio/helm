@@ -31,7 +31,7 @@ If your GitOps overlay sets probe paths (`/health/live`, `/health/ready`), delet
 ## Before you upgrade
 
 - **BYOC network policy:** the kubelet probes the pod on 8099 now. A policy that admits only the node to port 4027 must also admit the node to the pod on 8099.
-- **Load balancer and uptime checks:** a check on `/readyz`, `/health/live`, `/health/ready` or `/metrics` on the main port returns 404 on the new image. Point it at main `/health` on port 4027 (ALB: `alb.ingress.kubernetes.io/healthcheck-path: /health`, `healthcheck-port: "4027"`; GKE and AGIC: the same path on the serving port). Never route an Ingress to 8099.
+- **Load balancer and uptime checks:** a check on `/readyz`, `/health/live`, `/health/ready` or `/metrics` on the main port returns 404 on the new image. Point it at main `/health` on the serving port (ALB: `alb.ingress.kubernetes.io/healthcheck-path: /health` with `healthcheck-port` left at its default `traffic-port`, which works for `ip` and `instance` targets; GKE and AGIC: the same path on the serving port). Never route an Ingress to 8099.
 - **Scraping:** point Prometheus at the pod's port 8099 `/metrics`, inside the cluster.
 - **Grace:** the pod now has 55s to stop (15s drain, 30s shutdown budget, 10s margin). Raise `bankTransfer.health.shutdownSeconds` if your shutdown needs longer; the grace period follows.
 

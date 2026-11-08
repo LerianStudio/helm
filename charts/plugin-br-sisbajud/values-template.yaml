@@ -99,6 +99,15 @@ sisbajud:
   direct:
     permanentBlockEnabled: false
 
+  # Single tenant (v2.0.0): the Midaz connection comes from the environment.
+  # baseUrl is required in executor mode. With a Midaz that requires auth, set
+  # authAddress AND the ledger client pair in the Secret below (and
+  # MIDAZ_CRM_CLIENT_* with midaz.crmMode "legacy"); without auth, leave all
+  # three out.
+  midaz:
+    baseUrl: "https://midaz.example.com"
+    authAddress: "https://access-manager.example.com"
+
   # Production: an external Secret carrying the keys below.
   useExistingSecret: true
   existingSecretName: "plugin-br-sisbajud-secrets"
@@ -111,6 +120,8 @@ sisbajud:
     POSTGRES_PASSWORD: ""
     REDIS_PASSWORD: ""
     VAULT_APPROLE_SECRET_ID: ""
+    MIDAZ_LEDGER_CLIENT_ID: ""
+    MIDAZ_LEDGER_CLIENT_SECRET: ""
 
 migrations:
   enabled: true

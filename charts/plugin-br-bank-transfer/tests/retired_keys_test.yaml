@@ -42,3 +42,22 @@ tests:
     set: {bankTransfer.deploymentUpdate.type: Recreate}
     asserts:
       - failedTemplate: {errorPattern: "bankTransfer.deploymentUpdate is owned by the health preset"}
+  - it: refuses an empty deploymentUpdate
+    template: templates/pdb.yaml
+    set: {bankTransfer.deploymentUpdate: {}}
+    asserts:
+      - failedTemplate: {errorPattern: "bankTransfer.deploymentUpdate is owned by the health preset"}
+  - it: renders a non-string pdb annotation as a string
+    template: templates/pdb.yaml
+    set:
+      bankTransfer.pdb.annotations:
+        argocd.argoproj.io/sync-wave: -1
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "-1"
+  - it: renders no pdb for a singleton
+    template: templates/pdb.yaml
+    set: {bankTransfer.health.singleton: true, bankTransfer.replicaCount: 1, bankTransfer.autoscaling.enabled: false}
+    asserts:
+      - hasDocuments: {count: 0}

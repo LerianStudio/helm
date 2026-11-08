@@ -34,7 +34,7 @@ PDB spec and rollout strategy come from the health preset; an operator override 
 {{- range $k := list "minAvailable" "maxUnavailable" -}}
 {{- if hasKey ($.Values.bankTransfer.pdb | default dict) $k -}}{{- fail (printf "bank-transfer: bankTransfer.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $k) -}}{{- end -}}
 {{- end -}}
-{{- if .Values.bankTransfer.deploymentUpdate -}}{{- fail "bank-transfer: bankTransfer.deploymentUpdate is owned by the health preset (RollingUpdate, maxUnavailable 0); remove it" -}}{{- end -}}
+{{- if hasKey .Values.bankTransfer "deploymentUpdate" -}}{{- fail "bank-transfer: bankTransfer.deploymentUpdate is owned by the health preset (RollingUpdate, maxUnavailable 0); remove it" -}}{{- end -}}
 {{- end }}
 
 {{/*

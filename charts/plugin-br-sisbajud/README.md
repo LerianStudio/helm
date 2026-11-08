@@ -136,11 +136,12 @@ In single tenant the executor reaches Midaz through the environment, not through
 | `sisbajud.midaz.baseUrl` | `MIDAZ_BASE_URL` | ConfigMap | **Required** in executor mode |
 | `sisbajud.midaz.authAddress` | `MIDAZ_AUTH_ADDRESS` | ConfigMap | Auth group: optional, all-or-nothing |
 | `sisbajud.secrets.MIDAZ_LEDGER_CLIENT_ID` / `MIDAZ_LEDGER_CLIENT_SECRET` | same | Secret (or the existing Secret) | Auth group: optional, all-or-nothing |
-| `sisbajud.secrets.MIDAZ_CRM_CLIENT_ID` / `MIDAZ_CRM_CLIENT_SECRET` | same | Secret | Required with `crmMode: legacy` when the auth group is set; needs `authAddress`; refused with `embedded` |
+| `sisbajud.secrets.MIDAZ_CRM_CLIENT_ID` / `MIDAZ_CRM_CLIENT_SECRET` | same | Secret (or the existing Secret) | Required with `crmMode: legacy` when the auth group is set; needs `authAddress` and `crmBaseUrl`; refused with `embedded` |
+| `sisbajud.midaz.crmBaseUrl` | `MIDAZ_CRM_BASE_URL` | ConfigMap | The standalone CRM root (Midaz v3): `crmMode: legacy` only, required there with the CRM pair; refused with `embedded` |
 
-A Midaz without auth needs only `baseUrl`. With auth, set `authAddress` and the ledger client pair together; a partial group is refused. Both URLs are https (http only to a loopback host, or outside production), and each client pair is set whole. With `useExistingSecret: true` the chart cannot read the Secret: the group is decided by `authAddress`, and the Secret must carry the client pairs.
+A Midaz without auth needs only `baseUrl`. With auth, set `authAddress` and the ledger client pair together; a partial group is refused. The URLs are https (http only to a loopback host, or outside production), and each client pair is set whole. With `useExistingSecret: true` the chart cannot read the Secret: the group is decided by `authAddress`, and the Secret must carry the client pairs.
 
-**Upgrade note (breaking, plugin v2.0.0):** a single-tenant install must set `sisbajud.midaz.baseUrl` (and the auth group when its Midaz requires auth) before upgrading; the render fails without `baseUrl`. Multi-tenant is unchanged: each institution keeps its own connection, and the render refuses any of these keys there.
+**Upgrade note (breaking, plugin v2.0.0):** a single-tenant install must set `sisbajud.midaz.baseUrl` (and the auth group when its Midaz requires auth; with `crmMode: legacy`, also the CRM pair and `sisbajud.midaz.crmBaseUrl`, since a row's own CRM URL is no longer used) before upgrading; the render fails without `baseUrl`. Multi-tenant is unchanged: each institution keeps its own connection, and the render refuses any of these keys there.
 
 ## Development profile
 

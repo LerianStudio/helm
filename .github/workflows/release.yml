@@ -34,7 +34,7 @@ jobs:
   get-changed-paths:
     if: github.event_name == 'push' && github.actor != 'lerian-studio-midaz-push-bot[bot]'
     name: Get Changed Paths
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
     outputs:
       matrix: ${{ steps.restrict.outputs.matrix }}
     steps:
@@ -124,7 +124,10 @@ jobs:
       group: helm-release-${{ github.ref }}
       cancel-in-progress: false
       queue: max
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # GitHub-hosted, not Blacksmith: this job holds the GPG signing key and the App
+    # token that bypasses the main ruleset, so it stays off third-party runners.
+    # RELEASE_RUNNERS can move it without editing this file.
+    runs-on: ${{ vars.RELEASE_RUNNERS || 'ubuntu-latest' }}
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -353,6 +356,12 @@ jobs:
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          # semantic-release first dry-run pushes to the plain repository URL and
+          # only embeds the token in the URL (and so in git's argv) when that fails.
+          # This env-scoped helper makes the plain URL authenticate.
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: credential.https://github.com.helper
+          GIT_CONFIG_VALUE_0: '!f() { if [ "$1" = get ]; then printf "username=x-access-token\npassword=%s\n" "$GITHUB_TOKEN"; fi; }; f'
           GIT_AUTHOR_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_AUTHOR_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
@@ -417,9 +426,17 @@ jobs:
           git add README.md
           git commit -S -m "chore(readme): sync ${CHART_NAME} version matrix to ${NEW_VERSION} [skip ci]"
 
+          # The token reaches git through an env-scoped credential helper, not the
+          # remote URL: a URL argument sits in the argv of every git process, where
+          # the log mask does not reach. The config lives only in this step's env.
+          # shellcheck disable=SC2016 # $GITHUB_TOKEN expands when git runs the helper
+          export GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0='credential.https://github.com.helper' \
+            GIT_CONFIG_VALUE_0='!f() { if [ "$1" = get ]; then printf "username=x-access-token\npassword=%s\n" "$GITHUB_TOKEN"; fi; }; f'
+          url="https://github.com/${GITHUB_REPOSITORY}.git"
+
           # A merge can land between the release commit and this push; rebase onto
           # it and retry rather than drop the row.
-          url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           for attempt in 1 2 3 4 5; do
             if git pull --quiet --rebase --autostash "$url" "$BRANCH" && git push --quiet "$url" "HEAD:${BRANCH}"; then
               echo "README version matrix synced (attempt ${attempt})"

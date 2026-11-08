@@ -59,10 +59,10 @@ jobs:
     # to install the chart as written, and shrinking resources to fit would test
     # something nobody deploys.
     #
-    # A dispatch input wins, then the GENERAL_RUNNERS variable, so the pool can be
-    # moved without editing this file. Whatever GENERAL_RUNNERS names must still have
-    # 8 vCPU, for the reason above.
-    runs-on: ${{ inputs.runner || vars.GENERAL_RUNNERS || 'blacksmith-8vcpu-ubuntu-2404' }}
+    # A dispatch input wins, then the INSTALL_TEST_RUNNERS variable, so the pool can
+    # be moved without editing this file. Not GENERAL_RUNNERS: that one names the
+    # org's 4 vCPU pool, which is exactly the ceiling described above.
+    runs-on: ${{ inputs.runner || vars.INSTALL_TEST_RUNNERS || 'blacksmith-8vcpu-ubuntu-2404' }}
     timeout-minutes: 60 # a full sweep installs every app chart sequentially, now waiting for Ready
     steps:
       # persist-credentials: false because the step that follows runs

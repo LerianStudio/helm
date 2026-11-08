@@ -37,15 +37,14 @@ The partition CronJob and the partition reconcile Job mount the ledger's licence
 
 When `ledger.secrets.LICENSE_KEY` is set (and `ledger.useExistingSecret` is `false`), a hook Secret named `<ledger fullname>-license-hook` carries only `LICENSE_KEY` ahead of the partition reconcile Job, so the Job has the key on the first upgrade that sets it. With `useExistingSecret: true` the Job reads the key from your Secret, as the ledger does.
 
-With `ledger.configmap.MULTI_TENANT_ENABLED: "true"`, the partition CronJob and reconcile Job now receive `REDIS_PASSWORD` the same way the ledger Deployment does. A multi-tenant ledger keeps its licence file in Valkey, and without the password every partition run would fetch it from the licence service.
+With `ledger.configmap.MULTI_TENANT_ENABLED: "true"`, the partition CronJob and reconcile Job now receive `REDIS_PASSWORD` the same way the ledger Deployment does.
 
 ## BYOC: what the licence-validating images need
 
 These apply when you move `ledger.image.tag` and `tracer.image.tag` to an image built on lib-license-go v5:
 
 - **First boot:** each pod needs outbound access to `license.lerian.io` on port 443, or a mounted licence file (`licenseFile.existingSecret`).
-- **Single-tenant ledger and tracer:** the database role the application uses needs `CREATE` on the schema of the single-tenant transaction database and of the tracer database. Alternatively, pre-create the `lerian_license_file` table with a role that owns it.
-- **Multi-tenant ledger:** the licence file is stored in Valkey. It needs no database grant.
+- **Storage:** the licence lives only in memory. The application needs no database grant and no Valkey key for it. Images from Midaz 4.5.0-rc.2 on drop the `lerian_license_file` table (single-tenant) and the Valkey key (multi-tenant) that earlier v5 images created.
 - **Renewal:** the licence is renewed every 6 hours.
 
 ## Action required

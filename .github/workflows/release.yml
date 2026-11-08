@@ -34,7 +34,7 @@ jobs:
   get-changed-paths:
     if: github.event_name == 'push' && github.actor != 'lerian-studio-midaz-push-bot[bot]'
     name: Get Changed Paths
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
     outputs:
       matrix: ${{ steps.restrict.outputs.matrix }}
     steps:
@@ -124,7 +124,10 @@ jobs:
       group: helm-release-${{ github.ref }}
       cancel-in-progress: false
       queue: max
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # GitHub-hosted, not Blacksmith: this job holds the GPG signing key and the App
+    # token that bypasses the main ruleset, so it stays off third-party runners.
+    # RELEASE_RUNNERS can move it without editing this file.
+    runs-on: ${{ vars.RELEASE_RUNNERS || 'ubuntu-latest' }}
     strategy:
       max-parallel: 1
       fail-fast: false

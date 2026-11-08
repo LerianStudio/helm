@@ -165,6 +165,7 @@
               "SEAWEEDFS_REGION",
               "SEAWEEDFS_S3_ENDPOINT",
               "SERVER_ADDRESS",
+              "SHUTDOWN_TIMEOUT",
               "SERVER_TLS_CERT_FILE",
               "SERVER_TLS_KEY_FILE",
               "SISBAJUD_DEK_CACHE_TTL",

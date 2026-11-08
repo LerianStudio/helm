@@ -1,0 +1,33 @@
+suite: caradhras migrate init container carries the server TLS policy flag
+templates:
+  - templates/caradhras/deployment.yaml
+  - templates/caradhras/secrets.yaml
+  - templates/caradhras/app-client-secret.yaml
+  - templates/auth/secrets.yaml
+  - templates/auth-database/secrets.yaml
+  - templates/caradhras/configmap.yaml
+  - templates/auth/configmap.yaml
+release:
+  name: pam
+  namespace: pam
+set:
+  identity.secrets.LICENSE_KEY: x
+  auth.secrets.AUTHORIZER_CLIENT_SECRET: x
+  auth.secrets.LICENSE_KEY: x
+  caradhras.secrets.LICENSE_KEY: x
+tests:
+  - it: reads ALLOW_INSECURE_TLS from the caradhras configmap, as the server does
+    template: templates/caradhras/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: migrate
+      - contains:
+          path: spec.template.spec.initContainers[1].env
+          content:
+            name: ALLOW_INSECURE_TLS
+            valueFrom:
+              configMapKeyRef:
+                name: pam-caradhras
+                key: ALLOW_INSECURE_TLS
+                optional: true

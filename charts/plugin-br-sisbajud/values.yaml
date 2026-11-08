@@ -360,9 +360,22 @@ sisbajud:
     #    app refuse it otherwise).
     permanentResultEmitterEnabled: ""
 
-  # -- Midaz connector default. Ledger URL and credentials are per institution
-  #    (institution config, sealed in the database), not env.
+  # -- Midaz connection. Single-tenant (v2.0.0): the connection comes from the
+  #    environment. baseUrl is REQUIRED in executor mode. The auth group is
+  #    optional and all-or-nothing: authAddress here plus
+  #    MIDAZ_LEDGER_CLIENT_ID / MIDAZ_LEDGER_CLIENT_SECRET in `secrets` or the
+  #    existing Secret (and MIDAZ_CRM_CLIENT_ID / MIDAZ_CRM_CLIENT_SECRET with
+  #    crmMode "legacy"). Multi-tenant: each institution keeps its own
+  #    connection (sealed in the database) and these are refused.
   midaz:
+    # -- MIDAZ_BASE_URL: the Midaz ledger root (https; http only to a loopback
+    #    host, or outside production).
+    baseUrl: ""
+    # -- MIDAZ_AUTH_ADDRESS: the Access Manager address the client pairs
+    #    authenticate against (https; http only to a loopback host, or outside
+    #    production). Blank
+    #    for a Midaz without auth (then no client pair either).
+    authAddress: ""
     # -- MIDAZ_CRM_MODE: legacy | embedded. Match the institution's Midaz:
     #    Midaz v4 serves the CRM embedded in the ledger and no longer has the
     #    legacy /v1/holders surface, so it needs "embedded"; Midaz v3 needs
@@ -439,7 +452,9 @@ sisbajud:
   #    MENSAGERIA_CLIENT_SECRET, EXECUTOR_HUB_WEBHOOK_SECRET(_PREVIOUS),
   #    POSTGRES_PASSWORD, POSTGRES_REPLICA_PASSWORD, REDIS_PASSWORD, VAULT_TOKEN,
   #    VAULT_APPROLE_SECRET_ID, MULTI_TENANT_SERVICE_API_KEY,
-  #    MULTI_TENANT_REDIS_PASSWORD, IDP_M2M_CLIENT_ID, IDP_M2M_CLIENT_SECRET.
+  #    MULTI_TENANT_REDIS_PASSWORD, IDP_M2M_CLIENT_ID, IDP_M2M_CLIENT_SECRET,
+  #    MIDAZ_LEDGER_CLIENT_ID, MIDAZ_LEDGER_CLIENT_SECRET, MIDAZ_CRM_CLIENT_ID,
+  #    MIDAZ_CRM_CLIENT_SECRET (single tenant only).
   secrets: {}
   # -- Use an existing Secret (ESO / Vault) instead of the chart Secret. It
   #    REPLACES the chart Secret (not merged) and must carry the keys above.

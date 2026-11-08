@@ -28,7 +28,7 @@ image:
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag used for deployment (defaults to Chart.AppVersion)
-  tag: "3.2.0"
+  tag: "3.3.0"
 # -- Secrets for pulling images from a private registry
 imagePullSecrets: []
 # - name: regcred

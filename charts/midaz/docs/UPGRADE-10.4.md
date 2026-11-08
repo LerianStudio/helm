@@ -43,8 +43,9 @@ With `ledger.configmap.MULTI_TENANT_ENABLED: "true"`, the partition CronJob and 
 
 These apply when you move `ledger.image.tag` and `tracer.image.tag` to an image built on lib-license-go v5:
 
-- **First boot:** each pod needs outbound access to `license.lerian.io` on port 443, or a mounted licence file (`licenseFile.existingSecret`).
-- **Storage:** the licence lives only in memory. The application needs no database grant and no Valkey key for it. Images from Midaz 4.5.0-rc.2 on drop the `lerian_license_file` table (single-tenant) and the Valkey key (multi-tenant) that earlier v5 images created.
+- **Every process start:** without a mounted licence file, each pod start and each run of the partition CronJob or reconcile Job needs outbound access to `license.lerian.io` on port 443. A mounted licence file (`licenseFile.existingSecret`) removes that need, also during a licence-service outage.
+- **Storage:** from Midaz 4.5.0-rc.2 on (lib-license-go v5.3.0), the licence lives only in memory and needs no database grant and no Valkey key. Ledger migration 000073 and tracer migration 000053 drop the `lerian_license_file` table, and the multi-tenant ledger deletes its Valkey key at boot. Earlier v5 images (4.5.0-rc.1 and the 4.5.0 betas) still create the table at runtime and need `CREATE` on the schema.
+- **Pre-created table:** the migrations run as the application database user. If another role owns `lerian_license_file`, the drop fails and blocks the upgrade. Before the upgrade, check the owner with `SELECT tableowner FROM pg_tables WHERE tablename = 'lerian_license_file';` and have that role or a DBA drop the table.
 - **Renewal:** the licence is renewed every 6 hours.
 
 ## Action required

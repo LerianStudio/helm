@@ -83,7 +83,7 @@ permissions:
 jobs:
   porta-de-sanitizacao:
     name: Porta de sanitizacao (bloqueante)
-    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     timeout-minutes: 10
     steps:
       - name: Obter o codigo

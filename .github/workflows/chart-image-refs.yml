@@ -31,7 +31,7 @@ jobs:
   # ----------------- Scope -----------------
   scope:
     name: Determine chart scope
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     permissions:
       contents: read
       pull-requests: read # listing the pull request's changed files
@@ -66,7 +66,7 @@ jobs:
     name: images (${{ matrix.chart }})
     needs: scope
     if: needs.scope.outputs.has-charts == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     timeout-minutes: 15
     permissions:
       contents: read
@@ -92,7 +92,7 @@ jobs:
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKERHUB_IMAGE_PULL_TOKEN }}
 
       - name: Log in to GitHub Container Registry
         if: ${{ !github.event.pull_request.head.repo.fork }}
@@ -159,7 +159,7 @@ jobs:
     name: Report to the pull request
     needs: [scope, verify]
     if: always() && needs.scope.outputs.has-charts == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     permissions:
       contents: read
       pull-requests: write
@@ -182,10 +182,13 @@ jobs:
       - name: Generate GitHub App Token
         id: app-token
         continue-on-error: true
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+          # The comment is all this token does; it gets nothing that could push.
+          repositories: helm
+          permission-pull-requests: write
 
       - name: Comment the matrix on the pull request
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
@@ -317,7 +320,7 @@ jobs:
     name: Chart Image Refs
     needs: [scope, verify]
     if: always()
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     steps:
       # Gated first, and separately: a scope job that died leaves `verify` skipped,
       # and skipped counts as a pass. Without this the check would go green on a

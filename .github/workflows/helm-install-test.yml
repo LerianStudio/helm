@@ -29,14 +29,6 @@ on:
         description: "Space-separated chart names to test"
         type: string
         default: ""
-      runner:
-        description: "Runner to install on — raise it for a chart that does not fit"
-        type: choice
-        options:
-          - blacksmith-8vcpu-ubuntu-2404
-          - blacksmith-4vcpu-ubuntu-2404
-          - blacksmith-16vcpu-ubuntu-2404
-        default: blacksmith-8vcpu-ubuntu-2404
 
 concurrency:
   group: helm-install-test-${{ github.ref }}
@@ -58,7 +50,11 @@ jobs:
     # Raising the node rather than trimming requests in a fixture: this gate exists
     # to install the chart as written, and shrinking resources to fit would test
     # something nobody deploys.
-    runs-on: ${{ inputs.runner || 'blacksmith-8vcpu-ubuntu-2404' }}
+    #
+    # INSTALL_TEST_RUNNERS wins, then LARGE_RUNNERS (the org's 8 vCPU pool), then
+    # FALLBACK_RUNNERS, so the pool moves without editing this file and never drops
+    # to the 4 vCPU ceiling described above.
+    runs-on: ${{ vars.INSTALL_TEST_RUNNERS || vars.LARGE_RUNNERS || vars.FALLBACK_RUNNERS }}
     timeout-minutes: 60 # a full sweep installs every app chart sequentially, now waiting for Ready
     steps:
       # persist-credentials: false because the step that follows runs
@@ -137,7 +133,7 @@ jobs:
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKERHUB_IMAGE_PULL_TOKEN }}
 
       - name: Log in to GitHub Container Registry
         if: steps.scope.outputs.has-charts == 'true' && !github.event.pull_request.head.repo.fork

@@ -340,12 +340,14 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 validateMidazConnection — the Midaz connection from the environment (v1.3.0;
 the app's validateConnectorEnvConnection and its executor-mode requirement).
 Multi-tenant: every MIDAZ_* connection key is refused (each institution keeps
-its own connection). Single-tenant executor: MIDAZ_BASE_URL, MIDAZ_AUTH_ADDRESS
-and the ledger client pair are required, and the CRM pair too with
-MIDAZ_CRM_MODE=legacy; in either mode the CRM pair needs MIDAZ_CRM_BASE_URL,
-and with auth on that URL needs the pair (a row may override legacy); the URLs are https (http only outside production), and
-each client pair is whole. A refusal names the key, never the value. An external
-Secret (useExistingSecret) is opaque: its keys are trusted.
+its own connection). Single-tenant: MIDAZ_BASE_URL is required. The auth group
+(MIDAZ_AUTH_ADDRESS and the ledger client pair) is optional and all-or-nothing.
+With auth on, MIDAZ_CRM_MODE=legacy also needs the CRM pair; in either mode the
+CRM pair needs MIDAZ_CRM_BASE_URL, and with auth on that URL needs the pair (a
+row may override legacy). URLs are https (http only to a loopback host or
+outside production) and each client pair is whole. A refusal names the key,
+never the value. An external Secret (useExistingSecret) is opaque: its keys are
+trusted.
 */}}
 {{- define "plugin-br-sisbajud.validateMidazConnection" -}}
 {{- $s := .Values.sisbajud -}}

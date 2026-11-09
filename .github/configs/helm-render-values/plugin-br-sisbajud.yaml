@@ -31,7 +31,7 @@ sisbajud:
   # balance-change stream, so it is turned off here.
   direct:
     permanentBlockEnabled: false
-  # Single tenant: the Midaz connection comes from the environment (v2.0.0).
+  # Single tenant: the Midaz connection comes from the environment (v1.3.0).
   midaz:
     baseUrl: "https://midaz.example.invalid"
     authAddress: "https://access-manager.example.invalid"

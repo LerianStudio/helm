@@ -295,6 +295,8 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_MTLS_INBOUND_CERT_HEADER` | unset (app default) |
 | `BTG_WEBHOOK_CERTIFICATE_URL` | unset (app default) |
 | `BTG_BULK_MAX_BODY_BYTES` | read only by app versions after 1.0.2; unset (app default `7680` bytes; zero, negative or non-numeric stops the boot) |
+| `SANDBOX_SIMULATION_ENABLED` | unset (app default `"false"`; `"true"` enables `POST /v1/sandbox/boletos/{id}/simulate-payment` and `POST /v1/sandbox/payments/{id}/simulate-status`; with it on, the app refuses to boot when `ENV_NAME=production` and requires `BTG_API_BASE_URL`, `BTG_AUTH_URL`, `BTG_COMMON_BASE_URL` and `SANDBOX_FAKEBTG_ADMIN_URL` to share one origin, `scheme://host:port`) |
+| `SANDBOX_FAKEBTG_ADMIN_URL` | unset (no app default; required when `SANDBOX_SIMULATION_ENABLED` is `"true"`) |
 
 </details>
 

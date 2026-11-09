@@ -34,7 +34,7 @@ jobs:
   get-changed-paths:
     if: github.event_name == 'push' && github.actor != 'lerian-studio-midaz-push-bot[bot]'
     name: Get Changed Paths
-    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     outputs:
       matrix: ${{ steps.restrict.outputs.matrix }}
     steps:
@@ -527,7 +527,7 @@ jobs:
     permissions:
       actions: read
       contents: read
-    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     outputs:
       matrix: ${{ steps.collect.outputs.matrix }}
     steps:

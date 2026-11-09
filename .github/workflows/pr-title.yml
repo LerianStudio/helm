@@ -17,7 +17,7 @@ jobs:
       pull-requests: read
       statuses: write
     name: Validate PR title
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     steps:
       # pull_request_target runs on every pull request, forks included, so this job
       # holds nothing beyond the GITHUB_TOKEN scoped above. The Lerian App bypasses

@@ -34,7 +34,7 @@ jobs:
   get-changed-paths:
     if: github.event_name == 'push' && github.actor != 'lerian-studio-midaz-push-bot[bot]'
     name: Get Changed Paths
-    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     outputs:
       matrix: ${{ steps.restrict.outputs.matrix }}
     steps:
@@ -127,7 +127,7 @@ jobs:
     # GitHub-hosted, not Blacksmith: this job holds the GPG signing key and the App
     # token that bypasses the main ruleset, so it stays off third-party runners.
     # RELEASE_RUNNERS can move it without editing this file.
-    runs-on: ${{ vars.RELEASE_RUNNERS || 'ubuntu-latest' }}
+    runs-on: ${{ vars.RELEASE_RUNNERS || vars.FALLBACK_RUNNERS }}
     strategy:
       max-parallel: 1
       fail-fast: false
@@ -527,7 +527,7 @@ jobs:
     permissions:
       actions: read
       contents: read
-    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     outputs:
       matrix: ${{ steps.collect.outputs.matrix }}
     steps:
@@ -606,7 +606,7 @@ jobs:
       group: helm-gitops-main
       cancel-in-progress: false
       queue: max
-    runs-on: ${{ vars.GITOPS_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.GITOPS_RUNNERS || vars.FALLBACK_RUNNERS }}
     steps:
       - name: Refuse to sync without the GitOps runner
         if: vars.GITOPS_RUNNERS == ''

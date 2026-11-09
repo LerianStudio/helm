@@ -38,7 +38,7 @@ concurrency:
 jobs:
   guard:
     name: Markdown Liquid Guard
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

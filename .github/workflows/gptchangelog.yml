@@ -22,7 +22,6 @@ jobs:
   changelog:
     uses: LerianStudio/shared-workflows-public/.github/workflows/gptchangelog.yml@tier-1
     with:
-      runner_type: "blacksmith-4vcpu-ubuntu-2404"
       filter_paths: |-
         charts/agent
         charts/alloy-lerian

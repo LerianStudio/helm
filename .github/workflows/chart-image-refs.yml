@@ -31,7 +31,7 @@ jobs:
   # ----------------- Scope -----------------
   scope:
     name: Determine chart scope
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     permissions:
       contents: read
       pull-requests: read # listing the pull request's changed files
@@ -66,7 +66,7 @@ jobs:
     name: images (${{ matrix.chart }})
     needs: scope
     if: needs.scope.outputs.has-charts == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     timeout-minutes: 15
     permissions:
       contents: read
@@ -159,7 +159,7 @@ jobs:
     name: Report to the pull request
     needs: [scope, verify]
     if: always() && needs.scope.outputs.has-charts == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     permissions:
       contents: read
       pull-requests: write
@@ -320,7 +320,7 @@ jobs:
     name: Chart Image Refs
     needs: [scope, verify]
     if: always()
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     steps:
       # Gated first, and separately: a scope job that died leaves `verify` skipped,
       # and skipped counts as a pass. Without this the check would go green on a

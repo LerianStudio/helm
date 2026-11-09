@@ -36,7 +36,9 @@ permissions:
 jobs:
   publicar:
     name: Porta de entrega + publicação
-    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    # GitHub-hosted, like the chart release job: FLEET_TOKEN reaches the whole Fleet
+    # stack, so this job stays off third-party runners. RELEASE_RUNNERS moves it.
+    runs-on: ${{ vars.RELEASE_RUNNERS || vars.FALLBACK_RUNNERS }}
     timeout-minutes: 15
     # ⚠️ Ambiente com revisão obrigatória. É o que impede alguém publicar em
     # produção sozinho — o workflow é `workflow_dispatch`, então sem isso

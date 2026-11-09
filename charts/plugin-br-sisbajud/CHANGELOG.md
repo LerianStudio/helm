@@ -1,5 +1,15 @@
 # Plugin-br-sisbajud Changelog
 
+## [1.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.5.1)
+
+Fixes:
+
+- Default the images to `1.3.0`. (@brunobls)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.5.0...plugin-br-sisbajud-v1.5.1)
+
+---
+
 ## [1.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.5.0)
 
 Features:

@@ -254,6 +254,15 @@
 | `tracer.affinity` | object | `{}` | Affinity rules for pod scheduling |
 | `tracer.datastores` | object | `templates/tracer/configmap.yaml` | Dedicated datastore mask (override global.datastores). Sub-key: postgres (host/port/user/ssl). |
 | `tracer.configmap` | object | `{}` | Escape hatch: any native env var overrides the template default. |
+| `tracer.configmap.VALIDATION_PARTITION_MONTHS_AHEAD` | string | `"6"` | Months past the current one the validation trail partition worker keeps created (1 to 12). The worker is always on, never drops a partition, and does nothing on a trail that kept its plain layout. |
+| `tracer.configmap.VALIDATION_PARTITION_INTERVAL_HOURS` | string | `"6"` | Hours between two passes of the validation trail partition worker (1 to 168). |
+| `tracer.configmap.VALIDATION_ID_TIME_TOLERANCE_SECONDS` | string | `"300"` | Seconds around a UUID v7 validation id's instant that `GET /v1/validations/{id}` scans (1 to 86400). |
+| `tracer.configmap.IDENTITY_RETENTION_WORKER_ENABLED` | string | `"false"` | Run the validation identity retention worker, which deletes `validation_identities` rows past their origin's horizon. When `"false"` the `IDENTITY_RETENTION_*` settings below are not read. |
+| `tracer.configmap.IDENTITY_RETENTION_DECIDE_SECONDS` | string | `"900"` | Age in seconds past which a `RESERVE` (reserve or decide) identity is deleted (300 to 604800). |
+| `tracer.configmap.IDENTITY_RETENTION_RULES_ONLY_SECONDS` | string | `"86400"` | Age in seconds past which a `RULES_ONLY` identity is deleted (3600 to 2592000). |
+| `tracer.configmap.IDENTITY_RETENTION_BATCH_SIZE` | string | `"1000"` | Rows one delete statement of the identity retention worker removes at most (1 to 10000). |
+| `tracer.configmap.IDENTITY_RETENTION_INTERVAL_SECONDS` | string | `"300"` | Seconds between two passes of the identity retention worker (10 to 86400). |
+| `tracer.configmap.DECIDE_MAX_OPERATIONS` | string | `"10000"` | Most operations one decide request, or one full-projection `POST /v1/validations`, may carry (1 to 10000). The default is the ledger's per-transaction postings ceiling; lower it to bound latency. |
 | `tracer.licenseFile.existingSecret` | string | `""` | Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license; `tracer.secrets.LICENSE_KEY` is then not required. Needs an image on lib-license-go v5. |
 | `tracer.extraEnvVars` | object | `{}` | Extra environment variables |
 | `tracer.secrets` | object | `templates/tracer/secrets.yaml` | Secrets for storing sensitive data |

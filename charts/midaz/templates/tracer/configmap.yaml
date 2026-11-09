@@ -101,6 +101,31 @@ data:
   RULE_SYNC_POLL_INTERVAL_SECONDS: {{ $cm.RULE_SYNC_POLL_INTERVAL_SECONDS | default "10" | quote }}
   RULE_SYNC_STALENESS_THRESHOLD_SECONDS: {{ $cm.RULE_SYNC_STALENESS_THRESHOLD_SECONDS | default "50" | quote }}
   RULE_SYNC_OVERLAP_BUFFER_SECONDS: {{ $cm.RULE_SYNC_OVERLAP_BUFFER_SECONDS | default "2" | quote }}
+
+  # VALIDATION TRAIL PARTITIONS — the worker (always on) keeps the monthly
+  # partitions of transaction_validations created this many months ahead and
+  # never drops one; on a trail that kept its plain layout it does nothing.
+  # The integer settings below fail the render out of range, as the tracer
+  # refuses them at boot.
+  VALIDATION_PARTITION_MONTHS_AHEAD: {{ include "midaz-tracer.boundedInt" (dict "cm" $cm "key" "VALIDATION_PARTITION_MONTHS_AHEAD" "default" "6" "min" 1 "max" 12) | quote }}
+  VALIDATION_PARTITION_INTERVAL_HOURS: {{ include "midaz-tracer.boundedInt" (dict "cm" $cm "key" "VALIDATION_PARTITION_INTERVAL_HOURS" "default" "6" "min" 1 "max" 168) | quote }}
+  # GET /v1/validations/{id} with a UUID v7 id reads only created_at within
+  # the id's instant plus/minus this many seconds.
+  VALIDATION_ID_TIME_TOLERANCE_SECONDS: {{ include "midaz-tracer.boundedInt" (dict "cm" $cm "key" "VALIDATION_ID_TIME_TOLERANCE_SECONDS" "default" "300" "min" 1 "max" 86400) | quote }}
+
+  # VALIDATION IDENTITY RETENTION — deletes validation_identities rows past
+  # their origin's horizon (never the trail or the reservations); off by
+  # default. A repeat of a deleted identity's key is evaluated as a new request.
+  IDENTITY_RETENTION_WORKER_ENABLED: {{ $cm.IDENTITY_RETENTION_WORKER_ENABLED | default "false" | toString | quote }}
+  IDENTITY_RETENTION_DECIDE_SECONDS: {{ include "midaz-tracer.boundedInt" (dict "cm" $cm "key" "IDENTITY_RETENTION_DECIDE_SECONDS" "default" "900" "min" 300 "max" 604800) | quote }}
+  IDENTITY_RETENTION_RULES_ONLY_SECONDS: {{ include "midaz-tracer.boundedInt" (dict "cm" $cm "key" "IDENTITY_RETENTION_RULES_ONLY_SECONDS" "default" "86400" "min" 3600 "max" 2592000) | quote }}
+  IDENTITY_RETENTION_BATCH_SIZE: {{ include "midaz-tracer.boundedInt" (dict "cm" $cm "key" "IDENTITY_RETENTION_BATCH_SIZE" "default" "1000" "min" 1 "max" 10000) | quote }}
+  IDENTITY_RETENTION_INTERVAL_SECONDS: {{ include "midaz-tracer.boundedInt" (dict "cm" $cm "key" "IDENTITY_RETENTION_INTERVAL_SECONDS" "default" "300" "min" 10 "max" 86400) | quote }}
+
+  # DECIDE — most operations (transaction legs) one decide request, or one
+  # full-projection POST /v1/validations, may carry. The default is the
+  # ledger's per-transaction postings ceiling; lower it to bound latency.
+  DECIDE_MAX_OPERATIONS: {{ include "midaz-tracer.boundedInt" (dict "cm" $cm "key" "DECIDE_MAX_OPERATIONS" "default" "10000" "min" 1 "max" 10000) | quote }}
   {{- if include "midaz.belowHealthMin" (dict "component" .Values.tracer "context" .) }}
   # READINESS — drain grace on shutdown (images below the health preset).
   READYZ_DRAIN_GRACE_SECONDS: {{ $cm.READYZ_DRAIN_GRACE_SECONDS | default "12" | quote }}

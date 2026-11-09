@@ -594,6 +594,39 @@ a helm error the operator can read.
 {{- end -}}
 
 {{/*
+midaz-tracer.boundedInt — a tracer integer setting rendered as the string the
+process reads, failing the render when the process would refuse it at boot. It
+mirrors parseBoundedInt (components/tracer/internal/bootstrap/config.go): an
+empty value takes the default; anything else must be a base-10 integer within
+[min, max]. A YAML number is accepted and rendered without an exponent, so
+`2592000` does not reach the pod as `2.592e+06`.
+Input: dict "cm" (tracer.configmap) "key" "default" (string) "min" "max" (int).
+*/}}
+{{- define "midaz-tracer.boundedInt" -}}
+{{- $raw := index .cm .key -}}
+{{- $s := "" -}}
+{{- if or (kindIs "float64" $raw) (kindIs "float32" $raw) -}}
+{{- if ne (float64 (int64 $raw)) (float64 $raw) -}}
+{{- fail (printf "tracer.configmap.%s must be an integer, got %v" .key $raw) -}}
+{{- end -}}
+{{- $s = toString (int64 $raw) -}}
+{{- else if not (kindIs "invalid" $raw) -}}
+{{- $s = toString $raw -}}
+{{- end -}}
+{{- if eq $s "" -}}
+{{- $s = .default -}}
+{{- end -}}
+{{- if not (regexMatch "^[+-]?[0-9]+$" $s) -}}
+{{- fail (printf "tracer.configmap.%s must be an integer between %d and %d, got %q (the tracer refuses it at boot)" .key (int .min) (int .max) $s) -}}
+{{- end -}}
+{{- $n := atoi $s -}}
+{{- if or (lt $n (int .min)) (gt $n (int .max)) -}}
+{{- fail (printf "tracer.configmap.%s must be between %d and %d, got %s (the tracer refuses it at boot)" .key (int .min) (int .max) $s) -}}
+{{- end -}}
+{{- $s -}}
+{{- end -}}
+
+{{/*
 midaz.isTrue — "true" when the value is one of the tokens strconv.ParseBool
 accepts as true, "" otherwise. Midaz loads boolean env vars through ParseBool,
 so `TRUE`, `True`, `1`, `t` and `T` all enable a feature at runtime; comparing

@@ -953,6 +953,27 @@ tracer:
     IDP_DECLARATION_ENABLED: "false"
     IDP_HOST: ""
     IDP_M2M_CLIENT_ID: ""
+    # -- Months past the current one the validation trail partition worker keeps created (1 to 12).
+    # The worker is always on, never drops a partition, and does nothing on a trail that kept its plain layout.
+    VALIDATION_PARTITION_MONTHS_AHEAD: "6"
+    # -- Hours between two passes of the validation trail partition worker (1 to 168).
+    VALIDATION_PARTITION_INTERVAL_HOURS: "6"
+    # -- Seconds around a UUID v7 validation id's instant that GET /v1/validations/{id} scans (1 to 86400).
+    VALIDATION_ID_TIME_TOLERANCE_SECONDS: "300"
+    # -- Run the validation identity retention worker, which deletes validation_identities rows past
+    # their origin's horizon. When "false" the IDENTITY_RETENTION_* settings below are not read.
+    IDENTITY_RETENTION_WORKER_ENABLED: "false"
+    # -- Age in seconds past which a RESERVE (reserve or decide) identity is deleted (300 to 604800).
+    IDENTITY_RETENTION_DECIDE_SECONDS: "900"
+    # -- Age in seconds past which a RULES_ONLY identity is deleted (3600 to 2592000).
+    IDENTITY_RETENTION_RULES_ONLY_SECONDS: "86400"
+    # -- Rows one delete statement of the identity retention worker removes at most (1 to 10000).
+    IDENTITY_RETENTION_BATCH_SIZE: "1000"
+    # -- Seconds between two passes of the identity retention worker (10 to 86400).
+    IDENTITY_RETENTION_INTERVAL_SECONDS: "300"
+    # -- Most operations one decide request, or one full-projection POST /v1/validations, may carry
+    # (1 to 10000). The default is the ledger's per-transaction postings ceiling; lower it to bound latency.
+    DECIDE_MAX_OPERATIONS: "10000"
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data

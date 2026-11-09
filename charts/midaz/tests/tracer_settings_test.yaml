@@ -1,0 +1,107 @@
+suite: tracer validation trail, identity retention and decide settings
+templates:
+  - templates/tracer/configmap.yaml
+release:
+  name: midaz
+  namespace: midaz
+set:
+  tracer.enabled: true
+tests:
+  - it: renders the application defaults
+    asserts:
+      - equal:
+          path: data.VALIDATION_PARTITION_MONTHS_AHEAD
+          value: "6"
+      - equal:
+          path: data.VALIDATION_PARTITION_INTERVAL_HOURS
+          value: "6"
+      - equal:
+          path: data.VALIDATION_ID_TIME_TOLERANCE_SECONDS
+          value: "300"
+      - equal:
+          path: data.IDENTITY_RETENTION_WORKER_ENABLED
+          value: "false"
+      - equal:
+          path: data.IDENTITY_RETENTION_DECIDE_SECONDS
+          value: "900"
+      - equal:
+          path: data.IDENTITY_RETENTION_RULES_ONLY_SECONDS
+          value: "86400"
+      - equal:
+          path: data.IDENTITY_RETENTION_BATCH_SIZE
+          value: "1000"
+      - equal:
+          path: data.IDENTITY_RETENTION_INTERVAL_SECONDS
+          value: "300"
+      - equal:
+          path: data.DECIDE_MAX_OPERATIONS
+          value: "10000"
+
+  - it: renders overrides at the bounds, numbers without an exponent
+    set:
+      tracer.configmap.VALIDATION_PARTITION_MONTHS_AHEAD: 12
+      tracer.configmap.VALIDATION_PARTITION_INTERVAL_HOURS: "168"
+      tracer.configmap.VALIDATION_ID_TIME_TOLERANCE_SECONDS: "1"
+      tracer.configmap.IDENTITY_RETENTION_WORKER_ENABLED: true
+      tracer.configmap.IDENTITY_RETENTION_DECIDE_SECONDS: 604800
+      tracer.configmap.IDENTITY_RETENTION_RULES_ONLY_SECONDS: 2592000
+      tracer.configmap.IDENTITY_RETENTION_BATCH_SIZE: "10000"
+      tracer.configmap.IDENTITY_RETENTION_INTERVAL_SECONDS: "10"
+      tracer.configmap.DECIDE_MAX_OPERATIONS: 1
+    asserts:
+      - equal:
+          path: data.VALIDATION_PARTITION_MONTHS_AHEAD
+          value: "12"
+      - equal:
+          path: data.VALIDATION_PARTITION_INTERVAL_HOURS
+          value: "168"
+      - equal:
+          path: data.VALIDATION_ID_TIME_TOLERANCE_SECONDS
+          value: "1"
+      - equal:
+          path: data.IDENTITY_RETENTION_WORKER_ENABLED
+          value: "true"
+      - equal:
+          path: data.IDENTITY_RETENTION_DECIDE_SECONDS
+          value: "604800"
+      - equal:
+          path: data.IDENTITY_RETENTION_RULES_ONLY_SECONDS
+          value: "2592000"
+      - equal:
+          path: data.IDENTITY_RETENTION_BATCH_SIZE
+          value: "10000"
+      - equal:
+          path: data.IDENTITY_RETENTION_INTERVAL_SECONDS
+          value: "10"
+      - equal:
+          path: data.DECIDE_MAX_OPERATIONS
+          value: "1"
+
+  - it: takes the default for an empty value, as the tracer does
+    set:
+      tracer.configmap.DECIDE_MAX_OPERATIONS: ""
+    asserts:
+      - equal:
+          path: data.DECIDE_MAX_OPERATIONS
+          value: "10000"
+
+  - it: refuses a months-ahead string above 12
+    set:
+      tracer.configmap.VALIDATION_PARTITION_MONTHS_AHEAD: "13"
+    asserts:
+      - failedTemplate:
+          errorPattern: "tracer.configmap.VALIDATION_PARTITION_MONTHS_AHEAD must be between 1 and 12, got 13"
+
+  - it: refuses a decide identity horizon string below 300 seconds
+    set:
+      tracer.configmap.IDENTITY_RETENTION_DECIDE_SECONDS: "299"
+    asserts:
+      - failedTemplate:
+          errorPattern: "tracer.configmap.IDENTITY_RETENTION_DECIDE_SECONDS must be between 300 and 604800, got 299"
+
+  - it: refuses a decide operations string above the ledger ceiling
+    set:
+      tracer.configmap.DECIDE_MAX_OPERATIONS: "10001"
+    asserts:
+      - failedTemplate:
+          errorPattern: "tracer.configmap.DECIDE_MAX_OPERATIONS must be between 1 and 10000, got 10001"

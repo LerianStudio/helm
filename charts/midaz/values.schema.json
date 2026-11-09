@@ -2033,6 +2033,155 @@
           "type": "object",
           "additionalProperties": true,
           "description": "Escape hatch: any native env var overrides the template default.",
+          "properties": {
+            "VALIDATION_PARTITION_MONTHS_AHEAD": {
+              "description": "Months past the current one the validation trail partition worker keeps created (1 to 12). A string form is range-checked at render.",
+              "default": "6",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
+                },
+                {
+                  "type": "string",
+                  "pattern": "^([+-]?[0-9]+)?$"
+                }
+              ]
+            },
+            "VALIDATION_PARTITION_INTERVAL_HOURS": {
+              "description": "Hours between two passes of the validation trail partition worker (1 to 168). A string form is range-checked at render.",
+              "default": "6",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 168
+                },
+                {
+                  "type": "string",
+                  "pattern": "^([+-]?[0-9]+)?$"
+                }
+              ]
+            },
+            "VALIDATION_ID_TIME_TOLERANCE_SECONDS": {
+              "description": "Seconds around a UUID v7 validation id's instant that GET /v1/validations/{id} scans (1 to 86400). A string form is range-checked at render.",
+              "default": "300",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 86400
+                },
+                {
+                  "type": "string",
+                  "pattern": "^([+-]?[0-9]+)?$"
+                }
+              ]
+            },
+            "IDENTITY_RETENTION_WORKER_ENABLED": {
+              "description": "Run the validation identity retention worker. Off by default; when off the IDENTITY_RETENTION_* settings below are not read by the tracer.",
+              "default": "false",
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "1",
+                    "t",
+                    "T",
+                    "TRUE",
+                    "true",
+                    "True",
+                    "0",
+                    "f",
+                    "F",
+                    "FALSE",
+                    "false",
+                    "False"
+                  ]
+                }
+              ]
+            },
+            "IDENTITY_RETENTION_DECIDE_SECONDS": {
+              "description": "Age in seconds past which a RESERVE (reserve or decide) validation identity is deleted (300 to 604800). A string form is range-checked at render.",
+              "default": "900",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 300,
+                  "maximum": 604800
+                },
+                {
+                  "type": "string",
+                  "pattern": "^([+-]?[0-9]+)?$"
+                }
+              ]
+            },
+            "IDENTITY_RETENTION_RULES_ONLY_SECONDS": {
+              "description": "Age in seconds past which a RULES_ONLY validation identity is deleted (3600 to 2592000). A string form is range-checked at render.",
+              "default": "86400",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 3600,
+                  "maximum": 2592000
+                },
+                {
+                  "type": "string",
+                  "pattern": "^([+-]?[0-9]+)?$"
+                }
+              ]
+            },
+            "IDENTITY_RETENTION_BATCH_SIZE": {
+              "description": "Rows one delete statement of the identity retention worker removes at most (1 to 10000). A string form is range-checked at render.",
+              "default": "1000",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                {
+                  "type": "string",
+                  "pattern": "^([+-]?[0-9]+)?$"
+                }
+              ]
+            },
+            "IDENTITY_RETENTION_INTERVAL_SECONDS": {
+              "description": "Seconds between two passes of the identity retention worker (10 to 86400). A string form is range-checked at render.",
+              "default": "300",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 10,
+                  "maximum": 86400
+                },
+                {
+                  "type": "string",
+                  "pattern": "^([+-]?[0-9]+)?$"
+                }
+              ]
+            },
+            "DECIDE_MAX_OPERATIONS": {
+              "description": "Most operations one decide request, or one full-projection POST /v1/validations, may carry (1 to 10000; the default is the ledger's per-transaction postings ceiling). A string form is range-checked at render.",
+              "default": "10000",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                {
+                  "type": "string",
+                  "pattern": "^([+-]?[0-9]+)?$"
+                }
+              ]
+            }
+          },
           "propertyNames": {
             "enum": [
               "AGGRESSIVE_RATE_LIMIT_MAX",
@@ -2100,11 +2249,17 @@
               "DB_TRANSACTION_SSLMODE",
               "DB_TRANSACTION_USER",
               "DB_USER",
+              "DECIDE_MAX_OPERATIONS",
               "DEPLOYMENT_MODE",
               "ENABLE_TELEMETRY",
               "ENV_NAME",
               "GOMEMLIMIT",
               "GOOGLE_APPLICATION_CREDENTIALS",
+              "IDENTITY_RETENTION_BATCH_SIZE",
+              "IDENTITY_RETENTION_DECIDE_SECONDS",
+              "IDENTITY_RETENTION_INTERVAL_SECONDS",
+              "IDENTITY_RETENTION_RULES_ONLY_SECONDS",
+              "IDENTITY_RETENTION_WORKER_ENABLED",
               "IDP_DECLARATION_ENABLED",
               "IDP_HOST",
               "IDP_M2M_CLIENT_ID",
@@ -2295,6 +2450,9 @@
               "TRACER_TRANSPORT",
               "TRUSTED_PROXIES",
               "TRUSTED_PROXY_CIDRS",
+              "VALIDATION_ID_TIME_TOLERANCE_SECONDS",
+              "VALIDATION_PARTITION_INTERVAL_HOURS",
+              "VALIDATION_PARTITION_MONTHS_AHEAD",
               "VERSION"
             ]
           }

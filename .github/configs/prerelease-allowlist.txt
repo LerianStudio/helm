@@ -10,3 +10,5 @@ system-facts
 plugin-br-bank-transfer
 # midaz stays until the ledger team cuts 4.5.0.
 midaz
+# plugin-br-sisbajud pins the 1.3.0-rc.1 app; its stable waits for a client (Fred Amaral, 2026-11-09).
+plugin-br-sisbajud

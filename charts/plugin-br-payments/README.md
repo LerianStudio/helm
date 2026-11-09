@@ -147,9 +147,6 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `SERVER_ADDRESS` | `"0.0.0.0:8080"` |
 | `HTTP_BODY_LIMIT_BYTES` | `"104857600"` |
 | `HTTP_READ_BUFFER_SIZE` | unset (app default) |
-| `TLS_TERMINATED_UPSTREAM` | `"true"` |
-| `SERVER_TLS_CERT_FILE` | unset (app default) |
-| `SERVER_TLS_KEY_FILE` | unset (app default) |
 | `INTERNAL_WORKER_URL` | `""` |
 
 </details>
@@ -377,6 +374,8 @@ The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collec
 **Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`.
 
 **Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES`, `TRUSTED_PROXIES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
+
+Also refused at render (`app.configmap`): `SERVER_TLS_CERT_FILE`, `SERVER_TLS_KEY_FILE`. The main port serves plain HTTP; terminate TLS at the Ingress or mesh. `TLS_TERMINATED_UPSTREAM` is no longer rendered: the app stopped reading it.
 
 ## Probes
 

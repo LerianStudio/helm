@@ -1,5 +1,33 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.1)
+
+Fixes:
+- Default the chart to the stable `3.6.0` image. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.2.0...plugin-br-bank-transfer-v3.2.1)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.0)
+
+Features:
+- Serve probes and metrics on the health port `8099`. (@fredcamaral)
+
+Fixes:
+- Quote PDB annotations and skip the PDB for a singleton. (@fredcamaral)
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+- Keep the component label in the PDB selector. (@fredcamaral)
+- Publish the health port only on a ClusterIP service. (@fredcamaral)
+- Update `plugin-br-bank-transfer@3.5.1`. (@lerian-studio)
+
+Improvements:
+- Keep the ALB health check on the traffic port. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.1.0...plugin-br-bank-transfer-v3.2.0)
+
+---
+
 ## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.1.0)
 
 Features:

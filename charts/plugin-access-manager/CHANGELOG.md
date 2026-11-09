@@ -1,5 +1,17 @@
 # Plugin-access-manager Changelog
 
+## [11.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.3)
+
+Fixes:
+
+- Removed a redundant optional reference and duplicate unit test suite in the codebase. (@fredcamaral)
+- Ensured that `extraEnvVars.ALLOW_INSECURE_TLS` is accepted on the migrate init container. (@fredcamaral)
+- Provided the Caradhras migrate init container with `ALLOW_INSECURE_TLS`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.2.2...plugin-access-manager-v11.2.3)
+
+---
+
 ## [11.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.2)
 
 Fixes:

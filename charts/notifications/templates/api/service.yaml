@@ -12,5 +12,8 @@ spec:
       port: {{ .Values.api.service.port }}
       targetPort: http
       protocol: TCP
+    {{- if eq (.Values.api.service.type | default "ClusterIP") "ClusterIP" }}
+    {{- toYaml (include "notifications.api.health" . | fromYaml).servicePorts | nindent 4 }}
+    {{- end }}
   selector:
     {{- include "notifications.selectorLabels" (dict "context" . "name" .Values.api.name) | nindent 4 }}

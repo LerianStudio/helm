@@ -57,7 +57,7 @@ concurrency:
 jobs:
   resolve-chart:
     if: github.event_name == 'push'
-    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     outputs:
       chart: ${{ steps.resolve.outputs.chart }}
     steps:

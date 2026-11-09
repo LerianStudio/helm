@@ -1,5 +1,14 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.1)
+
+Fixes:
+- Default the chart to the stable `3.6.0` image. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.2.0...plugin-br-bank-transfer-v3.2.1)
+
+---
+
 ## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.0)
 
 Features:

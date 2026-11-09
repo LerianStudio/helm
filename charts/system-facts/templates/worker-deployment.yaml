@@ -2,7 +2,7 @@
 {{- include "system-facts.worker.validate" . }}
 {{- $w := .Values.worker }}
 {{- $img := $w.image | default dict }}
-{{- $port := $w.port | default 8080 }}
+{{- $h := include "system-facts.worker.health" . | fromYaml }}
 {{- $licenseSecret := include "system-facts.licenseFileSecret" $w }}
 apiVersion: apps/v1
 kind: Deployment
@@ -13,15 +13,11 @@ metadata:
     {{- include "system-facts.worker.labels" . | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ $w.revisionHistoryLimit | default 10 }}
-  {{- $du := $w.deploymentUpdate | default dict }}
-  {{- include "lerian-common.deploymentStrategy" (dict
-        "type" ($du.type | default "RollingUpdate")
-        "maxSurge" (dig "maxSurge" 1 $du)
-        "maxUnavailable" (dig "maxUnavailable" 0 $du)
-      ) | nindent 2 }}
+  strategy:
+    {{- toYaml $h.strategy | nindent 4 }}
   # No HPA: parallelism is bounded by distinct tenants, so replicas above
   # worker.partitionCeiling only idle (the chart refuses them).
-  replicas: {{ $w.replicaCount | default 1 }}
+  replicas: {{ $h.replicas }}
   selector:
     matchLabels:
       {{- include "system-facts.worker.selectorLabels" . | nindent 6 }}
@@ -44,8 +40,7 @@ spec:
       serviceAccountName: {{ include "system-facts.worker.serviceAccountName" . }}
       # The worker never calls the Kubernetes API.
       automountServiceAccountToken: false
-      # >= 60: consumer close (30s) + admin drain (10s) + telemetry flush.
-      terminationGracePeriodSeconds: {{ $w.terminationGracePeriodSeconds | default 60 }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- with $w.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -62,24 +57,19 @@ spec:
                 name: {{ include "system-facts.worker.secretName" . }}
             - configMapRef:
                 name: {{ include "system-facts.worker.fullname" . }}
-          {{- if $licenseSecret }}
           env:
+            {{- toYaml $h.env | nindent 12 }}
+            {{- if $licenseSecret }}
             {{- include "system-facts.licenseFileEnv" . | nindent 12 }}
-          {{- end }}
+            {{- end }}
           ports:
-            - name: http
-              containerPort: {{ $port }}
-              protocol: TCP
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "livenessProbe" "probe" ($w.livenessProbe | default dict)
-                "port" $port
-                "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "readinessProbe" "probe" ($w.readinessProbe | default dict)
-                "port" $port
-                "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
           {{- if $licenseSecret }}
           {{- include "system-facts.licenseFileVolumeMount" . | nindent 10 }}
           {{- end }}

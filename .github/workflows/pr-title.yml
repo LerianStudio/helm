@@ -17,18 +17,17 @@ jobs:
       pull-requests: read
       statuses: write
     name: Validate PR title
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     steps:
-      - uses: actions/create-github-app-token@v1
-        id: app-token
-        with:
-          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
-          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
-
-      - uses: amannn/action-semantic-pull-request@v5
+      # pull_request_target runs on every pull request, forks included, so this job
+      # holds nothing beyond the GITHUB_TOKEN scoped above. The Lerian App bypasses
+      # the main ruleset; handing its token to a third-party action here would turn a
+      # compromise of that action into a direct push to main. Pinned by SHA for the
+      # same reason: a moved tag cannot swap the code that runs.
+      - uses: amannn/action-semantic-pull-request@e32d7e603df1aa1ba07e981f2a23455dee596825 # v5
         if: github.actor != 'lerian-studio-midaz-push-bot[bot]'
         env:
-          GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           scopes: |
             midaz

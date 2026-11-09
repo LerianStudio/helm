@@ -37,7 +37,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Auth Version | Identity Version | Caradhras Version |
 | :---: | :---: | :---: | :---: |
-| `11.2.1` | 3.17.0 | 3.17.0 | 2.1.0 |
+| `11.2.3` | 3.19.0 | 3.19.0 | 2.1.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
@@ -77,7 +77,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `3.1.0` | 3.5.0 |
+| `3.2.0` | 3.6.0-beta.9 |
 -----------------
 
 
@@ -134,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `5.4.1` | 1.14.1 | 1.14.1 | 1.14.1 | 1.14.1 | 1.14.1 |
+| `5.5.0` | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 |
 
 -----------------
 
@@ -146,7 +146,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.3.0` | 1.2.0 |
+| `2.4.0` | 1.3.0 |
 -----------------
 
 ### Fetcher
@@ -214,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `4.5.2` | 3.0.0 |
+| `4.5.3` | 3.2.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -237,7 +237,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0` | 1.1.0 |
+| `1.2.0` | 1.2.0-beta.6 |
 -----------------
 
 ### BR SISBAJUD
@@ -275,7 +275,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.4` | 1.0.0-beta.64 |
+| `1.2.0` | 1.0.0-beta.86 |
 -----------------
 
 ### BR STA
@@ -288,7 +288,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version | Migrations Version |
 | :---: | :---: | :---: | :---: |
-| `1.0.6` | 1.2.0 | 1.2.0 | 1.2.0 |
+| `1.0.7` | 1.3.0 | 1.3.0 | 1.3.0 |
 -----------------
 
 ### Agent
@@ -338,7 +338,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | System-Facts Version |
 | :---: | :---: |
-| `1.2.0` | 1.1.0 |
+| `1.3.1` | 1.2.0-beta.4 |
 -----------------
 
 ### Lerian Consul

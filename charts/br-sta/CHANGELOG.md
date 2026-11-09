@@ -1,5 +1,24 @@
 # Br-sta Changelog
 
+## [1.0.7](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.7)
+
+Features:
+- Update `br-sta` to `1.3.0`. (@gandalf-at-lerian)
+
+Fixes:
+- Remove the organization ID from the development bundle note. (@bedatty)
+- Maintain retired knobs as set-only for images below `1.3.0`. (@gandalf-at-lerian)
+- Preserve `ORGANIZATION_IDS` for images pinned below `1.3.0`. (@gandalf-at-lerian)
+
+Improvements:
+- Wait for the old pods to stop before performing the `1.0.6` check. (@fredcamaral)
+- Stop the `audit_outbox` writers before the `1.0.6` check. (@fredcamaral)
+- Add the reviewed `1.0.6` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.6...br-sta-v1.0.7)
+
+---
+
 ## [1.0.6](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.6)
 
 Features:
@@ -98,3 +117,4 @@ Improvements:
 - Document the `br-sta` chart. (@guimoreirar)
 
 [View all changes](https://github.com/LerianStudio/helm/commits/br-sta-v1.0.0)
+

@@ -43,13 +43,6 @@ data:
   {{- if hasKey $cm "TRUSTED_PROXIES" }}
   TRUSTED_PROXIES: {{ index $cm "TRUSTED_PROXIES" | quote }}
   {{- end }}
-  TLS_TERMINATED_UPSTREAM: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "TLS_TERMINATED_UPSTREAM" "default" "true") | quote }}
-  {{- if hasKey $cm "SERVER_TLS_CERT_FILE" }}
-  SERVER_TLS_CERT_FILE: {{ index $cm "SERVER_TLS_CERT_FILE" | quote }}
-  {{- end }}
-  {{- if hasKey $cm "SERVER_TLS_KEY_FILE" }}
-  SERVER_TLS_KEY_FILE: {{ index $cm "SERVER_TLS_KEY_FILE" | quote }}
-  {{- end }}
   INTERNAL_WORKER_URL: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "INTERNAL_WORKER_URL" "default" "") | quote }}
   # ====================================================================
   # CORS

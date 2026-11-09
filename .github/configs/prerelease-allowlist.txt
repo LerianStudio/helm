@@ -5,5 +5,8 @@ plugin-br-ted-lerian
 # Health-port charts (Wave 3): pin the first app image that serves the health port, still a beta.
 # Decided by Fred Amaral on 2026-11-02. Each line leaves when the stable app-sync bumps appVersion.
 reporter
+notifications
+system-facts
+plugin-br-bank-transfer
 # midaz stays until the ledger team cuts 4.5.0.
 midaz

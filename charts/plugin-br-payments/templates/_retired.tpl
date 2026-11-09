@@ -17,6 +17,8 @@
 {{- if hasKey $cm "CIRCUIT_BREAKER_ENABLED" }}{{- fail "\n\nERROR: app.configmap.CIRCUIT_BREAKER_ENABLED is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- if hasKey $cm "RATE_LIMIT_READ" }}{{- fail "\n\nERROR: app.configmap.RATE_LIMIT_READ is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- if hasKey $cm "RATE_LIMIT_WRITE" }}{{- fail "\n\nERROR: app.configmap.RATE_LIMIT_WRITE is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
+{{- if hasKey $cm "SERVER_TLS_CERT_FILE" }}{{- fail "\n\nERROR: app.configmap.SERVER_TLS_CERT_FILE is no longer read by plugin-br-payments (the main port serves plain HTTP; terminate TLS at the Ingress or mesh).\n   Remove it from your values overlay.\n" }}{{- end }}
+{{- if hasKey $cm "SERVER_TLS_KEY_FILE" }}{{- fail "\n\nERROR: app.configmap.SERVER_TLS_KEY_FILE is no longer read by plugin-br-payments (the main port serves plain HTTP; terminate TLS at the Ingress or mesh).\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- if hasKey $cm "RECONCILIATION_LOOKBACK_HOURS" }}{{- fail "\n\nERROR: app.configmap.RECONCILIATION_LOOKBACK_HOURS is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- if hasKey $cm "EXAMPLE_STATUS_PROVIDER_MODE" }}{{- fail "\n\nERROR: app.configmap.EXAMPLE_STATUS_PROVIDER_MODE is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}
 {{- if hasKey $cm "RECONCILIATION_MAX_PROVIDER_PAGES" }}{{- fail "\n\nERROR: app.configmap.RECONCILIATION_MAX_PROVIDER_PAGES is no longer read by plugin-br-payments.\n   Remove it from your values overlay.\n" }}{{- end }}

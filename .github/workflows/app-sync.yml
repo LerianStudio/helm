@@ -1,5 +1,11 @@
 name: Update Helm Chart from Dispatch
 
+# Names the run after what it updates. Severino follows each maintenance line it opened and
+# replies in that request's Slack thread; for a failed run it finds the line by this title,
+# because a workflow_dispatch run does not expose its inputs through the API. The format
+# `<chart> <source_repo>@<source_ref>` is that contract: change it together with Severino.
+run-name: "Update Helm Chart from Dispatch: ${{ fromJSON(inputs.payload).chart }} ${{ fromJSON(inputs.payload).source_repo }}@${{ fromJSON(inputs.payload).source_ref }}"
+
 on:
   workflow_dispatch:
     inputs:
@@ -32,6 +38,11 @@ jobs:
       # and would otherwise create a second, duplicate line off main.
       legacy_branch_prefix: maintenance
       slack_notification: true
+      # Channel IDs are not secrets, so both come from variables. The update card goes to
+      # SLACK_CHANNEL_DEVOPS_NOTIFICATIONS; SLACK_CHANNEL_DEVOPS keeps only the Severino
+      # mention, which becomes the review ticket.
+      slack_channel: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+      slack_notification_channel: ${{ vars.SLACK_CHANNEL_DEVOPS_NOTIFICATIONS }}
     secrets:
       APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
       APP_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
@@ -40,6 +51,5 @@ jobs:
       GIT_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
       GIT_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
-      SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
       SLACK_GROUP_DEVOPS_SRE: ${{ secrets.SLACK_GROUP_DEVOPS_SRE }}
       SLACK_BOT_SEVERINO: ${{ secrets.SLACK_BOT_SEVERINO }}

@@ -55,7 +55,7 @@
 | `brCcs.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
 | `brCcs.image.repository` | string | `ghcr.io/lerianstudio/br-ccs` | Repository for the br-ccs service container image |
 | `brCcs.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
-| `brCcs.image.tag` | string | `"1.0.0"` | Image tag used for deployment |
+| `brCcs.image.tag` | string | `"1.2.0-beta.107"` | Image tag used for deployment |
 | `brCcs.migrations` | string | `{}` | PostgreSQL migrations job (Helm hook; ArgoCD PreSync for external PG, PostSync for the bundled subchart). Runs the dedicated br-ccs-migrations image (golang-migrate runner; the app image never migrates). The chart-managed Secret is rendered as an earlier hook so it exists before the migration hook — migrations run against the chart-managed Secret with NO pre-existing Secret required. Set useExistingSecret only to read POSTGRES_PASSWORD from an operator-provisioned Secret instead. |
 | `brCcs.migrations.enabled` | bool | `true` | Enable or disable the migrations job. |
 | `brCcs.migrations.useExistingSecret` | bool | `false` | Optional. When true, migrations read POSTGRES_PASSWORD from a pre-existing Secret (existingSecretName) instead of the chart-managed Secret hook. |

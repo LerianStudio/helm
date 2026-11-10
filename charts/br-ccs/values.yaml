@@ -168,7 +168,7 @@ brCcs:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0"
+    tag: "1.2.0-beta.107"
   # -- PostgreSQL migrations job (Helm hook; ArgoCD PreSync for external PG,
   # PostSync for the bundled subchart). Runs the dedicated br-ccs-migrations
   # image (golang-migrate runner; the app image never migrates). The
@@ -412,9 +412,9 @@ valkey:
   enabled: true
   global:
     security:
-      allowInsecureImages: false
+      allowInsecureImages: true
   image:
-    repository: bitnami/valkey
+    repository: bitnamilegacy/valkey
     tag: "8.0.2"
   external: false
   architecture: standalone
@@ -436,9 +436,9 @@ postgresql:
   enabled: true
   global:
     security:
-      allowInsecureImages: false
+      allowInsecureImages: true
   image:
-    repository: bitnami/postgresql
+    repository: bitnamilegacy/postgresql
     tag: "17.4.0"
   external: false
   architecture: standalone

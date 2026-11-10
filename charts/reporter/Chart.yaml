@@ -1,7 +1,6 @@
 apiVersion: v2
 name: reporter-helm
-description: Installs Lerian Reporter, the manager API and the report-generation
-  worker, with optional MongoDB, RabbitMQ, Valkey and SeaweedFS
+description: Installs Lerian Reporter, the manager API and the report-generation worker, with optional MongoDB, RabbitMQ, Valkey and SeaweedFS
 type: application
 annotations:
   lerian.studio/chart-type: multi-component
@@ -16,7 +15,7 @@ maintainers:
 # to the chart and its templates, including the app version.
 version: 5.4.0
 # This is the version number of the application being deployed.
-appVersion: "4.8.0"
+appVersion: "4.9.0"
 # A list of keywords about the chart. This helps others discover the chart.
 keywords:
   - midaz

@@ -70,9 +70,20 @@ global.serviceDiscovery (all optional except address when enabled):
   keeping a derived key in extraEnvVars too would duplicate it. SD_ENABLED stays with
   the caller and is never emitted here.
 */ -}}
-{{- /* Normalize .enabled to a strict bool: a raw string "false" (e.g. passed straight
-   from a configmap value) would otherwise be truthy under `if`. */ -}}
-{{- $enabled := eq (toString (.enabled | default false)) "true" -}}
+{{- /* Activation precedence (env-wide toggle with per-component override):
+   1. explicit `.enabled` param — legacy callers that pre-resolve it still win (backward-compatible);
+   2. `configmap.SD_ENABLED` — this component's own override;
+   3. `global.serviceDiscovery.enabled` — the env-wide toggle (turn SD on for the whole umbrella);
+   4. false.
+   A raw string "false" would be truthy under `if`, so normalize to a strict bool at each tier. */ -}}
+{{- $enabled := false -}}
+{{- if hasKey . "enabled" -}}
+{{- $enabled = eq (toString (.enabled | default false)) "true" -}}
+{{- else if hasKey $c "SD_ENABLED" -}}
+{{- $enabled = eq (toString (index $c "SD_ENABLED")) "true" -}}
+{{- else -}}
+{{- $enabled = eq (toString ($sd.enabled | default false)) "true" -}}
+{{- end -}}
 {{- if $enabled -}}
 {{- /* SD_ENABLED is NOT emitted here: it is the app's single knob and is
    rendered by the component's own extraEnvVars passthrough. Emitting it again
@@ -243,6 +254,8 @@ Inputs (dict):
 {{- define "lerian-common.serviceDiscovery.envFlat" -}}
 {{- $std := dict
       "SD_ADDRESS" "localhost:8500"
+      "SD_ADVERTISE_ADDRESS" ""
+      "SD_ADVERTISE_PORT" "0"
       "SD_ALLOW_STALE" ""
       "SD_DIAL_TIMEOUT" ""
       "SD_ENABLED" "false"
@@ -260,7 +273,7 @@ Inputs (dict):
       "SD_WATCH_WAIT_TIME" ""
       "SD_WORKLOAD" "" -}}
 {{- $keys := .keys | default (list
-      "SD_ADDRESS" "SD_ALLOW_STALE" "SD_DIAL_TIMEOUT" "SD_ENABLED"
+      "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_ALLOW_STALE" "SD_DIAL_TIMEOUT" "SD_ENABLED"
       "SD_EXTERNAL_ADDRESS" "SD_EXTERNAL_PORT" "SD_INTERNAL_ADDRESS"
       "SD_INTERNAL_PORT" "SD_INTERNAL_SCHEME" "SD_PREFER_VIEW"
       "SD_RESPONSE_HEADER_TIMEOUT" "SD_SEED_TIMEOUT" "SD_TLS"

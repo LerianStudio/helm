@@ -8,14 +8,16 @@ spec:
   revisionHistoryLimit: {{ .Values.fees.revisionHistoryLimit | default 10 }}
   strategy:
     {{- toYaml .Values.fees.deploymentStrategy | nindent 4 }}
+  {{- if not .Values.fees.autoscaling.enabled }}
   replicas: {{ .Values.fees.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-fees.selectorLabels" (dict "context" . "name" .Values.fees.name) | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "plugin-fees.labels" (dict "context" . "name" .Values.fees.name ) | nindent 8 }}
+        {{- include "plugin-fees.podLabels" (dict "context" . "name" .Values.fees.name ) | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/fees/configmap.yaml") . | sha256sum }}
         {{- if not .Values.fees.useExistingSecret }}
@@ -136,6 +138,8 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           resources:
             {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
         {{- end }}

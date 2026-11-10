@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v8.1.0 to v8.2.0
 
 # Topics
@@ -325,9 +326,9 @@ The default value for the authorizer client secret has been removed from the com
 
 | Configuration Path | v8.1.0 | v8.2.0 |
 |-------------------|--------|--------|
-| `common.authorizer.clientSecret` | `"6add4bc64f394456a77fa85708ad8c9b67e39e4c"` | *(removed)* |
+| `common.authorizer.clientSecret` | *(the value v8.1.0 shipped)* | *(removed)* |
 | `identity.secrets.AUTHORIZER_CLIENT_SECRET` | `"{{ .Values.common.authorizer.clientSecret }}"` | `""` |
-| `auth.secrets.AUTHORIZER_CLIENT_SECRET` | `"6add4bc64f394456a77fa85708ad8c9b67e39e4c"` | `""` |
+| `auth.secrets.AUTHORIZER_CLIENT_SECRET` | *(the value v8.1.0 shipped)* | `""` |
 
 **Why this is breaking:**
 
@@ -347,7 +348,7 @@ auth:
     AUTHORIZER_CLIENT_SECRET: "your-client-secret-here"
 ```
 
-> **Warning:** Do not use the old default value (`6add4bc64f394456a77fa85708ad8c9b67e39e4c`) in production. Generate a new secure secret.
+> **Warning:** Do not use the old default value (the value v8.1.0 shipped) in production. Generate a new secure secret.
 
 **Alternative: Using existing secrets**
 
@@ -635,3 +636,4 @@ helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/
 ```bash
 helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 8.2.0 -n plugin-access-manager
 ```
+<!-- {% endraw %} -->

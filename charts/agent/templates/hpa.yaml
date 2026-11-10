@@ -1,0 +1,8 @@
+{{- if and .Values.agent.enabled .Values.agent.autoscaling.enabled }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" .Values.agent.autoscaling
+      "name" (include "lerian-agent.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name))
+    ) }}
+{{- end }}

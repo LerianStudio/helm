@@ -1,3 +1,5 @@
+{{- $licenseSecret := include "fetcher.licenseFileSecret" .Values.manager -}}
+{{- $h := include "fetcher-manager.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,31 +8,28 @@ metadata:
     {{- include "fetcher-manager.labels" . | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.manager.revisionHistoryLimit | default 10 }}
-  {{- if not .Values.manager.autoscaling.enabled }}
-  replicas: {{ .Values.manager.replicaCount }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   strategy:
-    type: {{ .Values.manager.deploymentStrategy.type }}
-    {{- if eq .Values.manager.deploymentStrategy.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.manager.deploymentStrategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.manager.deploymentStrategy.rollingUpdate.maxUnavailable }}
-    {{- end }}
+    {{- toYaml $h.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "fetcher-manager.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/manager/configmap.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/manager/secrets.yaml") . | sha256sum }}
-        checksum/common-config: {{ include (print $.Template.BasePath "/common/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/manager/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/manager/secrets.yaml") . | fromYaml).data | toYaml | sha256sum }}
+        checksum/common-config: {{ (include (print $.Template.BasePath "/common/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
+        checksum/common-secret: {{ (include (print $.Template.BasePath "/common/secrets.yaml") . | fromYaml).data | toYaml | sha256sum }}
         {{- with .Values.manager.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "fetcher-manager.labels" . | nindent 8 }}
+        {{- include "fetcher-manager.podLabels" . | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- with .Values.manager.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -54,11 +53,27 @@ spec:
                 name: {{ include "fetcher-manager.fullname" . }}
             - configMapRef:
                 name: {{ include "fetcher.fullname" . }}-common
+            # Shared secrets first: the component Secret (or its existingSecret)
+            # comes after and wins on any key both define.
+            - secretRef:
+                name: {{ include "fetcher.fullname" . }}-common
             - secretRef:
                 name: {{ if .Values.manager.useExistingSecret }}{{ .Values.manager.existingSecretName }}{{ else }}{{ include "fetcher-manager.fullname" . }}{{ end }}
-          {{- if or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled) }}
+          {{- /* $(HOST_IP) is expanded only in env[].value, never through envFrom, so
+                 the node-local collector endpoint must be set here. Legacy path:
+                 common.configmap.ENABLE_TELEMETRY=true always uses it. Mask path
+                 (global.observability): only when the resolved endpoint is the
+                 $(HOST_IP) default, so a configured endpoint is kept. */}}
+          {{- $commonData := include "fetcher.commonConfigmapData" . | fromYaml | default dict }}
+          {{- $otelHostIP := or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and (eq (toString (index $commonData "ENABLE_TELEMETRY")) "true") (eq (toString (index $commonData "OTEL_EXPORTER_OTLP_ENDPOINT")) "http://$(HOST_IP):4317")) }}
           env:
-          {{- if eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true" }}
+            {{- toYaml $h.env | nindent 12 }}
+          {{- if $licenseSecret }}
+            # Licence-file mode: the signed file replaces LICENSE_KEY (needs lib-license-go v5).
+            - name: LICENSE_FILE_PATH
+              value: /etc/lerian/license/license
+          {{- end }}
+          {{- if $otelHostIP }}
             - name: "HOST_IP"
               valueFrom:
                 fieldRef:
@@ -72,31 +87,26 @@ spec:
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
               value: "IPv4"
           {{- end }}
-          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.manager.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
           livenessProbe:
-            httpGet:
-              path: {{ .Values.manager.livenessProbe.path | default "/health" }}
-              port: http
-            initialDelaySeconds: {{ .Values.manager.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.manager.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.manager.livenessProbe.timeoutSeconds }}
-            successThreshold: {{ .Values.manager.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.manager.livenessProbe.failureThreshold }}
+            {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe:
-            httpGet:
-              path: {{ .Values.manager.readinessProbe.path | default "/readyz" }}
-              port: http
-            initialDelaySeconds: {{ .Values.manager.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.manager.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.manager.readinessProbe.timeoutSeconds }}
-            successThreshold: {{ .Values.manager.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.manager.readinessProbe.failureThreshold }}
+            {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.manager.resources | nindent 12 }}
+          {{- if $licenseSecret }}
+          # Directory mount, never subPath, so a rotated licence file propagates.
+          volumeMounts:
+            - name: license-file
+              mountPath: /etc/lerian/license
+              readOnly: true
+          {{- end }}
         {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
         - name: aws-signing-helper
           image: "{{ .Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ .Values.aws.rolesAnywhere.sidecar.image.tag }}"
@@ -135,11 +145,15 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           resources:
             {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
         {{- end }}
-      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- $iam := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- if or $iam $licenseSecret }}
       volumes:
+      {{- if $iam }}
         - name: iam-certs
           secret:
             secretName: {{ .Values.aws.rolesAnywhere.certificateSecretName | default "fetcher-iam-tls" }}
@@ -150,15 +164,22 @@ spec:
               - key: tls.key
                 path: tls.key
       {{- end }}
-      {{- with .Values.manager.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
+      {{- if $licenseSecret }}
+        - name: license-file
+          secret:
+            secretName: {{ $licenseSecret | quote }}
+            defaultMode: 0444
+            items:
+              - key: license
+                path: license
       {{- end }}
-      {{- with .Values.manager.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.manager.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, manager.spread, manager.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.manager
+            "global" .Values.global
+            "selectorLabels" (include "fetcher-manager.selectorLabels" .)) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

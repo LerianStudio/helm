@@ -1,9 +1,78 @@
-# Changelog
+# Plugin-br-payments Changelog
 
-All notable changes to this chart will be documented in this file.
+## [2.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.5.0)
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this chart adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Features:
+- Accept sandbox simulation keys in `plugin-br-payments`. (@arthurkz)
+
+Fixes:
+- Render `TRUSTED_PROXIES` and HTTP timeouts for `plugin-br-payments`. (@MarcoBuarque)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.4.0...plugin-br-payments-v2.5.0)
+
+---
+
+## [2.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.4.0)
+
+Features:
+
+- Update `plugin-br-payments` to `1.3.0`, introducing new environment variables. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.3.1...plugin-br-payments-v2.4.0)
+
+---
+
+## [2.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.3.1)
+
+Fixes:
+- Removed the main-listener native TLS keys from `plugin-br-payments`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.3.0...plugin-br-payments-v2.3.1)
+
+---
+
+## [2.3.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.3.0)
+
+Features:
+- Added a license file mount and migrator key to `plugin-br-payments`. (@fredcamaral)
+
+Fixes:
+- Projected only the license key in the license file volume for `plugin-br-payments`. (@fredcamaral)
+
+Improvements:
+- Added the `plugin-br-payments` `2.2.2` upgrade guide. (@fredcamaral)
+- Marked the release and namespace as examples in the `2.2.2` guide for `plugin-br-payments`. (@fredcamaral)
+- Stated the `REQUEST_TIMEOUT_SEC` floor in the `2.2.2` guide for `plugin-br-payments`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.2...plugin-br-payments-v2.3.0)
+
+---
+
+## [2.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.2)
+
+Fixes:
+
+- Keep control-plane guard on API pods and trim comments to ensure proper functionality. (@fredcamaral)
+- Align starter overlay, schema, and pod labels for consistency. (@fredcamaral)
+
+Improvements:
+
+- Fix secret commands in the `plugin-br-payments` `1.1.2` documentation to ensure accuracy. (@fredcamaral)
+- Correct the upgrade guide for `plugin-br-payments` `1.1.2` to provide clear instructions. (@fredcamaral)
+- Add verified upgrade guides for versions `1.1.3` to `2.2.1` to assist users in transitioning between versions. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.1...plugin-br-payments-v2.2.2)
+
+---
+
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.2.1)
+
+Fixes:
+- Updated charts to use stable payments `1.2.0`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.2.0...plugin-br-payments-v2.2.1)
+
+---
 
 ## [1.0.0-beta.2] — Unreleased
 
@@ -64,3 +133,4 @@ helm lint passes; helm install succeeds end-to-end; deployment reaches
 `2/2 Ready`; `/health`, `/readyz`, and `/version` all return 200 via the
 generated Service; the readyz response reports `postgres`, `midaz`, and
 `provider` checks all `up`.
+

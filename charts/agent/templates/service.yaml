@@ -1,0 +1,13 @@
+{{- if .Values.agent.enabled }}
+{{- /*
+The agent serves no external traffic - it only polls the control plane
+outbound. This exposes its health and metrics endpoints inside the cluster.
+*/}}
+{{- include "lerian-common.service" (dict
+      "service" .Values.agent.service
+      "name" (include "lerian-agent.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name))
+      "selector" (include "lerian-agent.selectorLabels" (dict "context" . "name" .Values.agent.name))
+    ) }}
+{{- end }}

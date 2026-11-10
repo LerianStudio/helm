@@ -1,198 +1,705 @@
 # Midaz Changelog
 
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+## [10.4.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.2)
 
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
+Features:
 
-- **Contributors:** @guimoreirar, @lerian-studio
+- Match the `4.4` ledger image tag instead of pinning a patch. (@fredcamaral)
 
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+Fixes:
+
+- Allow per-component streaming SASL override on ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.1...midaz-v10.4.2)
 
 ---
 
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.1)
 
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
+Fixes:
+- Update `midaz-ledger@4.4.1`, `midaz-tracer@4.4.1`, `midaz-tracer-migrations@4.4.1`, and `midaz-ledger-migrations@4.4.1`. (@bedatty, @lerian-studio)
+
+Improvements:
+- Scope the in-memory license note to `4.5.0-rc.2` images. (@fredcamaral)
+- Remove the license table grant from the `10.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.0...midaz-v10.4.1)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.0)
+
+Features:
+- Add an optional license file mount for `lib-license-go` `v5`. (@fredcamaral)
+
+Improvements:
+- Scope the `10.3.3` pin notes per component. (@fredcamaral)
+- Add the verified `10.3.3` upgrade guide. (@fredcamaral)
+- Add the `10.3.4` upgrade guide. (@fredcamaral)
+- Name which migrations Jobs run in the `10.3.4` guide. (@fredcamaral)
+- Correct the `10.3.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.4...midaz-v10.4.0)
+
+---
+
+## [10.3.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.4)
+
+Fixes:
+- Ensure the chart version is not included in pod labels. (@fredcamaral)
+- Remove dead links from the documentation. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to the chart documentation and upgrade guides. (@dy-shimizu, @gandalf-at-lerian)
+- Pass the edited values file to the `10.3` and `10.3.1` upgrade commands. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.3...midaz-v10.3.4)
+
+---
+
+## [10.3.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.3)
+
+Features:
+- Add the verified `10.3.2` upgrade guide. (@fredcamaral)
+
+Fixes:
+- Default ledger and tracer to stable `4.4.0`. (@fredcamaral)
+- Align `4.4.0` default notes and partition test with main. (@fredcamaral)
+
+Improvements:
+- Scope the preset override notes to `4.5.0-beta.94` images. (@fredcamaral)
+- Reword a helper comment neutrally. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.2...midaz-v10.3.3)
+
+---
+
+## [10.3.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.2)
+
+Features:
+- Auto-enable the partition runner from `4.5.0-beta.1`. (@fredcamaral)
+
+Improvements:
+- Add prerequisites and the bundled RabbitMQ version to the documentation. (@fredcamaral)
+- Correct the `midaz` `10.0.4` upgrade guide. (@fredcamaral)
+- Add verified upgrade guides for versions `10.0.5` to `10.3.1`. (@fredcamaral)
+- Correct chart documentation to align with templates and application code. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.1...midaz-v10.3.2)
+
+---
+
+## [10.3.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.1)
+
+Fixes:
+- Preserve the partition runner to ensure consistent behavior in `midaz`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.0...midaz-v10.3.1)
+
+---
+
+## [10.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.0)
+
+Features:
+- Adopt the `lerian-common` health preset. (@fredcamaral)
+
+Fixes:
+- Fail the render when ledger/tracer overrides preset-owned `pdb` or `deploymentUpdate`. (@fredcamaral)
+- Drop orphan `rabbitmq` protocol and port keys from the ledger configmap. (@fredcamaral)
+- Remove orphan `rabbitmq` health URL and duplicate minimum image. (@fredcamaral)
+
+Improvements:
+- Note that the default image is the first `health-port` release. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.1...midaz-v10.3.0)
+
+---
+
+## [10.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.1)
+
+Improvements:
+- State the ledger shutdown grace sum in values to enhance clarity. (@fredcamaral)
+- Document the ledger grace need per lib-commons shutdown model for better understanding. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.2.0...midaz-v10.2.1)
+
+---
+
+## [10.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.2.0)
+
+Features:
+- Set ledger shutdown drain delay to `15s` to improve shutdown behavior. (@fredcamaral)
+
+Fixes:
+- Raise ledger grace period to cover the drain time and update grace documentation for clarity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.1...midaz-v10.2.0)
+
+---
+
+## [10.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.1)
+
+Fixes:
+- Increased the timeout settings for both ledger and CRM probes to improve reliability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.1.0...midaz-v10.1.1)
+
+---
+
+## [10.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.1.0)
+
+Features:
+
+- Pass the license key from a secret to ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.5...midaz-v10.1.0)
+
+---
+
+## [10.0.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.5)
+
+Features:
+- Add Helm upgrade guide for `midaz` `v10.0.4`. (@victorlazari)
+
+Improvements:
+- Relicense charts under Elastic License 2.0. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.4...midaz-v10.0.5)
+
+---
+
+## [10.0.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.4)
+
+Features:
+- Added a Helm upgrade guide for `midaz` `v10.0.1`. (@victorlazari)
+- Added a Helm upgrade guide for `midaz` `v10.0.2`. (@victorlazari)
+
+Fixes:
+- Updated `midaz-ledger` to `4.4.0`, `midaz-tracer` to `4.4.0`, `midaz-ledger-migrations` to `4.4.0`, and `midaz-tracer-migrations` to `4.4.0`. (@lerian-studio)
+- Fixed the `v10.0.2` upgrade guide to describe the schema fix. (@gandalf-at-lerian)
+
+Improvements:
+- Rewrote the `v10.0.1` upgrade guide to address the tolerations schema change. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.3...midaz-v10.0.4)
+
+---
+
+## [10.0.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.3)
+
+Features:
+- Keep the valkey claim through Argo CD pruning, ensuring it is not lost during the process. (@fredcamaral)
+- Grow a statefulset valkey claim without losing it, allowing for seamless scaling. (@fredcamaral)
+- Pass the edited valkey values on the `10.0.3` upgrade to maintain configuration consistency. (@fredcamaral)
+- Name the ledger and tracer migration switches to clarify their purpose during transitions. (@fredcamaral)
+- Scope the migrate-first order to the default settings, ensuring proper sequence during migrations. (@fredcamaral)
+- Name the hook type per deploy tool to enhance clarity in deployment processes. (@fredcamaral)
+- Provide the `v4.3` cutover steps at chart level for better guidance during upgrades. (@fredcamaral)
+
+Fixes:
+- Fsync every valkey write and stop upgrades on open fee debt to prevent data loss and ensure financial integrity. (@fredcamaral)
+- Count account-block exceptions in the valkey upgrade loss to accurately reflect upgrade impacts. (@fredcamaral)
+- Cover statefulset, image, and rollback in the valkey upgrade to ensure comprehensive upgrade handling. (@fredcamaral)
+- Add valkey drain, override checks, and sizing rule to improve system robustness during operations. (@fredcamaral)
+- Pin the bundled valkey image now that it opens a volume, ensuring consistency in image usage. (@fredcamaral)
+- Keep the bundled valkey's data and refuse writes when full to prevent data overflow and maintain stability. (@fredcamaral)
+
+Improvements:
+- Require a drained cutover from `midaz v4.2.x` to ensure a smooth transition and reduce downtime. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.2...midaz-v10.0.3)
+
+---
+
+## [10.0.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.2)
+
+Fixes:
+- Ensure that an empty map for component tolerations is still accepted. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.1...midaz-v10.0.2)
+
+---
+
+## [10.0.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.1)
+
+Fixes:
+- Accept a list for ledger, CRM, and tracer tolerations. (@guimoreirar)
+
+Improvements:
+- Correct guidance for `ALLOW_INSECURE_TLS` and quoted-value in the `UPGRADE-10.0` documentation. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.0.0...midaz-v10.0.1)
+
+---
+
+## [10.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.0.0)
+
+Fixes:
+
+- Render boolean false on default-true flags to ensure accurate representation. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.2...midaz-v10.0.0)
+
+---
+
+## [9.8.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.2)
+
+Fixes:
+- Resolve vault placeholders in RabbitMQ definitions to ensure correct configuration. (@andreimatiazi)
+- Address placeholder resolution in RabbitMQ users for accurate user setup. (@andreimatiazi)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.8.1` to assist users with the update process. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.1...midaz-v9.8.2)
+
+---
+
+## [9.8.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.1)
+
+Fixes:
+- Update `midaz-ledger` to `4.3.0`, `midaz-tracer` to `4.3.0`, `midaz-ledger-migrations` to `4.3.0`, and `midaz-tracer-migrations` to `4.3.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guide for `midaz` `v9.8.0`. (@guimoreirar)
+- Add Helm upgrade guide for `midaz` `v9.7.3`. (@guimoreirar)
+- Add Helm upgrade guide for `midaz` `v9.7.2`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.8.0...midaz-v9.8.1)
+
+---
+
+## [9.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.8.0)
+
+Features:
+- Reflect balance sync fork configuration in the values template. (@Ygohr)
+- Add balance sync fork configuration to the ledger. (@Ygohr)
+
+Fixes:
+- Keep balance sync fork variables in the configmap only. (@Ygohr)
+
+Improvements:
+- Add upgrade guide for `midaz` `v9.8.0`. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.3...midaz-v9.8.0)
+
+---
+
+## [9.7.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.3)
+
+Fixes:
+
+- Keep an explicit zero grace period for termination and reject negative values. (@fredcamaral)
+- Raise the ledger termination grace period to `60s`. (@fredcamaral)
+- Set a `45s` termination grace period for ledger and tracer pods. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.2...midaz-v9.7.3)
+
+---
+
+## [9.7.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.2)
+
+Features:
+- Documented the gRPC-only ledger to tracer transport. (@Ygohr)
+
+Fixes:
+- Ensured that the tracer gRPC port is always published. (@Ygohr)
+- Stopped defaulting the ledger `TRACER_TRANSPORT` to REST. (@Ygohr)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.1...midaz-v9.7.2)
+
+---
+
+## [9.7.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.1)
+
+Features:
+- Align README, parameters, and quickstart documentation with the rendered chart. (@gandalf-at-lerian)
+
+Fixes:
+- Update `midaz-ledger@4.2.2` and `midaz-tracer@4.2.2`. (@lerian-studio)
+
+Improvements:
+- Limit the `TRACER_TRANSPORT` note to a configured tracer integration in the documentation. (@gandalf-at-lerian)
+- Explain the `TRACER_TRANSPORT` default by ledger version in the documentation. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.7.0...midaz-v9.7.1)
+
+---
+
+## [9.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.7.0)
+
+Features:
+- Documented the `9.7.0` upgrade, including CRM KMS default, RabbitMQ cookie, and tracer migrations. (@jeffersonrodrigues92)
+
+Fixes:
+- Ensured the tracer migration remains a pre-upgrade hook during upgrades. (@jeffersonrodrigues92)
+- Defaulted the standalone CRM to legacy KMS mode, similar to the ledger. (@jeffersonrodrigues92)
+- Prevented rendering of a ledger that cannot boot unauthenticated in production. (@jeffersonrodrigues92)
+- Allowed a fresh install to reach Ready state by addressing tracer schema and RabbitMQ cookie issues. (@jeffersonrodrigues92)
+
+Improvements:
+- Qualified the old CRM Vault default as unreachable without an operator-run Vault. (@jeffersonrodrigues92)
+- Covered an explicit HashiCorp Vault without an address in the `9.7` upgrade scope. (@jeffersonrodrigues92)
+- Included custom Vault addresses in the CRM KMS upgrade scope. (@jeffersonrodrigues92)
+- Addressed the ledger auth render guard and the upgrade hook in `UPGRADE-9.7`. (@jeffersonrodrigues92)
+- Stated the Valkey fee-debt and RabbitMQ persistence requirements in the chart README. (@jeffersonrodrigues92)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.1...midaz-v9.7.0)
+
+---
+
+## [9.6.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.1)
+
+Features:
+
+- Add Helm upgrade guide for `midaz` `v9.6.0`. (@guimoreirar)
+
+Fixes:
+
+- Update `midaz-ledger` to `@4.2.1` and `midaz-tracer` to `@4.2.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.6.0...midaz-v9.6.1)
+
+---
+
+## [9.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.6.0)
+
+Features:
+- Spread ledger, CRM, and tracer pods across nodes to enhance distribution. (@guimoreirar)
+- Expose configuration options for spread `minDomains` and `nodeTaintsPolicy` in `lerian-common` `2.3.0`. (@guimoreirar)
+- Spread ledger, CRM, and tracer pods across both nodes and zones for improved redundancy. (@guimoreirar)
+
+Fixes:
+- Disable zone spread by default to prevent unintended distribution. (@guimoreirar)
+
+Improvements:
+- Add a Helm upgrade guide for `midaz` `v9.5.0` to assist users with the update process. (@guimoreirar)
+- Provide a Helm upgrade guide for `midaz` `v9.4.0` to facilitate smoother transitions. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.5.0...midaz-v9.6.0)
+
+---
+
+## [9.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.5.0)
+
+Features:
+- Run `midaz-ledger` and `midaz-tracer` `4.2.0`. (@guimoreirar)
+- Render the rest of the ledger and tracer `.env.example` contract. (@guimoreirar)
+- Render the environment staging passes through `extraEnvVars`. (@guimoreirar)
+
+Fixes:
+- Allow the configmap keys that the templates read but the schema previously refused. (@guimoreirar)
+- Keep the CRM multi-tenant Redis host optional. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.4.0...midaz-v9.5.0)
+
+---
+
+## [9.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.4.0)
+
+Features:
+- Render the ledger seam token wait timeout. (@andreimatiazi)
+- Render the ledger tracer seam credentials. (@andreimatiazi)
+- Support AWS IAM Roles Anywhere on the ledger. (@andreimatiazi)
+
+Fixes:
+- Name the seam token wait `TRACER_M2M_WAIT_TIMEOUT_MS`. (@andreimatiazi)
+- Update `midaz-ledger@4.1.2`, `midaz-tracer@4.1.2`. (@guimoreirar, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.3.0...midaz-v9.4.0)
+
+---
+
+## [9.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.3.0)
+
+Features:
+- Update `midaz-ledger@4.1.0` and `midaz-tracer@4.1.0`. (@guimoreirar)
+- Introduce new environment variables for `midaz-ledger@4.1.0` and `midaz-tracer@4.1.0`. (@lerian-studio)
+
+Improvements:
+- Add Helm upgrade guides for `midaz` versions: `v9.2.5`, `v9.2.7`, `v9.2.8`, `v9.2.9`, `v9.2.10`, `v9.2.11`, `v9.2.12`, `v9.2.13`, `v9.2.14`, and `v9.2.15`. (@guimoreirar)
+
+Fixes:
+- Correct upgrade guides for `midaz` versions: `v9.2.8`, `v9.2.9`, `v9.2.10`, `v9.2.13`, `v9.2.14`, and `v9.2.15`. (@guimoreirar)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.15...midaz-v9.3.0)
+
+---
+
+## [9.2.15](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.15)
+
+- Fixes:
+  - Honor the ledger and CRM disruption budgets as configured.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.14...midaz-v9.2.15)
+
+---
+
+## [9.2.12](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.12)
+
+- Fixes:
+  - Restart pods when their secret changes to ensure updated configurations are applied.
+  - Keep the manual ledger restart in the broker refusal process for better error handling.
+  - Drop the manual ledger restart from the broker refusal to streamline operations.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.11...midaz-v9.2.12)
+
+---
+
+## [9.2.11](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.11)
+
+- Fixes:
+  - Log the ledger into the replica with its own password.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.10...midaz-v9.2.11)
+
+---
+
+## [9.2.10](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.10)
+
+- Fixes:
+  - Stop promising a volume for the bundled broker.
+  - Name the immutable StatefulSet field precisely.
+  - Indicate that the broker loses messages when its pod is recreated.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.9...midaz-v9.2.10)
+
+---
+
+## [9.2.9](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.9)
+
+- Fixes:
+  - Stopped the bundled RabbitMQ from shipping public passwords.
+  - Shipped RabbitMQ definitions without users or hashes.
+  - Named the ledger restart in the RabbitMQ 401 sentence.
+  - Refused a broker boot file without users and kept job logs.
+
+Contributors: @fredcamaral, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.8...midaz-v9.2.9)
+
+---
+
+## [9.2.8](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.8)
+
+- Fixes:
+  - Ensure the RabbitMQ bootstrap runs on upgrade and rotation.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.7...midaz-v9.2.8)
+
+---
+
+## [9.2.7](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.7)
+
+- **Fixes**
+  - Run init containers under pod security restricted.
 
 - **Improvements**
-  - Added an upgrade guide for midaz v8.6.0.
+  - Updated documentation to indicate that `ledger.securityContext` also covers the init container.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.6...midaz-v9.2.7)
+
+---
+
+## [9.2.6](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.6)
+
+- Fixes:
+  - Keep the databases and their passwords on uninstall to ensure data integrity and security.
+
+- Improvements:
+  - Documentation update to specify that the chart owns the database passwords.
+  - Enhanced documentation by pointing the required-secrets note at the kept datastore secrets.
+
+Contributors: @fredcamaral, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.5...midaz-v9.2.6)
+
+---
+
+## [9.2.5](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.5)
+
+- Fixes:
+  - Send only the role password verifier to the server.
+  - Update midaz-ledger to version 4.0.7.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.4...midaz-v9.2.5)
+
+---
+
+## [9.2.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.4)
+
+- **Fixes:**
+  - Match the privilege check literally and read the password from the environment.
+  - Hide a failed CREATE ROLE from the server log.
+  - Quote the role password in the postgres bootstrap hook.
+
+Contributors: @fredcamaral, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.3...midaz-v9.2.4)
+
+---
+
+## [9.2.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.3)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.5.
+  - Updated `midaz-tracer` to version 4.0.5.
+
+- **Documentation:**
+  - Added Helm upgrade guide for midaz v9.2.2.
+  - Added upgrade guide for midaz v9.2.2.
 
 Contributors: @guimoreirar, @lerian-studio
 
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.2...midaz-v9.2.3)
 
 ---
 
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+## [9.2.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.2)
 
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Improvements**
-  - Added an upgrade guide for midaz v8.6.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Contributors**
-  - @guimoreirar
-  - @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Contributors:** @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features:**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Contributors:**
-  - @guimoreirar
-  - @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Improvements**
-  - Added an upgrade guide for midaz v8.6.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Contributors:** @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Improvements**
-  - Added an upgrade guide for midaz v8.6.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features:**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Contributors:**
-  - @guimoreirar
-  - @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Improvements**
-  - Added an upgrade guide for midaz v8.6.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Contributors**
-  - @guimoreirar
-  - @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated midaz-crm to version 3.8.0.
-  - Updated midaz-ledger to version 3.8.0.
-
-- **Improvements**
-  - Added an upgrade guide for midaz v8.6.0.
+- Fixes:
+  - CRM/Tracer default set to `maxUnavailable=0` for zero-downtime rollouts.
 
 Contributors: @guimoreirar, @lerian-studio,
 
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.1...midaz-v9.2.2)
 
 ---
 
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
+## [9.2.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.1)
+
+- **Fixes:**
+  - Updated `midaz-ledger` to version 4.0.3.
+  - Updated `midaz-tracer` to version 4.0.3.
+
+- **Improvements:**
+  - Added an upgrade guide for Midaz v9.2.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.2.0...midaz-v9.2.1)
+
+---
+
+## [9.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.2.0)
+
+- **Features**
+  - Fail fast when managed Mongo is missing CRM/Fees hosts.
+
+- **Improvements**
+  - Correct datastore precedence (native > dedicated > shared).
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.2...midaz-v9.2.0)
+
+---
+
+## [9.1.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.2)
+
+- Fixes:
+  - Removed the dead Grafana values block and the retired migration note.
+
+- Improvements:
+  - Added an upgrade guide for Midaz v9.1.1.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.1...midaz-v9.1.2)
+
+---
+
+## [9.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.1)
+
+- **Fixes:**
+  - Updated midaz-ledger to version 4.0.2.
+  - Updated midaz-tracer to version 4.0.2.
+
+- **Improvements:**
+  - Added an upgrade guide for midaz v9.1.0.
+
+Contributors: @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.1.0...midaz-v9.1.1)
+
+---
+
+## [9.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.1.0)
 
 - **Features:**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
+  - Bumped `lerian-common-helm` to stable version 2.1.0.
+  - Removed four ledger configmap knobs.
+  - Added IDP_* RI declaration environment variables to ledger and tracer.
+  - Exposed ledger schema registry URL.
+  - Restored standalone CRM component (opt-in, `crm.enabled=false`).
 
-- **Contributors:**
+- **Fixes:**
+  - Updated `midaz-crm` and `midaz-ledger` to version 3.8.4.
+  - Aligned HPA sync-wave with its Deployment.
+  - Replaced removed `--tlsInsecure` mongosh flag with the modern equivalent.
+  - Supported TLS in the MongoDB bootstrap job (required for DocumentDB).
+  - Resolved `RABBITMQ_PROTOCOL` via the broker mask.
+
+Contributors: @Ygohr, @andreimatiazi, @gandalf-at-lerian, @guimoreirar, @lerian-studio
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v9.0.0...midaz-v9.1.0)
+
+---
+
+## [9.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v9.0.0)
+
+- **Fixes**
+  - Updated `midaz-ledger` to version 3.8.3.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.9.0...midaz-v9.0.0)
+
+---
+
+## [8.9.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.9.0)
+
+- **Features**
+  - Released midaz version 8.9.0.
+
+- **Fixes**
+  - Updated midaz-crm to version 3.8.2.
+  - Updated midaz-ledger to version 3.8.2.
+
+- **Improvements**
+  - Added an upgrade guide for midaz version 8.8.0.
+
+Contributors: @guimoreirar, @lerian-studio,
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.8.0...midaz-v8.9.0)
+
+---
+
+## [8.8.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.8.0)
+
+- **Fixes**
+  - Updated `midaz-crm` to version 3.8.1.
+  - Updated `midaz-ledger` to version 3.8.1.
+
+- **Contributors**
   - @guimoreirar
   - @lerian-studio
 
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.7.0...midaz-v8.8.0)
 
 ---
 
@@ -202,37 +709,7 @@ Contributors: @guimoreirar, @lerian-studio,
   - Updated `midaz-crm` to version 3.8.0.
   - Updated `midaz-ledger` to version 3.8.0.
 
-- **Improvements**
-  - Added an upgrade guide for midaz v8.6.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated midaz-crm to version 3.8.0.
-  - Updated midaz-ledger to version 3.8.0.
-
-- **Improvements**
-  - Added an upgrade guide for midaz v8.6.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.6.0...midaz-v8.7.0)
-
----
-
-## [8.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.7.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.8.0.
-  - Updated `midaz-ledger` to version 3.8.0.
-
-- **Improvements**
+- **Documentation**
   - Added upgrade guide for midaz v8.6.0.
 
 Contributors: @guimoreirar, @lerian-studio
@@ -256,179 +733,11 @@ Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
 
 ---
 
-## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
-
-- **Features**
-  - Render streaming SASL/TLS secrets in midaz + plugin-fees Secrets.
-
-- **Documentation**
-  - Add upgrade guide for midaz v8.5.0.
-
-Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
-
----
-
-## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
-
-- **Features**
-  - Render streaming SASL/TLS secrets in midaz.
-
-- **Documentation**
-  - Added upgrade guide for midaz v8.5.0.
-
-Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
-
----
-
-## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
-
-- **Features:**
-  - Render streaming SASL/TLS secrets in midaz.
-
-- **Documentation:**
-  - Added upgrade guide for midaz v8.5.0.
-
-Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
-
----
-
-## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
-
-- **Features**
-  - Render streaming SASL/TLS secrets in midaz and plugin-fees Secrets.
-
-- **Documentation**
-  - Added upgrade guide for midaz v8.5.0.
-
-Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
-
----
-
-## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
-
-- **Features**
-  - Render streaming SASL/TLS secrets in midaz and plugin-fees Secrets.
-
-- **Documentation**
-  - Added upgrade guide for midaz v8.5.0.
-
-Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
-
----
-
-## [8.6.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.6.0)
-
-- **Features**
-  - Render streaming SASL/TLS secrets in midaz + plugin-fees Secrets.
-
-- **Documentation**
-  - Add upgrade guide for midaz v8.5.0.
-
-Contributors: @gandalf-at-lerian, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.5.0...midaz-v8.6.0)
-
----
-
 ## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
 
 - **Features**
   - Updated midaz-crm to version 3.7.8 with new environment variables.
   - Updated midaz-ledger to version 3.7.8 with new environment variables.
-
-- **Improvements**
-  - Removed ALLOW_INSECURE_TLS from CRM and Ledger configmaps.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.4.0...midaz-v8.5.0)
-
----
-
-## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
-
-- **Features**
-  - Update midaz-crm to version 3.7.8 and midaz-ledger to version 3.7.8, introducing new environment variables.
-
-- **Improvements**
-  - Removed `ALLOW_INSECURE_TLS` from CRM and Ledger configmaps for enhanced security.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.4.0...midaz-v8.5.0)
-
----
-
-## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
-
-- **Features:**
-  - Updated midaz-crm and midaz-ledger to version 3.7.8 with new environment variables.
-
-- **Improvements:**
-  - Removed `ALLOW_INSECURE_TLS` from CRM and Ledger configmaps.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.4.0...midaz-v8.5.0)
-
----
-
-## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
-
-- **Features**
-  - Updated `midaz-crm` and `midaz-ledger` to version 3.7.8, introducing new environment variables.
-
-- **Improvements**
-  - Removed `ALLOW_INSECURE_TLS` from CRM and Ledger configmaps for enhanced security.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.4.0...midaz-v8.5.0)
-
----
-
-## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
-
-- **Features**
-  - Updated `midaz-crm` to version 3.7.8 and `midaz-ledger` to version 3.7.8, introducing new environment variables.
-
-- **Improvements**
-  - Removed `ALLOW_INSECURE_TLS` from CRM and Ledger configmaps for enhanced security.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.4.0...midaz-v8.5.0)
-
----
-
-## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
-
-- **Features**
-  - Updated `midaz-crm` and `midaz-ledger` to version 3.7.8 with new environment variables.
-
-- **Improvements**
-  - Removed `ALLOW_INSECURE_TLS` from CRM and Ledger configmaps.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.4.0...midaz-v8.5.0)
-
----
-
-## [8.5.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.5.0)
-
-- **Features**
-  - Updated midaz-crm and midaz-ledger to version 3.7.8 with new environment variables.
 
 - **Improvements**
   - Removed ALLOW_INSECURE_TLS from CRM and Ledger configmaps.
@@ -450,126 +759,6 @@ Contributors: @guimoreirar, @lerian-studio
 - **Improvements:**
   - Regenerated Chart.lock to match Chart.yaml after dependency removal.
   - Refreshed midaz README for 8.4 release.
-
-Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.3.0...midaz-v8.4.0)
-
----
-
-## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.4.0)
-
-- **Features**
-  - Decoupled otel-collector-lerian from midaz helm chart.
-
-- **Fixes**
-  - Removed manually-added UPGRADE-9.0.md from midaz.
-
-- **Improvements**
-  - Regenerated Chart.lock to match Chart.yaml after dependency removal.
-  - Refreshed midaz README for 8.4 release.
-
-Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio,
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.3.0...midaz-v8.4.0)
-
----
-
-## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.4.0)
-
-- **Features**
-  - Decoupled otel-collector-lerian from midaz helm chart.
-
-- **Improvements**
-  - Regenerated Chart.lock to match Chart.yaml after dependency removal.
-  - Removed manually-added UPGRADE-9.0.md.
-
-- **Documentation**
-  - Refreshed midaz README for 8.4 release.
-
-Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio,
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.3.0...midaz-v8.4.0)
-
----
-
-## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.4.0)
-
-- **Features**
-  - Decoupled otel-collector-lerian from midaz helm chart.
-
-- **Fixes**
-  - Removed manually-added UPGRADE-9.0.md from midaz.
-
-- **Improvements**
-  - Regenerated Chart.lock to match Chart.yaml after dependency removal.
-  - Added UPGRADE-9.0 and tightened otel-collector-lerian schema.
-  - Refreshed midaz README for 8.4 release.
-
-Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio,
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.3.0...midaz-v8.4.0)
-
----
-
-## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.4.0)
-
-- **Features**
-  - Decoupled otel-collector-lerian from midaz helm chart.
-
-- **Fixes**
-  - Removed manually-added UPGRADE-9.0.md from midaz.
-
-- **Improvements**
-  - Regenerated Chart.lock to match Chart.yaml after dependency removal.
-
-Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.3.0...midaz-v8.4.0)
-
----
-
-## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.4.0)
-
-- **Features**
-  - Decoupled otel-collector-lerian from midaz helm chart.
-
-- **Improvements**
-  - Regenerated Chart.lock to match Chart.yaml after dependency removal.
-  - Removed manually-added UPGRADE-9.0.md.
-
-- **Documentation**
-  - Refreshed midaz README for 8.4 release.
-
-Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.3.0...midaz-v8.4.0)
-
----
-
-## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.4.0)
-
-- **Features**
-  - Decoupled otel-collector-lerian from midaz helm chart.
-
-- **Improvements**
-  - Regenerated Chart.lock to match Chart.yaml after dependency removal.
-  - Removed manually-added UPGRADE-9.0.md.
-
-Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.3.0...midaz-v8.4.0)
-
----
-
-## [8.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.4.0)
-
-- **Features:**
-  - Decoupled otel-collector-lerian from midaz helm chart.
-
-- **Improvements:**
-  - Removed manually-added UPGRADE-9.0.md.
-  - Regenerated Chart.lock to match Chart.yaml after dependency removal.
 
 Contributors: @gandalf-at-lerian, @gauchito91, @guimoreirar, @lerian-studio
 
@@ -603,100 +792,6 @@ Contributors: @fredcamaral, @guimoreirar, @lerian-studio
 
 ---
 
-## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.3.0)
-
-- **Features:**
-  - Added ALLOW_INSECURE_TLS configuration to multiple charts and updated image tags.
-  - Implemented per-chart values.schema.json generator.
-
-- **Fixes:**
-  - Enhanced validation and error handling for Helm chart processing.
-  - Allowed additional properties in values.schema.json files.
-  - Addressed CodeRabbit review on revamp PR #1470.
-  - Fixed stale midaz-helm repo URLs and setup-helm pin comment.
-  - Ensured failure on missing infra credentials in charts.
-
-- **Improvements:**
-  - Pinned Bitnami dependency versions in charts.
-  - Collapsed-safe Bitnami name derivation.
-  - Standardized charts to Lerian chart contract with single-source multi-subchart Bitnami secrets.
-  - Aligned documentation with chart standard revamp.
-
-Contributors: @fredcamaral, @guimoreirar, @lerian-studio,
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.2.0...midaz-v8.3.0)
-
----
-
-## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.3.0)
-
-- **Features**
-  - Added ALLOW_INSECURE_TLS configuration to multiple charts and updated image tags.
-  - Implemented per-chart values.schema.json generator.
-
-- **Fixes**
-  - Enhanced validation and error handling for Helm chart processing.
-  - Allowed additional properties in values.schema.json files.
-  - Addressed CodeRabbit review on revamp PR #1470.
-
-- **Improvements**
-  - Fixed stale midaz-helm repo URLs and setup-helm pin comment.
-  - Aligned documentation with chart standard revamp.
-  - Pinned Bitnami dependency versions.
-  - Improved handling of missing infra credentials by failing loudly.
-  - Standardized charts to Lerian chart contract.
-
-Contributors: @fredcamaral, @guimoreirar, @lerian-studio,
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.2.0...midaz-v8.3.0)
-
----
-
-## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.3.0)
-
-- **Features**
-  - Added ALLOW_INSECURE_TLS configuration to multiple charts and updated image tags.
-  - Implemented per-chart values.schema.json generator.
-
-- **Fixes**
-  - Enhanced validation and error handling for Helm chart processing.
-  - Addressed CodeRabbit review on revamp PR #1470.
-  - Fixed stale midaz-helm repo URLs and setup-helm pin comment.
-
-- **Improvements**
-  - Aligned documentation with chart standard revamp.
-  - Standardized charts to Lerian chart contract.
-
-Contributors: @fredcamaral, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.2.0...midaz-v8.3.0)
-
----
-
-## [8.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.3.0)
-
-- **Features**
-  - Added ALLOW_INSECURE_TLS configuration to multiple charts and updated image tags.
-  - Implemented per-chart values.schema.json generator.
-
-- **Fixes**
-  - Enhanced validation and error handling for Helm chart processing.
-  - Allowed additional properties in values.schema.json files.
-  - Addressed CodeRabbit review on revamp PR #1470.
-
-- **Improvements**
-  - Fixed stale midaz-helm repo URLs and setup-helm pin comment.
-  - Aligned documentation with chart standard revamp.
-  - Pinned Bitnami dependency versions.
-  - Ensured charts fail loud on missing infra credentials.
-  - Standardized charts to Lerian chart contract.
-
-Contributors: @fredcamaral, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.2.0...midaz-v8.3.0)
-
----
-
 ## [8.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.2.0)
 
 - **Fixes:**
@@ -708,79 +803,6 @@ Contributors: @fredcamaral, @guimoreirar, @lerian-studio
 Contributors: @lerian-studio
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.1.1...midaz-v8.2.0)
-
----
-
-## [8.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.2.0)
-
-- **Fixes**
-  - Updated `midaz-ledger` to version 3.7.7 to address compatibility issues.
-
-- **Documentation**
-  - Added an upgrade guide for Midaz v8.1.1.
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.1.1...midaz-v8.2.0)
-
----
-
-## [8.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.2.0)
-
-- **Fixes**
-  - Updated `midaz-ledger` to version 3.7.7 to address compatibility issues.
-
-- **Documentation**
-  - Added an upgrade guide for midaz v8.1.1.
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.1.1...midaz-v8.2.0)
-
----
-
-## [8.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.1.1)
-
-- **Fixes:**
-  - Updated midaz-crm to version 3.7.6.
-  - Updated midaz-ledger to version 3.7.6.
-
-- **Documentation:**
-  - Added an upgrade guide for midaz v8.1.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.1.0...midaz-v8.1.1)
-
----
-
-## [8.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.1.1)
-
-- **Fixes:**
-  - Updated midaz-crm to version 3.7.6.
-  - Updated midaz-ledger to version 3.7.6.
-
-- **Documentation:**
-  - Added an upgrade guide for midaz v8.1.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.1.0...midaz-v8.1.1)
-
----
-
-## [8.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.1.1)
-
-- **Fixes:**
-  - Updated midaz-crm to version 3.7.6.
-  - Updated midaz-ledger to version 3.7.6.
-
-- **Documentation:**
-  - Added upgrade guide for midaz v8.1.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.1.0...midaz-v8.1.1)
 
 ---
 
@@ -817,42 +839,6 @@ Contributors: @guimoreirar, @lerian-studio
 
 ---
 
-## [8.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.1.0)
-
-- **Features**
-  - Released version 8.1.0 of midaz.
-  - Released version 8.1.0-beta.1 of midaz.
-
-- **Fixes**
-  - Updated midaz-crm to version 3.7.3.
-
-- **Improvements**
-  - Added an upgrade guide for midaz v8.0.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.0.0...midaz-v8.1.0)
-
----
-
-## [8.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.1.0)
-
-- **Features**
-  - Released version 8.1.0 of Midaz.
-  - Released version 8.0.0 of Midaz.
-
-- **Fixes**
-  - Updated midaz-crm to version 3.7.3.
-
-- **Improvements**
-  - Added an upgrade guide for Midaz v8.0.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v8.0.0...midaz-v8.1.0)
-
----
-
 ## [8.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.0.0)
 
 - **Features:**
@@ -870,144 +856,10 @@ Contributors: @guimoreirar, @lerian-studio
 
 ---
 
-## [8.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.0.0)
-
-- **Features**
-  - Released midaz version 7.0.0.
-  - Added upgrade guide for midaz v7.0.0.
-
-- **Fixes**
-  - Updated midaz-crm to version 3.7.2.
-  - Updated midaz-ledger to version 3.7.2.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v7.0.0...midaz-v8.0.0)
-
----
-
-## [8.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.0.0)
-
-- **Features**
-  - Released midaz version 8.0.0.
-  - Added upgrade guide for midaz v7.0.0.
-
-- **Fixes**
-  - Updated midaz-crm to version 3.7.2.
-  - Updated midaz-ledger to version 3.7.2.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v7.0.0...midaz-v8.0.0)
-
----
-
-## [8.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v8.0.0)
-
-- **Features:**
-  - Released midaz version 8.0.0.
-  - Added upgrade guide for midaz v7.0.0.
-
-- **Fixes:**
-  - Updated midaz-crm to version 3.7.2.
-  - Updated midaz-ledger to version 3.7.2.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v7.0.0...midaz-v8.0.0)
-
----
-
 ## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
 
 - **Features**
   - Removed onboarding and transaction services from the midaz chart.
-
-Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
-
----
-
-## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
-
-- **Features**
-  - Removed onboarding and transaction services from the midaz chart.
-
-Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
-
----
-
-## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
-
-- **Features**
-  - Removed onboarding and transaction services from midaz chart.
-
-- **Improvements**
-  - Standardized probe field set across all charts.
-  - Parametrized probe path and timing for all charts using /readyz.
-  - Updated readiness probe paths to /readyz across multiple deployment templates.
-
-Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
-
----
-
-## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
-
-- **Features:**
-  - Removed onboarding and transaction services from midaz chart.
-
-Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
-
----
-
-## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
-
-- **Features**
-  - Removed onboarding and transaction services from midaz chart.
-
-- **Improvements**
-  - Standardized probe field set across all charts.
-  - Parametrized probe path and timing for all charts using /readyz.
-  - Updated readiness probe paths to /readyz across multiple deployment templates.
-
-Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
-
----
-
-## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
-
-- **Features**
-  - Removed onboarding and transaction services from midaz chart.
-
-- **Improvements**
-  - Standardized probe field set across all charts.
-  - Parameterized probe path and timing for all charts using /readyz.
-  - Updated readiness probe paths to /readyz across multiple deployment templates.
-
-Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.1...midaz-v7.0.0)
-
----
-
-## [7.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v7.0.0)
-
-- **Features**
-  - Removed onboarding and transaction services from midaz chart.
-
-- **Improvements**
-  - Standardized probe field set across all charts.
-  - Parameterized probe path and timing for all charts using /readyz.
-  - Updated readiness probe paths to /readyz across multiple deployment templates.
 
 Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
 
@@ -1022,98 +874,6 @@ Contributors: @ferr3ira-gabriel, @guimoreirar, @lerian-studio
 
 - Fixes:
   - Applied hotfix for midaz version 3.7.1.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
-
----
-
-## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
-
-- **Fixes**
-  - Resolved an issue with the midaz component in version 3.7.1.
-  
-- **Improvements**
-  - Updated CRM image tag to version 3.7.0 for better performance and compatibility.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
-
----
-
-## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
-
-- **Fixes**
-  - Resolved an issue in midaz with the hotfix update to version 3.7.1.
-
-- **Improvements**
-  - Updated CRM image tag to 3.7.0 for better compatibility and performance.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
-
----
-
-## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
-
-- Features:
-  - Updated CRM image tag to version 3.7.0.
-
-- Fixes:
-  - Applied hotfix for midaz version 3.7.1.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
-
----
-
-## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
-
-- **Fixes:**
-  - Resolved issue with midaz version 3.7.1 to ensure seamless functionality.
-
-- **Improvements:**
-  - Updated CRM image tag to version 3.7.0 for enhanced performance.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
-
----
-
-## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
-
-- **Fixes:**
-  - Resolved issue with CRM image tag by updating it to version 3.7.0.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
-
----
-
-## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
-
-- Features:
-  - Updated CRM image tag to version 3.7.0.
-
-- Fixes:
-  - Addressed issues in midaz with hotfix version 3.7.1.
-
-Contributors: @guimoreirar, @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.4.0...midaz-v6.4.1)
-
----
-
-## [6.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.4.1)
-
-- **Fixes:**
-  - Resolved an issue with the CRM image tag, updating it to version 3.7.0 to ensure compatibility and stability.
 
 Contributors: @guimoreirar, @lerian-studio
 
@@ -1146,78 +906,6 @@ Contributors: @lerian-studio
 
 ---
 
-## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
-
-- **Fixes**
-  - Updated midaz-crm to version 3.6.3.
-  - Updated midaz-ledger to version 3.6.3.
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.2.0...midaz-v6.3.0)
-
----
-
-## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
-
-- **Fixes**
-  - Updated `midaz-crm` to version 3.6.3.
-  - Updated `midaz-ledger` to version 3.6.3.
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.2.0...midaz-v6.3.0)
-
----
-
-## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
-
-- **Fixes:**
-  - Updated `midaz-crm` to version 3.6.3.
-  - Updated `midaz-ledger` to version 3.6.3.
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.2.0...midaz-v6.3.0)
-
----
-
-## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
-
-- **Fixes**
-  - Updated midaz-crm to version 3.6.3.
-  - Updated midaz-ledger to version 3.6.3.
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.2.0...midaz-v6.3.0)
-
----
-
-## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
-
-- Fixes:
-  - Updated midaz-crm to version 3.6.3
-  - Updated midaz-ledger to version 3.6.3
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.2.0...midaz-v6.3.0)
-
----
-
-## [6.3.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.3.0)
-
-- **Fixes**
-  - Updated `midaz-crm` to version 3.6.3.
-  - Updated `midaz-ledger` to version 3.6.3.
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.2.0...midaz-v6.3.0)
-
----
-
 ## [6.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.2.0)
 
 - Features:
@@ -1228,30 +916,6 @@ Contributors: @lerian-studio
   - Updated midaz-ledger to version 3.6.2.
 
 Contributors: @lerian-studio,
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.1.0...midaz-v6.2.0)
-
----
-
-## [6.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.2.0)
-
-- **Fixes:**
-  - Updated midaz-crm to version 3.6.2.
-  - Updated midaz-ledger to version 3.6.2.
-
-Contributors: @lerian-studio
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.1.0...midaz-v6.2.0)
-
----
-
-## [6.2.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v6.2.0)
-
-- **Fixes:**
-  - Updated `midaz-crm` to version 3.6.2.
-  - Updated `midaz-ledger` to version 3.6.2.
-
-Contributors: @lerian-studio
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v6.1.0...midaz-v6.2.0)
 
@@ -1290,109 +954,6 @@ Contributors: @gui.rodrigues
 
 - Features:
   - Released midaz version 3.5.3.
-
-Contributors: @medeirosygohr
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
-
----
-
-## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
-
-- Features:
-  - Released midaz v3.5.3 with new enhancements.
-
-- Improvements:
-  - Updated CHANGELOGs for midaz to v5.6.0.
-
-Contributors: @medeirosygohr
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
-
----
-
-## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
-
-- **Features**
-  - Released midaz version 3.5.3.
-
-- **Improvements**
-  - Updated CHANGELOGs for midaz version 5.6.0.
-
-Contributors: @medeirosygohr
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
-
----
-
-## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
-
-- Improvements:
-  - Bumped midaz to v3.5.3.
-  - Updated CHANGELOGs for midaz:v5.6.0.
-
-Contributors: @medeirosygohr
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
-
----
-
-## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
-
-- Features:
-  - Released version 3.5.3 of midaz.
-
-Contributors: @medeirosygohr
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
-
----
-
-## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
-
-- **Features**
-  - Released midaz version 3.5.3.
-
-- **Contributors**
-  - @medeirosygohr
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
-
----
-
-## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
-
-- **Features:**
-  - Released midaz version 3.5.3 with new enhancements.
-
-- **Improvements:**
-  - Updated CHANGELOGs for midaz version 5.6.0.
-
-Contributors: @medeirosygohr
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
-
----
-
-## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
-
-- Features:
-  - Released midaz version 3.5.3.
-
-- Contributors:
-  - @medeirosygohr
-
-[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v5.6.0...midaz-v5.7.0)
-
----
-
-## [5.7.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v5.7.0)
-
-- **Features:**
-  - Released midaz version 3.5.3 with new enhancements.
-
-- **Improvements:**
-  - Updated CHANGELOGs for midaz to version 5.6.0.
 
 Contributors: @medeirosygohr
 
@@ -1550,18 +1111,6 @@ This release focuses on essential maintenance updates and documentation enhancem
 In this release cycle, the focus was on maintaining the project with version updates and ensuring that the documentation accurately reflects the current state of the software. Users can expect a stable experience with the latest updates applied.
 
 
-## [midaz-2.4.0-beta.2] - 2025-06-16
-
-This release focuses on enhancing the organization and clarity of our documentation, ensuring users have access to the latest software versions and information. While there are no new features or bug fixes, this update emphasizes stability and user guidance.
-
-### 📚 Documentation
-- **Improved Changelog for `charts/midaz`:** We've updated the CHANGELOG to provide clearer insights into recent changes. This enhancement helps users track the software's evolution and understand any new features or fixes included in the latest releases.
-
-### 🔧 Maintenance
-- **Release Version Updates:** We've updated the release versions to 2.4.0-beta.2 and 2.3.1. This ensures users are accessing the most recent features and improvements while maintaining compatibility with existing setups.
-
-These updates are part of our ongoing commitment to providing a stable and user-friendly experience. While this release does not introduce new features or fixes, it lays the groundwork for future enhancements by keeping our documentation and versioning up-to-date.
-
 ## [midaz-2.4.0-beta.1] - 2025-06-16
 
 This release introduces enhanced configurability with RabbitMQ protocol settings, improves system reliability with critical bug fixes, and strengthens build security. Users will experience a more adaptable and stable platform.
@@ -1593,21 +1142,6 @@ This release focuses on improving user guidance and streamlining the build proce
 - **CI Pipeline Optimization**: Implemented a block on triggers from automated bots within the CI pipeline. This prevents unnecessary builds, reduces resource usage, and maintains clean build logs, enhancing overall efficiency.
 
 This changelog provides a concise overview of the changes in version 2.3.1, highlighting the benefits to users and ensuring clarity and accessibility.
-
-## [midaz-2.3.1-beta.4] - 2025-06-10
-
-This release focuses on enhancing documentation clarity and improving the build process, ensuring a smoother experience for developers and users interacting with the Helm project.
-
-### 📚 Documentation
-- **Improved Configuration Guidance**: Updated the values example in the Midaz documentation to provide clearer guidance on configuration options. This helps users better understand how to set up and customize their deployments effectively.
-- **Updated Changelog**: Enhanced the Midaz chart's CHANGELOG to include recent updates, ensuring users have access to the latest information about changes and improvements in the chart.
-
-### 🔧 Maintenance
-- **Release Management**: Published version 2.3.1-beta.4, marking the latest beta release. This version includes the latest updates and improvements, preparing for the next stable release.
-- **Continuous Integration**: Updated the pipeline configuration to block triggers from bots. This change prevents automated systems from inadvertently initiating builds, ensuring that only intentional changes by developers trigger the CI process. This maintains clean and efficient build processes.
-
-These updates collectively improve the documentation clarity and maintain the integrity of the build process, ensuring a smoother experience for developers and users interacting with the Helm project.
-
 
 ## [vmidaz-2.3.1-beta.3] - 2025-06-10
 

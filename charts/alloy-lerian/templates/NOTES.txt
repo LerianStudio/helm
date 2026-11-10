@@ -1,0 +1,49 @@
+alloy-lerian instalado no namespace {{ .Release.Namespace }}.
+
+Perfil: {{ include "alloy-lerian.profile" . }}
+Origem: {{ include "alloy-lerian.originId" . }}
+Destino: {{ include "alloy-lerian.destinationEndpoint" . }}
+Cadência mínima: {{ include "alloy-lerian.interval" . }}
+
+Papéis instalados:
+  - node (DaemonSet)  recebe telemetria de aplicação por OTLP em 4317/4318
+{{- if .Values.singleton.enabled }}
+  - singleton (Deployment, 1 réplica)  estado de escopo de cluster
+{{- end }}
+
+{{- if index .Values "kube-state-metrics" "enabled" }}
+  - kube-state-metrics (Deployment, 1 réplica)  estado de objetos de cluster
+{{- else }}
+Produtor de estado de objetos: externo
+  alvo: {{ include "alloy-lerian.clusterObjectTarget" . | default "NENHUM — métricas de objeto de cluster não serão coletadas" }}
+{{- end }}
+
+{{ if eq (include "alloy-lerian.fleetEnabled" .) "true" -}}
+Fleet Management: ATIVO
+  endpoint: {{ .Values.fleetManagement.url }}
+  intervalo: {{ .Values.fleetManagement.pollFrequency | default "1m" }}
+
+  Papel node: o ConfigMap local traz só `logging` e `remotecfg`. A coleta e as
+  regras de sanitização do node vêm da configuração publicada no Fleet
+  (`sanitizacao/publicar-fleet.sh`, renderizada a partir deste chart).
+  Papel singleton: a coleta e a sanitização de eventos ficam no ConfigMap local,
+  junto do `remotecfg`.
+
+  O Secret `alloy-lerian` precisa da chave `fleet-token` nos dois perfis.
+{{- else -}}
+Fleet Management: inativo (fleetManagement.enabled: false)
+  Os dois papéis renderizam a corrente completa de coleta e sanitização no
+  ConfigMap local.
+{{- end }}
+{{- if and .Values.global.imageRegistry (not ((.Values.global.image).registry)) }}
+
+Atenção: `global.imageRegistry` vale para kube-state-metrics e node-exporter. As
+imagens do agente e do config-reloader usam `global.image.registry`.
+{{- end }}
+
+Sanitização de dado regulado: SEMPRE ativa, não configurável.
+  7 classes cobertas (10 regras), verificadas contra o agente real na porta de entrega.
+  Telefone, e-mail e os esquemas `Bearer`, `Basic` e `Digest` são reconhecidos pelo
+  formato (robustos a nome de campo novo); nome, conta e agência, chave Pix, endereço e as formas de chave e
+  atribuição de credencial dependem de NOME DE CAMPO — ver a seção de limites no
+  README antes de tratar como garantia.

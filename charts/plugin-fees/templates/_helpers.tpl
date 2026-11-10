@@ -52,6 +52,14 @@ Create app version.
 {{- end }}
 
 {{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "plugin-fees.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
 fees Selector labels
 */}}
 {{- define "plugin-fees.selectorLabels" -}}
@@ -76,6 +84,14 @@ fees Common labels
 */}}
 {{- define "plugin-fees.labels" -}}
 helm.sh/chart: {{ include "plugin-fees.chart" .context }}
+{{ include "plugin-fees.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart every pod each time.
+*/}}
+{{- define "plugin-fees.podLabels" -}}
 {{ include "plugin-fees.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin.version" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
@@ -121,11 +137,19 @@ plugin-fees.mongoInternal — true when the bundled Bitnami mongodb subchart pro
 {{/*
 plugin-fees.mongoHostRequired — fail loudly when MongoDB is external/disabled but no explicit
 MONGO_HOST is set. The in-cluster Service name fallback does not point at an external MongoDB.
+
+Resolves the SAME way configmap.yaml's MONGO_HOST does (lerian-common.datastore.value: native
+configmap key > dedicated .Values.datastores.mongo.host > shared global.datastores.mongo.host >
+cloud preset) before deciding to fail — otherwise an operator who correctly set
+global.datastores.mongo.host (the mask, with no native override) would hit this fail even though
+the ConfigMap itself renders the right host.
 */}}
 {{- define "plugin-fees.mongoHostRequired" -}}
 {{- $cfg := default dict .Values.fees.configmap -}}
-{{- if and (ne (include "plugin-fees.mongoInternal" .) "true") (not $cfg.MONGO_HOST) -}}
-{{- fail "\n\nERROR: fees.configmap.MONGO_HOST is REQUIRED when the bundled mongodb subchart is disabled or external.\n   The in-cluster Service name fallback does not point at your external MongoDB.\n   Set fees.configmap.MONGO_HOST to the external MongoDB host.\n" -}}
+{{- $ded := default dict .Values.datastores -}}
+{{- $resolvedHost := include "lerian-common.datastore.value" (dict "context" . "dedicated" $ded "configmap" $cfg "type" "mongo" "field" "host" "nativeKey" "MONGO_HOST" "default" "") -}}
+{{- if and (ne (include "plugin-fees.mongoInternal" .) "true") (not $resolvedHost) -}}
+{{- fail "\n\nERROR: fees.configmap.MONGO_HOST (or global.datastores.mongo.host) is REQUIRED when the bundled mongodb subchart is disabled or external.\n   The in-cluster Service name fallback does not point at your external MongoDB.\n   Set fees.configmap.MONGO_HOST, or the global.datastores.mongo.host mask, to the external MongoDB host.\n" -}}
 {{- end -}}
 {{- end }}
 

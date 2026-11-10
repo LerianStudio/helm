@@ -24,13 +24,18 @@ Inputs (dict):
 {{- define "lerian-common.globalValue" -}}
 {{- $cm := .configmap | default dict -}}
 {{- $blk := index (.context.Values.global | default dict) .block | default dict -}}
+{{- /* Cloud preset tier: global.cloud selects a topology column (see _cloud.tpl),
+   ranked below an explicit global.<block> value and above the hardcoded default. */ -}}
+{{- $cloudBlk := include "lerian-common.cloud.block" (dict "context" .context "kind" .block) | fromYaml -}}
 {{/* Use presence checks (not sprig `default`/`empty`) at every tier so an explicit
-     boolean `false` (native key, global block, or default) wins instead of falling
-     through to a lower-priority value. */}}
+     boolean `false` (native key, global block, cloud preset, or default) wins
+     instead of falling through to a lower-priority value. */}}
 {{- if hasKey $cm .nativeKey -}}
 {{- index $cm .nativeKey -}}
 {{- else if hasKey $blk .field -}}
 {{- index $blk .field -}}
+{{- else if hasKey $cloudBlk .field -}}
+{{- index $cloudBlk .field -}}
 {{- else if hasKey . "default" -}}
 {{- .default -}}
 {{- else -}}

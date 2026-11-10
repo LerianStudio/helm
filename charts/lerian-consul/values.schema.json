@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "description": "Umbrella-injected values (imageRegistry, imagePullSecrets, ...) propagated to subcharts. Kept permissive.",
+      "additionalProperties": true
+    },
+    "consul": {
+      "type": "object",
+      "description": "Passed straight through to the upstream hashicorp/consul subchart. Kept permissive \u2014 the upstream chart owns its own (large) value surface.",
+      "additionalProperties": true
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "allowedNamespaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

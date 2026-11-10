@@ -1,3 +1,0 @@
-{{- if $.Values.desk.enabled -}}
-{{ include "br-sfn.componentIngress" (dict "root" $ "name" "desk" "comp" $.Values.desk "defaultPort" 3002) }}
-{{- end -}}

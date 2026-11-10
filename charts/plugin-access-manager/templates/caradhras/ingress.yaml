@@ -1,0 +1,11 @@
+{{- if .Values.caradhras.ingress.enabled -}}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" .Values.caradhras.ingress
+      "global" (.Values.global).ingress
+      "subdomain" "caradhras"
+      "name" (include "plugin-caradhras.fullname" .)
+      "labels" (printf "%s " (include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name)))
+      "svcPort" (include "caradhras.servicePort" .)
+    ) }}
+{{- end }}

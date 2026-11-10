@@ -1,6 +1,6 @@
 {{- if and .Values.brSisbajud.enabled .Values.brSisbajud.ingress.enabled -}}
 {{- $svcName := include "br-sisbajud.fullname" . -}}
-{{- $svcPort := .Values.brSisbajud.service.port | default 4029 -}}
+{{- $svcPort := .Values.brSisbajud.service.port | default 4031 -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

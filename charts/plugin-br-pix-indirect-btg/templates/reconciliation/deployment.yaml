@@ -1,3 +1,4 @@
+{{- $h := include "reconciliation.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,24 +7,28 @@ metadata:
     {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 4 }} 
 spec:
   revisionHistoryLimit: {{ .Values.reconciliation.revisionHistoryLimit | default 10 }}
-  strategy:
-    {{- toYaml .Values.reconciliation.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.reconciliation.autoscaling.enabled }}
-  replicas: {{ .Values.reconciliation.replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "reconciliation.selectorLabels" (dict "context" . "name" .Values.reconciliation.name) | nindent 6 }}
   template:
     metadata:
-      {{- if and .Values.mtls.enabled (index .Values.mtls "tls.crt") }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/reconciliation/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.reconciliation.useExistingSecrets }}
+        checksum/secret: {{ include (print $.Template.BasePath "/reconciliation/secrets.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if and .Values.mtls.enabled (index .Values.mtls "tls.crt") }}
         # Roll the pods when the chart-managed mTLS cert changes (app snapshots it at startup).
         checksum/mtls: {{ include "plugin-br-pix-indirect-btg.mtlsChecksum" . }}
-      {{- end }}
+        {{- end }}
       labels:
-        {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 8 }}
+        {{- omit (include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | fromYaml) "helm.sh/chart" | toYaml | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.reconciliation.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -41,9 +46,7 @@ spec:
           image: {{ .Values.reconciliation.image.repository }}:{{ .Values.reconciliation.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.reconciliation.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.reconciliation.service.port }}
-              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
               name: {{ if .Values.reconciliation.useExistingSecrets }}{{ .Values.reconciliation.existingSecretName }}{{ else }}{{ include "reconciliation.fullname" . }}{{ end }}
@@ -53,8 +56,9 @@ spec:
           {{- include "plugin-br-pix-indirect-btg.dbHostRequired" (dict "context" . "component" "reconciliation") }}
           {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "reconciliation" "secretName" (include "reconciliation.fullname" .)) }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
-          {{- if or (trim $infraEnv) $otelEnabled }}
           env:
+          {{- toYaml $h.env | nindent 10 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileEnv" . | trim) }}{{ . | nindent 10 }}{{- end }}
           {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
           {{- if $otelEnabled }}
           - name: "HOST_IP"
@@ -64,30 +68,20 @@ spec:
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
           {{- end }}
-          {{- end }}
           resources:
             {{- toYaml .Values.reconciliation.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.reconciliation.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.reconciliation.service.port }}
-            initialDelaySeconds: {{ .Values.reconciliation.readinessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.reconciliation.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.reconciliation.readinessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.reconciliation.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.reconciliation.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.reconciliation.livenessProbe.path | default "/health" }}
-              port: {{ .Values.reconciliation.service.port }}
-            initialDelaySeconds: {{ .Values.reconciliation.livenessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.reconciliation.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.reconciliation.livenessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.reconciliation.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.reconciliation.livenessProbe.failureThreshold | default 3 }}
-          {{- if .Values.mtls.enabled }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
+          {{- $licMount := include "plugin-br-pix-indirect-btg.licenseFileMount" . | trim }}
+          {{- if or .Values.mtls.enabled $licMount }}
           volumeMounts:
+            {{- if .Values.mtls.enabled }}
             {{- include "plugin-br-pix-indirect-btg.mtlsVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- with $licMount }}
+            {{- . | nindent 12 }}
+            {{- end }}
           {{- end }}
       {{- with .Values.reconciliation.nodeSelector }}
       nodeSelector:
@@ -101,7 +95,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.mtls.enabled }}
+      {{- $licVolume := include "plugin-br-pix-indirect-btg.licenseFileVolume" . | trim }}
+      {{- if or .Values.mtls.enabled $licVolume }}
       volumes:
+        {{- if .Values.mtls.enabled }}
         {{- include "plugin-br-pix-indirect-btg.mtlsVolume" . | nindent 8 }}
+        {{- end }}
+        {{- with $licVolume }}
+        {{- . | nindent 8 }}
+        {{- end }}
       {{- end }}

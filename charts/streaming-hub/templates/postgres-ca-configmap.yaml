@@ -1,0 +1,56 @@
+{{- $ca := get (.Values.postgres | default dict) "caBundle" | default dict }}
+{{- $streamingHub := .Values.streamingHub | default dict }}
+{{- $migrations := get $streamingHub "migrations" | default dict }}
+{{- $migrationsEnabled := eq (lower (toString (get $migrations "enabled" | default false))) "true" }}
+{{- /*
+Postgres/RDS server CA bundle, rendered ONLY on the chart-managed path
+(caBundle.enabled AND caBundle.pem AND no existingConfigMap). With
+existingConfigMap the operator owns the object and this file emits nothing.
+
+The PEM is a PUBLIC certificate, never credential material, so a ConfigMap is
+the right home for it — see templates/_helpers.tpl for the path contract.
+*/}}
+{{- if and (get $ca "enabled") (get $ca "pem") (not (get $ca "existingConfigMap")) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "streaming-hub.postgresCaConfigMapName" (dict "context" . "hook" false) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "streaming-hub.labels" (dict "context" . "component" "all") | nindent 4 }}
+data:
+  bundle.pem: |
+{{ get $ca "pem" | indent 4 }}
+{{- if $migrationsEnabled }}
+---
+{{- /*
+PreSync COPY for the migrations Job. The Job is a pre-install/pre-upgrade hook
+at weight -1, and Helm applies NON-hook resources only after every pre-install
+hook has run — so the ConfigMap above does not exist yet when the Job's pod is
+created, and the pod would hang in ContainerCreating. Same ordering gap, and the
+same fix, as migration-secret.yaml carrying the DSN.
+
+Weight -5 (with bootstrap-postgres at -10 and the Job at -1) and delete policy
+before-hook-creation ONLY: hook-succeeded would delete this ConfigMap at the end
+of wave -5, before the Job at wave -1 mounts it. It lingers after the run, which
+costs nothing — it only duplicates a public CA certificate.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "streaming-hub.postgresCaConfigMapName" (dict "context" . "hook" true) }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "streaming-hub.labels" (dict "context" . "component" "migrations") | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-5"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
+data:
+  bundle.pem: |
+{{ get $ca "pem" | indent 4 }}
+{{- end }}
+{{- end }}

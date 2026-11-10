@@ -40,6 +40,8 @@ Inputs (dict):
   emitRedis          (opt)  bool — REDIS_HOST / REDIS_PORT (6379) / REDIS_TLS
   requiredRedisHost  (opt)  bool — REDIS_HOST uses `required` vs default ""
   redisTlsDefault    (opt)  string — default for REDIS_TLS ("false"; "true" for tracer)
+  emitRedisCaCert    (opt)  bool — MULTI_TENANT_REDIS_CA_CERT (default ""); under emitRedis.
+                            For charts whose tenant-redis supports a CA cert (e.g. reporter).
   emitPool           (opt)  bool — MAX_TENANT_POOLS (100) + IDLE_TIMEOUT_SEC (300)
   emitCache          (opt)  bool — TIMEOUT (30) + CACHE_TTL_SEC (120) + CONNECTIONS_CHECK_INTERVAL_SEC (30)
   emitEnvironment    (opt)  bool — MULTI_TENANT_ENVIRONMENT (default "")
@@ -85,6 +87,10 @@ MULTI_TENANT_REDIS_HOST: {{ $redisHost | quote }}
 MULTI_TENANT_REDIS_PORT: {{ $redisPort | quote }}
 {{- $redisTls := ($g.redisTls | default (.redisTlsDefault | default "false")) -}}{{- if hasKey $c "MULTI_TENANT_REDIS_TLS" -}}{{- $redisTls = index $c "MULTI_TENANT_REDIS_TLS" -}}{{- end }}
 MULTI_TENANT_REDIS_TLS: {{ $redisTls | quote }}
+{{- if .emitRedisCaCert }}
+{{- $redisCaCert := ($g.redisCaCert | default "") -}}{{- if hasKey $c "MULTI_TENANT_REDIS_CA_CERT" -}}{{- $redisCaCert = index $c "MULTI_TENANT_REDIS_CA_CERT" -}}{{- end }}
+MULTI_TENANT_REDIS_CA_CERT: {{ $redisCaCert | quote }}
+{{- end }}
 {{- end }}
 {{- if .emitPool }}
 {{- $maxPools := "100" -}}{{- if hasKey $c "MULTI_TENANT_MAX_TENANT_POOLS" -}}{{- $maxPools = index $c "MULTI_TENANT_MAX_TENANT_POOLS" -}}{{- end }}
@@ -214,6 +220,7 @@ Inputs (dict):
       "MULTI_TENANT_REDIS_HOST" ""
       "MULTI_TENANT_REDIS_PORT" "6379"
       "MULTI_TENANT_REDIS_TLS" "false"
+      "MULTI_TENANT_REDIS_CA_CERT" ""
       "MULTI_TENANT_TIMEOUT" "30"
       "MULTI_TENANT_CACHE_TTL_SEC" "120"
       "MULTI_TENANT_CONNECTIONS_CHECK_INTERVAL_SEC" "30" -}}

@@ -1,0 +1,8 @@
+# The image refuses to boot in every environment without a license the Lerian
+# gateway accepts, so the render values' sample key and organization ID give way
+# to the CI license placeholder (README) and the single-tenant "global".
+common:
+  secrets:
+    LICENSE_KEY: "IT_LICENSE_KEY"
+  license:
+    organizationIds: "global"

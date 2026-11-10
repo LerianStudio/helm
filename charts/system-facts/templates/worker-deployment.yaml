@@ -1,0 +1,85 @@
+{{- if (.Values.worker).enabled }}
+{{- include "system-facts.worker.validate" . }}
+{{- $w := .Values.worker }}
+{{- $img := $w.image | default dict }}
+{{- $h := include "system-facts.worker.health" . | fromYaml }}
+{{- $licenseSecret := include "system-facts.licenseFileSecret" $w }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "system-facts.worker.fullname" . }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "system-facts.worker.labels" . | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ $w.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml $h.strategy | nindent 4 }}
+  # No HPA: parallelism is bounded by distinct tenants, so replicas above
+  # worker.partitionCeiling only idle (the chart refuses them).
+  replicas: {{ $h.replicas }}
+  selector:
+    matchLabels:
+      {{- include "system-facts.worker.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include "system-facts.worker.configData" . | sha256sum }}
+        {{- if not $w.useExistingSecret }}
+        checksum/secret: {{ include "system-facts.worker.secretData" . | sha256sum }}
+        {{- end }}
+        {{- with $w.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "system-facts.worker.podLabels" . | nindent 8 }}
+    spec:
+      {{- with $w.imagePullSecrets }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "system-facts.worker.serviceAccountName" . }}
+      # The worker never calls the Kubernetes API.
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
+      {{- with $w.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: internal-facts-worker
+          securityContext:
+            {{- toYaml $w.securityContext | nindent 12 }}
+          image: "{{ $img.repository | default "ghcr.io/lerianstudio/system-facts-worker" }}:{{ include "system-facts.worker.tag" . }}"
+          imagePullPolicy: {{ $img.pullPolicy | default "IfNotPresent" }}
+          # No args: the binary defaults to `run`.
+          envFrom:
+            - secretRef:
+                name: {{ include "system-facts.worker.secretName" . }}
+            - configMapRef:
+                name: {{ include "system-facts.worker.fullname" . }}
+          env:
+            {{- toYaml $h.env | nindent 12 }}
+            {{- if $licenseSecret }}
+            {{- include "system-facts.licenseFileEnv" . | nindent 12 }}
+            {{- end }}
+          ports:
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
+          {{- if $licenseSecret }}
+          {{- include "system-facts.licenseFileVolumeMount" . | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml $w.resources | nindent 12 }}
+      {{- if $licenseSecret }}
+      volumes:
+        {{- include "system-facts.licenseFileVolume" $licenseSecret | nindent 8 }}
+      {{- end }}
+      {{- if or $w.nodeSelector $w.affinity $w.tolerations }}
+      {{- include "lerian-common.scheduling" $w | nindent 6 }}
+      {{- end }}
+{{- end }}

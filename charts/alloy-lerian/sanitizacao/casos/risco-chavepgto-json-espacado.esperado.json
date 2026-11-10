@@ -1,0 +1,1 @@
+{"body": "{\\\"pixKey\\\" : \\\"**********\\\", \\\"chavePix\\\": \\\"**********\\\", \\\"valor\\\": 10}", "categoria": "canonico", "descricao": "JSON com espaco em volta do `:`: o rotulo com aspas e espacos fica, o valor some. Antes so `\"pixKey\":` colado casava e a forma espacada vazava a chave."}

@@ -26,24 +26,20 @@ Your release is named {{ .Release.Name }}.
   {{- end }}
 
   Health check:
-    Liveness:   GET /health/live
-    Readiness:  GET /health/ready
-    Startup:    GET /health/live (30 retries / 10s)
+    Liveness:   GET /health
+    Readiness:  GET /readyz
+    Startup:    GET /health (30 retries / 10s)
 
 {{- end }}
 
 == Dependencies ==
 
   PostgreSQL:  {{ if .Values.postgresql.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
-  RabbitMQ:    {{ if .Values.rabbitmq.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
   Valkey:      {{ if .Values.valkey.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
   SeaweedFS:   {{ if .Values.seaweedfs.enabled }}ENABLED (inline){{ else }}DISABLED{{ end }}
 
 {{ if .Values.global.externalPostgresDefinitions.enabled -}}
   NOTE: PostgreSQL bootstrap job will run to create the plugin-bc-correios database and role.
-{{- end }}
-{{ if .Values.global.externalRabbitmqDefinitions.enabled -}}
-  NOTE: RabbitMQ bootstrap job will run to create exchanges, queues, and users.
 {{- end }}
 
 For more information, see:

@@ -1,0 +1,56 @@
+suite: reporter licence file mode
+templates:
+  - templates/manager/deployment.yaml
+  - templates/worker/deployment.yaml
+  - templates/manager/configmap.yaml
+  - templates/manager/secrets.yaml
+  - templates/worker/configmap.yaml
+  - templates/worker/secrets.yaml
+release:
+  name: reporter
+  namespace: reporter
+set:
+  rabbitmq.enabled: false
+  keda.enabled: false
+  secrets.RABBITMQ_DEFAULT_PASS: x
+  secrets.DATASOURCE_ONBOARDING_PASSWORD: x
+  secrets.DATASOURCE_CRED_ENC_KEY: "46071cab3c0a47d43400741cb2a1aab25951f0d3509f373d150e96860ace057a"
+  secrets.LICENSE_KEY: x
+tests:
+  - it: mounts nothing and sets no path when licenseFile is null
+    template: templates/worker/deployment.yaml
+    set:
+      worker.licenseFile: null
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
+      - notContains:
+          path: spec.template.spec.volumes
+          any: true
+          content: {name: license-file}
+  - it: mounts the Secret as a directory on the manager and sets the path
+    template: templates/manager/deployment.yaml
+    set:
+      manager.licenseFile.existingSecret: my-license
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: license-file, mountPath: /etc/lerian/license, readOnly: true}
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: my-license
+  - it: mounts the Secret as a directory on the worker and sets the path
+    template: templates/worker/deployment.yaml
+    set:
+      worker.licenseFile.existingSecret: my-license
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: license-file, mountPath: /etc/lerian/license, readOnly: true}

@@ -45,7 +45,7 @@ This change affects the following components:
 
 #### The app version has been bumped to v3.0.0.
 
-For more details, refer to the [app changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+For more details, refer to the app changelog.
 
 ## Additions
 
@@ -307,8 +307,6 @@ The RabbitMQ configuration has been updated with new definitions:
 ```json
 {
   "name": "consumer",
-  "password_hash": "/xSX/E+2TzPfqRPYnPIdviUpNiXnoQWnAdQR7TS47cJc6GuM",
-  "hashing_algorithm": "rabbit_password_hashing_sha256",
   "tags": "administrator"
 }
 ```

@@ -2,7 +2,7 @@
 
 ![banner](image/README/midaz-banner.png)
 
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
+[![License: Elastic-2.0](https://img.shields.io/badge/License-Elastic_2.0-blue.svg)](https://github.com/LerianStudio/helm/blob/main/LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Lerian%20Studio-%237289da.svg?logo=discord)](https://discord.gg/DnhqKwkGv3)
 
 ## Chart Maintenance
@@ -16,7 +16,7 @@ CI enforces the static contract and render gate. Required production secrets are
 
 ### Midaz Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/deploy-midaz-using-helm) for deployment guides.
+See the [official documentation](https://docs.lerian.studio/en/products/midaz/deployment) for deployment guides.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/midaz).
 
@@ -24,25 +24,25 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Ledger Version | CRM Version |
 | :---: | :---: | :---: |
-| `8.7.0` | 3.8.0 | 3.8.0 |
+| `10.4.2` | 4.4.1 | 3.8.4 |
 -----------------
 
 ### Plugin Access Manager Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/access-manager) for details.
+See the [official documentation](https://docs.lerian.studio/en/platform/access-manager) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-access-manager).
 
 #### Application Version Mapping
 
-| Chart Version | Auth Version | Identity Version |
-| :---: | :---: | :---: |
-| `8.4.0` | 3.1.0 | 3.1.0 |
+| Chart Version | Auth Version | Identity Version | Caradhras Version |
+| :---: | :---: | :---: | :---: |
+| `11.2.3` | 3.19.0 | 3.19.0 | 2.1.0 |
 -----------------
 
 ### Plugin Fees Helm Chart
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/fees/fees-overview) for details.
+> **Deprecated.** Fees run inside the Midaz ledger: install the `midaz` chart instead. Before you remove an existing release, follow "Moving to Midaz" in the chart README below.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-fees).
 
@@ -50,13 +50,13 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Fees Version | UI Version |
 | :---: | :---: | :---: |
-| `7.3.0` | 3.4.0 | `3.0.0` |
+| `9.0.3` | 3.4.0 | `3.0.0` |
 
 -----------------
 
 ### Reporter
 
-See the [official documentation](https://docs.lerian.studio/en/reporter) for details.
+See the [official documentation](https://docs.lerian.studio/en/products/reporter/what-is-reporter) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/reporter).
 
@@ -64,12 +64,12 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.2.0` | 2.3.0 | 2.3.0 |
+| `5.4.1` | 4.9.0 | 4.9.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/bank-transfer/bank-transfer) for details.
+See the [official documentation](https://docs.lerian.studio/en/interfaces/ted/ted-overview) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-bank-transfer).
 
@@ -77,38 +77,56 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | bankTransfer Version |
 | :---: | :---: |
-| `1.4.0` | 1.0.0 |
+| `3.2.3` | 3.6.0 |
 -----------------
 
 
 
-### Plugin BR Pix Direct JD
+### Plugin BR Pix JD
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/direct-pix-jd) for details.
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-jd).
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-direct-jd).
+Multi-component chart (`api` + `worker`) for the Go PIX Direct plugin.
+The app publishes one image per entry point — `plugin-br-pix-jd` (`cmd/app`) and
+`plugin-br-pix-jd-worker` (`cmd/worker`) — and the release pipeline builds only the
+component that changed, so their tags may legitimately differ.
 
 #### Application Version Mapping
 
-| Chart Version | Pix Version | Job Version |
+| Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.0.0` | 1.2.1-beta.11 | 1.2.1-beta.12 |
+| `0.7.0` | 1.6.1 | 1.6.1 |
 -----------------
 
-### Plugin BR Pix Switch
+### BR JD Courier
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-switch).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-jd-courier).
+
+Multi-component chart for the JD Courier: four role Deployments (`spb-consumer`,
+`spb-sender`, `pix-ingress`, `admin`) off one image, `ghcr.io/lerianstudio/br-jd-courier`.
+The release bumps `jd-courier.image.tag`, which is the column below.
+
+#### Application Version Mapping
+
+| Chart Version | Br-Jd-Courier Version |
+| :---: | :---: |
+| `2.2.1` | 1.2.1 |
+-----------------
+
+### Plugin BR Pix Lerian
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-lerian).
 
 #### Application Version Mapping
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.0.0` | 1.0.0-beta.1 |
+| `2.1.0` | 1.3.0 |
 -----------------
 
 ### Plugin BR Pix Indirect BTG
 
-See the [official documentation](https://docs.lerian.studio/en/midaz/plugins/pix/indirect-pix-btg) for details.
+See the [official documentation](https://docs.lerian.studio/en/interfaces/pix-btg/indirect-pix-overview) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-pix-indirect-btg).
 
@@ -116,7 +134,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Pix Version | Inbound Version | Outbound Version | Reconciliation Version | Schedule Version |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| `3.7.0` | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 | 1.9.0 |
+| `5.5.0` | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 | 1.15.0 |
 
 -----------------
 
@@ -128,12 +146,10 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.1.0` | 1.0.0-beta.9 |
+| `2.5.0` | 1.3.0 |
 -----------------
 
 ### Fetcher
-
-See the [official documentation](https://docs.lerian.studio/en/fetcher) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/fetcher).
 
@@ -141,25 +157,14 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `3.1.0` | 3.0.2 | 3.0.2 |
------------------
-
-### Lender
-
-For more details, check out the [official documentation](https://docs.lerian.studio/en/lender).
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lender).
-
-#### Application Version Mapping
-
-| Chart Version | Lender Version |
-| :---: | :---: |
-| `1.0.0-beta.1` | 1.0.0-beta.48 |
+| `4.2.0` | 4.1.0 | 4.1.0 |
 -----------------
 
 ### Tracer
 
-For more details, check out the [official documentation](https://docs.lerian.studio/en/tracer).
+> **Deprecated.** Enable Tracer in the `midaz` chart (`tracer.enabled: true`) instead. This chart receives no further Tracer image versions.
+
+For more details, check out the [official documentation](https://docs.lerian.studio/en/products/tracer/what-is-tracer).
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/tracer).
 
@@ -167,10 +172,28 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Tracer Version |
 | :---: | :---: |
-| `2.1.0` | 1.0.0 |
+| `3.1.0` | 1.0.0 |
+-----------------
+
+### Alloy Lerian
+
+Telemetry collection agent for client clusters (BYOC). Replaces Otel Collector Lerian in the client-side collection role.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/alloy-lerian).
+
+#### Application Version Mapping
+
+| Chart Version | Alloy Version |
+| :---: | :---: |
+| `2.0.10` | 1.18.1 |
 -----------------
 
 ### Otel Collector Lerian
+
+> [!WARNING]
+> **Deprecated.** Superseded by [Alloy Lerian](#alloy-lerian) for client-side
+> collection. New installations should use Alloy Lerian; existing ones remain
+> supported while they migrate.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/otel-collector-lerian).
 
@@ -178,12 +201,12 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Otel Version |
 | :---: | :---: |
-| `4.1.0` | 0.142.0 |
+| `5.0.1` | 0.142.0 |
 -----------------
 
 ### Product Console
 
-See the [official documentation](https://docs.lerian.studio/en/console) for details.
+See the [official documentation](https://docs.lerian.studio/en/platform/console/about-lerian-console) for details.
 
 For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/product-console).
 
@@ -191,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `3.2.0` | 1.10.0 |
+| `4.5.4` | 3.4.0 |
 -----------------
 
 ### Plugin BC Correios
@@ -202,18 +225,8 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `2.2.0` | 1.0.0 |
+| `4.0.2` | 1.1.0 |
 
-
-### Go Boilerplate DDD
-
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/go-boilerplate-ddd).
-
-#### Application Version Mapping
-
-| Chart Version | App Version |
-| :---: | :---: |
-| `2.2.0` | 1.0.0 |
 -----------------
 
 ### Notifications
@@ -224,7 +237,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0-beta.4` | 0.1.0 |
+| `1.2.0` | 1.2.0-beta.6 |
 -----------------
 
 ### BR SISBAJUD
@@ -235,31 +248,73 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version | Migrations Version |
 | :---: | :---: | :---: |
+| `1.4.4` | 1.1.0 | 1.1.0 |
 | `1.1.0` | `1.0.0-beta.109` | `1.0.0-beta.109` |
 -----------------
 
-### BR SFN
+### Plugin BR SISBAJUD
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sfn).
+SISBAJUD executor: pulls judicial orders from the Sisbajud Mensageria over TLS (optional mTLS), executes them on Midaz and posts the results back. Complements `br-sisbajud`, which deploys the Mensageria the executor calls; run both.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-sisbajud).
 
 #### Application Version Mapping
 
-| Chart Version | App Version |
-| :---: | :---: |
-| `1.0.0` | `1.0.0-beta.1` |
+| Chart Version | Sisbajud Version | Migrations Version |
+| :---: | :---: | :---: |
+| `1.5.1` | 1.3.0 | 1.3.0 |
 -----------------
 
-### BR Consignado GW
+### Plugin BR TED Lerian
 
-API gateway and same-origin operator console for the Dataprev consignado rail.
+TED transfers plugin for Midaz.
 
-For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-consignado-gw).
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/plugin-br-ted-lerian).
 
 #### Application Version Mapping
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `1.0.0` | `1.3.0-beta.36` |
+| `1.2.0` | 1.0.0-beta.86 |
+-----------------
+
+### BR STA
+
+BACEN STA (Sistema de Transferência de Arquivos): file transfers to and from BACEN, operator credentials and the audit trail.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/br-sta).
+
+#### Application Version Mapping
+
+| Chart Version | Manager Version | Worker Version | Migrations Version |
+| :---: | :---: | :---: | :---: |
+| `1.0.7` | 1.3.0 | 1.3.0 | 1.3.0 |
+-----------------
+
+### Agent
+
+Lerian BYOC agent: runs in your Kubernetes cluster, polls the Lerian control plane over an outbound-only connection and executes the Helm operations it is assigned.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/agent).
+
+#### Application Version Mapping
+
+| Chart Version | Agent Version |
+| :---: | :---: |
+| `1.0.5` | 1.0.2 |
+-----------------
+
+### Streaming Hub
+
+Event delivery edge: consumes lib-streaming CloudEvents from Redpanda and fans them out per tenant to webhooks and queues.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/streaming-hub).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `2.1.0` | 3.1.0 |
 -----------------
 
 ### Lerian Common (Library)
@@ -272,5 +327,34 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `1.4.0` |
+| `2.6.1` |
 -----------------
+
+### System Facts
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/system-facts).
+
+#### Application Version Mapping
+
+| Chart Version | System-Facts Version |
+| :---: | :---: |
+| `1.3.1` | 1.2.0-beta.4 |
+-----------------
+
+### Lerian Consul
+
+Single-node Consul service-discovery backend for lib-service-discovery in BYOC deployments, wrapping the official HashiCorp Consul chart.
+
+For implementation and configuration details, see the [README](https://charts.lerian.studio/charts/lerian-consul).
+
+#### Application Version Mapping
+
+| Chart Version | App Version |
+| :---: | :---: |
+| `1.1.0` | 2.1.0 |
+-----------------
+
+## License
+
+Copyright 2024 Lerian Studio Ltd. Licensed under the Elastic License 2.0. See
+[LICENSE](LICENSE).

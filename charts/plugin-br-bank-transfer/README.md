@@ -3,12 +3,12 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY` and `RECIPIENT_DETAILS_ENCRYPTION_KEY`; JD and webhook fields are required when their non-sandbox features are enabled. The PostgreSQL, Valkey, and MongoDB passwords are **not** operator-provided with the bundled subcharts: each is auto-generated into its `<release>-{postgresql,valkey,mongodb}` Secret and read via `secretKeyRef`. The app is MongoDB-URI-only, so `MONGO_URI` is assembled on the deployment as `mongodb://bank_transfer:$(MONGO_PASSWORD)@<release>-mongodb…` where `MONGO_PASSWORD` is sourced from the subchart Secret (`mongodb-passwords`). For external infra, set the relevant `<subchart>.external=true` plus `<subchart>.auth.existingSecret` (and `bankTransfer.secrets.MONGO_URI` for an external Mongo). See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
-- Dependency notes: Uses local PostgreSQL and MongoDB dependency charts unless external services are configured.
+- Required secrets: `bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY` and `RECIPIENT_DETAILS_ENCRYPTION_KEY`; `LICENSE_KEY` (or a signed licence file via `bankTransfer.licenseFile.existingSecret`), which the chart does not check but newer app images refuse to boot without; JD and webhook fields are required when their non-sandbox features are enabled. The PostgreSQL, Valkey, and MongoDB passwords are **not** operator-provided with the bundled subcharts: each is auto-generated into its `<release>-{postgresql,valkey,mongodb}` Secret and read via `secretKeyRef`. The app is MongoDB-URI-only, so `MONGO_URI` is assembled on the deployment as `mongodb://<mongodb.auth.usernames[0]>:$(MONGO_PASSWORD)@<release>-mongodb…` where `MONGO_PASSWORD` is sourced from the subchart Secret (`mongodb-passwords`); with `bankTransfer.useExistingSecret=true` the chart assembles nothing and that Secret must carry a fully resolved `MONGO_URI` (no `$(MONGO_PASSWORD)` reference). For external PostgreSQL or Valkey, set `<subchart>.external=true` plus `<subchart>.auth.existingSecret`; with migrations on (the default), an external PostgreSQL also needs `bankTransfer.secrets.POSTGRES_PASSWORD` (or an existing Secret with that key) for the migrations Job. An external MongoDB takes `mongodb.external=true` plus, in single-tenant mode, `bankTransfer.secrets.MONGO_URI` (the render fails without it): either with the credential inline, or referencing `$(MONGO_PASSWORD)`, which `mongodb.auth.existingSecret` (key `mongodb-passwords`) or `bankTransfer.secrets.MONGO_PASSWORD` supplies. See `docs/helm-chart-standard.md` "Single-Source Infra Secrets".
+- Dependency notes: Uses local PostgreSQL, Valkey and MongoDB dependency charts unless external services are configured.
 - Production overrides: Provide bank-transfer credentials through chart secrets or `bankTransfer.useExistingSecret`; override Midaz/CRM/Fees/JD endpoints, image tags, ingress, resources, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
-This Helm chart installs **Plugin BR Bank Transfer** for Midaz, a high-performance and open-source ledger.
+This Helm chart installs **Plugin BR Bank Transfer** for Midaz, a high-performance ledger.
 
 ---
 
@@ -35,8 +35,16 @@ $ helm list -n midaz-plugins
 To upgrade the chart to a new version:
 
 ```console
-$ helm upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version <new-version> -n midaz-plugins
+$ helm upgrade plugin-br-bank-transfer oci://ghcr.io/lerianstudio/plugin-br-bank-transfer-helm --version <new-version> -n midaz-plugins
 ```
+
+- Latest stable v1: chart `1.5.0`, application `1.2.1` — see
+  [UPGRADE-1.5.md](docs/UPGRADE-1.5.md).
+- Latest stable v2: chart `2.8.0`, application `3.2.0` — see
+  [UPGRADE-2.8.md](docs/UPGRADE-2.8.md). Upgrading from v1 to v2 is covered by the mandatory
+  [v1-to-v2 deployment how-to](docs/UPGRADE-2.0.md); that major upgrade forbids
+  rolling old and new binaries together.
+- Upgrading from v2 to v3 is covered by [UPGRADE-3.0.md](docs/UPGRADE-3.0.md).
 
 ---
 
@@ -49,6 +57,114 @@ $ helm uninstall plugin-br-bank-transfer -n midaz-plugins
 ```
 
 ---
+
+## Managed Cloud (`global.cloud`)
+
+Point this chart at a managed-cloud environment (AWS/GCP/Azure) instead of the
+bundled in-cluster Postgres/Redis with one knob:
+
+```yaml
+global:
+  cloud: "aws"   # aws | gcp | azure — leave unset for the bundled dev topology
+  datastores:
+    postgres: { host: "my-rds.example.com", user: "bank_transfer" }
+    redis: { host: "my-elasticache.example.com:6379" }
+  env:
+    name: "production"
+  auth:
+    host: "https://plugin-access-manager-auth.example:4000"
+
+# Disable the bundled subcharts — the masks above point at your managed
+# infra instead, so the in-cluster Postgres/Redis/MongoDB would otherwise
+# still deploy unused alongside it.
+postgresql:
+  enabled: false
+  external: true
+valkey:
+  enabled: false
+  external: true
+mongodb:
+  enabled: false
+  external: true
+```
+
+`global.cloud` sets the connection TOPOLOGY (TLS, SSL mode) for the masks
+above; only the ENDPOINTS (host/port/user) still come from
+`global.datastores` — a cloud preset can't know your RDS host. A native
+`bankTransfer.configmap.<KEY>` always overrides any mask. `redis.host` is
+`host:port` (no separate `redis.port` field).
+MongoDB has no mask: an external MongoDB needs `bankTransfer.secrets.MONGO_URI`.
+
+Copy `values-template.yaml` as your starting point — it documents every
+`global.*` mask with a working example, including the required
+`enabled: false` / `external: true` pair for each bundled subchart on a
+managed-cloud install. `values.yaml` is the full power-user reference;
+`values.schema.json` validates it.
+
+---
+
+## Pod Spreading (`global.scheduling.spread`)
+
+The bank-transfer Deployment renders `topologySpreadConstraints` from the `lerian-common` spread
+preset. The default is **soft** (`ScheduleAnyway`) across nodes, so replicas
+are spread across nodes (e.g. spot nodes) whenever possible, but a pod is never
+left `Pending` because of it.
+
+Zone spreading is **off** by default (`zone: ""`). When scoring a soft spread, the
+scheduler skips every node that lacks the `topology.kubernetes.io/zone` label, so on
+clusters without zone labels (bare-metal, k3s) a zone constraint silently cancels the
+node spread. Turn it on (`zone: ScheduleAnyway`) where every node carries zone labels
+(EKS, GKE, AKS).
+
+```yaml
+global:
+  scheduling:
+    spread:
+      enabled: true            # master switch
+      hostname: ScheduleAnyway # kubernetes.io/hostname: ScheduleAnyway | DoNotSchedule | "" (off)
+      zone: ""                 # topology.kubernetes.io/zone: same values (off by default)
+      maxSkew: 1               # integer >= 1
+      minDomains: 0            # DoNotSchedule constraints only; 0 = off
+      nodeTaintsPolicy: ""     # Honor | Ignore | "" (Kubernetes default Ignore)
+bankTransfer:
+  spread: { hostname: DoNotSchedule }  # field-level override
+  topologySpreadConstraints: []        # raw list; non-empty replaces the preset
+```
+
+On EKS + Karpenter use a hard node spread:
+
+```yaml
+global:
+  scheduling:
+    spread:
+      hostname: DoNotSchedule
+      zone: ScheduleAnyway
+      maxSkew: 1
+      minDomains: 2
+      nodeTaintsPolicy: Honor
+```
+
+`minDomains: 2` is required with `DoNotSchedule`. Skew is measured only against nodes
+that already exist, so on a single eligible node all replicas would otherwise share
+it. With fewer than 2 nodes the extra replica stays `Pending` until Karpenter launches
+another node. `nodeTaintsPolicy: Honor` stops tainted nodes (for example a node being
+drained) from counting as domains.
+
+Precedence: `bankTransfer.topologySpreadConstraints` (non-empty, wins entirely) >
+`bankTransfer.spread.<field>` > `global.scheduling.spread.<field>` > off. Each preset
+constraint selects only this Deployment's own pods (`labelSelector` = its
+`spec.selector.matchLabels`) of the same ReplicaSet (`matchLabelKeys:
+[pod-template-hash]`), so a rolling update is never blocked by the old ReplicaSet's
+pods, even with `DoNotSchedule`. Requires Kubernetes >= 1.27 with the
+`MatchLabelKeysInPodTopologySpread` feature gate enabled (beta, on by default). Use
+`DoNotSchedule` only when the cluster can always provide enough distinct nodes/zones
+for the replica count. Jobs are not spread.
+
+**Upgrade note:** the preset is on by default, so upgrading to the chart version
+that introduces it adds `topologySpreadConstraints` to the pod template and
+triggers **one rolling restart** of the Deployment. No values change is required.
+To keep the previous pod template exactly, set
+`global.scheduling.spread.enabled: false`.
 
 ## Configuring Ingress for Different Controllers
 
@@ -76,6 +192,12 @@ bankTransfer:
 
 ---
 
+## Probes and health port
+
+The `lerian-common.health` preset owns probes, ports, grace period, rollout strategy and PodDisruptionBudget; the render refuses probe, grace period and PDB value overrides, and `HEALTH_PORT` or `SHUTDOWN_*` in `bankTransfer.configmap`. The app serves `/health`, `/readyz` and `/metrics` on the internal port 8099, never through the Ingress.
+
+Probes: startup and liveness `/health`, readiness `/readyz`, all on port 8099. See [UPGRADE-3.2](docs/UPGRADE-3.2.md) for the multi-tenant route, load balancer checks and rollback.
+
 ## Parameters
 
 ### Bank Transfer Service
@@ -86,11 +208,11 @@ bankTransfer:
 | `bankTransfer.replicaCount` | Number of replicas for the deployment | `2` |
 | `bankTransfer.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-br-bank-transfer` |
 | `bankTransfer.image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `bankTransfer.image.tag` | Image tag used for deployment | `2.4.0` |
+| `bankTransfer.image.tag` | Image tag used for deployment; the chart refuses tags below `3.6.0-beta.9`, the first image that serves the health port | `3.6.0-beta.9` |
 | `bankTransfer.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `bankTransfer.revisionHistoryLimit` | Old ReplicaSets to retain | `10` |
-| `bankTransfer.nameOverride` | Overrides the default generated name by Helm | `""` |
-| `bankTransfer.fullnameOverride` | Overrides the full name generated by Helm | `""` |
+| `nameOverride` | Overrides the default generated name | `bank-transfer` |
+| `fullnameOverride` | Overrides the full name generated by Helm | `""` |
 | `bankTransfer.ingress.enabled` | Enable or disable ingress | `false` |
 | `bankTransfer.ingress.className` | Ingress class name | `""` |
 | `bankTransfer.ingress.annotations` | Additional ingress annotations | `{}` |
@@ -98,16 +220,17 @@ bankTransfer:
 | `bankTransfer.ingress.tls` | TLS configuration for ingress | `[]` |
 | `bankTransfer.service.type` | Kubernetes service type | `ClusterIP` |
 | `bankTransfer.service.port` | Service port | `4027` |
-| `bankTransfer.deploymentUpdate.type` | Deployment strategy type | `RollingUpdate` |
+| `bankTransfer.health.shutdownSeconds` | SHUTDOWN_TIMEOUT, one total budget for the graceful stop; the grace period is derived (drain 15s + this + 10s). `health.drainSeconds` tunes the drain | `30` |
 | `bankTransfer.podSecurityContext` | Pod security context | `{}` |
 | `bankTransfer.securityContext` | Security context for the container | See `values.yaml` |
-| `bankTransfer.pdb.enabled` | Enable or disable PodDisruptionBudget | `true` |
-| `bankTransfer.pdb.minAvailable` | Minimum number of available pods | `1` |
-| `bankTransfer.pdb.maxUnavailable` | Maximum number of unavailable pods | `1` |
+| `bankTransfer.pdb.enabled` | Enable or disable PodDisruptionBudget (`maxUnavailable: 1`, `AlwaysAllow`; the budget comes from the health preset) | `true` |
 | `bankTransfer.resources` | CPU and memory limits for pods | See `values.yaml` |
 | `bankTransfer.autoscaling.enabled` | Enable or disable horizontal pod autoscaling | `true` |
-| `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas | `2` |
+| `bankTransfer.autoscaling.minReplicas` | Minimum number of replicas (the health preset floors an unset value at 2) | `2` |
 | `bankTransfer.autoscaling.maxReplicas` | Maximum number of replicas | `5` |
+| `global.scheduling.spread` | Pod spreading preset (enabled / hostname / zone / maxSkew / minDomains / nodeTaintsPolicy), see [Pod Spreading](#pod-spreading-globalschedulingspread) | `{enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1, minDomains: 0, nodeTaintsPolicy: ""}` |
+| `bankTransfer.spread` | Field-level override of `global.scheduling.spread` | `{}` |
+| `bankTransfer.topologySpreadConstraints` | Raw topologySpreadConstraints; non-empty replaces the preset (an entry without `labelSelector` gets the selector labels) | `[]` |
 | `bankTransfer.nodeSelector` | Node selector for scheduling pods | `{}` |
 | `bankTransfer.tolerations` | Tolerations for scheduling on tainted nodes | `[]` |
 | `bankTransfer.affinity` | Affinity rules for pod scheduling | `{}` |
@@ -133,7 +256,6 @@ bankTransfer:
 | `valkey.architecture` | Valkey architecture | `standalone` |
 | `valkey.auth.enabled` | Enable authentication | `true` |
 | `valkey.auth.password` | Valkey password. Leave empty to let the subchart auto-generate it into the `<release>-valkey` Secret (read via `secretKeyRef`). | `""` |
-| `valkey.auth.username` | Valkey username | `bank_transfer` |
 
 ### MongoDB Dependency
 
@@ -143,7 +265,7 @@ bankTransfer:
 | `mongodb.auth.rootPassword` | MongoDB admin password. Leave empty to let the subchart auto-generate it into the `<release>-mongodb` Secret. | `""` |
 | `mongodb.auth.usernames` | Application DB users | `["bank_transfer"]` |
 | `mongodb.auth.passwords` | Application DB passwords. Leave empty to let the subchart auto-generate them (read via `secretKeyRef`, key `mongodb-passwords`). | `[""]` |
-| `mongodb.auth.databases` | Application databases | `["plugin_br_bank_transfer_jd"]` |
+| `mongodb.auth.databases` | Application database, where the subchart creates `bank_transfer` and the authSource of the URI the chart assembles. Keep it equal to `bankTransfer.configmap.MONGO_DATABASE`. | `["plugin_br_bank_transfer"]` |
 
 ### RabbitMQ Dependency (Optional)
 
@@ -169,20 +291,25 @@ Key environment variables configured via `bankTransfer.configmap`:
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `ENV_NAME` | Environment name | `production` |
-| `LOG_LEVEL` | Log level | `info` |
+| `ENVIRONMENT_NAME` | Environment name; `global.env.name` sets it env-wide. The chart also emits `ENV_NAME`, its deprecated alias, with the same value for app images that read only `ENV_NAME`. `configmap.ENV_NAME` is still honoured; setting both keys to different values fails the render. A blank, whitespace-only or null value at any level counts as unset | `production` |
 | `SERVER_ADDRESS` | Server listen address | `:4027` |
 | `POSTGRES_HOST` | PostgreSQL host | Dynamic based on release |
 | `REDIS_HOST` | Redis/Valkey host | Dynamic based on release |
 | `PLUGIN_AUTH_ENABLED` | Enable authentication | `true` |
+| `IDP_DECLARATION_ENABLED` | Publish the app's permission manifest to the Access Manager at boot (lib-auth `declaration.WireFromEnv`). Needs `IDP_HOST` and the `IDP_M2M_*` pair in `bankTransfer.secrets` (with `bankTransfer.useExistingSecret=true`, in that existing Secret). Resolved as `bankTransfer.configmap` > `bankTransfer.extraEnvVars` (legacy) > `global.idp.declarationEnabled`. `global.idp` is shared by every chart in the release that reads it (umbrella installs), so each of them needs its own `IDP_M2M_*` pair | `false` |
+| `IDP_HOST` | Access Manager identity URL, e.g. `http://plugin-access-manager-identity.<namespace>.svc.cluster.local:4001`. Same precedence, with `global.idp.host`; rendered only when set | — |
 | `JD_SANDBOX_MODE` | Enable JD sandbox mode (fake adapter) | `false` |
 | `MIDAZ_BASE_URL` | Midaz API base URL | **Required** |
+| `MIDAZ_FEE_MODE` | Fee engine: `auto` (native on Midaz >= 4.1, legacy below), `legacy` (plugin-fees on `/v1`) or `native` (Midaz embedded fees on `/v2`) | `auto` |
+| `MIDAZ_FEE_MODE_REFRESH` | How often `auto` re-reads the ledger version (positive Go duration) | `5m` |
 | `CRM_BASE_URL` | CRM adapter base URL | **Required** |
 | `FEES_BASE_URL` | Fees adapter base URL | **Required** |
 | `JD_BASE_URL` | JD SPB SOAP API URL | **Required** (unless `JD_SANDBOX_MODE=true`) |
-| `JD_ORIGIN_ISPB` | Bank ISPB code for JD | **Required** (unless `JD_SANDBOX_MODE=true`) |
-| `LICENSE_SERVICE_ADDRESS` | License validation service URL | Optional |
-| `TENANT_IDS` | Tenant IDs for license validation | Optional |
+| `JD_LEGACY_CODE` | JD legacy code; `JD_USER_CODE`, `JD_PASSWORD`, `JD_PRIVATE_KEY_KEYINFO` and, in `local_pem` signing, `JD_PRIVATE_KEY_PEM` go in `bankTransfer.secrets`. The origin ISPB is the systemplane key `tenancy.ispb_organization_bindings`, not env | **Required** single-tenant (unless `JD_SANDBOX_MODE=true`) |
+| `ORGANIZATION_IDS` | Organizations the licence is validated for (or set it under `bankTransfer.secrets`) | **Required** by newer app images, in every environment |
+| `COURIER_ACCOUNT_CLAIMS_ENABLED` | App v3.2.0+: sweep that claims this engine's CRM accounts on the Courier. When `"true"`, single-tenant also needs `COURIER_BASE_URL`, the `COURIER_CLIENT_ID`/`COURIER_CLIENT_SECRET` pair and `ORGANIZATION_ID` (the render fails without the URL or the organization) | `false` |
+
+Under `ENVIRONMENT_NAME=production` (the default) the app refuses to boot unless `PLUGIN_AUTH_ADDRESS` (with `PLUGIN_AUTH_ENABLED=true`, the default), `MIDAZ_BASE_URL`, `MIDAZ_TRANSACTION_URL`, `CRM_BASE_URL`, `FEES_BASE_URL` and `JD_BASE_URL` use `https://`. The chart's in-cluster `http://` defaults boot only outside production.
 
 For a complete list, see `values.yaml`.
 
@@ -194,12 +321,14 @@ Key secrets configured via `bankTransfer.secrets`:
 
 | Secret | Description |
 | --- | --- |
-| `POSTGRES_PASSWORD` | PostgreSQL password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external PostgreSQL without `postgresql.auth.existingSecret`. |
+| `POSTGRES_PASSWORD` | PostgreSQL password. With the bundled subchart it is auto-generated and read via `secretKeyRef`. Set it for an external PostgreSQL: the migrations Job reads it even with `postgresql.auth.existingSecret`, unless the migrations read an existing Secret (`bankTransfer.migrations.useExistingSecret` or `bankTransfer.useExistingSecret`). |
 | `REDIS_PASSWORD` | Redis/Valkey password. With the bundled subchart it is auto-generated and read via `secretKeyRef`; set only for an external Valkey without `valkey.auth.existingSecret`. |
-| `MONGO_PASSWORD` | MongoDB password. With the bundled subchart it is read from the subchart Secret (key `mongodb-passwords`); set only for an external MongoDB without `mongodb.auth.existingSecret`. |
-| `MONGO_URI` | MongoDB connection URI. Auto-assembled on the deployment from `MONGO_PASSWORD`; set explicitly only to override (e.g. external MongoDB). |
+| `MONGO_PASSWORD` | MongoDB password for an external MongoDB without `mongodb.auth.existingSecret`, written only when `MONGO_URI` references `$(MONGO_PASSWORD)`. |
+| `MONGO_URI` | MongoDB connection URI. Assembled by the chart for the bundled subchart, except with `bankTransfer.useExistingSecret=true`: that Secret must then carry it. **Required** for an external MongoDB in single-tenant mode (the app reads only `MONGO_URI`). Delivered from the Secret, or as a deployment env when it references `$(MONGO_PASSWORD)` (kubelet expands only those). With `bankTransfer.useExistingSecret=true` nothing is expanded: the Secret must hold the URI with the URL-encoded password in place. |
+| `LICENSE_KEY` | Lerian licence key. **Required** by newer app images, in every environment, unless `bankTransfer.licenseFile.existingSecret` mounts a signed licence file. The chart does not check it. The migrations Job receives it too: from the app Secret with `bankTransfer.useExistingSecret`, else from the `<fullname>-license-hook` PreSync Secret (rendered only for a key given in values). |
 | `JD_INCOMING_RAW_XML_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
 | `RECIPIENT_DETAILS_ENCRYPTION_KEY` | Encryption key (hex-encoded 32-byte AES-256, 64 hex chars). **Required.** |
+| `IDP_M2M_CLIENT_ID` / `IDP_M2M_CLIENT_SECRET` | Access Manager client pair the app uses to publish its permission manifest (RI) at boot. Read only when `IDP_DECLARATION_ENABLED="true"` (see the ConfigMap table); with the flag on, the app refuses to boot without the pair. Each is rendered only when set. With `bankTransfer.useExistingSecret=true` the chart renders neither key: the existing Secret must carry both. |
 
 ---
 
@@ -210,13 +339,14 @@ For local development/testing, you can disable authentication and use sandbox mo
 ```yaml
 bankTransfer:
   configmap:
-    ENV_NAME: "development"
+    ENVIRONMENT_NAME: "development"
     PLUGIN_AUTH_ENABLED: "false"
-    POSTGRES_SSLMODE: "disable"
     JD_SANDBOX_MODE: "true"  # Uses fake JD adapter (no real bank calls)
 ```
 
-> **Note:** License validation is controlled via `LICENSE_SERVICE_ADDRESS` and `TENANT_IDS`. When these are not set, license validation is skipped.
+> **Note:** Newer app images never skip the licence: in every environment, development included, they refuse to boot without `bankTransfer.secrets.LICENSE_KEY` and `ORGANIZATION_IDS`.
+>
+> `bankTransfer.licenseFile.existingSecret` (a Secret holding the file under the key `license`; only that key is mounted) mounts a signed licence file at `/etc/lerian/license` on the app and the migrations runner and sets `LICENSE_FILE_PATH`; file mode needs an image on lib-license-go v5. The external-Postgres migrations Job (PreSync) mounts it too, so that Secret must exist before the sync.
 
 ---
 

@@ -1,0 +1,111 @@
+suite: permission declaration (RI) env
+templates:
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: system-facts
+  namespace: system-facts
+set:
+  system-facts.secrets.POSTGRES_PASSWORD: pw
+tests:
+  - it: renders only the gate, off, by default
+    template: templates/configmap.yaml
+    asserts:
+      - equal:
+          path: data.IDP_DECLARATION_ENABLED
+          value: "false"
+      - notExists:
+          path: data.IDP_HOST
+
+  - it: takes the host from global.idp and the gate from the component configmap
+    template: templates/configmap.yaml
+    set:
+      global.idp.host: http://plugin-access-manager-identity:4001
+      system-facts.configmap.IDP_DECLARATION_ENABLED: "true"
+    asserts:
+      - equal:
+          path: data.IDP_DECLARATION_ENABLED
+          value: "true"
+      - equal:
+          path: data.IDP_HOST
+          value: http://plugin-access-manager-identity:4001
+
+  - it: lets the component configmap override global.idp
+    template: templates/configmap.yaml
+    set:
+      global.idp.host: http://global:4001
+      global.idp.declarationEnabled: "true"
+      system-facts.configmap.IDP_HOST: http://local:4001
+      system-facts.configmap.IDP_DECLARATION_ENABLED: "false"
+    asserts:
+      - equal:
+          path: data.IDP_HOST
+          value: http://local:4001
+      - equal:
+          path: data.IDP_DECLARATION_ENABLED
+          value: "false"
+
+  - it: honors legacy extraEnvVars entries, emitting each key once
+    template: templates/configmap.yaml
+    set:
+      system-facts.extraEnvVars:
+        - name: IDP_DECLARATION_ENABLED
+          value: "true"
+        - name: IDP_HOST
+          value: http://legacy:4001
+        - name: FOO
+          value: bar
+    asserts:
+      - equal:
+          path: data.IDP_DECLARATION_ENABLED
+          value: "true"
+      - equal:
+          path: data.IDP_HOST
+          value: http://legacy:4001
+      - equal:
+          path: data.FOO
+          value: bar
+      - notMatchRegexRaw:
+          pattern: 'IDP_HOST:[\s\S]*IDP_HOST:'
+      - notMatchRegexRaw:
+          pattern: 'IDP_DECLARATION_ENABLED:[\s\S]*IDP_DECLARATION_ENABLED:'
+
+  - it: prefers the component configmap over a legacy extraEnvVars entry
+    template: templates/configmap.yaml
+    set:
+      system-facts.configmap.IDP_HOST: http://configmap:4001
+      system-facts.extraEnvVars:
+        - name: IDP_HOST
+          value: http://legacy:4001
+    asserts:
+      - equal:
+          path: data.IDP_HOST
+          value: http://configmap:4001
+
+  - it: puts the client pair in the Secret once each
+    template: templates/secrets.yaml
+    set:
+      system-facts.secrets.IDP_M2M_CLIENT_ID: cid
+      system-facts.secrets.IDP_M2M_CLIENT_SECRET: csec
+    asserts:
+      - equal:
+          path: stringData.IDP_M2M_CLIENT_ID
+          value: cid
+      - equal:
+          path: stringData.IDP_M2M_CLIENT_SECRET
+          value: csec
+      - notMatchRegexRaw:
+          pattern: 'IDP_M2M_CLIENT_ID:[\s\S]*IDP_M2M_CLIENT_ID:'
+      - notMatchRegexRaw:
+          pattern: 'IDP_M2M_CLIENT_SECRET:[\s\S]*IDP_M2M_CLIENT_SECRET:'
+
+  - it: renders no client pair by default
+    template: templates/secrets.yaml
+    asserts:
+      - notExists:
+          path: stringData.IDP_M2M_CLIENT_ID
+      - notExists:
+          path: stringData.IDP_M2M_CLIENT_SECRET
+      - equal:
+          path: stringData.POSTGRES_PASSWORD
+          value: pw

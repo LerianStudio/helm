@@ -1,0 +1,10 @@
+{{- $wh := .Values.sisbajud.executor.webhook | default dict -}}
+{{- if and .Values.sisbajud.enabled (eq (include "plugin-br-sisbajud.webhookEnabled" .) "true") ($wh.ingress | default dict).enabled -}}
+{{- include "lerian-common.ingress" (dict
+      "context" .
+      "ingress" $wh.ingress
+      "name" (include "plugin-br-sisbajud.webhookFullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-sisbajud.labels" (dict "context" $ "component" "webhook"))
+      "svcPort" $wh.service.port) }}
+{{- end -}}

@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v3.5.0 to v3.6.0
 
 ## Topics
@@ -42,6 +43,8 @@ spec:
 **After (v3.6.0):**
 
 ```yaml
+
+> Current charts: `<component>.deploymentStrategy` is owned by the health preset (RollingUpdate) and the render fails if it is set; remove it.
 spec:
   revisionHistoryLimit: {{ .Values.pix.revisionHistoryLimit | default 10 }}
   strategy:
@@ -156,3 +159,4 @@ helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianst
 ```bash
 helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.6.0 -n plugin-br-pix-indirect-btg
 ```
+<!-- {% endraw %} -->

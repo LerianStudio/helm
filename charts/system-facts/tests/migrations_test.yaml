@@ -1,0 +1,183 @@
+suite: root schema migrations (ArgoCD Sync hook)
+templates:
+  - templates/migrations-job.yaml
+release:
+  name: system-facts
+  namespace: system-facts
+tests:
+  # The gate: the Job is opt-in, so a chart bump alone changes no existing install.
+  - it: renders nothing by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders nothing when explicitly disabled
+    set:
+      migrations.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # No plausible-looking default: the application image has no `migrate` binary.
+  - it: refuses to render without a runner image repository
+    set:
+      migrations.enabled: true
+      migrations.image.repository: ""
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - failedTemplate:
+          errorPattern: "needs migrations.image.repository"
+
+  - it: refuses to render without a Postgres host
+    set:
+      migrations.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "need a Postgres host"
+
+  - it: refuses to render when the workload is disabled
+    set:
+      migrations.enabled: true
+      system-facts.enabled: false
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - failedTemplate:
+          errorPattern: "requires system-facts.enabled"
+
+  - it: is an ArgoCD Sync hook that is recreated and cleaned up
+    set:
+      migrations.enabled: true
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - isKind:
+          of: Job
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook"]
+          value: Sync
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook-delete-policy"]
+          value: BeforeHookCreation,HookSucceeded
+      # PreSync would run before the Secret this chart renders exists.
+      - notExists:
+          path: metadata.annotations["helm.sh/hook"]
+
+  - it: runs the dedicated runner image, never the application image
+    set:
+      migrations.enabled: true
+      migrations.image.tag: 1.0.0-beta.15
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/lerianstudio/system-facts-migrations:1.0.0-beta.15
+
+  - it: builds the connection from the same datastores mask the workload uses
+    set:
+      migrations.enabled: true
+      global.datastores.postgres.host: pg.example
+      global.datastores.postgres.user: system_facts
+      global.datastores.postgres.ssl: require
+      system-facts.database.name: system_facts
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: POSTGRES_HOST, value: pg.example}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: POSTGRES_USER, value: system_facts}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: POSTGRES_NAME, value: system_facts}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: POSTGRES_SSLMODE, value: require}
+
+  # The chart's Secret carries POSTGRES_PASSWORD on the external path.
+  - it: reads the password from the chart Secret when Postgres is external
+    set:
+      migrations.enabled: true
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef: {name: system-facts, key: POSTGRES_PASSWORD}
+
+  # Must follow the workload's own branch, or the Job authenticates against a
+  # Secret the Deployment never uses.
+  - it: reads the password from the bundled subchart Secret when postgresql is bundled
+    set:
+      migrations.enabled: true
+      postgresql.enabled: true
+      postgresql.external: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef: {name: system-facts-postgresql, key: password}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: POSTGRES_HOST, value: system-facts-postgresql}
+
+  - it: honours system-facts.useExistingSecret
+    set:
+      migrations.enabled: true
+      global.datastores.postgres.host: pg.example
+      system-facts.useExistingSecret: true
+      system-facts.existingSecretName: ext-sec
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef: {name: ext-sec, key: POSTGRES_PASSWORD}
+
+  - it: an explicit migrations.postgres.passwordSecret wins
+    set:
+      migrations.enabled: true
+      migrations.postgres.passwordSecret.name: mysec
+      migrations.postgres.passwordSecret.key: pw
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef: {name: mysec, key: pw}
+
+  # The catalog is environment-global (ADR-004): unlike br-jd-courier and
+  # plugin-br-bank-transfer this Job is NOT refused in multi-tenant mode.
+  - it: is not refused when multi-tenant is enabled
+    set:
+      migrations.enabled: true
+      system-facts.configmap.MULTI_TENANT_ENABLED: "true"
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - isKind:
+          of: Job
+
+  - it: keeps an explicit backoffLimit of zero
+    set:
+      migrations.enabled: true
+      migrations.backoffLimit: 0
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - equal:
+          path: spec.backoffLimit
+          value: 0
+
+  - it: defaults backoffLimit to 3 when unset
+    set:
+      migrations.enabled: true
+      migrations.backoffLimit: null
+      global.datastores.postgres.host: pg.example
+    asserts:
+      - equal:
+          path: spec.backoffLimit
+          value: 3

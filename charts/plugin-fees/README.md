@@ -1,42 +1,26 @@
 # Plugin Fees Helm Chart
 
+> **Deprecated.** Plugin Fees no longer ships as a standalone service: fees run inside the Midaz ledger, so install the `midaz` chart instead. This chart and the `plugin-fees` image receive no further releases.
+
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `fees.secrets.CLIENT_SECRET`; multi-tenant API/cache secrets are required when multi-tenancy is enabled. The MongoDB password is **not** an operator-provided secret with the bundled MongoDB: the Bitnami `mongodb` subchart auto-generates it into the `<release>-mongodb` Secret (key `mongodb-root-password`) and the app reads it via `secretKeyRef`. For an external MongoDB (`mongodb.external=true`), supply it via `mongodb.auth.existingSecret` or set `fees.secrets.MONGO_PASSWORD`.
-- Dependency notes: Uses a local MongoDB dependency chart unless external MongoDB is configured.
-- Production overrides: Provide fees, MongoDB, client, AWS, and multi-tenant credentials through chart secrets or existing Secrets where supported; override API/UI image tags, ingress, resources, and persistence.
-- Source/license: Source is in `github.com/LerianStudio/helm`; license is Apache-2.0.
+- Required secrets: `fees.secrets.CLIENT_SECRET`, `fees.secrets.LICENSE_KEY` and `fees.secrets.ORGANIZATION_IDS`; `fees.secrets.MULTI_TENANT_SERVICE_API_KEY` is also required when multi-tenancy is enabled. The MongoDB password is **not** an operator-provided secret with the bundled MongoDB: the Bitnami `mongodb` subchart auto-generates it into the `<release>-mongodb` Secret (key `mongodb-root-password`) and the app reads it via `secretKeyRef`. For an external MongoDB (`mongodb.external=true`), supply it via `mongodb.auth.existingSecret` or set `fees.secrets.MONGO_PASSWORD`.
+- Dependency notes: Uses the bundled Bitnami MongoDB subchart unless `mongodb.enabled` is `false`.
+- Production overrides: Provide fees, MongoDB, client, AWS, and multi-tenant credentials through chart secrets or existing Secrets where supported; override the image tag, ingress, resources, and persistence.
+- Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
-This Helm chart installs **Plugin Fees** for Midaz, a high-performance and open-source ledger.
-
----
-
-## Install Plugin Fees Helm Chart
-
-To install Plugin Fees using Helm, run the following command:
-
-```console
-$ helm install plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version <version> -n midaz-plugins --create-namespace
-```
-
-This will create a new namespace called `midaz-plugins` if it doesn't already exist and deploy the Plugin Fees Helm chart.
-
-After installation, you can verify that the release was successful by listing the Helm releases in the `midaz-plugins` namespace:
-
-```console
-$ helm list -n midaz-plugins
-```
+This Helm chart installs **Plugin Fees** for Midaz, a high-performance ledger.
 
 ---
 
-## Upgrading
+## Moving to Midaz
 
-To upgrade the chart to a new version:
+Fees run inside the Midaz ledger. Do not start new installs of this chart. Keep an existing release running until no service calls it:
 
-```console
-$ helm upgrade plugin-fees oci://registry-1.docker.io/lerianstudio/plugin-fees-helm --version <new-version> -n midaz-plugins
-```
+1. **Bank Transfer.** Follow the [Midaz fees migration guide](https://docs.lerian.studio/en/products/midaz/fees/fees-migration-guide) up to its last step, "Retire plugin-fees". It recreates the fee packages in Midaz and switches Bank Transfer to `MIDAZ_FEE_MODE=native`. From that last step, run only its query for open `legacy` TED INs, until it returns no rows on every tenant; do not back up or stop this release there, that is step 3. Keep `native` afterwards: under `auto`, a pod that cannot read the Midaz version starts in `legacy` and calls this release. Do not copy the database instead: Plugin Fees stores a route by name, Midaz matches it by ID, so a copied package never matches and the transfer is charged zero fee.
+2. **Pix Indirect BTG.** With `CASHIN_FEE_CALCULATION_TYPE: "segment"` (the chart default), it asks this release for every cash-in fee at `FEE_SERVICE_URL`, and it has no Midaz fee mode. Keep this release while any Pix Indirect BTG install calls it.
+3. Only when both hold (no open `legacy` TED IN, no Pix Indirect BTG install calling this release), back up the MongoDB database and uninstall this release as below. With the bundled MongoDB (the default), the uninstall deletes the MongoDB volume and every fee record in it.
 
 ---
 
@@ -60,19 +44,20 @@ The Plugin Fees Helm Chart optionally supports different Ingress Controllers for
 To use the **NGINX Ingress Controller**, configure the `values.yaml` as follows:
 
 ```yaml
-ingress:
-  enabled: true
-  className: "nginx"
-  annotations: {}
-  hosts:
-    - host: midaz.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: midaz-tls
-      hosts:
-        - midaz.example.com
+fees:
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: midaz.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: midaz-tls
+        hosts:
+          - midaz.example.com
 ```
 
 ---
@@ -86,10 +71,8 @@ ingress:
 | `fees.replicaCount` | Number of replicas for the deployment | `1` |
 | `fees.image.repository` | Repository for the container image | `ghcr.io/lerianstudio/plugin-fees` |
 | `fees.image.pullPolicy` | Image pull policy | `Always` |
-| `fees.image.tag` | Image tag used for deployment | `3.2.0` |
-| `fees.imagePullSecrets` | Secrets for pulling images from a private registry | `[{"name": "regcred"}]` |
-| `fees.nameOverride` | Overrides the default generated name by Helm | `""` |
-| `fees.fullnameOverride` | Overrides the full name generated by Helm | `""` |
+| `fees.image.tag` | Image tag used for deployment | `3.4.0` |
+| `fees.imagePullSecrets` | Secrets for pulling images from a private registry | `[]` |
 | `fees.ingress.enabled` | Enable or disable ingress | `false` |
 | `fees.ingress.className` | Ingress class name | `""` |
 | `fees.ingress.annotations` | Additional ingress annotations | `{}` |
@@ -134,17 +117,18 @@ ingress:
 - **Repository:** https://charts.bitnami.com/bitnami
 - **Release name:** The bundled MongoDB host and its generated Secret name are derived automatically from the release name (collapse-aware, honoring `nameOverride`/`fullnameOverride`), so any release name works. Set `fees.configmap.MONGO_HOST` only when pointing at an external MongoDB.
 - **How to disable:** Set `mongodb.enabled` to `false` in the values file.
-- **Note:** If you have an existing MongoDB instance, you can disable this dependency and configure Midaz Components to use your external MongoDB, like this:
+- **Note:** If you have an existing MongoDB instance, you can disable this dependency and configure Plugin Fees to use your external MongoDB, like this:
 
   ```yaml
 
-    configmap:
+    fees:
+      configmap:
         MONGO_HOST: { your-host }
         MONGO_NAME: { your-host-name }
         MONGO_USER: { your-host-user }
         MONGO_PORT: { your-host-port }
 
-    secrets:
+      secrets:
         MONGO_PASSWORD: { your-host-pass }
 
   ```

@@ -6,15 +6,6 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "midaz-grafana.fullname" -}}
-{{- printf "%s-%s" (include "midaz.name" .) .Values.grafana.name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "midaz.chart" -}}
@@ -22,13 +13,20 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Common labels
+Common labels without the chart version, safe for pod templates
 */}}
-{{- define "midaz.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
+{{- define "midaz.podLabels" -}}
 {{ include "midaz.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "ledger.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz.podLabels" . }}
 {{- end }}
 
 {{/*
@@ -67,6 +65,18 @@ Return valid ledger version label
 {{- end -}}
 
 {{/*
+midaz.ledgerRolesAnywhereEnabled — truthy string when the ledger's AWS IAM Roles
+Anywhere sidecar is on. The guard is an `and` over possibly-absent maps repeated
+at several sites; one helper keeps a values file that omits ledger.aws from
+nil-pointering the render.
+*/}}
+{{- define "midaz.ledgerRolesAnywhereEnabled" -}}
+{{- $aws := .Values.ledger.aws | default dict -}}
+{{- $ra := $aws.rolesAnywhere | default dict -}}
+{{- if $ra.enabled -}}true{{- end -}}
+{{- end }}
+
+{{/*
 Create the name of the service account to use for ledger
 */}}
 {{- define "midaz-ledger.serviceAccountName" -}}
@@ -87,7 +97,7 @@ Allows overriding it for multi-namespace deployments in combined charts.
 
 {{/*
 infraSecretRef — emit a `- name: <envName> valueFrom: secretKeyRef: {name,key}` env entry
-pointing at a Bitnami subchart's generated Secret (or the operator's existingSecret override).
+pointing at a bundled datastore's password Secret (or the operator's existingSecret override).
 Inputs (dict): context (root .), subchart, key, envName.
 See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 */}}
@@ -95,11 +105,8 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
 {{- $ctx := .context -}}
 {{- $sub := .subchart -}}
 {{- $subValues := default dict (index $ctx.Values $sub) -}}
-{{- $auth := default dict (index $subValues "auth") -}}
-{{- $secretName := "" -}}
-{{- if $auth.existingSecret -}}
-{{- $secretName = $auth.existingSecret -}}
-{{- else -}}
+{{- $secretName := include "midaz.operatorSecret" . -}}
+{{- if not $secretName -}}
 {{- $secretName = include "common.names.dependency.fullname" (dict "chartName" $sub "chartValues" $subValues "context" $ctx) -}}
 {{- end -}}
 - name: {{ .envName }}
@@ -107,6 +114,14 @@ See docs/helm-chart-standard.md "Single-Source Infra Secrets".
     secretKeyRef:
       name: {{ $secretName }}
       key: {{ .key }}
+{{- end }}
+
+{{/*
+midaz.operatorSecret — the Secret an operator named in <subchart>.auth.existingSecret, "" when none.
+The chart default renders a name only inside the subchart (templates/datastore-secrets.yaml).
+*/}}
+{{- define "midaz.operatorSecret" -}}
+{{- tpl (dig "auth" "existingSecret" "" (index .context.Values .subchart | default dict) | toString) .context -}}
 {{- end }}
 
 {{/*
@@ -120,8 +135,27 @@ Fail loud at render time so the operator fixes the configuration.
 {{- define "midaz.mongodbAuthRequired" -}}
 {{- $mongo := .Values.mongodb | default dict -}}
 {{- $mongoAuth := $mongo.auth | default dict -}}
-{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) (not $mongoAuth.enabled) (not $mongoAuth.existingSecret) -}}
+{{- if and (ne (toString $mongo.enabled) "false") (not $mongo.external) (not $mongoAuth.enabled) (not (include "midaz.operatorSecret" (dict "context" . "subchart" "mongodb"))) -}}
 {{- fail "\n\nERROR: mongodb.auth.enabled is REQUIRED when the bundled mongodb subchart is internal.\n   ledger and crm read MONGO_*_PASSWORD from the mongodb Secret (single source), but Bitnami\n   mongodb creates no Secret when auth.enabled=false, leaving a dangling secretKeyRef.\n   Choose one: set mongodb.auth.enabled=true, or provide mongodb.auth.existingSecret, or set mongodb.external=true.\n" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+midaz.rabbitmqErlangCookieRequired — fail when the bundled groundhog2k rabbitmq subchart is
+enabled without an Erlang cookie. The subchart only sets ERLANG_COOKIE when
+rabbitmq.authentication.erlangCookie.value (or existingSecret + erlangCookie.secretKey) is given;
+otherwise its init script writes an empty .erlang.cookie and the broker exits at boot with
+"Too short cookie string", taking every ledger pod waiting on it down too.
+*/}}
+{{- define "midaz.rabbitmqErlangCookieRequired" -}}
+{{- $auth := .Values.rabbitmq.authentication | default dict -}}
+{{- $cookie := $auth.erlangCookie | default dict -}}
+{{- /* The subchart also takes the cookie as a plain env var or from extraEnvSecrets, whose contents
+   cannot be seen at render: either one stands the check down. */ -}}
+{{- $viaEnv := .Values.rabbitmq.extraEnvSecrets -}}
+{{- range (.Values.rabbitmq.env | default list) }}{{ if eq (toString .name) "ERLANG_COOKIE" }}{{ $viaEnv = true }}{{ end }}{{ end -}}
+{{- if and (ne (toString .Values.rabbitmq.enabled) "false") (not .Values.rabbitmq.external) (not $cookie.value) (not (and $auth.existingSecret $cookie.secretKey)) (not $viaEnv) -}}
+{{- fail "\n\nERROR: rabbitmq.authentication.erlangCookie.value is REQUIRED when the bundled rabbitmq subchart is enabled.\n   Without it the broker writes an empty Erlang cookie and refuses to boot (\"Too short cookie string\").\n   Provide a stable value (it must not change across upgrades), e.g.: openssl rand -hex 32,\n   or set rabbitmq.authentication.existingSecret + rabbitmq.authentication.erlangCookie.secretKey.\n" -}}
 {{- end -}}
 {{- end }}
 
@@ -149,17 +183,76 @@ Return valid CRM version label
 {{/*
 CRM Common labels
 */}}
-{{- define "midaz-crm.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
+{{- define "midaz-crm.podLabels" -}}
 {{ include "midaz-crm.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "crm.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
 
 {{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz-crm.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz-crm.podLabels" . }}
+{{- end }}
+
+{{/*
 CRM Selector labels
 */}}
 {{- define "midaz-crm.selectorLabels" -}}
+{{- if .name -}}
+app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
+{{- end }}
+app.kubernetes.io/instance: {{ .context.Release.Name }}
+{{- end }}
+
+{{/*
+Create a default fully qualified app name for Tracer.
+*/}}
+{{- define "midaz-tracer.fullname" -}}
+{{- if .Values.tracer.fullnameOverride }}
+{{- .Values.tracer.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" (include "midaz.name" .) (default .Values.tracer.name .Values.tracer.nameOverride) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create Tracer app version
+*/}}
+{{- define "tracer.defaultTag" -}}
+{{- default .Chart.AppVersion .Values.tracer.image.tag }}
+{{- end -}}
+
+{{/*
+Return valid Tracer version label
+*/}}
+{{- define "tracer.versionLabelValue" -}}
+{{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "tracer.defaultTag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}
+{{- end -}}
+
+{{/*
+Tracer Common labels
+*/}}
+{{- define "midaz-tracer.podLabels" -}}
+{{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name) }}
+app.kubernetes.io/version: {{ include "tracer.versionLabelValue" .context }}
+app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz-tracer.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz-tracer.podLabels" . }}
+{{- end }}
+
+{{/*
+Tracer Selector labels
+*/}}
+{{- define "midaz-tracer.selectorLabels" -}}
 {{- if .name -}}
 app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
 {{- end }}
@@ -213,5 +306,504 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- else -}}
 {{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+midaz.tagIsV4 — reports "true" when the passed image tag is a semver >= 4.0.0
+(pre-releases included), "" otherwise. Non-semver tags ("latest", digests,
+branch builds) resolve to "" so they never trip a version-gated requirement.
+
+Midaz v4 changed two boot contracts that 3.x does not have: the unified ledger
+binary serves CRM in-process (so it initializes the CRM cipher at startup) and
+neither ledger nor tracer migrates its schema anymore. Both are gated on this
+helper so 3.x releases keep rendering exactly as before.
+*/}}
+{{- define "midaz.tagIsV4" -}}
+{{- $tag := . | toString | trimPrefix "v" -}}
+{{- /* Anchored, complete SemVer 2.0.0 match: semverCompare hard-fails rendering
+       on a malformed version, so a prefix-only test would let "4.0.0.1" through
+       and abort the render instead of resolving to "not v4". */ -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
+{{- if semverCompare ">=4.0.0-0" $tag -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+midaz.ledgerMigrationsEnabled — resolves the tri-state ledger.migrations.enabled.
+Unset (null) means "auto": on for 4.x ledger tags, off for 3.x, which still runs
+its migrations in-process. An explicit true/false always wins, so operators who
+apply the schema out-of-band (managed-Postgres S3 pipeline) can pin it off.
+*/}}
+{{- define "midaz.ledgerMigrationsEnabled" -}}
+{{- $enabled := dig "migrations" "enabled" nil .Values.ledger -}}
+{{- if kindIs "invalid" $enabled -}}
+{{- include "midaz.tagIsV4" (.Values.ledger.image.tag | default .Chart.AppVersion) -}}
+{{- else if eq (toString $enabled) "true" -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/* Explicit settings win; auto enables from 4.5.0-beta.1; every ledger image from that tag on ships the runner. */}}
+{{- define "midaz.ledgerPartitionEnabled" -}}
+{{- $enabled := dig "partition" "enabled" nil (.Values.ledger | default dict) -}}
+{{- if kindIs "invalid" $enabled -}}
+{{- $tag := .Values.ledger.image.tag | default .Chart.AppVersion | toString | trimPrefix "v" -}}
+{{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
+       render on a malformed version instead of resolving to "off". */ -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
+{{- if semverCompare ">=4.5.0-beta.1" $tag -}}true{{- end -}}
+{{- end -}}
+{{- else if eq (toString $enabled) "true" -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+Licence file (optional). licenseFile.existingSecret is mounted as a directory (never
+subPath, so rotations propagate) at /etc/lerian/license; LICENSE_FILE_PATH points at its key.
+Called with a component's values (.Values.ledger / .Values.tracer).
+*/}}
+{{- define "midaz.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{- define "midaz.licenseFileEnv" -}}
+{{- if include "midaz.licenseFileSecret" . -}}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end }}
+
+{{- define "midaz.licenseFileVolumeMount" -}}
+{{- if include "midaz.licenseFileSecret" . -}}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "midaz.licenseFileVolume" -}}
+{{- with include "midaz.licenseFileSecret" . -}}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end }}
+
+{{/* Both partition workloads use ledger connections and migration credentials. */}}
+{{- define "midaz-ledger.partitionPodSpec" -}}
+{{- $ctx := .context -}}
+{{- $values := $ctx.Values -}}
+{{- $partition := $values.ledger.partition | default dict -}}
+{{- $pg := $values.postgresql | default dict -}}
+{{- $pgInternal := or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ctx "subchart" "postgresql")) -}}
+{{- $secretName := ternary $values.ledger.existingSecretName (include "midaz-ledger.fullname" $ctx) $values.ledger.useExistingSecret -}}
+restartPolicy: Never
+automountServiceAccountToken: false
+{{- with $values.ledger.imagePullSecrets }}
+imagePullSecrets:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+securityContext:
+  {{- toYaml $values.ledger.podSecurityContext | nindent 2 }}
+containers:
+  - name: partition
+    image: "{{ $values.ledger.image.repository }}:{{ $values.ledger.image.tag | default $ctx.Chart.AppVersion }}"
+    imagePullPolicy: {{ $values.ledger.image.pullPolicy }}
+    command: ["/partition"]
+    args: {{ toJson .args }}
+    securityContext:
+      {{- toYaml $values.ledger.securityContext | nindent 6 }}
+    envFrom:
+      - secretRef:
+          name: {{ $secretName }}
+      - configMapRef:
+          name: {{ include "midaz-ledger.fullname" $ctx }}
+    env:
+      {{- with include "midaz.licenseFileEnv" $values.ledger }}
+      {{- . | nindent 6 }}
+      {{- end }}
+      {{- /* The reconcile hook runs before the chart Secret is updated: read the key from its hook Secret. */}}
+      {{- if and .licenseHook $values.ledger.secrets.LICENSE_KEY (not $values.ledger.useExistingSecret) }}
+      - name: LICENSE_KEY
+        valueFrom:
+          secretKeyRef:
+            name: {{ include "midaz-ledger.licenseHookSecretName" $ctx }}
+            key: LICENSE_KEY
+            optional: true
+      {{- end }}
+      {{- /* Inline settings override stale ConfigMaps during pre-upgrade hooks. */}}
+      {{- range $name, $value := include "midaz-ledger.partitionInlineEnv" $ctx | fromYaml }}
+      - name: {{ $name }}
+        value: {{ $value | toString | quote }}
+      {{- end }}
+      {{- /* Single-tenant runners use the same PostgreSQL Secret as migrations. */}}
+      {{- if ne (include "midaz.isTrue" ($values.ledger.configmap.MULTI_TENANT_ENABLED | default "false")) "true" }}
+      {{- if $pgInternal }}
+      {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "postgresql" "key" "password" "envName" "DB_TRANSACTION_PASSWORD") | nindent 6 }}
+      {{- else if or $values.ledger.useExistingSecret $values.ledger.secrets.DB_TRANSACTION_PASSWORD }}
+      - name: DB_TRANSACTION_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: {{ $secretName }}
+            key: DB_TRANSACTION_PASSWORD
+      {{- end }}
+      {{- else }}
+      {{- /* Multi-tenant: the licence store lives in Valkey, as for the ledger Deployment. */}}
+      {{- $vk := $values.valkey | default dict }}
+      {{- $vkAuth := $vk.auth | default dict }}
+      {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+      {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 6 }}
+      {{- end }}
+      {{- end }}
+    {{- with include "midaz.licenseFileVolumeMount" $values.ledger }}
+    volumeMounts:
+      {{- . | nindent 6 }}
+    {{- end }}
+    resources:
+      {{- toYaml $partition.resources | nindent 6 }}
+{{- with include "midaz.licenseFileVolume" $values.ledger }}
+volumes:
+  {{- . | nindent 2 }}
+{{- end }}
+{{- with $values.ledger.nodeSelector }}
+nodeSelector:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with $values.ledger.affinity }}
+affinity:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with $values.ledger.tolerations }}
+tolerations:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end -}}
+
+{{/* Inline values override stale ConfigMaps during pre-upgrade hooks. */}}
+{{- define "midaz-ledger.partitionInlineEnv" -}}
+{{- $cm := .Values.ledger.configmap | default dict -}}
+{{- $dsl := .Values.ledger.datastores -}}
+{{- $dv := "lerian-common.datastore.value" -}}
+{{- $mtEnabled := eq (include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false")) "true" }}
+DB_TRANSACTION_HOST: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "host" "nativeKey" "DB_TRANSACTION_HOST" "default" "midaz-postgresql-primary") | quote }}
+DB_TRANSACTION_PORT: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "port" "nativeKey" "DB_TRANSACTION_PORT" "default" "5432") | quote }}
+DB_TRANSACTION_NAME: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "name" "nativeKey" "DB_TRANSACTION_NAME" "default" "transaction") | quote }}
+DB_TRANSACTION_USER: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgresTransaction" "field" "user" "nativeKey" "DB_TRANSACTION_USER" "default" "midaz") | quote }}
+DB_TRANSACTION_SSLMODE: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
+MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
+{{ include "lerian-common.multiTenant.env" (dict "context" . "configmap" $cm "enabled" $mtEnabled "serviceName" "ledger" "emitRedis" true "requiredUrl" true "requiredRedisHost" true) }}
+{{- end -}}
+
+{{- define "midaz-ledger.licenseHookSecretName" -}}
+{{- printf "%s-license-hook" (include "midaz-ledger.fullname" .) -}}
+{{- end -}}
+
+{{/* Include the image tag in the immutable reconcile Job name. */}}
+{{- define "midaz-ledger.partitionReconcileJobName" -}}
+{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-ledger.fullname" .) "tag" (.Values.ledger.image.tag | default .Chart.AppVersion | toString) "suffix" "partition-reconcile") -}}
+{{- end -}}
+
+{{/*
+midaz-tracer.migrationsFullname — one Job name per rendered Job spec
+(dict "context" . "spec" <rendered spec>). The tracer Job is a regular release
+resource, and a Job spec is immutable, so the name has to change whenever the
+spec does: the migration image tag, then a hash of the spec. Re-running is safe:
+golang-migrate tracks progress in the schema_migrations table.
+*/}}
+{{- define "midaz-tracer.migrationsFullname" -}}
+{{- $tag := printf "%s-%s" (include "midaz-tracer.migrationsTag" .context) (sha256sum .spec | trunc 8) -}}
+{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-tracer.fullname" .context) "tag" $tag) -}}
+{{- end -}}
+
+{{- define "midaz-ledger.migrationsFullname" -}}
+{{- include "midaz.migrationsJobName" (dict "base" (include "midaz-ledger.fullname" .) "tag" (include "midaz-ledger.migrationsTag" .)) -}}
+{{- end -}}
+
+{{/* Preserve unique tag-derived names within the Kubernetes length limit. */}}
+{{- define "midaz.migrationsJobName" -}}
+{{- $suffix := .suffix | default "migrations" -}}
+{{- $tag := regexReplaceAll "[^a-z0-9.]+" (lower .tag) "-" -}}
+{{- $name := printf "%s-%s-%s" .base $suffix $tag -}}
+{{- if le (len $name) 63 -}}
+{{- $name | trimSuffix "-" | trimSuffix "." -}}
+{{- else -}}
+{{- /* base + "-" + suffix + "-" + 8-char hash stays within 62 characters
+       (42 for the "migrations" suffix, as before). */ -}}
+{{- printf "%s-%s-%s" (trunc (int (sub 52 (len $suffix))) .base | trimSuffix "-" | trimSuffix ".") $suffix (sha256sum $tag | trunc 8) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Migration-runner image tags default to the matching application image tag so the
+schema and the binary reading it can never drift when only one is bumped.
+*/}}
+{{- define "midaz-tracer.migrationsTag" -}}
+{{- dig "migrations" "image" "tag" "" .Values.tracer | default .Values.tracer.image.tag | default .Chart.AppVersion -}}
+{{- end -}}
+
+{{- define "midaz-ledger.migrationsTag" -}}
+{{- dig "migrations" "image" "tag" "" .Values.ledger | default .Values.ledger.image.tag | default .Chart.AppVersion -}}
+{{- end -}}
+
+{{/*
+midaz-tracer.validate — render-time mirror of the tracer bootstrap validators
+(components/tracer/internal/bootstrap). Every rule below is a configuration the
+v4 process rejects at boot, so failing the render turns a CrashLoopBackOff into
+a helm error the operator can read.
+*/}}
+{{- define "midaz-tracer.validate" -}}
+{{- $tracer := .Values.tracer -}}
+{{- $cm := $tracer.configmap | default dict -}}
+{{- $secrets := $tracer.secrets | default dict -}}
+{{- $extra := $tracer.extraEnvVars | default dict -}}
+{{- if and $tracer.useExistingSecret (not $tracer.existingSecretName) -}}
+{{- fail "tracer.useExistingSecret=true requires tracer.existingSecretName (an empty secretRef.name is rejected by the API server)" -}}
+{{- end -}}
+{{- if include "midaz.isTrue" ($cm.API_KEY_ENABLED | default "false") -}}
+{{- if and (not $secrets.API_KEY) (not $tracer.useExistingSecret) -}}
+{{- fail "tracer.secrets.API_KEY is required when API_KEY_ENABLED=true (ValidateAuthConfig rejects an empty key at boot); or set tracer.useExistingSecret" -}}
+{{- end -}}
+{{- if eq ($cm.CORS_ALLOWED_ORIGINS | default "*" | toString) "*" -}}
+{{- fail "tracer.configmap.CORS_ALLOWED_ORIGINS=\"*\" is rejected at boot when API_KEY_ENABLED=true: any site could drive authenticated calls once the key leaks. Set a concrete origin allow-list" -}}
+{{- end -}}
+{{- end -}}
+{{- if include "midaz.isTrue" ($cm.MULTI_TENANT_ENABLED | default "false") -}}
+{{- if not (include "midaz.isTrue" ($cm.PLUGIN_AUTH_ENABLED | default "false")) -}}
+{{- fail "tracer.configmap.PLUGIN_AUTH_ENABLED must be \"true\" when MULTI_TENANT_ENABLED=true: API-key-only auth cannot verify tenant JWT signatures, so any caller could forge a tenantId" -}}
+{{- end -}}
+{{- if or (include "midaz.isTrue" ($cm.API_KEY_ENABLED_ONLY_VALIDATION | default "false")) (include "midaz.isTrue" (dig "API_KEY_ENABLED_ONLY_VALIDATION" "false" $extra)) -}}
+{{- fail "API_KEY_ENABLED_ONLY_VALIDATION=true is incompatible with MULTI_TENANT_ENABLED=true: it lets /v1/validations bypass plugin auth, reopening cross-tenant forgery" -}}
+{{- end -}}
+{{- if and (not $secrets.MULTI_TENANT_SERVICE_API_KEY) (not $tracer.useExistingSecret) -}}
+{{- fail "tracer.secrets.MULTI_TENANT_SERVICE_API_KEY is required when MULTI_TENANT_ENABLED=true" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+midaz.isTrue — "true" when the value is one of the tokens strconv.ParseBool
+accepts as true, "" otherwise. Midaz loads boolean env vars through ParseBool,
+so `TRUE`, `True`, `1`, `t` and `T` all enable a feature at runtime; comparing
+against the literal string "true" would let those render past a validation the
+process then fails, and would reject a valid `PLUGIN_AUTH_ENABLED=TRUE`.
+Matching is exact (no trimming), like ParseBool: " true" is false at runtime.
+*/}}
+{{- define "midaz.isTrue" -}}
+{{- if has (. | toString) (list "1" "t" "T" "TRUE" "true" "True") -}}true{{- end -}}
+{{- end -}}
+
+{{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "midaz.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
+{{- end }}
+
+{{/*
+midaz.postgresqlPrimaryHost — in-cluster hostname of the bundled PostgreSQL
+primary for THIS release, so a release named something other than `midaz` still
+resolves its database. Bitnami names the Service `<fullname>-primary` in the
+replication topology and `<fullname>` when standalone. Returns "" when
+PostgreSQL is external, where only the operator knows the address.
+*/}}
+{{- define "midaz.postgresqlPrimaryHost" -}}
+{{- $pg := .Values.postgresql | default dict -}}
+{{- if and (ne (toString $pg.enabled) "false") (not $pg.external) -}}
+{{- $fullname := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" $pg "context" .) -}}
+{{- if eq ($pg.architecture | default "standalone") "replication" -}}
+{{- printf "%s-primary" $fullname -}}
+{{- else -}}
+{{- $fullname -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+midaz-tracer.dbHost — explicit tracer.configmap.DB_HOST, else the bundled
+PostgreSQL primary of this release. Fails when neither is available, which is
+the external-PostgreSQL case where a wrong guess would silently point the
+Deployment and the migration Job at a host that does not exist.
+*/}}
+{{/*
+midaz-tracer.grpcPort — the numeric gRPC container/Service port, kept in sync with the app's
+listen address. The tracer always serves the reservation seam over gRPC (":4021" when
+TRACER_GRPC_PORT is unset), so the port is always published. When
+tracer.configmap.TRACER_GRPC_PORT is set (e.g. ":5000") the port is its numeric tail; otherwise
+tracer.service.grpcPort (default 4021). Prevents the container/Service from exposing 4021 while
+the app listens on a custom TRACER_GRPC_PORT.
+*/}}
+{{- define "midaz-tracer.grpcPort" -}}
+{{- $listen := (.Values.tracer.configmap | default dict).TRACER_GRPC_PORT -}}
+{{- if $listen -}}
+{{- regexFind "[0-9]+$" (toString $listen) -}}
+{{- else -}}
+{{- .Values.tracer.service.grpcPort | default 4021 -}}
+{{- end -}}
+{{- end }}
+
+{{- define "midaz-tracer.dbHost" -}}
+{{- $explicit := (.Values.tracer.configmap | default dict).DB_HOST -}}
+{{- if $explicit -}}
+{{- $explicit -}}
+{{- else -}}
+{{- $bundled := include "midaz.postgresqlPrimaryHost" . -}}
+{{- if $bundled -}}
+{{- $bundled -}}
+{{- else -}}
+{{- fail "tracer.configmap.DB_HOST is required when PostgreSQL is external (postgresql.enabled=false / postgresql.external=true)" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+midaz.validateLcryptoKey — LCRYPTO_ENCRYPT_SECRET_KEY is hex-decoded and handed
+to aes.NewCipher (lib-commons Crypto.InitializeCipher), so it must be hex
+encoding 16, 24 or 32 bytes. A non-hex value fails at boot with
+"encoding/hex: invalid byte" and a wrong length with "crypto/aes: invalid key
+size", both of which this catches at render time instead. Only applies to keys
+supplied through values; an existing Secret is opaque to the chart.
+*/}}
+{{- define "midaz.validateLcryptoKey" -}}
+{{- $key := .key | toString -}}
+{{- /* Skip validation when the value is a secret-manager INJECTION PLACEHOLDER, not the literal
+   key: ArgoCD-Vault-Plugin `<path:secret/...#K>`, envsubst `${VAR}`, or any `<...>` token. The
+   real hex key is substituted AFTER `helm template`, so hex-validating the placeholder would
+   hard-fail the render in every Vault/AVP-backed environment. Literal values
+   (operator-supplied or the CI fixture) are still validated. */ -}}
+{{- if or (hasPrefix "<" $key) (contains "<path:" $key) (contains "${" $key) -}}
+{{- /* injected at deploy time — trust the secret manager */ -}}
+{{- else if $key -}}
+{{- if not (regexMatch "^[0-9a-fA-F]+$" $key) -}}
+{{- fail (printf "%s must be a hex-encoded AES key (0-9a-f only): it is hex-decoded before aes.NewCipher, so a non-hex value fails at boot" .name) -}}
+{{- end -}}
+{{- if not (has (len $key) (list 32 48 64)) -}}
+{{- fail (printf "%s must be 32, 48 or 64 hex characters (AES-128/192/256); got %d" .name (len $key)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+midaz.validateManagedMongo — fail-fast when the operator runs on an EXTERNAL /
+MANAGED Mongo (mongodb.enabled=false, so the packaged mongodb subchart is NOT
+deployed) but has NOT told the ledger where the CRM and/or Fees Mongo lives.
+
+Why this is needed: the ledger configmap resolves MONGO_CRM_HOST /
+MONGO_FEES_HOST through lerian-common.datastore.value with a hardcoded default
+of "midaz-mongodb" (the packaged service name — see
+templates/ledger/configmap.yaml MONGO_CRM_HOST / MONGO_FEES_HOST). When the
+packaged Mongo is disabled and no host override is provided, those keys
+SILENTLY point at a Service that does not exist. The ledger init container
+`wait-for-dependencies` (templates/ledger/deployment.yaml) hard-gates on ALL 9
+dependencies — including MONGO_CRM_HOST and MONGO_FEES_HOST, regardless of
+crm.enabled — so the pod never starts: it CrashLoops after the init timeout
+(ledger.initContainer.timeoutSeconds, default 300s).
+
+We resolve the EFFECTIVE host through the SAME datastore.value include (same
+value-precedence expression the configmap uses), so the guard and the rendered
+value can never disagree. If either resolves to the packaged default
+"midaz-mongodb" while packaged Mongo is disabled, we `fail` with an actionable
+message naming the exact keys.
+
+Reachability is NOT (and cannot be) checked — helm template is offline. This is
+a values-level conditional-required constraint only. `global.cloud` presets set
+Mongo TOPOLOGY (tls/params/scheme), never the host, so they do not satisfy it.
+
+Call early from templates/ledger/configmap.yaml with (dict "context" $).
+Only active when .Values.mongodb.enabled is false (default true = packaged Mongo,
+behavior unchanged).
+*/}}
+{{- define "midaz.validateManagedMongo" -}}
+{{- $ctx := .context -}}
+{{- $mongo := $ctx.Values.mongodb | default dict -}}
+{{- $packagedEnabled := true -}}
+{{- if hasKey $mongo "enabled" -}}{{- $packagedEnabled = $mongo.enabled -}}{{- end -}}
+{{- if not $packagedEnabled -}}
+{{- $cm := $ctx.Values.ledger.configmap | default dict -}}
+{{- $ded := $ctx.Values.ledger.datastores | default dict -}}
+{{- $crmHost := include "lerian-common.datastore.value" (dict "context" $ctx "dedicated" $ded "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") -}}
+{{- $feesHost := include "lerian-common.datastore.value" (dict "context" $ctx "dedicated" $ded "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") -}}
+{{- $unset := list -}}
+{{- if eq $crmHost "midaz-mongodb" -}}{{- $unset = append $unset "CRM" -}}{{- end -}}
+{{- if eq $feesHost "midaz-mongodb" -}}{{- $unset = append $unset "Fees" -}}{{- end -}}
+{{- if $unset -}}
+{{- fail (printf "\n\nmidaz: managed/external Mongo is selected (mongodb.enabled=false) but the %s Mongo host is not set.\nThe ledger still needs a reachable Mongo for CRM and Fees (they are folded into the ledger binary), and the ledger init container hard-gates on MONGO_CRM_HOST and MONGO_FEES_HOST regardless of crm.enabled. With the packaged Mongo disabled and no host override, these default to the packaged Service \"midaz-mongodb\" (which is not deployed), so the ledger pod CrashLoops after ledger.initContainer.timeoutSeconds (default 300s).\n\nSet the host(s) explicitly, e.g.:\n  --set global.datastores.mongoCrm.host=<your-mongo-host> --set global.datastores.mongoFees.host=<your-mongo-host>\nor per-component:\n  ledger.datastores.mongoCrm.host / ledger.datastores.mongoFees.host\nor as a native override:\n  ledger.configmap.MONGO_CRM_HOST / ledger.configmap.MONGO_FEES_HOST\n\nSee charts/midaz/docs/UPGRADE-9.1.md section 6 (Ledger CRM and Fees module integration).\n" (join " and " $unset)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Health preset inputs per component. minImage is the first Midaz image that serves
+/health and /readyz on HEALTH_PORT 8099. An image.tag below it keeps the 4.4 layout
+(midaz.healthLegacy); at or above it the preset owns probes, ports, PDB and rollout.
+*/}}
+{{- define "midaz.healthMinImage" -}}4.5.0-beta.94{{- end -}}
+
+{{/* "true" when the component's effective image tag is a SemVer below minImage. */}}
+{{- define "midaz.belowHealthMin" -}}
+{{- $tag := toString (.component.image.tag | default .context.Chart.AppVersion) -}}
+{{- if and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $tag) (lt ((semver $tag).Compare (semver (include "midaz.healthMinImage" .context))) 0) -}}true{{- end -}}
+{{- end -}}
+
+{{/*
+The 4.4 layout in the preset's output shape (dict name, component, context): the images
+below minImage serve /health and /readyz on the main port and read no HEALTH_PORT.
+Operator keys: probes, terminationGracePeriodSeconds, deploymentUpdate, pdb.
+*/}}
+{{- define "midaz.healthLegacy" -}}
+{{- $c := .component -}}
+{{- $ledger := eq .name "ledger" -}}
+{{- $du := dig "deploymentUpdate" dict $c -}}
+{{- $type := $du.type | default "RollingUpdate" -}}
+{{- $strategy := dict "type" $type -}}
+{{- if eq $type "RollingUpdate" -}}
+{{- $_ := set $strategy "rollingUpdate" (dict "maxSurge" (dig "maxSurge" (ternary "100%" 1 $ledger) $du) "maxUnavailable" (dig "maxUnavailable" 0 $du)) -}}
+{{- end -}}
+{{- $port := ternary "http" (int $c.service.port) $ledger -}}
+{{- $lp := dig "livenessProbe" dict $c -}}
+{{- $rp := dig "readinessProbe" dict $c -}}
+{{- $live := dict "httpGet" (dict "path" ($lp.path | default "/health") "port" $port) "initialDelaySeconds" ($lp.initialDelaySeconds | default (ternary 0 15 $ledger)) "periodSeconds" ($lp.periodSeconds | default (ternary 10 20 $ledger)) "timeoutSeconds" ($lp.timeoutSeconds | default (ternary 3 5 $ledger)) "successThreshold" ($lp.successThreshold | default 1) "failureThreshold" ($lp.failureThreshold | default 3) -}}
+{{- $ready := dict "httpGet" (dict "path" ($rp.path | default "/readyz") "port" $port) "initialDelaySeconds" ($rp.initialDelaySeconds | default (ternary 0 5 $ledger)) "periodSeconds" ($rp.periodSeconds | default 10) "timeoutSeconds" ($rp.timeoutSeconds | default (ternary 16 5 $ledger)) "successThreshold" ($rp.successThreshold | default 1) "failureThreshold" ($rp.failureThreshold | default 3) -}}
+{{- $pdb := $c.pdb | default dict -}}
+{{- $out := dict "strategy" $strategy "terminationGracePeriodSeconds" (dig "terminationGracePeriodSeconds" (ternary 72 55 $ledger) $c) "env" (list (dict "name" "SHUTDOWN_DRAIN_DELAY" "value" "15s")) "livenessProbe" $live "readinessProbe" $ready "autoscaling" (dict "minReplicas" $c.autoscaling.minReplicas) -}}
+{{- if $pdb.minAvailable -}}
+{{- $_ := set $out "pdb" (dict "minAvailable" $pdb.minAvailable) -}}
+{{- else -}}
+{{- $_ := set $out "pdb" (dict "maxUnavailable" (dig "maxUnavailable" 1 $pdb)) -}}
+{{- end -}}
+{{- if not $c.autoscaling.enabled -}}{{- $_ := set $out "replicas" $c.replicaCount -}}{{- end -}}
+{{- toYaml $out -}}
+{{- end -}}
+
+{{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "midaz.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.component.pdb | default dict) $k -}}{{- fail (printf "midaz: %s.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- if $.component.deploymentUpdate -}}{{- fail (printf "midaz: %s.deploymentUpdate is owned by the health preset (RollingUpdate); remove it" $.name) -}}{{- end -}}
+{{- end -}}
+
+{{- define "midaz-ledger.health" -}}
+{{- if include "midaz.belowHealthMin" (dict "component" .Values.ledger "context" .) -}}
+{{- include "midaz.healthLegacy" (dict "name" "ledger" "component" .Values.ledger) -}}
+{{- else -}}
+{{- include "midaz.presetOwned" (dict "name" "ledger" "component" .Values.ledger) -}}
+{{- include "lerian-common.health" (dict "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health "port" (int .Values.ledger.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "midaz-tracer.health" -}}
+{{- if include "midaz.belowHealthMin" (dict "component" .Values.tracer "context" .) -}}
+{{- include "midaz.healthLegacy" (dict "name" "tracer" "component" .Values.tracer) -}}
+{{- else -}}
+{{- include "midaz.presetOwned" (dict "name" "tracer" "component" .Values.tracer) -}}
+{{- include "lerian-common.health" (dict "name" "tracer" "component" .Values.tracer "health" .Values.tracer.health "port" (int .Values.tracer.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.tracer.replicaCount "autoscaling" .Values.tracer.autoscaling) -}}
 {{- end -}}
 {{- end -}}

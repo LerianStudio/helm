@@ -17,5 +17,8 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    {{- if eq (.Values.manager.service.type | default "ClusterIP") "ClusterIP" }}
+    {{- toYaml (include "reporter.manager.health" . | fromYaml).servicePorts | nindent 4 }}
+    {{- end }}
   selector:
     {{- include "plugin-manager.selectorLabels" (dict "context" . "name" .Values.manager.name) | nindent 4 }}

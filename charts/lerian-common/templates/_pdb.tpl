@@ -26,7 +26,7 @@ Usage (chart pdb.yaml):
   {{- end }}
 
 Inputs (dict):
-  pdb                 (req)  the component's `.pdb` map (minAvailable/maxUnavailable/annotations)
+  pdb                 (req)  the component's `.pdb` map (minAvailable/maxUnavailable/unhealthyPodEvictionPolicy/annotations)
   name                (req)  metadata.name (already rendered)
   labels              (req)  labels block already rendered (no leading indent)
   selector            (req)  selector labels block already rendered (no leading indent)
@@ -72,6 +72,9 @@ spec:
   {{- else }}
   minAvailable: {{ $miDefault }}
   {{- end }}
+  {{- end }}
+  {{- with $pdb.unhealthyPodEvictionPolicy }}
+  unhealthyPodEvictionPolicy: {{ . }}
   {{- end }}
   selector:
     matchLabels:

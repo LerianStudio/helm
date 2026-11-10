@@ -34,25 +34,235 @@ via `include` by the product charts that declare it as a dependency.
   `configmap.<KEY>` > `defaults.<KEY>` > `""`, presence-based). Each chart opts into
   its own SUBSET + ORDER via `keys` and its per-key defaults via `defaults`; adoption
   is a zero-diff refactor, before optionally migrating to the derivation helpers above.
+- **Access Manager permission declaration:** `lerian-common.idp.env`,
+  `lerian-common.idp.secret`, `lerian-common.idp.keys` — the four env keys lib-auth's
+  `declaration.WireFromEnv` reads. See [Permission declaration](#permission-declaration-idp_).
 - **In-cluster host primitives:** `lerian-common.internalHost`, `lerian-common.internalURL`.
 - **Resource helpers:** `lerian-common.hpa`, `.service`, `.serviceAccount`, `.pdb`, `.ingress`.
-- **Deployment pod-spec fragments:** `lerian-common.scheduling`, `.imagePullSecrets`,
-  `.httpProbe`, `.rolesAnywhere.{sidecar,volume,imdsEnv,podSecurityContext}`.
+- **Deployment pod-spec fragments:** `lerian-common.scheduling`, `.topologySpreadConstraints`,
+  `.imagePullSecrets`, `.httpProbe`, `.rolesAnywhere.{sidecar,volume,imdsEnv,podSecurityContext}`.
+  See [Pod spreading](#pod-spreading-topologyspreadconstraints).
 - **Dependency helpers:** `lerian-common.dependency.fullname`, `.infraSecretRef`.
 - **`lerian-common.deploymentStrategy`.**
+- **Health preset:** `lerian-common.health`, `lerian-common.health.prometheusRule`, plus the `healthcheck`
+  input of `.ingress` and `unhealthyPodEvictionPolicy` in `.pdb`. See [Health preset](#health-preset).
 
-See `values.yaml` for the standard `global.{serviceDiscovery,streaming,multiTenant}` template.
+See `values.yaml` for the standard `global.{serviceDiscovery,streaming,multiTenant,idp}` template.
+
+## Pod spreading (topologySpreadConstraints)
+
+`lerian-common.scheduling` accepts two input shapes:
+
+1. **The component values map** (original contract) — renders `nodeSelector` /
+   `affinity` / `tolerations` only. Output is byte-identical to earlier releases;
+   no `topologySpreadConstraints` is ever rendered. Keep this shape for Jobs.
+2. **A dict with `component` + `selectorLabels`** (and optional `global`) — renders
+   the same three fields plus the `topologySpreadConstraints` resolved by
+   `lerian-common.topologySpreadConstraints` (also callable on its own by charts
+   that hand-write the other scheduling fields).
+
+{% raw %}
+```yaml
+# consumer templates/<component>/deployment.yaml (pod spec, column 6)
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.manager
+            "global" .Values.global
+            "selectorLabels" (include "myapp.manager.selectorLabels" .)) | trim) }}
+      {{- . | nindent 6 }}
+      {{- end }}
+```
+{% endraw %}
+
+`selectorLabels` must be exactly the Deployment's `spec.selector.matchLabels` (a
+dict, or the YAML string the chart's selectorLabels helper renders). The library
+never guesses labels.
+
+Resolution, first match wins:
+
+1. `<component>.topologySpreadConstraints` — non-empty raw list, replaces the preset
+   entirely. An entry without `labelSelector` gets the component's selector labels.
+2. The `spread` preset, **field by field**: `<component>.spread.<field>` >
+   `global.scheduling.spread.<field>` > built-in (`enabled: false`, `hostname: ""`,
+   `zone: ""`, `maxSkew: 1`, `minDomains: 0`, `nodeTaintsPolicy: ""`).
+3. Nothing.
+
+| Field | Values | Renders |
+|-------|--------|---------|
+| `enabled` | bool | master switch for the preset |
+| `hostname` | `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off) | constraint on `kubernetes.io/hostname` |
+| `zone` | `ScheduleAnyway` \| `DoNotSchedule` \| `""` (off) | constraint on `topology.kubernetes.io/zone` |
+| `maxSkew` | integer >= 1 (default 1) | `maxSkew` of every preset constraint |
+| `minDomains` | integer >= 0 (default 0 = off) | `minDomains` of every `DoNotSchedule` preset constraint (the API rejects it with `ScheduleAnyway`) |
+| `nodeTaintsPolicy` | `Honor` \| `Ignore` \| `""` (default, omitted = Kubernetes `Ignore`) | `nodeTaintsPolicy` of every preset constraint |
+
+`minDomains` closes a gap of hard spreads (Kubernetes >= 1.30). Skew is measured only
+against domains that already exist, so with a single eligible node, `hostname:
+DoNotSchedule` + `maxSkew: 1` still lets every replica land on it (e.g. 2 replicas on a
+fresh 1-node Karpenter pool). With `minDomains: 2` the scheduler treats the missing
+domain as empty: the second replica stays `Pending` until another node exists, and
+Karpenter (which honours `minDomains`) launches it. Use it with `DoNotSchedule` on
+autoscaled clusters; on fixed-size clusters it can leave pods `Pending`.
+
+`nodeTaintsPolicy: Honor` counts only nodes whose taints the pod tolerates. With the
+Kubernetes default (`Ignore`) a tainted node still counts as a domain: a node Karpenter
+is draining (`karpenter.sh/disrupted:NoSchedule`) or a dedicated tainted pool matched by
+the node affinity distorts the skew and can satisfy `minDomains` without being able to
+run the pod.
+
+Every preset constraint carries `labelSelector.matchLabels: <selectorLabels>` and
+`matchLabelKeys: [pod-template-hash]`, so only pods of the same ReplicaSet are
+counted and a rolling update never deadlocks on the old ReplicaSet's pods
+(Kubernetes >= 1.27 with the `MatchLabelKeysInPodTopologySpread` feature gate
+enabled: beta since 1.27 and on by default, including 1.33, but it can be disabled).
+Invalid input fails the render with an explicit
+`lerian-common.topologySpreadConstraints: ...` message (unknown field, non-bool
+`enabled`, bad `whenUnsatisfiable`, `maxSkew` < 1 or non-integer, `minDomains` < 0 or
+non-integer, bad `nodeTaintsPolicy`, non-list raw
+constraints, empty `selectorLabels`).
+
+A library chart cannot ship defaults to its consumers: each consumer declares the
+keys in its own `values.yaml` and `values.schema.json`. Recommended consumer
+defaults (soft, so an upgrade never leaves pods `Pending`):
+
+```yaml
+global:
+  scheduling:
+    spread: { enabled: true, hostname: ScheduleAnyway, zone: "", maxSkew: 1 }
+<component>:
+  spread: {}
+  topologySpreadConstraints: []
+```
+
+Zone is off in the recommended default: when scoring a soft spread the scheduler skips
+every node lacking the `topology.kubernetes.io/zone` label, so on clusters without zone
+labels (bare-metal, k3s) a zone constraint silently cancels the hostname spread. EKS +
+Karpenter environments typically set:
+
+```yaml
+global:
+  scheduling:
+    spread: { hostname: DoNotSchedule, zone: ScheduleAnyway, maxSkew: 1, minDomains: 2, nodeTaintsPolicy: Honor }
+```
+
+`global.scheduling` may hold other env-wide scheduling keys (e.g. `nodeSelector`,
+`tolerations` in charts that support them); this helper reads only
+`global.scheduling.spread`.
+
+## Health preset
+
+`lerian-common.health` renders everything the cluster needs to run a component's health contract: the
+container's `health` port (8099, on the main container only; an internal ClusterIP Service port, never an
+Ingress backend), the `HEALTH_PORT`, `SHUTDOWN_DRAIN_DELAY` and `SHUTDOWN_TIMEOUT` env, the startup, liveness and readiness probes, the `preStop`
+sleep, `terminationGracePeriodSeconds`, the rollout strategy, replicas and the PDB. Liveness is
+process-only; a shared dependency is reported by `/readyz`, it never takes the pod out of the Service.
+Paths, ports, timings, strategy and grace are **not** values: the render refuses a component that also
+sets `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePeriodSeconds`, or carries
+`SHUTDOWN_DRAIN_DELAY`, `SHUTDOWN_TIMEOUT` or `HEALTH_PORT` in `configmap`.
+
+```yaml
+<component>:
+  health:
+    stack: go            # go | go-worker | next | static | external
+    drainSeconds: 15     # go: SHUTDOWN_DRAIN_DELAY; next/external: preStop sleep; go-worker: forced 0
+    shutdownSeconds: 30  # SHUTDOWN_TIMEOUT, the budget after the drain
+    singleton: false     # true: 1 replica, Recreate, no PDB, no autoscaling
+    # external only: livenessPath, readinessPath (required), port, startupBudgetSeconds (300, min 5)
+```
+
+| Stack | Probes | Drain | Grace |
+|---|---|---|---|
+| go | health port `/health`, `/readyz` | app (env) | D + T + 10 |
+| go-worker | as go | D = 0 | T + 10 |
+| next | main port `/api/admin/health/alive`, `/api/admin/health/readyz` | preStop sleep D | D + 15 |
+| static | main port `/healthz` | preStop sleep 5 | 15 |
+| external | the app's paths | preStop sleep D | D + T + 10 |
+
+Probe timings are fixed: startup 5s/3s x 60 (300s budget), liveness 10s/3s x 3, readiness 5s/3s x 3.
+Rollout: `RollingUpdate` 25% surge, 0 unavailable; `replicas` is 2 unless the caller passes a count (an
+explicit 0 is honored; pass nothing, not the chart's `replicaCount: 1`, to get 2). With autoscaling
+enabled on a non-singleton, the preset returns no `replicas` (render `spec.replicas` only when the key exists); pass `$h.autoscaling` to `lerian-common.hpa`: it is the
+caller's map with `minReplicas` defaulted to 2 when unset (an explicit value wins); as with `replicaCount`,
+delete the chart's own `minReplicas: 1` default, since the preset cannot tell a chart default from a client
+value. A singleton refuses autoscaling. The PDB is `maxUnavailable: 1` with `unhealthyPodEvictionPolicy: AlwaysAllow`.
+`drainSeconds` (>= 0), `shutdownSeconds` (>= 1: the lib refuses to boot with `SHUTDOWN_TIMEOUT` <= 0) and
+`startupBudgetSeconds` (>= 5) must be integers (seconds, not `15s`). Keys a stack does not use
+(`drainSeconds` on static and go-worker, `shutdownSeconds` on next and static) are ignored.
+The ALB annotations need `target-type: ip`.
+
+Usage: see the example in the header of `templates/_health.tpl`.
+
+- **Service port:** stack `go` also returns `servicePorts`, the named `health` 8099 -> targetPort 8099 port
+  (TCP, ClusterIP) for in-cluster callers by DNS name. Pass it as `ports` to `lerian-common.service`; it
+  lands after `http`, and only on a ClusterIP Service (a LoadBalancer or NodePort Service keeps `http`
+  alone). `go-worker` returns none (no Service) and `next`, `static` and `external` serve nothing on 8099.
+  `lerian-common.ingress` refuses a `svcPort` of 8099. A multi-tenant app that registers lib-commons `commons/health`
+  `WithTenantChecks` also serves `GET /readyz/tenant/:id` on this port, with no JWT, so only in-cluster workloads
+  may reach it.
+
+- **`minImage`** is passed by the chart (the first image that serves the health port), never a client value.
+  The render fails when `image.tag` is a semver below it; other tags skip the check.
+- **ALB:** with `className: alb` and `healthcheck`, the Ingress gets the target-group annotations: the
+  stack's main-port liveness path, the container port **number** (never `traffic-port`), success code 200,
+  10s interval, thresholds 2. They win over a same-key annotation.
+- **PrometheusRule:** `monitoring.prometheusRule.enabled` (default false, optional `labels`) renders the
+  health alerts through `lerian-common.health.prometheusRule`. The `health_*` rules need the service's OTLP
+  metrics in the client's Prometheus; the `kube_*` rules work on any kube-prometheus-stack.
+- **Tests:** `helm dependency build charts/lerian-common/tests/fixture && helm unittest charts/lerian-common/tests/fixture`.
+
+## Permission declaration (IDP_*)
+
+lib-auth's `declaration.WireFromEnv` publishes the app's permission manifest to the
+Access Manager at boot. The helpers split its four keys between the ConfigMap and the
+Secret:
+
+| Key | Helper | Source (highest first) | Rendered |
+|---|---|---|---|
+| `IDP_DECLARATION_ENABLED` | `idp.env` | `configmap` > `extraEnvVars` (legacy) > `global.idp.declarationEnabled` > `"false"` | always |
+| `IDP_HOST` | `idp.env` | `configmap` > `extraEnvVars` (legacy) > `global.idp.host` > `""` | only when non-empty |
+| `IDP_M2M_CLIENT_ID` | `idp.secret` | the component's secrets map | only when set; nothing with `useExistingSecret` |
+| `IDP_M2M_CLIENT_SECRET` | `idp.secret` | the component's secrets map | only when set; nothing with `useExistingSecret` |
+
+With the gate on, the app refuses to boot without the host and the client pair. The
+credentials are per component, so keep the gate per component too (`configmap`) and use
+`global.idp.host` for the env-wide host; `global.idp.declarationEnabled` turns the gate
+on for every component of the release.
+
+A chart that also ranges over its `configmap`, `extraEnvVars` or `secrets` must skip the
+keys the helpers own, or the key is emitted twice:
+
+<!-- {% raw %} -->
+```yaml
+# configmap.yaml, under data:
+{{- $idpEnv := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
+{{- range $k, $v := .Values.app.configmap }}
+{{- if not (has $k $idpEnv) }}
+{{ $k }}: {{ $v | quote }}
+{{- end }}
+{{- end }}
+{{- include "lerian-common.idp.env" (dict "context" $
+      "configmap" .Values.app.configmap "extraEnvVars" .Values.app.extraEnvVars) | nindent 2 }}
+
+# secrets.yaml, under data: (mode "data") or stringData: (mode "stringData")
+{{- with (include "lerian-common.idp.secret" (dict "secrets" .Values.app.secrets
+      "mode" "data" "useExistingSecret" .Values.app.useExistingSecret)) }}
+{{- . | nindent 2 }}
+{{- end }}
+```
+<!-- {% endraw %} -->
+
+`kind` selects `"env"` (ConfigMap keys), `"secret"` (Secret keys) or, when omitted, all four.
 
 ## Usage
 
 ```yaml
 # consumer Chart.yaml
 dependencies:
-  - name: lerian-common
-    version: "0.1.0"
-    repository: "file://../lerian-common"
+  - name: lerian-common-helm
+    version: "2.6.0"
+    repository: "oci://ghcr.io/lerianstudio"
 ```
 
+<!-- {% raw %} -->
 ```yaml
 # consumer template (example)
 {{- with (include "lerian-common.serviceDiscovery.env" (dict
@@ -61,14 +271,16 @@ dependencies:
 {{ . | nindent 2 }}
 {{- end }}
 ```
+<!-- {% endraw %} -->
 
 ## Chart Contract
 
 - Chart type: `library`
 - **Required secrets:** none — this is a library chart; it declares and manages no secrets.
-- **Dependency notes:** no subchart dependencies of its own. Consumers reference it via
-  `repository: "file://../lerian-common"` (monorepo) and vendor it at
+- **Dependency notes:** no subchart dependencies of its own. Consumers declare it as
+  `lerian-common-helm` from `repository: "oci://ghcr.io/lerianstudio"` and vendor it at
   `helm dependency build`; packaged consumer charts embed it in their `.tgz`.
-- **Production overrides:** set `global.serviceDiscovery`, `global.streaming` and
-  `global.multiTenant` once per environment (umbrella/GitOps). Helpers stay inert until set.
+- **Production overrides:** set `global.serviceDiscovery`, `global.streaming`,
+  `global.multiTenant` and `global.idp` once per environment (umbrella/GitOps). Helpers stay inert until enabled
+  (`idp.env` always emits `IDP_DECLARATION_ENABLED: "false"` while unset).
 - **Source/License:** https://github.com/LerianStudio/helm — © Lerian Studio.

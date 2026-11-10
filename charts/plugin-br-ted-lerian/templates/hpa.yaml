@@ -1,0 +1,9 @@
+{{- $h := include "plugin-br-ted-lerian.health" . | fromYaml }}
+{{- if and (index .Values "plugin-br-ted-lerian").enabled $h.autoscaling }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" $h.autoscaling
+      "name" (include "plugin-br-ted-lerian.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name))
+    ) }}
+{{- end }}

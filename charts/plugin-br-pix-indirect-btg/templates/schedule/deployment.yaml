@@ -1,3 +1,4 @@
+{{- $h := include "schedule.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,19 +7,24 @@ metadata:
     {{- include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | nindent 4 }} 
 spec:
   revisionHistoryLimit: {{ .Values.schedule.revisionHistoryLimit | default 10 }}
-  strategy:
-    {{- toYaml .Values.schedule.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.schedule.autoscaling.enabled }}
-  replicas: {{ .Values.schedule.replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "schedule.selectorLabels" (dict "context" . "name" .Values.schedule.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/schedule/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.schedule.useExistingSecrets }}
+        checksum/secret: {{ include (print $.Template.BasePath "/schedule/secrets.yaml") . | sha256sum }}
+        {{- end }}
       labels:
-        {{- include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | nindent 8 }}
+        {{- omit (include "schedule.labels" (dict "context" . "name" .Values.schedule.name ) | fromYaml) "helm.sh/chart" | toYaml | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.schedule.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -32,17 +38,17 @@ spec:
           image: {{ .Values.schedule.image.repository }}:{{ .Values.schedule.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.schedule.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.schedule.service.port }}
-              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
               name: {{ if .Values.schedule.useExistingSecrets }}{{ required "schedule.existingSecretName is required when schedule.useExistingSecrets is true" .Values.schedule.existingSecretName }}{{ else }}{{ include "schedule.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "schedule.fullname" . }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
-          {{- if $otelEnabled }}
           env:
+          {{- toYaml $h.env | nindent 10 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileEnv" . | trim) }}{{ . | nindent 10 }}{{- end }}
+          {{- if $otelEnabled }}
           - name: "HOST_IP"
             valueFrom:
               fieldRef:
@@ -52,24 +58,13 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.schedule.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.schedule.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.schedule.service.port }}
-            initialDelaySeconds: {{ .Values.schedule.readinessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.schedule.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.schedule.readinessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.schedule.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.schedule.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.schedule.livenessProbe.path | default "/health" }}
-              port: {{ .Values.schedule.service.port }}
-            initialDelaySeconds: {{ .Values.schedule.livenessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.schedule.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.schedule.livenessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.schedule.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.schedule.livenessProbe.failureThreshold | default 3 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileMount" . | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
       {{- with .Values.schedule.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -81,4 +76,8 @@ spec:
       {{- with .Values.schedule.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (include "plugin-br-pix-indirect-btg.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
       {{- end }}

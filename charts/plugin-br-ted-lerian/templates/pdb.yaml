@@ -1,0 +1,12 @@
+{{- if (index .Values "plugin-br-ted-lerian").enabled }}
+{{- $h := include "plugin-br-ted-lerian.health" . | fromYaml }}
+{{- if $h.pdb }}
+{{- include "lerian-common.pdb" (dict
+      "pdb" $h.pdb
+      "name" (include "plugin-br-ted-lerian.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-ted-lerian.labels" (dict "context" . "component" (index .Values "plugin-br-ted-lerian").name "name" (index .Values "plugin-br-ted-lerian").name))
+      "selector" (include "plugin-br-ted-lerian.selectorLabels" (dict "context" . "name" (index .Values "plugin-br-ted-lerian").name))
+    ) }}
+{{- end }}
+{{- end }}

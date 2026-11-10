@@ -41,7 +41,7 @@ bc-correios:
     tag: "1.2.0"
 ```
 
-> **Note:** For application-level changes included in version 1.2.0, refer to the [plugin-bc-correios changelog](https://github.com/LerianStudio/plugin-bc-correios).
+> **Note:** For application-level changes included in version 1.2.0, refer to the plugin-bc-correios changelog.
 
 ### 2. br-spb-bc-correios sibling image tag pinned
 
@@ -89,7 +89,7 @@ kubectl get pods -n <namespace>
 5. Check service logs for any startup issues
 
 ```bash
-kubectl logs -n <namespace> -l app.kubernetes.io/name=plugin-bc-correios-helm --tail=50
+kubectl logs -n <namespace> -l app.kubernetes.io/name=bc-correios,app.kubernetes.io/instance=plugin-bc-correios --tail=50
 ```
 
 > **Note:** The upgrade will trigger a rolling restart of the BC Correios pods. Depending on your replica count and readiness probe configuration, this may cause brief service interruptions.

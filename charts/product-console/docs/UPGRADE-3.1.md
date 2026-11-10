@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v3.0.0 to v3.1.0
 
 ## Topics
@@ -410,3 +411,4 @@ helm upgrade product-console oci://registry-1.docker.io/lerianstudio/product-con
   -f product-console-values.yaml \
   -n product-console
 ```
+<!-- {% endraw %} -->

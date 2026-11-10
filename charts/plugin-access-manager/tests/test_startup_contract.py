@@ -1,0 +1,739 @@
+#!/usr/bin/env python3
+"""Offline render checks for the v3.9 startup prerequisites. No cluster needed."""
+import base64
+import copy
+from pathlib import Path
+from typing import Any
+import subprocess
+import tempfile
+import unittest
+
+import yaml
+
+CHART = Path(__file__).resolve().parents[1]
+BASE = {
+    'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'},
+             'initUser': {'enabled': False}},
+    'identity': {'secrets': {'LICENSE_KEY': 'render-only'}},
+    'caradhras': {'secrets': {'LICENSE_KEY': 'render-only'}},
+}
+PRE_LICENSE = {'image': {'tag': '1.8.6'}}
+
+
+class UniqueLoader(yaml.SafeLoader):
+    """Reject duplicate keys rather than silently accepting ambiguous env."""
+
+
+def unique_map(loader, node, deep=False):
+    result = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in result:
+            raise ValueError(f'duplicate YAML key: {key}')
+        result[key] = loader.construct_object(value_node, deep=deep)
+    return result
+
+
+UniqueLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_map)
+
+
+def merge(target, patch):
+    for key, value in patch.items():
+        if isinstance(value, dict):
+            merge(target.setdefault(key, {}), value)
+        else:
+            target[key] = value
+
+
+def render(patch):
+    values = copy.deepcopy(BASE)
+    merge(values, patch)
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml') as f:
+        yaml.safe_dump(values, f)
+        f.flush()
+        return subprocess.run(['helm', 'template', 'startup-test', str(CHART),
+                               '-f', f.name], text=True, capture_output=True)
+
+
+def production() -> dict[str, Any]:
+    return {'global': {'env': {'name': 'production'}},
+            'auth': {'configmap': {'AUTHORIZER_ADDRESS': 'https://idp.example.test'}},
+            'identity': {'configmap': {'AUTHORIZER_ADDRESS': 'https://idp.example.test'}}}
+
+
+class StartupContract(unittest.TestCase):
+    def succeeds(self, patch):
+        result = render(patch)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return [d for d in yaml.load_all(result.stdout, Loader=UniqueLoader) if d]
+
+    def fails(self, patch, message):
+        result = render(patch)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(message, result.stderr)
+
+    def crash_loops(self, patch, *components):
+        """validateJwksTls names every failing component in one error."""
+        self.fails(patch, f"plugin-access-manager: {' and '.join(components)} would crash-loop")
+
+    def test_default_images_and_no_scale_to_zero(self):
+        docs = self.succeeds({})
+        values = yaml.safe_load((CHART / 'values.yaml').read_text())
+        app_version = str(yaml.safe_load((CHART / 'Chart.yaml').read_text())['appVersion'])
+        for component in ('auth', 'identity'):
+            image = values[component]['image']
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-' + component))
+            self.assertEqual(deployment['spec']['template']['spec']['containers'][0]['image'],
+                             f"{image['repository']}:{image.get('tag') or app_version}")
+        image = values['caradhras']['image']
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        self.assertEqual(deployment['spec']['template']['spec']['containers'][0]['image'],
+                         f"{image['repository']}:{image['tag']}")
+        override = {'caradhras': {'migrations': {'image': {
+            'repository': 'example.test/migrations', 'tag': 'render-test'}}}}
+        deployment = next(d for d in self.succeeds(override) if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        migrate = next(c for c in deployment['spec']['template']['spec']['initContainers']
+                       if c['name'] == 'migrate')
+        self.assertEqual(migrate['image'], 'example.test/migrations:render-test')
+        for d in docs:
+            if d['kind'] == 'HorizontalPodAutoscaler':
+                self.assertGreaterEqual(d['spec']['minReplicas'], 1)
+
+    def test_migrations_tag_follows_the_server_tag(self):
+        def migrate_image(caradhras):
+            d = next(d for d in self.succeeds({'caradhras': caradhras}) if d['kind'] == 'Deployment'
+                     and d['metadata']['name'].endswith('-caradhras'))
+            return next(c for c in d['spec']['template']['spec']['initContainers']
+                        if c['name'] == 'migrate')['image'].rsplit(':', 1)[1]
+        digest = '@sha256:' + 'a' * 64
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        self.assertEqual(migrate_image({}), '2.1.0')
+        self.assertEqual(migrate_image({**no_key, 'image': {'tag': '1.8.6'}}), '1.8.6')
+        self.assertEqual(migrate_image({'image': {'tag': '2.1.0' + digest}}), '2.1.0')
+        self.assertEqual(migrate_image({**no_key, **PRE_LICENSE,
+                                        'migrations': {'image': {'tag': '1.8.5'}}}), '1.8.5')
+        legacy = {'auth': {'backend': {'migrations': {'image': {'tag': '2.0.1'}}}}}
+        d = next(d for d in self.succeeds({'caradhras': {}, **legacy}) if d['kind'] == 'Deployment'
+                 and d['metadata']['name'].endswith('-caradhras'))
+        self.assertTrue(next(c for c in d['spec']['template']['spec']['initContainers']
+                             if c['name'] == 'migrate')['image'].endswith(':2.0.1'))
+
+    def test_caradhras_server_and_migrations_majors_must_match(self):
+        mig = lambda t: {'migrations': {'image': {'tag': t}}}
+        self.fails({'caradhras': mig('1.8.6')}, 'different major versions')
+        self.fails({'auth': {'backend': {'migrations': {'image': {'tag': '1.8.6'}}}}}, 'different major versions')
+        self.fails({'caradhras': {'image': {'tag': '1.8.6'}, **mig('2.1.0')}}, 'different major versions')
+        self.succeeds({'caradhras': {'image': {'tag': '1.8.6'}, **mig('1.8.5')}})
+        self.succeeds({'caradhras': mig('2.1.1')})
+        self.succeeds({'caradhras': {'image': {'tag': 'latest'}, **mig('1.8.6')}})
+
+    def test_probes_use_the_health_port_and_caradhras_drains(self):
+        docs = self.succeeds({'caradhras': {'ui': {'enabled': True}}})
+        for d in docs:
+            if d['kind'] != 'Deployment':
+                continue
+            name = d['metadata']['name']
+            pod = d['spec']['template']['spec']
+            for c in pod['containers']:
+                for kind in ('readinessProbe', 'livenessProbe', 'startupProbe'):
+                    if kind in c:
+                        self.assertGreaterEqual(c[kind]['timeoutSeconds'], 3, f'{name} {kind}')
+                        if name.endswith(('-auth', '-identity')):
+                            self.assertEqual(c[kind]['httpGet']['port'], 'health', f'{name} {kind}')
+            if name.endswith(('-auth', '-identity')):
+                env = {e['name']: e['value'] for e in pod['containers'][0]['env'] if 'value' in e}
+                self.assertEqual((env['HEALTH_PORT'], env['SHUTDOWN_DRAIN_DELAY'], env['SHUTDOWN_TIMEOUT']), ('8099', '15s', '30s'))
+                self.assertEqual(pod['terminationGracePeriodSeconds'], 55)
+                self.assertNotIn('initContainers', pod)
+                self.assertEqual(d['spec']['strategy']['rollingUpdate']['maxUnavailable'], 0)
+            if name.endswith('-caradhras'):
+                self.assertIn('sleep', pod['containers'][0]['lifecycle']['preStop']['exec']['command'])
+                self.assertGreaterEqual(pod['terminationGracePeriodSeconds'], 55)
+
+    def test_production_http_is_rejected(self):
+        for env in ['production', 'PRODUCTION', 'qa', 'prod']:
+            with self.subTest(env=env):
+                self.crash_loops({'global': {'env': {'name': env}}}, 'auth', 'identity')
+
+    def test_explicit_dev_allowlist(self):
+        for env in ['development', 'staging', 'local', ' STAGING ']:
+            with self.subTest(env=env):
+                self.succeeds({'global': {'env': {'name': env}}})
+
+    def test_production_https_and_native_precedence(self):
+        self.succeeds(production())
+        self.crash_loops({'auth': {'configmap': {'ENV_NAME': 'production'}}}, 'auth')
+        values = production()
+        values['auth']['configmap']['ENV_NAME'] = 'development'
+        values['auth']['configmap']['AUTHORIZER_ADDRESS'] = 'http://idp.example.test'
+        self.succeeds(values)
+
+    def test_identity_checked_even_with_inversion_disabled(self):
+        values = production()
+        values['identity']['configmap'] = {'AUTH_M2M_INVERSION_ENABLED': 'false'}
+        self.crash_loops(values, 'identity')
+
+    def test_identity_jwks_override_in_named_or_extra(self):
+        for location in ['configmap', 'extraEnvVars']:
+            values = production()
+            values['identity']['configmap'] = {'AUTHORIZER_ADDRESS': 'http://idp.example.test'}
+            values['identity'].setdefault(location, {})['AUTH_M2M_JWKS_URL'] = 'https://idp.example.test/keys'
+            self.succeeds(values)
+            # An http override is caught wherever it is set: extraEnvVars renders
+            # into the same ConfigMap the application reads.
+            values['identity']['configmap']['AUTHORIZER_ADDRESS'] = 'https://idp.example.test'
+            values['identity'][location]['AUTH_M2M_JWKS_URL'] = 'http://idp.example.test/keys'
+            self.crash_loops(values, 'identity')
+
+    def test_identity_auth_disabled_does_not_require_jwks(self):
+        for disabled in ['false', False]:
+            values = production()
+            values['identity']['configmap'] = {'AUTH_ENABLED': disabled}
+            self.succeeds(values)
+
+    def test_default_true_flags_honor_an_explicit_false(self):
+        flags = {'auth': ['ALLOW_INSECURE_TLS', 'RUNNING_IN_DOCKER', 'RATE_LIMIT_ENABLED',
+                          'CIRCUIT_BREAKER_ENABLED', 'SWAGGER_ENABLED'],
+                 'identity': ['ALLOW_INSECURE_TLS', 'AUTH_ENABLED', 'RATE_LIMIT_ENABLED', 'CIRCUIT_BREAKER_ENABLED']}
+        for value, expected in [(False, 'false'), ('false', 'false'), (True, 'true'), (None, 'true'), ('', 'true')]:
+            with self.subTest(value=value):
+                values = production()
+                for component, keys in flags.items():
+                    values[component]['configmap'].update(dict.fromkeys(keys, value))
+                values['caradhras'] = {'allowInsecureTLS': value}
+                config = {d['metadata']['name']: d['data'] for d in self.succeeds(values) if d['kind'] == 'ConfigMap'}
+                for component, keys in flags.items():
+                    for key in keys:
+                        rendered = 'PLUGIN_AUTH_ENABLED' if key == 'AUTH_ENABLED' else key
+                        self.assertEqual(config[f'startup-test-{component}'][rendered], expected, key)
+                self.assertEqual(config['startup-test-caradhras']['ALLOW_INSECURE_TLS'], expected)
+
+    def test_identity_loopback_contract(self):
+        for url in ['http://localhost/keys', 'http://127.0.0.1:8000/keys', 'http://[::1]:8000/keys',
+                    'HTTP://localhost:8000/keys', 'http://[0:0:0:0:0:0:0:1]:8000/keys',
+                    'http://[::ffff:127.0.0.1]:8000/keys', 'http://localhost?keys=1']:
+            values = production()
+            values['identity']['configmap']['AUTH_M2M_JWKS_URL'] = url
+            self.succeeds(values)
+        values = production()
+        values['auth']['configmap']['AUTHORIZER_ADDRESS'] = 'http://localhost:8000'
+        self.crash_loops(values, 'auth')
+
+    def test_auth_discovery_defers_to_runtime(self):
+        # auth validates the discovered address at boot; identity never uses discovery.
+        values = {'global': {'env': {'name': 'production'}},
+                  'auth': {'configmap': {'SD_ENABLED': 'true'}},
+                  'identity': {'configmap': {'AUTHORIZER_ADDRESS': 'https://idp.example.test'}}}
+        self.succeeds(values)
+        values['identity']['configmap']['SD_ENABLED'] = 'true'
+        values['identity']['configmap']['AUTHORIZER_ADDRESS'] = 'http://idp.example.test'
+        self.crash_loops(values, 'identity')
+        # The legacy lib-service-discovery switch is honored too.
+        legacy = {'global': {'env': {'name': 'production'}},
+                  'auth': {'extraEnvVars': {'SERVICE_DISCOVERY_ENABLED': 'true'}},
+                  'identity': {'configmap': {'AUTHORIZER_ADDRESS': 'https://idp.example.test'}}}
+        self.succeeds(legacy)
+
+    def test_invalid_https(self):
+        for url in ['http://idp.test', 'ftp://idp.test']:
+            with self.subTest(url=url):
+                for component in ['auth', 'identity']:
+                    values = production()
+                    values[component]['configmap']['AUTHORIZER_ADDRESS'] = url
+                    self.crash_loops(values, component)
+        for url in ['https://bad host', 'https://bad:port/keys']:
+            with self.subTest(url=url):
+                for component in ['auth', 'identity']:
+                    values = production()
+                    values[component]['configmap']['AUTHORIZER_ADDRESS'] = url
+                    self.fails(values, 'unable to parse url')
+        # Outside production the application parses nothing, so neither does the chart.
+        self.succeeds({'auth': {'configmap': {'AUTHORIZER_ADDRESS': 'https://bad host'}}})
+
+    def test_ipv6_identity(self):
+        for url in ['http://[::1]:8000/keys', 'http://[::ffff:7f00:1]/keys']:
+            values = production()
+            values['identity']['configmap']['AUTH_M2M_JWKS_URL'] = url
+            self.succeeds(values)
+        # A non-loopback IPv6 http URL is rejected by lib-auth, so by the chart too.
+        values = production()
+        values['identity']['configmap']['AUTH_M2M_JWKS_URL'] = 'http://[2001:db8::1]/keys'
+        self.crash_loops(values, 'identity')
+
+    def test_image_gate(self):
+        prod = {'global': {'env': {'name': 'production'}}}
+        # Below the first image that serves the health port the render refuses; a digest is not compared.
+        for tag in ['3.1.0', 'v3.2.9', '3.2.9-rc.1', '3.16.0-beta.4']:
+            with self.subTest(tag=tag):
+                values = copy.deepcopy(prod)
+                values['auth'] = {'image': {'tag': tag}}
+                values['identity'] = {'image': {'tag': tag}}
+                self.fails(values, 'is below 3.16.0-beta.5')
+        values = copy.deepcopy(prod)
+        values['auth'] = {'image': {'tag': '3.2.0@sha256:' + '0' * 64}}
+        values['identity'] = {'image': {'tag': '3.2.0@sha256:' + '0' * 64}}
+        self.succeeds(values)
+        for tag in ['3.16.0-beta.5', '3.16.0', 'latest']:
+            with self.subTest(tag=tag):
+                values = copy.deepcopy(prod)
+                values['auth'] = {'image': {'tag': tag}}
+                values['identity'] = {'image': {'tag': tag}}
+                self.crash_loops(values, 'auth', 'identity')
+
+    def test_extra_mfa_boolean_refused(self):
+        self.fails({'auth': {'extraEnvVars': {'MFA_ENABLED': True},
+                             'secrets': {'MFA_SECRET': 'test-only'}}}, 'must be a quoted string')
+
+    def test_duplicate_env_refused(self):
+        for component in ['auth', 'identity']:
+            for key in ['ENV_NAME', 'AUTHORIZER_ADDRESS']:
+                self.fails({component: {'extraEnvVars': {key: 'test'}}}, 'duplicates')
+        self.fails({'identity': {'extraEnvVars': {'PLUGIN_AUTH_ENABLED': 'false'}}}, 'duplicates')
+        self.fails({'identity': {'configmap': {'AUTH_M2M_JWKS_URL': 'https://one.test'},
+                                'extraEnvVars': {'AUTH_M2M_JWKS_URL': 'https://two.test'}}}, 'both')
+
+    def test_mfa_without_secret_fails(self):
+        for location in ['configmap', 'extraEnvVars']:
+            for enabled in [True, 'true', 'TRUE', '1']:
+                with self.subTest(location=location, enabled=enabled):
+                    message = 'must be a quoted string' if location == 'extraEnvVars' and enabled is True else 'requires a non-empty'
+                    self.fails({'auth': {location: {'MFA_ENABLED': enabled}}}, message)
+
+    def test_mfa_secret_is_only_in_secret(self):
+        docs = self.succeeds({'auth': {'configmap': {'MFA_ENABLED': 'true'},
+                                       'secrets': {'MFA_SECRET': 'render-only-mfa'}}})
+        for doc in docs:
+            if doc['kind'] == 'ConfigMap':
+                self.assertNotIn('MFA_SECRET', doc.get('data', {}))
+        self.fails({'auth': {'extraEnvVars': {'MFA_SECRET': 'not-secret-here'}}}, 'is sensitive')
+
+    def test_mfa_external_secret_offline(self):
+        values = {'auth': {'useExistingSecret': True, 'existingSecretName': 'operator-auth',
+                           'configmap': {'MFA_ENABLED': 'true'}}}
+        self.succeeds(values)
+        values['auth']['existingSecretName'] = ''
+        self.fails(values, 'requires auth.existingSecretName')
+
+    def test_mfa_disabled_or_unset(self):
+        self.succeeds({})
+        self.succeeds({'auth': {'configmap': {'MFA_ENABLED': 'false'}}})
+        self.succeeds({'auth': {'configmap': {'MFA_ENABLED': False}}})
+
+    def identity_data(self, docs, kind):
+        name = 'startup-test-identity'
+        doc = next((d for d in docs if d['kind'] == kind and d['metadata']['name'] == name), None)
+        return None if doc is None else doc.get('data', {})
+
+    def test_google_directory_unset_adds_no_keys(self):
+        docs = self.succeeds({})
+        for kind in ['Secret', 'ConfigMap']:
+            keys = [k for k in self.identity_data(docs, kind) if k.startswith('GOOGLE_DIRECTORY_')]
+            self.assertEqual(keys, [], kind)
+
+    def test_google_directory_set_splits_secret_and_config(self):
+        docs = self.succeeds({'identity': {
+            'configmap': {'GOOGLE_DIRECTORY_ENABLED': 'true',
+                          'GOOGLE_DIRECTORY_CLIENT_ID': 'render-only.apps.googleusercontent.com',
+                          'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'},
+            'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only',
+                        'GOOGLE_DIRECTORY_ENCRYPTION_KEY': 'render-only-key-of-at-least-32-bytes'}}})
+        secret = self.identity_data(docs, 'Secret')
+        config = self.identity_data(docs, 'ConfigMap')
+        self.assertEqual(base64.b64decode(secret['GOOGLE_DIRECTORY_CLIENT_SECRET']), b'render-only')
+        self.assertIn('GOOGLE_DIRECTORY_ENCRYPTION_KEY', secret)
+        self.assertEqual(config['GOOGLE_DIRECTORY_ENABLED'], 'true')
+        self.assertEqual(config['GOOGLE_DIRECTORY_CLIENT_ID'], 'render-only.apps.googleusercontent.com')
+        self.assertEqual(config['GOOGLE_DIRECTORY_REDIRECT_URL'], 'https://console.example.test/cb')
+        for key in ['GOOGLE_DIRECTORY_CLIENT_SECRET', 'GOOGLE_DIRECTORY_ENCRYPTION_KEY']:
+            self.assertNotIn(key, config)
+
+    def test_google_directory_secret_only_without_flag(self):
+        # A secret set ahead of the flag renders and changes nothing else.
+        docs = self.succeeds({'identity': {'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only'}}})
+        self.assertIn('GOOGLE_DIRECTORY_CLIENT_SECRET', self.identity_data(docs, 'Secret'))
+        self.assertNotIn('GOOGLE_DIRECTORY_ENCRYPTION_KEY', self.identity_data(docs, 'Secret'))
+        self.succeeds({'identity': {'configmap': {'GOOGLE_DIRECTORY_ENABLED': 'false'}}})
+
+    def test_google_directory_enabled_needs_all_values(self):
+        for location in ['configmap', 'extraEnvVars']:
+            with self.subTest(location=location):
+                self.fails({'identity': {location: {'GOOGLE_DIRECTORY_ENABLED': 'true'}}},
+                           'GOOGLE_DIRECTORY_ENABLED=true needs a non-empty')
+        plain = {'GOOGLE_DIRECTORY_ENABLED': 'true', 'GOOGLE_DIRECTORY_CLIENT_ID': 'id',
+                 'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'}
+        self.fails({'identity': {'configmap': plain,
+                                 'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only'}}},
+                   'identity.secrets.GOOGLE_DIRECTORY_ENCRYPTION_KEY')
+
+    def test_google_directory_key_length(self):
+        values = {'identity': {
+            'configmap': {'GOOGLE_DIRECTORY_ENABLED': 'true', 'GOOGLE_DIRECTORY_CLIENT_ID': 'id',
+                          'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'},
+            'secrets': {'GOOGLE_DIRECTORY_CLIENT_SECRET': 'render-only',
+                        'GOOGLE_DIRECTORY_ENCRYPTION_KEY': ' ' + 'k' * 31 + ' '}}}
+        self.fails(values, 'at least 32 bytes')
+        values['identity']['secrets']['GOOGLE_DIRECTORY_ENCRYPTION_KEY'] = 'k' * 32
+        self.succeeds(values)
+
+    def test_google_directory_extra_must_be_string(self):
+        for value in [True, 1]:
+            with self.subTest(value=value):
+                self.fails({'identity': {'extraEnvVars': {'GOOGLE_DIRECTORY_ENABLED': value}}},
+                           'must be a quoted string')
+
+    def test_google_directory_existing_secret(self):
+        plain = {'GOOGLE_DIRECTORY_ENABLED': 'true', 'GOOGLE_DIRECTORY_CLIENT_ID': 'id',
+                 'GOOGLE_DIRECTORY_REDIRECT_URL': 'https://console.example.test/cb'}
+        values = {'identity': {'useExistingSecret': True, 'existingSecretName': 'operator-identity',
+                               'configmap': plain}}
+        docs = self.succeeds(values)
+        self.assertIsNone(self.identity_data(docs, 'Secret'))
+        values['identity']['existingSecretName'] = ''
+        self.fails(values, 'identity.existingSecretName')
+
+    def test_google_directory_secrets_refused_outside_secret(self):
+        for location in ['configmap', 'extraEnvVars']:
+            for key in ['GOOGLE_DIRECTORY_CLIENT_SECRET', 'GOOGLE_DIRECTORY_ENCRYPTION_KEY']:
+                with self.subTest(location=location, key=key):
+                    self.fails({'identity': {location: {key: 'not-secret-here'}}}, 'is sensitive')
+
+    def test_google_directory_key_in_one_place(self):
+        for key in ['GOOGLE_DIRECTORY_ENABLED', 'GOOGLE_DIRECTORY_CLIENT_ID', 'GOOGLE_DIRECTORY_REDIRECT_URL']:
+            with self.subTest(key=key):
+                self.fails({'identity': {'configmap': {key: 'one'}, 'extraEnvVars': {key: 'two'}}}, 'both')
+        # An explicit false is a value too: extraEnvVars "true" must not override it silently.
+        self.fails({'identity': {'configmap': {'GOOGLE_DIRECTORY_ENABLED': False},
+                                 'extraEnvVars': {'GOOGLE_DIRECTORY_ENABLED': 'true'}}}, 'both')
+
+    def test_existing_secret_requires_a_name(self):
+        for component in ('auth', 'identity'):
+            with self.subTest(component=component):
+                self.fails({component: {'useExistingSecret': True}},
+                           f'{component}.useExistingSecret is true but {component}.existingSecretName is empty')
+                docs = self.succeeds({component: {'useExistingSecret': True,
+                                                  'existingSecretName': 'operator-secret'}})
+                deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                                  and d['metadata']['name'].endswith(component))
+                refs = [e['secretRef']['name'] for e in
+                        deployment['spec']['template']['spec']['containers'][0]['envFrom']
+                        if 'secretRef' in e]
+                self.assertEqual(refs, ['operator-secret'])
+
+    def test_builtin_admin_password_opt_in(self):
+        def env(docs):
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-caradhras'))
+            return [e for e in deployment['spec']['template']['spec']['containers'][0]['env']
+                    if e['name'] == 'builtInAdminPassword']
+        self.assertEqual(env(self.succeeds({})), [])
+        on = {'caradhras': {'image': {'tag': '2.0.0'}, 'builtInAdminPassword': {'enabled': True}}}
+        self.fails(on, 'caradhras.builtInAdminPassword.secretName is empty')
+        on['caradhras']['builtInAdminPassword']['secretName'] = 'operator-admin'
+        self.assertEqual(env(self.succeeds(on)), [{'name': 'builtInAdminPassword', 'valueFrom': {
+            'secretKeyRef': {'name': 'operator-admin', 'key': 'builtInAdminPassword'}}}])
+        on['caradhras']['builtInAdminPassword'].update(secretName='0123', secretKey='123')
+        self.assertEqual(env(self.succeeds(on))[0]['valueFrom']['secretKeyRef'], {'name': '0123', 'key': '123'})
+
+    def test_builtin_admin_password_needs_a_caradhras_that_reads_it(self):
+        digest = '@sha256:' + 'a' * 64
+        for tag in ('1.8.6', '1.9.0-beta.24', 'latest', 'sha256:abc', '1.8.6' + digest):
+            on = {'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
+                'enabled': True, 'secretName': 'operator-admin'}}}
+            self.fails(on, 'pin a Caradhras tag >= 1.9.0-beta.25')
+        self.succeeds({'caradhras': {'builtInAdminPassword': {'enabled': True, 'secretName': 'x'}}})
+        for tag in ('1.9.0-beta.25', '1.9.0-rc.1', '2.0.0', '2.1.0' + digest):
+            self.succeeds({'caradhras': {'image': {'tag': tag}, 'builtInAdminPassword': {
+                'enabled': True, 'secretName': 'operator-admin'}}})
+
+    def test_license_key_required(self):
+        for c in ('auth', 'identity'):
+            self.fails({c: {'secrets': {'LICENSE_KEY': ''}}}, f'{c}.secrets.LICENSE_KEY is required')
+            self.succeeds({c: {'secrets': {'LICENSE_KEY': ''}, 'useExistingSecret': True,
+                               'existingSecretName': 'x'}})
+
+    def component_spec(self, docs, name):
+        d = next(d for d in docs if d['kind'] == 'Deployment' and d['metadata']['name'].endswith('-' + name))
+        return d['spec']['template']['spec']
+
+    def test_auth_identity_licence_file_mounts_as_directory(self):
+        for c in ('auth', 'identity'):
+            docs = self.succeeds({c: {'secrets': {'LICENSE_KEY': ''}, 'licenseFile': {'existingSecret': 'lic'}}})
+            spec = self.component_spec(docs, c)
+            ctr = spec['containers'][0]
+            self.assertIn({'name': 'license-file', 'mountPath': '/etc/lerian/license', 'readOnly': True}, ctr['volumeMounts'])
+            self.assertIn({'name': 'LICENSE_FILE_PATH', 'value': '/etc/lerian/license/license'}, ctr['env'])
+            self.assertIn({'name': 'license-file', 'secret': {'secretName': 'lic', 'items': [{'key': 'license', 'path': 'license'}]}}, spec['volumes'])
+            secret = next(d for d in docs if d['kind'] == 'Secret' and d['metadata']['name'].endswith('-' + c))
+            self.assertNotIn('LICENSE_KEY', secret['data'])
+
+    def test_auth_identity_licence_file_null_keeps_key_mode(self):
+        for c in ('auth', 'identity'):
+            docs = self.succeeds({c: {'licenseFile': None}})
+            spec = self.component_spec(docs, c)
+            self.assertNotIn('volumes', spec)
+            self.assertNotIn('volumeMounts', spec['containers'][0])
+            self.assertNotIn('LICENSE_FILE_PATH', [e['name'] for e in spec['containers'][0]['env']])
+            secret = next(d for d in docs if d['kind'] == 'Secret' and d['metadata']['name'].endswith('-' + c))
+            self.assertIn('LICENSE_KEY', secret['data'])
+
+    def test_caradhras_license_key_required(self):
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        self.fails({'caradhras': no_key}, 'caradhras.secrets.LICENSE_KEY')
+        self.succeeds({'caradhras': {'secrets': {'LICENSE_KEY': 'k'}}})
+        self.succeeds({'caradhras': {**no_key, **PRE_LICENSE}})
+        self.fails({'caradhras': {**no_key, 'image': {'tag': '2.0.0-beta.1'}}}, 'caradhras.secrets.LICENSE_KEY')
+
+    def test_caradhras_license_key_with_digest_pinned_tags(self):
+        digest = '@sha256:' + 'a' * 64
+        no_key = {'secrets': {'LICENSE_KEY': ''}}
+        pin = lambda t: {'image': {'tag': t}}
+        self.succeeds({'caradhras': {'secrets': {'LICENSE_KEY': 'k'}, **pin('2.1.0' + digest)}})
+        self.succeeds({'caradhras': {**no_key, **pin('1.8.6' + digest)}})
+        self.fails({'caradhras': {**no_key, **pin('2.1.0' + digest)}}, 'caradhras.secrets.LICENSE_KEY')
+        self.succeeds({'caradhras': {**no_key, **pin('2.1.0' + digest),
+                                     'useExistingSecret': True, 'existingSecretName': 'x'}})
+
+    def test_ingress_falls_back_to_global(self):
+        glob = {'global': {'ingress': {'className': 'nginx', 'domain': 'example.test',
+                                       'tls': [{'secretName': 'tls', 'hosts': ['auth.example.test']}]}}}
+        for c in ('auth', 'identity'):
+            docs = self.succeeds({**glob, c: {'ingress': {'enabled': True}}})
+            spec = next(d for d in docs if d['kind'] == 'Ingress')['spec']
+            self.assertEqual(spec['ingressClassName'], 'nginx')
+            self.assertEqual(spec['rules'][0]['host'], f'{c}.example.test')
+            self.assertEqual(spec['tls'][0]['secretName'], 'tls')
+            own = {c: {'ingress': {'enabled': True, 'className': 'alb',
+                                   'hosts': [{'host': 'own.test', 'paths': [{'path': '/', 'pathType': 'Prefix'}]}]}}}
+            spec = next(d for d in self.succeeds({**glob, **own}) if d['kind'] == 'Ingress')['spec']
+            self.assertEqual((spec['ingressClassName'], spec['rules'][0]['host']), ('alb', 'own.test'))
+
+    def test_auth_service_exposes_only_ports_the_container_serves(self):
+        docs = self.succeeds({})
+        service = next(d for d in docs if d['kind'] == 'Service' and d['metadata']['name'].endswith('-auth'))
+        deployment = next(d for d in docs if d['kind'] == 'Deployment' and d['metadata']['name'].endswith('-auth'))
+        container = deployment['spec']['template']['spec']['containers'][0]['ports']
+        by_name = {p['name']: p['containerPort'] for p in container}
+        self.assertEqual({(p['name'], by_name[p['name']]) for p in service['spec']['ports']},
+                         {(p['name'], p['containerPort']) for p in container})
+        self.assertEqual(by_name['health'], 8099)
+
+    def identity_env(self, init_user):
+        docs = self.succeeds({'auth': {'initUser': init_user}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('identity'))
+        env = deployment['spec']['template']['spec']['containers'][0].get('env', [])
+        return docs, {e['name']: e for e in env}
+
+    def test_init_user_feeds_identity_boot(self):
+        disabled_docs, env = self.identity_env({'enabled': False})
+        self.assertFalse({'ADMIN_PASSWORD', 'ADMIN_EMAIL', 'ADMIN_DISPLAY_NAME'} & env.keys())
+        docs, env = self.identity_env({'enabled': True, 'adminPassword': 'render-only'})
+        ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+        self.assertEqual((ref['key'], ref['optional']), ('ADMIN_PASSWORD', True))
+        self.assertEqual(env['ADMIN_EMAIL']['value'], 'admin@midaz.tech')
+        self.assertEqual(env['ADMIN_DISPLAY_NAME']['value'], 'Admin')
+        self.assertEqual([d['kind'] for d in docs if d['kind'] == 'Job'], [])
+        secret = next(d for d in docs if d['kind'] == 'Secret' and d['metadata']['name'] == ref['name'])
+        self.assertNotIn('annotations', secret['metadata'])
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == ref['name']
+                             for d in disabled_docs))
+
+    def test_init_user_managed_secret_uses_selected_key(self):
+        for name, key in (('bootstrap', 'password'), ('123', '456')):
+            with self.subTest(name=name, key=key):
+                docs, env = self.identity_env({'enabled': True, 'adminPassword': 'render-only',
+                                               'adminPasswordSecretName': name,
+                                               'adminPasswordSecretKey': key})
+                ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+                self.assertEqual((ref['name'], ref['key']), (name, key))
+                secret = next(d for d in docs if d['kind'] == 'Secret'
+                              and d['metadata']['name'] == name)
+                self.assertEqual(base64.b64decode(secret['data'][key]).decode(), 'render-only')
+
+    def test_init_user_password_change_rolls_identity(self):
+        annotations = []
+        for password in ('x' * 73, 'render-only'):
+            docs, _ = self.identity_env({'enabled': True, 'adminPassword': password})
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-identity'))
+            annotations.append(deployment['spec']['template']['metadata']['annotations'])
+        self.assertNotEqual(annotations[0], annotations[1])
+
+    def test_init_user_preserves_health_preset(self):
+        containers = []
+        for init in ({'enabled': False}, {'enabled': True, 'adminPassword': 'render-only'}):
+            docs, env = self.identity_env(init)
+            deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                              and d['metadata']['name'].endswith('-identity'))
+            container = deployment['spec']['template']['spec']['containers'][0]
+            containers.append(container)
+            self.assertEqual(env['HEALTH_PORT']['value'], '8099')
+            self.assertEqual(env['SHUTDOWN_DRAIN_DELAY']['value'], '15s')
+            for kind, path in (('startupProbe', '/health'), ('livenessProbe', '/health'),
+                               ('readinessProbe', '/readyz')):
+                self.assertEqual(container[kind]['httpGet'], {'path': path, 'port': 'health'})
+            service = next(d for d in docs if d['kind'] == 'Service'
+                           and d['metadata']['name'].endswith('-identity'))
+            self.assertIn('health', {port['name'] for port in service['spec']['ports']})
+        for kind in ('startupProbe', 'livenessProbe', 'readinessProbe', 'ports'):
+            self.assertEqual(containers[0][kind], containers[1][kind])
+
+    def test_init_user_existing_secret(self):
+        docs, env = self.identity_env({'enabled': True, 'useExistingSecret': True,
+                                       'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})
+        ref = env['ADMIN_PASSWORD']['valueFrom']['secretKeyRef']
+        self.assertEqual((ref['name'], ref['key'], ref['optional']), ('mine', 'pw', True))
+        self.assertFalse([d for d in docs if d['metadata']['name'].endswith('init-user')])
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == 'mine' for d in docs))
+        disabled, _ = self.identity_env({'enabled': False, 'useExistingSecret': True,
+                                         'adminPasswordSecretName': 'mine', 'adminPasswordSecretKey': 'pw'})
+        self.assertFalse(any(d['kind'] == 'Secret' and d['metadata']['name'] == 'mine' for d in disabled))
+        self.fails({'auth': {'initUser': {'enabled': True, 'useExistingSecret': True}}},
+                   'adminPasswordSecretName must be specified')
+
+    def test_init_user_needs_the_ensure_first_admin_contract(self):
+        def init(identity='3.17.0', server='2.1.0', migrations='2.1.0', **extra):
+            return {'auth': {'initUser': {'enabled': True, 'adminPassword': 'render-only'}},
+                    'identity': {'image': {'tag': identity}},
+                    'caradhras': {'image': {'tag': server}, 'migrations': {'image': {'tag': migrations}}},
+                    **extra}
+        refused = [dict(server='1.8.6', migrations='1.8.6'), dict(migrations='1.8.6'), dict(server='1.8.6'),
+                   dict(identity='3.16.1'), dict(identity='3.17.0-beta.1')]
+        refused += [{k: tag} for tag in ('2.1.0-rc.2', '2.0.2', 'latest', '2.1.0@sha256:abc')
+                    for k in ('server', 'migrations')]
+        for case in refused:
+            with self.subTest(case=case):
+                self.fails(init(**case), 'auth.initUser.enabled needs identity >= 3.17.0')
+        self.succeeds(init())
+        self.succeeds(init(server='v2.1.0', migrations='v2.1.0'))
+        # Multi-tenant identity never calls ensure-first-admin.
+        self.succeeds(init(identity='3.16.1', server='1.8.6', migrations='1.8.6',
+                           **{'global': {'multiTenant': {'enabled': True}}}))
+
+    def migrate_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        init = next(c for c in deployment['spec']['template']['spec']['initContainers']
+                    if c['name'] == 'migrate')
+        return {e['name']: e.get('value') for e in init['env']}
+
+    def test_migrate_skip_rbac_chain_only_when_true(self):
+        default = self.migrate_env({})
+        self.assertEqual(set(default), {'POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB',
+                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE', 'ALLOW_INSECURE_TLS',
+                                        'LICENSE_KEY'})
+        self.assertEqual(self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': False}}}), default)
+        env = self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def test_licence_file_mounts_as_directory_on_server_and_migrate(self):
+        docs = self.succeeds({'caradhras': {'secrets': {'LICENSE_KEY': ''},
+                                            'licenseFile': {'existingSecret': 'lic'}}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        spec = deployment['spec']['template']['spec']
+        mount = {'name': 'license-file', 'mountPath': '/etc/lerian/license', 'readOnly': True}
+        init = next(c for c in spec['initContainers'] if c['name'] == 'migrate')
+        for c in (init, spec['containers'][0]):
+            self.assertIn(mount, c['volumeMounts'])
+            self.assertIn({'name': 'LICENSE_FILE_PATH', 'value': '/etc/lerian/license/license'}, c['env'])
+            self.assertNotIn('LICENSE_KEY', [e['name'] for e in c['env']])
+        self.assertIn({'name': 'license-file', 'secret': {'secretName': 'lic', 'items': [{'key': 'license', 'path': 'license'}]}}, spec['volumes'])
+
+    def test_licence_file_null_keeps_key_mode(self):
+        docs = self.succeeds({'caradhras': {'licenseFile': None}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        spec = deployment['spec']['template']['spec']
+        self.assertNotIn('volumes', spec)
+        for c in (next(c for c in spec['initContainers'] if c['name'] == 'migrate'), spec['containers'][0]):
+            self.assertNotIn('volumeMounts', c)
+            names = [e['name'] for e in c['env']]
+            self.assertIn('LICENSE_KEY', names)
+            self.assertNotIn('LICENSE_FILE_PATH', names)
+
+    def server_env(self, patch):
+        docs = self.succeeds(patch)
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        server = deployment['spec']['template']['spec']['containers'][0]
+        return {e['name']: e.get('value') for e in server['env']}
+
+    def test_server_skip_rbac_chain_follows_migrate(self):
+        # The boot schema check reads the same variable: a migrate that skips the
+        # rbac chain next to a server that asserts it is a crash-loop on the first
+        # image with a newer rbac head.
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN', self.server_env({}))
+        self.assertNotIn('MIGRATIONS_SKIP_RBAC_CHAIN',
+                         self.server_env({'caradhras': {'migrations': {'skipRBACChain': False}}}))
+        env = self.server_env({'caradhras': {'migrations': {'skipRBACChain': True}}})
+        self.assertEqual(env['MIGRATIONS_SKIP_RBAC_CHAIN'], 'true')
+
+    def test_migrate_extra_env_vars(self):
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'FOO': 'bar', 'RETRIES': 3}}}})
+        self.assertEqual((env['FOO'], env['RETRIES']), ('bar', '3'))
+        # YAML 1.1 boolean-like names must still render as strings (env.name is a string).
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'TRUE': 'a', 'ON': 'b'}}}})
+        self.assertEqual((env.get('TRUE'), env.get('ON')), ('a', 'b'))
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'POSTGRES_HOST': 'x'}}}},
+                   'caradhras.migrations.extraEnvVars.POSTGRES_HOST duplicates a chart-owned env')
+
+    def test_migrate_extra_env_var_names_are_schema_checked(self):
+        # A name Kubernetes rejects must fail at values validation, not at apply.
+        # Helm versions word (and locate) the schema error differently; the
+        # pattern itself is in every one of them.
+        pattern = '^[-._a-zA-Z][-._a-zA-Z0-9]*$'
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'BAD=NAME': 'x'}}}}, pattern)
+        self.fails({'caradhras': {'migrations': {'extraEnvVars': {'9LIVES': 'x'}}}}, pattern)
+        env = self.migrate_env({'caradhras': {'migrations': {'extraEnvVars': {'my.var-1_X': 'ok'}}}})
+        self.assertEqual(env['my.var-1_X'], 'ok')
+
+    def caradhras_license(self, secrets=None, **caradhras):
+        docs = self.succeeds({'caradhras': {**caradhras, **({'secrets': secrets} if secrets else {})}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        env = {e['name']: e for e in deployment['spec']['template']['spec']['containers'][0]['env']}
+        secret = next((d for d in docs if d['kind'] == 'Secret'
+                       and d['metadata']['name'].endswith('-caradhras')), None)
+        return env.get('LICENSE_KEY'), secret
+
+    def test_caradhras_license_key_from_chart_secret(self):
+        env, secret = self.caradhras_license({'LICENSE_KEY': 'lic-123'})
+        self.assertEqual(env['valueFrom']['secretKeyRef'],
+                         {'name': 'startup-test-caradhras', 'key': 'LICENSE_KEY', 'optional': True})
+        self.assertEqual(base64.b64decode(secret['data']['LICENSE_KEY']), b'lic-123')
+        self.assertNotIn('redisEndpoint', secret['data'])
+
+    def test_caradhras_license_key_from_existing_secret(self):
+        env, secret = self.caradhras_license(useExistingSecret=True, existingSecretName='operator-secret')
+        self.assertEqual(env['valueFrom']['secretKeyRef'], {'name': 'operator-secret', 'key': 'LICENSE_KEY', 'optional': True})
+        self.assertIsNone(secret)
+
+    def test_caradhras_existing_secret_with_plain_session_endpoint(self):
+        docs = self.succeeds({'caradhras': {'useExistingSecret': True, 'existingSecretName': 'operator-license',
+                                            'configmap': {'redisEndpoint': 'valkey:6379'}}})
+        deployment = next(d for d in docs if d['kind'] == 'Deployment'
+                          and d['metadata']['name'].endswith('-caradhras'))
+        env = {e['name']: e for e in deployment['spec']['template']['spec']['containers'][0]['env']}
+        self.assertEqual(env['LICENSE_KEY']['valueFrom']['secretKeyRef']['name'], 'operator-license')
+        self.assertNotIn('redisEndpoint', env)
+        configmap = next(d for d in docs if d['kind'] == 'ConfigMap' and d['metadata']['name'].endswith('-caradhras'))
+        self.assertEqual(configmap['data']['redisEndpoint'], 'valkey:6379')
+
+    def test_caradhras_without_license_key_renders_no_env(self):
+        env, secret = self.caradhras_license({'LICENSE_KEY': ''}, **PRE_LICENSE)
+        self.assertIsNone(env)
+        self.assertIsNone(secret)
+
+    def test_caradhras_redis_endpoint_only_secret_has_no_license_key(self):
+        env, secret = self.caradhras_license({'LICENSE_KEY': '', 'redisEndpoint': 'valkey:6379,100,pw'}, **PRE_LICENSE)
+        self.assertIsNone(env)
+        self.assertEqual(list(secret['data']), ['redisEndpoint'])
+
+
+if __name__ == '__main__':
+    unittest.main()

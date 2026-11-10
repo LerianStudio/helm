@@ -1,3 +1,4 @@
+{{- $h := include "inbound.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,19 +7,24 @@ metadata:
     {{- include "inbound.labels" (dict "context" . "name" .Values.inbound.name ) | nindent 4 }} 
 spec:
   revisionHistoryLimit: {{ .Values.inbound.revisionHistoryLimit | default 10 }}
-  strategy:
-    {{- toYaml .Values.inbound.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.inbound.autoscaling.enabled }}
-  replicas: {{ .Values.inbound.replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "inbound.selectorLabels" (dict "context" . "name" .Values.inbound.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/inbound/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.inbound.useExistingSecrets }}
+        checksum/secret: {{ include (print $.Template.BasePath "/inbound/secrets.yaml") . | sha256sum }}
+        {{- end }}
       labels:
-        {{- include "inbound.labels" (dict "context" . "name" .Values.inbound.name ) | nindent 8 }}
+        {{- omit (include "inbound.labels" (dict "context" . "name" .Values.inbound.name ) | fromYaml) "helm.sh/chart" | toYaml | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.inbound.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -32,9 +38,7 @@ spec:
           image: {{ .Values.inbound.image.repository }}:{{ .Values.inbound.image.tag | default (include "plugin.version" .) }}
           imagePullPolicy: {{ .Values.inbound.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.inbound.service.port }}
-              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
               name: {{ if .Values.inbound.useExistingSecrets }}{{ .Values.inbound.existingSecretName }}{{ else }}{{ include "inbound.fullname" . }}{{ end }}
@@ -46,8 +50,9 @@ spec:
           {{- include "plugin-br-pix-indirect-btg.mongoHostRequired" (dict "context" . "component" "inbound") }}
           {{- $infraEnv := include "plugin-br-pix-indirect-btg.infraEnv" (dict "context" . "component" "inbound" "secretName" (include "inbound.fullname" .)) }}
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
-          {{- if or (trim $infraEnv) $otelEnabled }}
           env:
+          {{- toYaml $h.env | nindent 10 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileEnv" . | trim) }}{{ . | nindent 10 }}{{- end }}
           {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
           {{- if $otelEnabled }}
           - name: "HOST_IP"
@@ -57,27 +62,15 @@ spec:
           - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
             value: "$(HOST_IP):4317"
           {{- end }}
-          {{- end }}
           resources:
             {{- toYaml .Values.inbound.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.inbound.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.inbound.service.port }}
-            initialDelaySeconds: {{ .Values.inbound.readinessProbe.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.inbound.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.inbound.readinessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.inbound.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.inbound.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.inbound.livenessProbe.path | default "/health" }}
-              port: {{ .Values.inbound.service.port }}
-            initialDelaySeconds: {{ .Values.inbound.livenessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.inbound.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.inbound.livenessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.inbound.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.inbound.livenessProbe.failureThreshold | default 3 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileMount" . | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
       {{- with .Values.inbound.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -89,4 +82,8 @@ spec:
       {{- with .Values.inbound.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (include "plugin-br-pix-indirect-btg.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
       {{- end }}

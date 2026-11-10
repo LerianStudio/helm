@@ -1,3 +1,0 @@
-{{- if $.Values.siloc.enabled -}}
-{{ include "br-sfn.componentIngress" (dict "root" $ "name" "siloc" "comp" $.Values.siloc "defaultPort" 9820) }}
-{{- end -}}

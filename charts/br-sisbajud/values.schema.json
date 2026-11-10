@@ -51,11 +51,43 @@
       "type": "object",
       "additionalProperties": true
     },
+    "lerian-common-helm": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "postgresql": {
       "type": "object",
       "additionalProperties": true
     },
     "valkey": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "seaweedfs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "seaweedfsBuckets": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "openbao": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "openbaoDevToken": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "openbaoTransit": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "redpandaBundle": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "redpanda": {
       "type": "object",
       "additionalProperties": true
     }

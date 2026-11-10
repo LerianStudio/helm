@@ -8,14 +8,13 @@ annotations:
 home: https://github.com/LerianStudio/helm
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/plugin-bc-correios
-  - https://github.com/LerianStudio/plugin-bc-correios
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 2.2.0
+version: 4.0.2
 
-appVersion: "1.2.0"
+appVersion: "1.1.0"
 keywords:
   - bc-correios
   - correios
@@ -35,7 +34,3 @@ dependencies:
     version: "2.4.7"
     repository: "oci://registry-1.docker.io/bitnamicharts"
     condition: valkey.enabled
-  - name: rabbitmq
-    version: "2.1.11"
-    repository: "https://groundhog2k.github.io/helm-charts"
-    condition: rabbitmq.enabled

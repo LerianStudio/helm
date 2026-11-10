@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v2.x to v3.x
 
 ## Table of Contents
@@ -371,3 +372,4 @@ helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianst
 ```bash
 helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 3.0.0 -n plugin-br-pix-indirect-btg
 ```
+<!-- {% endraw %} -->

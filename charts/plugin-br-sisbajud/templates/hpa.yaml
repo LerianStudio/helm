@@ -1,0 +1,7 @@
+{{- if and .Values.sisbajud.enabled .Values.sisbajud.autoscaling.enabled -}}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" .Values.sisbajud.autoscaling
+      "name" (include "plugin-br-sisbajud.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud"))) }}
+{{- end -}}

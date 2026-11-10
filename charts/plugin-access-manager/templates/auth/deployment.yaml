@@ -1,3 +1,4 @@
+{{- $h := include "plugin-auth.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,42 +8,29 @@ metadata:
 spec:
   revisionHistoryLimit: {{ .Values.auth.revisionHistoryLimit | default 10 }}
   strategy:
-    {{- toYaml .Values.auth.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.auth.autoscaling.enabled }}
-  replicas: {{ .Values.auth.replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/auth/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/auth/configmap.yaml") . | sha256sum }}
+        checksum/app-client-secret: {{ .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET | toString | sha256sum }}
       labels:
-        {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name ) | nindent 8 }}
+        {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name "pod" true) | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       securityContext:
         {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
-      initContainers:
-        - name: wait-for-dependencies
-          securityContext:
-            {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: busybox
-          envFrom:
-          - configMapRef:
-              name: {{ include "plugin-auth.fullname" . }}
-          command:
-            - /bin/sh
-            - -c
-            - |
-              #!/bin/bash
-              until wget --spider -q "$AUTHORIZER_ADDRESS/api/health"; do
-                echo "Wait for backend...";
-                sleep 5;
-              done;
-              echo "Backend is up!";
       containers:
         - name: {{ include "plugin-auth.fullname" . }}
           securityContext:
@@ -53,60 +41,46 @@ spec:
             - name: http
               containerPort: {{ .Values.auth.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
-              name: {{ if .Values.auth.useExistingSecret }}{{ .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
+              name: {{ if .Values.auth.useExistingSecret }}{{ required "\n\nERROR: auth.useExistingSecret is true but auth.existingSecretName is empty.\n   Set auth.existingSecretName to the name of the Secret holding the auth environment (AUTHORIZER_CLIENT_SECRET, LICENSE_KEY, ORGANIZATION_IDS, ...), or set auth.useExistingSecret=false.\n" .Values.auth.existingSecretName }}{{ else }}{{ include "plugin-auth.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-auth.fullname" . }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
           env:
-          - name: "HOST_IP"
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value: "$(HOST_IP):4317"
-          {{ end }}              
+            {{- toYaml $h.env | nindent 12 }}
+            {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "AUTHORIZER_CLIENT_SECRET") | nindent 12 }}
+            {{- with (include "plugin-access-manager.licenseFileEnv" .Values.auth | trim) }}{{ . | nindent 12 }}{{ end }}
+          {{- if (index .Values "otel-collector-lerian").enabled }}
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+          {{- end }}
+          {{- with (include "plugin-access-manager.licenseFileMount" .Values.auth | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.auth.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.auth.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: {{ .Values.auth.readinessProbe.initialDelaySeconds | default 25 }}
-            periodSeconds: {{ .Values.auth.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.auth.readinessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.auth.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.auth.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.auth.livenessProbe.path | default "/health" }}
-              port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: {{ .Values.auth.livenessProbe.initialDelaySeconds | default 30 }}
-            periodSeconds: {{ .Values.auth.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.auth.livenessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.auth.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.auth.livenessProbe.failureThreshold | default 3 }}
-          {{- if .Values.auth.startupProbe.enabled }}
           startupProbe:
-            httpGet:
-              path: {{ .Values.auth.startupProbe.path | default "/health" }}
-              port: {{ .Values.auth.service.port }}
-            initialDelaySeconds: {{ .Values.auth.startupProbe.initialDelaySeconds | default 0 }}
-            periodSeconds: {{ .Values.auth.startupProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.auth.startupProbe.timeoutSeconds | default 10 }}
-            successThreshold: {{ .Values.auth.startupProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.auth.startupProbe.failureThreshold | default 5 }}
-          {{- end }}
-      {{- with .Values.auth.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
+      {{- with (include "plugin-access-manager.licenseFileVolume" .Values.auth | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
       {{- end }}
-      {{- with .Values.auth.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.auth.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, auth.spread, auth.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.auth
+            "global" .Values.global
+            "selectorLabels" (include "plugin-auth.selectorLabels" (dict "context" . "name" .Values.auth.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

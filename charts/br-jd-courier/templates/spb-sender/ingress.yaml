@@ -1,0 +1,39 @@
+{{- $values := .Values.roles.spbSender -}}
+{{- if and $values.enabled $values.ingress.enabled }}
+{{- $name := printf "%s-spb-sender" (include "br-jd-courier.fullname" .) | trunc 63 | trimSuffix "-" }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "br-jd-courier.labels" (dict "ctx" . "component" "spb-sender") | nindent 4 }}
+  {{- with $values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with $values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range $values.ingress.hosts }}
+    - http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $name }}
+                port:
+                  name: soap
+          {{- end }}
+      {{- with .host }}
+      host: {{ . | quote }}
+      {{- end }}
+    {{- end }}
+{{- end }}

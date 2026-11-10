@@ -8,6 +8,41 @@ Unified from helpers.tpl and _helpers.tpl
 */}}
 
 {{/*
+Health preset (probes, ports, env, grace, strategy, replicas, PDB, HPA floor). minImage is
+the first image that serves /readyz on the health port.
+*/}}
+{{/*
+PDB and rollout strategy come from the health preset, and workers have no Service or Ingress; an
+operator override of any of them fails the render instead of being silently ignored.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.presetOwned" -}}
+{{- range $k := .keys -}}
+{{- if hasKey $.component $k -}}{{- fail (printf "plugin-br-pix-indirect-btg: %s.%s is owned by the health preset (PDB maxUnavailable 1, RollingUpdate, workers expose no Service or Ingress); remove it" $.name $k) -}}{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- define "plugin-br-pix-indirect-btg.minImage" -}}1.14.0-beta.6{{- end }}
+{{- define "plugin-br-pix-indirect-btg.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "pix" "component" .Values.pix "keys" (list "pdb" "deploymentStrategy")) -}}
+{{- include "lerian-common.health" (dict "name" (include "plugin-br-pix-indirect-btg.fullname" .) "component" .Values.pix "health" .Values.pix.health "port" .Values.pix.service.port "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.pix.replicaCount "autoscaling" .Values.pix.autoscaling) -}}
+{{- end }}
+{{- define "inbound.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "inbound" "component" .Values.inbound "keys" (list "pdb" "deploymentStrategy" "service" "ingress")) -}}
+{{- include "lerian-common.health" (dict "name" (include "inbound.fullname" .) "component" .Values.inbound "health" .Values.inbound.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.inbound.replicaCount "autoscaling" .Values.inbound.autoscaling) -}}
+{{- end }}
+{{- define "outbound.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "outbound" "component" .Values.outbound "keys" (list "pdb" "deploymentStrategy" "service" "ingress")) -}}
+{{- include "lerian-common.health" (dict "name" (include "outbound.fullname" .) "component" .Values.outbound "health" .Values.outbound.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.outbound.replicaCount "autoscaling" .Values.outbound.autoscaling) -}}
+{{- end }}
+{{- define "reconciliation.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "reconciliation" "component" .Values.reconciliation "keys" (list "pdb" "deploymentStrategy" "service" "ingress")) -}}
+{{- include "lerian-common.health" (dict "name" (include "reconciliation.fullname" .) "component" .Values.reconciliation "health" .Values.reconciliation.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.reconciliation.replicaCount "autoscaling" .Values.reconciliation.autoscaling) -}}
+{{- end }}
+{{- define "schedule.health" -}}
+{{- include "plugin-br-pix-indirect-btg.presetOwned" (dict "name" "schedule" "component" .Values.schedule "keys" (list "pdb" "deploymentStrategy" "service" "ingress")) -}}
+{{- include "lerian-common.health" (dict "name" (include "schedule.fullname" .) "component" .Values.schedule "health" .Values.schedule.health "minImage" (include "plugin-br-pix-indirect-btg.minImage" .) "replicas" .Values.schedule.replicaCount "autoscaling" .Values.schedule.autoscaling) -}}
+{{- end }}
+
+{{/*
 ================================================================================
 NAME HELPERS
 ================================================================================
@@ -140,6 +175,14 @@ Create app version.
 */}}
 {{- define "plugin.version" -}}
 {{- printf "%s" .Chart.AppVersion | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+A flag that defaults to "true". Sprig `default` treats an explicit boolean false
+as empty, so a bool is rendered as-is. Input: the value.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.flagDefaultTrue" -}}
+{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
 {{- end }}
 
 {{/*
@@ -396,6 +439,14 @@ because common.names.dependency.fullname is Bitnami-specific.
 {{- end }}
 
 {{/*
+plugin-br-pix-indirect-btg.apiURL — this release's API Service, which the inbound, reconciliation and
+schedule workers call.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.apiURL" -}}
+{{- printf "http://%s.%s.svc.cluster.local:%v" (include "plugin-br-pix-indirect-btg.fullname" .) .Release.Namespace .Values.pix.service.port -}}
+{{- end }}
+
+{{/*
 plugin-br-pix-indirect-btg.dbPasswordRequired — fail-loud gate. When the bundled postgresql
 subchart is NOT the source (external or disabled) and no operator credential or existingSecret is
 supplied, fail the render naming the exact value. On the bundled path the password comes from the
@@ -552,7 +603,6 @@ VALIDATION HELPERS
 ================================================================================
 These validations run before deployment to ensure critical fields are set.
 - ERRORS (fail): Block deployment - used for truly required fields
-- WARNINGS (print): Show message but allow deployment - used for recommended fields
 ================================================================================
 */}}
 
@@ -581,6 +631,8 @@ Validate required configuration fields
 {{- fail "\n\nERROR: pix.configmap.MIDAZ_LEDGER_ID is required. Set your Midaz ledger ID.\n" }}
 {{- end }}
 
+{{/* Required while the chart renders any Secret that reads them; only all-existing-Secrets frees them */}}
+{{- if not (and .Values.pix.useExistingSecrets .Values.inbound.useExistingSecrets .Values.outbound.useExistingSecrets .Values.reconciliation.useExistingSecrets .Values.schedule.useExistingSecrets) }}
 {{/* BTG Secrets - Required */}}
 {{- if not .Values.pix.secrets.BTG_CLIENT_ID }}
 {{- fail "\n\nERROR: pix.secrets.BTG_CLIENT_ID is required. Set your BTG client ID in secrets section.\n" }}
@@ -604,9 +656,10 @@ Validate required configuration fields
 {{- fail "\n\nERROR: pix.secrets.MIDAZ_CLIENT_SECRET is required. Set your Midaz client secret in secrets section.\n" }}
 {{- end }}
 
-{{/* License - Required */}}
-{{- if not .Values.pix.secrets.LICENSE_KEY }}
-{{- fail "\n\nERROR: pix.secrets.LICENSE_KEY is required. Set your license key in secrets section.\n" }}
+{{/* License - Required unless a signed licence file is mounted (licenseFile.existingSecret) */}}
+{{- if not (or .Values.pix.secrets.LICENSE_KEY (include "plugin-br-pix-indirect-btg.licenseSecret" .)) }}
+{{- fail "\n\nERROR: pix.secrets.LICENSE_KEY is required unless licenseFile.existingSecret is set. Set your license key in secrets section.\n" }}
+{{- end }}
 {{- end }}
 
 {{/* Organization IDs - Required */}}
@@ -616,70 +669,6 @@ Validate required configuration fields
 
 
 {{- end }}
-
-{{/*
-Validate PostgreSQL configuration (warnings only)
-*/}}
-{{- define "plugin-br-pix-indirect-btg.validatePostgreSQL" -}}
-{{/* Warnings are logged but do not block deployment */}}
-{{- end }}
-
-{{/*
-Validate MongoDB configuration (warnings only)
-*/}}
-{{- define "plugin-br-pix-indirect-btg.validateMongoDB" -}}
-{{/* Warnings are logged but do not block deployment */}}
-{{- end }}
-
-{{/*
-================================================================================
-WARNING ANNOTATIONS
-================================================================================
-These are informational annotations added to resources when using default values.
-They serve as reminders without blocking deployment.
-================================================================================
-*/}}
-
-{{/*
-Generate warning annotations for secrets using default values
-*/}}
-{{- define "plugin-br-pix-indirect-btg.secretWarnings" -}}
-{{- $warnings := list -}}
-{{- if eq .Values.pix.secrets.DB_PASSWORD "lerian" -}}
-{{- $warnings = append $warnings "DB_PASSWORD is using default value 'lerian'" -}}
-{{- end -}}
-{{- if eq .Values.pix.secrets.MONGO_PASSWORD "lerian" -}}
-{{- $warnings = append $warnings "MONGO_PASSWORD is using default value 'lerian'" -}}
-{{- end -}}
-{{- if .Values.postgresql.enabled -}}
-{{- if eq .Values.postgresql.auth.password "lerian" -}}
-{{- $warnings = append $warnings "postgresql.auth.password is using default value 'lerian'" -}}
-{{- end -}}
-{{- end -}}
-{{- if .Values.mongodb.enabled -}}
-{{- if eq .Values.mongodb.auth.rootPassword "lerian" -}}
-{{- $warnings = append $warnings "mongodb.auth.rootPassword is using default value 'lerian'" -}}
-{{- end -}}
-{{- end -}}
-{{- if gt (len $warnings) 0 -}}
-lerian.studio/security-warnings: {{ $warnings | join "; " | quote }}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Generate warning annotations for missing webhook configuration
-*/}}
-{{- define "plugin-br-pix-indirect-btg.webhookWarnings" -}}
-{{- $warnings := list -}}
-{{- if .Values.outbound -}}
-{{- if not .Values.outbound.configmap.WEBHOOK_CLIENT_URL -}}
-{{- $warnings = append $warnings "WEBHOOK_CLIENT_URL is empty - outbound notifications disabled" -}}
-{{- end -}}
-{{- end -}}
-{{- if gt (len $warnings) 0 -}}
-lerian.studio/webhook-warnings: {{ $warnings | join "; " | quote }}
-{{- end -}}
-{{- end -}}
 
 {{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra
@@ -781,4 +770,39 @@ Outbound BTG client mTLS — read-only volumeMount for the cert volume above.
   mountPath: {{ .Values.mtls.mountPath | default "/etc/btg/mtls" | quote }}
   readOnly: true
 {{- end -}}
+{{- end -}}
+
+{{/*
+Optional signed licence file: the Secret licenseFile.existingSecret is mounted as a
+DIRECTORY (never subPath, so rotations propagate) on every component. The nil-safe
+read keeps --reuse-values over old releases working.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.licenseSecret" -}}
+{{- (.Values.licenseFile | default dict).existingSecret | default "" -}}
+{{- end -}}
+
+{{- define "plugin-br-pix-indirect-btg.licenseFileEnv" -}}
+{{- if include "plugin-br-pix-indirect-btg.licenseSecret" . }}
+- name: LICENSE_FILE_PATH
+  value: "/etc/lerian/license/license"
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-br-pix-indirect-btg.licenseFileMount" -}}
+{{- if include "plugin-br-pix-indirect-btg.licenseSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-br-pix-indirect-btg.licenseFileVolume" -}}
+{{- with include "plugin-br-pix-indirect-btg.licenseSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
 {{- end -}}

@@ -28,7 +28,7 @@ The Midaz application components have been upgraded from version `3.7.8` to `3.8
 | ledger.image.tag | 3.7.8 | 3.8.0 |
 | crm.image.tag | 3.7.8 | 3.8.0 |
 
-This version includes new capabilities for service discovery, KMS integration, and streaming features. Refer to the [Midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md) for detailed application-level changes.
+This version includes new capabilities for service discovery, KMS integration, and streaming features. Refer to the Midaz application changelog for detailed application-level changes.
 
 ### 2. Service Discovery (Consul) integration
 
@@ -109,6 +109,8 @@ The following KMS configuration variables have been added to `crm.configmap`:
 | KMS_VENDOR | `hashicorp-vault` | KMS vendor identifier |
 | KMS_VAULT_ADDR | `http://midaz-hc-vault:8200` | Vault server address |
 | KMS_VAULT_AUTH_METHOD | `token` | Vault authentication method |
+
+> **Changed in v9.7.0:** `KMS_VENDOR` defaults to `none` and `KMS_VAULT_ADDR` has no default. To keep Vault, set both explicitly — see [UPGRADE-9.7.md](UPGRADE-9.7.md).
 
 #### Example configuration
 

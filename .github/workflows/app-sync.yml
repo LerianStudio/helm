@@ -1,5 +1,11 @@
 name: Update Helm Chart from Dispatch
 
+# Names the run after what it updates. Severino follows each maintenance line it opened and
+# replies in that request's Slack thread; for a failed run it finds the line by this title,
+# because a workflow_dispatch run does not expose its inputs through the API. The format
+# `<chart> <source_repo>@<source_ref>` is that contract: change it together with Severino.
+run-name: "Update Helm Chart from Dispatch: ${{ fromJSON(inputs.payload).chart }} ${{ fromJSON(inputs.payload).source_repo }}@${{ fromJSON(inputs.payload).source_ref }}"
+
 on:
   workflow_dispatch:
     inputs:
@@ -10,11 +16,33 @@ on:
 
 jobs:
   update:
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/helm-update-chart.yml@v1.36.8
+    # v1.55.0 honours the is_legacy_patch/version_line fields the senders already emit,
+    # routing a maintenance-line release to <prefix>/<chart>-<major>.<minor>.x (cut from
+    # main) instead of overwriting the mainline chart. release.yml releases from those
+    # branches, so this closes the loop. Contract is additive between the two versions:
+    # only the four legacy_* inputs appear, none removed or renamed, secrets unchanged.
+    # Pinned to the tier-2 channel like this repo's other shared workflows, not to a
+    # version: releases arrive when tier-2 is promoted. Since v1.76.0 it writes a
+    # single-service chart's image to the root .image.tag (and drops the orphan
+    # "<component>:" block older runs left) instead of .<component>.image.tag, which no
+    # template reads: product-console bumps moved appVersion but kept shipping the old
+    # image. Inputs and secrets are unchanged from v1.55.0.
+    uses: LerianStudio/shared-workflows-public/.github/workflows/helm-update-chart.yml@tier-1
     with:
       payload: ${{ inputs.payload }}
-      base_branch: develop
+      # develop is retired for this repo (see the PR template): mainline updates belong on main.
+      base_branch: main
+      # Chart line branches use the same prefix as the app repos' maintenance lines,
+      # instead of the action's `hotfix` default. Every existing chart line branch must
+      # be renamed to this prefix: the resolver looks the branch up by <prefix>/<chart>-<line>.x
+      # and would otherwise create a second, duplicate line off main.
+      legacy_branch_prefix: maintenance
       slack_notification: true
+      # Channel IDs are not secrets, so both come from variables. The update card goes to
+      # SLACK_CHANNEL_DEVOPS_NOTIFICATIONS; SLACK_CHANNEL_DEVOPS keeps only the Severino
+      # mention, which becomes the review ticket.
+      slack_channel: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+      slack_notification_channel: ${{ vars.SLACK_CHANNEL_DEVOPS_NOTIFICATIONS }}
     secrets:
       APP_ID: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
       APP_PRIVATE_KEY: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
@@ -23,6 +51,5 @@ jobs:
       GIT_USER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
       GIT_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
-      SLACK_CHANNEL_DEVOPS: ${{ secrets.SLACK_CHANNEL_DEVOPS }}
       SLACK_GROUP_DEVOPS_SRE: ${{ secrets.SLACK_GROUP_DEVOPS_SRE }}
       SLACK_BOT_SEVERINO: ${{ secrets.SLACK_BOT_SEVERINO }}

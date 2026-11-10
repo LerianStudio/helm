@@ -3,9 +3,15 @@
 #
 # Topology:
 #   - api             (HTTP API on :8080, ingress optional)
-#   - worker-email    (consumer on :8081 — health probe only)
-#   - worker-sms      (consumer on :8082 — health probe only)
-#   - worker-webhook  (consumer on :8083 — health probe only)
+#   - worker-email    (consumer, no Service)
+#   - worker-sms      (consumer, no Service)
+#   - worker-webhook  (consumer, no Service)
+#
+# Probes, /readyz and /metrics are served on HEALTH_PORT 8099 by every component
+# (internal ClusterIP Service port `health` on the api only, never an Ingress
+# backend). The lerian-common health preset owns probes, drain, grace period,
+# rollout strategy and the PDB; tune only <component>.health.drainSeconds and
+# shutdownSeconds. The chart refuses images below the first one that serves the port.
 #
 # All components share the same env contract, exposed via a single ConfigMap
 # (non-sensitive) and a single Secret (sensitive — fillable per env via gitops
@@ -92,9 +98,13 @@ migrations:
 # under `secrets` (rendered into a separate Secret).
 config:
   # ---- Application ----
-  ENV_NAME: "firmino"
+  # -- Only the exact value `production` turns on the app's production checks
+  #    (Swagger forced off, rate limiting forced on, POSTGRES_PASSWORD required,
+  #    sslmode=disable and dev encryption keys refused). Any other value,
+  #    including the default `development`, leaves them off.
+  ENV_NAME: "development"
   LOG_LEVEL: "info"
-  SERVER_ADDRESS: ":8080"
+  SERVER_ADDRESS: "0.0.0.0:8080"
   HTTP_BODY_LIMIT_BYTES: "104857600"
   TLS_TERMINATED_UPSTREAM: "true"
   DEFAULT_TENANT_ID: "11111111-1111-1111-1111-111111111111"
@@ -154,11 +164,8 @@ config:
   # ---- RabbitMQ (external) ----
   RABBITMQ_HOST: ""
   RABBITMQ_PORT_AMQP: "5672"
-  RABBITMQ_PORT_HOST: "15672"
   RABBITMQ_VHOST: "/"
   RABBITMQ_EXCHANGE: "events"
-  RABBITMQ_REQUIRE_HEALTH_ALLOWED_HOSTS: "false"
-  RABBITMQ_ALLOW_INSECURE_HEALTH_CHECK: "false"
   RABBITMQ_ALLOW_INSECURE_TLS: "false"
   RABBITMQ_PUBLISHER_CONFIRM_TIMEOUT_MS: "5000"
   RABBITMQ_PUBLISHER_RECOVERY_INITIAL_MS: "1000"
@@ -195,7 +202,6 @@ config:
   # ---- Worker tuning (consumed by all worker-* components) ----
   WORKER_RETRY_INTERVAL_SEC: "30"
   WORKER_RETRY_BATCH_SIZE: "50"
-  WORKER_SHUTDOWN_TIMEOUT_SEC: "30"
 
   # ---- Swagger ----
   SWAGGER_ENABLED: "true"
@@ -211,7 +217,7 @@ config:
   OTEL_RESOURCE_SERVICE_NAME: "notifications"
   OTEL_RESOURCE_SERVICE_VERSION: "0.1.0"
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
-  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "firmino"
+  OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT: "development"
 
   # ---- Rate Limiting ----
   RATE_LIMIT_ENABLED: "true"
@@ -219,13 +225,14 @@ config:
   RATE_LIMIT_WINDOW_SEC: "60"
   AGGRESSIVE_RATE_LIMIT_MAX: "100"
   AGGRESSIVE_RATE_LIMIT_WINDOW_SEC: "60"
-  RELAXED_RATE_LIMIT_MAX: "1000"
-  RELAXED_RATE_LIMIT_WINDOW_SEC: "60"
 
   # ---- Observability ----
   DB_METRICS_INTERVAL_SEC: "15"
 
   # ---- Idempotency ----
+  # -- Window (seconds) during which a cached Idempotency-Key response is
+  #    replayed. The chart pins 300; the application's own default (used when
+  #    the variable is unset) is 86400 (24h), which is what the app docs describe.
   IDEMPOTENCY_RETRY_WINDOW_SEC: "300"
 
   # ---- Destination Auth Cache ----
@@ -247,14 +254,26 @@ config:
 extraConfig: {}
 
 #==============================================================================
+# Licence file (optional alternative to secrets.LICENSE_KEY)
+#==============================================================================
+licenseFile:
+  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license on the api and workers; secrets.LICENSE_KEY is then not required.
+  # File mode needs an image on lib-license-go v5.
+  existingSecret: ""
+
+#==============================================================================
 # Shared environment (Secret)
 #==============================================================================
 # Sensitive env vars. Leave empty here; populate per-env via gitops + AVP, or
 # point `secretRef.name` at an externally-managed Secret to skip this entirely.
 secrets:
+  # -- REQUIRED unless `licenseFile.existingSecret` is set: licence key; the api and every worker refuse to boot without a licence.
+  LICENSE_KEY: ""
   # -- DATABASE_URL is the pre-built, URL-escaped Postgres DSN consumed
   # by the migrations Job (templates/migrations-job.yaml). Required when
-  # `migrations.enabled` is true. Format:
+  # `migrations.enabled` is true: an empty value still renders, but the Job
+  # then fails at run time with an empty `-database` flag. Format:
   #   postgres://USER:URLENCODED_PW@HOST:PORT/DB?sslmode=disable
   DATABASE_URL: ""
   # -- Postgres
@@ -275,7 +294,6 @@ secrets:
   RABBITMQ_URL: ""
   RABBITMQ_DEFAULT_USER: ""
   RABBITMQ_DEFAULT_PASS: ""
-  RABBITMQ_HEALTH_CHECK_URL: ""
   # -- Multi-tenant (MULTI_TENANT_URL and MULTI_TENANT_REDIS_HOST are
   #    non-sensitive and live in `config`/ConfigMap; only the API key and
   #    Redis password are sensitive)
@@ -283,8 +301,16 @@ secrets:
   MULTI_TENANT_REDIS_PASSWORD: ""
   # -- Plugin Auth
   PLUGIN_AUTH_HOST: ""
-  # -- Destination auth cache encryption key (base64 AES-256-GCM)
+  # -- REQUIRED by the application (it refuses to boot without it): destination
+  #    auth cache encryption key (base64, 32 bytes, AES-256-GCM). Empty by
+  #    default so the chart renders; set it per env.
   NOTIFICATION_AUTH_CACHE_ENCRYPTION_KEY: ""
+  # -- REQUIRED by the application (it refuses to boot without it) but not
+  #    declared here by default: NOTIFICATION_ENCRYPTION_KEY (base64, 32 bytes),
+  #    which encrypts delivery-profile credentials at rest. Provide it via
+  #    `extraSecrets`, or as a key in the Secret named by `secretRef.name`. Do
+  #    not also add it here and in `extraSecrets`: both land in the same Secret.
+  #    Generate with `openssl rand -base64 32`.
   # -- M2M
   M2M_TARGET_SERVICE: ""
   # -- Webhook SSRF allowlist override (development only)
@@ -298,14 +324,18 @@ extraSecrets: {}
 #==============================================================================
 api:
   name: "notifications"
-  replicaCount: 1
+  replicaCount: 2
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/notifications
+    repository: ghcr.io/lerianstudio/notifications
     pullPolicy: Always
     tag: ""  # defaults to .Chart.AppVersion
   imagePullSecrets: []
   containerPort: 8080
+  # -- Health preset (lerian-common.health): probes, ports, grace, drain and rollout strategy are owned by it.
+  #    Tune only drainSeconds (default 15) and shutdownSeconds (default 30); grace = drain + shutdown + 10.
+  health:
+    stack: go
   service:
     type: ClusterIP
     port: 8080
@@ -319,11 +349,6 @@ api:
           - path: /
             pathType: Prefix
     tls: []
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -346,35 +371,14 @@ api:
       memory: 128Mi
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 70
+  # -- PodDisruptionBudget: maxUnavailable 1 with AlwaysAllow eviction, owned by the health preset.
   pdb:
-    enabled: false
-    maxUnavailable: 1
-    minAvailable: 0
+    enabled: true
     annotations: {}
-  probes:
-    liveness:
-      path: /health
-      initialDelaySeconds: 10
-      periodSeconds: 10
-      timeoutSeconds: 3
-      failureThreshold: 3
-    readiness:
-      path: /readyz
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 3
-    startup:
-      enabled: true
-      path: /health
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 30
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -387,15 +391,18 @@ workerEmail:
   name: "notifications-worker-email"
   enabled: true
   replicaCount: 1
+  # -- Health preset (lerian-common.health): probes, ports, grace and rollout strategy are owned by it.
+  #    Tune only shutdownSeconds (default 30); a worker has no Service to drain, so grace = shutdown + 10.
+  #    singleton: the retry scheduler has no row claim, so overlapping pods would resend.
+  health:
+    stack: go-worker
+    singleton: true
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/notifications-worker-email
+    repository: ghcr.io/lerianstudio/notifications-worker-email
     pullPolicy: Always
     tag: ""  # defaults to .Chart.AppVersion
   imagePullSecrets: []
-  containerPort: 8081
-  # -- Bound to WORKER_HEALTH_ADDRESS (=:8081). Exposed only via probes; no
-  #    Service is created for workers.
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -416,42 +423,6 @@ workerEmail:
     requests:
       cpu: 100m
       memory: 128Mi
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 3
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 70
-  pdb:
-    enabled: false
-    maxUnavailable: 1
-    minAvailable: 0
-    annotations: {}
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  probes:
-    liveness:
-      path: /health
-      initialDelaySeconds: 10
-      periodSeconds: 10
-      timeoutSeconds: 3
-      failureThreshold: 3
-    readiness:
-      path: /readyz
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 3
-    startup:
-      enabled: true
-      path: /health
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 30
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -464,13 +435,18 @@ workerSms:
   name: "notifications-worker-sms"
   enabled: true
   replicaCount: 1
+  # -- Health preset (lerian-common.health): probes, ports, grace and rollout strategy are owned by it.
+  #    Tune only shutdownSeconds (default 30); a worker has no Service to drain, so grace = shutdown + 10.
+  #    singleton: the retry scheduler has no row claim, so overlapping pods would resend.
+  health:
+    stack: go-worker
+    singleton: true
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/notifications-worker-sms
+    repository: ghcr.io/lerianstudio/notifications-worker-sms
     pullPolicy: Always
     tag: ""
   imagePullSecrets: []
-  containerPort: 8082
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -491,42 +467,6 @@ workerSms:
     requests:
       cpu: 100m
       memory: 128Mi
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 3
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 70
-  pdb:
-    enabled: false
-    maxUnavailable: 1
-    minAvailable: 0
-    annotations: {}
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  probes:
-    liveness:
-      path: /health
-      initialDelaySeconds: 10
-      periodSeconds: 10
-      timeoutSeconds: 3
-      failureThreshold: 3
-    readiness:
-      path: /readyz
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 3
-    startup:
-      enabled: true
-      path: /health
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 30
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -539,13 +479,18 @@ workerWebhook:
   name: "notifications-worker-webhook"
   enabled: true
   replicaCount: 1
+  # -- Health preset (lerian-common.health): probes, ports, grace and rollout strategy are owned by it.
+  #    Tune only shutdownSeconds (default 30); a worker has no Service to drain, so grace = shutdown + 10.
+  #    singleton: the retry scheduler has no row claim, so overlapping pods would resend.
+  health:
+    stack: go-worker
+    singleton: true
   revisionHistoryLimit: 10
   image:
-    repository: docker.io/lerianstudio/notifications-worker-webhook
+    repository: ghcr.io/lerianstudio/notifications-worker-webhook
     pullPolicy: Always
     tag: ""
   imagePullSecrets: []
-  containerPort: 8083
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -566,42 +511,6 @@ workerWebhook:
     requests:
       cpu: 100m
       memory: 128Mi
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 3
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 70
-  pdb:
-    enabled: false
-    maxUnavailable: 1
-    minAvailable: 0
-    annotations: {}
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  probes:
-    liveness:
-      path: /health
-      initialDelaySeconds: 10
-      periodSeconds: 10
-      timeoutSeconds: 3
-      failureThreshold: 3
-    readiness:
-      path: /readyz
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 3
-    startup:
-      enabled: true
-      path: /health
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 30
   nodeSelector: {}
   tolerations: []
   affinity: {}

@@ -1,0 +1,8 @@
+# The image panics at startup without license configuration:
+#   at least one organization ID is required
+#   LicenseClient is nil, cannot configure skip validation
+# "global" is the single-tenant organization ID the internal environments use.
+fees:
+  secrets:
+    ORGANIZATION_IDS: "global"
+    LICENSE_KEY: "IT_LICENSE_KEY" # CI license placeholder (README)

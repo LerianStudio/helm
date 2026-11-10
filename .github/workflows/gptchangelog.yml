@@ -20,22 +20,34 @@ permissions:
 
 jobs:
   changelog:
-    uses: LerianStudio/github-actions-shared-workflows/.github/workflows/gptchangelog.yml@main
+    uses: LerianStudio/shared-workflows-public/.github/workflows/gptchangelog.yml@tier-1
     with:
-      runner_type: "blacksmith-4vcpu-ubuntu-2404"
       filter_paths: |-
+        charts/agent
+        charts/alloy-lerian
+        charts/br-jd-courier
+        charts/br-sisbajud
         charts/br-sta
         charts/fetcher
-        charts/lerian-notification
+        charts/lerian-common
+        charts/lerian-consul
         charts/midaz
+        charts/notifications
         charts/otel-collector-lerian
         charts/plugin-access-manager
-        charts/plugin-br-pix-direct-jd
+        charts/plugin-bc-correios
+        charts/plugin-br-bank-transfer
+        charts/plugin-br-payments
         charts/plugin-br-pix-indirect-btg
-        charts/plugin-br-pix-switch
-        charts/plugin-crm
+        charts/plugin-br-pix-jd
+        charts/plugin-br-pix-lerian
+        charts/plugin-br-sisbajud
+        charts/plugin-br-ted-lerian
         charts/plugin-fees
         charts/product-console
         charts/reporter
+        charts/streaming-hub
+        charts/system-facts
+        charts/tracer
       path_level: '2'
     secrets: inherit

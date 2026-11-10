@@ -35,7 +35,11 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-br-pix-indirect-btg-db"
-
+# -- Optional signed licence file, an alternative to pix.secrets.LICENSE_KEY. The Secret is mounted
+# read-only as the directory /etc/lerian/license (key `license`) on every component. File mode needs
+# an image on lib-license-go v5.
+licenseFile:
+  existingSecret: ""
 # -- Outbound (client) mTLS to the BTG API, shared by the components that call
 # BTG directly (pix and reconciliation). Independent of the inbound webhook
 # `MTLS_ENABLED` toggle. The Secret (created by the chart from `tls.crt`/`tls.key`
@@ -70,12 +74,10 @@ mtls:
   # -- fsGroup applied to the pod so the non-root app can group-read the key. Match runAsGroup (1000).
   fsGroup: 1000
 pix:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe:
-    path: /health
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
-  replicaCount: 1
+  # -- Health preset (lerian-common.health): probes, ports, grace, strategy and PDB are derived from it.
+  health:
+    stack: go
+  replicaCount: 2
   name: "plugin-br-pix-indirect-btg"
   description: "Plugin pix for Midaz"
   # -- Number of old ReplicaSets to retain for deployment rollback
@@ -86,7 +88,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -111,11 +113,6 @@ pix:
     type: ClusterIP
     # -- Service port
     port: 4014
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   podSecurityContext: {} # fsGroup: 2000
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
@@ -132,15 +129,6 @@ pix:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  pdb:
-    # -- Enable or disable PodDisruptionBudget
-    enabled: true
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
-    # -- Minimum number of available pods
-    minAvailable: 0
-    # -- Annotations for PodDisruptionBudget
-    annotations: {}
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -196,6 +184,8 @@ pix:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    # PostgreSQL TLS: disable, allow, prefer, require, verify-ca or verify-full; only require and stricter encrypt.
+    DB_SSL_MODE: "disable"
     # MongoDB Configuration
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
@@ -232,6 +222,34 @@ pix:
     SCHEDULE_MIN_FUTURE_SECONDS: "60"
     SCHEDULE_DEFAULT_EXECUTE_HOUR_BRT: "6"
     SCHEDULE_MAX_ATTEMPTS: "2"
+    # Recurring (Pix Automatico) stale authorization-request sweep
+    RECURRING_AR_EXPIRE_GRACE: "1h"
+    RECURRING_AR_EXPIRE_MIN_GRACE: "1m"
+    # Access Manager permission declaration. When "true" the app also requires
+    # PLUGIN_AUTH_ENABLED=true, PLUGIN_AUTH_ADDRESS and the M2M_CLIENT_* secrets, or boot fails.
+    DECLARATION_ENABLED: "false"
+    # Defaults to the identity service in the Helm release namespace when empty.
+    PLUGIN_IDENTITY_HOST: ""
+    # Anti-Fraud Decision Hook (cashin / refund-cashin)
+    # Master flag off by default; when false none of the other ANTIFRAUD_HOOK_* vars
+    # are read or validated by the app. When true: URL must be HTTPS (unless
+    # ALLOW_PRIVATE_NETWORK), HMAC secret >= 32 chars, and exactly one of
+    # FALLBACK_DECISION (APPROVE|REJECT) or FALLBACK_MAX_APPROVE_AMOUNT must be set.
+    ANTIFRAUD_HOOK_ENABLED: "false"
+    ANTIFRAUD_HOOK_URL: ""
+    ANTIFRAUD_HOOK_TIMEOUT_MS: "500"
+    ANTIFRAUD_HOOK_FALLBACK_DECISION: ""
+    ANTIFRAUD_HOOK_FALLBACK_MAX_APPROVE_AMOUNT: ""
+    # AUTH_HEADER_NAME and the AUTH_HEADER_VALUE secret must be set together or both left empty.
+    ANTIFRAUD_HOOK_AUTH_HEADER_NAME: ""
+    # Never "true" in production.
+    ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK: "false"
+    ANTIFRAUD_HOOK_CB_ENABLED: "true"
+    ANTIFRAUD_HOOK_CB_MAX_REQUESTS: "3"
+    ANTIFRAUD_HOOK_CB_INTERVAL: "60s"
+    ANTIFRAUD_HOOK_CB_TIMEOUT: "30s"
+    ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: "5"
+    ANTIFRAUD_HOOK_PREWARM_ENABLED: "true"
   # -- Secrets for storing sensitive data
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
@@ -252,16 +270,23 @@ pix:
     FEE_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""
     BTG_WEBHOOK_SECRET: ""
+    # Access Manager declaration credentials (required when DECLARATION_ENABLED=true)
+    M2M_CLIENT_ID: ""
+    M2M_CLIENT_SECRET: ""
+    # Anti-Fraud hook (HMAC secret >= 32 chars when the hook is enabled)
+    ANTIFRAUD_HOOK_HMAC_SECRET: ""
+    ANTIFRAUD_HOOK_AUTH_HEADER_VALUE: ""
+    # Streaming broker credentials (required by the broker when SASL is on; CA is base64 PEM)
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
   # -- Extra environment variables
   extraEnvVars: {}
   useExistingSecrets: false
   existingSecretName: ""
 inbound:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe:
-    path: /health
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
+  # -- Health preset (lerian-common.health): probes, ports, grace, strategy and PDB are derived from it.
+  health:
+    stack: go-worker
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-inbound"
   description: "Plugin pix for Midaz"
@@ -273,36 +298,13 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
   nameOverride: ""
   # -- Overrides the full name generated by Helm
   fullnameOverride: ""
-  ingress:
-    # -- Enable or disable ingress
-    enabled: false
-    # -- Ingress class name
-    className: "nginx"
-    # -- Additional ingress annotations
-    annotations: {}
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-  service:
-    # -- Kubernetes service type
-    type: ClusterIP
-    # -- Service port
-    port: 4016
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   podSecurityContext: {}
   # fsGroup: 2000
 
@@ -321,15 +323,6 @@ inbound:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  pdb:
-    # -- Enable or disable PodDisruptionBudget
-    enabled: true
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
-    # -- Minimum number of available pods
-    minAvailable: 0
-    # -- Annotations for PodDisruptionBudget
-    annotations: {}
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -381,6 +374,8 @@ inbound:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    # PostgreSQL TLS: disable, allow, prefer, require, verify-ca or verify-full; only require and stricter encrypt.
+    DB_SSL_MODE: "disable"
     # MongoDB Configuration
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
@@ -390,6 +385,8 @@ inbound:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
+    # Falls back to pix.secrets.LICENSE_KEY when empty.
+    LICENSE_KEY: ""
     DB_PASSWORD: ""
     DB_REPLICA_PASSWORD: ""
     MONGO_PASSWORD: ""
@@ -399,11 +396,9 @@ inbound:
   useExistingSecrets: false
   existingSecretName: "plugin-br-pix-indirect-btg-inbound"
 outbound:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe:
-    path: /health
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
+  # -- Health preset (lerian-common.health): probes, ports, grace, strategy and PDB are derived from it.
+  health:
+    stack: go-worker
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-outbound"
   description: "Plugin pix for Midaz"
@@ -415,36 +410,13 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
   nameOverride: ""
   # -- Overrides the full name generated by Helm
   fullnameOverride: ""
-  ingress:
-    # -- Enable or disable ingress
-    enabled: false
-    # -- Ingress class name
-    className: "nginx"
-    # -- Additional ingress annotations
-    annotations: {}
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-  service:
-    # -- Kubernetes service type
-    type: ClusterIP
-    # -- Service port
-    port: 4015
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   podSecurityContext: {}
   # fsGroup: 2000
 
@@ -463,15 +435,6 @@ outbound:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  pdb:
-    # -- Enable or disable PodDisruptionBudget
-    enabled: true
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
-    # -- Minimum number of available pods
-    minAvailable: 0
-    # -- Annotations for PodDisruptionBudget
-    annotations: {}
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -526,15 +489,14 @@ outbound:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    # PostgreSQL TLS: disable, allow, prefer, require, verify-ca or verify-full; only require and stricter encrypt.
+    DB_SSL_MODE: "disable"
     # MongoDB Configuration
     MONGO_HOST: ""
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
-    # Redis Configuration
-    REDIS_HOST: ""
-    # Webhook URLs (Client-specific)
+    # Webhook URLs (Client-specific). WEBHOOK_DEFAULT_URL is required when an enabled entity has no entity or flow URL.
     WEBHOOK_DEFAULT_URL: ""
-    WEBHOOK_CLIENT_URL: ""
     WEBHOOK_DICT_CLAIM_URL: ""
     WEBHOOK_DICT_INFRACTION_REPORT_URL: ""
     WEBHOOK_DICT_REFUND_URL: ""
@@ -549,6 +511,8 @@ outbound:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
+    # Falls back to pix.secrets.LICENSE_KEY when empty.
+    LICENSE_KEY: ""
     DB_PASSWORD: ""
     DB_REPLICA_PASSWORD: ""
     MONGO_PASSWORD: ""
@@ -557,11 +521,9 @@ outbound:
   useExistingSecrets: false
   existingSecretName: ""
 reconciliation:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe:
-    path: /health
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
+  # -- Health preset (lerian-common.health): probes, ports, grace, strategy and PDB are derived from it.
+  health:
+    stack: go-worker
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-reconciliation"
   description: "Reconciliation Worker for Plugin BR PIX Indirect BTG"
@@ -573,38 +535,13 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
   nameOverride: ""
   # -- Overrides the full name generated by Helm
   fullnameOverride: ""
-  ingress:
-    # -- Enable or disable ingress
-    enabled: false
-    # -- Ingress class name
-    className: "nginx"
-    # -- Additional ingress annotations
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
-      nginx.ingress.kubernetes.io/proxy-response-buffer-size: 16k
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-  service:
-    # -- Kubernetes service type
-    type: ClusterIP
-    # -- Service port
-    port: 4017
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   podSecurityContext: {} # fsGroup: 2000
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
@@ -621,15 +558,6 @@ reconciliation:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  pdb:
-    # -- Enable or disable PodDisruptionBudget
-    enabled: true
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
-    # -- Minimum number of available pods
-    minAvailable: 0
-    # -- Annotations for PodDisruptionBudget
-    annotations: {}
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -681,6 +609,8 @@ reconciliation:
     DB_REPLICA_HOST: ""
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
+    # PostgreSQL TLS: disable, allow, prefer, require, verify-ca or verify-full; only require and stricter encrypt.
+    DB_SSL_MODE: "disable"
     ALLOW_INSECURE_TLS: "true"
     # Redis Configuration
     REDIS_HOST: ""
@@ -695,6 +625,8 @@ reconciliation:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/secrets.yaml
   secrets:
+    # Falls back to pix.secrets.LICENSE_KEY when empty.
+    LICENSE_KEY: ""
     DB_PASSWORD: ""
     DB_REPLICA_PASSWORD: ""
     REDIS_PASSWORD: ""
@@ -709,12 +641,9 @@ reconciliation:
   useExistingSecrets: false
   existingSecretName: ""
 schedule:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe:
-    path: /readyz
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe:
-    path: /health
+  # -- Health preset (lerian-common.health): probes, ports, grace, strategy and PDB are derived from it.
+  health:
+    stack: go-worker
   replicaCount: 1
   name: "plugin-br-pix-indirect-btg-worker-schedule"
   description: "Schedule (Pix recurrence) Worker for Plugin BR PIX Indirect BTG"
@@ -726,23 +655,13 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.9.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
   nameOverride: ""
   # -- Overrides the full name generated by Helm
   fullnameOverride: ""
-  service:
-    # -- Kubernetes service type
-    type: ClusterIP
-    # -- Service port (distinct from reconciliation 4017 to keep both co-locatable)
-    port: 4018
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   podSecurityContext: {} # fsGroup: 2000
   securityContext:
     # -- Defines the group ID for the user running the process inside the container
@@ -759,15 +678,6 @@ schedule:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  pdb:
-    # -- Enable or disable PodDisruptionBudget
-    enabled: true
-    # -- Maximum number of unavailable pods (unset so minAvailable applies for the single-replica worker)
-    maxUnavailable: null
-    # -- Minimum number of available pods
-    minAvailable: 1
-    # -- Annotations for PodDisruptionBudget
-    annotations: {}
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -815,6 +725,8 @@ schedule:
   # -- All secrets are declared in the templates/schedule/secrets.yaml
   # @default -- templates/schedule/secrets.yaml
   secrets:
+    # Falls back to pix.secrets.LICENSE_KEY when empty.
+    LICENSE_KEY: ""
     # PIX BTG service credentials (operator/Vault-provided).
     PLUGIN_PIX_BTG_CLIENT_ID: ""
     PLUGIN_PIX_BTG_CLIENT_SECRET: ""
@@ -830,12 +742,15 @@ postgresql:
   image:
     repository: bitnamisecure/postgresql
     tag: "latest"
+    # latest (PostgreSQL 18.6.0), pinned: PostgreSQL refuses a data directory of another major.
+    digest: "sha256:7045d816bdf7e704f0f662fabf243f3c0a975aa380e73e4e881ee94740f60d4f"
   auth:
     enabled: true
     enablePostgresUser: false
     username: "pix_btg"
     password: ""
     database: "pix_btg"
+  primary:
     persistence:
       size: 8Gi
     resourcesPreset: large
@@ -860,8 +775,6 @@ postgresql:
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
   auth:
     enabled: false
@@ -873,10 +786,16 @@ mongodb:
   image:
     repository: bitnamisecure/mongodb
     tag: "latest"
+    # latest (MongoDB 8.3.11), pinned so the version opening this volume changes only on upgrade.
+    digest: "sha256:c8babafb7d15a7412543a9a391ffee8ba206c4d10dd6a1ba2ae2bf74fdfe538b"
   auth:
     enabled: true
     rootUser: pix_btg
     rootPassword: ""
+  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
+  # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+  updateStrategy:
+    type: Recreate
 otel-collector-lerian:
   enabled: true
 # ci: re-trigger release — cancelled in run 27577375728 after PR #1470 (no-op)

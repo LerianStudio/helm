@@ -44,6 +44,9 @@ Inputs (dict):
   global    (opt)  `.Values.global.ingress` — shared contract defaults
   subdomain (opt)  host prefix used with global.ingress.domain to derive the host
   namespace (opt)  metadata.namespace (already rendered); omitted when empty
+  healthcheck (opt) the `alb` key of lerian-common.health ({path, port}); for className
+                   "alb" it sets the target-group health check (path, container port
+                   number, 200, 10s, thresholds 2) and wins over same-key annotations
 ==============================================================================
 */}}
 {{- define "lerian-common.ingress" -}}
@@ -52,11 +55,25 @@ Inputs (dict):
 {{- $g := .global | default dict -}}
 {{- $name := .name -}}
 {{- $svcPort := .svcPort -}}
+{{- if eq (toString $svcPort) "8099" -}}
+{{- fail (printf "lerian-common.ingress: %s: never route to the health port (svcPort %v)" .name $svcPort) -}}
+{{- end -}}
 {{- /* Presence-based (hasKey) so an explicit component className "" (deliberately no
    class) is honored instead of falling back to the global class. */ -}}
 {{- $className := $g.className -}}{{- if hasKey $ing "className" -}}{{- $className = index $ing "className" -}}{{- end -}}
 {{- /* mergeOverwrite (not merge): per-ingress annotations must win over same-key global. */ -}}
 {{- $annotations := mergeOverwrite (deepCopy ($g.annotations | default dict)) ($ing.annotations | default dict) -}}
+{{- with .healthcheck -}}
+{{- if eq (toString $className) "alb" -}}
+{{- $annotations = mergeOverwrite $annotations (dict
+      "alb.ingress.kubernetes.io/healthcheck-path" .path
+      "alb.ingress.kubernetes.io/healthcheck-port" (toString .port)
+      "alb.ingress.kubernetes.io/success-codes" "200"
+      "alb.ingress.kubernetes.io/healthcheck-interval-seconds" "10"
+      "alb.ingress.kubernetes.io/healthy-threshold-count" "2"
+      "alb.ingress.kubernetes.io/unhealthy-threshold-count" "2") -}}
+{{- end -}}
+{{- end -}}
 {{- $tls := $g.tls -}}
 {{- if hasKey $ing "tls" -}}{{- $tls = $ing.tls -}}{{- end -}}
 {{- $hosts := $ing.hosts | default list -}}

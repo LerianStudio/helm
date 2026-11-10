@@ -1,0 +1,142 @@
+{{- if .Values.tracer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "midaz-tracer.fullname" . }}
+  labels:
+    {{- include "midaz-tracer.labels" (dict "context" . "name" .Values.tracer.name ) | nindent 4 }}
+{{- /*
+Migration gate — see the ledger Deployment for the reasoning. The migration Job
+stays in the default sync wave with the bundled PostgreSQL and its Secret, this
+Deployment moves one wave later, and Argo CD applies it only once the Job is
+Complete. `tracer.migrations.deploymentSyncWave: ""` opts out.
+*/}}
+{{- $migrationSyncWave := dig "deploymentSyncWave" "1" (.Values.tracer.migrations | default dict) | toString }}
+{{- if and .Values.tracer.migrations.enabled $migrationSyncWave }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $migrationSyncWave | quote }}
+{{- end }}
+{{- $h := include "midaz-tracer.health" . | fromYaml }}
+spec:
+  revisionHistoryLimit: {{ .Values.tracer.revisionHistoryLimit | default 10 }}
+  strategy:
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "midaz-tracer.podLabels" (dict "context" . "name" .Values.tracer.name ) | nindent 8 }}
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/tracer/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/tracer/configmap.yaml") . | sha256sum }}
+        {{- with .Values.tracer.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+    {{- with .Values.tracer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
+      {{- with .Values.tracer.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ include "midaz-tracer.fullname" . }}
+          image: {{ .Values.tracer.image.repository }}:{{ .Values.tracer.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.tracer.image.pullPolicy }}
+          {{- with .Values.tracer.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.tracer.service.port }}
+              protocol: TCP
+            {{- /* The tracer always serves the reservation seam over gRPC (":4021" when
+                 TRACER_GRPC_PORT is unset). TRACER_GRPC_PORT is a listen address; the
+                 container port is its numeric half, kept in sync with the Service. */}}
+            - name: grpc
+              containerPort: {{ include "midaz-tracer.grpcPort" . }}
+              protocol: TCP
+            {{- with $h.ports }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+          {{- if not .Values.tracer.useExistingSecret }}
+          - secretRef:
+              name: {{ include "midaz-tracer.fullname" . }}
+          {{- else }}
+          - secretRef:
+              name: {{ required "tracer.existingSecretName is required when tracer.useExistingSecret=true" .Values.tracer.existingSecretName }}
+          {{- end }}
+          - configMapRef:
+              name: {{ include "midaz-tracer.fullname" . }}
+          env:
+            {{- toYaml $h.env | nindent 12 }}
+            {{- with include "midaz.licenseFileEnv" .Values.tracer }}
+            {{- . | nindent 12 }}
+            {{- end }}
+            {{/* existingSecretName presence is enforced by midaz-tracer.validate; ternary
+                 cannot carry `required` because Go templates evaluate both arms. */}}
+            {{- $secretName := ternary .Values.tracer.existingSecretName (include "midaz-tracer.fullname" .) .Values.tracer.useExistingSecret }}
+            {{/* PostgreSQL: DB_PASSWORD is single-sourced from the Bitnami postgresql subchart Secret when internal. */}}
+            {{- $pg := .Values.postgresql | default dict }}
+            {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) (include "midaz.operatorSecret" (dict "context" $ "subchart" "postgresql")) }}
+            {{- include "midaz.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "DB_PASSWORD") | nindent 12 }}
+            {{- else if .Values.tracer.secrets.DB_PASSWORD }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: DB_PASSWORD
+            {{- end }}
+            {{- $otel := index .Values "otel-collector-lerian" }}
+            {{- if $otel.enabled }}
+            - name: "POD_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+            - name: "OTEL_RESOURCE_ATTRIBUTES"
+              value: "k8s.pod.ip=$(POD_IP)"
+            {{- end }}
+          resources:
+            {{- toYaml .Values.tracer.resources | nindent 12 }}
+          {{- with include "midaz.licenseFileVolumeMount" .Values.tracer }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
+          {{- with $h.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
+      {{- with include "midaz.licenseFileVolume" .Values.tracer }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, tracer.spread, tracer.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.tracer
+            "global" .Values.global
+            "selectorLabels" (include "midaz-tracer.selectorLabels" (dict "context" . "name" .Values.tracer.name))) | trim) }}
+      {{- . | nindent 6 }}
+      {{- end }}
+{{- end }}

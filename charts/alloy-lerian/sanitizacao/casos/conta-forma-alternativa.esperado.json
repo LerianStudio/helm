@@ -1,0 +1,4 @@
+{
+  "body": "conta ******** agência **** accountNumberDestination=******** agencyNumber=****",
+  "descricao": "Tres formas na mesma passagem: conta de 20 digitos (real, cliente A (prd)), a palavra em portugues, e o camelCase com sufixo de papel (real, cliente C). ⚠️ A versao anterior da regra exigia `account=`/`account_number=` exatos e NAO mascarava nada do cliente C — nem `accountNumber=` sozinho casava."
+}

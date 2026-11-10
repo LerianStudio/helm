@@ -1,0 +1,81 @@
+suite: retired pdb and rollout overrides fail the render
+templates:
+  - templates/api/deployment.yaml
+  - templates/api/configmap.yaml
+  - templates/api/secrets.yaml
+  - templates/worker/deployment.yaml
+  - templates/worker/configmap.yaml
+  - templates/worker/secrets.yaml
+release:
+  name: pix-jd
+  namespace: pix-jd
+set:
+  api.configmap.REDIS_HOST: "valkey:6379"
+  api.configmap.POSTGRES_HOST: postgresql
+  api.configmap.ENVIRONMENT_NAME: development
+  api.secrets.LICENSE_KEY: x
+  api.secrets.POSTGRES_PASSWORD: x
+  worker.enabled: true
+tests:
+  - it: renders with the defaults
+    template: templates/api/deployment.yaml
+    asserts:
+      - isKind:
+          of: Deployment
+
+  - it: refuses api.pdb.minAvailable
+    template: templates/api/deployment.yaml
+    set:
+      api.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-jd: api.pdb.minAvailable is owned by the health preset"
+
+  - it: refuses api.pdb.maxUnavailable
+    template: templates/api/deployment.yaml
+    set:
+      api.pdb.maxUnavailable: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-jd: api.pdb.maxUnavailable is owned by the health preset"
+
+  - it: refuses api.pdb.enabled
+    template: templates/api/deployment.yaml
+    set:
+      api.pdb.enabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-jd: api.pdb.enabled is owned by the health preset"
+
+  - it: refuses api.deploymentStrategy
+    template: templates/api/deployment.yaml
+    set:
+      api.deploymentStrategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-jd: api.deploymentStrategy is owned by the health preset"
+
+
+  - it: refuses worker.pdb.minAvailable
+    template: templates/worker/deployment.yaml
+    set:
+      worker.pdb.minAvailable: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-jd: worker.pdb.minAvailable is owned by the health preset"
+
+  - it: refuses worker.pdb.enabled
+    template: templates/worker/deployment.yaml
+    set:
+      worker.pdb.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-jd: worker.pdb.enabled is owned by the health preset"
+
+  - it: refuses worker.deploymentStrategy
+    template: templates/worker/deployment.yaml
+    set:
+      worker.deploymentStrategy.type: RollingUpdate
+    asserts:
+      - failedTemplate:
+          errorPattern: "plugin-br-pix-jd: worker.deploymentStrategy is owned by the health preset"

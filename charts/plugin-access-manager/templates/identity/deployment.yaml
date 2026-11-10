@@ -1,3 +1,4 @@
+{{- $h := include "plugin-identity.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,49 +8,30 @@ metadata:
 spec:
   revisionHistoryLimit: {{ .Values.identity.revisionHistoryLimit | default 10 }}
   strategy:
-    {{- toYaml .Values.identity.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.identity.autoscaling.enabled }}
-  replicas: {{ .Values.identity.replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name) | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/identity/secrets.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
+        checksum/app-client-secret: {{ .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET | toString | sha256sum }}
+        checksum/init-user: {{ include (print $.Template.BasePath "/auth/init_user.yaml") . | sha256sum }}
       labels:
-       {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name ) | nindent 8 }} 
+       {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name "pod" true) | nindent 8 }} 
     spec:
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.identity.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       securityContext:
         {{- toYaml .Values.identity.podSecurityContext | nindent 8 }}
-      initContainers:
-        - name: wait-for-dependencies
-          securityContext:
-            {{- toYaml .Values.identity.securityContext | nindent 12 }}
-          image: busybox
-          envFrom:
-          - configMapRef:
-              name: {{ include "plugin-identity.fullname" . }}
-          command:
-            - /bin/sh
-            - -c
-            - >
-              for svc in "$PLUGIN_AUTH_ADDRESS";
-              do
-                echo "Checking $svc...";
-                case "$svc" in https://*) default_port=443;; *) default_port=80;; esac;
-                hostport=$(echo "$svc" | sed -E 's|^https?://||' | cut -d/ -f1);
-                host=$(echo "$hostport" | cut -d: -f1);
-                case "$hostport" in *:*) port=$(echo "$hostport" | cut -d: -f2);; *) port=$default_port;; esac;
-                while ! nc -z "$host" "$port"; do
-                  echo "$svc is not ready yet, waiting...";
-                  sleep 5;
-                done;
-                echo "$svc is ready!";
-              done;
       containers:
         - name: {{ include "plugin-identity.fullname" . }}
           image: {{ .Values.identity.image.repository }}:{{ .Values.identity.image.tag | default (include "plugin.version" .) }}
@@ -60,60 +42,58 @@ spec:
             - name: http
               containerPort: {{ .Values.identity.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
-              name: {{ if .Values.identity.useExistingSecret }}{{ .Values.identity.existingSecretName }}{{ else }}{{ include "plugin-identity.fullname" . }}{{ end }}
+              name: {{ if .Values.identity.useExistingSecret }}{{ required "\n\nERROR: identity.useExistingSecret is true but identity.existingSecretName is empty.\n   Set identity.existingSecretName to the name of the Secret holding the identity environment (LICENSE_KEY, ORGANIZATION_IDS, ...), or set identity.useExistingSecret=false.\n" .Values.identity.existingSecretName }}{{ else }}{{ include "plugin-identity.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-identity.fullname" . }}
+          env:
+            {{- toYaml $h.env | nindent 12 }}
+            {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "AUTHORIZER_CLIENT_SECRET") | nindent 12 }}
+            {{- with (include "plugin-access-manager.licenseFileEnv" .Values.identity | trim) }}{{ . | nindent 12 }}{{ end }}
+          {{- if (index .Values "otel-collector-lerian").enabled }}
+            - name: "HOST_IP"
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "$(HOST_IP):4317"
+          {{- end }}
+          {{- if .Values.auth.initUser.enabled }}
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "plugin-access-manager.initUserSecretName" . | quote }}
+                  key: {{ .Values.auth.initUser.adminPasswordSecretKey | default "ADMIN_PASSWORD" | quote }}
+                  optional: true
+            - name: ADMIN_EMAIL
+              value: {{ .Values.auth.initUser.adminEmail | default "admin@midaz.tech" | quote }}
+            - name: ADMIN_DISPLAY_NAME
+              value: {{ .Values.auth.initUser.adminDisplayName | default "Admin" | quote }}
+          {{- end }}
+          {{- with (include "plugin-access-manager.licenseFileMount" .Values.identity | trim) }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.identity.resources | nindent 12 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.identity.readinessProbe.path | default "/readyz" }}
-              port: {{ .Values.identity.service.port }}
-            initialDelaySeconds: {{ .Values.identity.readinessProbe.initialDelaySeconds | default 25 }}
-            periodSeconds: {{ .Values.identity.readinessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.identity.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.identity.readinessProbe.failureThreshold | default 3 }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.identity.livenessProbe.path | default "/health" }}
-              port: {{ .Values.identity.service.port }}
-            initialDelaySeconds: {{ .Values.identity.livenessProbe.initialDelaySeconds | default 30 }}
-            periodSeconds: {{ .Values.identity.livenessProbe.periodSeconds | default 5 }}
-            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds | default 1 }}
-            successThreshold: {{ .Values.identity.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold | default 3 }}
-          {{- if .Values.identity.startupProbe.enabled }}
           startupProbe:
-            httpGet:
-              path: {{ .Values.identity.startupProbe.path | default "/health" }}
-              port: {{ .Values.identity.service.port }}
-            initialDelaySeconds: {{ .Values.identity.startupProbe.initialDelaySeconds | default 0 }}
-            periodSeconds: {{ .Values.identity.startupProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.identity.startupProbe.timeoutSeconds | default 10 }}
-            successThreshold: {{ .Values.identity.startupProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.identity.startupProbe.failureThreshold | default 5 }}
-          {{- end }}
-          {{ if (index .Values "otel-collector-lerian").enabled }}
-          env:
-          - name: "HOST_IP"
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value: "$(HOST_IP):4317"
-          {{ end }}            
-      {{- with .Values.identity.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
+      {{- with (include "plugin-access-manager.licenseFileVolume" .Values.identity | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
       {{- end }}
-      {{- with .Values.identity.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.identity.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
+      {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
+             (global.scheduling.spread preset, identity.spread, identity.topologySpreadConstraints).
+             selectorLabels MUST equal spec.selector.matchLabels above. */}}
+      {{- with (include "lerian-common.scheduling" (dict
+            "component" .Values.identity
+            "global" .Values.global
+            "selectorLabels" (include "plugin-identity.selectorLabels" (dict "context" . "name" .Values.identity.name))) | trim) }}
+      {{- . | nindent 6 }}
       {{- end }}

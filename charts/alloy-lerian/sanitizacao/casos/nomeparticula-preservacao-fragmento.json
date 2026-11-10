@@ -1,0 +1,17 @@
+{
+  "resourceLogs": [
+    {
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "body": {
+                "stringValue": "recipientName=Ana de Souza status=ok"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

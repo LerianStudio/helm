@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "commonLabels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "system-facts": {
+      "type": "object",
+      "properties": {
+        "configmap": {
+          "type": "object",
+          "properties": {
+            "IDP_DECLARATION_ENABLED": {
+              "type": ["string", "boolean"],
+              "description": "Publish the RI permission manifest to the Access Manager at boot. Overrides global.idp.declarationEnabled; default \"false\"."
+            },
+            "IDP_HOST": {
+              "type": "string",
+              "description": "Access Manager identity base URL for the RI declaration. Overrides global.idp.host; emitted only when non-empty."
+            }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "properties": {
+            "IDP_M2M_CLIENT_ID": {
+              "type": "string",
+              "description": "RI declaration M2M client ID (required by the app when IDP_DECLARATION_ENABLED=true). Emitted only when non-empty."
+            },
+            "IDP_M2M_CLIENT_SECRET": {
+              "type": "string",
+              "description": "RI declaration M2M client secret (required by the app when IDP_DECLARATION_ENABLED=true). Emitted only when non-empty."
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "migrations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "worker": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "configmap": {
+          "type": "object"
+        },
+        "secrets": {
+          "type": "object"
+        },
+        "products": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["midaz", "plugin-br-pix-jd"]
+          }
+        },
+        "systemFacts": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "authUrl": {
+              "type": "string"
+            },
+            "allowInsecureHttp": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "aws": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "lerian-common-helm": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "valkey": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

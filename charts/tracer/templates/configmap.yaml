@@ -8,7 +8,7 @@ metadata:
     {{- include "tracer.labels" (dict "context" . "component" .Values.tracer.name "name" .Values.tracer.name) | nindent 4 }}
 data:
   # Application Configuration
-  ALLOW_INSECURE_TLS: {{ .Values.tracer.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
+  ALLOW_INSECURE_TLS: {{ include "tracer.flagDefaultTrue" .Values.tracer.configmap.ALLOW_INSECURE_TLS | quote }}
   ENV_NAME: {{ .Values.tracer.configmap.ENV_NAME | default "production" | quote }}
   SERVER_PORT: {{ .Values.tracer.configmap.SERVER_PORT | default "4020" | quote }}
   SERVER_ADDRESS: {{ .Values.tracer.configmap.SERVER_ADDRESS | default ":4020" | quote }}
@@ -61,7 +61,7 @@ data:
   MULTI_TENANT_ALLOW_INSECURE_HTTP: {{ .Values.tracer.configmap.MULTI_TENANT_ALLOW_INSECURE_HTTP | default "false" | quote }}
   MULTI_TENANT_REDIS_HOST: {{ required "tracer.configmap.MULTI_TENANT_REDIS_HOST is required when MULTI_TENANT_ENABLED=true" .Values.tracer.configmap.MULTI_TENANT_REDIS_HOST | quote }}
   MULTI_TENANT_REDIS_PORT: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_PORT | default "6379" | quote }}
-  MULTI_TENANT_REDIS_TLS: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_TLS | default "true" | quote }}
+  MULTI_TENANT_REDIS_TLS: {{ include "tracer.flagDefaultTrue" .Values.tracer.configmap.MULTI_TENANT_REDIS_TLS | quote }}
   MULTI_TENANT_MAX_TENANT_POOLS: {{ .Values.tracer.configmap.MULTI_TENANT_MAX_TENANT_POOLS | default "100" | quote }}
   MULTI_TENANT_IDLE_TIMEOUT_SEC: {{ .Values.tracer.configmap.MULTI_TENANT_IDLE_TIMEOUT_SEC | default "300" | quote }}
   MULTI_TENANT_TIMEOUT: {{ .Values.tracer.configmap.MULTI_TENANT_TIMEOUT | default "30" | quote }}

@@ -40,7 +40,6 @@ pix:
     MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
     ALLOW_INSECURE_TLS: "true"
     BTG_BASE_URL: ""
     PIX_ISPB: ""
@@ -60,6 +59,26 @@ pix:
     MTLS_HTTP_TIMEOUT: "10s"
     # BTG Webhook Validation
     BTG_WEBHOOK_VALIDATION_ENABLED: "true"
+    # Recurring (Pix Automatico) stale authorization-request sweep
+    RECURRING_AR_EXPIRE_GRACE: "1h"
+    RECURRING_AR_EXPIRE_MIN_GRACE: "1m"
+    # Access Manager permission declaration
+    DECLARATION_ENABLED: "false"
+    PLUGIN_IDENTITY_HOST: ""
+    # Anti-Fraud Decision Hook (off by default)
+    ANTIFRAUD_HOOK_ENABLED: "false"
+    ANTIFRAUD_HOOK_URL: ""
+    ANTIFRAUD_HOOK_TIMEOUT_MS: "500"
+    ANTIFRAUD_HOOK_FALLBACK_DECISION: ""
+    ANTIFRAUD_HOOK_FALLBACK_MAX_APPROVE_AMOUNT: ""
+    ANTIFRAUD_HOOK_AUTH_HEADER_NAME: ""
+    ANTIFRAUD_HOOK_ALLOW_PRIVATE_NETWORK: "false"
+    ANTIFRAUD_HOOK_CB_ENABLED: "true"
+    ANTIFRAUD_HOOK_CB_MAX_REQUESTS: "3"
+    ANTIFRAUD_HOOK_CB_INTERVAL: "60s"
+    ANTIFRAUD_HOOK_CB_TIMEOUT: "30s"
+    ANTIFRAUD_HOOK_CB_FAILURE_THRESHOLD: "5"
+    ANTIFRAUD_HOOK_PREWARM_ENABLED: "true"
 
   secrets:
     DB_PASSWORD: ""
@@ -73,11 +92,17 @@ pix:
     MIDAZ_CLIENT_SECRET: ""
     FEE_CLIENT_ID: ""
     FEE_CLIENT_SECRET: ""
-    LICENSE_KEY: ""
+    LICENSE_KEY: ""   # required unless licenseFile.existingSecret (needs lib-license-go v5)
     PLUGIN_CRM_CLIENT_ID: ""
     PLUGIN_CRM_CLIENT_SECRET: ""
     INTERNAL_WEBHOOK_SECRET: ""
     BTG_WEBHOOK_SECRET: ""
+    M2M_CLIENT_ID: ""
+    M2M_CLIENT_SECRET: ""
+    ANTIFRAUD_HOOK_HMAC_SECRET: ""
+    ANTIFRAUD_HOOK_AUTH_HEADER_VALUE: ""
+    STREAMING_SASL_PASSWORD: ""
+    STREAMING_TLS_CA_CERT: ""
 
   useExistingSecrets: false
   existingSecretName: ""
@@ -95,17 +120,6 @@ inbound:
     repository: ghcr.io/lerianstudio/plugin-br-pix-indirect-btg-worker-inbound
     pullPolicy: Always
     tag: "1.0.0-rc.27"
-
-  ingress:
-    enabled: false
-    className: "nginx"
-    annotations: {}
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
 
   configmap:
     DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
@@ -142,17 +156,6 @@ outbound:
     pullPolicy: Always
     tag: "1.0.0-rc.27"
 
-  ingress:
-    enabled: false
-    className: "nginx"
-    annotations: {}
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-
   configmap:
     DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
     DB_USER: "pix_btg"
@@ -163,9 +166,8 @@ outbound:
     MONGO_HOST: "plugin-br-pix-indirect-btg-mongodb.midaz-plugins.svc.cluster.local"
     MONGO_NAME: "plugin-br-pix-indirect-btg-db"
     MONGO_USER: "pix_btg"
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
     ALLOW_INSECURE_TLS: "true"
-    WEBHOOK_CLIENT_URL: ""
+    WEBHOOK_DEFAULT_URL: ""
     WEBHOOK_DICT_CLAIM_URL: ""
     WEBHOOK_DICT_INFRACTION_REPORT_URL: ""
     WEBHOOK_DICT_REFUND_URL: ""
@@ -199,17 +201,6 @@ reconciliation:
     pullPolicy: Always
     tag: "1.0.0-rc.27"
 
-  ingress:
-    enabled: false
-    className: "nginx"
-    annotations: {}
-    hosts:
-      - host: ""
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-
   configmap:
     DB_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
     DB_USER: "pix_btg"
@@ -217,7 +208,6 @@ reconciliation:
     DB_REPLICA_HOST: "plugin-br-pix-indirect-btg-postgresql.midaz-plugins.svc.cluster.local"
     DB_REPLICA_USER: "pix_btg"
     DB_REPLICA_NAME: "pix_btg"
-    REDIS_HOST: "plugin-br-pix-indirect-btg-valkey-master.midaz-plugins.svc.cluster.local"
     ALLOW_INSECURE_TLS: "true"
     MIDAZ_ORGANIZATION_ID: ""
     BTG_BASE_URL: ""

@@ -1,0 +1,152 @@
+{{- $m := .Values.migrations | default dict -}}
+{{- if $m.enabled }}
+{{- /*
+==============================================================================
+ROOT (CONTROL-PLANE) SCHEMA MIGRATIONS — an ArgoCD Sync hook, following
+charts/billing-worker.
+
+NOTHING ELSE APPLIES THIS SEQUENCE. The service image is gcr.io/distroless/static
+(ENTRYPOINT /service): no shell and no `migrate` binary, so the /migrations it
+carries cannot be applied from inside it. Without this Job the control-plane
+tables (fact_contracts, reference_types, outbox_events, systemplane_entries,
+namespace_bindings) are never created and /v1/contracts and /v1/reference-types
+answer 500 (relation "fact_contracts" does not exist).
+
+SCOPE. This Job runs the flat root sequence only. golang-migrate reads the
+directory non-recursively, so migrations/tenant is NOT applied here. The
+tenant-partition sequence stays with the service (boot in single-tenant mode,
+tenant-added event in multi-tenant mode) and keeps its own version table,
+schema_migrations_tenant. The root sequence uses schema_migrations. They create
+different tables and never collide.
+
+MULTI-TENANT. The contract catalog is environment-global (ADR-004): one database,
+no tenantId. Unlike charts whose database is per tenant (br-jd-courier,
+plugin-br-bank-transfer), this Job is therefore NOT refused when
+MULTI_TENANT_ENABLED=true. It migrates the control-plane database only.
+
+IMAGE. There is NO default repository: the application image cannot run this
+Job, and a plausible-looking default would fail at exec with no explanation. The
+runner is published by the app release as system-facts-migrations.
+
+HOOK PHASE. Sync, NOT PreSync. The Job reads POSTGRES_PASSWORD from a Secret
+this same chart renders; PreSync runs before that Secret exists, so a fresh
+install would fail on a missing secretKeyRef. Sync keeps the Job in the same wave
+as the Secret. helm.sh/hook is deliberately absent for the same ordering reason
+(this mirrors charts/billing-worker; a plain `helm install` therefore does not
+run the Job).
+
+JOB NAME carries no tag: the ArgoCD hook delete policy (BeforeHookCreation)
+recreates the Job on every sync, so a fixed name cannot leave a stale Job behind.
+==============================================================================
+*/ -}}
+{{- $w := index .Values "system-facts" -}}
+{{- if not $w.enabled }}{{ fail "system-facts: migrations.enabled requires system-facts.enabled" }}{{ end }}
+{{- $repo := trim (toString (dig "image" "repository" "" $m)) -}}
+{{- if not $repo }}
+{{- fail "system-facts: migrations.enabled=true needs migrations.image.repository. There is NO default: the application image is gcr.io/distroless/static with no `migrate` binary and no shell, so it cannot run this Job. Set migrations.image.repository (ghcr.io/lerianstudio/system-facts-migrations) or disable the Job with migrations.enabled=false." }}
+{{- end }}
+{{- $cm := $w.configmap | default dict -}}
+{{- $pg := .Values.postgresql | default dict -}}
+{{- $pgInternal := and (ne (toString $pg.enabled) "false") (not $pg.external) -}}
+{{- $pgDefault := "" -}}
+{{- if $pgInternal }}{{- $pgDefault = printf "%s-postgresql" .Release.Name }}{{- end -}}
+{{- $host := (dig "postgres" "host" "" $m) | default (include "lerian-common.datastore.value" (dict "context" . "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" $pgDefault)) -}}
+{{- $port := (dig "postgres" "port" "" $m) | default (include "lerian-common.datastore.value" (dict "context" . "configmap" $cm "type" "postgres" "field" "port" "nativeKey" "POSTGRES_PORT" "default" "5432")) -}}
+{{- $user := (dig "postgres" "user" "" $m) | default (include "lerian-common.datastore.value" (dict "context" . "configmap" $cm "type" "postgres" "field" "user" "nativeKey" "POSTGRES_USER" "default" "system-facts")) -}}
+{{- $database := (dig "postgres" "database" "" $m) | default (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "POSTGRES_NAME" "params" ($w.database | default dict) "field" "name" "default" "system-facts")) -}}
+{{- $sslMode := (dig "postgres" "sslMode" "" $m) | default (include "lerian-common.datastore.value" (dict "context" . "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "POSTGRES_SSLMODE" "default" "disable")) -}}
+{{- if not $host }}{{ fail "system-facts: migrations need a Postgres host — set migrations.postgres.host or global.datastores.postgres.host" }}{{ end }}
+{{- /*
+Where the runner reads the password from. This MUST follow the same branch the
+workload does, or the Job authenticates against a Secret the Deployment never
+uses. With the postgresql subchart BUNDLED, the workload reads the subchart's OWN
+Secret (see system-facts.infraSecretRef) and this chart's Secret carries no
+POSTGRES_PASSWORD. An explicit migrations.postgres.passwordSecret wins over both.
+*/ -}}
+{{- $secretOverride := (dig "postgres" "passwordSecret" "name" "" $m) -}}
+{{- $useBundledSecret := and (not $secretOverride) $pgInternal -}}
+{{- $appSecret := include "system-facts.fullname" . -}}
+{{- if $w.useExistingSecret }}{{- $appSecret = $w.existingSecretName -}}{{- end -}}
+{{- $secretName := $secretOverride | default $appSecret -}}
+{{- $secretKey := (dig "postgres" "passwordSecret" "key" "POSTGRES_PASSWORD" $m) -}}
+{{- $jobName := printf "%s-migrations" (include "system-facts.fullname" .) | trunc 63 | trimSuffix "-" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $jobName }}
+  namespace: {{ include "global.namespace" . }}
+  labels:
+    {{- include "system-facts.labels" (dict "context" . "component" "migrations" "name" "migrations") | nindent 4 }}
+  annotations:
+    {{- /* ArgoCD Sync hook: excluded from the app's desired-state diff, so a
+       recreated Job never holds the Application OutOfSync. HookSucceeded removes
+       the Job once it completes; BeforeHookCreation clears a same-named leftover
+       before a re-sync recreates it (a Job spec is immutable, so recreate — not
+       patch — is required on a chart-only bump). Re-running is safe: golang-migrate
+       tracks progress in schema_migrations. */}}
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    {{- with $m.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: {{ if hasKey $m "backoffLimit" }}{{ $m.backoffLimit }}{{ else }}3{{ end }}
+  activeDeadlineSeconds: {{ $m.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: {{ $m.ttlSecondsAfterFinished | default 600 }}
+  template:
+    metadata:
+      labels:
+        {{- include "system-facts.selectorLabels" (dict "context" . "component" "migrations" "name" "migrations") | nindent 8 }}
+        {{- with .Values.commonLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with ($m.imagePullSecrets | default $w.imagePullSecrets) }}
+      {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ $m.waitImage | default "busybox:1.37" | quote }}
+          command:
+            - /bin/sh
+            - -ec
+            - >-
+              until nc -z {{ $host }} {{ $port }}; do
+                echo "waiting for postgres {{ $host }}:{{ $port }}"; sleep 5;
+              done
+          securityContext:
+            {{- toYaml $w.securityContext | nindent 12 }}
+      containers:
+        - name: migrations
+          image: "{{ $repo }}:{{ dig "image" "tag" "" $m | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ dig "image" "pullPolicy" "IfNotPresent" $m }}
+          # The image ENTRYPOINT (/migrate-entrypoint.sh) assembles the DSN from
+          # POSTGRES_* (percent-encoding the password) and runs
+          # `migrate -path /migrations up`. The path is baked into the image.
+          env:
+            - name: POSTGRES_HOST
+              value: {{ $host | quote }}
+            - name: POSTGRES_PORT
+              value: {{ $port | quote }}
+            - name: POSTGRES_USER
+              value: {{ $user | quote }}
+            - name: POSTGRES_NAME
+              value: {{ $database | quote }}
+            - name: POSTGRES_SSLMODE
+              value: {{ $sslMode | quote }}
+            {{- if $useBundledSecret }}
+            {{- include "system-facts.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 12 }}
+            {{- else }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: {{ $secretKey }}
+            {{- end }}
+          securityContext:
+            {{- toYaml $w.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml ($m.resources | default (dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "memory" "256Mi"))) | nindent 12 }}
+{{- end }}

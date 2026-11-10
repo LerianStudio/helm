@@ -1,0 +1,5 @@
+{
+ "body": "__CORPO_NAO_STRING__",
+ "categoria": "risco",
+ "descricao": "Corpo nao-string (kvlist/map). O marcador __CORPO_NAO_STRING__ existe porque o agente nao imprime linha 'Body: Str(...)' para corpo nao-string: a AUSENCIA dessa linha e a evidencia. O caso confere que o agente emite um corpo nao-string."
+}

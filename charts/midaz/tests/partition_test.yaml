@@ -1,0 +1,137 @@
+suite: ledger partition runner
+templates:
+  - templates/ledger/partition-cronjob.yaml
+  - templates/ledger/partition-reconcile-job.yaml
+release:
+  name: midaz
+  namespace: midaz
+tests:
+  - it: renders neither workload on the default 4.4.0 tag
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: renders both workloads on stable 4.5.x
+    set:
+      ledger.image.tag: 4.5.2
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/partition-cronjob.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: renders neither workload when disabled
+    set:
+      ledger.partition.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: renders scheduled ensure and reconcile hook with existing identity
+    set:
+      ledger.partition.enabled: true
+      ledger.image.tag: 4.5.0-beta.119
+    asserts:
+      - equal:
+          path: metadata.name
+          value: midaz-ledger-partition
+        template: templates/ledger/partition-cronjob.yaml
+      - equal:
+          path: spec.concurrencyPolicy
+          value: Forbid
+        template: templates/ledger/partition-cronjob.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].args
+          value: [ensure, --reconcile-indexes]
+        template: templates/ledger/partition-cronjob.yaml
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: [reconcile-indexes, --tolerate-unavailable]
+        template: templates/ledger/partition-reconcile-job.yaml
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: post-install,pre-upgrade
+        template: templates/ledger/partition-reconcile-job.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_TRANSACTION_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: midaz-postgresql
+                key: password
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: inherits tenant settings and existing ledger secret
+    set:
+      ledger.partition.enabled: true
+      ledger.useExistingSecret: true
+      ledger.existingSecretName: ledger-credentials
+      ledger.configmap.MULTI_TENANT_ENABLED: "true"
+      ledger.configmap.MULTI_TENANT_URL: http://tenant-manager
+      ledger.configmap.MULTI_TENANT_REDIS_HOST: valkey
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            secretRef:
+              name: ledger-credentials
+        template: templates/ledger/partition-reconcile-job.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MULTI_TENANT_ENABLED
+            value: "true"
+        template: templates/ledger/partition-reconcile-job.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MULTI_TENANT_URL
+            value: http://tenant-manager
+        template: templates/ledger/partition-reconcile-job.yaml
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            configMapRef:
+              name: midaz-ledger
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: does not require a static transaction password for multi-tenant runners
+    set:
+      ledger.partition.enabled: true
+      ledger.useExistingSecret: true
+      ledger.existingSecretName: tenant-credentials
+      ledger.configmap.MULTI_TENANT_ENABLED: "true"
+      ledger.configmap.MULTI_TENANT_URL: http://tenant-manager
+      ledger.configmap.MULTI_TENANT_REDIS_HOST: valkey
+      postgresql.enabled: false
+      postgresql.external: true
+    asserts:
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name == "DB_TRANSACTION_PASSWORD")]
+        template: templates/ledger/partition-cronjob.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "DB_TRANSACTION_PASSWORD")]
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: keeps the transaction host default when only onboarding is customized
+    set:
+      ledger.partition.enabled: true
+      ledger.configmap.DB_ONBOARDING_HOST: onboarding.example
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: DB_TRANSACTION_HOST
+            value: midaz-postgresql-primary
+        template: templates/ledger/partition-cronjob.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_TRANSACTION_HOST
+            value: midaz-postgresql-primary
+        template: templates/ledger/partition-reconcile-job.yaml

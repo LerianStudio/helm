@@ -1,3 +1,4 @@
+<!-- {% raw %} -->
 # Helm Upgrade from v1.0.0 to v1.1.0
 
 ## Topics
@@ -471,7 +472,7 @@ bankTransfer:
 helm diff upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version 1.1.0 -n plugin-br-bank-transfer
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+> **Note:** Requires the helm-diff plugin. Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
@@ -480,3 +481,4 @@ helm upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plu
 ```
 
 > **Important:** Replace `values-override.yaml` with the path to your values file containing the required passwords and configuration changes from the migration steps above.
+<!-- {% endraw %} -->

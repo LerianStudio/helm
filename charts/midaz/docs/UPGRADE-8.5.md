@@ -41,7 +41,7 @@ ledger:
     tag: "3.7.8"
 ```
 
-> **Note:** For application-level changes and bug fixes included in version 3.7.8, refer to the [Midaz application changelog](https://github.com/LerianStudio/midaz/blob/main/CHANGELOG.md).
+> **Note:** For application-level changes and bug fixes included in version 3.7.8, refer to the Midaz application changelog.
 
 #### What this means for operators
 

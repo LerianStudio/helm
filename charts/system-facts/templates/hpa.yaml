@@ -1,0 +1,11 @@
+{{- if (index .Values "system-facts").enabled }}
+{{- $h := include "system-facts.api.health" . | fromYaml }}
+{{- if $h.autoscaling }}
+{{- include "lerian-common.hpa" (dict
+      "autoscaling" $h.autoscaling
+      "name" (include "system-facts.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "system-facts.labels" (dict "context" . "component" (index .Values "system-facts").name "name" (index .Values "system-facts").name))
+    ) }}
+{{- end }}
+{{- end }}

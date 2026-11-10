@@ -25,3 +25,18 @@ bankTransfer:
     LICENSE_KEY: "IT_LICENSE_KEY" # CI license placeholder (README)
     JD_INCOMING_RAW_XML_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     RECIPIENT_DETAILS_ENCRYPTION_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+
+# The default "large" Postgres preset requests 1 CPU per pod: primary + read replica + app
+# (HPA min 2) + Valkey + Mongo asked ~4.3 CPU, the replica stayed Pending ("Insufficient
+# cpu") and the app never went Ready. Requests only; limits and production defaults unchanged.
+postgresql:
+  primary:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+  readReplicas:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi

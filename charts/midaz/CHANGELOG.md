@@ -1,5 +1,19 @@
 # Midaz Changelog
 
+## [10.4.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.2)
+
+Features:
+
+- Match the `4.4` ledger image tag instead of pinning a patch. (@fredcamaral)
+
+Fixes:
+
+- Allow per-component streaming SASL override on ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.1...midaz-v10.4.2)
+
+---
+
 ## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.1)
 
 Fixes:

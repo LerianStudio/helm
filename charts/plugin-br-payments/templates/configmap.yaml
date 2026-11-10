@@ -30,9 +30,18 @@ data:
   # HTTP SERVER
   # ====================================================================
   SERVER_ADDRESS: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "SERVER_ADDRESS" "default" "0.0.0.0:8080") | quote }}
-  HTTP_BODY_LIMIT_BYTES: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "HTTP_BODY_LIMIT_BYTES" "default" "104857600") | quote }}
+  HTTP_BODY_LIMIT_BYTES: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "HTTP_BODY_LIMIT_BYTES" "default" "4194304") | quote }}
   {{- if hasKey $cm "HTTP_READ_BUFFER_SIZE" }}
   HTTP_READ_BUFFER_SIZE: {{ index $cm "HTTP_READ_BUFFER_SIZE" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "HTTP_RECEIVE_TIMEOUT_SEC" }}
+  HTTP_RECEIVE_TIMEOUT_SEC: {{ index $cm "HTTP_RECEIVE_TIMEOUT_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "HTTP_IDLE_TIMEOUT_SEC" }}
+  HTTP_IDLE_TIMEOUT_SEC: {{ index $cm "HTTP_IDLE_TIMEOUT_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "TRUSTED_PROXIES" }}
+  TRUSTED_PROXIES: {{ index $cm "TRUSTED_PROXIES" | quote }}
   {{- end }}
   INTERNAL_WORKER_URL: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "INTERNAL_WORKER_URL" "default" "") | quote }}
   # ====================================================================
@@ -206,6 +215,15 @@ data:
   {{- end }}
   {{- if hasKey $cm "BTG_BULK_MAX_BODY_BYTES" }}
   BTG_BULK_MAX_BODY_BYTES: {{ index $cm "BTG_BULK_MAX_BODY_BYTES" | quote }}
+  {{- end }}
+  {{- /* Sandbox simulation (non-production only): the app refuses to boot with
+  the flag on in production, and requires the admin URL to share the BTG
+  URLs' origin. */}}
+  {{- if hasKey $cm "SANDBOX_SIMULATION_ENABLED" }}
+  SANDBOX_SIMULATION_ENABLED: {{ index $cm "SANDBOX_SIMULATION_ENABLED" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "SANDBOX_FAKEBTG_ADMIN_URL" }}
+  SANDBOX_FAKEBTG_ADMIN_URL: {{ index $cm "SANDBOX_FAKEBTG_ADMIN_URL" | quote }}
   {{- end }}
   # ====================================================================
   # BOLETO BATCH

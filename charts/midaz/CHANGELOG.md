@@ -1,5 +1,18 @@
 # Midaz Changelog
 
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.1)
+
+Fixes:
+- Update `midaz-ledger@4.4.1`, `midaz-tracer@4.4.1`, `midaz-tracer-migrations@4.4.1`, and `midaz-ledger-migrations@4.4.1`. (@bedatty, @lerian-studio)
+
+Improvements:
+- Scope the in-memory license note to `4.5.0-rc.2` images. (@fredcamaral)
+- Remove the license table grant from the `10.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.0...midaz-v10.4.1)
+
+---
+
 ## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.0)
 
 Features:

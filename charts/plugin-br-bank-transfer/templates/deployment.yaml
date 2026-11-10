@@ -18,10 +18,12 @@ spec:
       {{- include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name ) | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.bankTransfer.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- with .Values.bankTransfer.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name "podTemplate" true) | nindent 8 }}
     spec:

@@ -15,6 +15,14 @@ global:
 # kind runs no Midaz, so the app's DNS probe finds no private upstream and refuses the
 # render values' plaintext MIDAZ_BASE_URL; in a cluster with Midaz the probe allows it.
 bankTransfer:
+  # The app adds 2 x 500m (HPA min 2) next to the bundled datastores on the 4 vCPU kind
+  # node, so the Postgres replica stayed Pending even with the trim below. One replica proves the gate.
+  replicaCount: 1
+  autoscaling:
+    minReplicas: 1
+  resources:
+    requests:
+      cpu: 250m
   configmap:
     POSTGRES_SSLMODE: "disable"
     ALLOW_PRIVATE_UPSTREAMS: "true"
@@ -40,3 +48,4 @@ postgresql:
       requests:
         cpu: 250m
         memory: 512Mi
+

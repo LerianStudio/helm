@@ -326,6 +326,33 @@ worker:
   licenseFile:
     # -- Same as api.licenseFile.existingSecret, for the worker.
     existingSecret: ""
+# -- PIX JD behind the JD Courier — the ADMISSION side. The Courier delivers its
+# inbound calls on an M2M credential whose manifest role is `service`, and lib-auth
+# admits that role only under the inverted authorization model: enabling this block
+# sets AUTH_M2M_INVERSION_ENABLED=true AND AUTH_M2M_PRODUCT_FORWARD_ENABLED=true on
+# the api, ALWAYS AS A PAIR. Under the legacy model (inversion off) every Courier
+# delivery is 403, and inversion WITHOUT forward refuses the Courier 403 just the
+# same — which is why the chart exposes one switch and never the two variables
+# separately (api.extraConfigmap remains the raw escape hatch, and it still wins).
+# The worker serves no Courier routes and never gets the pair. Off, NOTHING is
+# emitted: the app defaults both variables to false.
+#
+# The OUTBOUND Courier configuration is already modeled elsewhere and is not
+# repeated here: api.configmap.COURIER_URL (single-tenant only, emitted when set,
+# must point at the Courier process running the `admin` role) and
+# api.secrets.COURIER_CLIENT_ID / COURIER_CLIENT_SECRET. Prerequisites that are
+# not this chart's — the Courier credential, the `service` role, the Access
+# Manager version — are in README.md, "Installing behind the JD Courier".
+courier:
+  # -- Admit JD Courier deliveries on the api (the AUTH_M2M pair above).
+  enabled: false
+  accountClaims:
+    # -- The worker sweep that claims each participant's CRM accounts on its
+    # Courier: emits COURIER_ACCOUNT_CLAIMS_ENABLED=true in the WORKER ConfigMap
+    # only (the api never reads it). Requires worker.enabled=true — the render
+    # fails otherwise, since nothing would ever run the sweep — and is independent
+    # of courier.enabled above: it is an outbound call, not inbound admission.
+    enabled: false
 # -- Schema migrations, as a SEGREGATED Job (templates/common/migrations-job.yaml) —
 # the repository convention, matching plugin-br-bank-transfer, notifications,
 # plugin-access-manager and plugin-br-pix-switch.

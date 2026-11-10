@@ -182,6 +182,8 @@ global:
   #   saslMechanism: "PLAIN"
   #   saslUsername: "midaz"
   #   tlsEnabled: "true"
+  # Per-component opt-out: set ledger.configmap.STREAMING_SASL_MECHANISM: "" and
+  # STREAMING_SASL_USERNAME: "" (and leave its STREAMING_SASL_PASSWORD empty) to drop the shared SASL.
   # -- Env-wide auth (plugin-access-manager): enabled / host.
   auth: {}
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):

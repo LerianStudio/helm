@@ -1,5 +1,17 @@
 # Plugin-br-payments Changelog
 
+## [2.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.5.0)
+
+Features:
+- Accept sandbox simulation keys in `plugin-br-payments`. (@arthurkz)
+
+Fixes:
+- Render `TRUSTED_PROXIES` and HTTP timeouts for `plugin-br-payments`. (@MarcoBuarque)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.4.0...plugin-br-payments-v2.5.0)
+
+---
+
 ## [2.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.4.0)
 
 Features:

@@ -1,0 +1,58 @@
+# Layered on helm-render-values/br-ccs.yaml for the kind install gate.
+# install-test.sh grants the GHCR pull secret to the namespace's default ServiceAccount
+# only; the chart's own ServiceAccount would pull the private image anonymously (401).
+# kind runs no Access Manager, Tenant Manager, Consul or Kafka: the app accepts plugin
+# auth off only when ENV_NAME is a development name, and the render fixture's
+# multi-tenant, service-discovery and streaming paths are turned back off.
+brCcs:
+  serviceAccount:
+    create: false
+  multiTenant:
+    enabled: false
+  serviceDiscovery:
+    enabled: false
+  streaming:
+    enabled: false
+  configmap:
+    ENV_NAME: "development"
+    PLUGIN_AUTH_ENABLED: "false"
+    # The bundled postgresql subchart serves no TLS.
+    POSTGRES_SSLMODE: "disable"
+    # ...and the app refuses plaintext datastores unless this bypass is set.
+    ALLOW_INSECURE_TLS: "true"
+    # The app refuses a blank server-side encryption posture for either bucket.
+    OBJECT_STORAGE_STA_SSE_ALGORITHM: "AES256"
+    OBJECT_STORAGE_CCS_SSE_ALGORITHM: "AES256"
+    # The render fixture names an external broker; here the bundled rabbitmq
+    # subchart serves, addressed by its Service in the release namespace.
+    RABBITMQ_HOST: "br-ccs-rabbitmq"
+    ORGANIZATION_IDS: "global"
+    # The app refuses an empty REPORTER_URL; an unreachable Reporter only trips its breaker.
+    REPORTER_URL: "http://reporter:4005"
+    # With RabbitMQ on, the Reporter integration registers an outbox handler (dev-st runs it on).
+    OUTBOX_ENABLED: "true"
+  # The app refuses to boot in every environment without a license the Lerian
+  # gateway accepts: the CI license placeholder (README) is written over by
+  # install-test.sh from HELM_CI_LICENSE_KEY_BR_CCS.
+  secrets:
+    LICENSE_KEY: "IT_LICENSE_KEY"
+    # Synthetic AES-256 key (64 hex chars); the render fixture's placeholder is not hex.
+    CCS_CRYPTO_MASTER_KEY: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+global:
+  observability:
+    enabled: false
+# The app dials RabbitMQ at boot; bundle the broker with the fixture's password.
+rabbitmq:
+  enabled: true
+  persistence:
+    enabled: false
+  # The chart's load_definitions.json declares the br-ccs user without a
+  # password, overriding the one the subchart creates (login refused, 403);
+  # the gate lets the subchart own the user instead.
+  extraSecrets: []
+  customConfig: ""
+  authentication:
+    password:
+      value: "render-fixture-rmq-pass"
+    erlangCookie:
+      value: "render-fixture-erlang-cookie-0123456789"

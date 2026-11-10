@@ -14,6 +14,8 @@ brCcs:
     enabled: true
   configmap:
     RABBITMQ_ENABLED: "true"
+    # The rabbitmq subchart stays off: the broker is external, so it is named.
+    RABBITMQ_HOST: "rabbitmq.messaging.svc.cluster.local"
     STREAMING_BROKERS: "kafka:9092"
     STREAMING_SASL_MECHANISM: "PLAIN"
     STREAMING_SASL_USERNAME: "render-fixture-user"

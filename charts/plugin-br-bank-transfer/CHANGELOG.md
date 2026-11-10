@@ -1,5 +1,14 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.2)
+
+Fixes:
+- Corrected the indentation of the commented secrets examples under `bankTransfer.secrets` to maintain consistency. (@Leonardox7, @gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.2.1...plugin-br-bank-transfer-v3.2.2)
+
+---
+
 ## [3.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.1)
 
 Fixes:

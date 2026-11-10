@@ -28,7 +28,9 @@
       "durable": true,
       "auto_delete": false,
       "internal": false,
-      "arguments": {}
+      "arguments": {
+        "alternate-exchange": "ccs.business.dlq"
+      }
     }
   ],
   "bindings": []

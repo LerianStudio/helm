@@ -151,3 +151,21 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Default in-cluster hosts of the bundled datastores, built from the Services the
+Bitnami subcharts actually render: common.names.dependency.fullname honours the
+release-name collapse, and the postgresql subchart only adds -primary in
+replication mode (standalone publishes the bare fullname).
+*/}}
+{{- define "br-ccs.postgresql.defaultHost" -}}
+{{- $name := include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .) -}}
+{{- if eq (dig "architecture" "standalone" .Values.postgresql) "replication" -}}
+{{- $name = printf "%s-%s" $name (dig "primary" "name" "primary" .Values.postgresql) -}}
+{{- end -}}
+{{- printf "%s.%s.svc.cluster.local" $name (include "global.namespace" .) -}}
+{{- end -}}
+
+{{- define "br-ccs.valkey.defaultHost" -}}
+{{- printf "%s-primary.%s.svc.cluster.local:6379" (include "common.names.dependency.fullname" (dict "chartName" "valkey" "chartValues" .Values.valkey "context" .)) (include "global.namespace" .) -}}
+{{- end -}}

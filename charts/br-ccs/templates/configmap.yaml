@@ -80,7 +80,7 @@ data:
   # datastore mask). Pool/timeout TUNING is passthrough.
   # =====================================================================
   {{- if $pgInternal }}
-  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace)) | quote }}
+  POSTGRES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST" "default" (include "br-ccs.postgresql.defaultHost" $)) | quote }}
   {{- else }}
   POSTGRES_HOST: {{ required "brCcs.configmap.POSTGRES_HOST (or brCcs.datastores.postgres.host / global.datastores.postgres.host) is required when the bundled postgresql subchart is disabled (external infra)" (include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "postgres" "field" "host" "nativeKey" "POSTGRES_HOST")) | quote }}
   {{- end }}
@@ -109,7 +109,7 @@ data:
   # REDIS / VALKEY (dependency — HOST via the datastore mask). Tuning is passthrough.
   # =====================================================================
   {{- if $vkInternal }}
-  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (printf "%s-valkey-primary.%s.svc.cluster.local:6379" .Release.Name $namespace)) | quote }}
+  REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" (include "br-ccs.valkey.defaultHost" $)) | quote }}
   {{- else }}
   REDIS_HOST: {{ required "brCcs.configmap.REDIS_HOST (or brCcs.datastores.redis.host / global.datastores.redis.host) is required when the bundled valkey subchart is disabled (external infra)" (include "lerian-common.datastore.value" (dict "context" $ "dedicated" $ds "configmap" $cm "type" "redis" "field" "host" "nativeKey" "REDIS_HOST")) | quote }}
   {{- end }}

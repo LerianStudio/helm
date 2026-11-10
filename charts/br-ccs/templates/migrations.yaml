@@ -94,7 +94,7 @@ spec:
               echo "Postgres is ready";
           env:
             - name: POSTGRES_HOST
-              value: {{ get $configmap "POSTGRES_HOST" | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+              value: {{ get $configmap "POSTGRES_HOST" | default (include "br-ccs.postgresql.defaultHost" $) | quote }}
             - name: POSTGRES_PORT
               value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
           securityContext:
@@ -120,7 +120,7 @@ spec:
             - name: MIGRATIONS_PATH
               value: {{ get $migrations "path" | default "/migrations" | quote }}
             - name: POSTGRES_HOST
-              value: {{ get $configmap "POSTGRES_HOST" | default (printf "%s-postgresql-primary.%s.svc.cluster.local" .Release.Name $namespace) | quote }}
+              value: {{ get $configmap "POSTGRES_HOST" | default (include "br-ccs.postgresql.defaultHost" $) | quote }}
             - name: POSTGRES_PORT
               value: {{ get $configmap "POSTGRES_PORT" | default "5432" | quote }}
             - name: POSTGRES_USER

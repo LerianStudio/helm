@@ -28,7 +28,7 @@ icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
 dependencies:
   - name: lerian-common-helm
     version: "1.4.0"
-    repository: "file://../lerian-common"
+    repository: "oci://ghcr.io/lerianstudio"
   - name: valkey
     version: "2.4.7"
     repository: "oci://registry-1.docker.io/bitnamicharts"

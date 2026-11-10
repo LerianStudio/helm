@@ -309,6 +309,16 @@ brCcs:
   # SERVER_TLS_CERT_FILE, RABBITMQ_QUEUE, FETCHER_URL, *_OAUTH2_*, CCS_DETAIL_*).
   # Precedence: brCcs.configmap.<KEY> > chart default. Leaving this {} renders
   # the documented defaults (byte-identical to the app .env).
+  # Optional keys rendered ONLY when set (skipped if the same key is in
+  # brCcs.extraEnvVars): CRM_URL/CRM_ORGANIZATION_ID/CRM_M2M_TARGET_SERVICE,
+  # IDP_DECLARATION_ENABLED/IDP_HOST, REPORTER_TEMPLATE_{ID,NAME}_*,
+  # CCS_REPORTER_POLL_*,
+  # BATCH_SCHEDULER_*/BATCH_SCHEDULE_HUMAN_APPROVAL_MARGIN_MIN,
+  # STA_FILE_HASH_VERIFY_ENABLED/STA_EVENT_HMAC_{VERIFY_ENABLED,MASTER_KEY_VERSION,TOLERANCE_SECONDS},
+  # CCS_{CONSUMER_MAX_REDELIVERIES,DETAIL_PII_RETENTION_BUSINESS_DAYS,MOVEMENT_*,NON_SUBMISSION_SCAN_INTERVAL_SEC,OUTBOX_OVERRIDES_ENABLED},
+  # IDEMPOTENCY_KEY_{PREFIX,TTL_HRS},
+  # OBJECT_STORAGE_{CCS,STA}_{MAX_OBJECT_BYTES,SSE_ALGORITHM,SSE_KMS_KEY_ID},
+  # SWAGGER_{HOST,SCHEMES}.
   # @default -- templates/configmap.yaml
   configmap: {}
 
@@ -377,6 +387,11 @@ brCcs:
     # REPORTER_CLIENT_SECRET: ""
     # STA_CLIENT_ID: ""
     # STA_CLIENT_SECRET: ""
+    # CRM_CLIENT_ID: ""
+    # CRM_CLIENT_SECRET: ""
+    # IdP M2M client (read by lib-auth when IDP_DECLARATION_ENABLED=true)
+    # IDP_M2M_CLIENT_ID: ""
+    # IDP_M2M_CLIENT_SECRET: ""
 
   # -- Existing secrets name
   useExistingSecret: false

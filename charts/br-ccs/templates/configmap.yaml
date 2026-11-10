@@ -218,6 +218,12 @@ data:
   {{- if eq (toString ($cm.REPORTER_ENABLED | default "false")) "true" }}
   REPORTER_URL: {{ required "brCcs.configmap.REPORTER_URL is required when REPORTER_ENABLED=true" $cm.REPORTER_URL | quote }}
   REPORTER_HTTP_TIMEOUT_SEC: {{ $cm.REPORTER_HTTP_TIMEOUT_SEC | default "30" | quote }}
+  {{- else if and $cm.REPORTER_URL (not (hasKey (.Values.brCcs.extraEnvVars | default dict) "REPORTER_URL")) }}
+  {{- /* The app no longer reads REPORTER_ENABLED: it always dials the Reporter
+         and refuses to boot on an empty REPORTER_URL. A REPORTER_URL set without
+         the legacy switch is therefore delivered as-is (skipped when extraEnvVars
+         already carries it, so the key never renders twice). */}}
+  REPORTER_URL: {{ $cm.REPORTER_URL | quote }}
   {{- end }}
 
   # =====================================================================
@@ -384,6 +390,62 @@ data:
   OBJECT_STORAGE_FETCHER_DISABLE_SSL: {{ $cm.OBJECT_STORAGE_FETCHER_DISABLE_SSL | default "true" | quote }}
   CCS_OUTBOUND_RETENTION_DAYS: {{ $cm.CCS_OUTBOUND_RETENTION_DAYS | default "30" | quote }}
   CCS_ACCS009_RETENTION_DAYS: {{ $cm.CCS_ACCS009_RETENTION_DAYS | default "30" | quote }}
+
+  {{- $extra := .Values.brCcs.extraEnvVars | default dict }}
+  {{- /* OPTIONAL APP KNOBS (render ONLY when set in brCcs.configmap).
+     A key also present in brCcs.extraEnvVars is skipped here — extraEnvVars
+     wins and renders it below, so a key is never emitted twice.
+     CRM UPSTREAM (optional — render only when set)
+     OAuth2 client_id/secret for CRM live in the Secret. */}}
+  {{- range $k := (list "CRM_URL" "CRM_ORGANIZATION_ID" "CRM_M2M_TARGET_SERVICE") }}
+  {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+  {{- /* IDENTITY PROVIDER (optional, read by lib-auth)
+     IDP_M2M_CLIENT_ID/SECRET live in the Secret. */}}
+  {{- range $k := (list "IDP_DECLARATION_ENABLED" "IDP_HOST") }}
+  {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+  {{- /* REPORTER TEMPLATES (optional — template id/name per message) */}}
+  {{- range $k := (list "REPORTER_TEMPLATE_ID_ACCS001" "REPORTER_TEMPLATE_ID_ACCS005" "REPORTER_TEMPLATE_ID_CCS0002" "REPORTER_TEMPLATE_ID_CCS0004" "REPORTER_TEMPLATE_NAME_ACCS001" "REPORTER_TEMPLATE_NAME_ACCS005" "REPORTER_TEMPLATE_NAME_CCS0002" "REPORTER_TEMPLATE_NAME_CCS0004") }}
+  {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+  {{- /* REPORTER POLLING (optional — unset = app defaults) */}}
+  {{- range $k := (list "CCS_REPORTER_POLL_INITIAL_DELAY_MS" "CCS_REPORTER_POLL_MAX_DELAY_MS" "CCS_REPORTER_POLL_TOTAL_TIMEOUT_SEC") }}
+  {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+  {{- /* BATCH SCHEDULER (optional — unset = app defaults; absent ENABLED = off) */}}
+  {{- range $k := (list "BATCH_SCHEDULER_ENABLED" "BATCH_SCHEDULER_MAX_ATTEMPTS" "BATCH_SCHEDULER_TICK_INTERVAL_SEC" "BATCH_SCHEDULE_HUMAN_APPROVAL_MARGIN_MIN") }}
+  {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+  {{- /* STA INBOUND VERIFICATION (optional). The HMAC key catalogue
+     (STA_EVENT_HMAC_MASTER_KEYS) lives in the Secret. */}}
+  {{- range $k := (list "STA_FILE_HASH_VERIFY_ENABLED" "STA_EVENT_HMAC_VERIFY_ENABLED" "STA_EVENT_HMAC_MASTER_KEY_VERSION" "STA_EVENT_HMAC_TOLERANCE_SECONDS") }}
+  {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+  {{- /* CCS RUNTIME KNOBS (optional — unset = app defaults) */}}
+  {{- range $k := (list "CCS_CONSUMER_MAX_REDELIVERIES" "CCS_DETAIL_PII_RETENTION_BUSINESS_DAYS" "CCS_MOVEMENT_MAX_BUSINESS_DAYS_PAST" "CCS_MOVEMENT_SUBMIT_WINDOW_ALWAYS_OPEN" "CCS_NON_SUBMISSION_SCAN_INTERVAL_SEC" "CCS_OUTBOX_OVERRIDES_ENABLED") }}
+  {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
+  {{- /* IDEMPOTENCY / OBJECT STORAGE LIMITS + SSE / SWAGGER HOST (optional) */}}
+  {{- range $k := (list "ALLOW_INSECURE_TLS" "IDEMPOTENCY_KEY_PREFIX" "IDEMPOTENCY_KEY_TTL_HRS" "OBJECT_STORAGE_CCS_MAX_OBJECT_BYTES" "OBJECT_STORAGE_STA_MAX_OBJECT_BYTES" "OBJECT_STORAGE_CCS_SSE_ALGORITHM" "OBJECT_STORAGE_CCS_SSE_KMS_KEY_ID" "OBJECT_STORAGE_STA_SSE_ALGORITHM" "OBJECT_STORAGE_STA_SSE_KMS_KEY_ID" "SWAGGER_HOST" "SWAGGER_SCHEMES") }}
+  {{- if and (hasKey $cm $k) (ne (toString (index $cm $k)) "") (not (hasKey $extra $k)) }}
+  {{ $k }}: {{ index $cm $k | quote }}
+  {{- end }}
+  {{- end }}
 
   # =====================================================================
   # EXTRA OVERRIDES (escape hatch for optional knobs not modeled above)

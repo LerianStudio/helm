@@ -105,6 +105,59 @@ brCcs:
     OBJECT_STORAGE_FETCHER_ENDPOINT: ""
     OBJECT_STORAGE_FETCHER_BUCKET: ""
 
+    # =================================================================
+    # Optional app knobs — rendered ONLY when set (unset = app default).
+    # A key also set in brCcs.extraEnvVars is rendered from extraEnvVars.
+    # =================================================================
+    # CRM upstream (client id/secret go in secrets)
+    # CRM_URL: ""
+    # CRM_ORGANIZATION_ID: ""
+    # CRM_M2M_TARGET_SERVICE: ""
+    # IdP (lib-auth; M2M client id/secret go in secrets)
+    # IDP_DECLARATION_ENABLED: ""
+    # IDP_HOST: ""
+    # Reporter templates
+    # REPORTER_TEMPLATE_ID_ACCS001: ""
+    # REPORTER_TEMPLATE_ID_ACCS005: ""
+    # REPORTER_TEMPLATE_ID_CCS0002: ""
+    # REPORTER_TEMPLATE_ID_CCS0004: ""
+    # REPORTER_TEMPLATE_NAME_ACCS001: ""
+    # REPORTER_TEMPLATE_NAME_ACCS005: ""
+    # REPORTER_TEMPLATE_NAME_CCS0002: ""
+    # REPORTER_TEMPLATE_NAME_CCS0004: ""
+    # Reporter polling
+    # CCS_REPORTER_POLL_INITIAL_DELAY_MS: ""
+    # CCS_REPORTER_POLL_MAX_DELAY_MS: ""
+    # CCS_REPORTER_POLL_TOTAL_TIMEOUT_SEC: ""
+    # Batch scheduler
+    # BATCH_SCHEDULER_ENABLED: ""
+    # BATCH_SCHEDULER_MAX_ATTEMPTS: ""
+    # BATCH_SCHEDULER_TICK_INTERVAL_SEC: ""
+    # BATCH_SCHEDULE_HUMAN_APPROVAL_MARGIN_MIN: ""
+    # STA inbound verification (STA_EVENT_HMAC_MASTER_KEYS goes in secrets)
+    # STA_FILE_HASH_VERIFY_ENABLED: ""
+    # STA_EVENT_HMAC_VERIFY_ENABLED: ""
+    # STA_EVENT_HMAC_MASTER_KEY_VERSION: ""
+    # STA_EVENT_HMAC_TOLERANCE_SECONDS: ""
+    # CCS runtime knobs
+    # CCS_CONSUMER_MAX_REDELIVERIES: ""
+    # CCS_DETAIL_PII_RETENTION_BUSINESS_DAYS: ""
+    # CCS_MOVEMENT_MAX_BUSINESS_DAYS_PAST: ""
+    # CCS_MOVEMENT_SUBMIT_WINDOW_ALWAYS_OPEN: ""
+    # CCS_NON_SUBMISSION_SCAN_INTERVAL_SEC: ""
+    # CCS_OUTBOX_OVERRIDES_ENABLED: ""
+    # Idempotency / object-storage limits + SSE / swagger host
+    # IDEMPOTENCY_KEY_PREFIX: ""
+    # IDEMPOTENCY_KEY_TTL_HRS: ""
+    # OBJECT_STORAGE_CCS_MAX_OBJECT_BYTES: ""
+    # OBJECT_STORAGE_STA_MAX_OBJECT_BYTES: ""
+    # OBJECT_STORAGE_CCS_SSE_ALGORITHM: ""
+    # OBJECT_STORAGE_CCS_SSE_KMS_KEY_ID: ""
+    # OBJECT_STORAGE_STA_SSE_ALGORITHM: ""
+    # OBJECT_STORAGE_STA_SSE_KMS_KEY_ID: ""
+    # SWAGGER_HOST: ""
+    # SWAGGER_SCHEMES: ""
+
   secrets:
     # PostgreSQL - REQUIRED
     POSTGRES_PASSWORD: ""  # REQUIRED - PostgreSQL primary password
@@ -140,6 +193,10 @@ brCcs:
     # REPORTER_CLIENT_SECRET: ""
     # STA_CLIENT_ID: ""
     # STA_CLIENT_SECRET: ""
+    # CRM_CLIENT_ID: ""
+    # CRM_CLIENT_SECRET: ""
+    # IDP_M2M_CLIENT_ID: ""
+    # IDP_M2M_CLIENT_SECRET: ""
 
     # Multi-tenant (tenant-manager)
     # MULTI_TENANT_SERVICE_API_KEY: ""

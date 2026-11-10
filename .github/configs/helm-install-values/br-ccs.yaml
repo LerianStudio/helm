@@ -46,11 +46,6 @@ rabbitmq:
   enabled: true
   persistence:
     enabled: false
-  # The chart's load_definitions.json declares the br-ccs user without a
-  # password, overriding the one the subchart creates (login refused, 403);
-  # the gate lets the subchart own the user instead.
-  extraSecrets: []
-  customConfig: ""
   authentication:
     password:
       value: "render-fixture-rmq-pass"

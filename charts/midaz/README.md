@@ -701,6 +701,7 @@ With a custom `mongodb.auth.rootUser`, use it instead of `midaz`. Then check hol
 - an own `mongodb.auth.existingSecret` needs a `mongodb-replica-set-key` key;
 - an Argo CD install that sets `mongodb.auth.rootPassword` also sets `mongodb.auth.replicaSetKey`, or the key changes on every render;
 - values that pin a Mongo host to `midaz-mongodb` change to `midaz-mongodb-headless`;
+- values that set `mongodb.updateStrategy.type: Recreate` drop it, unless they also pin `mongodb.architecture: standalone` (Option A): a StatefulSet refuses Recreate and the upgrade fails;
 - connection strings do not change.
 
 ### RabbitMQ

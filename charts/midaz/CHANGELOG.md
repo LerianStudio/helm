@@ -1,5 +1,14 @@
 # Midaz Changelog
 
+## [10.4.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.3)
+
+Fixes:
+- Update `midaz-ledger` to `4.4.2`, `midaz-tracer` to `4.4.2`, `midaz-tracer-migrations` to `4.4.2`, and `midaz-ledger-migrations` to `4.4.2`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.2...midaz-v10.4.3)
+
+---
+
 ## [10.4.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.2)
 
 Features:

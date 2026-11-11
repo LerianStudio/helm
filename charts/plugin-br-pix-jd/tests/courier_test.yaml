@@ -1,0 +1,96 @@
+suite: courier block
+templates:
+  - templates/api/configmap.yaml
+  - templates/api/deployment.yaml
+  - templates/api/secrets.yaml
+  - templates/worker/configmap.yaml
+  - templates/worker/deployment.yaml
+  - templates/worker/secrets.yaml
+release:
+  name: pix-jd
+  namespace: pix-jd
+set:
+  api.configmap.REDIS_HOST: "valkey:6379"
+  api.configmap.POSTGRES_HOST: postgresql
+  api.configmap.ENVIRONMENT_NAME: development
+  api.secrets.LICENSE_KEY: x
+  api.secrets.POSTGRES_PASSWORD: x
+  worker.enabled: true
+tests:
+  - it: default emits no AUTH_M2M pair in the api ConfigMap
+    template: templates/api/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.AUTH_M2M_INVERSION_ENABLED
+      - notExists:
+          path: data.AUTH_M2M_PRODUCT_FORWARD_ENABLED
+  - it: default emits no courier switch in the worker ConfigMap
+    template: templates/worker/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.COURIER_ACCOUNT_CLAIMS_ENABLED
+      - notExists:
+          path: data.AUTH_M2M_INVERSION_ENABLED
+      - notExists:
+          path: data.AUTH_M2M_PRODUCT_FORWARD_ENABLED
+  - it: courier.enabled emits the AUTH_M2M pair, both "true", in the api ConfigMap
+    set: {courier.enabled: true}
+    template: templates/api/configmap.yaml
+    asserts:
+      - equal:
+          path: data.AUTH_M2M_INVERSION_ENABLED
+          value: "true"
+      - equal:
+          path: data.AUTH_M2M_PRODUCT_FORWARD_ENABLED
+          value: "true"
+  - it: courier.enabled keeps the AUTH_M2M pair OUT of the worker ConfigMap
+    set: {courier.enabled: true}
+    template: templates/worker/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.AUTH_M2M_INVERSION_ENABLED
+      - notExists:
+          path: data.AUTH_M2M_PRODUCT_FORWARD_ENABLED
+  - it: accountClaims.enabled emits the sweep switch in the worker ConfigMap
+    set: {courier.accountClaims.enabled: true}
+    template: templates/worker/configmap.yaml
+    asserts:
+      - equal:
+          path: data.COURIER_ACCOUNT_CLAIMS_ENABLED
+          value: "true"
+  - it: accountClaims.enabled never reaches the api ConfigMap
+    set: {courier.accountClaims.enabled: true}
+    template: templates/api/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.COURIER_ACCOUNT_CLAIMS_ENABLED
+  - it: refuses accountClaims with the worker disabled, naming both keys
+    set: {courier.accountClaims.enabled: true, worker.enabled: false}
+    # The gate lives in consistencyGates, which every api/worker ConfigMap and Secret
+    # invokes; helm attributes the failure to the first template that evaluates it,
+    # which is the api Secret.
+    template: templates/api/secrets.yaml
+    asserts:
+      - failedTemplate:
+          errorPattern: "courier.accountClaims.enabled=true requires worker.enabled=true"
+  - it: api.extraConfigmap still wins over the courier block
+    set:
+      courier.enabled: true
+      api.extraConfigmap.AUTH_M2M_INVERSION_ENABLED: "false"
+    template: templates/api/configmap.yaml
+    asserts:
+      - equal:
+          path: data.AUTH_M2M_INVERSION_ENABLED
+          value: "false"
+      - equal:
+          path: data.AUTH_M2M_PRODUCT_FORWARD_ENABLED
+          value: "true"
+  - it: worker.extraConfigmap still wins over the courier block
+    set:
+      courier.accountClaims.enabled: true
+      worker.extraConfigmap.COURIER_ACCOUNT_CLAIMS_ENABLED: "false"
+    template: templates/worker/configmap.yaml
+    asserts:
+      - equal:
+          path: data.COURIER_ACCOUNT_CLAIMS_ENABLED
+          value: "false"

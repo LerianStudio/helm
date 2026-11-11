@@ -1,5 +1,15 @@
 # Plugin-br-pix-jd Changelog
 
+## [0.8.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.8.0)
+
+Features:
+
+- Add courier block for JD Courier installs. (@digocelos)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-pix-jd-v0.7.0...plugin-br-pix-jd-v0.8.0)
+
+---
+
 ## [0.7.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-pix-jd-v0.7.0)
 
 Features:

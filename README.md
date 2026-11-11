@@ -225,7 +225,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | App Version |
 | :---: | :---: |
-| `4.0.2` | 1.1.0 |
+| `4.0.3` | 1.1.0 |
 
 -----------------
 

@@ -42,3 +42,11 @@ tests:
     template: charts/mongodb/templates/arbiter/statefulset.yaml
     asserts:
       - hasDocuments: {count: 0}
+  - it: keeps an external host when the bundled mongodb is disabled
+    set:
+      mongodb.enabled: false
+      ledger.configmap.MONGO_CRM_HOST: mongo.example.com
+      ledger.configmap.MONGO_FEES_HOST: mongo.example.com
+    template: templates/ledger/configmap.yaml
+    asserts:
+      - equal: {path: data.MONGO_FEES_HOST, value: mongo.example.com}

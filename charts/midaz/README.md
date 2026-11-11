@@ -680,22 +680,21 @@ mongodb:
     type: Recreate
 ```
 
-**Option B, migrate the data.** Commands assume release `midaz` in namespace `midaz`; turn Argo CD auto-sync off first. Under Argo CD the upgrade step is: set the chart to 11.0.0 and sync with prune (safe once the volume is patched to Retain), keeping the ledger and CRM at 0 replicas in the app values and running the `wait` below before the dump; there is no Helm release to `helm upgrade`.
+**Option B, migrate the data.** Commands assume release `midaz` in namespace `midaz`; turn Argo CD auto-sync off first. Under Argo CD the upgrade step is: set the chart to 11.0.0 and sync with prune (safe once the volume is patched to Retain), with no values change for the ledger and CRM: the scale to 0 below survives the sync, because with autoscaling on (the default) the Deployments omit `spec.replicas`. Run the `wait` before the dump. There is no Helm release to `helm upgrade`: after the restore, sync the chart values again and scale back with `kubectl -n midaz scale deploy -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name in (midaz-ledger,midaz-crm)' --replicas=<n>`, `<n>` being the `autoscaling.minReplicas` you use; the HPA does not scale a Deployment sitting at 0, so without this step both stay down.
 
 ```console
 $ kubectl -n midaz scale deploy -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name in (midaz-ledger,midaz-crm)' --replicas=0
 $ kubectl -n midaz wait --for=delete pod -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name in (midaz-ledger,midaz-crm)' --timeout=120s
-$ PASS=$(kubectl -n midaz get secret midaz-mongodb -o jsonpath='{.data.mongodb-root-password}' | base64 -d)
-$ kubectl -n midaz exec deploy/midaz-mongodb -- mongodump --username midaz --password "$PASS" --authenticationDatabase admin --archive > midaz-mongo.archive
+$ kubectl -n midaz exec deploy/midaz-mongodb -- sh -c 'mongodump --username "$MONGODB_ROOT_USER" --password "$MONGODB_ROOT_PASSWORD" --authenticationDatabase admin --archive' > midaz-mongo.archive
 $ PV=$(kubectl -n midaz get pvc midaz-mongodb -o jsonpath='{.spec.volumeName}')
 $ kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
 $ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 11.0.0 -n midaz -f values.yaml --set ledger.autoscaling.enabled=false,ledger.replicaCount=0,crm.autoscaling.enabled=false,crm.replicaCount=0
 $ kubectl -n midaz rollout status sts/midaz-mongodb
-$ kubectl -n midaz exec -i midaz-mongodb-0 -- mongorestore --username midaz --password "$PASS" --authenticationDatabase admin --archive --drop --nsExclude 'admin.*' --nsExclude 'config.*' < midaz-mongo.archive
+$ kubectl -n midaz exec -i midaz-mongodb-0 -- sh -c 'mongorestore --username "$MONGODB_ROOT_USER" --password "$MONGODB_ROOT_PASSWORD" --authenticationDatabase admin --archive --drop --nsExclude "admin.*" --nsExclude "config.*"' < midaz-mongo.archive
 $ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 11.0.0 -n midaz -f values.yaml
 ```
 
-With a custom `mongodb.auth.rootUser`, use it instead of `midaz`. Then check holders and fee packages through the API, and once satisfied delete the old claim and its disk: `kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'`, then `kubectl -n midaz delete pvc midaz-mongodb`.
+The password comes from the container's own `MONGODB_ROOT_USER` and `MONGODB_ROOT_PASSWORD` variables, so it never travels in the `pods/exec` request (kubectl sends exec arguments as query parameters, which an audit log records) and a custom `mongodb.auth.rootUser` needs no change. Inside the container `--password` is still visible in the mongod-side process list for the duration of the command: the MongoDB tools read no password from the environment, and a `--config` file would put it on disk. Then check holders and fee packages through the API, and once satisfied delete the old claim and its disk: `kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'`, then `kubectl -n midaz delete pvc midaz-mongodb`.
 
 **Also check:**
 

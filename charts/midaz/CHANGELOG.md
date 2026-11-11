@@ -1,5 +1,23 @@
 # Midaz Changelog
 
+## [11.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.0.0)
+
+Features:
+- Run the bundled MongoDB as a one-member replica set. This change is significant as it alters the default setup of MongoDB within the application. (@fredcamaral)
+
+Fixes:
+- Allow the replica-set key to be generated when upgrading from a standalone setup. This ensures a smoother transition and avoids potential configuration issues during upgrades. (@fredcamaral)
+
+Improvements:
+- Document the process to hold the ledger and CRM at zero through the Argo CD sync, providing clearer guidance for maintaining system states during synchronization. (@fredcamaral)
+- Advise on keeping the MongoDB password off `kubectl exec` arguments for enhanced security practices. (@fredcamaral)
+- Include instructions to wait for the ledger to drain before performing a MongoDB dump, ensuring data consistency and integrity. (@fredcamaral)
+- Warn users that a `Recreate` update strategy will fail during the replica set upgrade, helping them avoid potential pitfalls during updates. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.3...midaz-v11.0.0)
+
+---
+
 ## [10.4.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.3)
 
 Fixes:

@@ -95,7 +95,7 @@ component that changed, so their tags may legitimately differ.
 
 | Chart Version | API Version | Worker Version |
 | :---: | :---: | :---: |
-| `0.7.0` | 1.6.1 | 1.6.1 |
+| `0.8.0` | 1.6.1 | 1.6.1 |
 -----------------
 
 ### BR JD Courier

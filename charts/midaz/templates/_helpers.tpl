@@ -260,6 +260,14 @@ app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
 
 {{/*
+midaz.mongodbHost: Service the bundled MongoDB answers on. A replica set exposes only the headless Service.
+*/}}
+{{- define "midaz.mongodbHost" -}}
+{{- $m := .Values.mongodb | default dict -}}
+{{- if and (ne (toString $m.enabled) "false") (eq (toString $m.architecture) "replicaset") -}}midaz-mongodb-headless{{- else -}}midaz-mongodb{{- end -}}
+{{- end -}}
+
+{{/*
 Enable internal dependencies
 */}}
 {{- define "mongodb.enabled" -}}

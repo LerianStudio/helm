@@ -1134,10 +1134,14 @@ mongodb:
     # -- Secret with the passwords, as postgresql.auth.existingSecret.
     existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
-  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
-  # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+  # A replica set: the ledger records fee quota usage in a Mongo transaction.
+  architecture: replicaset
+  replicaCount: 1
+  arbiter:
+    enabled: false # one data member needs no arbiter
+  # A StatefulSet refuses Recreate: an install pinned to architecture: standalone must also pin Recreate.
   updateStrategy:
-    type: Recreate
+    type: RollingUpdate
   persistence:
     size: 8Gi
     # -- The data volume outlives the release, like the PostgreSQL ones.

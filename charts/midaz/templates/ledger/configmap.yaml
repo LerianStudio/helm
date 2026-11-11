@@ -132,7 +132,7 @@ data:
   # MONGO DB - ONBOARDING MODULE (host/user/port via datastore mask)
   # =============================================================================
   MONGO_ONBOARDING_URI: {{ $cm.MONGO_ONBOARDING_URI | default "mongodb" | quote }}
-  MONGO_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "host" "nativeKey" "MONGO_ONBOARDING_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "host" "nativeKey" "MONGO_ONBOARDING_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_ONBOARDING_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "name" "nativeKey" "MONGO_ONBOARDING_NAME" "default" "onboarding") | quote }}
   MONGO_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "user" "nativeKey" "MONGO_ONBOARDING_USER" "default" "midaz") | quote }}
   MONGO_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "port" "nativeKey" "MONGO_ONBOARDING_PORT" "default" "27017") | quote }}
@@ -170,7 +170,7 @@ data:
   # MONGO DB - TRANSACTION MODULE (host/user/port via datastore mask)
   # =============================================================================
   MONGO_TRANSACTION_URI: {{ $cm.MONGO_TRANSACTION_URI | default "mongodb" | quote }}
-  MONGO_TRANSACTION_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "host" "nativeKey" "MONGO_TRANSACTION_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_TRANSACTION_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "host" "nativeKey" "MONGO_TRANSACTION_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_TRANSACTION_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "name" "nativeKey" "MONGO_TRANSACTION_NAME" "default" "transaction") | quote }}
   MONGO_TRANSACTION_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "user" "nativeKey" "MONGO_TRANSACTION_USER" "default" "midaz") | quote }}
   MONGO_TRANSACTION_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "port" "nativeKey" "MONGO_TRANSACTION_PORT" "default" "27017") | quote }}
@@ -182,7 +182,7 @@ data:
   # MONGO DB - CRM MODULE (folded into the unified ledger binary; host/user/port via mask)
   # =============================================================================
   MONGO_CRM_URI: {{ $cm.MONGO_CRM_URI | default "mongodb" | quote }}
-  MONGO_CRM_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_CRM_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_CRM_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "name" "nativeKey" "MONGO_CRM_NAME" "default" "crm") | quote }}
   MONGO_CRM_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "user" "nativeKey" "MONGO_CRM_USER" "default" "midaz") | quote }}
   MONGO_CRM_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "port" "nativeKey" "MONGO_CRM_PORT" "default" "27017") | quote }}
@@ -195,7 +195,7 @@ data:
   # MONGO DB - FEES MODULE (folded into the unified ledger binary; host/user/port via mask)
   # =============================================================================
   MONGO_FEES_URI: {{ $cm.MONGO_FEES_URI | default "mongodb" | quote }}
-  MONGO_FEES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_FEES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_FEES_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "name" "nativeKey" "MONGO_FEES_NAME" "default" "fees") | quote }}
   MONGO_FEES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "user" "nativeKey" "MONGO_FEES_USER" "default" "midaz") | quote }}
   MONGO_FEES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "port" "nativeKey" "MONGO_FEES_PORT" "default" "27017") | quote }}

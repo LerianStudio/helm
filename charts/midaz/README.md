@@ -445,7 +445,6 @@ To enable the CRM service:
 crm:
   enabled: true
   configmap:
-    MONGO_HOST: "midaz-mongodb"  # Use your MongoDB host
     MONGO_NAME: "crm"
     MONGO_USER: "midaz"
   # MONGO_PASSWORD is single-sourced from the chart's bundled-MongoDB Secret
@@ -670,7 +669,7 @@ The bundled MongoDB is now a one-member replica set (`mongodb.architecture: repl
 
 **Who is affected:** every release with `mongodb.enabled: true` (the default). An external MongoDB is untouched, but it must be a replica set or DocumentDB 4.0+ instance-based.
 
-**Upgrading without acting:** the replica set starts on a new empty volume (`datadir-midaz-mongodb-0`), because a StatefulSet cannot mount the old claim `midaz-mongodb`, so holders, fee packages and every other Mongo document appear to be gone. With the Helm CLI the old volume is kept, unmounted. With Argo CD and prune on, the old claim is deleted and, with reclaimPolicy `Delete`, so is the data.
+**Upgrading without acting:** the replica set starts on a new empty volume (`datadir-midaz-mongodb-0`), because a StatefulSet cannot mount the old claim `midaz-mongodb`, so holders, fee packages and every other Mongo document appear to be gone. With the Helm CLI the old volume is kept, unmounted. With Argo CD and prune on, the old claim is deleted and, with reclaimPolicy `Delete`, so is the data. With Argo CD and prune off (the default), the old Deployment `midaz-mongodb` keeps running and its pod is selected by the new `midaz-mongodb-headless` Service, so the ledger splits its connections between the old and the new MongoDB; delete `deploy/midaz-mongodb` and `svc/midaz-mongodb` before the ledger runs again.
 
 **Option A, stay standalone for now.** Valid only while the ledger runs a release that does not record quota usage in a transaction; a newer single-tenant ledger refuses to boot on standalone.
 
@@ -681,7 +680,7 @@ mongodb:
     type: Recreate
 ```
 
-**Option B, migrate the data.** Commands assume release `midaz` in namespace `midaz`; turn Argo CD auto-sync off first.
+**Option B, migrate the data.** Commands assume release `midaz` in namespace `midaz`; turn Argo CD auto-sync off first. Under Argo CD the upgrade step is: set the chart to 11.0.0 and sync with prune (safe once the volume is patched to Retain), keeping the ledger and CRM at 0 replicas in the app values; there is no Helm release to `helm upgrade`.
 
 ```console
 $ kubectl -n midaz scale deploy/midaz-ledger deploy/midaz-crm --replicas=0
@@ -689,17 +688,18 @@ $ PASS=$(kubectl -n midaz get secret midaz-mongodb -o jsonpath='{.data.mongodb-r
 $ kubectl -n midaz exec deploy/midaz-mongodb -- mongodump --username midaz --password "$PASS" --authenticationDatabase admin --archive > midaz-mongo.archive
 $ PV=$(kubectl -n midaz get pvc midaz-mongodb -o jsonpath='{.spec.volumeName}')
 $ kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
-$ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 11.0.0 -n midaz -f values.yaml
+$ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 11.0.0 -n midaz -f values.yaml --set ledger.autoscaling.enabled=false,ledger.replicaCount=0,crm.autoscaling.enabled=false,crm.replicaCount=0
 $ kubectl -n midaz rollout status sts/midaz-mongodb
 $ kubectl -n midaz exec -i midaz-mongodb-0 -- mongorestore --username midaz --password "$PASS" --authenticationDatabase admin --archive --drop --nsExclude 'admin.*' --nsExclude 'config.*' < midaz-mongo.archive
-$ kubectl -n midaz scale deploy/midaz-ledger deploy/midaz-crm --replicas=1
+$ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 11.0.0 -n midaz -f values.yaml
 ```
 
-With a custom `mongodb.auth.rootUser`, use it instead of `midaz`. Then check holders and fee packages through the API, and once satisfied delete the old claim and volume (`kubectl -n midaz delete pvc midaz-mongodb`, then `kubectl delete pv "$PV"`).
+With a custom `mongodb.auth.rootUser`, use it instead of `midaz`. Then check holders and fee packages through the API, and once satisfied delete the old claim and its disk: `kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'`, then `kubectl -n midaz delete pvc midaz-mongodb`.
 
 **Also check:**
 
 - an own `mongodb.auth.existingSecret` needs a `mongodb-replica-set-key` key;
+- an Argo CD install that sets `mongodb.auth.rootPassword` also sets `mongodb.auth.replicaSetKey`, or the key changes on every render;
 - values that pin a Mongo host to `midaz-mongodb` change to `midaz-mongodb-headless`;
 - connection strings do not change.
 

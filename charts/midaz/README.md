@@ -680,10 +680,11 @@ mongodb:
     type: Recreate
 ```
 
-**Option B, migrate the data.** Commands assume release `midaz` in namespace `midaz`; turn Argo CD auto-sync off first. Under Argo CD the upgrade step is: set the chart to 11.0.0 and sync with prune (safe once the volume is patched to Retain), keeping the ledger and CRM at 0 replicas in the app values; there is no Helm release to `helm upgrade`.
+**Option B, migrate the data.** Commands assume release `midaz` in namespace `midaz`; turn Argo CD auto-sync off first. Under Argo CD the upgrade step is: set the chart to 11.0.0 and sync with prune (safe once the volume is patched to Retain), keeping the ledger and CRM at 0 replicas in the app values and running the `wait` below before the dump; there is no Helm release to `helm upgrade`.
 
 ```console
-$ kubectl -n midaz scale deploy/midaz-ledger deploy/midaz-crm --replicas=0
+$ kubectl -n midaz scale deploy -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name in (midaz-ledger,midaz-crm)' --replicas=0
+$ kubectl -n midaz wait --for=delete pod -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name in (midaz-ledger,midaz-crm)' --timeout=120s
 $ PASS=$(kubectl -n midaz get secret midaz-mongodb -o jsonpath='{.data.mongodb-root-password}' | base64 -d)
 $ kubectl -n midaz exec deploy/midaz-mongodb -- mongodump --username midaz --password "$PASS" --authenticationDatabase admin --archive > midaz-mongo.archive
 $ PV=$(kubectl -n midaz get pvc midaz-mongodb -o jsonpath='{.spec.volumeName}')

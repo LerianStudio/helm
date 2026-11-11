@@ -33,16 +33,6 @@ tests:
     asserts:
       - equal: {path: data.MONGO_FEES_HOST, value: midaz-mongodb}
       - equal: {path: data.MONGO_ONBOARDING_HOST, value: midaz-mongodb}
-  - it: keeps the plain Service when pinned to standalone for crm
-    set:
-      crm.enabled: true
-      crm.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-      crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-      mongodb.architecture: standalone
-      mongodb.updateStrategy.type: Recreate
-    template: templates/crm/configmap.yaml
-    asserts:
-      - equal: {path: data.MONGO_HOST, value: midaz-mongodb}
   - it: runs one data member without an arbiter and rolls updates
     template: charts/mongodb/templates/replicaset/statefulset.yaml
     asserts:

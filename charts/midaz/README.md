@@ -8,9 +8,9 @@
 - Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the chart own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
-> **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` (or the equivalent `global.datastores.*` host masks) accordingly. Two more names do not follow the release name: the component Services are always `midaz-ledger`, `midaz-crm` and `midaz-tracer` (the `midaz` prefix comes from `nameOverride`, default `midaz`), so a `TRACER_BASE_URL` points at `midaz-tracer:<port>` whatever the release is called; and the tracer's own `DB_HOST` does follow the release name (see the Tracer section). Mixed naming is therefore expected under a custom release name.
+> **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb-headless`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` (or the equivalent `global.datastores.*` host masks) accordingly. Two more names do not follow the release name: the component Services are always `midaz-ledger`, `midaz-crm` and `midaz-tracer` (the `midaz` prefix comes from `nameOverride`, default `midaz`), so a `TRACER_BASE_URL` points at `midaz-tracer:<port>` whatever the release is called; and the tracer's own `DB_HOST` does follow the release name (see the Tracer section). Mixed naming is therefore expected under a custom release name.
 
-> **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`<release>-mongodb`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets. Deleting only the Secrets resets nothing: a reinstall generates new passwords that the kept data never learned.
+> **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`datadir-<release>-mongodb-0`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets. Deleting only the Secrets resets nothing: a reinstall generates new passwords that the kept data never learned.
 
 Source code can be found here:
 * https://github.com/LerianStudio/helm/tree/main/charts/midaz
@@ -664,6 +664,44 @@ Notes:
       MONGO_FEES_PASSWORD: { your-host-pass }
   ```
 
+#### MongoDB replica set (chart 11.0.0)
+
+The bundled MongoDB is now a one-member replica set (`mongodb.architecture: replicaset`, `replicaCount: 1`, no arbiter). The ledger records fee quota usage in a Mongo transaction, and a single-tenant ledger refuses to boot on a standalone MongoDB. The ledger and CRM hosts now default to `midaz-mongodb-headless`.
+
+**Who is affected:** every release with `mongodb.enabled: true` (the default). An external MongoDB is untouched, but it must be a replica set or DocumentDB 4.0+ instance-based.
+
+**Upgrading without acting:** the replica set starts on a new empty volume (`datadir-midaz-mongodb-0`), because a StatefulSet cannot mount the old claim `midaz-mongodb`, so holders, fee packages and every other Mongo document appear to be gone. With the Helm CLI the old volume is kept, unmounted. With Argo CD and prune on, the old claim is deleted and, with reclaimPolicy `Delete`, so is the data.
+
+**Option A, stay standalone for now.** Valid only while the ledger runs a release that does not record quota usage in a transaction; a newer single-tenant ledger refuses to boot on standalone.
+
+```yaml
+mongodb:
+  architecture: standalone
+  updateStrategy:
+    type: Recreate
+```
+
+**Option B, migrate the data.** Commands assume release `midaz` in namespace `midaz`; turn Argo CD auto-sync off first.
+
+```console
+$ kubectl -n midaz scale deploy/midaz-ledger deploy/midaz-crm --replicas=0
+$ PASS=$(kubectl -n midaz get secret midaz-mongodb -o jsonpath='{.data.mongodb-root-password}' | base64 -d)
+$ kubectl -n midaz exec deploy/midaz-mongodb -- mongodump --username midaz --password "$PASS" --authenticationDatabase admin --archive > midaz-mongo.archive
+$ PV=$(kubectl -n midaz get pvc midaz-mongodb -o jsonpath='{.spec.volumeName}')
+$ kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+$ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 11.0.0 -n midaz -f values.yaml
+$ kubectl -n midaz rollout status sts/midaz-mongodb
+$ kubectl -n midaz exec -i midaz-mongodb-0 -- mongorestore --username midaz --password "$PASS" --authenticationDatabase admin --archive --drop --nsExclude 'admin.*' --nsExclude 'config.*' < midaz-mongo.archive
+$ kubectl -n midaz scale deploy/midaz-ledger deploy/midaz-crm --replicas=1
+```
+
+With a custom `mongodb.auth.rootUser`, use it instead of `midaz`. Then check holders and fee packages through the API, and once satisfied delete the old claim and volume (`kubectl -n midaz delete pvc midaz-mongodb`, then `kubectl delete pv "$PV"`).
+
+**Also check:**
+
+- an own `mongodb.auth.existingSecret` needs a `mongodb-replica-set-key` key;
+- values that pin a Mongo host to `midaz-mongodb` change to `midaz-mongodb-headless`;
+- connection strings do not change.
 
 ### RabbitMQ
 

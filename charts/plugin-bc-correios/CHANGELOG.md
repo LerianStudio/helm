@@ -1,5 +1,17 @@
 # Plugin-bc-correios Changelog
 
+## [4.0.3](https://github.com/LerianStudio/helm/releases/tag/plugin-bc-correios-v4.0.3)
+
+Fixes:
+- Ensure that `bc-correios` pods are rolled on configuration changes to maintain consistency and reliability. (@fredcamaral)
+
+Improvements:
+- Remove repeated release sections from the changelogs to enhance clarity and readability. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-bc-correios-v4.0.2...plugin-bc-correios-v4.0.3)
+
+---
+
 ## [4.0.2](https://github.com/LerianStudio/helm/releases/tag/plugin-bc-correios-v4.0.2)
 
 Fixes:
@@ -51,3 +63,4 @@ Improvements:
 - Correct documentation against templates and application code. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/plugin-bc-correios-v3.0.2...plugin-bc-correios-v4.0.0)
+

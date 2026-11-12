@@ -1,5 +1,26 @@
 # Product-console Changelog
 
+## [4.5.4](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.4)
+
+Fixes:
+- Update `product-console` to `3.4.0`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.5.3...product-console-v4.5.4)
+
+---
+
+## [4.5.3](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.3)
+
+Fixes:
+- Update `product-console` to `3.2.0`. (@lerian-studio)
+
+Improvements:
+- Add an upgrade guide for `4.5.2`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/product-console-v4.5.2...product-console-v4.5.3)
+
+---
+
 ## [4.5.2](https://github.com/LerianStudio/helm/releases/tag/product-console-v4.5.2)
 
 Fixes:
@@ -611,3 +632,4 @@ Contributors: @ferr3ira.gabriel
 - Horizontal Pod Autoscaler (HPA) support
 - Pod Disruption Budget (PDB) support
 - Service Account configuration
+

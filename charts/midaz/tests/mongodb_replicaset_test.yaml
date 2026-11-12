@@ -1,0 +1,52 @@
+suite: bundled mongodb replica set
+release:
+  name: midaz
+  namespace: midaz
+set:
+  ledger.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.RABBITMQ_DEFAULT_PASS: sample
+  ledger.secrets.RABBITMQ_CONSUMER_PASS: sample
+  ledger.configmap.ENV_NAME: development
+  rabbitmq.authentication.erlangCookie.value: "0123456789abcdef0123456789abcdef"
+tests:
+  - it: points every module at the headless Service by default
+    template: templates/ledger/configmap.yaml
+    asserts:
+      - equal: {path: data.MONGO_ONBOARDING_HOST, value: midaz-mongodb-headless}
+      - equal: {path: data.MONGO_TRANSACTION_HOST, value: midaz-mongodb-headless}
+      - equal: {path: data.MONGO_CRM_HOST, value: midaz-mongodb-headless}
+      - equal: {path: data.MONGO_FEES_HOST, value: midaz-mongodb-headless}
+  - it: points crm at the headless Service by default
+    set:
+      crm.enabled: true
+      crm.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    template: templates/crm/configmap.yaml
+    asserts:
+      - equal: {path: data.MONGO_HOST, value: midaz-mongodb-headless}
+  - it: keeps the plain Service when pinned to standalone
+    set:
+      mongodb.architecture: standalone
+      mongodb.updateStrategy.type: Recreate
+    template: templates/ledger/configmap.yaml
+    asserts:
+      - equal: {path: data.MONGO_FEES_HOST, value: midaz-mongodb}
+      - equal: {path: data.MONGO_ONBOARDING_HOST, value: midaz-mongodb}
+  - it: runs one data member without an arbiter and rolls updates
+    template: charts/mongodb/templates/replicaset/statefulset.yaml
+    asserts:
+      - equal: {path: spec.replicas, value: 1}
+      - equal: {path: spec.updateStrategy.type, value: RollingUpdate}
+  - it: renders no arbiter
+    template: charts/mongodb/templates/arbiter/statefulset.yaml
+    asserts:
+      - hasDocuments: {count: 0}
+  - it: keeps an external host when the bundled mongodb is disabled
+    set:
+      mongodb.enabled: false
+      ledger.configmap.MONGO_CRM_HOST: mongo.example.com
+      ledger.configmap.MONGO_FEES_HOST: mongo.example.com
+    template: templates/ledger/configmap.yaml
+    asserts:
+      - equal: {path: data.MONGO_FEES_HOST, value: mongo.example.com}

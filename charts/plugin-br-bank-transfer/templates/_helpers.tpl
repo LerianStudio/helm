@@ -28,6 +28,28 @@ Create bank-transfer app version
 {{- end -}}
 
 {{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "bank-transfer.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.Values.bankTransfer.pdb | default dict) $k -}}{{- fail (printf "bank-transfer: bankTransfer.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $k) -}}{{- end -}}
+{{- end -}}
+{{- if hasKey .Values.bankTransfer "deploymentUpdate" -}}{{- fail "bank-transfer: bankTransfer.deploymentUpdate is owned by the health preset (RollingUpdate, maxUnavailable 0); remove it" -}}{{- end -}}
+{{- end }}
+
+{{/*
+Health preset (probes, ports, env, grace, strategy, replicas, PDB, HPA floor). minImage is the first image
+that serves /health, /readyz and /metrics on the health port. The effective tag (explicit, else appVersion)
+is handed to the preset so a tag inherited from appVersion is guarded too.
+*/}}
+{{- define "bank-transfer.health" -}}
+{{- include "bank-transfer.presetOwned" . -}}
+{{- $c := deepCopy .Values.bankTransfer -}}
+{{- $_ := set $c "image" (dict "tag" (include "bank-transfer.defaultTag" .)) -}}
+{{- include "lerian-common.health" (dict "name" (include "bank-transfer.fullname" .) "component" $c "health" .Values.bankTransfer.health "port" .Values.bankTransfer.service.port "minImage" "3.6.0-beta.9" "replicas" .Values.bankTransfer.replicaCount "autoscaling" .Values.bankTransfer.autoscaling) -}}
+{{- end }}
+
+{{/*
 Return valid bank-transfer version label
 */}}
 {{- define "bank-transfer.versionLabelValue" -}}

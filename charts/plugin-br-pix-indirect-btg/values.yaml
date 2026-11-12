@@ -35,13 +35,11 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-br-pix-indirect-btg-db"
-
 # -- Optional signed licence file, an alternative to pix.secrets.LICENSE_KEY. The Secret is mounted
 # read-only as the directory /etc/lerian/license (key `license`) on every component. File mode needs
 # an image on lib-license-go v5.
 licenseFile:
   existingSecret: ""
-
 # -- Outbound (client) mTLS to the BTG API, shared by the components that call
 # BTG directly (pix and reconciliation). Independent of the inbound webhook
 # `MTLS_ENABLED` toggle. The Secret (created by the chart from `tls.crt`/`tls.key`
@@ -90,7 +88,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.1"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -300,7 +298,7 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.1"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -412,7 +410,7 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.1"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -537,7 +535,7 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.1"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -657,7 +655,7 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.1"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

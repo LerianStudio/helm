@@ -20,6 +20,7 @@ spec:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/identity/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
+        checksum/app-client-secret: {{ .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET | toString | sha256sum }}
         checksum/init-user: {{ include (print $.Template.BasePath "/auth/init_user.yaml") . | sha256sum }}
       labels:
        {{- include "plugin-identity.labels" (dict "context" . "name" .Values.identity.name "pod" true) | nindent 8 }} 
@@ -44,11 +45,12 @@ spec:
             {{- toYaml $h.ports | nindent 12 }}
           envFrom:
           - secretRef:
-              name: {{ if .Values.identity.useExistingSecret }}{{ required "\n\nERROR: identity.useExistingSecret is true but identity.existingSecretName is empty.\n   Set identity.existingSecretName to the name of the Secret holding the identity environment (AUTHORIZER_CLIENT_SECRET, LICENSE_KEY, ORGANIZATION_IDS, ...), or set identity.useExistingSecret=false.\n" .Values.identity.existingSecretName }}{{ else }}{{ include "plugin-identity.fullname" . }}{{ end }}
+              name: {{ if .Values.identity.useExistingSecret }}{{ required "\n\nERROR: identity.useExistingSecret is true but identity.existingSecretName is empty.\n   Set identity.existingSecretName to the name of the Secret holding the identity environment (LICENSE_KEY, ORGANIZATION_IDS, ...), or set identity.useExistingSecret=false.\n" .Values.identity.existingSecretName }}{{ else }}{{ include "plugin-identity.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "plugin-identity.fullname" . }}
           env:
             {{- toYaml $h.env | nindent 12 }}
+            {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "AUTHORIZER_CLIENT_SECRET") | nindent 12 }}
             {{- with (include "plugin-access-manager.licenseFileEnv" .Values.identity | trim) }}{{ . | nindent 12 }}{{ end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
             - name: "HOST_IP"

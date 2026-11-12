@@ -13,21 +13,21 @@
 
 ## Overview
 
-This guide covers the `plugin-br-payments` chart upgrade from `2.2.2` to `2.3.0`. The application version remains `1.2.0`; the chart bump to `2.3.0` is a minor release that introduces an optional signed licence file mechanism as an alternative to the existing `app.secrets.LICENSE_KEY` environment variable. This feature requires the application binary to support file-mode licensing (lib-license-go v5 or later).
+This guide covers the `plugin-br-payments` chart upgrade from `2.2.2` to `2.3.0`. The application version remains `1.2.0`; the chart bump adds optional Secret-file mounting and environment wiring. This is chart-level preparation, not a working file-only licensing migration for the shipped application. Application `1.2.0` uses `lib-license-go/v4 v4.2.2`, requires a non-empty `LICENSE_KEY`, and does not consume `LICENSE_FILE_PATH`. Keep the existing key with this image. No compatible replacement image is identified by this guide.
 
-Existing deployments will continue to work without values changes. The `LICENSE_KEY` secret remains the default licensing method; the new `app.licenseFile.existingSecret` field is an opt-in alternative for operators who manage signed licence files externally.
+No licence-related values migration is required for existing key-based deployments. Preserve all existing operator values and the key source. Even with identical values, upgrading from `2.2.2` to `2.3.0` changes the Deployment pod-template checksums and triggers a rolling restart; schedule and monitor it. The application version does not change.
 
 ## Features
 
 ### 1. Optional signed licence file support
 
-The chart now supports mounting a signed licence file from an existing Kubernetes Secret as an alternative to the `LICENSE_KEY` environment variable. When `app.licenseFile.existingSecret` is set, the chart mounts the Secret as a read-only directory at `/etc/lerian/license` on both the application Deployment and the control-plane migrations Job, and sets the `LICENSE_FILE_PATH` environment variable to `/etc/lerian/license/license`.
+The chart now supports mounting a signed licence file from an existing Kubernetes Secret. This does not replace `LICENSE_KEY` in application `1.2.0`. When `app.licenseFile.existingSecret` is set, the chart mounts the Secret as a read-only directory at `/etc/lerian/license` on the application Deployment and, when rendered, the control-plane migrations Job, and sets the `LICENSE_FILE_PATH` environment variable to `/etc/lerian/license/license`.
 
 **Why this matters:**
 
-- Operators who manage signed licence files in external secret stores (e.g., Vault, AWS Secrets Manager) can now reference a pre-created Kubernetes Secret instead of embedding the licence key in Helm values.
-- The Secret is mounted as a directory (not `subPath`), so licence rotations propagate to running pods without requiring a restart.
-- The control-plane migrations Job is now licence-gated: it will read the licence from either `LICENSE_KEY` or `LICENSE_FILE_PATH` before running schema migrations.
+- The chart can reference a pre-created Kubernetes Secret for a future, independently verified file-aware image. With application `1.2.0`, continue supplying `LICENSE_KEY`, including through the existing application Secret where configured.
+- The Secret is mounted as a directory (not `subPath`), allowing Kubernetes to eventually project Secret updates. Projection is not application consumption or hot reload; neither file-mode licensing nor file hot reload is established for the default image.
+- The conditional control-plane migrations Job receives licence environment/mount wiring. The published `1.2.0` `/controlplane-migrate` executable uses `LoadControlPlaneMigrationConfig` and `RunControlPlaneMigrations` without full service licence enforcement. Wiring does not add a licence gate. The Job is conditional on the multi-tenant migration settings, not present in the default single-tenant render.
 
 **New values field:**
 
@@ -47,7 +47,7 @@ app:
   2. Set the `LICENSE_FILE_PATH` environment variable to `/etc/lerian/license/license` in the ConfigMap.
   3. Relax the `LICENSE_KEY` requirement in the chart's validation logic (the `fail` hook in `templates/_helpers.tpl` now allows `LICENSE_KEY` to be empty if `app.licenseFile.existingSecret` is set).
 
-- If `app.licenseFile.existingSecret` is **not** set, the chart behaves exactly as in v2.2.2: `LICENSE_KEY` is required and must be set in `app.secrets.LICENSE_KEY`.
+- If `app.licenseFile.existingSecret` is **not** set, keep the existing `LICENSE_KEY` source. The chart requires `app.secrets.LICENSE_KEY` when it manages the app Secret; with `app.useExistingSecret`, the operator-managed app Secret must supply the key. The migration Job also gains optional key wiring in this release, and the application Deployment rolls even without values changes.
 
 **Template changes:**
 
@@ -182,7 +182,7 @@ LICENSE_FILE_PATH: "/etc/lerian/license/license"
 
 **NOTES.txt changes:**
 
-The post-install notes were updated to reflect the new licensing options:
+The post-install notes describe the relaxed chart validation, not the actual licensing support of application `1.2.0`:
 
 **Before (v2.2.2):**
 
@@ -196,8 +196,7 @@ The post-install notes were updated to reflect the new licensing options:
 - app.secrets.LICENSE_KEY               (required in every environment unless app.licenseFile.existingSecret mounts a signed licence file)
 ```
 
-> **Important:** The application binary must support file-mode licensing (lib-license-go v5 or later) for this feature to work. If you are running an older application version that does not recognize `LICENSE_FILE_PATH`, the pods will fail to start. Verify your application version supports file-mode licensing before enabling this feature.
-
+> **Important:** A successful render with a file Secret and no key is not a successful application startup. The shipped `1.2.0` image requires `LICENSE_KEY`; the historical notes and validation snippets above do not override that requirement. File-only migration is blocked until an exact compatible image and its licensing behavior have been independently verified.
 > **Note:** The Secret referenced by `app.licenseFile.existingSecret` must contain a key named `license` with the signed licence file content. The chart does not create this Secret; operators must create it before upgrading.
 
 ## Configuration Reference
@@ -206,46 +205,53 @@ The post-install notes were updated to reflect the new licensing options:
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `app.licenseFile.existingSecret` | `""` | Name of an existing Kubernetes Secret containing a signed licence file (key: `license`). When set, the Secret is mounted at `/etc/lerian/license` and `LICENSE_FILE_PATH` is set to `/etc/lerian/license/license`. Requires lib-license-go v5 or later. |
+| `app.licenseFile.existingSecret` | `""` | Name of an existing Kubernetes Secret containing a signed licence file (key: `license`). When set, the Secret is mounted at `/etc/lerian/license` and `LICENSE_FILE_PATH` is set to `/etc/lerian/license/license`. Chart wiring only; the default application `1.2.0` cannot use it instead of `LICENSE_KEY`. |
 
 ### New environment variables
 
 | Variable | Source | Description |
 |----------|--------|-------------|
-| `LICENSE_FILE_PATH` | ConfigMap | Path to the signed licence file. Set to `/etc/lerian/license/license` when `app.licenseFile.existingSecret` is configured. Read by the application binary and the control-plane migrations Job. |
+| `LICENSE_FILE_PATH` | ConfigMap | Path to the signed licence file. Set to `/etc/lerian/license/license` when `app.licenseFile.existingSecret` is configured. Delivered to the app and conditional migration Job; not consumed as a licence source by the shipped `1.2.0` application, and not a migration licence gate. |
 
 ### Changed validation logic
 
 | Setting | v2.2.2 | v2.3.0 |
 |---------|--------|--------|
-| `app.secrets.LICENSE_KEY` requirement | Always required | Required **unless** `app.licenseFile.existingSecret` is set |
+| Chart validation, chart-managed app Secret | Required | Required **unless** `app.licenseFile.existingSecret` is set |
+| Application `1.2.0` startup | Non-empty `LICENSE_KEY` required | Non-empty `LICENSE_KEY` still required |
 
 ## Migration Steps
 
-### Option 1: Keep existing LICENSE_KEY (no action required)
+### Keep existing LICENSE_KEY (supported for application 1.2.0)
 
-If you are satisfied with the current `LICENSE_KEY` environment variable approach, no changes are required. The chart will continue to work exactly as in v2.2.2.
+No licence-related values changes are required. Do not remove the key. The chart upgrade still triggers a rolling restart through the changed pod-template checksums.
 
-1. Run the upgrade command (see [Command to upgrade](#command-to-upgrade)).
-2. Verify all pods are running and healthy after the upgrade:
-
-```bash
-kubectl get pods -n <namespace>
-```
-
-### Option 2: Migrate to signed licence file
-
-If you want to use the new signed licence file mechanism:
-
-1. Create a Kubernetes Secret containing your signed licence file with the key `license`:
+1. Set the following variables to the existing release, namespace and your maintained values file. The file must preserve **all** current operator configuration (including externally managed Secret references, image overrides, datastore and tenant settings), not just the small licence fragment shown in this guide. If you use multiple maintained overlays, pass the same complete ordered `-f` list in both preview and upgrade; do not replace it with a partial overlay. Protect values/render output as it can include secrets.
 
 ```bash
-kubectl create secret generic my-license-file \
-  --from-file=license=/path/to/your/license.lic \
-  -n <namespace>
+RELEASE='my-payments'
+NAMESPACE='midaz-plugins'
+VALUES_FILE='/path/to/maintained-complete-values.yaml'
 ```
 
-2. Update your values overlay to reference the Secret:
+2. Review the pinned `2.3.0` render/diff using those values. Confirm that the existing key source remains configured and that changes outside licensing are intended. Review any conditional migration Job separately; it is not licence-gated by the default executable.
+3. After operational approval, perform the upgrade during your maintenance window using the command below. Preserve your usual backup and recovery process; no live upgrade or restore is demonstrated here.
+4. Discover the actual Deployment name (it can be affected by naming overrides), assign it to `DEPLOYMENT`, then monitor rollout and pod readiness:
+
+```bash
+kubectl get deployments -n "$NAMESPACE" -l "app.kubernetes.io/instance=$RELEASE"
+DEPLOYMENT='plugin-br-payments'
+kubectl rollout status "deployment/$DEPLOYMENT" -n "$NAMESPACE"
+kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/instance=$RELEASE"
+```
+
+Confirm application readiness and licence validation through your normal application checks, not just a successful Helm command.
+
+### File-only migration: blocked for the shipped default image
+
+Do not remove `LICENSE_KEY` or perform a file-only migration with application `1.2.0`. This guide does not name a compatible replacement image and therefore does not provide an executable file-only migration recipe.
+
+For reference only, the new chart field is:
 
 ```yaml
 app:
@@ -253,50 +259,29 @@ app:
     existingSecret: "my-license-file"
 ```
 
-3. **(Optional)** Remove `app.secrets.LICENSE_KEY` from your values overlay if you no longer need it. The chart will use the licence file instead.
+This is a **partial configuration reference**, not a complete upgrade overlay. The named Secret must already exist in the release namespace and contain the key `license` before any Deployment or hook Job uses it; the chart does not create it. The mount is read-only at `/etc/lerian/license`, and the chart supplies `LICENSE_FILE_PATH=/etc/lerian/license/license`. Kubernetes projection does not prove the binary reads or reloads it. With application `1.2.0`, the key remains mandatory even if both sources are delivered.
 
-4. Preview the rendered diff with the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
+If an independently verified compatible image is introduced later, verify file support, licence-source precedence, renewal/reload behavior, and the migration executable separately before designing a migration. Do not infer them from a library major version or from these templates alone.
 
-5. Run the upgrade command during a maintenance window (see [Command to upgrade](#command-to-upgrade)).
-
-6. Verify the licence file is mounted correctly:
+Inspect wiring without assuming `ls` or a shell exists in the distroless app image:
 
 ```bash
-kubectl exec -n <namespace> -it deployment/plugin-br-payments -- ls -la /etc/lerian/license
+kubectl get deployment "$DEPLOYMENT" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[*].envFrom}{"\n"}{.spec.template.spec.containers[*].volumeMounts}{"\n"}{.spec.template.spec.volumes}{"\n"}'
 ```
 
-Expected output:
-
-```
-total 0
-drwxrwxrwt 3 root root  100 Jan  1 00:00 .
-drwxr-xr-x 3 root root 4096 Jan  1 00:00 ..
-drwxr-xr-x 2 root root   60 Jan  1 00:00 ..2024_01_01_00_00_00.123456789
-lrwxrwxrwx 1 root root   31 Jan  1 00:00 ..data -> ..2024_01_01_00_00_00.123456789
-lrwxrwxrwx 1 root root   14 Jan  1 00:00 license -> ..data/license
-```
-
-7. Verify the application logs confirm the licence was loaded from the file:
-
-```bash
-kubectl logs -n <namespace> -l app.kubernetes.io/name=plugin-br-payments --tail=50 | grep -i license
-```
-
-> **Warning:** If you set both `app.secrets.LICENSE_KEY` and `app.licenseFile.existingSecret`, the application binary's behavior depends on its internal precedence logic. Consult the application documentation to understand which licence source takes priority. The chart will render both the environment variable and the file mount.
-
-> **Note:** The Secret mount is read-only and uses Kubernetes' atomic symlink mechanism. When you update the Secret, Kubernetes will update the symlink, and the application will see the new licence file content without a pod restart (if the application supports hot-reloading of licence files). Consult the application documentation to confirm hot-reload support.
+This shows references and mount paths, not file contents, successful licence loading, or application health. Do not dump Secret values for troubleshooting.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.3.0
+helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace "$NAMESPACE" --version 2.3.0 -f "$VALUES_FILE"
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+> **Note:** Requires an independently reviewed installation of the [helm-diff plugin](https://github.com/databus23/helm-diff). Diff output can expose sensitive values; review it privately. Preview does not prove that application `1.2.0` can start without `LICENSE_KEY`.
 
 ## Command to upgrade
 
 ```bash
-helm upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.3.0
+helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace "$NAMESPACE" --version 2.3.0 -f "$VALUES_FILE"
 ```
 <!-- {% endraw %} -->

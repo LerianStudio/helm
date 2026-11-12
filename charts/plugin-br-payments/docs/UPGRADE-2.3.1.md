@@ -73,6 +73,21 @@ No new configuration values were added. The chart now enforces that `SERVER_TLS_
 
 ## Migration Steps
 
+Before editing the maintained values file or changing the backend protocol, record the current release revision and chart version and make private backups:
+
+```bash
+umask 077
+backup_dir=$(mktemp -d "./payments-upgrade-backup.XXXXXX")
+helm history my-payments --namespace midaz-plugins -o yaml > "$backup_dir/history.yaml"
+helm get values my-payments --namespace midaz-plugins -o yaml > "$backup_dir/values.yaml"
+helm get manifest my-payments --namespace midaz-plugins > "$backup_dir/manifest.yaml"
+cp values.yaml "$backup_dir/maintained-values.yaml"
+```
+
+These commands assume the complete maintained configuration is `values.yaml`; adapt that path before running them. Release values and manifests can contain credentials and Secret data. Keep this fresh owner-only directory outside version control, restrict access, and remove it after the upgrade and rollback window. Also retain the pre-change Ingress/mesh configuration, effective backend TLS settings and certificate/Secret references through your existing private configuration-backup process. Helm does not back up independently managed routing or Secrets.
+
+Do not change the Ingress backend protocol while old pods still require HTTPS. Plan the application and routing transition together in a maintenance window, including mixed old/new pods during rollout; if the controller cannot safely support that transition, stop traffic for the cutover rather than sending HTTP to a TLS-only listener. Keep the previous configuration and certificate material available for recovery until validation succeeds.
+
 1. Review your values overlay for any references to `SERVER_TLS_CERT_FILE`, `SERVER_TLS_KEY_FILE`, or `TLS_TERMINATED_UPSTREAM` under `app.configmap`. Remove all three keys if present.
 
 2. Verify your Ingress configuration terminates TLS and forwards plain HTTP to the application Service. If you use an Ingress controller with backend protocol annotations (e.g., AWS ALB, NGINX), ensure the backend protocol is set to HTTP, not HTTPS.
@@ -134,6 +149,19 @@ No new configuration values were added. The chart now enforces that `SERVER_TLS_
    Verify Ingress TLS separately against a known public application route with the required authentication. A successful front-end TLS handshake does not establish backend transport. Do not expose the internal health listener publicly for this test.
 
 > **Note:** The upgrade triggers a rolling restart of the plugin pods. Depending on your replica count and readiness probe configuration, this may cause brief request handling interruptions.
+
+## Recovery if validation fails
+
+Stop or drain traffic if requests fail or the backend protocol is inconsistent. Coordinate recovery of routing and the application; do not switch the Ingress back to HTTPS while it still targets HTTP-only pods. Select the actual pre-upgrade revision recorded in the private history backup, not an assumed revision number:
+
+```bash
+helm history my-payments --namespace midaz-plugins
+read -r -p "Pre-upgrade release revision: " previous_revision
+helm rollback my-payments "$previous_revision" --namespace midaz-plugins --wait --timeout 10m
+kubectl rollout status -n midaz-plugins deployment/plugin-br-payments --timeout=300s
+```
+
+Restore the separately managed Ingress/mesh configuration, TLS environment, certificate mounts and Secret references to the backed-up state in the planned traffic-stopped recovery sequence. Helm rollback restores the selected Helm revision's resources and values; it cannot restore external routing, independently managed Secrets or database contents. Recheck the dedicated health listener, actual backend transport, front-end TLS and an authenticated application route before reopening traffic. Retain backups until the recovery window closes, then remove the private exports under your retention policy. This procedure is guidance, not evidence of an exercised upgrade or rollback.
 
 ## Preview changes before upgrading
 

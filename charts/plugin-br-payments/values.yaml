@@ -100,7 +100,7 @@ app:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag (defaults to Chart.appVersion if empty)
-    tag: "1.3.0"
+    tag: "1.4.0"
   # -- Image pull secrets for private registries
   imagePullSecrets: []
   # -- Override of the resource name

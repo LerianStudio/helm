@@ -30,6 +30,8 @@ This release introduces **JD Courier integration support**, enabling the plugin 
 
 **No breaking changes.** All new configuration is opt-in and defaults to disabled, maintaining full compatibility with existing v0.7.0 deployments.
 
+> **Note:** The pods restart on this upgrade even with unchanged values. The ConfigMaps and Secrets carry the `helm.sh/chart` label, which changes to `plugin-br-pix-jd-helm-0.8.0`, and the Deployments hash those objects into the `checksum/config` and `checksum/secret` pod annotations. The api pods restart with a rolling update. With `worker.enabled=true`, the worker pods restart with the `Recreate` strategy: the old worker stops before the new one starts.
+
 ## Features
 
 ### 1. JD Courier Integration Support
@@ -98,14 +100,7 @@ The `courierAuthEnv` helper emits the AUTH_M2M pair only when `courier.enabled=t
 
 **Prerequisites (not modeled in this chart):**
 
-The Courier integration requires:
-
-1. A JD Courier deployment running the `admin` role (configured via `api.configmap.COURIER_URL` — single-tenant only)
-2. Courier M2M credentials (configured via `api.secrets.COURIER_CLIENT_ID` and `COURIER_CLIENT_SECRET`)
-3. A `service` role defined in the Access Manager
-4. An Access Manager version that supports the inverted authorization model
-
-These prerequisites are documented in the chart's README.md under "Installing behind the JD Courier" and are not repeated here.
+The admission pair alone does not admit the Courier. The install also needs authentication on, the Courier credential with source `jd-courier`, the `service` role published to the Access Manager, and the Access Manager at 3.13.0 or later. The chart does not check any of these at render time. See [Step 1](#step-1-review-courier-integration-requirements) for the full list.
 
 ### 2. Courier Account Claims Worker Sweep
 
@@ -259,20 +254,26 @@ worker (--set worker.enabled=true) or drop courier.accountClaims.enabled.
 
 ### Step 1: Review Courier Integration Requirements
 
-Before enabling Courier integration, verify you have the prerequisites in place:
+> **Warning:** The chart does not check these prerequisites. If one is missing, the render succeeds and the integration fails only at runtime.
 
-1. **A JD Courier deployment** running the `admin` role
-2. **Courier M2M credentials** (client ID and secret)
-3. **A `service` role** defined in the Access Manager
-4. **An Access Manager version** that supports the inverted authorization model
+Before you set `courier.enabled=true`, put all of these in place. They come from the chart README, section "Installing behind the JD Courier":
 
-These prerequisites are documented in the chart's README.md under "Installing behind the JD Courier".
+1. **Authentication on.** Set `api.configmap.PLUGIN_AUTH_ENABLED: "true"` and `api.configmap.PLUGIN_AUTH_HOST`, or `global.auth.enabled` and `global.auth.host` in an umbrella chart. The admission pair authorizes the Courier's bearer, so it does nothing with authentication off.
+2. **The Courier credential, with source `jd-courier`.** In multi-tenant, the Tenant Manager issues it. In single-tenant, the install's service-credential issuer issues it.
+3. **The `service` role published to the Access Manager.** In single-tenant, publish it with `api.configmap.IDP_DECLARATION_ENABLED: "true"`. That key also needs `api.configmap.IDP_HOST`, `IDP_M2M_CLIENT_ID` (in `api.configmap` or `api.secrets`) and `api.secrets.IDP_M2M_CLIENT_SECRET`. Without them, the render fails.
+4. **The Access Manager at 3.13.0 or later.** The first `plugin-access-manager` chart with that app is **10.0.3** (app 3.13.1). Charts 10.0.0 to 10.0.2 ship app 3.11.1.
+5. **`COURIER_URL` pointed at the Courier process that runs the `admin` role** (single-tenant only). Only that role serves the ownership lookup. A Courier process in any other role answers `404` to the plugin, and its own health probe still reports healthy.
+
+Which side each item affects:
+
+- Items 1 to 4 govern the **inbound** side: the api authorizing the Courier deliveries.
+- Item 5 governs the **outbound** side: the plugin calling the Courier. A wrong role answers `404`.
 
 > **Note:** If you are not integrating with the JD Courier, **no action is required**. The new `courier` configuration block defaults to disabled and has no impact on existing deployments.
 
 ### Step 2: Configure Courier Admission (Optional)
 
-If you want the api to admit inbound Courier deliveries, enable `courier.enabled`:
+If you want the api to admit inbound Courier deliveries, add `courier.enabled` to **your values file**. The upgrade commands below pass that file with `-f`. Without `-f`, `helm upgrade` reuses the stored values and the new keys never reach the cluster.
 
 ```yaml
 courier:
@@ -304,13 +305,16 @@ The inbound admission model is only half of the integration. You also need to co
 ```yaml
 api:
   configmap:
-    COURIER_URL: "https://courier.example.com"  # Single-tenant only
+    # Single-tenant only. Must point at the Courier process that runs the `admin` role.
+    COURIER_URL: "https://courier-admin.example.internal"
   secrets:
-    COURIER_CLIENT_ID: "your-client-id"
-    COURIER_CLIENT_SECRET: "your-client-secret"
+    COURIER_CLIENT_ID: "<courier-client-id>"
+    COURIER_CLIENT_SECRET: "<courier-client-secret>"
 ```
 
-> **Important:** `api.configmap.COURIER_URL` is only emitted in single-tenant mode. Multi-tenant deployments configure the Courier URL per tenant in the Tenant Manager.
+> **Important:** `api.configmap.COURIER_URL` is only emitted in single-tenant mode. In multi-tenant, each tenant's Courier comes from its `jd-spi` bundle in the Tenant Manager and the chart ignores this key. A `COURIER_URL` that points at a Courier process in another role gets `404`, even with that process healthy.
+
+> **Important:** With `api.existingSecret.name`, the chart ignores `api.secrets`. Add `COURIER_CLIENT_ID` and `COURIER_CLIENT_SECRET` to your existing Secret instead.
 
 ### Step 3: Enable Account Claims Sweep (Optional)
 
@@ -360,7 +364,7 @@ This may be useful during a phased rollout where you want to claim accounts befo
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.8.0
+helm diff upgrade <pix-release> oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.8.0 -n midaz-plugins -f my-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -368,6 +372,10 @@ helm diff upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-h
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-pix-jd oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm -n midaz-plugins --version 0.8.0
+helm upgrade <pix-release> oci://ghcr.io/lerianstudio/plugin-br-pix-jd-helm --version 0.8.0 -n midaz-plugins -f my-values.yaml
 ```
+
+Replace `<pix-release>` with your release name and `my-values.yaml` with your values file.
+
+If you set the payment signing key and certificate with `--set-file`, add the same two `--set-file` flags to these commands. Otherwise the upgrade drops them and payment orders go out unsigned.
 <!-- {% endraw %} -->

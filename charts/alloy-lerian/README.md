@@ -6,10 +6,10 @@ chart and renders the collection pipeline from semantic parameters.
 ## Chart Contract
 
 - Chart type: `dependency-wrapper`
-- Required secrets: `alloy-lerian` (key `telemetry-token`) — created by the client before install, from a token we hand over, in the `client` profile. The chart reads it and never creates it. When Fleet Management is enabled, the same Secret carries a second key, `fleet-token`. One Secret, one command: it is the only manual step.
-- Dependency notes: three dependency entries, all pinned exactly. `alloy` 1.11.1 appears **twice** under the `node` and `singleton` aliases, each condition-gated on its own `enabled` value, because the upstream chart delivers one set of workloads and the design needs two topologies. `kube-state-metrics` 8.2.0 is condition-gated on `kube-state-metrics.enabled` so clusters that already run it can reuse the existing instance.
-- Production overrides: `profile` and `origin.id` are required and have no default — the render fails without them. `destination.endpoint` defaults to `https://telemetry.lerian.io`; override it only for an internal destination. Override `destination.retry.maxElapsedTime` and `destination.queue.size` from measured volume per environment.
-- Source/license: [grafana/alloy](https://github.com/grafana/alloy) (Apache-2.0), [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) (Apache-2.0).
+- Required secrets: `alloy-lerian`, created by the client before install from the tokens we hand over. Key `telemetry-token` is required in the `client` profile. Key `fleet-token` is required in both profiles: `ALLOY_FLEET_TOKEN` is `optional: false` by default, also with Fleet Management off. The chart reads the Secret and never creates it. One Secret, one command: it is the only manual step.
+- Dependency notes: four dependency entries, all pinned exactly. `alloy` 1.15.0 appears **twice** under the `node` and `singleton` aliases, each condition-gated on its own `enabled` value, because the upstream chart delivers one set of workloads and the design needs two topologies. `kube-state-metrics` 8.2.0 is condition-gated on `kube-state-metrics.enabled` so clusters that already run it can reuse the existing instance. `prometheus-node-exporter` 4.56.1, under the `node-exporter` alias, is condition-gated on `node-exporter.enabled` and is off by default.
+- Production overrides: `profile` and `origin.id` are required and have no default — the render fails without them. `destination.endpoint` defaults to `https://telemetry.lerian.io`; override it only for an internal destination. Override `destination.retry.maxElapsedTime` and `destination.queue.size` from measured volume per environment. With Fleet Management on (the default), the node role runs the configuration published to Fleet, and these values reach it only with `fleetManagement.enabled: false`.
+- Source/license: chart source in [github.com/LerianStudio/helm](https://github.com/LerianStudio/helm) (Elastic License 2.0). It wraps [grafana/alloy](https://github.com/grafana/alloy) (Apache-2.0), [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) (Apache-2.0) and [prometheus-node-exporter](https://github.com/prometheus/node_exporter) (Apache-2.0).
 
 ## What this chart does differently
 
@@ -73,7 +73,7 @@ minute equalled the node count exactly, across five environments.
 
 Runs at the edge, before anything leaves the origin cluster, and is **not
 configurable**. There is no value that disables a rule, weakens one, or produces
-unsanitised output. The absence of those knobs is the guarantee.
+unsanitised output. With Fleet Management on (the default), the node role gets these rules from the configuration published to Fleet, which `sanitizacao/publicar-fleet.sh` renders from this chart; its local ConfigMap holds only the `logging` and `remotecfg` blocks.
 
 **Seven classes** are covered: person name, email address, phone number, bank
 account and branch, Pix key, postal address, authentication credential.
@@ -113,9 +113,7 @@ test, and a load-bearing one: a malformed rule produces **no error** under
 `error_mode = "ignore"`, only output that looks masked (verified — the wrong
 backreference notation emits the literal text `$1.***.***-**`).
 
-It does **not** answer *"do the rules cover what the applications emit?"* Proven by
-injection: removing only `holder` from the person-name rule exposes
-`holderName=Ana Silva`, and the gate still reports 52 cases, 0 failures.
+It does **not** answer *"do the rules cover what the applications emit?"*
 
 **A green gate is not evidence that PII is protected.** Treating it as such is worse
 than not having it, because it grants confidence that does not correspond.
@@ -150,12 +148,6 @@ errors ignored, so a malformed rule produces **no error** — it produces output
 that looks masked and is not. Verified: the wrong backreference form emits the
 literal text `$1` with no warning at all.
 
-**Known and accepted false positive:** the document rule masks any 11+ digit
-run, including transaction identifiers and latency values. Measured at roughly
-2% of log lines. Accepted because a false positive costs legibility while a
-false negative leaks a document. Requiring a field prefix was evaluated and
-rejected — the canonical case is a bare document in running text.
-
 ## Delivery guarantees
 
 Queue and retry are enabled. Without them any blip in the destination is
@@ -185,8 +177,7 @@ network, and processing at the destination.
 
 ## Origin identifier
 
-Required, no default, and validated against a canonical form that accepts
-hyphenated composition.
+Required, no default, and validated against a canonical form: `<client>-<stage>`, lowercase, stage `stg` or `prd`, with a one-word client name.
 
 It marks **provenance, not identity**. The credential authenticates the sender;
 the marker is self-declared, so an authenticated origin could claim another's
@@ -204,6 +195,7 @@ Both tokens are handed over by Lerian through a secure channel. The chart reads
 this Secret and never creates it.
 
 ```console
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 read -rs TELEMETRY_TOKEN   # paste, no echo
 read -rs FLEET_TOKEN       # paste, no echo
 kubectl create secret generic alloy-lerian -n monitoring \
@@ -232,7 +224,7 @@ origin:
 # The chart cannot decide that on its own: the correct value depends on the
 # PROFILE, and `extraEnv` is static subchart YAML that cannot read it. The chart
 # default is `optional: true`, which is correct for the `own` profile — there
-# the destination does not authenticate and no Secret exists.
+# the destination does not authenticate.
 #
 # ⚠️ `extraEnv` is a LIST and lists do not merge: declaring yours replaces the
 # chart's entirely. That is why the Fleet entries reappear here — they are the
@@ -297,8 +289,8 @@ helm install alloy-lerian oci://ghcr.io/lerianstudio/alloy-lerian-helm \
 | `ALLOY_CLIENT_ID` | derived from `origin.id` | Delivered through `envFrom`, from a ConfigMap the chart renders. It used to be repeated by hand and could drift — and when it drifts nothing fails: telemetry arrives stamped with the **wrong** client, in someone else's dashboard. The render is refused if an explicit value diverges. |
 | `ALLOY_DESTINATION_ENDPOINT` | derived from `destination.endpoint` | Same mechanism, same reason. |
 | `destination.endpoint` | `https://telemetry.lerian.io` | Our edge, not a client choice. |
-| `fleetManagement` | enabled, `url` and `username` filled in | This is what lets collection be adjusted without asking the client for anything: no chart upgrade, no maintenance window. The client supplies only the token, through the Secret above. |
-| `collection.onlyNamespaces` | `^midaz$`, `^midaz-plugins$` | Where our products are installed. Override only if this client installed them elsewhere. |
+| `fleetManagement` | enabled, `url` and `username` filled in | This is what lets the node role's collection be adjusted without asking the client for anything: no chart upgrade, no maintenance window. The client supplies only the token, through the Secret above. |
+| `collection.onlyNamespaces` | `^midaz$`, `^midaz-plugins$` | Where our products are installed. |
 
 ### Values that exist but are NOT IMPLEMENTED
 
@@ -336,7 +328,7 @@ very log being configured.
 Worth knowing before you need it:
 
 - **`successfully loaded remote configuration` is `info`.** It is the
-  confirmation that Fleet loaded, and in BYOC Fleet governs the whole collection
+  confirmation that Fleet loaded, and in BYOC Fleet governs the node role's collection
   pipeline. At `error` there is no positive line saying the remote config came
   through; silence becomes the only success signal.
 

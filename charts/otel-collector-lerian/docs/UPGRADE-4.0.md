@@ -37,8 +37,6 @@ apiVersion: v2
 name: otel-collector-lerian
 description: A Helm chart for Kubernetes
 type: application
-
-home: https://github.com/LerianStudio/otel-collector-lerian
 ```
 
 **After (v4.0.0):**
@@ -50,8 +48,6 @@ description: A Helm chart for Kubernetes
 type: application
 annotations:
   lerian.studio/chart-type: dependency-wrapper
-
-home: https://github.com/LerianStudio/otel-collector-lerian
 ```
 
 > **Note:** This annotation is metadata only and does not modify any Kubernetes resources. It may be consumed by Lerian Studio tooling or chart repositories for categorization purposes.

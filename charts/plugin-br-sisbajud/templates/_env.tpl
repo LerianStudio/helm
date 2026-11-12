@@ -3,7 +3,8 @@
 plugin-br-sisbajud.configmapData — every env key the chart models, as
 ConfigMap `data` lines. Contract source: LerianStudio/plugin-br-sisbajud
 internal/bootstrap/config*.go (env tags + validations), restricted to what the
-process reads in EXECUTOR mode (MENSAGERIA_BASE_URL set). Dependency
+process reads in EXECUTOR mode: MENSAGERIA_BASE_URL set, or EXECUTOR_ENABLED=true
+without it (DIRECT-only: no transport / Hub webhook / SQS keys). Dependency
 connections go through the lerian-common masks/env helpers; the rest through
 lerian-common.cfgValue (plugin-br-sisbajud.kv). No credential is emitted here.
 ==============================================================================
@@ -22,7 +23,11 @@ lerian-common.cfgValue (plugin-br-sisbajud.kv). No credential is emitted here.
 {{- $envName := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "ENVIRONMENT_NAME" "p" $s.app "f" "environmentName" "d" "production") -}}
 {{- $mtOn := eq (include "plugin-br-sisbajud.multiTenantEnabled" .) "true" -}}
 {{- $transport := include "plugin-br-sisbajud.transport" . -}}
-{{- $kmsProvider := include "plugin-br-sisbajud.kmsProvider" . }}
+{{- $kmsProvider := include "plugin-br-sisbajud.kmsProvider" . -}}
+{{- $mode := include "plugin-br-sisbajud.executorMode" . -}}
+{{- $exOn := include "plugin-br-sisbajud.executorEnabled" . -}}
+{{- $exDirect := $ex.direct | default dict -}}
+{{- $direct := $s.direct | default dict }}
 # --- Application -------------------------------------------------------------
 ENVIRONMENT_NAME: {{ $envName | quote }}
 ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) | quote }}
@@ -33,6 +38,11 @@ ENV_NAME: {{ (hasKey $cm "ENV_NAME" | ternary (index $cm "ENV_NAME") $envName) |
 {{- include $kv (dict "cm" $cm "p" $s.app "f" "infraConnectTimeoutSec" "k" "INFRA_CONNECT_TIMEOUT_SEC" "d" "30") }}
 # --- HTTP server + CORS --------------------------------------------------------
 SERVER_ADDRESS: {{ (hasKey $cm "SERVER_ADDRESS" | ternary (index $cm "SERVER_ADDRESS") (printf ":%v" $s.service.port)) | quote }}
+{{- /* The app serves /health, /readyz and /metrics only on HEALTH_PORT (no
+   listener when unset); the container port and the readiness probe use the same
+   value, so it is not a configmap key. */}}
+HEALTH_PORT: {{ $s.healthPort | default 8099 | toString | quote }}
+{{- include $kv (dict "cm" $cm "p" $s "f" "shutdownTimeout" "k" "SHUTDOWN_TIMEOUT" "d" "80s") }}
 {{- include $kv (dict "cm" $cm "p" $s.server "f" "bodyLimitBytes" "k" "HTTP_BODY_LIMIT_BYTES" "d" "104857600") }}
 {{- include $kv (dict "cm" $cm "p" $s.server "f" "tlsTerminatedUpstream" "k" "TLS_TERMINATED_UPSTREAM" "d" "false") }}
 {{- /* The app binds CORS_* (ServerConfig); the lib-commons CORS middleware reads
@@ -45,6 +55,9 @@ SERVER_ADDRESS: {{ (hasKey $cm "SERVER_ADDRESS" | ternary (index $cm "SERVER_ADD
 {{- end }}
 # --- License (LICENSE_KEY lives in the Secret) ---------------------------------
 {{- include $kv (dict "cm" $cm "p" $s.license "f" "organizationIds" "k" "ORGANIZATION_IDS" "d" "global") }}
+{{- if include "plugin-br-sisbajud.licenseSecret" $ }}
+LICENSE_FILE_PATH: "/etc/lerian/license/license"
+{{- end }}
 # --- Executor: Sisbajud Mensageria (TLS; mTLS behind MENSAGERIA_MTLS_ENABLED) ------
 {{- include $kv (dict "cm" $cm "p" $s.mensageria "f" "baseUrl" "k" "MENSAGERIA_BASE_URL" "d" "") }}
 {{- $mt := include "plugin-br-sisbajud.mensageriaTls" . | fromYaml }}
@@ -72,13 +85,31 @@ MENSAGERIA_TLS_CLIENT_KEY_FILE: {{ $mt.keyFile | quote }}
 {{- include $kv (dict "cm" $cm "p" $ex "f" "settleWindow" "k" "EXECUTOR_SETTLE_WINDOW" "opt" true) }}
 {{- include $kv (dict "cm" $cm "p" $ex "f" "tickEvery" "k" "EXECUTOR_TICK_EVERY" "d" "30s") }}
 {{- include $kv (dict "cm" $cm "p" $ex "f" "orphanReconcileWindow" "k" "EXECUTOR_ORPHAN_RECONCILE_WINDOW" "d" "48h") }}
+{{- if $exOn }}
+EXECUTOR_ENABLED: {{ $exOn | quote }}
+{{- end }}
+{{- include $kv (dict "cm" $cm "p" $ex "f" "resultMaxAttempts" "k" "EXECUTOR_RESULT_MAX_ATTEMPTS" "d" "12") }}
+{{- include $kv (dict "cm" $cm "p" $ex "f" "orderSweepEnabled" "k" "EXECUTOR_ORDER_SWEEP_ENABLED" "d" "false") }}
+# --- Direct channel: drainer alarms + permanent-block switch ----------------------
+{{- include $kv (dict "cm" $cm "p" $exDirect "f" "drainerInfraAlarmThreshold" "k" "EXECUTOR_DIRECT_DRAINER_INFRA_ALARM_THRESHOLD" "d" "3") }}
+{{- include $kv (dict "cm" $cm "p" $exDirect "f" "purgeEligibleAlarmAfter" "k" "EXECUTOR_DIRECT_PURGE_ELIGIBLE_ALARM_AFTER" "d" "168h") }}
+{{- include $kv (dict "cm" $cm "p" $exDirect "f" "purgeRefreshEvery" "k" "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY" "d" "15m") }}
+{{- include $kv (dict "cm" $cm "p" $direct "f" "permanentBlockEnabled" "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "d" "true") }}
+{{- include $kv (dict "cm" $cm "p" $direct "f" "permanentRefreshEvery" "k" "DIRECT_PERMANENT_REFRESH_EVERY" "d" "15m") }}
+{{- /* The emitter follows the stream unless set: blank means "same as STREAMING_ENABLED".
+   It publishes from the permanent path, which also runs with the opener off (maintenance
+   of ACTIVE permanents) whenever the stream is on. */}}
+{{- $emitter := include "plugin-br-sisbajud.val" (dict "cm" $cm "k" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED" "p" $direct "f" "permanentResultEmitterEnabled" "d" "") | trim | default (include "plugin-br-sisbajud.streamingEnabled" $) }}
+EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED: {{ $emitter | quote }}
+# --- Direct drainer attempt cap (every executor mode; also the webhook's) ----------
+{{- include $kv (dict "cm" $cm "p" $wh "f" "maxHandleAttempts" "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "d" "5") }}
+{{- if ne $mode "direct" }}
 EXECUTOR_TRANSPORT: {{ $transport | quote }}
 {{- if eq $transport "webhook" }}
 # --- Executor: Streaming Hub webhook listener ------------------------------------
 EXECUTOR_HUB_WEBHOOK_ADDRESS: {{ (hasKey $cm "EXECUTOR_HUB_WEBHOOK_ADDRESS" | ternary (index $cm "EXECUTOR_HUB_WEBHOOK_ADDRESS") (printf ":%v" ($wh.port | default 9082))) | quote }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "path" "k" "EXECUTOR_HUB_WEBHOOK_PATH" "d" "/v1/webhooks/hub") }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "maxSkewSec" "k" "EXECUTOR_HUB_WEBHOOK_MAX_SKEW_SEC" "d" "300") }}
-{{- include $kv (dict "cm" $cm "p" $wh "f" "maxHandleAttempts" "k" "EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS" "d" "5") }}
 {{- include $kv (dict "cm" $cm "p" $wh "f" "upstreamTlsValidated" "k" "EXECUTOR_HUB_WEBHOOK_UPSTREAM_TLS_VALIDATED" "d" "false") }}
 {{- if $whTls.existingSecret }}
 EXECUTOR_HUB_WEBHOOK_TLS_CERT_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.mountPath) $whTls.certKey | quote }}
@@ -99,8 +130,15 @@ EXECUTOR_HUB_WEBHOOK_TLS_KEY_FILE: {{ printf "%s/%s" (trimSuffix "/" $whTls.moun
 {{- include $kv (dict "cm" $cm "p" $sqs "f" "visibilityTimeoutSeconds" "k" "EXECUTOR_SQS_VISIBILITY_TIMEOUT_SECONDS" "d" "300") }}
 {{- include $kv (dict "cm" $cm "p" $sqs "f" "maxReceiveCount" "k" "EXECUTOR_SQS_MAX_RECEIVE_COUNT" "d" "5") }}
 {{- end }}
+{{- end }}
 # --- Midaz connector (ledger URL + credentials are per institution, in the DB) ----
-{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "legacy") }}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmMode" "k" "MIDAZ_CRM_MODE" "d" "embedded") }}
+{{- /* Single-tenant Midaz connection (v1.3.0): the URLs here, the client pairs in the
+   Secret (sisbajud.secrets.MIDAZ_*_CLIENT_* or the existing Secret). Emitted only
+   when set; multi-tenant refuses them (_validate.tpl). */}}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "baseUrl" "k" "MIDAZ_BASE_URL" "opt" true) }}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "authAddress" "k" "MIDAZ_AUTH_ADDRESS" "opt" true) }}
+{{- include $kv (dict "cm" $cm "p" $s.midaz "f" "crmBaseUrl" "k" "MIDAZ_CRM_BASE_URL" "opt" true) }}
 # --- Inbound auth + token minting (lerian-common.auth.env) -----------------------
 {{ include "lerian-common.auth.env" (dict "context" $ "configmap" $cm "hostKey" "PLUGIN_AUTH_HOST" "hostDefault" "") }}
 {{- include $kv (dict "cm" $cm "p" $s.auth "f" "productName" "k" "AUTH_PRODUCT_NAME" "opt" true) }}
@@ -183,15 +221,21 @@ KMS_AWS_CREDENTIALS_KEY_ARN: {{ $awsCredArn | quote }}
 # --- Envelope encryption + blind index ---------------------------------------------
 {{- include $kv (dict "cm" $cm "p" $s.crypto "f" "dekCacheTtl" "k" "SISBAJUD_DEK_CACHE_TTL" "d" "5m") }}
 {{- include $kv (dict "cm" $cm "p" $s.crypto "f" "hmacCoexistenceWindow" "k" "SISBAJUD_HMAC_COEXISTENCE_WINDOW" "d" "720h") }}
-# --- Streaming: OFF in executor mode ------------------------------------------------
-{{- /* Executor mode starts no producer or consumer (no outbox dispatcher, no balance
-   consumer, no Midaz translator), so the chart renders it off explicitly (same as the
-   app default) and an enabled value would only demand brokers the executor never uses. */}}
-STREAMING_ENABLED: {{ (hasKey $cm "STREAMING_ENABLED" | ternary (index $cm "STREAMING_ENABLED") "false") | quote }}
+# --- Streaming (lerian-common.streaming.env; SASL password/CA via sisbajud.secrets) --
+{{- /* Off by default (the app default): a DIRECT executor without the permanent block
+   starts no producer or consumer. The permanent block reads the balance-change stream,
+   so turning it on needs STREAMING_ENABLED=true and brokers (_validate.tpl). The
+   ce-source is pinned to the roster name: lib-streaming refuses an enabled stream
+   without one and the app refuses any other (extensions_streaming.go). */}}
+{{- $streamingRaw := include "plugin-br-sisbajud.streamingEnabled" . }}
+STREAMING_ENABLED: {{ $streamingRaw | quote }}
+{{- with include "lerian-common.streaming.env" (dict "context" $ "enabled" (eq $streamingRaw "true") "configmap" $cm "cloudeventsSource" "plugin-br-sisbajud") | trim }}
+{{ . }}
+{{- end }}
 # --- OpenTelemetry (lerian-common.otel.env) ------------------------------------------
 {{ include "lerian-common.otel.env" (dict "context" $ "configmap" $cm "enabledDefault" "false" "endpointDefault" "localhost:4317" "deploymentEnvironmentDefault" $envName) }}
 {{- include $kv (dict "cm" $cm "p" $s.observability "f" "serviceName" "k" "OTEL_RESOURCE_SERVICE_NAME" "d" "plugin-br-sisbajud") }}
-{{- include $kv (dict "cm" $cm "p" $s.observability "f" "libraryName" "k" "OTEL_LIBRARY_NAME" "d" "github.com/LerianStudio/plugin-br-sisbajud") }}
+{{- include $kv (dict "cm" $cm "p" $s.observability "f" "libraryName" "k" "OTEL_LIBRARY_NAME" "d" "github.com/LerianStudio/br-sisbajud") }}
 # --- Rate limiting (lerian-common.rateLimit.env) ------------------------------------
 {{ include "lerian-common.rateLimit.env" (dict "configmap" $cm "params" $s.rateLimit) }}
 # --- Swagger -----------------------------------------------------------------------

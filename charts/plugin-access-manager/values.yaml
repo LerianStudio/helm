@@ -131,7 +131,7 @@ identity:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.17.0"
+    tag: "3.19.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -264,7 +264,6 @@ identity:
   # -- All secrets are declared in the templates/secrets.yaml
   # @default -- templates/identity/secrets.yaml
   secrets:
-    AUTHORIZER_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
     # -- Consul ACL token for service discovery (empty = no ACL)
@@ -281,6 +280,10 @@ identity:
   # GOOGLE_DIRECTORY_ENCRYPTION_KEY to your own Secret (existingSecretName).
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license; replaces LICENSE_KEY. File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
 auth:
   # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain and shutdown env, grace, rollout and PDB.
   # stack go; tune only health.drainSeconds (default 15) and health.shutdownSeconds (default 30).
@@ -299,7 +302,7 @@ auth:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "3.17.0"
+    tag: "3.19.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -428,6 +431,9 @@ auth:
     # the bundled subchart. Only set this for an EXTERNAL database (auth-database.external=true)
     # without auth-database.auth.existingSecret. See docs/helm-chart-standard.md.
     DB_PASSWORD: ""
+    # -- app-lerian client secret. Required for helm template/GitOps (no cluster read: the render refuses to generate).
+    # Empty on a FRESH helm install: generates and keeps one, needs Caradhras >= 2.4.0-beta.4.
+    # An install whose Caradhras database already exists must set the value app-lerian already holds (or auth.useExistingSecret).
     AUTHORIZER_CLIENT_SECRET: ""
     REDIS_PASSWORD: ""
     LICENSE_KEY: ""
@@ -438,6 +444,10 @@ auth:
     SD_TOKEN: ""
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license; replaces LICENSE_KEY. File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- Identity >= 3.17.0 asks Caradhras >= 2.1.0 (server and migrations) to create the first Console admin at most once, and only for an organization Caradhras never initialized (see README); deleting users never re-seeds it.
   # -- Set adminPassword or useExistingSecret + adminPasswordSecretName; adminEmail and adminDisplayName are optional.
   initUser:
@@ -470,7 +480,7 @@ caradhras:
   # -- Whether to create database on startup (requires CREATEDB permission).
   # Defaults to false: most DB users granted to caradhras have no CREATEDB
   # privilege, and the target database/schema is typically provisioned ahead
-  # of time (see benedita sandbox permission-denied incident, 2026-08-25).
+  # of time.
   createDatabase: false
   # -- Caradhras (beego) config keys. Names are the beego literals, camelCase:
   # caradhras reads them with conf.GetConfigString, which looks up the exact
@@ -503,14 +513,20 @@ caradhras:
     # caradhras.configmap.redisEndpoint.
     redisEndpoint: ""
     # -- Caradhras license key, injected as env LICENSE_KEY by secretKeyRef.
-    # Required by images that carry the license gate (they refuse to boot
-    # without it). Issued for product `caradhras`; not the auth/identity key.
+    # Required for Caradhras 2.x (it refuses to boot without it or a licence file, and the
+    # render fails without it, useExistingSecret or licenseFile.existingSecret). Issued for product `caradhras`;
+    # not the auth/identity key.
     LICENSE_KEY: ""
   # -- Set true to manage the caradhras Secret yourself: the chart creates none
   # and reads `LICENSE_KEY` from existingSecretName, plus `redisEndpoint` unless
   # configmap.redisEndpoint is set.
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license on the server and its `migrate` init container; replaces LICENSE_KEY.
+  # File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- Redis/Valkey AUTH password, injected as the beego config key
   # `redisPassword` by secretKeyRef — the same delivery DB_PASSWORD already uses
   # on this workload. Caradhras hands it to both redis consumers (the session
@@ -531,7 +547,7 @@ caradhras:
   # database) and never changes an existing admin. Unset, a new built-in/admin
   # gets the public default `123` and caradhras WARNs every hour until it is
   # changed; a value over 72 bytes (bcrypt's limit) fails the boot before seeding.
-  # Needs Caradhras >= 1.9.0-beta.25 (the chart default image 1.8.6 ignores the key):
+  # Needs Caradhras >= 1.9.0-beta.25:
   # the render fails unless caradhras.image.tag is a semver tag >= 1.9.0-beta.25.
   builtInAdminPassword:
     # -- Opt-in. Off by default.
@@ -574,7 +590,7 @@ caradhras:
     # -- to override.
     repository: ghcr.io/lerianstudio/caradhras
     pullPolicy: Always
-    tag: "1.8.6"
+    tag: "2.1.0"
   resources:
     # -- CPU and memory limits for pods
     limits:
@@ -611,10 +627,9 @@ caradhras:
       # -- See "Backward-compat" note above — resolved via caradhras.migrationsImagePullPolicy.
       pullPolicy: ""
       # -- Empty preserves auth.backend.migrations.image.tag overrides;
-      # -- otherwise defaults to 1.8.6 in templates/_helpers.tpl.
-      # -- Independent of caradhras.image.tag: override both when changing versions.
+      # -- otherwise defaults to the server tag (caradhras.image.tag), without any @digest.
       tag: ""
-    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests (e.g. cross). Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
+    # -- Skip the migrations-rbac chain (Lerian product permissions/roles/groups under owner 'lerian') in the migrate init container and in the caradhras boot schema check. For installs whose permissions arrive only via RI manifests. Requires caradhras and caradhras-migrations images that understand MIGRATIONS_SKIP_RBAC_CHAIN.
     skipRBACChain: false
     # -- Extra env vars for the migrate init container only, as a NAME: value map
     # -- (rendered as name/value pairs, values quoted). Chart-owned names (POSTGRES_HOST/PORT/DB/
@@ -634,7 +649,7 @@ caradhras:
 auth-database:
   # Database dependency for identity and access management.
   # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-security#identity-management-with-casdoor
+  # https://docs.lerian.studio/en/platform/access-manager/am-components
   enabled: true
   global:
     security:
@@ -679,8 +694,6 @@ auth-database:
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
   global:
     security:

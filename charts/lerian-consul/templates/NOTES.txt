@@ -18,7 +18,8 @@ Consul:       {{ .Chart.AppVersion }}
              Resilience is delegated to lib-service-discovery's DynamicResolver
              (last-known-good cache). For real HA, scale to an ODD count:
 
-               --set consul.server.replicas=3 --set consul.server.bootstrapExpect=3
+               --set consul.server.replicas=3 --set consul.server.bootstrapExpect=3 \
+               --set consul.global.gossipEncryption.autoGenerate=true
 
              NEVER use 2 servers (quorum of 2 tolerates zero failures).
 {{- else }}

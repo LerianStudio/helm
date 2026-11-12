@@ -16,7 +16,7 @@
     },
     "spanMetrics": {
       "type": "object",
-      "description": "RED metrics derived from spans (calls_total, duration_milliseconds_*). Replaces the connector that lived in the retiring otel-collector-client; disabling it stops those series from being produced at all.",
+      "description": "RED metrics derived from spans (calls_total, duration_milliseconds_*). Off by default: the telemetry server derives them from the spans it receives. Enable only when Lerian asks; generating them in both places doubles the counts.",
       "additionalProperties": false,
       "properties": {
         "enabled": {

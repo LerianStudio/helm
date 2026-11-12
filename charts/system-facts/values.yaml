@@ -53,11 +53,7 @@ global:
   # overrides.)
   # Example: multiTenant: { url: "http://tenant-manager:8080", redisHost: "my-elasticache.example.com" }
   multiTenant: {}
-  # -- Env-wide service discovery (Consul), consumed by
-  # lerian-common.serviceDiscovery.env when boilerplate.serviceDiscovery.enabled=true.
-  # Fields: address, tls, tlsSkipVerify, workload, preferView, internalScheme,
-  # externalPort. (configmap.SD_* overrides.)
-  # Example: serviceDiscovery: { address: "consul.internal:8500", tls: "true" }
+  # -- Accepted for compatibility; System Facts has no service-discovery client, so nothing is rendered from it.
   serviceDiscovery: {}
   # -- Env-wide streaming backend (lib-streaming/RedPanda), consumed by
   # lerian-common.streaming.env when boilerplate.streaming.enabled=true and
@@ -106,8 +102,12 @@ system-facts:
   description: "Lerian Go service reference template"
   # -- Enable or disable the boilerplate service
   enabled: true
-  # -- Number of replicas for the boilerplate service
-  replicaCount: 1
+  # -- Number of replicas (ignored while autoscaling is enabled; the preset floors the HPA at 2)
+  replicaCount: 2
+  # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout strategy and PDB policy are owned by it.
+  # Tune only drainSeconds (default 15) and shutdownSeconds (default 30); grace = drain + shutdown + 10.
+  health:
+    stack: go
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   # ----- Workload · image ----------------------------------------------------
@@ -117,7 +117,7 @@ system-facts:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.1.0" # defaults to appVersion when empty
+    tag: "1.2.0-beta.4" # defaults to appVersion when empty; the chart refuses tags below 1.2.0-beta.4
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # ----- Workload · pod security ---------------------------------------------
@@ -139,33 +139,19 @@ system-facts:
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
   # ----- Workload · availability & rollout -----------------------------------
-  # -- PodDisruptionBudget configuration
+  # -- PodDisruptionBudget configuration (budget and eviction policy come from the health preset)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 1
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
-  # -- Seconds Kubernetes waits after SIGTERM before killing the API pod.
-  # 55 = 15s drain (SHUTDOWN_DRAIN_DELAY) + 30s shutdown budget (lib-commons SHUTDOWN_TIMEOUT default) + 10s margin
-  terminationGracePeriodSeconds: 55
-  # -- Deployment update strategy
-  deploymentUpdate:
-    # -- Type of deployment strategy
-    type: RollingUpdate
-    # -- Maximum number of pods that can be created over the desired number of pods
-    maxSurge: 1
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 1
   # ----- Workload · networking -----------------------------------------------
   service:
     # -- Kubernetes service type
     type: ClusterIP
     # -- Port for the HTTP API
     port: 8080
+    # -- The internal `health` port 8099 is added by the health preset on ClusterIP only; never route an Ingress to it
     annotations: {}
   ingress:
     # -- Enable or disable ingress
@@ -175,7 +161,7 @@ system-facts:
     # -- Additional ingress annotations
     annotations: {}
     hosts:
-      - host: "system-facts.lerian.net"
+      - host: "system-facts.example.com"
         paths:
           - path: /
             pathType: Prefix
@@ -197,8 +183,8 @@ system-facts:
   autoscaling:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
-    # -- Minimum number of replicas
-    minReplicas: 1
+    # -- Minimum number of replicas (the health preset floors an unset value at 2)
+    minReplicas: 2
     # -- Maximum number of replicas
     maxReplicas: 5
     # -- Target CPU utilization percentage for autoscaling
@@ -216,7 +202,7 @@ system-facts:
     # -- Enable lib-commons/multitenancy for this component (emits MULTI_TENANT_ENABLED + config)
     enabled: false
   serviceDiscovery:
-    # -- Enable lib-service-discovery for this component (emits SD_ENABLED + derives SD_* from global.serviceDiscovery)
+    # -- Accepted for compatibility. System Facts has no service-discovery client, so no SD_* keys are rendered.
     enabled: false
   streaming:
     # -- Enable lib-streaming for this component (emits STREAMING_ENABLED + STREAMING_* from global.streaming)
@@ -314,6 +300,10 @@ system-facts:
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
+  licenseFile:
+    # -- Secret holding a signed licence file under the key `license`, mounted as a directory at
+    # /etc/lerian/license. LICENSE_KEY is then optional. File mode needs an image on lib-license-go v5.
+    existingSecret: ""
   # -- Extra environment variables
   extraEnvVars: []
   serviceAccount:
@@ -346,7 +336,7 @@ migrations:
     # -- Runner image repository. Never the application image: it has no `migrate` binary. The Job refuses to render if this is empty.
     repository: ghcr.io/lerianstudio/system-facts-migrations
     # -- Empty tracks the chart appVersion; the app release writes it to .migrations.image.tag
-    tag: "1.1.0"
+    tag: "1.2.0-beta.4"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   # -- Extra annotations merged onto the Job (the ArgoCD Sync-hook pair is always emitted)
@@ -407,14 +397,13 @@ aws:
 # =============================================================================
 # BUNDLED INFRA SUBCHARTS — DISABLED by default.
 #
-# On benedita, Postgres and Valkey are external, pre-provisioned services: the
+# By default, Postgres and Valkey are external, pre-provisioned services: the
 # host comes from `global.datastores.*` (or an explicit
 # `boilerplate.configmap.POSTGRES_HOST` / `REDIS_HOST`) and the password from
 # `boilerplate.secrets.*`, typically Vault-templated by the GitOps layer.
 #
 # Enable these for a SELF-CONTAINED install, where the app brings its own
-# datastores instead of sharing cluster-wide ones — the anacleto chaos/fuzzing
-# pattern. When enabled:
+# datastores instead of sharing cluster-wide ones. When enabled:
 #   - POSTGRES_HOST / REDIS_HOST default to the in-cluster subchart Services
 #     (templates/configmap.yaml resolves them), so no host needs to be set.
 #   - POSTGRES_PASSWORD / REDIS_PASSWORD are read straight from the subchart's
@@ -482,8 +471,8 @@ valkey:
 # internal-facts-worker — OPTIONAL separate workload (image system-facts-worker).
 #
 # Consumes product events from RedPanda and delivers them to the System Facts API
-# as facts. It is not an HTTP service: the admin port (/health, /readyz, /version)
-# is for the kubelet only, so this block renders a Deployment, ConfigMap, Secret
+# as facts. It is not an HTTP service: its only listener is the health port 8099
+# (/health, /readyz), for the kubelet only, so this block renders a Deployment, ConfigMap, Secret
 # and ServiceAccount and NO Service, Ingress, HPA, PDB, database or migrations.
 # Disabled by default so an existing install is not changed by a chart bump alone.
 #
@@ -496,8 +485,8 @@ worker:
   enabled: false
   image:
     repository: ghcr.io/lerianstudio/system-facts-worker
-    # -- Empty tracks the chart appVersion; the app release writes .worker.image.tag
-    tag: "1.1.0"
+    # -- Empty tracks the chart appVersion; the app release writes .worker.image.tag. The chart refuses tags below 1.2.0-beta.4
+    tag: "1.2.0-beta.4"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   # -- Replicas. Effective parallelism = min(replicas, partitions of the subscribed
@@ -508,14 +497,11 @@ worker:
   # green probe). Raise only after `rpk topic describe <topic> -p` and a tenant count.
   partitionCeiling: 1
   revisionHistoryLimit: 10
-  deploymentUpdate:
-    type: RollingUpdate
-    maxSurge: 1
-    maxUnavailable: 0
-  # -- Admin port (SERVER_ADDRESS). Probes only; never exposed through a Service.
-  port: 8080
-  # -- >= 60 (consumer close 30s + admin drain 10s + telemetry flush); the chart refuses less.
-  terminationGracePeriodSeconds: 60
+  # -- Health preset (lerian-common.health, stack go-worker): probes, HEALTH_PORT 8099, grace and rollout strategy are owned by it.
+  # shutdownSeconds (SHUTDOWN_TIMEOUT) must be >= 50: grace = shutdown + 10 must cover the 30s consumer close plus the 30s SHUTDOWN_TIMEOUT.
+  health:
+    stack: go-worker
+    shutdownSeconds: 50
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -533,8 +519,6 @@ worker:
     requests:
       cpu: 50m
       memory: 64Mi
-  livenessProbe: {}
-  readinessProbe: {}
   nodeSelector: {}
   tolerations: {}
   affinity: {}
@@ -605,10 +589,17 @@ worker:
   # Application that targets it all of its roles, so nothing extra is granted per app today.
   # STREAMING_SASL_PASSWORD required with a SASL mechanism. STREAMING_TLS_CA_CERT is
   # base64 PEM; empty means the system pool.
+  # LICENSE_KEY: the worker's licence key, the same product key as the service
+  # (optional when licenseFile.existingSecret is set).
   secrets:
     SYSTEM_FACTS_CLIENT_ID: ""
     SYSTEM_FACTS_CLIENT_SECRET: ""
     STREAMING_SASL_PASSWORD: ""
     STREAMING_TLS_CA_CERT: ""
+    LICENSE_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
+  licenseFile:
+    # -- Secret holding a signed licence file under the key `license`, mounted as a directory at
+    # /etc/lerian/license. LICENSE_KEY is then optional. File mode needs an image on lib-license-go v5.
+    existingSecret: ""

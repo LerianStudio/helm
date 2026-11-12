@@ -15,6 +15,17 @@
 {{- /* RABBITMQ_PORT_HOST is the AMQP transport port the ledger dials (amqpPort mask field). */ -}}
 {{- $rabbitHost := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "host" "nativeKey" "RABBITMQ_HOST" "default" "midaz-rabbitmq") }}
 {{- $rabbitPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "amqpPort" "nativeKey" "RABBITMQ_PORT_HOST" "default" "5672") }}
+{{- /* Images below the health preset also read the broker management API (RABBITMQ_PORT_AMQP is
+   its port) for the /readyz RabbitMQ check; RABBITMQ_PROTOCOL picks the URL scheme. */ -}}
+{{- $legacy := include "midaz.belowHealthMin" (dict "component" .Values.ledger "context" .) }}
+{{- $rabbitProtocol := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "protocol" "nativeKey" "RABBITMQ_PROTOCOL" "default" "http") }}
+{{- $rabbitAmqpPort := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "port" "nativeKey" "RABBITMQ_PORT_AMQP" "default" "15672") }}
+{{- $rabbitHealthCheckURL := "" }}
+{{- if eq $rabbitProtocol "http" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s:%s" $rabbitProtocol $rabbitHost $rabbitAmqpPort }}
+{{- else if eq $rabbitProtocol "https" }}
+  {{- $rabbitHealthCheckURL = printf "%s://%s" $rabbitProtocol $rabbitHost }}
+{{- end }}
 
 kind: ConfigMap
 apiVersion: v1
@@ -121,7 +132,7 @@ data:
   # MONGO DB - ONBOARDING MODULE (host/user/port via datastore mask)
   # =============================================================================
   MONGO_ONBOARDING_URI: {{ $cm.MONGO_ONBOARDING_URI | default "mongodb" | quote }}
-  MONGO_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "host" "nativeKey" "MONGO_ONBOARDING_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_ONBOARDING_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "host" "nativeKey" "MONGO_ONBOARDING_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_ONBOARDING_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "name" "nativeKey" "MONGO_ONBOARDING_NAME" "default" "onboarding") | quote }}
   MONGO_ONBOARDING_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "user" "nativeKey" "MONGO_ONBOARDING_USER" "default" "midaz") | quote }}
   MONGO_ONBOARDING_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoOnboarding" "field" "port" "nativeKey" "MONGO_ONBOARDING_PORT" "default" "27017") | quote }}
@@ -159,7 +170,7 @@ data:
   # MONGO DB - TRANSACTION MODULE (host/user/port via datastore mask)
   # =============================================================================
   MONGO_TRANSACTION_URI: {{ $cm.MONGO_TRANSACTION_URI | default "mongodb" | quote }}
-  MONGO_TRANSACTION_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "host" "nativeKey" "MONGO_TRANSACTION_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_TRANSACTION_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "host" "nativeKey" "MONGO_TRANSACTION_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_TRANSACTION_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "name" "nativeKey" "MONGO_TRANSACTION_NAME" "default" "transaction") | quote }}
   MONGO_TRANSACTION_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "user" "nativeKey" "MONGO_TRANSACTION_USER" "default" "midaz") | quote }}
   MONGO_TRANSACTION_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoTransaction" "field" "port" "nativeKey" "MONGO_TRANSACTION_PORT" "default" "27017") | quote }}
@@ -171,7 +182,7 @@ data:
   # MONGO DB - CRM MODULE (folded into the unified ledger binary; host/user/port via mask)
   # =============================================================================
   MONGO_CRM_URI: {{ $cm.MONGO_CRM_URI | default "mongodb" | quote }}
-  MONGO_CRM_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_CRM_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "host" "nativeKey" "MONGO_CRM_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_CRM_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "name" "nativeKey" "MONGO_CRM_NAME" "default" "crm") | quote }}
   MONGO_CRM_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "user" "nativeKey" "MONGO_CRM_USER" "default" "midaz") | quote }}
   MONGO_CRM_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoCrm" "field" "port" "nativeKey" "MONGO_CRM_PORT" "default" "27017") | quote }}
@@ -184,7 +195,7 @@ data:
   # MONGO DB - FEES MODULE (folded into the unified ledger binary; host/user/port via mask)
   # =============================================================================
   MONGO_FEES_URI: {{ $cm.MONGO_FEES_URI | default "mongodb" | quote }}
-  MONGO_FEES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" "midaz-mongodb") | quote }}
+  MONGO_FEES_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "host" "nativeKey" "MONGO_FEES_HOST" "default" (include "midaz.mongodbHost" $)) | quote }}
   MONGO_FEES_NAME: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "name" "nativeKey" "MONGO_FEES_NAME" "default" "fees") | quote }}
   MONGO_FEES_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "user" "nativeKey" "MONGO_FEES_USER" "default" "midaz") | quote }}
   MONGO_FEES_PORT: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "mongoFees" "field" "port" "nativeKey" "MONGO_FEES_PORT" "default" "27017") | quote }}
@@ -336,6 +347,11 @@ data:
   RABBITMQ_URI: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "scheme" "nativeKey" "RABBITMQ_URI" "default" "amqp") | quote }}
   RABBITMQ_HOST: {{ $rabbitHost | quote }}
   RABBITMQ_PORT_HOST: {{ $rabbitPort | quote }}
+  {{- if $legacy }}
+  RABBITMQ_PROTOCOL: {{ $rabbitProtocol | quote }}
+  RABBITMQ_PORT_AMQP: {{ $rabbitAmqpPort | quote }}
+  RABBITMQ_HEALTH_CHECK_URL: {{ $cm.RABBITMQ_HEALTH_CHECK_URL | default $rabbitHealthCheckURL | quote }}
+  {{- end }}
   # TLS to the broker (AmazonMQ requires it). Native key, else the broker mask's tls.
   RABBITMQ_TLS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "broker" "field" "tls" "nativeKey" "RABBITMQ_TLS" "default" "false") | quote }}
   RABBITMQ_DEFAULT_USER: {{ include "lerian-common.datastore.value" (dict "context" $ "dedicated" .Values.ledger.datastores "configmap" $cm "type" "broker" "field" "user" "nativeKey" "RABBITMQ_DEFAULT_USER" "default" "transaction") | quote }}

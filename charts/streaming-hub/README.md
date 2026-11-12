@@ -14,7 +14,7 @@ infra, and OTEL is env-wired (see [External dependencies](#external-dependencies
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `secrets.STREAMING_HUB_POSTGRES_DSN` (the DSN carries the DB password); `secrets.STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` (32 bytes base64, mandatory in every mode from `appVersion 2.x` on — see [Requirements of the 2.x line](#requirements-of-the-2x-line)); `secrets.LICENSE_KEY` (the Lerian license, mandatory in every environment on a license-gated image — see [License](#license-lib-license-go-global-mode)); `secrets.STREAMING_HUB_KAFKA_SCRAM_PASSWORD` (when the broker requires SASL/SCRAM; the matching `configmap.STREAMING_HUB_KAFKA_SCRAM_USERNAME` is NOT a credential and lives in the ConfigMap); `secrets.STREAMING_HUB_DEV_KEK` (dev-only KEK material — the pointer `configmap.STREAMING_HUB_KEK_REF` names it; in staging and production, including the chart default `STREAMING_HUB_ENV=production`, the hub refuses to start unless `STREAMING_HUB_KEK_REF` names another variable in the Secret that carries the KEK); `secrets.STREAMING_HUB_REDIS_PASSWORD` (when the rate-limiter Redis/Valkey requires AUTH — the endpoint itself is not a credential and lives in `configmap.STREAMING_HUB_REDIS_ADDRESS`). Multi-tenant needs exactly one extra secret: `secrets.MULTI_TENANT_SERVICE_API_KEY`, which authenticates the hub to the tenant-manager it reads the control-plane allowlist from — from the 2.x line on, an empty one refuses the boot alongside a missing `configmap.MULTI_TENANT_URL`. It also needs `ENV_NAME` (`global.observability.deploymentEnvironment` or `configmap.ENV_NAME`) set to the environment name; empty or `local` refuses the boot. Each TENANT's own credentials still need no secret here: the hub sweeps them from AWS Secrets Manager with its own IAM identity. All blank by default; the DSN is always emitted (an empty DSN fails the app fast at boot rather than failing the render). Provide sensitive values inline through a protected values source or set `streamingHub.useExistingSecret` + `streamingHub.existingSecretName` (the path GitOps uses, with a Vault-injected Secret).
+- Required secrets: `secrets.STREAMING_HUB_POSTGRES_DSN` (the DSN carries the DB password); `secrets.STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` (32 bytes base64, mandatory in every mode from `appVersion 2.x` on — see [Requirements of the 2.x line](#requirements-of-the-2x-line)); `secrets.LICENSE_KEY` (the Lerian license, mandatory in every environment on a license-gated image unless `streamingHub.licenseFile.existingSecret` is set — see [License](#license-lib-license-go-global-mode)); `secrets.STREAMING_HUB_KAFKA_SCRAM_PASSWORD` (when the broker requires SASL/SCRAM; the matching `configmap.STREAMING_HUB_KAFKA_SCRAM_USERNAME` is NOT a credential and lives in the ConfigMap); `secrets.STREAMING_HUB_DEV_KEK` (dev-only KEK material — the pointer `configmap.STREAMING_HUB_KEK_REF` names it; in staging and production, including the chart default `STREAMING_HUB_ENV=production`, the hub refuses to start unless `STREAMING_HUB_KEK_REF` names another variable in the Secret that carries the KEK); `secrets.STREAMING_HUB_REDIS_PASSWORD` (when the rate-limiter Redis/Valkey requires AUTH — the endpoint itself is not a credential and lives in `configmap.STREAMING_HUB_REDIS_ADDRESS`). Multi-tenant needs exactly one extra secret: `secrets.MULTI_TENANT_SERVICE_API_KEY`, which authenticates the hub to the tenant-manager it reads the control-plane allowlist from — from the 2.x line on, an empty one refuses the boot alongside a missing `configmap.MULTI_TENANT_URL`. It also needs `ENV_NAME` (`global.observability.deploymentEnvironment` or `configmap.ENV_NAME`) set to the environment name; empty or `local` refuses the boot. Each TENANT's own credentials still need no secret here: the hub sweeps them from AWS Secrets Manager with its own IAM identity. All blank by default; the DSN is always emitted (an empty DSN fails the app fast at boot rather than failing the render). Provide sensitive values inline through a protected values source or set `streamingHub.useExistingSecret` + `streamingHub.existingSecretName` (the path GitOps uses, with a Vault-injected Secret).
 - Dependency notes: **No bundled subcharts.** Kafka/Redpanda, PostgreSQL and Redis/Valkey are shared external infra — supply `configmap.STREAMING_HUB_KAFKA_BROKERS`, `secrets.STREAMING_HUB_POSTGRES_DSN` and `configmap.STREAMING_HUB_REDIS_ADDRESS` (every role refuses to start without it; see [Rate limiting](#rate-limiting)). OTEL is env-wired to a node-local collector (`HOST_IP:4317`, gated on `streamingHub.telemetry.enabled`) — there is no OTEL collector subchart. The optional `bootstrap-postgres` Job provisions the hub's single database when `global.externalPostgresDefinitions.enabled=true`.
 - Migrations: the hub applies its schema **out of band** (the app never migrates itself). Enable the migration Job with `streamingHub.migrations.enabled=true` (default off). It is a PreSync hook that runs the stock `migrate/migrate` toolchain (image `ghcr.io/lerianstudio/streaming-hub-migrations`) BEFORE the app rolls out. The hook chain is **`bootstrap-postgres` (sync-wave -10, role+db) → `migration-secret` (-5, the DSN) → `migrations` Job (-1, the schema) → app Deployment (main Sync)**. The Job's only env is `STREAMING_HUB_POSTGRES_DSN` (from the migration-secret, or `migrations.existingSecretName` when `migrations.useExistingSecret=true`). Without it, the app refuses to boot because the database schema is older than the version it requires. **When `migrations.useExistingSecret=true`, the named secret must already exist in the namespace before the PreSync phase runs** — do not point it at the chart-managed application Secret (`streamingHub.existingSecretName` / inline `secrets.*`), which is created later in the main Sync phase and is therefore absent when the hook fires; the chart provisions its own PreSync `migration-secret` precisely to close that ordering gap.
 - Production overrides: choose `streamingHub.mode` (`all` vs `split`); size per-role `replicaCount` / `autoscaling` / `resources` and the Postgres pool (`poolMaxOpenConns` / `poolMaxIdleConns`) honoring **Σ(replicas × poolMaxOpenConns) ≤ Postgres `max_connections`**; set `image.tag`, `ingress`, and the secrets (inline or `useExistingSecret`).
@@ -53,7 +53,7 @@ lib-license-go convention, so a `STREAMING_HUB_`-prefixed spelling reads empty.
 
 | Variable | Where | Default | Without it / wrong |
 |----------|-------|---------|--------------------|
-| **`LICENSE_KEY`** | Secret: `secrets.LICENSE_KEY` (always emitted, even empty), or the Secret named by `existingSecretName`, where the Deployments pin it via `secretKeyRef` | `""` | The app refuses to start (`ErrMissingLicenseKey`). On the `useExistingSecret` path a Secret without the key fails container creation (`CreateContainerConfigError`, "couldn't find key LICENSE_KEY"). Supply it through Vault/ExternalSecret, never in a values file in git. |
+| **`LICENSE_KEY`** | Secret: `secrets.LICENSE_KEY` (always emitted, even empty), or the Secret named by `existingSecretName`, where the Deployments pin it via `secretKeyRef` | `""` | Required unless `streamingHub.licenseFile.existingSecret` is set (file mode, below). Without either the app refuses to start (`ErrMissingLicenseKey`). On the `useExistingSecret` path a Secret without the key fails container creation (`CreateContainerConfigError`, "couldn't find key LICENSE_KEY"). Supply it through Vault/ExternalSecret, never in a values file in git. |
 | **`ORGANIZATION_IDS`** | ConfigMap: `configmap.ORGANIZATION_IDS` | `global` | Must be **exactly** `global`: the hub supports global license mode only. Any other value (`GLOBAL`, an organization id, a comma list) **fails the render**, and the app would refuse it at boot (`ErrLicenseOrganizationIDsInvalid`). |
 | `IS_DEVELOPMENT` | ConfigMap: `configmap.IS_DEVELOPMENT` | unset | Deprecated and ignored: still accepted so an upgrade that sets it keeps validating, never rendered. Products validate licenses only on the production license server. |
 
@@ -61,8 +61,14 @@ lib-license-go convention, so a `STREAMING_HUB_`-prefixed spelling reads empty.
 the effective value there too. It also refuses `extraEnvVars.LICENSE_KEY`,
 because that would put the license in plaintext on the Deployment spec.
 
+**Licence file (optional).** `streamingHub.licenseFile.existingSecret` names a Secret
+holding a signed licence file under the key `license`. It is mounted read-only as the
+directory `/etc/lerian/license` on every Deployment and `LICENSE_FILE_PATH` points at
+it; only the `license` key is projected (a Secret without it fails pod creation), and the `LICENSE_KEY` `secretKeyRef` then becomes `optional`. File mode needs an image on lib-license-go v5.
+
 > **Rollout order on the `useExistingSecret` path.** From this chart version on,
-> every Deployment pins `LICENSE_KEY` by name, whatever the image tag. Add the key
+> every Deployment pins `LICENSE_KEY` by name, whatever the image tag, unless
+> `streamingHub.licenseFile.existingSecret` is set. Add the key
 > to the Vault/ExternalSecret source **before** you roll the chart out. That
 > includes environments still pinned to a pre-license image, which ignores the
 > value but cannot start without the key being present.
@@ -219,13 +225,13 @@ Two mutually-exclusive paths:
 | `useExistingSecret` | Behavior |
 |---------------------|----------|
 | `false` (default) | The chart renders `templates/secrets.yaml` from `streamingHub.secrets` (base64-encoded). `STREAMING_HUB_POSTGRES_DSN` is ALWAYS emitted (even empty) so a bare `helm template` succeeds; an empty DSN fails the app fast at boot. Empty optional keys are skipped. |
-| `true` | **No** Secret is rendered. Deployments reference `existingSecretName`. This is the **gitops/Vault path** (an external secret is projected into the named Secret) and is the production default. **Key contract:** the named Secret MUST carry `STREAMING_HUB_POSTGRES_DSN`, `STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` **and** `LICENSE_KEY` — each Deployment pins all three via explicit `secretKeyRef`s, so a Secret missing any of them fails container creation (`CreateContainerConfigError`, "couldn't find key") instead of CrashLooping the app. |
+| `true` | **No** Secret is rendered. Deployments reference `existingSecretName`. This is the **gitops/Vault path** (an external secret is projected into the named Secret) and is the production default. **Key contract:** the named Secret MUST carry `STREAMING_HUB_POSTGRES_DSN`, `STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` **and** `LICENSE_KEY` (unless `streamingHub.licenseFile.existingSecret` is set) — each Deployment pins them via explicit `secretKeyRef`s, so a Secret missing a required one fails container creation (`CreateContainerConfigError`, "couldn't find key") instead of CrashLooping the app. |
 
 Sensitive keys (all in `streamingHub.secrets`, all default `""`):
 `STREAMING_HUB_POSTGRES_DSN`, `STREAMING_HUB_KAFKA_CA_CERT`,
 `STREAMING_HUB_DEV_KEK` (dev only) and
 `STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` (32 bytes base64, mandatory from 2.x) and
-`LICENSE_KEY` (mandatory in every environment on a license-gated image — see
+`LICENSE_KEY` (mandatory in every environment on a license-gated image unless `streamingHub.licenseFile.existingSecret` is set — see
 [License](#license-lib-license-go-global-mode))
 — these five are ALWAYS emitted (even empty)
 so a bare render succeeds and their non-credential-shaped names are still counted
@@ -374,14 +380,14 @@ and a stale value earns one WARN per boot.
 |-----|---------|-------------|
 | `streamingHub.mode` | `all` | Topology switch: `all` \| `split`. Schema-enforced enum. |
 | `streamingHub.image.repository` | `ghcr.io/lerianstudio/streaming-hub` | Image repo. |
-| `streamingHub.image.tag` | `"3.0.0"` | Empty falls back to `Chart.appVersion`. |
+| `streamingHub.image.tag` | `"3.1.0"` | Empty falls back to `Chart.appVersion`. |
 | `streamingHub.image.pullPolicy` | `IfNotPresent` | |
 | `streamingHub.imagePullSecrets` | `[]` | Private registry pull secrets. |
 | `streamingHub.service.type` | `ClusterIP` | Lerian convention (Ingress fronts external). |
 | `streamingHub.service.port` | `8080` | Control-plane HTTP port. |
 | `streamingHub.ingress.enabled` | `false` | Control-plane API ingress (opt-in per env). |
 | `streamingHub.serviceAccount.create` | `true` | |
-| `streamingHub.terminationGracePeriodSeconds` | `80` | Set at least `87` (the drain ceiling at the shipped timeouts); keep at or above it. |
+| `streamingHub.terminationGracePeriodSeconds` | `90` | Above `87`, the drain ceiling at the shipped timeouts; keep at or above the ceiling if you tune them. |
 | `streamingHub.securityContext` | nonroot 65532, drop ALL, RO rootfs, RuntimeDefault | Distroless:nonroot. |
 | `streamingHub.useExistingSecret` | `false` | `true` = Vault/gitops path. |
 | `streamingHub.existingSecretName` | `""` | Required when `useExistingSecret`. |
@@ -391,7 +397,8 @@ and a stale value earns one WARN per boot.
 | `streamingHub.extraEnvVars` | `{}` | Per-Deployment env hatch (key → value map). Never credentials. |
 | `streamingHub.secrets` | (all `""`) | Shared sensitive env. DSN always emitted; other empty values skipped. |
 | `streamingHub.secrets.STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` | `""` | Dashboard cursor signing key, 32 bytes base64. Mandatory from `appVersion 2.x`; always emitted and pinned via `secretKeyRef`. |
-| `streamingHub.secrets.LICENSE_KEY` | `""` | Lerian license key (lib-license-go, GLOBAL mode). Mandatory in every environment on a license-gated image; always emitted and pinned via `secretKeyRef`. See [License](#license-lib-license-go-global-mode). |
+| `streamingHub.secrets.LICENSE_KEY` | `""` | Lerian license key (lib-license-go, GLOBAL mode). Required unless `streamingHub.licenseFile.existingSecret` is set (file mode, image on lib-license-go v5); always emitted and pinned via `secretKeyRef`. See [License](#license-lib-license-go-global-mode). |
+| `streamingHub.licenseFile.existingSecret` | `""` | Optional Secret with a signed licence file under the key `license`, mounted read-only as the directory `/etc/lerian/license`; sets `LICENSE_FILE_PATH`. Replaces `LICENSE_KEY`. File mode needs an image on lib-license-go v5. |
 | `streamingHub.configmap.ORGANIZATION_IDS` | `global` (template default) | License mode. Must be exactly `global`; any other value fails the render. |
 | `streamingHub.configmap.IS_DEVELOPMENT` | unset | Deprecated and ignored: accepted, never rendered. |
 | `streamingHub.secrets.STREAMING_HUB_REDIS_PASSWORD` | `""` | Rate-limiter Redis AUTH password. Emit-when-set; may stay empty. |

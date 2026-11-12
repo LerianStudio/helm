@@ -73,7 +73,7 @@ api:
     ALLOW_INSECURE_TLS: ""
 
   secrets:
-    # REQUIRED for the api and the worker, in every mode.
+    # REQUIRED for the api and the worker unless api/worker.licenseFile.existingSecret is set.
     LICENSE_KEY: ""
 
     # Optional: an in-cluster Redis with no auth is a legitimate topology.

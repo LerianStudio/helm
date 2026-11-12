@@ -96,7 +96,7 @@ plugin-br-ted-lerian:
   # -- Enable or disable the TED service
   enabled: true
   # -- Number of replicas for the TED service
-  replicaCount: 1
+  replicaCount: 2
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   # ----- Workload · image ----------------------------------------------------
@@ -106,7 +106,7 @@ plugin-br-ted-lerian:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0-beta.64" # defaults to appVersion when empty
+    tag: "1.0.0-beta.86" # defaults to appVersion when empty
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: ghcr-credential
@@ -129,27 +129,11 @@ plugin-br-ted-lerian:
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
   # ----- Workload · availability & rollout -----------------------------------
-  # -- Seconds Kubernetes waits after SIGTERM before killing the pod
-  # 55 = 15s drain + 30s shutdown budget + 10s margin
-  terminationGracePeriodSeconds: 55
-  # -- PodDisruptionBudget configuration
-  pdb:
-    # -- Enable or disable PodDisruptionBudget
-    enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 1
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
-    # -- Annotations for the PodDisruptionBudget
-    annotations: {}
-  # -- Deployment update strategy
-  deploymentUpdate:
-    # -- Type of deployment strategy
-    type: RollingUpdate
-    # -- Maximum number of pods that can be created over the desired number of pods
-    maxSurge: 1
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 1
+  # -- Health preset (lerian-common.health). The preset owns the probes (served on the
+  # internal port 8099, never through the Ingress), HEALTH_PORT, SHUTDOWN_*, the grace
+  # period, the rollout strategy and the PodDisruptionBudget; none is a value.
+  health:
+    stack: go
   # ----- Workload · networking -----------------------------------------------
   service:
     # -- Kubernetes service type
@@ -165,7 +149,7 @@ plugin-br-ted-lerian:
     # -- Additional ingress annotations
     annotations: {}
     hosts:
-      - host: "plugin-br-ted-lerian.lerian.net"
+      - host: "plugin-br-ted-lerian.example.com"
         paths:
           - path: /
             pathType: Prefix
@@ -188,7 +172,7 @@ plugin-br-ted-lerian:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 2
     # -- Maximum number of replicas
     maxReplicas: 5
     # -- Target CPU utilization percentage for autoscaling
@@ -254,9 +238,9 @@ plugin-br-ted-lerian:
     protocol: "3" # → REDIS_PROTOCOL
     poolSize: "10" # → REDIS_POOL_SIZE
     minIdleConns: "2" # → REDIS_MIN_IDLE_CONNS
-    readTimeoutMs: "3000" # → REDIS_READ_TIMEOUT_MS
-    writeTimeoutMs: "3000" # → REDIS_WRITE_TIMEOUT_MS
-    dialTimeoutMs: "5000" # → REDIS_DIAL_TIMEOUT_MS
+    readTimeoutMs: "3000" # → REDIS_READ_TIMEOUT (whole seconds, minimum 1)
+    writeTimeoutMs: "3000" # → REDIS_WRITE_TIMEOUT (whole seconds, minimum 1)
+    dialTimeoutMs: "5000" # → REDIS_DIAL_TIMEOUT (whole seconds, minimum 1)
   # --- Rate limiting ---------------------------------------------------------
   rateLimit:
     enabled: "true" # → RATE_LIMIT_ENABLED
@@ -268,8 +252,10 @@ plugin-br-ted-lerian:
     title: "Plugin Br Ted Lerian" # → SWAGGER_TITLE
   # -- Raw env override (advanced escape hatch). EMPTY by default — everything a
   #    client tunes is a clean param above; connection host/user/port/ssl comes from
-  #    global.datastores. Any key set here WINS (backward-compatible) — e.g.
-  #    POSTGRES_HOST, REDIS_HOST, PLUGIN_AUTH_HOST, OTEL_EXPORTER_OTLP_ENDPOINT.
+  #    global.datastores. A key set here WINS over the param that renders the same
+  #    variable — e.g. POSTGRES_HOST, REDIS_HOST, PLUGIN_AUTH_HOST,
+  #    OTEL_EXPORTER_OTLP_ENDPOINT. Keys the ConfigMap does not render are
+  #    dropped: add those through extraEnvVars or secrets.
   # @default -- templates/configmap.yaml
   configmap: {}
   # -- Secrets for storing sensitive data
@@ -342,14 +328,13 @@ aws:
 # =============================================================================
 # BUNDLED INFRA SUBCHARTS — DISABLED by default.
 #
-# On benedita, Postgres and Valkey are external, pre-provisioned services: the
+# Postgres and Valkey are normally external, pre-provisioned services: the
 # host comes from `global.datastores.*` (or an explicit
 # `plugin-br-ted-lerian.configmap.POSTGRES_HOST` / `REDIS_HOST`) and the password from
 # `plugin-br-ted-lerian.secrets.*`, typically Vault-templated by the GitOps layer.
 #
 # Enable these for a SELF-CONTAINED install, where the app brings its own
-# datastores instead of sharing cluster-wide ones — the anacleto chaos/fuzzing
-# pattern. When enabled:
+# datastores instead of sharing cluster-wide ones. When enabled:
 #   - POSTGRES_HOST / REDIS_HOST default to the in-cluster subchart Services
 #     (templates/configmap.yaml resolves them), so no host needs to be set.
 #   - POSTGRES_PASSWORD / REDIS_PASSWORD are read straight from the subchart's

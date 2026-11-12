@@ -318,6 +318,42 @@ secret-manager inputs must not be blocked at render time.
 {{- end }}
 
 {{/*
+reporter.licenseFileSecret: the component's licence-file Secret name ("" when unset).
+Input: the component values. Trailing default required: include yields "<no value>" for a
+missing key; --reuse-values over an old release has no licenseFile.
+*/}}
+{{- define "reporter.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{- define "reporter.licenseFileEnv" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end }}
+
+{{- define "reporter.licenseFileMount" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "reporter.licenseFileVolume" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ include "reporter.licenseFileSecret" . | quote }}
+    defaultMode: 0444
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end }}
+
+{{/*
 reporter.licenseKeyRequired — refuse to render a reporter >= 4.6.0 without a license.
 
 Reporter 4.6.0 requires LICENSE_KEY in every run mode: the manager AND the worker refuse
@@ -329,8 +365,9 @@ Like reporter.datasourceCredEncKeyRequired, presence is enforced only when the
 COMPONENT'S OWN resolved image tag parses as semver and is >= 4.6.0-0, so a release that
 still runs 4.5.x keeps rendering, and a floating tag ("latest", a digest) is left alone.
 An argocd-vault-plugin reference (`<path:...>`) counts as set: it is resolved after the
-render, and the plugin fails closed when it cannot resolve it. Called only when the
-component does not use an existing Secret, whose contents the chart cannot see.
+render, and the plugin fails closed when it cannot resolve it. A component with licenseFile.existingSecret
+is exempt. Called only when the component does not use an existing Secret, whose contents
+the chart cannot see.
 
 Input (dict): context (root .), component ("manager"|"worker"), tag (resolved image tag).
 */}}
@@ -340,8 +377,8 @@ Input (dict): context (root .), component ("manager"|"worker"), tag (resolved im
 {{- /* Only tags Masterminds semver can parse reach semverCompare: prerelease and build
    metadata are [0-9A-Za-z-] dot-separated. Anything else (4.5.1-custom_1, latest, a digest)
    skips the gate, as a floating tag does. */ -}}
-{{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag) (semverCompare ">=4.6.0-0" $tag) -}}
-{{- fail (printf "\n\nERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (%s.image.tag is %q).\n   The manager AND the worker refuse to boot without a license.\n   Set secrets.LICENSE_KEY (and secrets.ORGANIZATION_IDS for a per-organization license),\n   or point %s.useExistingSecret at a Secret that carries them.\n   See charts/reporter/docs/UPGRADE-5.1.md.\n" .component .tag .component) -}}
+{{- if and (not $key) (not (include "reporter.licenseFileSecret" (index .context.Values .component))) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag) (semverCompare ">=4.6.0-0" $tag) -}}
+{{- fail (printf "\n\nERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (%s.image.tag is %q).\n   The manager AND the worker refuse to boot without a license.\n   Set secrets.LICENSE_KEY, or %s.licenseFile.existingSecret (needs an image on lib-license-go v5),\n   or set %s.useExistingSecret=true and %s.existingSecretName to a Secret that carries them.\n   See charts/reporter/docs/UPGRADE-5.1.md.\n" .component .tag .component .component .component) -}}
 {{- end -}}
 {{- end -}}
 
@@ -526,7 +563,20 @@ MONGO_USER: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "t
 MONGO_PORT: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "port" "nativeKey" "MONGO_PORT" "default" "27017") | quote }}
 MONGO_MAX_POOL_SIZE: {{ $cm.MONGO_MAX_POOL_SIZE | default "100" | quote }}
 MONGO_TLS_CA_CERT: {{ $cm.MONGO_TLS_CA_CERT | default "" | quote }}
-MONGO_PARAMETERS: {{ include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") | quote }}
+{{- /* The app (lib-commons) verifies DocumentDB against its embedded RDS CA bundle, so the shared cloud preset's tlsInsecure is dropped when that preset is what resolved. */}}
+{{- $mongoParams := include $dv (dict "context" $ "dedicated" $ded "configmap" $cm "type" "mongo" "field" "params" "nativeKey" "MONGO_PARAMETERS" "default" "maxIdleTimeMS=60000") -}}
+{{- /* The bundle ships from app 4.7.0 (lib-commons 7.20.0): older pinned tags keep the preset. A tag semver cannot parse (latest, a digest) counts as new. */}}
+{{- $bundled := true -}}
+{{- range $c := list $.Values.manager $.Values.worker -}}
+{{- $t := $c.image.tag | default (include "plugin.version" $) | toString | trimPrefix "v" -}}
+{{- if and (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $t) (semverCompare "<4.7.0-0" $t) -}}
+{{- $bundled = false -}}
+{{- end -}}
+{{- end -}}
+{{- if and $bundled (eq $mongoParams (index (include "lerian-common.cloud.block" (dict "context" $ "kind" "mongo") | fromYaml) "params" | default "-")) -}}
+{{- $mongoParams = $mongoParams | replace "tlsInsecure=true&" "" -}}
+{{- end }}
+MONGO_PARAMETERS: {{ $mongoParams | quote }}
 {{- /* Observability: enable/endpoint/deployment-env via lerian-common.otel.env (global.observability);
    identity (library/port/insecure) stays inline. configmap.<KEY> still overrides via otel.env. */}}
 OTEL_LIBRARY_NAME: {{ $cm.OTEL_LIBRARY_NAME | default "github.com/LerianStudio/reporter" | quote }}

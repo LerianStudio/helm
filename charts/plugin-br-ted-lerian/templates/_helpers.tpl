@@ -39,6 +39,14 @@ Common labels
 */}}
 {{- define "plugin-br-ted-lerian.labels" -}}
 helm.sh/chart: {{ include "plugin-br-ted-lerian.chart" .context }}
+{{ include "plugin-br-ted-lerian.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart every pod each time.
+*/}}
+{{- define "plugin-br-ted-lerian.podLabels" -}}
 {{ include "plugin-br-ted-lerian.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "plugin-br-ted-lerian.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
@@ -139,4 +147,21 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- printf "%s-%s" .context.Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Health preset (probes, ports, env, grace, strategy, replicas, PDB, HPA floor).
+minImage is the first TED image that serves /readyz on the health port (HEALTH_PORT).
+The effective tag (image.tag, else appVersion) goes to the preset so its minImage
+guard also covers a tag inherited from appVersion. The pre-preset PDB and rollout
+keys are refused instead of silently ignored.
+*/}}
+{{- define "plugin-br-ted-lerian.minImage" -}}1.0.0-beta.86{{- end -}}
+{{- define "plugin-br-ted-lerian.health" -}}
+{{- $c := deepCopy (index .Values "plugin-br-ted-lerian") -}}
+{{- range $k := list "pdb" "deploymentUpdate" -}}
+{{- if hasKey $c $k -}}{{- fail (printf "plugin-br-ted-lerian: %s is owned by the health preset (PDB maxUnavailable 1, RollingUpdate maxSurge 25%% maxUnavailable 0); remove it from your values" $k) -}}{{- end -}}
+{{- end -}}
+{{- $_ := set $c.image "tag" (default .Chart.AppVersion $c.image.tag) -}}
+{{- include "lerian-common.health" (dict "name" (include "plugin-br-ted-lerian.fullname" .) "component" $c "health" $c.health "port" $c.service.port "minImage" (include "plugin-br-ted-lerian.minImage" .) "replicas" $c.replicaCount "autoscaling" $c.autoscaling) -}}
 {{- end -}}

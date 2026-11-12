@@ -49,7 +49,7 @@ livedebugging {
 //
 // ⚠️ O agente NAO escolhe entre config local e remota: ele carrega as DUAS. Se
 // este template rendesse a corrente completa, os dois receptores disputariam a
-// porta 4318. MEDIDO em aws-devops:
+// porta 4318. MEDIDO em ambiente interno:
 //
 //   level=error "failed to start scheduled component"
 //     component_id=otelcol.receiver.otlp.entrada
@@ -175,9 +175,9 @@ otelcol.processor.transform "procedencia" {
       // POR QUE IMPORTA: 75 regras de alerta consultam `http_status_code` e
       // ZERO consultam `http_response_status_code`. Um servico ja migrado para
       // lib-observability emite so a forma canonica e SOME dessas 75 regras,
-      // sem erro nenhum. MEDIDO 2026-10-06 em calls_total: Banqi-Prd,
-      // Cappta-Prd e Cappta-Stg tem apenas `http_status_code`; so voluti-prd e
-      // voluti-stg tem as duas formas.
+      // sem erro nenhum. MEDIDO 2026-10-06 em calls_total: cliente C (prd),
+      // cliente A (prd) e cliente A (stg) tem apenas `http_status_code`; so cliente B (prd) e
+      // cliente B (stg) tem as duas formas.
       //
       // `_OTHER` e excluido de proposito: e o valor que o SDK usa para metodo
       // HTTP nao reconhecido, e propagar isso para a forma antiga poluiria a
@@ -407,14 +407,14 @@ otelcol.exporter.otlphttp "destino" {
     //   level=error "Exporting failed. Rejecting data." error="sending queue is full"
     //
     // Quanto a fila aguenta, com linha media de 909 bytes medida em producao:
-    // ~17 min em aws-devops, ~18 s em Cappta-Prd, ~1,7 s em Voluti-prd.
+    // ~17 min em ambiente interno, ~18 s em cliente A (prd), ~1,7 s em cliente B (prd).
     //
     // ⚠️ Logo a fila NAO e a protecao para cliente de alto volume. O que torna
     // essa perda percebida e o ALERTA de saturacao (`otelcol_exporter_queue_size`
     // sobre `_capacity`), nao o tamanho da fila. Sem ele o dado some em silencio.
     //
     // ⚠️ A mesma evidencia aparece no values, no comentario de `singletonSize`:
-    // 256 eventos perdidos na benedita por fila cheia. Aumentar a fila adiou
+    // 256 eventos perdidos em cluster interno por fila cheia. Aumentar a fila adiou
     // aquele caso; nao resolveu a classe do problema.
     //
     // `destination.queue.blockOnOverflow: true` inverte para contrapressao. Use
@@ -436,8 +436,8 @@ otelcol.exporter.otlphttp "destino" {
 // ===========================================================================
 // This is REPLACEMENT of collection that already exists, not a new capability.
 // The retiring agent reads it through `kubeletstats`, and the `container_*`
-// families in the destination today come from there (MEASURED: 68 series in
-// aws-devops, 72 in aws-production, 44 in aws-staging). kube-state-metrics does
+// families in the destination today come from there (MEASURED: 68, 72 and 44
+// series in three internal environments). kube-state-metrics does
 // NOT cover it: KSM describes an object's DECLARED state — the limit, the desired
 // replica count — never the consumption observed against it.
 //
@@ -498,7 +498,7 @@ prometheus.scrape "consumo_container" {
   forward_to      = [prometheus.relabel.allowlist_consumo.receiver]
 }
 
-// ⚠️ ALLOWLIST, not full collection. MEASURED on benedita: the endpoint exposes
+// ⚠️ ALLOWLIST, not full collection. MEASURED on an internal cluster: the endpoint exposes
 // 78 families and 90,948 series; the {{ len ((.Values.collection).containerUsageAllowlist | default list) }} kept here are 4,893 — a 94.6% cut.
 //
 // The cut is by diagnostic value, not by volume. The expensive families answer
@@ -539,8 +539,8 @@ prometheus.relabel "allowlist_consumo" {
   //
   // Perfil deste render: {{ $perfil }}.
   //
-  // MEDIDO: o collector de aws-staging já dropava os namespaces de sistema e emitia
-  // 488 séries `container_*`; aws-devops, SEM o filtro, emitia 2.284 com número de
+  // MEDIDO: o collector de um ambiente interno já dropava os namespaces de sistema e emitia
+  // 488 séries `container_*`; outro, SEM o filtro, emitia 2.284 com número de
   // pods equivalente. A diferença é este filtro, não o tamanho do cluster.
 {{- if and (eq $perfil "own") $excluir }}
   rule {
@@ -551,7 +551,7 @@ prometheus.relabel "allowlist_consumo" {
 {{- else if and (eq $perfil "client") $somente }}
   // ⚠️ `keep` com ALTERNATIVA VAZIA — o `|^$` no fim não é descuido.
   //
-  // MEDIDO em aws-devops: 272 séries `container_*` têm `namespace` VAZIO. São os
+  // MEDIDO em ambiente interno: 272 séries `container_*` têm `namespace` VAZIO. São os
   // agregados de nó e os sandboxes de pod que o cAdvisor reporta fora de qualquer
   // namespace — `container_cpu_usage_seconds_total` (18),
   // `container_network_*` (52 cada), `container_fs_*` (12 cada) e outras.
@@ -598,7 +598,7 @@ Nothing is exposed outside the pod and there is no target to configure.
 
 ⚠️ REPLACEMENT, not a new capability. The retiring agent has a `metrics/internal`
 pipeline scraping localhost:8887, and the `otelcol_*` families in the destination
-today come from it — MEASURED: 288 series in aws-devops. Dropping this collection
+today come from it — MEASURED: 288 series in an internal environment. Dropping this collection
 makes the loss invisible by construction: you stop seeing the very mechanism that
 would report loss.
 
@@ -677,7 +677,7 @@ logging {
 // /sys e nao ganha privilegio nenhum. Mesmo padrao do chart guarda-chuva da
 // Grafana, que separa instalar o exportador de coleta-lo.
 //
-// ALLOWLIST, nao coleta integral. MEDIDO na benedita: 3 nos produzem 612
+// ALLOWLIST, nao coleta integral. MEDIDO em cluster interno: 3 nos produzem 612
 // familias e 46.575 series — 11% de todas as series daquele cluster, e escala
 // com o numero de nos. As 20 familias mais caras somam 25.482 series e a maioria
 // nao responde pergunta nenhuma: node_cpu_scaling_governor sao 4.608 series de
@@ -748,7 +748,7 @@ prometheus.scrape "objetos_de_cluster" {
 // from the list BEFORE it reaches the destination, so the cost is never paid.
 //
 // ⚠️ WITHOUT this filter kube-state-metrics ships its FULL default set: 184
-// families, 5.272 series measured in aws-devops on 2026-08-25. The allowlist keeps
+// families, 5.272 series measured in an internal environment on 2026-08-25. The allowlist keeps
 // 46 families / 1.254 series — a 76% cut.
 //
 // The cut is by DIAGNOSTIC VALUE, not by volume. Two questions decide it:
@@ -776,7 +776,7 @@ prometheus.relabel "allowlist_objetos" {
   // recebe argumento de namespace; sem esta regra a allowlist acima filtra só a
   // FAMÍLIA, e cada pod, deployment e PVC do cliente sai do cluster dele.
   //
-  // MEDIDO em voluti-stg (2026-10-20), primeiro BYOC migrado: 1.109 séries
+  // MEDIDO em cliente B (stg), em 2026-10-20, primeiro BYOC migrado: 1.109 séries
   // `kube_*`, das quais 647 (58%) eram de kube-system, observability e security
   // do cliente. O agente anterior entregava só os namespaces da Lerian.
   //
@@ -792,7 +792,7 @@ prometheus.relabel "allowlist_objetos" {
   // Só o `include` vira regra. O `exclude` do perfil `own` fica de fora: lá o
   // cluster é nosso, e aplicá-lo aqui tiraria os `kube_*` de kube-system dos
   // ambientes internos — mudança que esta correção não pediu nem mediu.
-  // VERIFICADO: com `examples/values-benedita.yaml` o render sai idêntico ao
+  // VERIFICADO: com os values de um ambiente interno o render sai idêntico ao
   // anterior, fora este comentário.
 {{- $nsIncludeObj := include "alloy-lerian.namespaceInclude" . }}
 {{- if $nsIncludeObj }}
@@ -836,7 +836,7 @@ otelcol.receiver.loki "ponte_eventos" {
 // ADMISSION CONTROL — first in the event chain, for the same reason it is first
 // in the node chain: it sheds load before anything downstream allocates for it.
 //
-// This role needed it MORE than the node role, not less. Measured on benedita:
+// This role needed it MORE than the node role, not less. Measured on an internal cluster:
 // loki.source.kubernetes_events replays the cluster's whole event history the
 // moment it starts, and that burst already overran the exporter queue once. A
 // deeper `queue_size` bounds the EXPORTER, not the process — a large enough
@@ -929,7 +929,7 @@ otelcol.exporter.otlphttp "destino" {
 {{- end }}
   }
 
-  // MEASURED on benedita: without this block the exporter used its implicit
+  // MEASURED on an internal cluster: without this block the exporter used its implicit
   // default and lost 256 event records at startup —
   // `enqueue_failed_log_records_total = 256`, "sending queue is full", zero HTTP
   // errors at any point. The destination never refused; the local queue filled.
@@ -965,7 +965,7 @@ otelcol.exporter.otlphttp "destino" {
 {{/*
 This role needs it MORE than the node role, not less: it is the singleton that
 replays the cluster's event history on startup, and it was here that a queue
-overflow lost 256 records in the first seconds — measured on benedita. Without
+overflow lost 256 records in the first seconds — measured on an internal cluster. Without
 these metrics that loss is invisible.
 */}}
 {{ include "alloy-lerian.config.selfMetrics" (dict "ctx" . "role" "singleton") }}

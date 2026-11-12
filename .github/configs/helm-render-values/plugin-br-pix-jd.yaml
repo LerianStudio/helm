@@ -14,7 +14,7 @@
 #     o default renderizava; com o Postgres externo por default não há de onde
 #     derivar e o chart falha o render nomeando a chave. Esta fixture representa o
 #     caminho EXTERNO, que é o default — o caminho embarcado é exercido pelos values
-#     reais do anacleto/chaos.
+#     de um install autocontido.
 #   api.secrets.POSTGRES_PASSWORD  — requerida pelo mesmo motivo: o Job de migrations
 #     roda como pre-install hook, ANTES de o Secret normal do chart existir, então no
 #     caminho externo ele precisa da senha declarada. No caminho embarcado ela vem do

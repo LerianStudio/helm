@@ -803,6 +803,7 @@
               "RABBITMQ_CONSUMER_USER",
               "RABBITMQ_DEFAULT_PASS",
               "RABBITMQ_DEFAULT_USER",
+              "RABBITMQ_HEALTH_CHECK_URL",
               "RABBITMQ_HOST",
               "RABBITMQ_NUMBERS_OF_PREFETCH",
               "RABBITMQ_NUMBERS_OF_WORKERS",
@@ -824,6 +825,7 @@
               "RATE_LIMIT_REDIS_TIMEOUT_MS",
               "RATE_LIMIT_WINDOW_SEC",
               "READYZ_CACHE_STALENESS_THRESHOLD_SECONDS",
+              "READYZ_DRAIN_GRACE_SECONDS",
               "REDIS_CA_CERT",
               "REDIS_DB",
               "REDIS_DIAL_TIMEOUT",
@@ -873,6 +875,8 @@
               "SERVER_ADDRESS",
               "SERVER_PORT",
               "STREAMING_ENABLED",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_USERNAME",
               "STREAMING_SCHEMA_REGISTRY_URL",
               "SWAGGER_BASE_PATH",
               "SWAGGER_DESCRIPTION",
@@ -916,6 +920,16 @@
         },
         "existingSecretName": {
           "default": ""
+        },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": "",
+              "description": "Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license. Needs an image on lib-license-go v5."
+            }
+          }
         },
         "extraEnvVars": {
           "type": "object",
@@ -1474,6 +1488,7 @@
               "RABBITMQ_CONSUMER_USER",
               "RABBITMQ_DEFAULT_PASS",
               "RABBITMQ_DEFAULT_USER",
+              "RABBITMQ_HEALTH_CHECK_URL",
               "RABBITMQ_HOST",
               "RABBITMQ_NUMBERS_OF_PREFETCH",
               "RABBITMQ_NUMBERS_OF_WORKERS",
@@ -1495,6 +1510,7 @@
               "RATE_LIMIT_REDIS_TIMEOUT_MS",
               "RATE_LIMIT_WINDOW_SEC",
               "READYZ_CACHE_STALENESS_THRESHOLD_SECONDS",
+              "READYZ_DRAIN_GRACE_SECONDS",
               "REDIS_CA_CERT",
               "REDIS_DB",
               "REDIS_DIAL_TIMEOUT",
@@ -2182,6 +2198,7 @@
               "RABBITMQ_CONSUMER_USER",
               "RABBITMQ_DEFAULT_PASS",
               "RABBITMQ_DEFAULT_USER",
+              "RABBITMQ_HEALTH_CHECK_URL",
               "RABBITMQ_HOST",
               "RABBITMQ_NUMBERS_OF_PREFETCH",
               "RABBITMQ_NUMBERS_OF_WORKERS",
@@ -2203,6 +2220,7 @@
               "RATE_LIMIT_REDIS_TIMEOUT_MS",
               "RATE_LIMIT_WINDOW_SEC",
               "READYZ_CACHE_STALENESS_THRESHOLD_SECONDS",
+              "READYZ_DRAIN_GRACE_SECONDS",
               "REDIS_CA_CERT",
               "REDIS_DB",
               "REDIS_DIAL_TIMEOUT",
@@ -2252,6 +2270,8 @@
               "SERVER_ADDRESS",
               "SERVER_PORT",
               "STREAMING_ENABLED",
+              "STREAMING_SASL_MECHANISM",
+              "STREAMING_SASL_USERNAME",
               "STREAMING_SCHEMA_REGISTRY_URL",
               "SWAGGER_BASE_PATH",
               "SWAGGER_DESCRIPTION",
@@ -2296,6 +2316,16 @@
         },
         "existingSecretName": {
           "default": ""
+        },
+        "licenseFile": {
+          "type": "object",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": "",
+              "description": "Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license. Needs an image on lib-license-go v5."
+            }
+          }
         },
         "health": {
           "type": "object",

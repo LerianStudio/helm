@@ -28,6 +28,28 @@ Create bank-transfer app version
 {{- end -}}
 
 {{/*
+PDB spec and rollout strategy come from the health preset; an operator override fails the render.
+*/}}
+{{- define "bank-transfer.presetOwned" -}}
+{{- range $k := list "minAvailable" "maxUnavailable" -}}
+{{- if hasKey ($.Values.bankTransfer.pdb | default dict) $k -}}{{- fail (printf "bank-transfer: bankTransfer.pdb.%s is owned by the health preset (PDB maxUnavailable 1); remove it" $k) -}}{{- end -}}
+{{- end -}}
+{{- if hasKey .Values.bankTransfer "deploymentUpdate" -}}{{- fail "bank-transfer: bankTransfer.deploymentUpdate is owned by the health preset (RollingUpdate, maxUnavailable 0); remove it" -}}{{- end -}}
+{{- end }}
+
+{{/*
+Health preset (probes, ports, env, grace, strategy, replicas, PDB, HPA floor). minImage is the first image
+that serves /health, /readyz and /metrics on the health port. The effective tag (explicit, else appVersion)
+is handed to the preset so a tag inherited from appVersion is guarded too.
+*/}}
+{{- define "bank-transfer.health" -}}
+{{- include "bank-transfer.presetOwned" . -}}
+{{- $c := deepCopy .Values.bankTransfer -}}
+{{- $_ := set $c "image" (dict "tag" (include "bank-transfer.defaultTag" .)) -}}
+{{- include "lerian-common.health" (dict "name" (include "bank-transfer.fullname" .) "component" $c "health" .Values.bankTransfer.health "port" .Values.bankTransfer.service.port "minImage" "3.6.0-beta.9" "replicas" .Values.bankTransfer.replicaCount "autoscaling" .Values.bankTransfer.autoscaling) -}}
+{{- end }}
+
+{{/*
 Return valid bank-transfer version label
 */}}
 {{- define "bank-transfer.versionLabelValue" -}}
@@ -38,8 +60,8 @@ Return valid bank-transfer version label
 Common labels
 */}}
 {{- define "bank-transfer.labels" -}}
-helm.sh/chart: {{ include "bank-transfer.chart" .context }}
-{{ include "bank-transfer.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
+{{ if not .podTemplate }}helm.sh/chart: {{ include "bank-transfer.chart" .context }}
+{{ end }}{{ include "bank-transfer.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "bank-transfer.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
 {{- end }}
@@ -189,3 +211,42 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Optional signed licence file: the Secret is mounted as a DIRECTORY at
+/etc/lerian/license (never subPath, so rotations propagate).
+*/}}
+{{- define "bank-transfer.licenseSecret" -}}
+{{- ((.Values.bankTransfer.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{/*
+LICENSE_KEY as the app receives it from values (secrets, else extraEnvVars). The
+PreSync migrator cannot read the app Secret yet, so the hook Secret below copies it.
+*/}}
+{{- define "bank-transfer.licenseKeyValue" -}}
+{{- ((.Values.bankTransfer.secrets | default dict).LICENSE_KEY | default (get (.Values.bankTransfer.extraEnvVars | default dict) "LICENSE_KEY") | default "" | toString) -}}
+{{- end }}
+
+{{- define "bank-transfer.licenseHookName" -}}
+{{- printf "%s-license-hook" (include "bank-transfer.fullname" . | trunc 50 | trimSuffix "-") -}}
+{{- end }}
+
+{{- define "bank-transfer.licenseFileMount" -}}
+{{- if include "bank-transfer.licenseSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "bank-transfer.licenseFileVolume" -}}
+{{- with include "bank-transfer.licenseSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end }}

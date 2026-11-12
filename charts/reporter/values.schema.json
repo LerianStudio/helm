@@ -591,6 +591,10 @@
                   "REDIS_TLS",
                   "REDIS_USER",
                   "REDIS_USE_GCP_IAM",
+                  "REGULATORY_CATALOG_CHANNEL",
+                  "REGULATORY_CATALOG_DIR",
+                  "REGULATORY_CATALOG_GITHUB_REPO",
+                  "REGULATORY_CATALOG_GITHUB_URL",
                   "RELAXED_RATE_LIMIT_MAX",
                   "RELAXED_RATE_LIMIT_WINDOW_SEC",
                   "RUN_MODE",
@@ -633,6 +637,32 @@
         "extraEnvVars": {
           "type": "object",
           "additionalProperties": true
+        },
+        "extraVolumes": {
+          "type": "array",
+          "default": [],
+          "description": "Extra pod volumes and container mounts, e.g. a catalog tree for REGULATORY_CATALOG_DIR",
+          "items": {
+            "type": "object"
+          }
+        },
+        "extraVolumeMounts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "licenseFile": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          "description": "Signed licence file instead of LICENSE_KEY: a Secret with key license, mounted at /etc/lerian/license. Needs an image on lib-license-go v5"
         },
         "autoscaling": {
           "type": "object",
@@ -1021,6 +1051,10 @@
                   "REDIS_TLS",
                   "REDIS_USER",
                   "REDIS_USE_GCP_IAM",
+                  "REGULATORY_CATALOG_CHANNEL",
+                  "REGULATORY_CATALOG_DIR",
+                  "REGULATORY_CATALOG_GITHUB_REPO",
+                  "REGULATORY_CATALOG_GITHUB_URL",
                   "RELAXED_RATE_LIMIT_MAX",
                   "RELAXED_RATE_LIMIT_WINDOW_SEC",
                   "RUN_MODE",
@@ -1093,6 +1127,32 @@
         "extraEnvVars": {
           "type": "object",
           "additionalProperties": true
+        },
+        "extraVolumes": {
+          "type": "array",
+          "default": [],
+          "description": "Extra pod volumes and container mounts, e.g. a catalog tree for REGULATORY_CATALOG_DIR",
+          "items": {
+            "type": "object"
+          }
+        },
+        "extraVolumeMounts": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object"
+          }
+        },
+        "licenseFile": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          "description": "Signed licence file instead of LICENSE_KEY: a Secret with key license, mounted at /etc/lerian/license. Needs an image on lib-license-go v5"
         },
         "keda": {
           "type": "object",
@@ -1252,6 +1312,10 @@
                   "REDIS_TLS",
                   "REDIS_USER",
                   "REDIS_USE_GCP_IAM",
+                  "REGULATORY_CATALOG_CHANNEL",
+                  "REGULATORY_CATALOG_DIR",
+                  "REGULATORY_CATALOG_GITHUB_REPO",
+                  "REGULATORY_CATALOG_GITHUB_URL",
                   "RELAXED_RATE_LIMIT_MAX",
                   "RELAXED_RATE_LIMIT_WINDOW_SEC",
                   "RUN_MODE",
@@ -1418,7 +1482,7 @@
     },
     "aws": {
       "type": "object",
-      "description": "AWS Authentication - IAM Roles Anywhere for non-AWS clusters (e.g. Clotilde/Proxmox)",
+      "description": "AWS Authentication - IAM Roles Anywhere for non-AWS clusters",
       "properties": {
         "rolesAnywhere": {
           "type": "object",

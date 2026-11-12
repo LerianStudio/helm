@@ -25,7 +25,7 @@ maintainers:
 
 # Seed version only. semantic-release owns the published OCI package version;
 # never hand-bump this field.
-version: 2.0.6
+version: 2.0.10
 
 # Tracks the pinned upstream Alloy binary, not this chart's own release line.
 appVersion: "1.21.3"
@@ -38,9 +38,6 @@ keywords:
   - lerian
 
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
-
-# Refer to the Lerian docs for component documentation:
-# https://docs.lerian.studio/docs/midaz-components
 
 dependencies:
   # The upstream chart delivers ONE set of workloads, but the design needs two
@@ -89,8 +86,8 @@ dependencies:
   # (`prometheus.exporter.unix`, verificado — carrega no binario), mas exigiria
   # montar /proc e /sys, e o README do chart oficial pede `privileged: true` +
   # `runAsUser: 0` para isso. Seria desfazer o uid 473 + rootfs somente-leitura no
-  # MESMO DaemonSet que recebe OTLP de 26 namespaces de aplicacao — medido na
-  # benedita. O node-exporter carrega esse privilegio isolado, e roda nao-root.
+  # MESMO DaemonSet que recebe OTLP de 26 namespaces de aplicacao — medido em
+  # cluster interno. O node-exporter carrega esse privilegio isolado, e roda nao-root.
   #
   # DESLIGADO por padrao. Habilitar so nos ambientes internos, onde o no e nosso.
   # No perfil `client` a guarda do chart recusa: o no pertence ao cliente.

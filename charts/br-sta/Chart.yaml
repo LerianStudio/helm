@@ -17,12 +17,12 @@ maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
 
-version: 1.0.4
+version: 1.0.7
 
 # NOTE: appVersion is the default image tag for the manager, the worker and the
 # migrations Job (the three images are released together under one tag). Override
 # via manager.image.tag / worker.image.tag / migrations.image.tag when needed.
-appVersion: "1.0.0"
+appVersion: "1.3.0"
 
 keywords:
   - br-sta

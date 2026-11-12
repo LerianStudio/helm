@@ -72,6 +72,14 @@ Input: dict { context, component }.
 */}}
 {{- define "streaming-hub.labels" -}}
 helm.sh/chart: {{ include "streaming-hub.chart" .context }}
+{{ include "streaming-hub.podLabels" . }}
+{{- end }}
+
+{{/*
+Pod-template labels: the common labels WITHOUT helm.sh/chart, so a chart release
+that changes no pod spec does not roll every pod. Input: dict { context, component }.
+*/}}
+{{- define "streaming-hub.podLabels" -}}
 {{ include "streaming-hub.componentSelectorLabels" (dict "context" .context "component" .component) }}
 app.kubernetes.io/version: {{ include "streaming-hub.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
@@ -104,13 +112,13 @@ Input: root context (.).
 The existing-Secret path carries a KEY contract, not just a name: the
 Deployments pin STREAMING_HUB_POSTGRES_DSN,
 STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY and LICENSE_KEY via secretKeyRef
-(_deployment.tpl),
+(_deployment.tpl; LICENSE_KEY optional in licence-file mode),
 so the `required` message below states the full contract the external Secret
 must satisfy.
 */}}
 {{- define "streaming-hub.secretName" -}}
 {{- if .Values.streamingHub.useExistingSecret -}}
-{{- required "\n\nERROR: streamingHub.existingSecretName is required when streamingHub.useExistingSecret=true. The referenced Secret MUST carry the keys STREAMING_HUB_POSTGRES_DSN, STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY and LICENSE_KEY — the Deployments consume all three via explicit secretKeyRefs, and a Secret missing any of them fails container creation (CreateContainerConfigError) instead of starting the app." .Values.streamingHub.existingSecretName -}}
+{{- required "\n\nERROR: streamingHub.existingSecretName is required when streamingHub.useExistingSecret=true. The referenced Secret MUST carry the keys STREAMING_HUB_POSTGRES_DSN and STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY, plus LICENSE_KEY unless streamingHub.licenseFile.existingSecret is set (file mode, which needs an image on lib-license-go v5) — the Deployments consume them via explicit secretKeyRefs, and a Secret missing a required one fails container creation (CreateContainerConfigError) instead of starting the app." .Values.streamingHub.existingSecretName -}}
 {{- else -}}
 {{- include "streaming-hub.fullname" . -}}
 {{- end -}}
@@ -218,6 +226,12 @@ Input: none. Caller: nindent 12.
   readOnly: true
 {{- end -}}
 
+{{/* Optional signed licence file Secret ("" = key mode). Nil-safe so
+     --reuse-values over an old release cannot nil-pointer. */}}
+{{- define "streaming-hub.licenseFileSecret" -}}
+{{- ((.Values.streamingHub.licenseFile | default dict).existingSecret | default "") -}}
+{{- end -}}
+
 {{/*
 streaming-hub.licenseGuard — render-time mirror of the app's license config
 gate (lib-license-go, GLOBAL mode). Fails the render for the combination the
@@ -245,5 +259,29 @@ Input: root context (.).
 {{- $org := trim (toString (ternary (get $x "ORGANIZATION_IDS") (get $cm "ORGANIZATION_IDS" | default "global") (hasKey $x "ORGANIZATION_IDS"))) -}}
 {{- if ne $org "global" -}}
 {{- fail (printf "\n\nERROR: ORGANIZATION_IDS must be exactly \"global\" (got %q): streaming-hub supports GLOBAL license mode only, and the app refuses any other value at boot (ErrLicenseOrganizationIDsInvalid). Leave streamingHub.configmap.ORGANIZATION_IDS unset (the chart default is \"global\")." $org) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+streaming-hub.hardenedEnvGuard — render-time mirror of two refusals the app makes
+in staging and production (the chart default STREAMING_HUB_ENV is production):
+Kafka TLS must be on, and STREAMING_HUB_KEK_REF must name the KEK variable. The
+effective value is judged: extraEnvVars wins over the ConfigMap (envFrom).
+Input: root context (.).
+*/}}
+{{- define "streaming-hub.hardenedEnvGuard" -}}
+{{- $sh := .Values.streamingHub -}}
+{{- $cm := $sh.configmap | default dict -}}
+{{- $x := $sh.extraEnvVars | default dict -}}
+{{- $env := trim (toString (ternary (get $x "STREAMING_HUB_ENV") (get $cm "STREAMING_HUB_ENV" | default "production") (hasKey $x "STREAMING_HUB_ENV"))) -}}
+{{- if has $env (list "production" "staging") -}}
+{{- $tls := lower (trim (toString (ternary (get $x "STREAMING_HUB_KAFKA_TLS_ENABLED") (get $cm "STREAMING_HUB_KAFKA_TLS_ENABLED" | default "false") (hasKey $x "STREAMING_HUB_KAFKA_TLS_ENABLED")))) -}}
+{{- if has $tls (list "false" "0" "f") -}}
+{{- fail (printf "\n\nERROR: STREAMING_HUB_ENV=%s requires Kafka TLS. Set streamingHub.configmap.STREAMING_HUB_KAFKA_TLS_ENABLED=\"true\" (and streamingHub.secrets.STREAMING_HUB_KAFKA_CA_CERT for a private CA), or set streamingHub.configmap.STREAMING_HUB_ENV=local for a development install." $env) -}}
+{{- end -}}
+{{- $kek := trim (toString (ternary (get $x "STREAMING_HUB_KEK_REF") (get $cm "STREAMING_HUB_KEK_REF" | default "") (hasKey $x "STREAMING_HUB_KEK_REF"))) -}}
+{{- if not $kek -}}
+{{- fail (printf "\n\nERROR: STREAMING_HUB_ENV=%s requires a KEK reference. Set streamingHub.configmap.STREAMING_HUB_KEK_REF to the name of the variable that carries the KEK in the Secret, or set streamingHub.configmap.STREAMING_HUB_ENV=local for a development install." $env) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

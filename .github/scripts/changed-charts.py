@@ -3,7 +3,8 @@
 
 Reads the changed-file list from /tmp/changed.txt — which the caller fills from the
 pull request's own file list, not from a local diff — and writes `charts` (a JSON
-array) and `has-charts` to $GITHUB_OUTPUT.
+array) and `has-charts` to $GITHUB_OUTPUT. A library's fixture charts
+(charts/<lib>/tests/*/Chart.yaml) are emitted as `fixtures`.
 
 The rule is deliberately narrow: a pull request is verified against the charts it
 changed, never against the repository. Three things put a chart in scope:
@@ -11,6 +12,9 @@ changed, never against the repository. Three things put a chart in scope:
   charts/<name>/**                     that chart
   helm-render-values/<name>.yaml       that chart — it is what the chart renders with
   helm-install-values/<name>.yaml      likewise
+
+A chart's README, CHANGELOG and docs/ are left out: they never reach a rendered
+manifest, and release.yml ignores the same paths.
 
 A changed library chart is the one indirection. It has no images and cannot be
 installed, so it is replaced by the charts that consume it from the working tree —
@@ -34,6 +38,7 @@ import yaml
 CHARTS = Path("charts")
 VALUES = re.compile(r"^\.github/configs/helm-(?:render|install)-values/(.+)\.ya?ml$")
 CHART_PATH = re.compile(r"^charts/([^/]+)/")
+CHART_DOCS = re.compile(r"^charts/[^/]+/(?:README(?:\.params)?\.md|CHANGELOG\.md|docs/.*)$")
 
 
 def load(path):
@@ -88,6 +93,8 @@ def main():
 
     scope = set()
     for path in changed:
+        if CHART_DOCS.match(path):
+            continue
         for pattern in (CHART_PATH, VALUES):
             m = pattern.match(path)
             if m:
@@ -98,10 +105,12 @@ def main():
     # the case where consumers pinning its `file://` path are most certainly broken,
     # and where checking existence first would drop it silently instead.
     notices = []
+    fixtures = []
     for name in sorted(scope):
         chart_yaml = CHARTS / name / "Chart.yaml"
         gone = not chart_yaml.exists()
         if gone or is_library(name):
+            fixtures += sorted(str(p.parent) for p in (CHARTS / name / "tests").glob("*/Chart.yaml"))
             deps = local_dependents(name)
             if not deps:
                 continue
@@ -128,6 +137,7 @@ def main():
         if "GITHUB_OUTPUT" in os.environ
         else sys.stdout
     )
+    out.write(f"fixtures={' '.join(fixtures)}\n")
     # Two shapes of the same list: `charts` feeds a job matrix, `charts-list` feeds
     # a shell loop. Emitting both keeps every caller off ad-hoc jq.
     if not final:

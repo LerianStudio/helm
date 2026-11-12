@@ -25,6 +25,14 @@ Common labels
 */}}
 {{- define "product-console.labels" -}}
 helm.sh/chart: {{ include "product-console.chart" . }}
+{{ include "product-console.podLabels" . }}
+{{- end }}
+
+{{/*
+Labels without helm.sh/chart, for the pod template: the chart version changes on
+every release and would restart every pod each time.
+*/}}
+{{- define "product-console.podLabels" -}}
 {{ include "product-console.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}

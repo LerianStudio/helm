@@ -68,6 +68,15 @@ sisbajud:
     heartbeatEvery: "1m"
     # SAME value as the Sisbajud Mensageria.
     responseDeadlineMargin: "2h"
+    # Direct-channel knobs (app defaults shown; every executor mode).
+    # resultMaxAttempts: "12"
+    # direct:
+    #   drainerInfraAlarmThreshold: "3"
+    #   purgeEligibleAlarmAfter: "168h"
+    # DIRECT-only alternative (no Mensageria): leave sisbajud.mensageria.baseUrl
+    # empty, set enabled: "true" and drop transport/webhook/streamingHubTenantId
+    # and the MENSAGERIA_CLIENT_* / EXECUTOR_HUB_WEBHOOK_SECRET secrets.
+    # enabled: "true"
     transport: "webhook"
     webhook:
       # TLS terminated (and validated) by the ingress in front of the listener.
@@ -84,6 +93,22 @@ sisbajud:
           - hosts: ["<sisbajud-webhook-host>"]
             secretName: "<tls-secret>"
 
+  # Direct channel: the permanent block is ON by default and needs
+  # global.streaming.brokers. This example has no brokers, so it turns it off
+  # (permanent blocks refused with 422 SBJ-0027); with brokers, drop these lines.
+  direct:
+    permanentBlockEnabled: false
+
+  # Single tenant (v1.3.0): the Midaz connection comes from the environment.
+  # baseUrl is required in executor mode. With a Midaz that requires auth, set
+  # authAddress AND the ledger client pair in the Secret below (and
+  # MIDAZ_CRM_CLIENT_* plus midaz.crmBaseUrl for a legacy CRM, whatever
+  # midaz.crmMode says);
+  # without auth, leave all three out.
+  midaz:
+    baseUrl: "https://midaz.example.com"
+    authAddress: "https://access-manager.example.com"
+
   # Production: an external Secret carrying the keys below.
   useExistingSecret: true
   existingSecretName: "plugin-br-sisbajud-secrets"
@@ -96,6 +121,8 @@ sisbajud:
     POSTGRES_PASSWORD: ""
     REDIS_PASSWORD: ""
     VAULT_APPROLE_SECRET_ID: ""
+    MIDAZ_LEDGER_CLIENT_ID: ""
+    MIDAZ_LEDGER_CLIENT_SECRET: ""
 
 migrations:
   enabled: true

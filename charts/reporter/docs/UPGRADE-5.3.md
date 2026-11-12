@@ -435,6 +435,10 @@ The `lerian-common-helm` dependency has been updated from `2.4.0` to `2.6.0`. Th
 |-------|---------|-------------|
 | `manager.health.stack` | `"go"` | Health preset stack type for manager (controls probes, ports, env, grace, strategy, PDB) |
 | `worker.health.stack` | `"go-worker"` | Health preset stack type for worker (controls probes, ports, env, grace, strategy) |
+| `manager.health.drainSeconds` | `15` | Drain delay (`SHUTDOWN_DRAIN_DELAY`). The `go-worker` stack always uses `0` |
+| `manager.health.shutdownSeconds` | `30` | Shutdown budget (`SHUTDOWN_TIMEOUT`); the grace period is drain + shutdown + 10 |
+
+`worker.health` takes the same two keys. Besides `stack`, the preset accepts only `drainSeconds`, `shutdownSeconds` and `singleton` under `health`.
 
 ### Replica count fields
 
@@ -578,7 +582,9 @@ helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm \
   -f values.yaml
 ```
 
-> **Warning:** The upgrade will trigger a rolling restart of the manager Deployment (and of the worker Deployment when KEDA is disabled). The new replica count will take effect immediately.
+> **Warning:** The upgrade will trigger a rolling restart of the manager Deployment (and of the worker Deployment when KEDA is disabled). The new replica count will take effect immediately. With the default KEDA ScaledJob, the chart sets no `rollout.strategy`, so KEDA deletes the worker Jobs of the previous version, including Jobs still running, and new worker Jobs start on the new image. A report that was being generated restarts from the beginning in a new Job, because the worker acknowledges its message only after finishing. To see the running Jobs before you upgrade: `kubectl get jobs -n reporter -l scaledjob.keda.sh/name=reporter-worker`.
+
+> **Warning:** Do not use `--reuse-values`. It keeps the 5.2.0 chart defaults, including `worker.configmap.HEALTH_PORT`, and the 5.3.0 render fails. Pass the migrated file with `-f`, or use `--reset-then-reuse-values`.
 
 ### Step 6: Verify deployment health
 
@@ -592,10 +598,12 @@ Verify manager and worker logs:
 
 ```bash
 kubectl logs -n reporter -l app.kubernetes.io/name=reporter-manager --tail=50
-kubectl logs -n reporter -l app.kubernetes.io/name=reporter-worker --tail=50
+# Default KEDA ScaledJob: Job pods carry only the scaledjob.keda.sh/name label.
+# With KEDA disabled, use -l app.kubernetes.io/name=reporter-worker instead.
+kubectl logs -n reporter -l scaledjob.keda.sh/name=reporter-worker --tail=50
 ```
 
-Verify probe behavior for both components:
+Verify probe behavior (the worker has probes only when it runs as a Deployment, with KEDA disabled):
 
 ```bash
 kubectl describe pod -n reporter -l app.kubernetes.io/name=reporter-manager | grep -A5 -E "Liveness|Readiness|Startup"
@@ -612,13 +620,15 @@ kubectl describe pdb -n reporter reporter-manager
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.3.0 -n reporter
+helm diff upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.3.0 -n reporter -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
+Pass the migrated values file. Without `-f`, Helm reuses the release's stored values, and leftover probe keys, `HEALTH_PORT` or an image pin below `4.7.0-beta.1` make the render fail.
+
 ```bash
-helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.3.0 -n reporter
+helm upgrade reporter oci://registry-1.docker.io/lerianstudio/reporter-helm --version 5.3.0 -n reporter -f values.yaml
 ```

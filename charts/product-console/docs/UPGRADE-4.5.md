@@ -32,31 +32,11 @@ A new `LICENSE_KEY` secret field has been added to support Lerian licensing.
 
 The license key is rendered into the Secret only when non-empty. With `useExistingSecret=true`, the chart renders no Secret, so a `LICENSE_KEY` you set goes in your own Secret.
 
+The default image `3.0.0` does not read `LICENSE_KEY`, so it boots without one.
+
 **Template behavior change:**
 
 The secrets template now conditionally renders the `LICENSE_KEY` field. All other secret fields are always rendered (even when empty), but `LICENSE_KEY` is only included when a value is provided.
-
-**Before (v4.4.8):**
-
-```yaml
-type: Opaque
-data:
-  {{- range $key, $value := .Values.secrets }}
-  {{ $key }}: {{ $value | b64enc | quote }}
-  {{- end }}
-```
-
-**After (v4.5.0):**
-
-```yaml
-type: Opaque
-data:
-  {{- range $key, $value := .Values.secrets }}
-  {{- if or $value (ne $key "LICENSE_KEY") }}
-  {{ $key }}: {{ $value | b64enc | quote }}
-  {{- end }}
-  {{- end }}
-```
 
 **Impact:**
 
@@ -82,7 +62,7 @@ One new secret field has been added. No existing fields were removed or renamed.
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version 4.5.0 -n product-console
+helm diff upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm --version 4.5.0 -f values.yaml -n product-console
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`

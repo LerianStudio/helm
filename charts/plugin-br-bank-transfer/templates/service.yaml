@@ -1,22 +1,12 @@
 {{- if .Values.bankTransfer.enabled }}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "bank-transfer.fullname" . }}
-  namespace: {{ include "global.namespace" . }}
-  labels:
-    {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name ) | nindent 4 }}
-  {{- with .Values.bankTransfer.service.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  type: {{ .Values.bankTransfer.service.type }}
-  ports:
-    - port: {{ .Values.bankTransfer.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
-  selector:
-    {{- include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name) | nindent 4 }}
+{{- $h := include "bank-transfer.health" . | fromYaml }}
+{{- $mt := eq (lower (toString (include "lerian-common.globalValue" (dict "context" $ "configmap" .Values.bankTransfer.configmap "block" "multiTenant" "field" "enabled" "nativeKey" "MULTI_TENANT_ENABLED" "default" "false")))) "true" }}
+{{- include "lerian-common.service" (dict
+      "service" .Values.bankTransfer.service
+      "name" (include "bank-transfer.fullname" .)
+      "namespace" (include "global.namespace" .)
+      "labels" (include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name))
+      "selector" (include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name))
+      "ports" (ternary $h.servicePorts (list) $mt)
+    ) }}
 {{- end }}

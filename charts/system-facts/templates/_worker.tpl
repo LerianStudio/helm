@@ -4,8 +4,8 @@ internal-facts-worker — helpers for the optional `worker` workload.
 
 The worker is a separate binary (image system-facts-worker) that consumes
 product events from RedPanda and delivers facts to the System Facts API. It is
-NOT an HTTP service: its admin port (/health, /readyz, /version) is for the
-kubelet only, so this chart renders no Service, Ingress, HPA or PDB for it, and
+NOT an HTTP service: its only listener is the health port 8099 (/health, /readyz),
+for the kubelet only, so this chart renders no Service, Ingress, HPA or PDB for it, and
 no database, Redis or migrations contract.
 
 SELECTOR ISOLATION. The API's selector is app.kubernetes.io/name +
@@ -32,6 +32,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{- define "system-facts.worker.labels" -}}
 helm.sh/chart: {{ include "system-facts.chart" . }}
+{{ include "system-facts.worker.podLabels" . }}
+{{- end -}}
+
+{{/* Worker labels without helm.sh/chart, for the pod template (see system-facts.podLabels). */}}
+{{- define "system-facts.worker.podLabels" -}}
 {{ include "system-facts.worker.selectorLabels" . }}
 app.kubernetes.io/component: worker
 app.kubernetes.io/version: {{ regexReplaceAll "[^-A-Za-z0-9_.]" (include "system-facts.worker.tag" .) "-" | trunc 63 | trimAll "-" | trimAll "_" | trimAll "." | quote }}
@@ -89,7 +94,6 @@ with a blank. SYSTEM_FACTS_ALLOW_INSECURE_HTTP is always emitted, like REQUIRE_B
       "STREAMING_SASL_USERNAME" ($st.saslUsername | default "")
       "STREAMING_TOPIC_AUTO_PROVISION" (toString (ternary "" $st.topicAutoProvision (kindIs "invalid" $st.topicAutoProvision)))
       "REQUIRE_BROKER_SECURITY" (toString (ternary "true" $st.requireSecurity (kindIs "invalid" $st.requireSecurity)))
-      "SERVER_ADDRESS" (printf ":%v" ($w.port | default 8080))
       "ENVIRONMENT_NAME" ($w.environmentName | default "")
       "ENABLE_TELEMETRY" (toString ($ot.enabled | default "false"))
       "OTEL_RESOURCE_SERVICE_NAME" ($ot.serviceName | default "")
@@ -176,9 +180,9 @@ leaving an operator to read a CrashLoopBackOff.
 {{- if gt (int ($w.replicaCount | default 1)) $ceiling -}}
 {{- fail (printf "system-facts: worker.replicaCount=%v exceeds worker.partitionCeiling=%v. Replicas past the ceiling own no partition and sit idle with a green probe. Raise the ceiling only after reading the partition count (rpk topic describe <topic> -p) and the number of distinct tenants." $w.replicaCount $ceiling) -}}
 {{- end -}}
-{{- /* 6. Shutdown budget: consumer close 30s + admin drain 10s + telemetry 10s. */ -}}
-{{- if lt (int ($w.terminationGracePeriodSeconds | default 60)) 60 -}}
-{{- fail "system-facts: worker.terminationGracePeriodSeconds must be >= 60 (consumer close 30s + admin drain 10s + telemetry flush); below it the kubelet SIGKILLs mid-drain." -}}
+{{- /* 6. Shutdown budget: the grace is shutdownSeconds + 10 and must cover consumer close (30s) + SHUTDOWN_TIMEOUT (30s). */ -}}
+{{- if lt (int (dig "health" "shutdownSeconds" 0 $w)) 50 -}}
+{{- fail "system-facts: worker.health.shutdownSeconds must be >= 50 (grace = shutdown + 10 must cover the 30s consumer close plus the 30s SHUTDOWN_TIMEOUT); below it the kubelet SIGKILLs mid-drain." -}}
 {{- end -}}
 {{- /* 7. Product selection (system-facts #71). The binary refuses each of these at boot. */ -}}
 {{- $raw := trim (get $cfg "WORKER_PRODUCTS") -}}

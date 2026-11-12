@@ -182,6 +182,8 @@ global:
   #   saslMechanism: "PLAIN"
   #   saslUsername: "midaz"
   #   tlsEnabled: "true"
+  # Per-component opt-out: set ledger.configmap.STREAMING_SASL_MECHANISM: "" and
+  # STREAMING_SASL_USERNAME: "" (and leave its STREAMING_SASL_PASSWORD empty) to drop the shared SASL.
   # -- Env-wide auth (plugin-access-manager): enabled / host.
   auth: {}
   # example ↓ (uncomment & fill; comments render nothing = default stays empty):
@@ -235,7 +237,8 @@ ledger:
     # timeout. See docs/UPGRADE-9.1.md section 6.
     timeoutSeconds: 300
   # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout
-  # strategy and PDB are owned by the chart. Only these keys are values.
+  # strategy and PDB are owned by the chart. Only these keys are values. Applies when
+  # image.tag is 4.5.0-beta.94 or later; a lower tag ignores it and keeps the 4.4 layout.
   health:
     # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
     stack: go
@@ -254,8 +257,10 @@ ledger:
     repository: lerianstudio/midaz-ledger
     # -- Image pull policy
     pullPolicy: IfNotPresent
-    # -- Image tag used for deployment
-    tag: "4.5.0-beta.94"
+    # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
+    # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
+    # rollout); the partition runner is on from 4.5.0-beta.1; a lower tag keeps the 4.4 probes and ports.
+    tag: "4.4.2"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -310,8 +315,8 @@ ledger:
   # health via exit codes (0 healthy/unpartitioned, 1 attention, 2 invalid).
   # It visits every active tenant in multi-tenant mode.
   partition:
-    # -- Run the scheduled runner. Unset enables stable tags >= 4.5.0 only;
-    # pre-release, older and non-SemVer tags default off. Set true or false to override.
+    # -- Run the scheduled runner. Unset enables tags >= 4.5.0-beta.1 (every ledger
+    # image from that tag on ships the runner); older and non-SemVer tags default off. Set true or false to override.
     enabled:
     # -- Cron schedule in `timeZone`, defaulting to 06:00 outside common managed
     # PostgreSQL maintenance windows; choose a time outside your database's windows.
@@ -370,7 +375,7 @@ ledger:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration (the spec comes from the health preset; setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
+  # -- PodDisruptionBudget configuration (from image tag 4.5.0-beta.94 the spec comes from the health preset, and setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -483,6 +488,10 @@ ledger:
   # -- Existing secrets name
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with a signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license; secrets.LICENSE_KEY is then not required. Needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
   # -- Extra environment variables
   extraEnvVars: {}
   # -- Secrets for storing sensitive data
@@ -517,7 +526,7 @@ ledger:
     # encryption). The RoleID counterpart is not secret and stays in the
     # ConfigMap.
     KMS_VAULT_SECRET_ID: ""
-    # -- Product license key. Required: the ledger refuses to boot when empty.
+    # -- Product license key. Required unless licenseFile.existingSecret is set.
     LICENSE_KEY: ""
     # -- Shared passwords.
     # REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret
@@ -764,7 +773,8 @@ crm:
   existingSecretName: ""
 tracer:
   # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout
-  # strategy and PDB are owned by the chart. Only these keys are values.
+  # strategy and PDB are owned by the chart. Only these keys are values. Applies when
+  # image.tag is 4.5.0-beta.94 or later; a lower tag ignores it and keeps the 4.4 layout.
   health:
     # -- Runtime stack of the image (go serves /health and /readyz on 8099 from lib-commons)
     stack: go
@@ -784,8 +794,10 @@ tracer:
     repository: lerianstudio/midaz-tracer
     # -- Image pull policy
     pullPolicy: Always
-    # -- Image tag used for deployment
-    tag: "4.5.0-beta.94"
+    # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
+    # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
+    # rollout); a lower tag keeps the 4.4 probes and ports.
+    tag: "4.4.2"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -862,7 +874,7 @@ tracer:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration (the spec comes from the health preset; setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
+  # -- PodDisruptionBudget configuration (from image tag 4.5.0-beta.94 the spec comes from the health preset, and setting minAvailable/maxUnavailable or deploymentUpdate fails the render)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
@@ -952,7 +964,7 @@ tracer:
     DB_PASSWORD: ""
     # -- API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true).
     API_KEY: ""
-    # -- Product license key. Required: the tracer refuses to boot when empty.
+    # -- Product license key. Required unless licenseFile.existingSecret is set.
     LICENSE_KEY: ""
     # -- Tenant Manager service API key (required when MULTI_TENANT_ENABLED=true).
     # MULTI_TENANT_SERVICE_API_KEY: ""
@@ -973,6 +985,10 @@ tracer:
     STREAMING_TLS_CA_CERT: ""
   useExistingSecret: false
   existingSecretName: ""
+  # -- Existing Secret with a signed licence file (key `license`), mounted as a directory at
+  # /etc/lerian/license; secrets.LICENSE_KEY is then not required. Needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
 valkey:
   # Valkey holds ledger state no other store has: balances not yet synced to PostgreSQL, idempotency keys,
   # engine receipts and open fee debts. It is a datastore, not a cache: nothing in it may be evicted.
@@ -1017,8 +1033,6 @@ valkey:
 postgresql:
   # PostgreSQL is the backbone of Midaz for managing structured data that demands transactional reliability and consistency.
   # This component is responsible for providing a robust relational database
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-postgresql
   enabled: true
   global:
     security:
@@ -1043,8 +1057,7 @@ postgresql:
     replicationPassword: ""
     # -- Secret with the passwords. The default points the subchart at the one this chart keeps across
     # uninstall (templates/datastore-secrets.yaml); midaz's own templates read it as empty. Name yours to replace it.
-    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname"
-      . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname" . }}{{ end }}'
   primary:
     extraVolumes:
       - name: init-script
@@ -1119,13 +1132,16 @@ mongodb:
     rootUser: midaz
     rootPassword: ""
     # -- Secret with the passwords, as postgresql.auth.existingSecret.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
-      . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
-  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
-  # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+  # A replica set: the ledger records fee quota usage in a Mongo transaction.
+  architecture: replicaset
+  replicaCount: 1
+  arbiter:
+    enabled: false # one data member needs no arbiter
+  # A StatefulSet refuses Recreate: an install pinned to architecture: standalone must also pin Recreate.
   updateStrategy:
-    type: Recreate
+    type: RollingUpdate
   persistence:
     size: 8Gi
     # -- The data volume outlives the release, like the PostgreSQL ones.
@@ -1178,7 +1194,7 @@ otel-collector-lerian:
   enabled: true
 midaz-ledger-migrations:
   image:
-    tag: 4.4.0
+    tag: 4.4.2
 midaz-tracer-migrations:
   image:
-    tag: 4.4.0
+    tag: 4.4.2

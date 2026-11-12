@@ -62,7 +62,7 @@ shapes are rejected.
 {{- $path := trimSuffix "/" (toString $route.path) }}
 {{- $prefixLike := ne (toString (default "Prefix" $route.pathType)) "Exact" }}
 {{- if or (hasPrefix "/pixauto/internal" $path) (and $prefixLike (or (eq $path "/pixauto") (eq $path ""))) }}
-{{- fail (printf "plugin-br-pix-lerian: appsIngress route %q (pathType %s) publishes the Pix Automatico internal M2M group /pixauto/internal/v1/* on the apps host. Those endpoints take inbound recurrence callbacks and drive the scheduler sweep and must not be externally routed. Use %q for the client-facing surface, plus an Exact route for /pixauto/readyz if the dashboard link is needed - that is what values.yaml ships by default." $route.path (default "Prefix" $route.pathType) "/pixauto/v1") }}
+{{- fail (printf "plugin-br-pix-lerian: appsIngress route %q (pathType %s) publishes the Pix Automatico internal M2M group /pixauto/internal/v1/* on the apps host. Those endpoints take inbound recurrence callbacks and drive the scheduler sweep and must not be externally routed. Use %q for the client-facing surface, plus an Exact route for /pixauto/health if the dashboard link is needed - that is what values.yaml ships by default." $route.path (default "Prefix" $route.pathType) "/pixauto/v1") }}
 {{- end }}
 {{- end }}
 {{- /*
@@ -93,9 +93,9 @@ nothing in this chart can check it for you. Setting the key in
 pixauto.extraEnvVars instead keeps the guard effective, because explicit env
 entries outrank every envFrom source.
 */}}
-{{- $authState := include "plugin-br-pix-lerian.envGateState" (dict "componentValues" .Values.pixauto "componentKey" "pixauto" "key" "PLUGIN_AUTH_ENABLED" "default" "false") }}
+{{- $authState := include "plugin-br-pix-lerian.envGateState" (dict "componentValues" .Values.pixauto "componentKey" "pixauto" "key" "PLUGIN_AUTH_ENABLED" "default" (include "lerian-common.globalValue" (dict "context" $ "configmap" dict "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false"))) }}
 {{- if eq $authState "off" }}
-{{- fail (printf "plugin-br-pix-lerian: appsIngress publishes Pix Automatico but the effective PLUGIN_AUTH_ENABLED for the pixauto component is not a true value. The app appends its authorize middleware only when auth is enabled, so EVERY pixauto route would be served without authentication - including the payer routes under /pixauto/v1 that create, decide and cancel mandates. Fix by setting pixauto.configmap.PLUGIN_AUTH_ENABLED=%q (values-template.yaml already does), or by removing the pixauto route(s) from appsIngress.routes if this environment should not expose Pix Automatico. The value is resolved across pixauto.extraEnvVars, pixauto.secrets and pixauto.configmap in that order of precedence." "true") }}
+{{- fail (printf "plugin-br-pix-lerian: appsIngress publishes Pix Automatico but the effective PLUGIN_AUTH_ENABLED for the pixauto component is not a true value. The app appends its authorize middleware only when auth is enabled, so EVERY pixauto route would be served without authentication - including the payer routes under /pixauto/v1 that create, decide and cancel mandates. Fix by setting global.auth.enabled=true or pixauto.configmap.PLUGIN_AUTH_ENABLED=%q (values-template.yaml does it through global.auth.enabled=true), or by removing the pixauto route(s) from appsIngress.routes if this environment should not expose Pix Automatico. The value is resolved across pixauto.extraEnvVars, pixauto.secrets and pixauto.configmap in that order of precedence." "true") }}
 {{- end }}
 {{- end }}
 {{- include "plugin-br-pix-lerian.routedIngress" (dict "context" $ "component" "apps" "config" .Values.appsIngress) }}

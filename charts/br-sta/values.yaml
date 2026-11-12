@@ -67,8 +67,8 @@ global:
   # OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT. development | develop | dev | local |
   # test are the app's development class (PLUGIN_AUTH_ENABLED=false is accepted,
   # dev-only bundles are allowed); `production` turns on the app's production
-  # gates (TLS, mandatory audit transport). The license (LICENSE_KEY +
-  # ORGANIZATION_IDS) is required in every environment. Default: production.
+  # gates (TLS, mandatory audit transport). The license (LICENSE_KEY) is
+  # required in every environment. Default: production.
   # Example: env: { name: "development" }
   env: {}
   # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
@@ -112,9 +112,9 @@ global:
   # Example: kms: { vendor: "aws", keyId: "arn:aws:kms:sa-east-1:<account>:key/<id>" }
   kms: {}
 
-# -- Pull secrets for the manager, worker, migrations Job and mock STA. The images are
-# public on GHCR, so none is needed by default; set it only for a private mirror or
-# registry, e.g. [{name: my-registry-credential}]. Per-component lists override it.
+# -- Pull secrets for the manager, worker, migrations Job and mock STA. The app images are
+# public on GHCR, so none is needed by default; set it for a private mirror or
+# registry, or for the mock STA image (not public), e.g. [{name: my-registry-credential}]. Per-component lists override it.
 imagePullSecrets: []
 
 serviceAccount:
@@ -177,7 +177,9 @@ common:
   # -- lib-commons security toggles: allowInsecureTls (defaults to "true" only when
   # a bundled plaintext datastore is enabled), allowCorsWildcard, allowInsecureOtel.
   security: {}
-  # -- organizationIds (ORGANIZATION_IDS — required in every environment). LICENSE_KEY is a secret.
+  # -- organizationIds (ORGANIZATION_IDS). App 1.3.0 ignores it (the licence is
+  # global); set it only for a manager/worker image pinned below 1.3.0, which
+  # requires it. LICENSE_KEY is a secret.
   license: {}
   # -- Postgres pool tuning: maxOpenConns, maxIdleConns, connMaxLifetimeMins,
   # connMaxIdleTimeMins, connectTimeoutSec. Connection identity lives in datastores.
@@ -188,9 +190,10 @@ common:
   redis: {}
   # -- RabbitMQ (audit transport + business-event channel): enabled, vhost,
   # exchange, queue, healthCheckUrl, healthCheckAllowedHosts,
-  # requireHealthAllowedHosts, allowInsecureHealthCheck, allowInsecureTls,
+  # requireHealthAllowedHosts, allowInsecureHealthCheck, allowInsecureTls.
   # publisherConfirmTimeoutMs, publisherRecoveryInitialMs, publisherRecoveryMaxMs,
-  # publisherMaxRecoveries. host/ports/user/scheme live in datastores.broker;
+  # publisherMaxRecoveries: ignored by app 1.3.0; set only for an image pinned
+  # below 1.3.0. host/ports/user/scheme live in datastores.broker;
   # RABBITMQ_DEFAULT_PASS (or a full RABBITMQ_URL) is a secret.
   rabbitmq: {}
   # -- Transactional outbox: enabled, tableName, dispatchIntervalSec, batchSize,
@@ -268,8 +271,9 @@ common:
   # (required in every environment),
   # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, IDP_M2M_CLIENT_SECRET,
   # STREAMING_SASL_PASSWORD, STREAMING_TLS_CA_CERT, MULTI_TENANT_SERVICE_API_KEY,
-  # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, when a tier sources it from
-  # the secret store). Any other key is emitted verbatim.
+  # MULTI_TENANT_REDIS_PASSWORD (and ORGANIZATION_IDS, for an image pinned below
+  # 1.3.0). Any other key is emitted verbatim, except the retired keys that NOTES
+  # names (br-sta.removedKeys).
   secrets: {}
   # -- Per-key references to Secrets the chart does not manage (e.g. a Vault/ESO
   # synced Secret): {ENV_KEY: {name, key[, optional]}} renders an explicit
@@ -431,7 +435,8 @@ worker:
   # ---------------------------------------------------------------------------
   # -- Leader-gated scheduler (BACEN verdict polling + maintenance jobs):
   # enabled, serviceName, leaderTtlSeconds, heartbeatSeconds,
-  # credentialIntervalHours, staleCleanupIntervalHours, retentionIntervalHours,
+  # credentialIntervalHours (image below 1.3.0 only), staleCleanupIntervalHours,
+  # retentionIntervalHours,
   # quarantineRetentionDays, filingSweepEnabled, filingSweepIntervalMinutes,
   # filingSweepAgeMinutes (a SAFETY knob — see README), filingSweepBatchLimit.
   scheduler: {}
@@ -741,7 +746,8 @@ redpandaTopics:
 # When enabled, STA_SCHEME / STA_FILE_HOST / STA_PASSWORD_HOST point the STA client
 # at it (a native common.configmap key still wins). The chart refuses it in a
 # production-like environment.
-# The image is public on GHCR (it follows the app's imagePullSecrets, if any).
+# The image is not public: ask Lerian for read access and name a ghcr.io pull secret in
+# imagePullSecrets (mockSta.imagePullSecrets, when set, overrides the top-level list).
 mockSta:
   enabled: false
   image:

@@ -13,13 +13,20 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Common labels
+Common labels without the chart version, safe for pod templates
 */}}
-{{- define "midaz.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
+{{- define "midaz.podLabels" -}}
 {{ include "midaz.selectorLabels" (dict "context" .context "component" .component "name" .name) }}
 app.kubernetes.io/version: {{ include "ledger.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz.podLabels" . }}
 {{- end }}
 
 {{/*
@@ -176,11 +183,18 @@ Return valid CRM version label
 {{/*
 CRM Common labels
 */}}
-{{- define "midaz-crm.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
+{{- define "midaz-crm.podLabels" -}}
 {{ include "midaz-crm.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "crm.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz-crm.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz-crm.podLabels" . }}
 {{- end }}
 
 {{/*
@@ -221,11 +235,18 @@ Return valid Tracer version label
 {{/*
 Tracer Common labels
 */}}
-{{- define "midaz-tracer.labels" -}}
-helm.sh/chart: {{ include "midaz.chart" .context }}
+{{- define "midaz-tracer.podLabels" -}}
 {{ include "midaz-tracer.selectorLabels" (dict "context" .context "name" .name) }}
 app.kubernetes.io/version: {{ include "tracer.versionLabelValue" .context }}
 app.kubernetes.io/managed-by: {{ .context.Release.Service }}
+{{- end }}
+
+{{/*
+Common labels, including the chart version (not for pod templates)
+*/}}
+{{- define "midaz-tracer.labels" -}}
+helm.sh/chart: {{ include "midaz.chart" .context }}
+{{ include "midaz-tracer.podLabels" . }}
 {{- end }}
 
 {{/*
@@ -237,6 +258,14 @@ app.kubernetes.io/name: {{ include "midaz.name" .context }}-{{ .name }}
 {{- end }}
 app.kubernetes.io/instance: {{ .context.Release.Name }}
 {{- end }}
+
+{{/*
+midaz.mongodbHost: Service the bundled MongoDB answers on. A replica set exposes only the headless Service.
+*/}}
+{{- define "midaz.mongodbHost" -}}
+{{- $m := .Values.mongodb | default dict -}}
+{{- if and (ne (toString $m.enabled) "false") (eq (toString $m.architecture) "replicaset") -}}midaz-mongodb-headless{{- else -}}midaz-mongodb{{- end -}}
+{{- end -}}
 
 {{/*
 Enable internal dependencies
@@ -323,7 +352,7 @@ true
 {{- end -}}
 {{- end -}}
 
-{{/* Explicit settings win; auto enables only stable versions with the runner. */}}
+{{/* Explicit settings win; auto enables from 4.5.0-beta.1; every ledger image from that tag on ships the runner. */}}
 {{- define "midaz.ledgerPartitionEnabled" -}}
 {{- $enabled := dig "partition" "enabled" nil (.Values.ledger | default dict) -}}
 {{- if kindIs "invalid" $enabled -}}
@@ -331,12 +360,47 @@ true
 {{- /* Same anchored SemVer 2.0.0 guard as midaz.tagIsV4: semverCompare aborts the
        render on a malformed version instead of resolving to "off". */ -}}
 {{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag -}}
-{{- if semverCompare ">=4.5.0" $tag -}}true{{- end -}}
+{{- if semverCompare ">=4.5.0-beta.1" $tag -}}true{{- end -}}
 {{- end -}}
 {{- else if eq (toString $enabled) "true" -}}
 true
 {{- end -}}
 {{- end -}}
+
+{{/*
+Licence file (optional). licenseFile.existingSecret is mounted as a directory (never
+subPath, so rotations propagate) at /etc/lerian/license; LICENSE_FILE_PATH points at its key.
+Called with a component's values (.Values.ledger / .Values.tracer).
+*/}}
+{{- define "midaz.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{- define "midaz.licenseFileEnv" -}}
+{{- if include "midaz.licenseFileSecret" . -}}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end }}
+
+{{- define "midaz.licenseFileVolumeMount" -}}
+{{- if include "midaz.licenseFileSecret" . -}}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "midaz.licenseFileVolume" -}}
+{{- with include "midaz.licenseFileSecret" . -}}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end }}
 
 {{/* Both partition workloads use ledger connections and migration credentials. */}}
 {{- define "midaz-ledger.partitionPodSpec" -}}
@@ -368,6 +432,18 @@ containers:
       - configMapRef:
           name: {{ include "midaz-ledger.fullname" $ctx }}
     env:
+      {{- with include "midaz.licenseFileEnv" $values.ledger }}
+      {{- . | nindent 6 }}
+      {{- end }}
+      {{- /* The reconcile hook runs before the chart Secret is updated: read the key from its hook Secret. */}}
+      {{- if and .licenseHook $values.ledger.secrets.LICENSE_KEY (not $values.ledger.useExistingSecret) }}
+      - name: LICENSE_KEY
+        valueFrom:
+          secretKeyRef:
+            name: {{ include "midaz-ledger.licenseHookSecretName" $ctx }}
+            key: LICENSE_KEY
+            optional: true
+      {{- end }}
       {{- /* Inline settings override stale ConfigMaps during pre-upgrade hooks. */}}
       {{- range $name, $value := include "midaz-ledger.partitionInlineEnv" $ctx | fromYaml }}
       - name: {{ $name }}
@@ -384,9 +460,24 @@ containers:
             name: {{ $secretName }}
             key: DB_TRANSACTION_PASSWORD
       {{- end }}
+      {{- else }}
+      {{- /* Multi-tenant: the licence store lives in Valkey, as for the ledger Deployment. */}}
+      {{- $vk := $values.valkey | default dict }}
+      {{- $vkAuth := $vk.auth | default dict }}
+      {{- if or (and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled) $vkAuth.existingSecret }}
+      {{- include "midaz.infraSecretRef" (dict "context" $ctx "subchart" "valkey" "key" "valkey-password" "envName" "REDIS_PASSWORD") | nindent 6 }}
       {{- end }}
+      {{- end }}
+    {{- with include "midaz.licenseFileVolumeMount" $values.ledger }}
+    volumeMounts:
+      {{- . | nindent 6 }}
+    {{- end }}
     resources:
       {{- toYaml $partition.resources | nindent 6 }}
+{{- with include "midaz.licenseFileVolume" $values.ledger }}
+volumes:
+  {{- . | nindent 2 }}
+{{- end }}
 {{- with $values.ledger.nodeSelector }}
 nodeSelector:
   {{- toYaml . | nindent 2 }}
@@ -414,6 +505,10 @@ DB_TRANSACTION_USER: {{ include $dv (dict "context" . "dedicated" $dsl "configma
 DB_TRANSACTION_SSLMODE: {{ include $dv (dict "context" . "dedicated" $dsl "configmap" $cm "type" "postgres" "field" "ssl" "nativeKey" "DB_TRANSACTION_SSLMODE" "default" "disable") | quote }}
 MULTI_TENANT_ENABLED: {{ $cm.MULTI_TENANT_ENABLED | default "false" | quote }}
 {{ include "lerian-common.multiTenant.env" (dict "context" . "configmap" $cm "enabled" $mtEnabled "serviceName" "ledger" "emitRedis" true "requiredUrl" true "requiredRedisHost" true) }}
+{{- end -}}
+
+{{- define "midaz-ledger.licenseHookSecretName" -}}
+{{- printf "%s-license-hook" (include "midaz-ledger.fullname" .) -}}
 {{- end -}}
 
 {{/* Include the image tag in the immutable reconcile Job name. */}}
@@ -587,7 +682,7 @@ supplied through values; an existing Secret is opaque to the chart.
 {{- /* Skip validation when the value is a secret-manager INJECTION PLACEHOLDER, not the literal
    key: ArgoCD-Vault-Plugin `<path:secret/...#K>`, envsubst `${VAR}`, or any `<...>` token. The
    real hex key is substituted AFTER `helm template`, so hex-validating the placeholder would
-   hard-fail the render in every Vault/AVP-backed environment (benedita, etc.). Literal values
+   hard-fail the render in every Vault/AVP-backed environment. Literal values
    (operator-supplied or the CI fixture) are still validated. */ -}}
 {{- if or (hasPrefix "<" $key) (contains "<path:" $key) (contains "${" $key) -}}
 {{- /* injected at deploy time — trust the secret manager */ -}}
@@ -652,9 +747,46 @@ behavior unchanged).
 
 {{/*
 Health preset inputs per component. minImage is the first Midaz image that serves
-/health and /readyz on HEALTH_PORT 8099; a lower image.tag fails the render.
+/health and /readyz on HEALTH_PORT 8099. An image.tag below it keeps the 4.4 layout
+(midaz.healthLegacy); at or above it the preset owns probes, ports, PDB and rollout.
 */}}
 {{- define "midaz.healthMinImage" -}}4.5.0-beta.94{{- end -}}
+
+{{/* "true" when the component's effective image tag is a SemVer below minImage. */}}
+{{- define "midaz.belowHealthMin" -}}
+{{- $tag := toString (.component.image.tag | default .context.Chart.AppVersion) -}}
+{{- if and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$" $tag) (lt ((semver $tag).Compare (semver (include "midaz.healthMinImage" .context))) 0) -}}true{{- end -}}
+{{- end -}}
+
+{{/*
+The 4.4 layout in the preset's output shape (dict name, component, context): the images
+below minImage serve /health and /readyz on the main port and read no HEALTH_PORT.
+Operator keys: probes, terminationGracePeriodSeconds, deploymentUpdate, pdb.
+*/}}
+{{- define "midaz.healthLegacy" -}}
+{{- $c := .component -}}
+{{- $ledger := eq .name "ledger" -}}
+{{- $du := dig "deploymentUpdate" dict $c -}}
+{{- $type := $du.type | default "RollingUpdate" -}}
+{{- $strategy := dict "type" $type -}}
+{{- if eq $type "RollingUpdate" -}}
+{{- $_ := set $strategy "rollingUpdate" (dict "maxSurge" (dig "maxSurge" (ternary "100%" 1 $ledger) $du) "maxUnavailable" (dig "maxUnavailable" 0 $du)) -}}
+{{- end -}}
+{{- $port := ternary "http" (int $c.service.port) $ledger -}}
+{{- $lp := dig "livenessProbe" dict $c -}}
+{{- $rp := dig "readinessProbe" dict $c -}}
+{{- $live := dict "httpGet" (dict "path" ($lp.path | default "/health") "port" $port) "initialDelaySeconds" ($lp.initialDelaySeconds | default (ternary 0 15 $ledger)) "periodSeconds" ($lp.periodSeconds | default (ternary 10 20 $ledger)) "timeoutSeconds" ($lp.timeoutSeconds | default (ternary 3 5 $ledger)) "successThreshold" ($lp.successThreshold | default 1) "failureThreshold" ($lp.failureThreshold | default 3) -}}
+{{- $ready := dict "httpGet" (dict "path" ($rp.path | default "/readyz") "port" $port) "initialDelaySeconds" ($rp.initialDelaySeconds | default (ternary 0 5 $ledger)) "periodSeconds" ($rp.periodSeconds | default 10) "timeoutSeconds" ($rp.timeoutSeconds | default (ternary 16 5 $ledger)) "successThreshold" ($rp.successThreshold | default 1) "failureThreshold" ($rp.failureThreshold | default 3) -}}
+{{- $pdb := $c.pdb | default dict -}}
+{{- $out := dict "strategy" $strategy "terminationGracePeriodSeconds" (dig "terminationGracePeriodSeconds" (ternary 72 55 $ledger) $c) "env" (list (dict "name" "SHUTDOWN_DRAIN_DELAY" "value" "15s")) "livenessProbe" $live "readinessProbe" $ready "autoscaling" (dict "minReplicas" $c.autoscaling.minReplicas) -}}
+{{- if $pdb.minAvailable -}}
+{{- $_ := set $out "pdb" (dict "minAvailable" $pdb.minAvailable) -}}
+{{- else -}}
+{{- $_ := set $out "pdb" (dict "maxUnavailable" (dig "maxUnavailable" 1 $pdb)) -}}
+{{- end -}}
+{{- if not $c.autoscaling.enabled -}}{{- $_ := set $out "replicas" $c.replicaCount -}}{{- end -}}
+{{- toYaml $out -}}
+{{- end -}}
 
 {{/*
 PDB spec and rollout strategy come from the health preset; an operator override fails the render.
@@ -667,11 +799,19 @@ PDB spec and rollout strategy come from the health preset; an operator override 
 {{- end -}}
 
 {{- define "midaz-ledger.health" -}}
+{{- if include "midaz.belowHealthMin" (dict "component" .Values.ledger "context" .) -}}
+{{- include "midaz.healthLegacy" (dict "name" "ledger" "component" .Values.ledger) -}}
+{{- else -}}
 {{- include "midaz.presetOwned" (dict "name" "ledger" "component" .Values.ledger) -}}
 {{- include "lerian-common.health" (dict "name" "ledger" "component" .Values.ledger "health" .Values.ledger.health "port" (int .Values.ledger.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.ledger.replicaCount "autoscaling" .Values.ledger.autoscaling) -}}
 {{- end -}}
+{{- end -}}
 
 {{- define "midaz-tracer.health" -}}
+{{- if include "midaz.belowHealthMin" (dict "component" .Values.tracer "context" .) -}}
+{{- include "midaz.healthLegacy" (dict "name" "tracer" "component" .Values.tracer) -}}
+{{- else -}}
 {{- include "midaz.presetOwned" (dict "name" "tracer" "component" .Values.tracer) -}}
 {{- include "lerian-common.health" (dict "name" "tracer" "component" .Values.tracer "health" .Values.tracer.health "port" (int .Values.tracer.service.port) "minImage" (include "midaz.healthMinImage" .) "replicas" .Values.tracer.replicaCount "autoscaling" .Values.tracer.autoscaling) -}}
+{{- end -}}
 {{- end -}}

@@ -1,0 +1,44 @@
+suite: http edge keys
+templates:
+  - templates/configmap.yaml
+set:
+  postgresql.enabled: true
+  app.configmap.BTG_API_BASE_URL: https://btg.example.test
+  app.configmap.BTG_AUTH_URL: https://btg.example.test/token
+  app.configmap.MIDAZ_LEDGER_URL: http://midaz:3000
+  app.configmap.ORGANIZATION_IDS: 00000000-0000-0000-0000-000000000001
+  app.secrets.PROVIDER_CLIENT_ID: x
+  app.secrets.PROVIDER_CLIENT_SECRET: x
+  app.secrets.PLUGIN_AUTH_CLIENT_ID: x
+  app.secrets.PLUGIN_AUTH_CLIENT_SECRET: x
+  app.secrets.LICENSE_KEY: x
+  app.secrets.CONSULT_AUDIT_HMAC_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.BTG_WEBHOOK_HMAC_SECRET: "0123456789abcdef0123456789abcdef"
+  app.secrets.INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+tests:
+  - it: leaves the proxy and timeout keys to the app default and caps the body at 4 MiB
+    asserts:
+      - equal: {path: 'data.HTTP_BODY_LIMIT_BYTES', value: "4194304"}
+      - notExists: {path: 'data.TRUSTED_PROXIES'}
+      - notExists: {path: 'data.HTTP_RECEIVE_TIMEOUT_SEC'}
+      - notExists: {path: 'data.HTTP_IDLE_TIMEOUT_SEC'}
+  - it: renders the proxy and timeout keys when the overlay sets them
+    set:
+      app.configmap.TRUSTED_PROXIES: "10.123.10.12/32,10.42.0.0/16"
+      app.configmap.HTTP_RECEIVE_TIMEOUT_SEC: 30
+      app.configmap.HTTP_IDLE_TIMEOUT_SEC: 120
+    asserts:
+      - equal: {path: 'data.TRUSTED_PROXIES', value: "10.123.10.12/32,10.42.0.0/16"}
+      - equal: {path: 'data.HTTP_RECEIVE_TIMEOUT_SEC', value: "30"}
+      - equal: {path: 'data.HTTP_IDLE_TIMEOUT_SEC', value: "120"}
+  - it: treats a null TRUSTED_PROXIES as unset
+    set:
+      app.configmap.TRUSTED_PROXIES: null
+    asserts:
+      - notExists: {path: 'data.TRUSTED_PROXIES'}
+  - it: keeps an explicit body limit override
+    set:
+      app.configmap.HTTP_BODY_LIMIT_BYTES: "1048576"
+    asserts:
+      - equal: {path: 'data.HTTP_BODY_LIMIT_BYTES', value: "1048576"}

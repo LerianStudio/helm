@@ -28,6 +28,7 @@ spec:
       http:
         paths:
           {{- range .paths }}
+          {{- include "plugin-br-pix-lerian.validateIngressPath" .path }}
           - path: {{ .path }}
             pathType: {{ default "Prefix" .pathType }}
             backend:

@@ -24,6 +24,7 @@ STREAMING_HUB_ROLE / the pool vars.
 {{- $rolesAnywhere := and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled -}}
 {{/* Postgres server CA bundle — mount + volume, both gated on the same switch. */}}
 {{- $postgresCa := get (get ($.Values.postgres | default dict) "caBundle" | default dict) "enabled" -}}
+{{- $licenseSecret := include "streaming-hub.licenseFileSecret" $ -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -50,19 +51,19 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 8 }}
+        {{- include "streaming-hub.podLabels" (dict "context" $ "component" $component) | nindent 8 }}
       annotations:
         # Config-rollout trigger. Every role consumes the shared ConfigMap and the
         # chart Secret through envFrom ONLY, so a value change rewrites those objects
         # while leaving the pod template byte-identical — `helm upgrade` then cuts no
         # new ReplicaSet and the running pods keep the OLD config until an unrelated
         # restart. Hashing the rendered manifests into the template closes that.
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/configmap.yaml") $ | fromYaml).data | toYaml | sha256sum }}
         {{- if not $sh.useExistingSecret }}
         # Only when the chart OWNS the Secret. Under useExistingSecret the Secret is
         # Vault/gitops-managed and changes outside Helm's view, so a hash of the
         # (empty) rendered template would be a constant that never triggers anything.
-        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") $ | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/secrets.yaml") $ | fromYaml).data | toYaml | sha256sum }}
         {{- end }}
       {{- with $sh.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -73,7 +74,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "streaming-hub.serviceAccountName" $ }}
       automountServiceAccountToken: {{ $sh.serviceAccount.automountServiceAccountToken | default false }}
-      terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 80 }}
+      terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 90 }}
       {{- if $rolesAnywhere }}
       # IAM Roles Anywhere: fsGroup lets the sidecar's non-root user (65532) read the
       # 0440 iam-certs projection. MERGED into the chart's podSecurityContext — fsGroup
@@ -109,6 +110,11 @@ spec:
               value: {{ $cfg.poolMaxOpenConns | quote }}
             - name: STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS
               value: {{ $cfg.poolMaxIdleConns | quote }}
+            {{- if $licenseSecret }}
+            # Licence-file mode: the signed file replaces LICENSE_KEY (needs lib-license-go v5).
+            - name: LICENSE_FILE_PATH
+              value: /etc/lerian/license/license
+            {{- end }}
             {{- if $sh.useExistingSecret }}
             # Existing-Secret path: Helm cannot inspect the external Secret's keys
             # at render time, so the boot-critical keys are pinned via explicit
@@ -138,6 +144,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "streaming-hub.secretName" $ }}
                   key: LICENSE_KEY
+                  {{- if $licenseSecret }}
+                  optional: true
+                  {{- end }}
             {{- end }}
             {{- range $k, $v := $sh.extraEnvVars }}
             # Un-enumerated per-Deployment env hatch (key -> value map).
@@ -166,12 +175,22 @@ spec:
               ) | nindent 10 }}
           resources:
             {{- toYaml $cfg.resources | nindent 12 }}
+          {{- if or $postgresCa $licenseSecret }}
           {{- if $postgresCa }}
           # Postgres server CA. The app never reads this path by itself — the DSN's
           # sslrootcert names it, and the hardened 2.x boot refuses to connect
           # without a readable bundle there.
+          {{- end }}
           volumeMounts:
+            {{- if $postgresCa }}
             {{- include "streaming-hub.postgresCaVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- if $licenseSecret }}
+            # Directory mount, never subPath, so a rotated licence file propagates.
+            - name: license-file
+              mountPath: /etc/lerian/license
+              readOnly: true
+            {{- end }}
           {{- end }}
         {{- if $rolesAnywhere }}
         # IAM Roles Anywhere credential sidecar. Serves an IMDS-compatible endpoint on
@@ -186,7 +205,7 @@ spec:
       # so only the sidecar's fsGroup can read it.
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" (printf "%s-iam-tls" (include "streaming-hub.fullname" $))) | nindent 6 }}
       {{- end }}
-      {{- if $postgresCa }}
+      {{- if or $postgresCa $licenseSecret }}
       {{- /*
       lerian-common.rolesAnywhere.volume emits the `volumes:` key itself, so this
       block opens it only when that branch did not — a second `volumes:` would be
@@ -195,7 +214,18 @@ spec:
       {{- if not $rolesAnywhere }}
       volumes:
       {{- end }}
+      {{- if $postgresCa }}
       {{- include "streaming-hub.postgresCaVolume" (dict "context" $ "hook" false) | nindent 8 }}
+      {{- end }}
+      {{- if $licenseSecret }}
+        - name: license-file
+          secret:
+            secretName: {{ $licenseSecret | quote }}
+            defaultMode: 0444
+            items:
+              - key: license
+                path: license
+      {{- end }}
       {{- end }}
       {{- /* Scheduling: a component's nodeSelector / affinity / tolerations replace
              the shared ones; a component's spread overrides streamingHub.spread

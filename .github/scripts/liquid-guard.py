@@ -11,9 +11,22 @@ The rule: in every markdown file Jekyll publishes, `{{` and `{%` may only appear
 inside a `{% raw %}` ... `{% endraw %}` block. Liquid's raw does not nest — the first
 endraw closes it — and this check reads the file the same way.
 
-    liquid-guard.py            check every published .md tracked by git
-    liquid-guard.py --fix F..  wrap each given file the way the helm-upgrade-doc
-                               generator in shared-workflows-public does
+    liquid-guard.py                      check every published .md tracked by git
+    liquid-guard.py --changed-since REF  check only the published .md files added,
+                                         modified or renamed since REF (REF...HEAD)
+    liquid-guard.py --fix F..            wrap each given file the way the
+                                         helm-upgrade-doc generator in
+                                         shared-workflows-public does
+
+Why two scopes: Pages publishes main only. A pull request into main gets the full
+scan, because whatever main holds is what the site builds. A pull request into any
+other branch (a maintenance/<chart>-<X.Y>.x line) gets --changed-since its base:
+those branches are never published, and they are seeded by restoring charts/<chart>/
+from an old chart tag that predates the raw-wrapping on main. A full scan there fails
+every pull request on upgrade guides it inherited and never touched — LerianStudio/helm#3093
+failed on three UPGRADE docs outside its diff. The changed-files scan still stops a
+pull request from adding new unwrapped Liquid, so main stays clean when the line's
+docs are later brought back.
 
 Exits 1 when a file breaks the rule, with a GitHub annotation on the first offending
 line of each file.
@@ -68,15 +81,36 @@ def fix(path):
         print(f"wrapped {path}")
 
 
+def git_paths(*args):
+    out = subprocess.run(["git", *args], check=True, capture_output=True, text=True).stdout
+    return [p for p in out.split("\0") if p]
+
+
 def main(args):
     if args[:1] == ["--fix"]:
         for path in args[1:]:
             fix(path)
         return 0
 
-    files = subprocess.run(["git", "ls-files", "*.md"], check=True, capture_output=True, text=True).stdout.split()
+    if args[:1] == ["--changed-since"]:
+        if len(args) != 2 or not args[1]:
+            print("usage: liquid-guard.py --changed-since REF", file=sys.stderr)
+            return 2
+        base = args[1]
+        # Deleted files are left out: there is nothing left to publish.
+        files = git_paths("diff", "-z", "--name-only", "--diff-filter=d", f"{base}...HEAD", "--", "*.md")
+        mode = f"changed-files mode (published .md changed since {base})"
+    elif not args:
+        files = git_paths("ls-files", "-z", "--", "*.md")
+        mode = "full mode (every published .md tracked by git)"
+    else:
+        print(f"unknown arguments: {' '.join(args)}", file=sys.stderr)
+        return 2
+
+    files = list(filter(published, files))
+    print(f"Markdown Liquid Guard: {mode}, {len(files)} file(s) to check")
     failed = 0
-    for path in filter(published, files):
+    for path in files:
         with open(path, encoding="utf-8") as f:
             found = offence(f.read())
         if found:
@@ -84,7 +118,12 @@ def main(args):
             print(f"::error file={path},line={line}::{reason}. Wrap the file: python3 .github/scripts/liquid-guard.py --fix {path}")
             failed += 1
 
-    print(f"{failed} markdown file(s) would break or blank out on charts.lerian.studio" if failed else "All published markdown is Liquid-safe")
+    if failed:
+        print(f"{failed} of {len(files)} markdown file(s) would break or blank out on charts.lerian.studio")
+    elif not files:
+        print("No published markdown to check: 0 files scanned")
+    else:
+        print(f"All {len(files)} checked markdown file(s) are Liquid-safe")
     return 1 if failed else 0
 
 

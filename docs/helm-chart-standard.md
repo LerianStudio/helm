@@ -20,8 +20,9 @@ Allowed values:
 | `single-service` | One deployable application or a constrained mock/stub | Root-level application templates |
 | `multi-component` | Multiple deployable components in one chart | Component directories plus shared common templates |
 | `dependency-wrapper` | A chart that primarily configures upstream dependencies | `Chart.yaml`, `Chart.lock`, `README.md`, `values.yaml`, optional `values-template.yaml`, optional `values.schema.json` |
+| `library` | A Helm library chart that renders nothing on its own, such as `lerian-common` | `Chart.yaml` with `type: library`, `README.md`, `values.yaml` |
 
-`mock` is not a chart type. Mock charts use `single-service` and may carry temporary baseline exceptions while they are migrated.
+`mock` is not a chart type. Mock charts use `single-service`.
 
 `otel-collector-lerian` is the canonical `dependency-wrapper` example because it wraps the upstream OpenTelemetry Collector chart.
 
@@ -203,7 +204,7 @@ Generated Secret name and data keys, **verified against rendered output at this 
 |----------|-------------------|---------------------|-------------|
 | postgresql | 16.3.5 | derived (see below), default `<release>-postgresql` | `postgres-password` (admin/superuser), `password` (the `auth.username` user), `replication-password` |
 | mongodb | 16.4.0 / 16.4.12 | derived (see below), default `<release>-mongodb` | `mongodb-root-password` (root user); `mongodb-passwords` (array, only when `auth.usernames`/`auth.passwords` provision non-root users) |
-| valkey | 0.7.4 / 2.4.6 / 2.4.7 | derived (see below), default `<release>-valkey` | `valkey-password` |
+| valkey | 2.4.6 / 2.4.7 | derived (see below), default `<release>-valkey` | `valkey-password` |
 
 Every Bitnami dependency is pinned to an **exact** version in `Chart.yaml` (no `~`/`^` ranges). Versions are not yet uniform across charts; the table lists the versions in use. Re-verify the Secret name and data keys against `helm template` output whenever a chart bumps its pin.
 
@@ -223,7 +224,7 @@ A small number of non-Bitnami subcharts (e.g. `groundhog2k/rabbitmq`) have their
 
 ### `infraSecretRef` helper contract
 
-Application charts have no first-party shared library chart, so this helper lives per-chart in `templates/_helpers.tpl` (it wraps the transitively-available Bitnami `common.names.dependency.fullname`). Each chart that adopts Pattern A defines:
+The library chart `lerian-common` ships this helper as `lerian-common.infraSecretRef`, built on its collapse-aware `lerian-common.dependency.fullname`. A chart that does not use it defines a per-chart copy in `templates/_helpers.tpl`:
 
 ```
 {{/*
@@ -326,11 +327,11 @@ securityContext:
     type: RuntimeDefault
 ```
 
-Any root user, writable root filesystem, or privilege escalation exception must be documented in the chart README and represented in the standard baseline until removed.
+Any root user, writable root filesystem, or privilege escalation exception must be documented in the chart README.
 
 ## values.schema.json
 
-Every chart ships a `values.schema.json` so operator typos at the top level fail Helm's schema validation at render time. The schemas are **generated deterministically**, not hand-written — do not edit them by hand. Regenerate after any change to a chart's top-level `values.yaml` keys or its `Chart.yaml` dependencies:
+Every application chart ships a `values.schema.json` so operator typos at the top level fail Helm's schema validation at render time. The generator below writes the base schema. Many charts add hand-written rules on top of it, such as descriptions, enums and patterns, and `alloy-lerian` keeps its rules in `values.schema.overlay.json`. The generator rewrites every chart's schema and keeps none of these rules, so restore them before you commit. It also writes a schema for the `lerian-common` library chart, which ships none, so delete that file. Regenerate after any change to a chart's top-level `values.yaml` keys or its `Chart.yaml` dependencies:
 
 ```sh
 cd .github/scripts
@@ -342,7 +343,7 @@ Policy enforced by the generator:
 - The **root** schema is a closed object: `additionalProperties: false` over the chart's actual top-level `values.yaml` keys plus `global` (which Helm always injects). A top-level key the chart does not define fails validation.
 - **Third-party subchart blocks** (any `Chart.yaml` dependency name/alias, plus a known set such as `postgresql`/`mongodb`/`valkey`/`rabbitmq`/`auth-database`/`otel-collector-lerian`) are left **opaque**: `type: object, additionalProperties: true`. Their value surface belongs to the dependency, so the chart does not constrain it.
 - App component / app config blocks are `type: object, additionalProperties: true` (nested structure is not over-constrained); `secrets`/`configmap` sub-keys are declared as objects when present.
-- Top-level scalars are type-checked (string/boolean/integer/number) against their `values.yaml` default; `required` lists the chart's top-level keys (Helm validates coalesced values, so defaults always satisfy it — it guards against a block being dropped).
+- Top-level scalars are type-checked (string/boolean/integer/number) against their `values.yaml` default. The generator declares no `required` keys.
 
 ## README Contract
 
@@ -389,12 +390,13 @@ The render gate runs `helm dependency build` + `helm template` per chart and ass
 
 - **Dangling secret references**: every `secretKeyRef`, `envFrom.secretRef`, and `volume.secret.secretName` in the rendered output must point at a Secret rendered in the same release.
 - **Release-name collapse**: for each bundled Bitnami dependency, the chart is re-rendered with the release name set to that dependency's name (or alias). This reproduces the collapse where `common.names.dependency.fullname` shortens `<release>-<subchart>` to `<subchart>`; any helper that hardcoded `<release>-<subchart>` instead surfaces here as a dangling reference. This is why infra Secret names must be derived through the helper (see "Single-Source Infra Secrets").
+- **ServiceAccount namespace**: a workload and the ServiceAccount it names must render into the same namespace.
+- **Collapse hosts**: in the collapse renders, an in-cluster Service host that starts with the release name (ConfigMap data or a literal container `env` value) must name a Service rendered in the same release.
+- **Health port**: no Service or Ingress backend reaches port 8099 or a port named `health` except a ClusterIP Service port named `health`, and no Ingress path has a `readyz` or `metrics` segment.
 
-A documented allowlist exempts Secrets that are intentionally provisioned out of band (each entry must carry a justification):
+Library charts are not installable, so the render gate skips them.
 
-- `otel-api-key` — operator-provisioned before install (`otel-collector-lerian`).
-- `alloy-api-key` — operator-provisioned before install (`alloy-lerian`); the credential lives in the origin cluster Secret and the chart only references it.
-- `kedaorg-certs` — self-managed at runtime by the KEDA operator's cert rotation (`reporter`).
+An allowlist exempts Secrets that are intentionally provisioned out of band. It lives in `allowedDanglingSecrets` in `.github/scripts/validate-helm-charts/main.go`, and each entry carries its justification there.
 
 Charts with required production values use dummy CI-only fixtures under `.github/configs/helm-render-values/<chart>.yaml`. These files are not production examples and must not contain real credentials.
 

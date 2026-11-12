@@ -15,7 +15,7 @@
 
 **What changed:**
 
-The chart now supports injecting a Caradhras license key (`LICENSE_KEY`) as an environment variable into the Caradhras deployment. This is required by newer Caradhras images that carry a license gate and refuse to boot without a valid license key issued for the `caradhras` product.
+The chart now supports injecting a Caradhras license key (`LICENSE_KEY`) as an environment variable into the Caradhras deployment. This is required by Caradhras `2.0.0` and later, which carry a license gate and refuse to boot without a valid license key issued for the `caradhras` product. The chart default Caradhras image stays `1.8.6`, which ignores `LICENSE_KEY`.
 
 | Setting | v10.1.4 | v10.2.0 |
 |---------|---------|---------|
@@ -55,104 +55,7 @@ caradhras:
 
 **Template changes:**
 
-The chart now injects the `LICENSE_KEY` environment variable into the Caradhras deployment when the license key is provided, and the Secret creation logic has been updated to include the license key.
-
-**Before (v10.1.4):**
-
-```yaml
-# templates/_helpers.tpl
-{{- define "plugin-caradhras.sessionSecretName" -}}
-{{- if .Values.caradhras.useExistingSecret -}}
-{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the redisEndpoint key.\n" .Values.caradhras.existingSecretName -}}
-{{- else -}}
-{{- include "plugin-caradhras.fullname" . -}}
-{{- end -}}
-{{- end }}
-```
-
-```yaml
-# templates/caradhras/deployment.yaml
-env:
-  - name: redisEndpoint
-    valueFrom:
-      secretKeyRef:
-        name: {{ include "plugin-caradhras.sessionSecretName" . }}
-        key: redisEndpoint
-```
-
-```yaml
-# templates/caradhras/secrets.yaml
-{{- $secrets := .Values.caradhras.secrets | default dict -}}
-{{- $redisEndpoint := $secrets.redisEndpoint | default "" | toString -}}
-{{- if and (not .Values.caradhras.useExistingSecret) $redisEndpoint }}
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ include "plugin-caradhras.fullname" . }}
-  labels:
-    {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 4 }}
-type: Opaque
-data:
-  redisEndpoint: {{ $redisEndpoint | b64enc | quote }}
-{{- end }}
-```
-
-**After (v10.2.0):**
-
-```yaml
-# templates/_helpers.tpl
-{{- define "plugin-caradhras.secretName" -}}
-{{- if .Values.caradhras.useExistingSecret -}}
-{{- required "\n\nERROR: caradhras.useExistingSecret is true but caradhras.existingSecretName is empty.\n   Set caradhras.existingSecretName to the name of the Secret holding the redisEndpoint and LICENSE_KEY keys.\n" .Values.caradhras.existingSecretName -}}
-{{- else -}}
-{{- include "plugin-caradhras.fullname" . -}}
-{{- end -}}
-{{- end }}
-```
-
-```yaml
-# templates/caradhras/deployment.yaml
-env:
-  - name: redisEndpoint
-    valueFrom:
-      secretKeyRef:
-        name: {{ include "plugin-caradhras.secretName" . }}
-        key: redisEndpoint
-  {{- if or (.Values.caradhras.secrets | default dict).LICENSE_KEY .Values.caradhras.useExistingSecret }}
-  # Caradhras refuses to boot without its own license key (product
-  # `caradhras`, not the auth/identity key). optional: a Secret lacking
-  # the key renders no env, so older images keep booting on upgrade.
-  - name: LICENSE_KEY
-    valueFrom:
-      secretKeyRef:
-        name: {{ include "plugin-caradhras.secretName" . }}
-        key: LICENSE_KEY
-        optional: true
-  {{- end }}
-```
-
-```yaml
-# templates/caradhras/secrets.yaml
-{{- $secrets := .Values.caradhras.secrets | default dict -}}
-{{- $redisEndpoint := $secrets.redisEndpoint | default "" | toString -}}
-{{- $licenseKey := $secrets.LICENSE_KEY | default "" | toString -}}
-{{- if and (not .Values.caradhras.useExistingSecret) (or $redisEndpoint $licenseKey) }}
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ include "plugin-caradhras.fullname" . }}
-  labels:
-    {{- include "plugin-caradhras.labels" (dict "context" . "name" .Values.caradhras.name ) | nindent 4 }}
-type: Opaque
-data:
-  {{- if $redisEndpoint }}
-  redisEndpoint: {{ $redisEndpoint | b64enc | quote }}
-  {{- end }}
-  {{- if $licenseKey }}
-  LICENSE_KEY: {{ $licenseKey | b64enc | quote }}
-  {{- end }}
-{{- end }}
-```
+The chart now injects the `LICENSE_KEY` environment variable into the Caradhras deployment, by `secretKeyRef` with `optional: true`, when `caradhras.secrets.LICENSE_KEY` is set or `caradhras.useExistingSecret` is true. The chart-managed Secret now renders when either `redisEndpoint` or `LICENSE_KEY` is set.
 
 **Why this matters:**
 
@@ -199,19 +102,7 @@ caradhras:
 
 **Method B: External Secret (operator-managed)**
 
-If you manage the Caradhras Secret yourself (`caradhras.useExistingSecret: true`), add the `LICENSE_KEY` key to your existing Secret:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: my-caradhras-secret
-  namespace: plugin-access-manager
-type: Opaque
-stringData:
-  redisEndpoint: "redis.example.com:6379,100,mypassword,0"
-  LICENSE_KEY: "your-caradhras-license-key-here"
-```
+If you manage the Caradhras Secret yourself (`caradhras.useExistingSecret: true`), add the `LICENSE_KEY` key to your existing Secret. In this release that Secret must also keep its `redisEndpoint` key.
 
 Then ensure your `values.yaml` references the Secret:
 
@@ -221,6 +112,8 @@ caradhras:
   existingSecretName: "my-caradhras-secret"
 ```
 
+> **Important:** In v10.2.0, `caradhras.useExistingSecret: true` together with `caradhras.configmap.redisEndpoint` fails the render ("both define redisEndpoint"). To take only `LICENSE_KEY` from an existing Secret while the endpoint stays in the ConfigMap, upgrade to v10.2.2 or later.
+
 > **Important:** If you are using `caradhras.useExistingSecret: true`, you must add the `LICENSE_KEY` key to your existing Secret **before** upgrading to a Caradhras image version that requires it. If the Secret lacks the key and you upgrade to a licensed image, the Caradhras pods will fail to start with a license validation error.
 
 > **Note:** The license key is product-specific. The `caradhras` license key is different from the `auth` or `identity` license keys. Ensure you request and use the correct key for the Caradhras component.
@@ -229,7 +122,7 @@ caradhras:
 
 1. **Secret updates**: If you provide `caradhras.secrets.LICENSE_KEY` inline, the chart will update the `<release>-caradhras` Secret to include the new key.
 
-2. **Rolling restart**: After adding the license key to the Secret, you may need to trigger a rolling restart of the Caradhras deployment to pick up the new environment variable:
+2. **Rolling restart**: An inline `caradhras.secrets.LICENSE_KEY` changes the `checksum/secret` annotation, so the upgrade rolls the Caradhras pods. With `caradhras.useExistingSecret`, that annotation does not change when you add the key to your own Secret, so restart the Caradhras deployment yourself:
 
 ```bash
 kubectl rollout restart deployment/<release>-caradhras -n plugin-access-manager

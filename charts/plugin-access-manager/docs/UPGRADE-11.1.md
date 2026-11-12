@@ -1,296 +1,169 @@
 <!-- {% raw %} -->
 # Helm Upgrade from v11.0.1 to v11.1.0
 
-# Topics
+## Topics
 
-- **[Overview](#overview)**
-- **[Features](#features)**
-  - [1. Signed License File Support for Caradhras](#1-signed-license-file-support-for-caradhras)
-- **[Configuration Reference](#configuration-reference)**
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+- [Overview](#overview)
+- [Changes](#changes)
+- [Configuration reference](#configuration-reference)
+- [Action required](#action-required)
+- [Preview changes before upgrading](#preview-changes-before-upgrading)
+- [Command to upgrade](#command-to-upgrade)
+- [Verify](#verify)
+- [Recovery considerations](#recovery-considerations)
 
-# Overview
+## Overview
 
-This is a minor release that increments the chart version from 11.0.1 to 11.1.0. The application version remains unchanged at `3.17.0`.
+This guide covers chart `plugin-access-manager` **11.0.1 → 11.1.0**, not later releases. The chart `appVersion` stays at `3.17.0`.
 
-**What changed:**
+**Keep `LICENSE_KEY` when using the default Caradhras 2.1.0 image.** This release adds chart wiring for a license file; it does not make that image read the file. Caradhras 2.1.0 uses `lib-license-go/v4` v4.2.2 and its startup requires a nonempty `LICENSE_KEY`. It does not read `LICENSE_FILE_PATH`. A file-only configuration can pass Helm validation but leave the server unable to start.
 
-- Added support for mounting a signed license file as an alternative to the `LICENSE_KEY` environment variable for Caradhras
-- Updated documentation comments for license configuration options
-- Added new template helpers for license file mounting
-
-**What this means for operators:**
-
-This release introduces a new optional configuration method for Caradhras licensing. Operators can now choose between:
-
-1. **Environment variable** (existing): `caradhras.secrets.LICENSE_KEY` or `caradhras.useExistingSecret`
-2. **License file** (new): `caradhras.licenseFile.existingSecret`
-
-Both methods remain fully supported. If you are already using `LICENSE_KEY`, no changes are required. The upgrade is backward compatible.
-
-| Component | v11.0.1 | v11.1.0 |
-|-----------|---------|---------|
+| Component | 11.0.1 default | 11.1.0 default |
+|---|---|---|
 | Chart version | 11.0.1 | 11.1.0 |
-| App version | 3.17.0 | 3.17.0 |
-| Caradhras image | *(unchanged)* | *(unchanged)* |
-| Auth image | *(unchanged)* | *(unchanged)* |
-| Identity image | *(unchanged)* | *(unchanged)* |
+| Chart appVersion | 3.17.0 | 3.17.0 |
+| Auth image | `ghcr.io/lerianstudio/plugin-auth:3.17.0` | unchanged |
+| Identity image | `ghcr.io/lerianstudio/plugin-identity:3.17.0` | unchanged |
+| Caradhras server | `ghcr.io/lerianstudio/caradhras:2.1.0` | unchanged |
+| Caradhras migrations | `ghcr.io/lerianstudio/caradhras-migrations:2.1.0` | unchanged |
 
-# Features
+The migrations tag follows the Caradhras server tag, without its digest suffix, unless overridden by `caradhras.migrations.image.tag` or the legacy `auth.backend.migrations.image.tag`. Preserve and review existing image overrides; this table describes defaults only.
 
-### 1. Signed License File Support for Caradhras
+Existing, working key-based configuration needs no license-format migration. **Expect a rolling update of auth, identity and Caradhras even when values do not change.** Plan for the Caradhras `migrate` init container to run again in replacement pods.
 
-**What changed:**
+## Changes
 
-Caradhras can now read its license from a signed file mounted at `/etc/lerian/license/license` instead of requiring the `LICENSE_KEY` environment variable. This feature is controlled by the new `caradhras.licenseFile.existingSecret` value.
+### 1. Optional license-file delivery
 
-The chart mounts the license file on both the Caradhras server container and the `migrate` init container. The migrator is license-gated and, on a fresh install, is the first process to fetch the license file.
-
-**New values.yaml fields:**
+The new value is disabled by default:
 
 ```yaml
 caradhras:
-  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
-  # /etc/lerian/license on the server and its `migrate` init container; replaces LICENSE_KEY.
-  # File mode needs an image on lib-license-go v5.
   licenseFile:
     existingSecret: ""
 ```
 
-**Before (v11.0.1):**
+When nonempty, `caradhras.licenseFile.existingSecret` names a Secret **in the release namespace** containing a key named `license`. The chart projects that key as `/etc/lerian/license/license`, sets `LICENSE_FILE_PATH` to that path, and adds the read-only directory mount `/etc/lerian/license` to both the server container and the `migrate` init container.
 
-Caradhras required one of these configurations:
+The directory mount does not use `subPath`. Kubernetes can propagate Secret updates to such a volume, but that does not establish that an application loads the file, reloads it after rotation, or can rotate without a restart. The chart uses a Kubernetes Secret volume, not a CSI volume configuration.
 
-```yaml
-caradhras:
-  secrets:
-    LICENSE_KEY: "your-license-key-here"
-```
+**Application compatibility is separate from Helm rendering.** The chart comments describe file mode as requiring an image using `lib-license-go` v5. The shipped Caradhras 2.1.0 server instead uses v4 and accepts the environment key only. No compatible replacement image is identified in this guide. Do not remove the key or change images based solely on the new chart option.
 
-Or:
+A future file-mode migration needs a specifically verified server image and matching migrations image, their upgrade contract, and a staged startup/rotation test. Merely finding a v5 dependency is not sufficient proof of that contract.
 
-```yaml
-caradhras:
-  useExistingSecret: true
-  existingSecretName: "caradhras-license"
-```
+### 2. License environment passed to migrations
 
-**After (v11.1.0):**
+In 11.0.1, the chart injects the configured `LICENSE_KEY` into the server only. In 11.1.0 it also passes the key to the `migrate` init container. With file delivery enabled, both receive the file path and mount.
 
-All previous configurations remain valid. You can now also use:
+This is **delivery, not a new license gate**. The default `caradhras-migrations:2.1.0` executable (`/postgres-migrations`) does not initialize licensing. It can perform database work before the server checks its license. A successful migration therefore does not prove the server's key is present or valid.
 
-```yaml
-caradhras:
-  licenseFile:
-    existingSecret: "caradhras-license-file"
-```
+### 3. Validation and rollout behavior
 
-**Template changes:**
+The chart's Caradhras license render check now accepts any of:
 
-The deployment template now includes new helper functions that conditionally mount the license file and set the `LICENSE_FILE_PATH` environment variable:
+- A nonempty `caradhras.secrets.LICENSE_KEY`.
+- `caradhras.useExistingSecret: true`.
+- A nonempty `caradhras.licenseFile.existingSecret`.
 
-**Before (v11.0.1):**
+The existing exemption for semantic-version server tags below `2.0.0-0` remains. It is not a recommendation to downgrade. Chart validation cannot validate a license, prove an external Secret exists, or prove a binary supports file mode. With the default 2.1.0 image, retain a valid key issued for the product `caradhras`; the auth/identity license does not license Caradhras.
 
-```yaml
-# templates/caradhras/deployment.yaml
-{{- if $licensed }}
-- name: LICENSE_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "plugin-caradhras.secretName" . }}
-      key: LICENSE_KEY
-      optional: true
-{{- end }}
-```
+Even with file delivery disabled, the chart-version label in hashed ConfigMaps/Secrets changes. The pod-template checksums consequently change for auth, identity and Caradhras. In addition, the Caradhras init container gains the license-key environment entry. The conditional mount does **not** make this upgrade restart-free.
 
-**After (v11.1.0):**
+## Configuration reference
 
-```yaml
-# templates/caradhras/deployment.yaml
-{{- with (include "plugin-caradhras.licenseEnv" (dict "context" $ "licensed" $licensed) | trim) }}{{ . | nindent 10 }}{{ end }}
-```
+| Value | Default | Meaning in 11.1.0 |
+|---|---|---|
+| `caradhras.licenseFile.existingSecret` | `""` | Optional existing Secret with key `license`; enables chart file projection, not application file support. Leave empty with the default image. |
+| `caradhras.secrets.LICENSE_KEY` | `""` | Caradhras key in the chart-managed Secret. Retain a valid key for default 2.1.0. |
+| `caradhras.useExistingSecret` | `false` | Use an operator-managed Caradhras Secret instead of creating one. |
+| `caradhras.existingSecretName` | `""` | Name of that operator-managed Secret. |
 
-The helper template `plugin-caradhras.licenseEnv` now generates both the `LICENSE_KEY` environment variable (if configured) and the `LICENSE_FILE_PATH` environment variable (if `licenseFile.existingSecret` is set):
+With `useExistingSecret: true`, the named Secret must contain `LICENSE_KEY` for Caradhras 2.1.0. When `caradhras.configmap.redisEndpoint` is empty, the deployment also reads `redisEndpoint` from this Secret. Keep all other required Secret keys and current configuration; a license-only replacement Secret may be incomplete.
 
-```yaml
-# When licenseFile.existingSecret is set, the template adds:
-- name: LICENSE_FILE_PATH
-  value: /etc/lerian/license/license
-```
+The existing-Secret selection is not the same option as `licenseFile.existingSecret`: one selects the Caradhras environment Secret, the other a separate optional file Secret.
 
-The license file is mounted as a volume:
+| Environment variable | Rendered when | Delivery |
+|---|---|---|
+| `LICENSE_KEY` | Key configured or `useExistingSecret` true | `secretKeyRef` to key `LICENSE_KEY`; server and `migrate` in 11.1.0 |
+| `LICENSE_FILE_PATH` | `licenseFile.existingSecret` nonempty | Literal `/etc/lerian/license/license`; server and `migrate` |
 
-```yaml
-# templates/caradhras/deployment.yaml
-volumes:
-  - name: license-file
-    secret:
-      secretName: "caradhras-license-file"
-      items:
-        - key: license
-          path: license
+Both entries can render together. Caradhras 2.1.0 still uses `LICENSE_KEY`; it does not choose whichever method it finds first. No file/key precedence is asserted for other images.
 
-# In both the server container and migrate init container:
-volumeMounts:
-  - name: license-file
-    mountPath: /etc/lerian/license
-    readOnly: true
-```
+## Action required
 
-**Why this matters:**
+The commands use release name `plugin-access-manager` and namespace `midaz-plugins`. Set these to the actual installed release before running them. You need Helm, kubectl, access to the cluster and the published chart, and permission to read the release. Review backups, capacity and your maintenance window before the rolling update.
 
-Some operators prefer to manage licenses as files rather than environment variables for:
+1. Save the release's **user-supplied** values to a protected local file. It may contain license keys and other credentials. Do not commit it, attach it to tickets, or publish its contents. Preserve operator-managed Secrets separately through your normal secret-management process.
 
-- **Security:** File-based secrets can be managed with stricter file permissions and access controls
-- **Rotation:** Easier to rotate signed license files without redeploying pods (when using projected volumes or CSI drivers)
-- **Compliance:** Some environments require cryptographically signed artifacts for audit trails
-- **Compatibility:** Future Caradhras versions on lib-license-go v5 will support file mode restrictions
+   ```bash
+   RELEASE=plugin-access-manager
+   NAMESPACE=midaz-plugins
+   umask 077
+   VALUES_DIR=$(mktemp -d)
+   VALUES_FILE="$VALUES_DIR/am-values.yaml"
+   helm get values "$RELEASE" -n "$NAMESPACE" -o yaml > "$VALUES_FILE"
+   ```
 
-The license file method is particularly useful when integrating with external secret management systems (Vault, AWS Secrets Manager, etc.) that can mount signed files directly.
+2. Review the file against your current configuration. Preserve all user overrides (including image repositories/tags, database, authorizer, TLS, resource and secret settings). If Helm returns `null` because there are no user overrides, use an empty YAML mapping (`{}`) as the starting file, then add the required configuration. Do not blindly export `--all` and freeze every old chart default.
 
-**Operational impact:**
+3. For default Caradhras 2.1.0, retain the working `caradhras.secrets.LICENSE_KEY` or `caradhras.useExistingSecret`/`existingSecretName` setup. Leave `caradhras.licenseFile.existingSecret` empty. Do not paste a new `caradhras:` block over an existing one: merge keys into the existing mapping without duplicate keys. Auth and identity still need their existing license and authorizer credentials.
 
-- **No action required:** If you are using `LICENSE_KEY` or `useExistingSecret`, your configuration continues to work unchanged
-- **No pod restarts:** The upgrade does not change the pod template for existing configurations (the license mounting logic is conditional)
-- **Validation:** The chart still validates that at least one license method is configured for Caradhras 2.x images
+4. If recovering from an attempted file-only configuration on 2.1.0, restore a valid Caradhras key using the original Secret mechanism before upgrading. A file mount alone is not a recovery. Review the `migrate` logs and database state if a previous attempt ran migrations; do not assume failure to start meant nothing changed.
 
-**Updated validation:**
+5. Take or verify a recent database backup using your normal PostgreSQL procedure and confirm your restore procedure is available. This chart bump does not change the default application or migrations images, but replacement Caradhras pods run the init migrator. Existing image overrides may have a different migration impact.
 
-The chart's license validation now accepts three methods:
+## Preview changes before upgrading
 
-```yaml
-# templates/caradhras/deployment.yaml
-{{- if not (or $licensed $licenseFile (and (regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" $tag) (semverCompare "<2.0.0-0" $tag))) }}
-{{- fail "\n\nERROR: Caradhras refuses to boot without its own license key.\n   Set caradhras.secrets.LICENSE_KEY, set caradhras.useExistingSecret=true with caradhras.existingSecretName naming a Secret that holds LICENSE_KEY, or mount a signed licence file with caradhras.licenseFile.existingSecret.\n   The key is issued for the product `caradhras`; the auth and identity key does not license it.\n" }}
-{{- end }}
-```
+Use the same complete user-values file for preview and upgrade. A partial file can lose stored overrides; editing a local file without passing `-f` does not apply it. Do not replace this with an isolated `--set` command that drops other release values.
 
-**When to use the license file method:**
-
-#### Option 1: Keep existing LICENSE_KEY configuration
-
-If your current setup works and you have no specific requirement for file-based licensing, keep your existing configuration:
-
-```yaml
-caradhras:
-  secrets:
-    LICENSE_KEY: "your-license-key-here"
-```
-
-No changes are needed during the upgrade.
-
-#### Option 2: Migrate to license file
-
-If you want to use a signed license file, follow these steps:
-
-**Step 1:** Create a Secret containing your signed license file:
+The preview requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install a reviewed plugin version through your normal tooling process. Diff output may expose credentials depending on plugin settings: use Secret suppression and protect the output. ConfigMaps may also contain sensitive operator settings.
 
 ```bash
-kubectl create secret generic caradhras-license-file \
-  --from-file=license=/path/to/your/signed-license-file \
-  -n midaz-plugins
+helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-access-manager \
+  --version 11.1.0 -n "$NAMESPACE" -f "$VALUES_FILE" --suppress-secrets
 ```
 
-> **Important:** The Secret must contain a key named `license`. The chart mounts this key at `/etc/lerian/license/license`.
+Check the rendered image names, Secret references, database settings and expected pod-template changes. A successful preview does not validate application startup or the license.
 
-**Step 2:** Update your values.yaml:
+## Command to upgrade
 
-```yaml
-caradhras:
-  # Remove or comment out the LICENSE_KEY
-  # secrets:
-  #   LICENSE_KEY: ""
-  
-  # Add the license file configuration
-  licenseFile:
-    existingSecret: "caradhras-license-file"
-```
-
-**Step 3:** Upgrade the chart:
+Run only after reviewing the preview. The values file must still contain all intended user overrides.
 
 ```bash
-helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
-  --version 11.1.0 \
-  -n midaz-plugins \
-  -f values.yaml
+helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-access-manager \
+  --version 11.1.0 -n "$NAMESPACE" -f "$VALUES_FILE" \
+  --wait --timeout 15m
 ```
 
-> **Note:** You can use both `LICENSE_KEY` and `licenseFile.existingSecret` simultaneously. Caradhras will use whichever method it finds first. However, for clarity, configure only one method.
+Choose a timeout appropriate to your environment. A timeout is not a rollback and does not undo database writes. Keep the protected values/backup artifacts according to your retention policy and securely remove unnecessary local copies afterward.
 
-**Environment variables added:**
+## Verify
 
-| Variable | Set when | Value | Description |
-|----------|----------|-------|-------------|
-| `LICENSE_FILE_PATH` | `caradhras.licenseFile.existingSecret` is set | `/etc/lerian/license/license` | Path to the mounted signed license file |
-| `LICENSE_KEY` | `caradhras.secrets.LICENSE_KEY` or `caradhras.useExistingSecret` is set | *(from Secret)* | License key as environment variable (existing behavior) |
-
-**Volume mounts added:**
-
-When `caradhras.licenseFile.existingSecret` is configured:
-
-| Mount path | Source | Mode |
-|------------|--------|------|
-| `/etc/lerian/license` | Secret `caradhras.licenseFile.existingSecret`, key `license` | Read-only |
-
-The mount is added to:
-- The Caradhras server container
-- The `migrate` init container
-
-> **Note:** The license file is mounted as a directory (never as a subPath) to ensure compatibility with Secret rotation mechanisms.
-
-# Configuration Reference
-
-### New values.yaml fields
-
-```yaml
-caradhras:
-  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
-  # /etc/lerian/license on the server and its `migrate` init container; replaces LICENSE_KEY.
-  # File mode needs an image on lib-license-go v5.
-  licenseFile:
-    existingSecret: ""
-```
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `caradhras.licenseFile.existingSecret` | string | `""` | Name of an existing Secret containing a signed license file under the key `license`. When set, the chart mounts the file at `/etc/lerian/license/license` and sets `LICENSE_FILE_PATH` environment variable. |
-
-### Updated documentation
-
-The comment for `caradhras.secrets.LICENSE_KEY` has been updated to reflect the new option:
-
-**Before (v11.0.1):**
-
-```yaml
-# -- Caradhras license key, injected as env LICENSE_KEY by secretKeyRef.
-# Required for Caradhras 2.x (it refuses to boot without it, and the render
-# fails without it or useExistingSecret). Issued for product `caradhras`;
-# not the auth/identity key.
-LICENSE_KEY: ""
-```
-
-**After (v11.1.0):**
-
-```yaml
-# -- Caradhras license key, injected as env LICENSE_KEY by secretKeyRef.
-# Required for Caradhras 2.x (it refuses to boot without it or a licence file, and the
-# render fails without it, useExistingSecret or licenseFile.existingSecret). Issued for product `caradhras`;
-# not the auth/identity key.
-LICENSE_KEY: ""
-```
-
-# Preview changes before upgrading
+With the example release name and no fullname overrides, the deployments are `plugin-access-manager-auth`, `plugin-access-manager-identity` and `plugin-access-manager-caradhras`. If you override names, use the actual rendered deployment names in the rollout commands.
 
 ```bash
-helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.1.0
+kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/instance=$RELEASE"
+kubectl rollout status "deployment/${RELEASE}-auth" -n "$NAMESPACE" --timeout=15m
+kubectl rollout status "deployment/${RELEASE}-identity" -n "$NAMESPACE" --timeout=15m
+kubectl rollout status "deployment/${RELEASE}-caradhras" -n "$NAMESPACE" --timeout=15m
+helm status "$RELEASE" -n "$NAMESPACE"
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+Confirm the release reports `deployed`, the new pods are ready, and the expected images are running. Verify the init migrator completed and run your normal authentication and identity smoke tests. Ready pods and a deployed Helm status alone are not an end-to-end test.
 
-# Command to upgrade
+For the example naming, inspect the migration log after old Caradhras pods have terminated, so the deployment selector does not return an old pod's log:
 
 ```bash
-helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.1.0
+kubectl logs "deployment/${RELEASE}-caradhras" -n "$NAMESPACE" -c migrate
+kubectl get deployment "${RELEASE}-caradhras" -n "$NAMESPACE" \
+  -o jsonpath='{range .spec.template.spec.initContainers[*]}{.name}{"="}{.image}{"\n"}{end}{range .spec.template.spec.containers[*]}{.name}{"="}{.image}{"\n"}{end}'
 ```
+
+Treat logs as potentially sensitive. Do not print license Secret values to check configuration. If you separately test file-delivery wiring with a verified compatible image, inspect its PodSpec for `LICENSE_FILE_PATH`, the `license-file` volume and the read-only directory mounts; that inspection proves wiring only. Do not assume the application image contains a shell or `ls`.
+
+## Recovery considerations
+
+If startup fails, check Kubernetes events, Secret references, the init migrator and server logs without disclosing credentials. Restore a valid Caradhras environment key if it was removed from the default 2.1.0 configuration.
+
+A Helm rollback restores release resources, not database contents. Do not downgrade Caradhras images or assume an older chart undoes migrations. If an image override or failed prior attempt moved the schema, use the backup/restore and application-version recovery procedure appropriate to that exact release before attempting a rollback.
 <!-- {% endraw %} -->

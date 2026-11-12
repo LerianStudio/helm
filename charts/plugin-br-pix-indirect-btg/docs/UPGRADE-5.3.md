@@ -580,14 +580,14 @@ schedule:
 
 From app `1.14.0-beta.6`, the `inbound`, `outbound`, `reconciliation` and `schedule` workers refuse to boot without `LICENSE_KEY`. With chart-managed Secrets (the default), each worker falls back to `pix.secrets.LICENSE_KEY`, so no action is needed. For a worker with `useExistingSecrets: true`, add the `LICENSE_KEY` key to that existing Secret before you upgrade.
 
-> **Note:** Do not upgrade with `--reuse-values`. It keeps the `5.2.3` chart defaults (`pdb`, `deploymentStrategy`, `readinessProbe` and the worker `service` blocks), and the render fails. Pass your values file with `-f`, as below.
+> **Note:** Do not upgrade with `--reuse-values` or `--reset-then-reuse-values`: either can retain removed overrides (`pdb`, `deploymentStrategy`, `readinessProbe` and worker `service` blocks), and the render fails. Use `--reset-values -f your-values.yaml` as below. The migrated file must contain your complete intended configuration, not only the changes in this guide: explicitly retain all unrelated settings, image pins and existing-Secret references you still need. Export and back up the current user overrides privately, remove the retired keys, and compare the intended configuration before upgrading. Treat exported values as sensitive; do not commit them or paste them into public issues.
 
 **7. Preview the upgrade**
 
 Use the helm-diff plugin to review all changes before applying:
 
 ```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg -f your-values.yaml
+helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg --reset-values -f your-values.yaml
 ```
 
 **8. Perform the upgrade**
@@ -595,7 +595,7 @@ helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianst
 Run the upgrade command during a maintenance window:
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg -f your-values.yaml
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg --reset-values -f your-values.yaml
 ```
 
 **9. Verify all pods are running**
@@ -621,15 +621,15 @@ curl http://localhost:8099/readyz
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg -f your-values.yaml
+helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg --reset-values -f your-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
-Pass the migrated values file. Without `-f`, Helm reuses the values stored in the release, including any override you removed from your file, and the render fails.
+Pass the complete migrated values file with `--reset-values`. Plain `-f` can still reuse stored release overrides when the file is empty; `--reset-values` prevents that fallback. It also drops every stored override not supplied in the file, so preserve all intended unrelated settings and existing-Secret references before proceeding. Do not use an empty or partial file unless a reset to the remaining chart defaults is intentional and has been reviewed.
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg -f your-values.yaml
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg --reset-values -f your-values.yaml
 ```

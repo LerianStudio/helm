@@ -15,7 +15,7 @@
 
 ## Overview
 
-This is a minor release that adds support for an optional signed license file as an alternative to the `LICENSE_KEY` environment variable. The application version remains at `1.14.0` across all components. No configuration changes are required — the existing `pix.secrets.LICENSE_KEY` configuration continues to work as before.
+This minor chart release adds optional signed-license Secret mounts and `LICENSE_FILE_PATH` injection. It still ships application `1.14.0` across all five components. Those images use `lib-license-go/v4` and require nonempty `LICENSE_KEY`; they do not read `LICENSE_FILE_PATH`. The chart plumbing is not a working file-only licensing alternative for the shipped images. Keep the existing key configuration.
 
 The expected upgrade path is an in-place Helm upgrade with no downtime beyond the normal rolling restart window.
 
@@ -29,7 +29,7 @@ The expected upgrade path is an in-place Helm upgrade with no downtime beyond th
 
 ### 1. Optional signed license file support
 
-This release adds support for mounting a signed license file as an alternative to providing the license key via the `LICENSE_KEY` environment variable. The license file is mounted read-only from a Kubernetes Secret and made available to all components.
+This release adds chart-level mounting of a signed license file from a Kubernetes Secret on all five components. The shipped application images remain key-only; the mount is preparation for separately validated compatible images, not an alternative to their required `LICENSE_KEY`.
 
 **What changed:**
 
@@ -37,11 +37,11 @@ A new top-level `licenseFile` configuration block was added to `values.yaml`, al
 
 **Why it matters:**
 
-Signed license files provide an alternative licensing mechanism that may be required for certain deployment scenarios or compliance requirements. The file-based approach allows license rotation without modifying environment variables, as Kubernetes automatically propagates Secret updates to mounted volumes.
+The chart can deliver file content without placing it in environment variables. Kubernetes propagation to a mounted volume alone establishes neither application consumption nor reload. Application `1.14.0` does not consume this file.
 
 **Operational impact:**
 
-This change is fully backward-compatible. Existing deployments using `pix.secrets.LICENSE_KEY` continue to work without modification. Operators who wish to use the signed license file feature must create a Secret containing the license file and reference it via `licenseFile.existingSecret`.
+Existing key-based deployments can retain their licensing configuration. Keep `LICENSE_KEY` for the API and all workers. Setting `licenseFile.existingSecret` does not make their shipped images file-compatible.
 
 **New configuration block:**
 
@@ -247,7 +247,7 @@ licenseFile:
 
 ## Migration Steps
 
-This upgrade is fully backward-compatible and requires no immediate action. Choose one of the following options based on your licensing requirements.
+No licensing-value migration is required for the default images. Continue with Option 1; Option 2 explains why file-only migration is unavailable for this release.
 
 ### Option 1: Continue using LICENSE_KEY environment variable (no action required)
 
@@ -269,95 +269,15 @@ helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/
 kubectl get pods -n midaz-plugins -l app.kubernetes.io/instance=plugin-br-pix-indirect-btg
 ```
 
-> **Note:** The upgrade triggers a rolling restart of all deployments because the template changes add conditional logic for the license file mount. Depending on your replica count, this may cause brief service interruptions.
+> **Note:** Rendering both releases with identical key-based values changes the ConfigMap/Secret checksums in all five application pod templates, even with file mounting disabled. Expect a rolling restart; single-replica workloads may be interrupted.
 
 ### Option 2: Migrate to signed license file
 
-If you wish to use the signed license file feature, follow these steps to create the required Secret and update your Helm values.
+**Not supported by the default `1.14.0` images in chart `5.4.0`.** Do not remove `LICENSE_KEY`: the API and all four workers reject an empty key before initializing the v4 license client. Keeping the key while mounting a file does not enable file licensing either; this application version does not read `LICENSE_FILE_PATH`.
 
-**Prerequisites:**
+The chart prepares a read-only directory mount at `/etc/lerian/license` from an existing Secret with key `license`, and injects the file path on all five components. Its relaxed render-time validation is not proof that an application image can consume the file. This guide does not prescribe a compatible replacement image set; no such set has been validated here. A later file-mode adoption needs a separately verified application release, consistent pins for every component, reviewed file/key precedence, and a tested upgrade plan.
 
-- You must have a signed license file provided by Lerian Studio
-- The application image must be based on `lib-license-go` v5 or later
-
-**Migration steps:**
-
-1. Create a Kubernetes Secret containing your signed license file:
-
-```bash
-kubectl create secret generic plugin-br-pix-indirect-btg-license \
-  --from-file=license=/path/to/your/license-file \
-  -n midaz-plugins
-```
-
-> **Important:** The Secret key must be named `license` exactly as shown above. The chart expects this specific key name.
-
-2. Update your `values.yaml` to reference the license file Secret:
-
-```yaml
-licenseFile:
-  existingSecret: "plugin-br-pix-indirect-btg-license"
-```
-
-3. (Optional) Remove the `LICENSE_KEY` environment variable from your configuration:
-
-```yaml
-pix:
-  secrets:
-    LICENSE_KEY: ""  # Can be removed when using licenseFile
-```
-
-> **Note:** You can keep both `LICENSE_KEY` and `licenseFile.existingSecret` configured. The application will use the license file when `LICENSE_FILE_PATH` is set, falling back to `LICENSE_KEY` if the file is not available.
-
-4. Review the changes using the helm-diff plugin:
-
-```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.4.0 -n midaz-plugins -f values.yaml
-```
-
-5. Run the upgrade command with your updated values:
-
-```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.4.0 -n midaz-plugins -f values.yaml
-```
-
-6. Verify the license file is mounted correctly on all pods:
-
-```bash
-kubectl exec -n midaz-plugins deployment/plugin-br-pix-indirect-btg -- ls -la /etc/lerian/license/
-```
-
-You should see the `license` file with read-only permissions.
-
-7. Verify the `LICENSE_FILE_PATH` environment variable is set:
-
-```bash
-kubectl exec -n midaz-plugins deployment/plugin-br-pix-indirect-btg -- env | grep LICENSE_FILE_PATH
-```
-
-Expected output:
-
-```
-LICENSE_FILE_PATH=/etc/lerian/license/license
-```
-
-**License file rotation:**
-
-When using the signed license file, you can rotate the license without restarting pods:
-
-1. Update the Secret with the new license file:
-
-```bash
-kubectl create secret generic plugin-br-pix-indirect-btg-license \
-  --from-file=license=/path/to/new/license-file \
-  --dry-run=client -o yaml | kubectl apply -n midaz-plugins -f -
-```
-
-2. Wait for Kubernetes to propagate the Secret update to the mounted volumes (typically 60-90 seconds).
-
-3. The application will automatically detect and reload the updated license file.
-
-> **Note:** Secret propagation delay depends on your cluster's kubelet sync period. If you need immediate license updates, you can trigger a rolling restart after updating the Secret.
+A projected Secret update only changes mounted file content. It does not prove application reload or key fallback. No file-only migration or restart-free license rotation is supported by the shipped `1.14.0` images.
 
 ## Preview changes before upgrading
 

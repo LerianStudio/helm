@@ -10,52 +10,47 @@
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
 - **[Command to upgrade](#command-to-upgrade)**
+- **[Verify](#verify)**
 
 ## Overview
 
-This guide covers the `notifications` chart upgrade from `1.0.2` to `1.1.0`. This is a **minor** release that adds support for mounting a signed licence file as an alternative to the `LICENSE_KEY` environment variable. The application version (`appVersion: "1.1.0"`) remains unchanged.
+This guide covers the `notifications` chart upgrade from `1.0.2` to `1.1.0`. This is a **minor** release that adds optional chart wiring to mount a signed licence file. The application version (`appVersion: "1.1.0"`) remains unchanged.
 
-No configuration change is required if you are already using `secrets.LICENSE_KEY`. The new `licenseFile.existingSecret` field is optional and provides an alternative licensing method.
+> **Default-image limitation:** The API and all three worker images at tag `1.1.0` correspond to application source revision `4e54f5fa19bf95757891d0a02002438914bfde3d`. They use `lib-license-go/v4 v4.2.2`; the shared bootstrap requires a nonempty `LICENSE_KEY` and does not read `LICENSE_FILE_PATH`. The new mount is preparatory wiring, **not a file-only licensing alternative for these images**. Keep `LICENSE_KEY`. No compatible replacement image set is identified by this guide.
 
-Every pod of the release restarts once during this upgrade due to template changes.
+No licensing values change is required if you already supply `secrets.LICENSE_KEY` or reference an external Secret containing `LICENSE_KEY` through `secretRef.name`.
+
+With chart-managed configuration and Secrets, all four Deployment pod templates change even with the optional mount disabled: chart-version labels change the checksums embedded in the templates. Expect a rolling replacement of enabled Deployments, not a guarantee of exactly one container restart per pod. External configuration/Secret overrides may change the rendered impact; review the preview for your values.
+
+The existing pre-upgrade migrations hook also runs when `migrations.enabled` is true. Preserve its `DATABASE_URL`, external PostgreSQL, Redis and RabbitMQ settings, encryption keys, and all other current overrides. Retain a tested database backup/recovery procedure before maintenance. A Helm rollback does not reverse database migrations.
 
 ## Features
 
 ### 1. Optional licence file mounting
 
-The chart now supports mounting a signed licence file from an existing Secret as an alternative to providing `secrets.LICENSE_KEY`. When `licenseFile.existingSecret` is set, the chart mounts the Secret as a directory at `/etc/lerian/license` on the API and all worker pods, and sets the `LICENSE_FILE_PATH` environment variable to point to the licence file.
+When `licenseFile.existingSecret` is nonempty, the chart mounts that existing Secret as a read-only directory at `/etc/lerian/license` on the API and each enabled worker, and sets `LICENSE_FILE_PATH=/etc/lerian/license/license`. The Secret must contain the key `license`.
 
 #### Why this matters
 
-- **File-based licensing:** Some deployments prefer to manage licences as files rather than environment variables, especially when using external secret management systems or certificate rotation workflows.
-- **Secret rotation:** Mounting the Secret as a directory (not using `subPath`) allows Kubernetes to propagate updates when the Secret is rotated, without requiring pod restarts.
-- **Backward compatibility:** The existing `secrets.LICENSE_KEY` method continues to work unchanged. You can choose either method.
+- **Preparatory wiring:** Operators can stage a file mount for a separately verified compatible application version. Staging it does not activate file licensing in the default images.
+- **Secret projection:** Mounting the directory without `subPath` permits Kubernetes to eventually update projected Secret content. This is not proof of application consumption or automatic reload.
+- **Existing licensing:** Continue using `LICENSE_KEY` with the default `1.1.0` images. Adding the mount does not establish file/key precedence.
 
 #### How it works
 
-The chart adds four new template helpers in `_helpers.tpl`:
+The chart adds four helpers in `templates/_helpers.tpl`:
 
-- `notifications.licenseFileSecret`: Returns the value of `licenseFile.existingSecret` if set.
-- `notifications.licenseFileEnv`: Injects the `LICENSE_FILE_PATH` environment variable when a licence file Secret is configured.
-- `notifications.licenseFileVolumeMount`: Adds the volume mount for the licence file directory.
-- `notifications.licenseFileVolume`: Adds the Secret volume definition.
+- `notifications.licenseFileSecret`: Returns `licenseFile.existingSecret` when configured.
+- `notifications.licenseFileEnv`: Supplies the `LICENSE_FILE_PATH` environment variable.
+- `notifications.licenseFileVolumeMount`: Adds the read-only directory mount.
+- `notifications.licenseFileVolume`: Adds the Secret volume and projects its `license` key as `license`.
 
-These helpers are applied to the API and all three worker Deployments (`worker-email`, `worker-sms`, `worker-webhook`).
+These helpers are applied to the API and all three worker Deployment templates (`worker-email`, `worker-sms`, `worker-webhook`).
 
-**Before (v1.0.2):**
+**Before (v1.0.2, API excerpt):**
 
 ```yaml
 # templates/api/deployment.yaml
-spec:
-  template:
-    spec:
-      containers:
-        - name: api
-          envFrom:
-            - configMapRef:
-                name: {{ include "notifications.configMapName" . }}
-            - secretRef:
-                name: {{ include "notifications.secretName" . }}
           {{- with .Values.api.extraEnvVars }}
           env:
             {{- range $key, $value := . }}
@@ -65,20 +60,10 @@ spec:
           {{- end }}
 ```
 
-**After (v1.1.0):**
+**After (v1.1.0, API excerpt):**
 
 ```yaml
 # templates/api/deployment.yaml
-spec:
-  template:
-    spec:
-      containers:
-        - name: api
-          envFrom:
-            - configMapRef:
-                name: {{ include "notifications.configMapName" . }}
-            - secretRef:
-                name: {{ include "notifications.secretName" . }}
           {{- $licenseEnv := include "notifications.licenseFileEnv" . }}
           {{- if or $licenseEnv .Values.api.extraEnvVars }}
           env:
@@ -89,24 +74,13 @@ spec:
             {{- end }}
           {{- end }}
           {{- with (include "notifications.licenseFileVolumeMount" . | trim) }}{{ . | nindent 10 }}{{ end }}
-          # ... probes ...
-      {{- with (include "notifications.licenseFileVolume" . | trim) }}{{ . | nindent 6 }}{{ end }}
 ```
 
-The worker Deployments receive identical changes, with the `LICENSE_FILE_PATH` environment variable injected into their existing `env:` blocks.
+The API retains its existing `envFrom` references. Its pod spec also receives the Secret volume. Workers receive the same mount and volume, and inject `LICENSE_FILE_PATH` into their existing `env` lists. Avoid conflicting `LICENSE_FILE_PATH` entries in component `extraEnvVars`.
 
 #### Secret validation changes
 
-The chart's Secret validation logic in `templates/secrets.yaml` now allows deployments without `secrets.LICENSE_KEY` if `licenseFile.existingSecret` is set:
-
-**Before (v1.0.2):**
-
-```yaml
-{{- if not .Values.secretRef.name }}
-{{- $_ := required "secrets.LICENSE_KEY is required: the api and every worker refuse to boot without it. Set it, or point secretRef.name at a Secret that carries LICENSE_KEY." .Values.secrets.LICENSE_KEY }}
-```
-
-**After (v1.1.0):**
+Previously, `templates/secrets.yaml` required `secrets.LICENSE_KEY` whenever `secretRef.name` was unset. In `1.1.0`, that requirement is also bypassed when `licenseFile.existingSecret` is set:
 
 ```yaml
 {{- if not .Values.secretRef.name }}
@@ -115,99 +89,132 @@ The chart's Secret validation logic in `templates/secrets.yaml` now allows deplo
 {{- end }}
 ```
 
-#### New environment variable
+This is a **render-time validation change only**. A successful file-only render does not mean the default application images can start without `LICENSE_KEY`.
 
-When `licenseFile.existingSecret` is set, the following environment variable is added to the API and all worker containers:
+#### New environment variable
 
 | Variable | Value | Description |
 |----------|-------|-------------|
-| `LICENSE_FILE_PATH` | `/etc/lerian/license/license` | Path to the mounted licence file; consumed by the application's licensing library |
+| `LICENSE_FILE_PATH` | `/etc/lerian/license/license` | Path supplied when a file Secret is configured; not consumed by the default `1.1.0` bootstrap. |
 
-> **Note:** The application requires lib-license-go v5 or later to support file-based licensing. Ensure your image version is compatible before switching to `licenseFile.existingSecret`.
+The chart comments describe file mode as requiring an image using lib-license-go v5. The shipped images use v4. Before any future file-only migration, verify the exact API and every enabled worker image, application bootstrap, precedence, file readability and rotation semantics. A library major version or a chart mount alone is insufficient evidence.
 
 ## Configuration Reference
 
 ### New values
 
-The following field has been added to `values.yaml`:
+The new value defaults to empty. The comments below clarify the default-image limitation rather than repeating the chart's broader alternative-license wording:
 
 ```yaml
-#==============================================================================
-# Licence file (optional alternative to secrets.LICENSE_KEY)
-#==============================================================================
 licenseFile:
-  # -- Existing Secret with the signed licence file (key `license`), mounted as a directory at
-  # /etc/lerian/license on the api and workers; secrets.LICENSE_KEY is then not required.
-  # File mode needs an image on lib-license-go v5.
+  # Existing Secret containing key `license`; optional preparatory mount.
+  # Keep LICENSE_KEY with the default API and worker images at 1.1.0.
   existingSecret: ""
 ```
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `licenseFile.existingSecret` | `""` | Name of an existing Secret containing the licence file under the key `license`. When set, `secrets.LICENSE_KEY` is no longer required. |
+| `licenseFile.existingSecret` | `""` | Existing file Secret name. Enables mount/env wiring and bypasses chart key validation, but does not remove the default images' runtime requirement for `LICENSE_KEY`. |
 
 ### Changed values
 
-The comment for `secrets.LICENSE_KEY` has been updated to reflect the new optional behaviour:
+The `secrets.LICENSE_KEY` default remains empty. Its chart comment changed from `REQUIRED: licence key; the api and every worker refuse to boot without it.` to `REQUIRED unless licenseFile.existingSecret is set: licence key; the api and every worker refuse to boot without a licence.` Interpret the exception as chart validation behavior, not default-image file support.
 
-| Setting | v1.0.2 | v1.1.0 |
-|---------|--------|--------|
-| `secrets.LICENSE_KEY` comment | `REQUIRED: licence key; the api and every worker refuse to boot without it.` | `REQUIRED unless licenseFile.existingSecret is set: licence key; the api and every worker refuse to boot without a licence.` |
+`secretRef.name` remains the existing external environment Secret mechanism. If it is used, retain `LICENSE_KEY` and all other required keys there. The file Secret is separate and is not managed by the chart.
 
 ## Migration Steps
 
-### Option 1: Continue using `secrets.LICENSE_KEY` (no action required)
+### Preserve the complete current configuration
 
-If you are already providing `secrets.LICENSE_KEY` via `values.yaml`, `--set`, or an external Secret referenced by `secretRef.name`, no change is required. The chart continues to work exactly as before.
+The examples use release `notifications` in namespace `notifications`. Change these to match the existing installation. Use the **same complete values file** for preview and upgrade, preserving all current overrides, including values originally passed through `--set` and the existing secret-injection process.
 
-### Option 2: Migrate to file-based licensing
+For GitOps-managed installations, update the authoritative configuration through the normal reconciliation process instead of introducing a competing manual Helm upgrade. For manually managed releases, export stored user-supplied values as a starting point:
 
-If you want to switch to file-based licensing:
+```bash
+RELEASE=notifications
+NAMESPACE=notifications
+umask 077
+VALUES_DIR=$(mktemp -d)
+VALUES_FILE="$VALUES_DIR/notifications-upgrade-values.yaml"
+helm get values "$RELEASE" -n "$NAMESPACE" -o yaml > "$VALUES_FILE"
+```
 
-1. **Verify image compatibility.** Ensure your application image uses lib-license-go v5 or later. Check the release notes or image tags for your deployment.
+This file may contain credentials. Protect it and do not commit or publish it. Securely remove unnecessary local copies after the upgrade according to your retention policy. Reconcile it with your authoritative configuration and review target defaults. If no user values were stored, replace a null/empty export with a valid YAML mapping and populate all required configuration. Do not replace the complete file with the small example below or blindly pin every computed old default.
 
-2. **Create a Secret with your licence file.** The Secret must contain a key named `license` with the signed licence file content:
+### Option 1: Continue using key-based licensing
+
+Keep `secrets.LICENSE_KEY`, or keep the external Secret referenced by `secretRef.name` with its `LICENSE_KEY` key. Preserve every other override and required key, including encryption keys and the migrations DSN. Leave `licenseFile.existingSecret` empty unless deliberately staging the mount. No licence-format migration is required.
+
+### Option 2: Stage a file mount while retaining the key
+
+This is optional chart preparation, not migration to file-only licensing.
+
+1. Obtain the intended signed licence file through your approved secure process. Create a Secret containing key `license` in the workload namespace. The following example assumes no `namespaceOverride`; if configured, create the Secret in that namespace instead. Replace the example local file path before running:
 
 ```bash
 kubectl create secret generic notifications-license \
   --from-file=license=/path/to/your/license.lic \
-  -n notifications
+  -n "$NAMESPACE"
 ```
 
-3. **Update your values to reference the Secret:**
+2. Merge this fragment into the complete file identified by `VALUES_FILE`, keeping the current `LICENSE_KEY` source and all other overrides:
 
 ```yaml
 licenseFile:
   existingSecret: "notifications-license"
 ```
 
-4. **Remove `secrets.LICENSE_KEY` from your values** (optional). If you set `licenseFile.existingSecret`, the chart no longer requires `secrets.LICENSE_KEY`. However, leaving it set does no harm; the application will use the file if `LICENSE_FILE_PATH` is present.
+3. Preview and upgrade using the commands below. **Do not remove `LICENSE_KEY`** from values or the external Secret with the default images. They do not select a file because `LICENSE_FILE_PATH` is present.
 
-5. **Run the upgrade** (see [Command to upgrade](#command-to-upgrade)).
-
-6. **Verify the mount:**
-
-```bash
-kubectl exec -n notifications deploy/notifications-api -- ls -la /etc/lerian/license
-```
-
-You should see the `license` file with read-only permissions.
-
-> **Important:** The licence file Secret is **not** managed by this chart. You must create and maintain it externally. The chart only mounts it. Ensure your Secret exists in the same namespace as the release before upgrading.
-
-> **Note:** The chart mounts the Secret as a directory (not using `subPath`). This allows Kubernetes to propagate updates when you rotate the Secret, without requiring a pod restart. The application will reload the licence file automatically if it supports hot reloading.
+The file Secret must exist before new pods start. Missing Secrets or a missing `license` key can prevent startup. Maintain and rotate the Secret externally. Projection updates are eventual; this guide makes no application reload guarantee and supplies no unverified replacement images.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.1.0 -n notifications
+helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/notifications-helm \
+  --version 1.1.0 -n "$NAMESPACE" -f "$VALUES_FILE"
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+Requires an installed, compatible [helm-diff plugin](https://github.com/databus23/helm-diff); review and pin plugins according to your environment policy. Diff output may contain sensitive configuration; keep it private. Review every change and the migrations hook before proceeding, using the same values and secret resolution process for preview and upgrade.
 
 ## Command to upgrade
 
 ```bash
-helm upgrade notifications oci://registry-1.docker.io/lerianstudio/notifications-helm --version 1.1.0 -n notifications
+helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/notifications-helm \
+  --version 1.1.0 -n "$NAMESPACE" -f "$VALUES_FILE" --wait --timeout 10m
 ```
+
+Do not run a bare `--set licenseFile.existingSecret=...` upgrade that loses unrelated release overrides. The complete preserved values file is the input to both commands above.
+
+## Verify
+
+Inspect the release and enabled Deployments:
+
+```bash
+helm status "$RELEASE" -n "$NAMESPACE"
+kubectl get deployments -n "$NAMESPACE" -l "app.kubernetes.io/instance=$RELEASE" -o name
+kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/instance=$RELEASE"
+```
+
+Wait for each enabled Deployment using the names returned above. With default names (omit disabled workers and adjust names for overrides):
+
+```bash
+kubectl rollout status deployment/notifications -n "$NAMESPACE" --timeout=10m
+kubectl rollout status deployment/notifications-worker-email -n "$NAMESPACE" --timeout=10m
+kubectl rollout status deployment/notifications-worker-sms -n "$NAMESPACE" --timeout=10m
+kubectl rollout status deployment/notifications-worker-webhook -n "$NAMESPACE" --timeout=10m
+```
+
+If `namespaceOverride` is set, use that workload namespace for all `kubectl` inspection and rollout commands, while retaining the release namespace for Helm commands.
+
+For a staged file mount, inspect PodSpec wiring without assuming a shell or `ls` exists inside the application image:
+
+```bash
+kubectl get deployments -n "$NAMESPACE" -l "app.kubernetes.io/instance=$RELEASE" \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{range .spec.template.spec.containers[*]}{.name}{"\n"}{.env}{"\n"}{.volumeMounts}{"\n"}{end}{.spec.template.spec.volumes}{"\n"}{end}'
+```
+
+Each enabled API/worker should have `LICENSE_FILE_PATH=/etc/lerian/license/license`, a read-only `license-file` mount at `/etc/lerian/license`, and a volume referencing the intended Secret and its `license` key, without `subPath`. This verifies configuration only, not application file consumption or licensing success. Confirm readiness and run your established application smoke tests.
+
+The successful migrations hook is normally deleted, so absence alone proves neither failure nor recovery. These instructions have been checked statically; they do not constitute an exercised live upgrade, automatic reload or database restore.
 <!-- {% endraw %} -->

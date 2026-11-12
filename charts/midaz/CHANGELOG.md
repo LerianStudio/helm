@@ -1,5 +1,75 @@
 # Midaz Changelog
 
+## [11.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.0.0)
+
+Features:
+- Run the bundled MongoDB as a one-member replica set. This change is significant as it alters the default setup of MongoDB within the application. (@fredcamaral)
+
+Fixes:
+- Allow the replica-set key to be generated when upgrading from a standalone setup. This ensures a smoother transition and avoids potential configuration issues during upgrades. (@fredcamaral)
+
+Improvements:
+- Document the process to hold the ledger and CRM at zero through the Argo CD sync, providing clearer guidance for maintaining system states during synchronization. (@fredcamaral)
+- Advise on keeping the MongoDB password off `kubectl exec` arguments for enhanced security practices. (@fredcamaral)
+- Include instructions to wait for the ledger to drain before performing a MongoDB dump, ensuring data consistency and integrity. (@fredcamaral)
+- Warn users that a `Recreate` update strategy will fail during the replica set upgrade, helping them avoid potential pitfalls during updates. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.3...midaz-v11.0.0)
+
+---
+
+## [10.4.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.3)
+
+Fixes:
+- Update `midaz-ledger` to `4.4.2`, `midaz-tracer` to `4.4.2`, `midaz-tracer-migrations` to `4.4.2`, and `midaz-ledger-migrations` to `4.4.2`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.2...midaz-v10.4.3)
+
+---
+
+## [10.4.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.2)
+
+Features:
+
+- Match the `4.4` ledger image tag instead of pinning a patch. (@fredcamaral)
+
+Fixes:
+
+- Allow per-component streaming SASL override on ledger and tracer. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.1...midaz-v10.4.2)
+
+---
+
+## [10.4.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.1)
+
+Fixes:
+- Update `midaz-ledger@4.4.1`, `midaz-tracer@4.4.1`, `midaz-tracer-migrations@4.4.1`, and `midaz-ledger-migrations@4.4.1`. (@bedatty, @lerian-studio)
+
+Improvements:
+- Scope the in-memory license note to `4.5.0-rc.2` images. (@fredcamaral)
+- Remove the license table grant from the `10.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.0...midaz-v10.4.1)
+
+---
+
+## [10.4.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.0)
+
+Features:
+- Add an optional license file mount for `lib-license-go` `v5`. (@fredcamaral)
+
+Improvements:
+- Scope the `10.3.3` pin notes per component. (@fredcamaral)
+- Add the verified `10.3.3` upgrade guide. (@fredcamaral)
+- Add the `10.3.4` upgrade guide. (@fredcamaral)
+- Name which migrations Jobs run in the `10.3.4` guide. (@fredcamaral)
+- Correct the `10.3.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.3.4...midaz-v10.4.0)
+
+---
+
 ## [10.3.4](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.3.4)
 
 Fixes:
@@ -1319,3 +1389,4 @@ In this release, the key focus is on improving documentation to help users bette
 ### Bug Fixes
 
 * generate multiples CHANGELOG's ([3f60787](https://github.com/LerianStudio/helm/commit/3f607875b618db474e4055c44a2cffd8216f4261))
+

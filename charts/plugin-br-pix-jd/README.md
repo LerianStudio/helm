@@ -87,6 +87,27 @@ To use a Secret that you manage, set `api.existingSecret.name`. The chart then r
 
 If you use argocd-vault-plugin, a `<path:...>` placeholder skips the chart's format checks, because the plugin substitutes it after Helm runs. The value in your vault must then hold the key in the right format — for a PEM, with real line breaks.
 
+## Installing behind the JD Courier
+
+When the install receives its JD traffic through the JD Courier, the Courier calls the API on a machine credential whose role is `service`, and the API admits that role only under the inverted authorization model. The chart models that as one block:
+
+| Key | What it does | Default |
+| :-- | :----------- | :------ |
+| `courier.enabled` | emits `AUTH_M2M_INVERSION_ENABLED="true"` **and** `AUTH_M2M_PRODUCT_FORWARD_ENABLED="true"` in the API ConfigMap, always as a pair: under the legacy model every Courier delivery answers `403`, and inversion without forward answers `403` just the same. The worker serves no Courier routes and never gets the pair. `false` emits neither variable — the application defaults both to off | `false` |
+| `courier.accountClaims.enabled` | emits `COURIER_ACCOUNT_CLAIMS_ENABLED="true"` in the **worker** ConfigMap only: the worker sweep that claims each participant's CRM accounts on its Courier. Requires `worker.enabled=true` — the render fails otherwise — and is independent of `courier.enabled` | `false` |
+
+Prerequisites that are not this chart's:
+
+- `api.configmap.PLUGIN_AUTH_ENABLED="true"`: the admission pair authorizes the Courier's bearer, so it does nothing with authentication off.
+- The Courier's credential, with source `jd-courier`: issued by the Tenant Manager in a multi-tenant install, or by the install's service-credential issuer in single-tenant.
+- The `service` role published to the Access Manager. In single-tenant, publish it with `api.configmap.IDP_DECLARATION_ENABLED="true"` (see Optional values above).
+- The Access Manager at **3.13.0 or later**.
+
+The Courier is also something this plugin calls — the on-us ownership lookup and the account claims — and the chart already models that side; set it with the keys that exist today:
+
+- `api.configmap.COURIER_URL`: the Courier's address, emitted only when set, single-tenant only — in multi-tenant each tenant's Courier comes from its `jd-spi` bundle and the variable is ignored. It must point at the Courier process running the **`admin`** role: only that role serves the ownership lookup, and a process in any other role answers `404` while its own health probe still reads up.
+- `api.secrets.COURIER_CLIENT_ID` and `api.secrets.COURIER_CLIENT_SECRET`: the Courier credentials, among the chart's Secret keys and emitted only when set. With `api.existingSecret.name`, carry them in that Secret instead.
+
 ## Install
 
 Pin the image in production with `api.image.tag`. Without it, the image follows the chart's `appVersion`, so a chart upgrade also changes the application version. Image tags have no leading `v`. The migrations image is pinned separately in `migrations.image.tag`. The worker image is pinned separately in `worker.image.tag`; it does not follow `api.image.tag`, so move it together with `api.image.tag`.

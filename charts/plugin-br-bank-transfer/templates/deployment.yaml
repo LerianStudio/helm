@@ -1,4 +1,5 @@
 {{- if .Values.bankTransfer.enabled }}
+{{- $h := include "bank-transfer.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,25 +9,21 @@ metadata:
     {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name ) | nindent 4 }}
 spec:
   revisionHistoryLimit: {{ .Values.bankTransfer.revisionHistoryLimit | default 10 }}
-  strategy:
-    type: {{ .Values.bankTransfer.deploymentUpdate.type }}
-    {{- if eq .Values.bankTransfer.deploymentUpdate.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.bankTransfer.deploymentUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.bankTransfer.deploymentUpdate.maxUnavailable }}
-    {{- end }}
-  {{- if not .Values.bankTransfer.autoscaling.enabled }}
-  replicas: {{ .Values.bankTransfer.replicaCount }}
+  strategy: {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "bank-transfer.selectorLabels" (dict "context" . "name" .Values.bankTransfer.name ) | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.bankTransfer.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- with .Values.bankTransfer.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "bank-transfer.labels" (dict "context" . "component" .Values.bankTransfer.name "name" .Values.bankTransfer.name "podTemplate" true) | nindent 8 }}
     spec:
@@ -35,6 +32,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "bank-transfer.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       securityContext:
         {{- toYaml .Values.bankTransfer.podSecurityContext | nindent 8 }}
       {{- /* Same global.multiTenant mask configmap.yaml resolves MULTI_TENANT_ENABLED through, so the
@@ -101,6 +99,7 @@ spec:
           - configMapRef:
               name: {{ include "bank-transfer.fullname" . }}
           env:
+          {{- toYaml $h.env | nindent 10 }}
           {{- $secretName := ternary .Values.bankTransfer.existingSecretName (include "bank-transfer.fullname" .) .Values.bankTransfer.useExistingSecret }}
           {{- $pg := .Values.postgresql | default dict }}
           {{- $pgAuth := $pg.auth | default dict }}
@@ -147,24 +146,10 @@ spec:
             - name: http
               containerPort: 4027
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.bankTransfer.livenessProbe.path | default "/health/live" }}
-              port: http
-            initialDelaySeconds: {{ .Values.bankTransfer.livenessProbe.initialDelaySeconds | default 15 }}
-            periodSeconds: {{ .Values.bankTransfer.livenessProbe.periodSeconds | default 20 }}
-            timeoutSeconds: {{ .Values.bankTransfer.livenessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ .Values.bankTransfer.livenessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.bankTransfer.livenessProbe.failureThreshold | default 3 }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.bankTransfer.readinessProbe.path | default "/readyz" }}
-              port: http
-            initialDelaySeconds: {{ .Values.bankTransfer.readinessProbe.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.bankTransfer.readinessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.bankTransfer.readinessProbe.timeoutSeconds | default 5 }}
-            successThreshold: {{ .Values.bankTransfer.readinessProbe.successThreshold | default 1 }}
-            failureThreshold: {{ .Values.bankTransfer.readinessProbe.failureThreshold | default 3 }}
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
           {{- with (include "bank-transfer.licenseFileMount" . | trim) }}
           volumeMounts:
             {{- . | nindent 12 }}

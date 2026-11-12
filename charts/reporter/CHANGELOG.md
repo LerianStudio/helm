@@ -1,5 +1,29 @@
 # Reporter Changelog
 
+## [5.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.1)
+
+Fixes:
+- Update `reporter-manager` to `4.9.0` and `reporter-worker` to `4.9.0`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.4.0...reporter-v5.4.1)
+
+---
+
+## [5.4.0](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.0)
+
+Features:
+- Add an optional license file mount for `lib-license-go` `v5`. (@fredcamaral)
+
+Improvements:
+- Add the `5.3.2` upgrade guide for reporter. (@fredcamaral)
+- Add AWS Mongo parameters step to the `5.3.2` guide. (@fredcamaral)
+- Correct worker pod label and Mongo parameters wording in the `5.3.2` guide. (@fredcamaral)
+- Scope the `5.3.2` guide to KEDA mode and correct override keys. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.3.2...reporter-v5.4.0)
+
+---
+
 ## [5.3.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.3.2)
 
 Fixes:
@@ -1080,3 +1104,4 @@ This changelog highlights the new feature that users will directly benefit from,
 ### Bug Fixes
 
 * generate multiples CHANGELOG's ([3f60787](https://github.com/LerianStudio/helm/commit/3f607875b618db474e4055c44a2cffd8216f4261))
+

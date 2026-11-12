@@ -160,3 +160,59 @@ Secret/Service names render even when all bundled subcharts are disabled
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+system-facts.licenseFileSecret — a component's licenseFile.existingSecret, "" when unset.
+Takes the component values dict. Mounted as a directory (never subPath, so rotations
+propagate) at /etc/lerian/license; LICENSE_FILE_PATH points at its `license` key.
+*/}}
+{{- define "system-facts.licenseFileSecret" -}}
+{{- ((. | default dict).licenseFile | default dict).existingSecret | default "" -}}
+{{- end }}
+
+{{- define "system-facts.licenseFileEnv" -}}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+
+{{- define "system-facts.licenseFileVolumeMount" -}}
+volumeMounts:
+  - name: license-file
+    mountPath: /etc/lerian/license
+    readOnly: true
+{{- end }}
+
+{{- define "system-facts.licenseFileVolume" -}}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
+
+{{/*
+Health preset (lerian-common.health) for the API and the worker: probes, ports, env, grace,
+rollout strategy, PDB, HPA floor and the API's internal health Service port. Read with fromYaml.
+minImage is the first image that serves HEALTH_PORT. It moves with values image.tag and Chart appVersion.
+The effective tag (explicit, else appVersion) is handed to the preset so a tag inherited from appVersion is guarded too.
+*/}}
+{{- define "system-facts.minImage" -}}1.2.0-beta.4{{- end -}}
+
+{{- define "system-facts.health" -}}
+{{- $c := deepCopy .values -}}
+{{- $_ := set $c "image" (dict "tag" (default .context.Chart.AppVersion ((.values.image | default dict).tag))) -}}
+{{- include "lerian-common.health" (dict
+      "name" .name "component" $c "health" .values.health "port" .port
+      "minImage" (include "system-facts.minImage" .context)
+      "replicas" .values.replicaCount "autoscaling" .values.autoscaling) -}}
+{{- end -}}
+
+{{- define "system-facts.api.health" -}}
+{{- $v := index .Values "system-facts" -}}
+{{- include "system-facts.health" (dict "context" . "name" "system-facts" "values" $v "port" $v.service.port) -}}
+{{- end -}}
+
+{{- define "system-facts.worker.health" -}}
+{{- include "system-facts.health" (dict "context" . "name" "system-facts-worker" "values" .Values.worker) -}}
+{{- end -}}

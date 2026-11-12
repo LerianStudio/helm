@@ -112,13 +112,13 @@ Input: root context (.).
 The existing-Secret path carries a KEY contract, not just a name: the
 Deployments pin STREAMING_HUB_POSTGRES_DSN,
 STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY and LICENSE_KEY via secretKeyRef
-(_deployment.tpl),
+(_deployment.tpl; LICENSE_KEY optional in licence-file mode),
 so the `required` message below states the full contract the external Secret
 must satisfy.
 */}}
 {{- define "streaming-hub.secretName" -}}
 {{- if .Values.streamingHub.useExistingSecret -}}
-{{- required "\n\nERROR: streamingHub.existingSecretName is required when streamingHub.useExistingSecret=true. The referenced Secret MUST carry the keys STREAMING_HUB_POSTGRES_DSN, STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY and LICENSE_KEY — the Deployments consume all three via explicit secretKeyRefs, and a Secret missing any of them fails container creation (CreateContainerConfigError) instead of starting the app." .Values.streamingHub.existingSecretName -}}
+{{- required "\n\nERROR: streamingHub.existingSecretName is required when streamingHub.useExistingSecret=true. The referenced Secret MUST carry the keys STREAMING_HUB_POSTGRES_DSN and STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY, plus LICENSE_KEY unless streamingHub.licenseFile.existingSecret is set (file mode, which needs an image on lib-license-go v5) — the Deployments consume them via explicit secretKeyRefs, and a Secret missing a required one fails container creation (CreateContainerConfigError) instead of starting the app." .Values.streamingHub.existingSecretName -}}
 {{- else -}}
 {{- include "streaming-hub.fullname" . -}}
 {{- end -}}
@@ -224,6 +224,12 @@ Input: none. Caller: nindent 12.
 - name: postgres-ca
   mountPath: /etc/streaming-hub/postgres-ca
   readOnly: true
+{{- end -}}
+
+{{/* Optional signed licence file Secret ("" = key mode). Nil-safe so
+     --reuse-values over an old release cannot nil-pointer. */}}
+{{- define "streaming-hub.licenseFileSecret" -}}
+{{- ((.Values.streamingHub.licenseFile | default dict).existingSecret | default "") -}}
 {{- end -}}
 
 {{/*

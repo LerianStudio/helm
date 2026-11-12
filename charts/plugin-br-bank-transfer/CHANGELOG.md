@@ -1,5 +1,51 @@
 # Plugin-br-bank-transfer Changelog
 
+## [3.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.3)
+
+Fixes:
+- Updated the plugin to roll pods when there are changes in the configmap and secret, ensuring that the latest configurations are always applied. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.2.2...plugin-br-bank-transfer-v3.2.3)
+
+---
+
+## [3.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.2)
+
+Fixes:
+- Corrected the indentation of the commented secrets examples under `bankTransfer.secrets` to maintain consistency. (@Leonardox7, @gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.2.1...plugin-br-bank-transfer-v3.2.2)
+
+---
+
+## [3.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.1)
+
+Fixes:
+- Default the chart to the stable `3.6.0` image. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.2.0...plugin-br-bank-transfer-v3.2.1)
+
+---
+
+## [3.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.2.0)
+
+Features:
+- Serve probes and metrics on the health port `8099`. (@fredcamaral)
+
+Fixes:
+- Quote PDB annotations and skip the PDB for a singleton. (@fredcamaral)
+- Refuse retired PDB and rollout overrides. (@fredcamaral)
+- Keep the component label in the PDB selector. (@fredcamaral)
+- Publish the health port only on a ClusterIP service. (@fredcamaral)
+- Update `plugin-br-bank-transfer@3.5.1`. (@lerian-studio)
+
+Improvements:
+- Keep the ALB health check on the traffic port. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-bank-transfer-v3.1.0...plugin-br-bank-transfer-v3.2.0)
+
+---
+
 ## [3.1.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-bank-transfer-v3.1.0)
 
 Features:

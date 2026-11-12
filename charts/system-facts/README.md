@@ -3,7 +3,7 @@
 ## Chart Contract
 
 - Chart type: `single-service`
-- Required secrets: `system-facts.secrets.POSTGRES_PASSWORD` (no default). `system-facts.secrets.LICENSE_KEY` (with `system-facts.configmap.ORGANIZATION_IDS`): the application refuses to boot without a valid key. `system-facts.secrets.FACTS_REFERENCE_HASH_KEY` (at least 32 bytes) and `system-facts.secrets.FACTS_REFERENCE_ENCRYPTION_KEY` (exactly 64 hex characters), no default: the application refuses to boot without them unless `system-facts.env` is `local`, `development` or `test`. `REDIS_PASSWORD` only when Redis/Valkey auth is on, `MULTI_TENANT_SERVICE_API_KEY` and `MULTI_TENANT_REDIS_PASSWORD` only when `system-facts.multiTenant.enabled=true`. When the bootstrap Job runs, `global.externalPostgresDefinitions.postgresAdminLogin.password` and `.boilerplateCredentials.password` are required too — or point both at an existing Secret.
+- Required secrets: `system-facts.secrets.POSTGRES_PASSWORD` (no default). `system-facts.secrets.LICENSE_KEY` (with `system-facts.configmap.ORGANIZATION_IDS`): the application refuses to boot without a valid key, unless `system-facts.licenseFile.existingSecret` names a Secret holding a signed licence file under the key `license` (mounted as a directory at `/etc/lerian/license`; file mode needs an image on lib-license-go v5). The worker takes `worker.secrets.LICENSE_KEY` or `worker.licenseFile.existingSecret` the same way. `system-facts.secrets.FACTS_REFERENCE_HASH_KEY` (at least 32 bytes) and `system-facts.secrets.FACTS_REFERENCE_ENCRYPTION_KEY` (exactly 64 hex characters), no default: the application refuses to boot without them unless `system-facts.env` is `local`, `development` or `test`. `REDIS_PASSWORD` only when Redis/Valkey auth is on, `MULTI_TENANT_SERVICE_API_KEY` and `MULTI_TENANT_REDIS_PASSWORD` only when `system-facts.multiTenant.enabled=true`. When the bootstrap Job runs, `global.externalPostgresDefinitions.postgresAdminLogin.password` and `.boilerplateCredentials.password` are required too — or point both at an existing Secret.
 - Dependency notes: `lerian-common-helm` (library, no objects of its own) plus PostgreSQL and Valkey, both declared with exact pins, condition-gated and **disabled by default** — the target environments provide them externally. Archives are not vendored in git; `helm dependency update` resolves them from `Chart.lock`.
 - Access Manager prerequisite: `plugin-access-manager` app **3.13.0 or later** (it catalogs the `system-facts` and `internal-facts-worker` applications and issues single-tenant service credentials), plus `AUTH_M2M_INVERSION_ENABLED` and `AUTH_M2M_PRODUCT_FORWARD_ENABLED` set to `"true"` on the service when authorization is on. See [Access Manager](#access-manager).
 - Production overrides: image tag and pull secrets, ingress host/TLS, resources, autoscaling, `system-facts.configmap.POSTGRES_HOST` / `REDIS_HOST`, and every credential above. `POSTGRES_SSLMODE` too: the chart renders `disable` unless `global.cloud` or `global.datastores.postgres.ssl` sets it, and with the default `system-facts.env` (`production`) the application refuses to boot on `disable`. Never ship a published default as a production secret.
@@ -190,11 +190,17 @@ migrations:
 - **Runner image.** Published by the `system-facts` release as
   `system-facts-migrations`; `.migrations.image.tag` is written by the release.
 
+## Health, probes and rollout
+
+The chart pairs with app images that serve `/health`, `/readyz` and `/metrics` on the internal **health port 8099** (`HEALTH_PORT`). The `lerian-common` health preset owns probes (`startup` and `liveness` on `/health`, `readiness` on `/readyz`, all on the named container port `health`), the drain and shutdown env, the grace period, the rollout strategy (`maxUnavailable: 0`) and the PodDisruptionBudget (`maxUnavailable: 1`, `unhealthyPodEvictionPolicy: AlwaysAllow`). The API runs 2 replicas (the autoscaler floors at 2). Port 8099 is a named ClusterIP Service port `health` only: no Ingress routes to it, and a LoadBalancer or NodePort Service drops it.
+
+The only knobs are `system-facts.health.drainSeconds` (default 15) and `shutdownSeconds` (default 30); grace = drain + shutdown + 10. Setting `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePeriodSeconds`, or `HEALTH_PORT` / `SHUTDOWN_*` in `configmap`, fails the render. The chart also refuses an `image.tag` below `1.2.0-beta.4` (pre-releases of older lines included). Roll back chart and image together: an older image on this chart fails the render.
+
 ## internal-facts-worker (optional)
 
 `worker.enabled=true` adds a second workload next to the API: the `system-facts-worker` image, which consumes product events from RedPanda and delivers them to the System Facts API as facts. Off by default, so a chart bump alone changes nothing.
 
-It renders a Deployment, ConfigMap, Secret and ServiceAccount, and **no** Service, Ingress, HPA, PDB, database, Redis or migrations: the admin port (`/health`, `/readyz`) is for the kubelet only. The worker pod carries its own `app.kubernetes.io/name` (`<name>-worker`), because the API Service, HPA and PDB select on the API's name and would otherwise pick it up.
+It renders a Deployment, ConfigMap, Secret and ServiceAccount, and **no** Service, Ingress, HPA, PDB, database, Redis or migrations: its only listener, the health port 8099 (`/health`, `/readyz`), is for the kubelet only. The worker pod carries its own `app.kubernetes.io/name` (`<name>-worker`), because the API Service, HPA and PDB select on the API's name and would otherwise pick it up.
 
 | Value | Env | Notes |
 |-------|-----|-------|
@@ -213,12 +219,12 @@ The consumer switch (`STREAMING_CONSUMER_ENABLED=true`) is always rendered. The 
 - the consumer switch is turned off (the worker would boot, stay ready and read nothing);
 - a required URL, broker, credential or SASL username/password is missing;
 - `worker.replicaCount` exceeds `worker.partitionCeiling` (default `1`). Parallelism is bounded by distinct tenants, so extra replicas idle with a green probe. Single-tenant Midaz stamps tenant `default` on every record: the ceiling there is 1;
-- `worker.terminationGracePeriodSeconds` is below 60 (consumer close 30 s + admin drain 10 s + telemetry flush);
+- `worker.health.shutdownSeconds` is below 50 (grace = shutdown + 10 must cover the 30 s consumer close plus the 30 s `SHUTDOWN_TIMEOUT`);
 - `WORKER_PRODUCTS` (from `worker.products`, `worker.configmap` or `worker.extraEnvVars`) has an empty entry, a duplicate, an unknown product, or `plugin-br-pix-jd` without `midaz` (its manifest mirrors `lerian.midaz.transaction_id`);
 - `SYSTEM_FACTS_URL` or `SYSTEM_FACTS_AUTH_URL` is plain `http://` while `SYSTEM_FACTS_ALLOW_INSECURE_HTTP` is not `true`. There is no loopback exception: a pod never reaches the API on its own loopback;
 - `SYSTEM_FACTS_ALLOW_INSECURE_HTTP` (through `worker.configmap` or `worker.extraEnvVars`) is not a Go boolean (`true`/`false`, `1`/`0`, `t`/`f`, `T`/`F`, `TRUE`/`FALSE`, `True`/`False`): the binary refuses it at boot.
 
-The image tag tracks `appVersion` when `worker.image.tag` is empty; the app release writes `.worker.image.tag`.
+The image tag tracks `appVersion` when `worker.image.tag` is empty; the app release writes `.worker.image.tag`. The chart refuses a tag below `1.2.0-beta.4`, the first image that serves the health port.
 
 ### Product selection and in-cluster http
 

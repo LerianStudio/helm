@@ -1,3 +1,4 @@
+{{- $licenseSecret := include "fetcher.licenseFileSecret" .Values.manager -}}
 {{- $h := include "fetcher-manager.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
@@ -67,6 +68,11 @@ spec:
           {{- $otelHostIP := or (eq (toString .Values.common.configmap.ENABLE_TELEMETRY) "true") (and (eq (toString (index $commonData "ENABLE_TELEMETRY")) "true") (eq (toString (index $commonData "OTEL_EXPORTER_OTLP_ENDPOINT")) "http://$(HOST_IP):4317")) }}
           env:
             {{- toYaml $h.env | nindent 12 }}
+          {{- if $licenseSecret }}
+            # Licence-file mode: the signed file replaces LICENSE_KEY (needs lib-license-go v5).
+            - name: LICENSE_FILE_PATH
+              value: /etc/lerian/license/license
+          {{- end }}
           {{- if $otelHostIP }}
             - name: "HOST_IP"
               valueFrom:
@@ -94,6 +100,13 @@ spec:
             {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.manager.resources | nindent 12 }}
+          {{- if $licenseSecret }}
+          # Directory mount, never subPath, so a rotated licence file propagates.
+          volumeMounts:
+            - name: license-file
+              mountPath: /etc/lerian/license
+              readOnly: true
+          {{- end }}
         {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
         - name: aws-signing-helper
           image: "{{ .Values.aws.rolesAnywhere.sidecar.image.repository }}:{{ .Values.aws.rolesAnywhere.sidecar.image.tag }}"
@@ -137,8 +150,10 @@ spec:
           resources:
             {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
         {{- end }}
-      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- $iam := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- if or $iam $licenseSecret }}
       volumes:
+      {{- if $iam }}
         - name: iam-certs
           secret:
             secretName: {{ .Values.aws.rolesAnywhere.certificateSecretName | default "fetcher-iam-tls" }}
@@ -148,6 +163,16 @@ spec:
                 path: tls.crt
               - key: tls.key
                 path: tls.key
+      {{- end }}
+      {{- if $licenseSecret }}
+        - name: license-file
+          secret:
+            secretName: {{ $licenseSecret | quote }}
+            defaultMode: 0444
+            items:
+              - key: license
+                path: license
+      {{- end }}
       {{- end }}
       {{- /* nodeSelector / affinity / tolerations + topologySpreadConstraints
              (global.scheduling.spread preset, manager.spread, manager.topologySpreadConstraints).

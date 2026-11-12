@@ -127,6 +127,7 @@ data:
   {{- include "plugin-br-pix-indirect-btg.mtlsConfig" . | nindent 2 }}
   {{- end }}
 
+  LICENSE_FILE_PATH: {{ .Values.reconciliation.configmap.LICENSE_FILE_PATH | default "" | quote }}
   # Extra Env Vars
   {{- with .Values.reconciliation.extraEnvVars }}
   {{- toYaml . | nindent 2 }}

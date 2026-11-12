@@ -479,7 +479,7 @@ Input: the root context ($).
     "ENV_NAME" "ALLOW_INSECURE_TLS" "LOG_LEVEL"
     "RABBITMQ_URI" "RABBITMQ_HOST" "RABBITMQ_PORT_HOST" "RABBITMQ_PORT_AMQP"
     "RABBITMQ_NUMBERS_OF_WORKERS" "RABBITMQ_EXCHANGE" "RABBITMQ_GENERATE_REPORT_QUEUE"
-    "RABBITMQ_GENERATE_REPORT_KEY" "RABBITMQ_REPORT_EVENTS_EXCHANGE"
+    "RABBITMQ_GENERATE_REPORT_KEY"
     "REDIS_HOST" "REDIS_USER" "REDIS_MASTER_NAME" "REDIS_DB" "REDIS_PROTOCOL" "REDIS_TLS" "REDIS_CA_CERT"
     "GOOGLE_APPLICATION_CREDENTIALS" "REDIS_SERVICE_ACCOUNT"
     "OBJECT_STORAGE_ENDPOINT" "OBJECT_STORAGE_REGION" "OBJECT_STORAGE_USE_PATH_STYLE"
@@ -604,13 +604,11 @@ MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
       "keys" (list "SD_ENABLED" "SD_ADDRESS" "SD_ADVERTISE_ADDRESS" "SD_ADVERTISE_PORT" "SD_WORKLOAD" "SD_TLS" "SD_TLS_SKIP_VERIFY")
       "defaults" (dict "SD_ADDRESS" "")) | nindent 0 }}
 {{- /* Streaming: knob inline; brokers/SASL/TLS transport + identity via global.streaming
-   (gated — inert unless enabled AND global.streaming.brokers is set). RABBITMQ_REPORT_EVENTS_EXCHANGE
-   is read only by app < 4.10.0 and stays passthrough. App >= 4.10.0 dials
+   (gated — inert unless enabled AND global.streaming.brokers is set). The app dials
    STREAMING_KAFKA_BROKERS instead of STREAMING_BROKERS; each component ConfigMap emits it
    through reporter.streamingKafkaBrokers. The ce-source must be the roster name "reporter":
    the app refuses to boot with any other value, whether or not streaming is enabled. */}}
 STREAMING_ENABLED: {{ $streamingRaw | default "false" | quote }}
-RABBITMQ_REPORT_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_REPORT_EVENTS_EXCHANGE | default "reporter.events" | quote }}
 {{- if $streamingEnabled }}
 {{- include "lerian-common.streaming.env" (dict
       "context" $

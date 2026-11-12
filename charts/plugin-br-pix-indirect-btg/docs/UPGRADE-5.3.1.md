@@ -89,10 +89,10 @@ This upgrade requires no manual migration steps or configuration changes. The im
 2. Verify your custom values file does not pin image tags to the beta version. If you have explicit overrides, decide whether to remove them to adopt the stable release or keep them:
 
 ```bash
-grep -E "tag.*1.14.0-beta" your-custom-values.yaml
+grep -E "tag.*1.14.0-beta" your-values.yaml
 ```
 
-3. Run the upgrade command with your edited values file (`-f your-values.yaml`). Without `-f`, Helm reuses the values stored in the release and keeps a beta tag pin.
+3. Prepare `your-values.yaml` with the complete intended deployment configuration, remove unwanted beta image-tag pins, and pass it to both preview and upgrade with `--reset-values -f your-values.yaml`. `--reset-values` prevents stored overrides from being reused, including when removing the last override leaves the file empty. Include every custom setting you intend to retain, including credentials or existing-Secret references. Keep this file private and remove temporary copies after validation. Do not use `--reuse-values` or `--reset-then-reuse-values` for this removal.
 
 4. Monitor the rollout status for all deployments:
 
@@ -115,7 +115,7 @@ kubectl logs -n midaz-plugins -l app.kubernetes.io/name=plugin-br-pix-indirect-b
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.1 -n midaz-plugins
+helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.1 -n midaz-plugins --reset-values -f your-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -123,5 +123,5 @@ helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianst
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.1 -n midaz-plugins
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.1 -n midaz-plugins --reset-values -f your-values.yaml
 ```

@@ -12,7 +12,7 @@
 
 ## Overview
 
-This guide covers the `plugin-br-payments` chart upgrade from `2.3.0` to `2.3.1`. The application version remains `1.2.0`; the chart bump to `2.3.1` is a patch release that removes TLS configuration options from the main HTTP server. The application now serves plain HTTP on its main port and expects TLS termination to occur at the Ingress or service mesh layer.
+This guide covers the `plugin-br-payments` chart upgrade from `2.3.0` to `2.3.1`. Both releases ship application image `1.2.0`. This patch removes TLS options from the chart-managed ConfigMap; it does not remove TLS capability from the unchanged binary. The chart-managed path expects upstream TLS termination and an HTTP backend.
 
 Existing deployments that set `SERVER_TLS_CERT_FILE` or `SERVER_TLS_KEY_FILE` in their values overlay must remove these keys before upgrading. The chart will fail fast at upgrade time if these keys are still present.
 
@@ -26,7 +26,7 @@ The chart no longer supports TLS termination at the application layer. Three env
 - `SERVER_TLS_CERT_FILE`
 - `SERVER_TLS_KEY_FILE`
 
-The application binary now serves plain HTTP on its main port. TLS termination must be handled by the Ingress controller or service mesh.
+Application `1.2.0` still reads all three variables. Its main listener uses TLS only when upstream termination is false and both certificate/key paths are supplied; otherwise it uses plain HTTP. In chart `2.3.0`, upstream termination defaulted to true, so certificate paths alone did not mean the application previously served HTTPS.
 
 **Before (v2.3.0):**
 
@@ -53,13 +53,13 @@ ERROR: app.configmap.SERVER_TLS_KEY_FILE is no longer read by plugin-br-payments
 
 **Operational impact:**
 
-If your deployment previously set `SERVER_TLS_CERT_FILE` or `SERVER_TLS_KEY_FILE` in `app.configmap`, the application was attempting to serve HTTPS on its main port. After upgrading to v2.3.1, the application will serve plain HTTP. You must ensure TLS termination is configured at the Ingress or service mesh layer before upgrading.
+Audit the effective environment, existing Secrets loaded through `envFrom`, `app.extraEnvVars` and any custom pod configuration before changing backend protocol. Those paths can supply settings independently of the removed ConfigMap entries. Do not bypass the chart guards to retain retired `app.configmap` fields. The validation errors quoted above describe the chart contract, not the unchanged binary's implementation.
 
 If you rely on end-to-end encryption between the Ingress and the application pod, you must reconfigure your architecture to terminate TLS at the Ingress or enable mTLS via a service mesh (e.g., Istio, Linkerd).
 
-> **Warning:** If your Ingress is configured to forward HTTPS traffic directly to the application pod (e.g., `backend.protocol: HTTPS` in an AWS ALB Ingress annotation), you must change it to HTTP before upgrading. The application will no longer accept TLS connections on its main port.
+> **Warning:** If the effective backend currently serves TLS, coordinate its cutover to HTTP with the Ingress/mesh configuration. Verify the actual pre-upgrade transport first; do not change backend protocol solely because a certificate path appeared in the old values file.
 
-> **Important:** The `TLS_TERMINATED_UPSTREAM` flag has also been removed. If you previously set this to `"false"` to enable application-layer TLS, that configuration is no longer supported. The application now assumes TLS is always terminated upstream.
+> **Important:** The chart no longer renders `TLS_TERMINATED_UPSTREAM`; only the two certificate/key fields are rejected under `app.configmap`. The binary still reads the flag. Confirm no alternative environment injection retains main-listener TLS settings when adopting the chart-managed HTTP path.
 
 ## Configuration Changes
 
@@ -97,40 +97,48 @@ No new configuration values were added. The chart now enforces that `SERVER_TLS_
        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
    ```
 
-3. If you previously mounted TLS certificate and key files into the application pod via `volumeMounts` or `volumes`, remove those mounts from your values overlay. The application will no longer read them.
+3. Remove only main-listener certificate mounts confirmed unused after the HTTP cutover. Do not remove unrelated outbound/provider TLS or Roles Anywhere certificates. This historical chart does not provide generic `app.volumeMounts`/`app.volumes` wiring; inspect separately managed pod customizations instead of assuming those values are supported.
 
 4. **(Optional)** If you require end-to-end encryption between the Ingress and the application pod, configure a service mesh with mTLS (e.g., Istio, Linkerd) before upgrading.
 
-5. Run the upgrade command during a maintenance window (see [Command to upgrade](#command-to-upgrade)).
+5. Preserve every other installation-specific override in the same complete maintained file, called `values.yaml` below. Keep it outside version control and restrict its permissions if it contains secrets. Preview and upgrade during a maintenance window. Both commands deliberately use `--reset-values` with that complete file to drop retired stored keys; do not supply an incomplete TLS-only overlay.
 
 6. Verify all pods are running and healthy after the upgrade:
 
    ```bash
-   kubectl get pods -n <namespace>
+   kubectl rollout status -n midaz-plugins deployment/plugin-br-payments --timeout=300s
+   kubectl get pods -n midaz-plugins -l app.kubernetes.io/name=plugin-br-payments,app.kubernetes.io/instance=my-payments
    ```
 
 7. Confirm the application is serving HTTP on its main port by checking the Service and pod logs:
 
    ```bash
-   kubectl logs -n <namespace> -l app.kubernetes.io/name=plugin-br-payments-helm --tail=50
+   kubectl logs -n midaz-plugins -l app.kubernetes.io/name=plugin-br-payments,app.kubernetes.io/instance=my-payments --tail=50
    ```
 
-   You should see log entries indicating the HTTP server started on the configured port (default `8080`), with no references to TLS certificate loading.
+   Inspect startup configuration and effective backend transport separately; absence of a TLS log line is not proof. These commands assume release `my-payments`, namespace `midaz-plugins` and the default application name. Adapt them consistently if overridden.
 
-8. Test an HTTP request to the application through the Ingress to verify TLS termination is working correctly:
+8. Test the dedicated internal health listener, not the main-port Ingress. In one terminal:
 
    ```bash
-   curl -v https://<your-ingress-host>/health
+   kubectl port-forward -n midaz-plugins deployment/plugin-br-payments 18099:8099
    ```
 
-   The TLS handshake should complete at the Ingress, and the application should respond over plain HTTP.
+   In another terminal:
+
+   ```bash
+   curl --fail http://127.0.0.1:18099/health
+   curl --fail http://127.0.0.1:18099/readyz
+   ```
+
+   Verify Ingress TLS separately against a known public application route with the required authentication. A successful front-end TLS handshake does not establish backend transport. Do not expose the internal health listener publicly for this test.
 
 > **Note:** The upgrade triggers a rolling restart of the plugin pods. Depending on your replica count and readiness probe configuration, this may cause brief request handling interruptions.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.3.1
+helm diff upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.3.1 --reset-values -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -138,5 +146,5 @@ helm diff upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm
 ## Command to upgrade
 
 ```bash
-helm upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.3.1
+helm upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.3.1 --reset-values -f values.yaml
 ```

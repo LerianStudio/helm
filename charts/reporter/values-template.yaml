@@ -47,8 +47,9 @@ global:
   auth: {}
     # enabled: "true"
     # host: "http://plugin-access-manager-auth:4000"
-  # -- Streaming backend (only when STREAMING_ENABLED=true; the worker needs it
-  # for Fetcher job-event notifications since fetcher 2.0.0-beta.5).
+  # -- Streaming backend (only when STREAMING_ENABLED=true). App >= 4.10.0 publishes every
+  # business event to Kafka; single-tenant installs set brokers, which the chart passes as
+  # STREAMING_KAFKA_BROKERS. Multi-tenant installs take brokers from the Tenant Manager.
   streaming: {}
     # brokers: "redpanda:9092"
   # -- Env-wide multi-tenancy gate. When true, also set MULTI_TENANT_URL etc.

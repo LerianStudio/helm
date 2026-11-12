@@ -86,13 +86,13 @@ LICENSE_FILE_PATH: {{ .Values.<component>.configmap.LICENSE_FILE_PATH | default 
 
 **Why it matters:**
 
-This change provides explicit control over the license file path at the application level. Operators who mount license files via the `licenseFile.existingSecret` mechanism can now configure the application to read from a specific path, or use a completely custom mount point.
+This change adds ConfigMap overrides for an explicitly mounted license file. When `licenseFile.existingSecret` is set, the chart already mounts the Secret and explicitly sets `LICENSE_FILE_PATH=/etc/lerian/license/license` for every component; that environment entry takes precedence over the ConfigMap override.
 
 **Operational impact:**
 
-If you do not set `LICENSE_FILE_PATH`, the variable defaults to an empty string and the application will continue to use its built-in license discovery logic (typically checking `LICENSE_KEY` environment variable or default file paths like `/etc/lerian/license/license`).
+When the effective `LICENSE_FILE_PATH` is empty, application version `1.15.0` uses `LICENSE_KEY`; it does not automatically search default file paths. A nonempty `LICENSE_FILE_PATH` selects file-based licensing.
 
-If you use the `licenseFile.existingSecret` feature and want to explicitly point the application to the mounted license file, set the path per component:
+No ConfigMap path override is needed with `licenseFile.existingSecret`. For a license file mounted by another mechanism, leave `licenseFile.existingSecret` empty and set the actual file path per component; the following example assumes that mechanism mounts the file at `/etc/lerian/license/license`:
 
 ```yaml
 pix:
@@ -122,7 +122,7 @@ schedule:
 
 ## Configuration Reference
 
-The following new configuration keys are available in `values.yaml`:
+The following override keys are supported by the ConfigMap templates and may be added to your custom values file. Their template default is an empty string; they are not listed in the chart's default `values.yaml`.
 
 | Key | Default | Description |
 |-----|---------|-------------|
@@ -166,24 +166,24 @@ This upgrade requires no destructive migration steps. The new `LICENSE_FILE_PATH
 
 2. Review the changes using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
 
-3. If you use the `licenseFile.existingSecret` feature and want to explicitly configure the license file path, add the `LICENSE_FILE_PATH` override to your custom values file for each component as shown in [Configuration Reference](#configuration-reference).
+3. If using `licenseFile.existingSecret`, no path override is needed. For a file mounted by another mechanism, leave `licenseFile.existingSecret` empty and configure each component's `LICENSE_FILE_PATH` with its actual mounted path as shown in [Configuration Reference](#configuration-reference). The preview and upgrade commands below use `values.yaml`: this must be your complete maintained values file, preserving all installation-specific overrides, with the intended changes applied. Keep it outside version control and restrict its permissions if it contains secrets.
 
 4. Run the upgrade command during a maintenance window.
 
-5. Verify all pods are running and healthy after the upgrade:
+5. Inspect all five application workloads after the upgrade. The commands below assume the documented release name and default component names; adapt both if overridden. Pod listing alone does not establish readiness; check the READY/STATUS columns and each Deployment's rollout status.
 
 ```bash
-kubectl get pods -n midaz-plugins -l app.kubernetes.io/name=plugin-br-pix-indirect-btg
+kubectl get pods -n midaz-plugins -l 'app.kubernetes.io/instance=plugin-br-pix-indirect-btg,app.kubernetes.io/name in (plugin-br-pix-indirect-btg,plugin-br-pix-indirect-btg-worker-inbound,plugin-br-pix-indirect-btg-worker-outbound,plugin-br-pix-indirect-btg-worker-reconciliation,plugin-br-pix-indirect-btg-worker-schedule)'
 ```
 
 6. Check the logs of each component to confirm the license is loaded correctly:
 
 ```bash
-kubectl logs -n midaz-plugins -l app.kubernetes.io/component=pix --tail=50
-kubectl logs -n midaz-plugins -l app.kubernetes.io/component=inbound --tail=50
-kubectl logs -n midaz-plugins -l app.kubernetes.io/component=outbound --tail=50
-kubectl logs -n midaz-plugins -l app.kubernetes.io/component=reconciliation --tail=50
-kubectl logs -n midaz-plugins -l app.kubernetes.io/component=schedule --tail=50
+kubectl logs -n midaz-plugins -l app.kubernetes.io/instance=plugin-br-pix-indirect-btg,app.kubernetes.io/name=plugin-br-pix-indirect-btg --tail=50
+kubectl logs -n midaz-plugins -l app.kubernetes.io/instance=plugin-br-pix-indirect-btg,app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-inbound --tail=50
+kubectl logs -n midaz-plugins -l app.kubernetes.io/instance=plugin-br-pix-indirect-btg,app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-outbound --tail=50
+kubectl logs -n midaz-plugins -l app.kubernetes.io/instance=plugin-br-pix-indirect-btg,app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-reconciliation --tail=50
+kubectl logs -n midaz-plugins -l app.kubernetes.io/instance=plugin-br-pix-indirect-btg,app.kubernetes.io/name=plugin-br-pix-indirect-btg-worker-schedule --tail=50
 ```
 
 > **Note:** The upgrade triggers a rolling restart of all five deployments (`pix`, `inbound`, `outbound`, `reconciliation`, `schedule`) because the image tag and ConfigMap spec change. Depending on your replica count and probe timing, this may cause brief service interruptions.
@@ -191,7 +191,7 @@ kubectl logs -n midaz-plugins -l app.kubernetes.io/component=schedule --tail=50
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm -n midaz-plugins --version 5.5.0
+helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm -n midaz-plugins --version 5.5.0 -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -199,6 +199,6 @@ helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianst
 ## Command to upgrade
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm -n midaz-plugins --version 5.5.0
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm -n midaz-plugins --version 5.5.0 -f values.yaml
 ```
 <!-- {% endraw %} -->

@@ -1,5 +1,17 @@
 # Plugin-br-payments Changelog
 
+## [2.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.5.1)
+
+Features:
+- Updated `plugin-br-payments` to `@1.4.0`. (@bedatty, @lerian-studio)
+
+Improvements:
+- Added a Helm upgrade guide for `plugin-br-payments` `v2.4.0`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.5.0...plugin-br-payments-v2.5.1)
+
+---
+
 ## [2.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.5.0)
 
 Features:

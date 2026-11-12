@@ -11,7 +11,7 @@
 
 ### 1. Midaz application version bump to 4.4.1
 
-This release updates the Midaz application from version 4.4.0 to 4.4.1 across all components. This is a patch-level application update that includes bug fixes and minor improvements to the ledger, tracer, and migration runner images.
+This release updates the Midaz application from version 4.4.0 to 4.4.1 for the ledger, enabled tracer, and their migration runners (legacy CRM is unchanged). This is a patch-level application update that includes bug fixes and minor improvements to the ledger, tracer, and migration runner images.
 
 #### What changed
 
@@ -21,8 +21,10 @@ This release updates the Midaz application from version 4.4.0 to 4.4.1 across al
 | Application version | 4.4.0 | 4.4.1 |
 | `ledger.image.tag` | 4.4.0 | 4.4.1 |
 | `tracer.image.tag` | 4.4.0 | 4.4.1 |
-| `midaz-ledger-migrations.image.tag` | 4.4.0 | 4.4.1 |
-| `midaz-tracer-migrations.image.tag` | 4.4.0 | 4.4.1 |
+| Ledger migration image (default) | 4.4.0 | 4.4.1 |
+| Tracer migration image (default, if enabled) | 4.4.0 | 4.4.1 |
+
+The effective migration overrides are `ledger.migrations.image.tag` and `tracer.migrations.image.tag`. When empty, each follows its component's `image.tag`; an explicit migration pin takes precedence. The similarly named root `midaz-ledger-migrations` and `midaz-tracer-migrations` blocks in the shipped values file are not consumed by these templates.
 
 **Before (v10.4.0):**
 
@@ -30,18 +32,17 @@ This release updates the Midaz application from version 4.4.0 to 4.4.1 across al
 ledger:
   image:
     tag: "4.4.0"
+  migrations:
+    image:
+      tag: "4.4.0"
 
 tracer:
   image:
     tag: "4.4.0"
+  migrations:
+    image:
+      tag: "4.4.0"
 
-midaz-ledger-migrations:
-  image:
-    tag: 4.4.0
-
-midaz-tracer-migrations:
-  image:
-    tag: 4.4.0
 ```
 
 **After (v10.4.1):**
@@ -50,18 +51,17 @@ midaz-tracer-migrations:
 ledger:
   image:
     tag: "4.4.1"
+  migrations:
+    image:
+      tag: "4.4.1"
 
 tracer:
   image:
     tag: "4.4.1"
+  migrations:
+    image:
+      tag: "4.4.1"
 
-midaz-ledger-migrations:
-  image:
-    tag: 4.4.1
-
-midaz-tracer-migrations:
-  image:
-    tag: 4.4.1
 ```
 
 #### Operational impact
@@ -75,7 +75,7 @@ midaz-tracer-migrations:
 
 #### Action required
 
-No action required. The image tag update is applied automatically during the Helm upgrade. The chart will pull the new 4.4.1 images and perform a rolling restart of the ledger and tracer deployments.
+With default image settings, the update is applied during Helm upgrade. Explicit component or migration image pins remain in force: review and update them together if you intend to move to 4.4.1. Tracer effects apply only when enabled. Apply any edited, complete values file explicitly with `-f` to both preview and upgrade commands.
 
 ## Preview changes before upgrading
 

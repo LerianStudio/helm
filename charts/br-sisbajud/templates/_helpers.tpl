@@ -771,6 +771,7 @@ STA_OBJECT_STORAGE_ENDPOINT: {{ include $osv (dict "context" $ "dedicated" $osDe
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "transfersBaseUrl" "k" "STA_TRANSFERS_BASE_URL" "d" "") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "documentTypeAjud302" "k" "STA_DOCUMENT_TYPE_AJUD302" "d" "AJUD302") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "documentTypeAjud309" "k" "STA_DOCUMENT_TYPE_AJUD309" "d" "AJUD309") }}
+{{ include $kv (dict "cm" $cm "p" $b.sta "f" "documentTypeAjud302b" "k" "STA_DOCUMENT_TYPE_AJUD302B" "d" "AJUD302B") }}
 {{ include $kv (dict "cm" $cm "p" $b.sta "f" "clientId" "k" "STA_CLIENT_ID" "d" "") }}
 {{- /* br-sta's own cluster for the fact consumer (never global.streaming). */}}
 {{- $staStream := ($b.sta | default dict).stream | default dict }}

@@ -155,7 +155,7 @@ Parity rules the app enforces are single-sourced: `TRANSFER_OBJECT_STORAGE_BUCKE
 | `sta.expectedTenantSt` | `STA_EXPECTED_TENANT_ST` | `""` (always emitted: the app checks presence) |
 | `sta.maxInboundSizeBytes` | `STA_MAX_INBOUND_SIZE_BYTES` | `52428800` |
 | `sta.transfersEnabled` / `transfersBaseUrl` / `clientId` | `STA_TRANSFERS_ENABLED` / `STA_TRANSFERS_BASE_URL` / `STA_CLIENT_ID` | `false` / `""` / `""` |
-| `sta.documentTypeAjud302` / `documentTypeAjud309` | `STA_DOCUMENT_TYPE_AJUD302` / `STA_DOCUMENT_TYPE_AJUD309` | `AJUD302` / `AJUD309` |
+| `sta.documentTypeAjud302` / `documentTypeAjud309` / `documentTypeAjud302b` | `STA_DOCUMENT_TYPE_AJUD302` / `STA_DOCUMENT_TYPE_AJUD309` / `STA_DOCUMENT_TYPE_AJUD302B` | `AJUD302` / `AJUD309` / `AJUD302B` |
 | `workers.kekRewrapBackfill.{enabled,scanInterval,batchSize}` | `KEK_REWRAP_BACKFILL_*` | `false` / `300` / `100` |
 | `workers.slaAlert.{enabled,scanInterval}` | `SLA_ALERT_*` | `false` / `60` |
 | `workers.returnFile.{enabled,scanInterval,limit,environment}` | `RETURN_FILE_GENERATION_*`, `RETURN_FILE_ENVIRONMENT` | `false` / `3600` / `500` / `HOMOLOGATION` |

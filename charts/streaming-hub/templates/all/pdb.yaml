@@ -1,3 +1,3 @@
-{{- if and (eq .Values.streamingHub.mode "all") .Values.streamingHub.all.pdb.enabled }}
+{{- if eq .Values.streamingHub.mode "all" }}
 {{- include "streaming-hub.pdb" (dict "root" . "component" "all") }}
 {{- end }}

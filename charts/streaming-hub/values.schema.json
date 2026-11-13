@@ -95,28 +95,6 @@
           "additionalProperties": true,
           "description": "Annotations applied to every pod."
         },
-        "deploymentStrategy": {
-          "type": "object",
-          "description": "Deployment update strategy (shared by all roles).",
-          "properties": {
-            "type": {
-              "default": "RollingUpdate"
-            },
-            "rollingUpdate": {
-              "type": "object",
-              "properties": {
-                "maxSurge": {
-                  "default": 1
-                },
-                "maxUnavailable": {
-                  "default": 0
-                }
-              },
-              "additionalProperties": true
-            }
-          },
-          "additionalProperties": true
-        },
         "podSecurityContext": {
           "type": "object",
           "additionalProperties": true,
@@ -231,54 +209,6 @@
             "automountServiceAccountToken": {
               "default": false,
               "description": "Mount the SA API token into pods. Default false — the hub makes no"
-            }
-          },
-          "additionalProperties": true
-        },
-        "terminationGracePeriodSeconds": {
-          "default": 80,
-          "description": "Graceful-shutdown window. Defaults to the hub's derived SIGTERM drain"
-        },
-        "livenessProbe": {
-          "type": "object",
-          "description": "Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).",
-          "properties": {
-            "initialDelaySeconds": {
-              "default": 15
-            },
-            "periodSeconds": {
-              "default": 20
-            },
-            "timeoutSeconds": {
-              "default": 5
-            },
-            "successThreshold": {
-              "default": 1
-            },
-            "failureThreshold": {
-              "default": 3
-            }
-          },
-          "additionalProperties": true
-        },
-        "readinessProbe": {
-          "type": "object",
-          "description": "Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM).",
-          "properties": {
-            "initialDelaySeconds": {
-              "default": 10
-            },
-            "periodSeconds": {
-              "default": 10
-            },
-            "timeoutSeconds": {
-              "default": 5
-            },
-            "successThreshold": {
-              "default": 1
-            },
-            "failureThreshold": {
-              "default": 3
             }
           },
           "additionalProperties": true
@@ -426,7 +356,6 @@
               "STREAMING_HUB_POSTGRES_CONN_MAX_LIFETIME",
               "STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS",
               "STREAMING_HUB_POSTGRES_MAX_OPEN_CONNS",
-              "STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT",
               "STREAMING_HUB_PULL_BURST",
               "STREAMING_HUB_PULL_RATE",
               "STREAMING_HUB_READ_RATE",
@@ -436,7 +365,6 @@
               "STREAMING_HUB_REDIS_CA_CERT",
               "STREAMING_HUB_REDIS_TLS",
               "STREAMING_HUB_ROLE",
-              "STREAMING_HUB_SHUTDOWN_TIMEOUT",
               "STREAMING_HUB_SWAGGER_ENABLED",
               "STREAMING_HUB_TENANT_ID"
             ]
@@ -543,7 +471,7 @@
           "type": "object",
           "properties": {
             "replicaCount": {
-              "default": 1
+              "default": 2
             },
             "poolMaxOpenConns": {
               "default": 25
@@ -589,7 +517,7 @@
                   "description": "HPA off by default; replicaCount governs. maxReplicas × poolMaxOpenConns"
                 },
                 "minReplicas": {
-                  "default": 1
+                  "default": 2
                 },
                 "maxReplicas": {
                   "default": 3
@@ -599,22 +527,6 @@
                 },
                 "targetMemoryUtilizationPercentage": {
                   "default": 80
-                }
-              },
-              "additionalProperties": true
-            },
-            "pdb": {
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "default": false
-                },
-                "minAvailable": {
-                  "default": 1
-                },
-                "annotations": {
-                  "type": "object",
-                  "additionalProperties": true
                 }
               },
               "additionalProperties": true
@@ -637,7 +549,7 @@
           "type": "object",
           "properties": {
             "replicaCount": {
-              "default": 1
+              "default": 2
             },
             "poolMaxOpenConns": {
               "default": 8
@@ -682,7 +594,7 @@
                   "default": false
                 },
                 "minReplicas": {
-                  "default": 1
+                  "default": 2
                 },
                 "maxReplicas": {
                   "default": 4,
@@ -693,22 +605,6 @@
                 },
                 "targetMemoryUtilizationPercentage": {
                   "default": 80
-                }
-              },
-              "additionalProperties": true
-            },
-            "pdb": {
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "default": false
-                },
-                "minAvailable": {
-                  "default": 1
-                },
-                "annotations": {
-                  "type": "object",
-                  "additionalProperties": true
                 }
               },
               "additionalProperties": true
@@ -731,7 +627,7 @@
           "type": "object",
           "properties": {
             "replicaCount": {
-              "default": 1
+              "default": 2
             },
             "poolMaxOpenConns": {
               "default": 16
@@ -776,7 +672,7 @@
                   "default": false
                 },
                 "minReplicas": {
-                  "default": 1
+                  "default": 2
                 },
                 "maxReplicas": {
                   "default": 4,
@@ -787,22 +683,6 @@
                 },
                 "targetMemoryUtilizationPercentage": {
                   "default": 80
-                }
-              },
-              "additionalProperties": true
-            },
-            "pdb": {
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "default": false
-                },
-                "minAvailable": {
-                  "default": 1
-                },
-                "annotations": {
-                  "type": "object",
-                  "additionalProperties": true
                 }
               },
               "additionalProperties": true
@@ -820,6 +700,30 @@
             }
           },
           "additionalProperties": true
+        },
+        "health": {
+          "type": "object",
+          "description": "lerian-common health preset tuning (stack go).",
+          "properties": {
+            "stack": {
+              "enum": [
+                "go"
+              ],
+              "default": "go"
+            },
+            "drainSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 15
+            },
+            "shutdownSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 34,
+              "default": 30
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": true

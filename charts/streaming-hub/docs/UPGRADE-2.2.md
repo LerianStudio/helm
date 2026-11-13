@@ -1,7 +1,7 @@
 <!-- {% raw %} -->
 # Helm Upgrade from v2.1.0 to v2.2.0
 
-`streaming-hub` 2.2.0 ships Streaming Hub 3.4.0 and moves probes, drain and the disruption budget to the `lerian-common` health preset. The Hub serves `/health`, `/readyz` and `/metrics` on the internal health port 8099 (`HEALTH_PORT`). Upgrade the chart and the image together: the chart refuses an `image.tag` below `3.3.0` (explicit, or inherited from `appVersion`), and Hub 3.3.0 or later no longer serves `/healthz`, so the old probes would return 404 on the new image.
+`streaming-hub` 2.2.0 ships Streaming Hub 3.4.0 and moves probes, drain and the disruption budget to the `lerian-common` health preset. The Hub serves `/health`, `/readyz` and `/metrics` on the internal health port 8099 (`HEALTH_PORT`). Upgrade the chart and the image together: the chart refuses an `image.tag` below `3.3.0`.
 
 ## What changes
 
@@ -41,9 +41,6 @@ A `--reuse-values` upgrade from 2.1.0 carries the removed keys and fails the ren
 -  configmap:
 -    STREAMING_HUB_SHUTDOWN_TIMEOUT: "30s"
 -    STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT: "5s"
-+  health:
-+    drainSeconds: 15
-+    shutdownSeconds: 30
 ```
 
 ## Before you upgrade
@@ -53,13 +50,12 @@ A `--reuse-values` upgrade from 2.1.0 carries the removed keys and fails the ren
 3. **License.** Hub 3.4.0 validates a signed license file (lib-license-go v5). With `LICENSE_KEY`, the pod needs egress to `https://license.lerian.io` at every boot. While the server is unreachable the pod stays up but not ready (8080 closed) and is not restarted; a refused key exits the pod. Without access to the license server, mount a signed license file with `streamingHub.licenseFile.existingSecret` (Secret key `license`, mounted as a directory at `/etc/lerian/license`); the chart sets `LICENSE_FILE_PATH`, which wins over `LICENSE_KEY`.
 4. **BYOC network policy.** The kubelet probes the pod on 8099 now. A policy that admits only 8080 must also admit the node to 8099.
 5. **Load balancer and uptime checks.** A check on `/healthz`, `/readyz` or `/metrics` on 8080 returns 404. Point it at `/health` on 8080 (the chart forces this on an ALB Ingress). Never route an Ingress to 8099.
-6. **Scraping.** Point Prometheus at the pod's port 8099 `/metrics`, inside the cluster.
-7. **Footprint.** Each role now runs 2 replicas, so Postgres connections double; check Σ(replicas x `poolMaxOpenConns`) against `max_connections`. The PDB needs Kubernetes 1.27 or later (`unhealthyPodEvictionPolicy`).
-8. **Readiness behavior.** `/readyz` latches after the first success: a later Postgres or Kafka outage is reported but does not pull the pod from the Service. The pod no longer flips NotReady on SIGTERM; it keeps serving for the 15s drain delay. In the `all` and `ingest` roles `/health` answers 503 if the consumer has exited, so liveness restarts the pod.
+6. **Footprint.** Each role now runs 2 replicas, so Postgres connections double; check Σ(replicas x `poolMaxOpenConns`) against `max_connections`. The PDB needs Kubernetes 1.27 or later (`unhealthyPodEvictionPolicy`).
+7. **Readiness behavior.** `/readyz` latches after the first success: a later Postgres or Kafka outage is reported but does not pull the pod from the Service. The pod no longer flips NotReady on SIGTERM; it keeps serving for the 15s drain delay. In the `all` and `ingest` roles `/health` answers 503 if the consumer has exited, so liveness restarts the pod.
 
 ## Rollback
 
-Roll back the chart and the image together. An image-tag-only rollback below `3.3.0` fails the render and the running version stays. The database stays at 46, which the older Hub accepts.
+Roll back the chart and the image together. An image-tag-only rollback below `3.3.0` fails the render and the running version stays. The database stays at 46, which the older Hub accepts. With `streamingHub.migrations.enabled`, the 2.1.0 migrations Job runs the 3.1.0 migrations image, and its `migrate up` fails on a database at 46 (no migration found for version 46), which aborts the upgrade or Argo sync. Roll back with `helm rollback`, or set `streamingHub.migrations.enabled: false` (or `streamingHub.migrations.image.tag: 3.4.0`) for the rollback.
 
 ## Preview changes before upgrading
 

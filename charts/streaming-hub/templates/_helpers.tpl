@@ -235,10 +235,6 @@ Input: none. Caller: nindent 12.
 {{/*
 streaming-hub.licenseGuard — refuses LICENSE_KEY in streamingHub.extraEnvVars,
 which would put the license in plaintext on the Deployment spec.
-(configmap.LICENSE_KEY is already rejected by the values.schema.json allowlist
-and skipped by the ConfigMap's leak guard.) LICENSE_KEY is deliberately NOT
-`required`: like the DSN and the cursor HMAC key it is always emitted (even
-empty) so a bare `helm template` still renders; an empty key refuses the boot.
 Input: root context (.).
 */}}
 {{- define "streaming-hub.licenseGuard" -}}
@@ -272,23 +268,14 @@ Input: root context (.).
 {{- end -}}
 
 {{/*
-streaming-hub.health — the lerian-common health preset for one role. Input: dict { root, component }.
-The preset owns probes (HEALTH_PORT 8099), rollout, grace, PDB and the drain env. minImage is the
-first image that serves HEALTH_PORT. The retired probe/grace values are passed through so a
-leftover override fails the render instead of being ignored.
+streaming-hub.health — lerian-common health preset for one role; minImage 3.3.0 is the first image serving HEALTH_PORT 8099.
 */}}
 {{- define "streaming-hub.health" -}}
 {{- $sh := .root.Values.streamingHub -}}
 {{- $cfg := index $sh .component -}}
 {{- include "lerian-common.health" (dict
       "name" (include "streaming-hub.componentFullname" (dict "context" .root "component" .component))
-      "component" (dict
-        "image" (dict "tag" (include "streaming-hub.defaultTag" .root))
-        "configmap" $sh.configmap
-        "livenessProbe" $sh.livenessProbe
-        "readinessProbe" $sh.readinessProbe
-        "startupProbe" $sh.startupProbe
-        "terminationGracePeriodSeconds" $sh.terminationGracePeriodSeconds)
+      "component" $sh
       "health" $sh.health
       "port" $sh.service.port
       "minImage" "3.3.0"

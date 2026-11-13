@@ -285,7 +285,7 @@ Fail-loud gate. lerian-common.hpa emits each metric behind its own `if`, so an
 autoscaling block with BOTH targets unset (an operator nulling the values.yaml
 defaults) renders an HPA with an EMPTY `metrics:` list — accepted by the API
 server, permanently unable to scale — while the Deployment simultaneously omits
-`replicas:` (see the autoscaling.enabled branch above), pinning the role at the
+`replicas:`, pinning the role at the
 API default of 1. Refuse the render instead of shipping that silent pair.
 */}}
 {{- if not (or $cfg.autoscaling.targetCPUUtilizationPercentage $cfg.autoscaling.targetMemoryUtilizationPercentage) -}}
@@ -303,8 +303,7 @@ API default of 1. Refuse the render instead of shipping that silent pair.
 {{/*
 =============================================================================
 streaming-hub.pdb — the shared, component-parameterized PDB (policy/v1).
-Input: dict { root, component }. Emitted only when that role's pdb.enabled.
-maxUnavailable wins over minAvailable when both are set (mirrors the template).
+Input: dict { root, component }.
 =============================================================================
 */}}
 {{- define "streaming-hub.pdb" -}}

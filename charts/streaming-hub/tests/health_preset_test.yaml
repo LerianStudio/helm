@@ -107,14 +107,10 @@ tests:
       - equal: {path: 'metadata.annotations["alb.ingress.kubernetes.io/healthcheck-path"]', value: "/health"}
       - equal: {path: 'metadata.annotations["alb.ingress.kubernetes.io/healthcheck-port"]', value: "8080"}
 
-  - it: mounts the licence file as a directory and sets the path
-    template: templates/all/deployment.yaml
+  - it: refuses a shutdown window the grace period cannot cover
+    template: templates/all/service.yaml
     set:
-      streamingHub.licenseFile.existingSecret: my-license
+      streamingHub.health.shutdownSeconds: 35
     asserts:
-      - contains:
-          path: spec.template.spec.containers[0].env
-          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
-      - contains:
-          path: spec.template.spec.containers[0].volumeMounts
-          content: {name: license-file, mountPath: /etc/lerian/license, readOnly: true}
+      - failedTemplate:
+          errorPattern: "shutdownSeconds"

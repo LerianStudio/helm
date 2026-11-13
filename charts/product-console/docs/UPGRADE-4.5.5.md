@@ -10,7 +10,7 @@
 
 ## Overview
 
-This is a patch release that updates the application version from `3.4.0` to `3.5.0`. No breaking changes are introduced. The chart updates the default image tag to match the new application version.
+This is a patch chart release that updates the default application image from `3.4.0` to `3.5.0`; it does not change chart value keys. This is not a claim that application startup is non-destructive: the license and MongoDB prerequisites below still apply.
 
 | Field | v4.5.4 | v4.5.5 |
 |-------|--------|--------|
@@ -60,21 +60,26 @@ image:
 
 ## Migration Steps
 
-This upgrade requires no mandatory configuration changes. The chart will automatically use the new `3.5.0` image unless you have explicitly pinned a different version.
+No new chart value keys are required, but application startup and recovery prerequisites are mandatory before starting the target image.
+
+**Startup and data safety:** Console `3.5.0`, like `3.4.0`, requires a nonempty valid `LICENSE_KEY`; configure it through your protected Secret mechanism, not source control or a pasted command. Preserve the other startup credentials, including `NEXTAUTH_SECRET` and MongoDB authentication. After MongoDB connection validation, each new process asynchronously attempts to drop the legacy `license_files` collection. This cleanup is inherited behavior, not newly introduced by `3.5.0`.
+
+Before rollout, take a consistent private MongoDB backup and retain protected release/configuration and Secret references. Validate a recovery procedure in an isolated environment, including recovery of the legacy collection if needed; do not proceed without a tested recovery plan. Helm rollback restores release configuration, not deleted database data. Before restoring data, stop all Console processes running cleanup-capable images; starting `3.4.0` or `3.5.0` again can delete a restored `license_files` collection. Select a recovery image/configuration proven to preserve the restored data before resuming traffic. Neither a real upgrade nor a backup/restore exercise was performed to validate this guide.
 
 **Recommended upgrade process:**
 
-1. **Review your current image tag configuration**:
+1. **Export values privately and prepare a complete intended configuration**:
 
 ```bash
-helm get values product-console -n product-console | grep -A5 "^image:"
+umask 077
+helm get values product-console -n product-console -o yaml > current-values.private.yaml
 ```
 
-2. **If you have explicitly set `image.tag` in your values**, decide whether to:
-   - Keep your pinned version (no action required)
-   - Upgrade to `3.5.0` by removing your override or updating it to `"3.5.0"`
+Treat this file as sensitive: it may contain credentials. Do not commit, upload or paste it. Prepare `intended-values.private.yaml` from this export and your deployment configuration. Preserve every unrelated override, datastore/storage setting, credential and external Secret reference. Securely dispose of temporary exports after validation under your retention policy; retain recovery backups privately.
 
-3. **If you have NOT overridden `image.tag`**, the upgrade will automatically deploy `3.5.0`. Review the application release notes for `3.5.0` to understand what changed in the application.
+2. **Set the intended image explicitly** in `intended-values.private.yaml`: use `image.tag: "3.5.0"` for this target, or deliberately retain a different pin and verify that image's own requirements. Editing a local file alone does not change stored Helm values.
+
+3. **Review the complete intended configuration**. The preview and upgrade below both use `--reset-values -f intended-values.private.yaml`: omitted settings revert to chart defaults, so this must not be a partial image-only fragment. Preserve existing Secret references and all intended custom settings before continuing.
 
 4. **Preview the changes** using the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
 
@@ -89,7 +94,7 @@ kubectl rollout status deployment/product-console -n product-console
 7. **Confirm the new image is running**:
 
 ```bash
-kubectl get pods -n product-console -l app.kubernetes.io/name=product-console -o jsonpath='{.items[0].spec.containers[0].image}'
+kubectl get pods -n product-console -l app.kubernetes.io/name=product-console,app.kubernetes.io/instance=product-console -o jsonpath='{.items[0].spec.containers[0].image}'
 ```
 
 Expected output: `lerianstudio/product-console:3.5.0` (or your pinned version if you overrode `image.tag`)
@@ -99,7 +104,7 @@ Expected output: `lerianstudio/product-console:3.5.0` (or your pinned version if
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm -n product-console --version 4.5.5
+helm diff upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm -n product-console --version 4.5.5 --reset-values -f intended-values.private.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -107,5 +112,5 @@ helm diff upgrade product-console oci://registry-1.docker.io/lerianstudio/produc
 ## Command to upgrade
 
 ```bash
-helm upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm -n product-console --version 4.5.5
+helm upgrade product-console oci://registry-1.docker.io/lerianstudio/product-console-helm -n product-console --version 4.5.5 --reset-values -f intended-values.private.yaml
 ```

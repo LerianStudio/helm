@@ -39,7 +39,12 @@ class NotRoutine(Exception):
 
 
 def leaves(node, path=()):
-    """Every scalar of a YAML document keyed by its path, lists indexed by position."""
+    """Every scalar of a YAML document keyed by its path, lists indexed by position.
+
+    An empty map or list is a leaf too: adding or dropping `tls: []` changes what a
+    template sees through hasKey, so it must show up in the comparison."""
+    if isinstance(node, (dict, list)) and not node:
+        return {path: node}
     if isinstance(node, dict):
         out = {}
         for key, value in node.items():

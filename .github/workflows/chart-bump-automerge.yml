@@ -12,13 +12,18 @@ name: Chart Bump Auto-merge
 #
 # Kill switch: the repository variable AUTOMERGE_ENABLED must be 'true'. With it off or unset
 # every bump takes the manual path. A run already waiting on CI read the variable when it
-# started: cancel it to stop that merge.
+# started: cancel it, or add the needs-human-review label, to stop that merge; either way
+# the Severino ticket goes out.
 #
 # The merge uses the push bot's token, which is a pull_request bypass actor on the main
-# ruleset (the review requirement), and whose push, unlike GITHUB_TOKEN's, triggers release.yml.
+# ruleset (the review requirement), and whose push, unlike GITHUB_TOKEN's, triggers workflows.
+# release.yml skips the push bot's pushes (its own release commits) unless the head commit
+# carries MERGE_MARKER, which only this workflow's merge writes.
 
 on:
   pull_request_target:
+    # No `edited`: it would cancel a waiting merge without moving the head, which notify-severino
+    # could not tell from a cancel by hand. A retarget is caught by the base check before merging.
     types: [opened, reopened, synchronize]
     branches: [main]
 
@@ -39,7 +44,12 @@ env:
     Markdown Liquid Guard
   # This workflow's own jobs, left out of the wait.
   SELF_CHECKS: '["Classify chart bump","Merge routine bump","Notify Severino"]'
+  # Veto: set by the gate when it sends the ticket, or by a human to stop a merge.
   REVIEW_LABEL: needs-human-review
+  # Dedupe: the ticket was sent, so later runs do not send another.
+  TICKET_LABEL: severino-ticket-sent
+  # Written into the merge commit body; release.yml matches it. Change both together.
+  MERGE_MARKER: "Auto-merged-by: chart-bump-automerge"
 
 jobs:
   classify:
@@ -125,11 +135,11 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          state=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid,mergeable,state,labels)
+          state=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid,baseRefName,mergeable,state,labels)
           echo "$state"
-          jq -e --arg sha "$HEAD_SHA" '.headRefOid == $sha and .mergeable == "MERGEABLE" and .state == "OPEN"' <<<"$state" >/dev/null \
-            || { echo "::error::Pull request moved, conflicts or closed since it was classified"; exit 1; }
-          # A ticket already sent, or a human adding the label, keeps the bump on the manual path.
+          jq -e --arg sha "$HEAD_SHA" '.headRefOid == $sha and .baseRefName == "main" and .mergeable == "MERGEABLE" and .state == "OPEN"' <<<"$state" >/dev/null \
+            || { echo "::error::Pull request moved, was retargeted, conflicts or closed since it was classified"; exit 1; }
+          # The gate's own ticket, or a human adding the label, keeps the bump on the manual path.
           if jq -e --arg l "$REVIEW_LABEL" 'any(.labels[]; .name == $l)' <<<"$state" >/dev/null; then
             echo "::error::Pull request carries ${REVIEW_LABEL}; leaving it to a human"
             exit 1
@@ -158,12 +168,14 @@ jobs:
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --match-head-commit "$HEAD_SHA"
+        # The subject keeps the repository's default (PR title and number), which semantic-release reads.
+        run: gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --match-head-commit "$HEAD_SHA" --body "$MERGE_MARKER"
 
   # The ticket goes out when the bump is not routine, when auto-merge is off, or when the
-  # classifier or the merge failed: in doubt, a human looks. The label keeps it to one
-  # ticket per pull request across synchronize runs. A cancelled merge (a newer push
-  # superseded it) is left to the newer run.
+  # classifier or the merge failed or was cancelled by hand: in doubt, a human looks.
+  # TICKET_LABEL keeps it to one ticket per pull request across synchronize runs. A merge
+  # cancelled because a newer push superseded it is left to the newer run, and a pull request
+  # closed meanwhile (superseded by a newer bump) gets no ticket.
   notify-severino:
     name: Notify Severino
     needs: [classify, automerge]
@@ -172,6 +184,7 @@ jobs:
       && needs.classify.result != 'skipped'
       && (needs.classify.result == 'failure'
           || needs.automerge.result == 'failure'
+          || needs.automerge.result == 'cancelled'
           || (needs.classify.result == 'success'
               && (needs.classify.outputs.routine != 'true' || vars.AUTOMERGE_ENABLED != 'true')))
     runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
@@ -187,13 +200,23 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_RESULT: ${{ needs.automerge.result }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
           BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
           SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
         run: |
-          set -uo pipefail
-          labels=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name')
-          if grep -qx "$REVIEW_LABEL" <<<"$labels"; then
+          set -euo pipefail
+          pr=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json state,headRefOid,labels)
+          if ! jq -e '.state == "OPEN"' <<<"$pr" >/dev/null; then
+            echo "Pull request is no longer open; no ticket"
+            exit 0
+          fi
+          if [ "$MERGE_RESULT" = "cancelled" ] && ! jq -e --arg sha "$HEAD_SHA" '.headRefOid == $sha' <<<"$pr" >/dev/null; then
+            echo "Superseded by a newer push; its run decides"
+            exit 0
+          fi
+          if jq -e --arg l "$TICKET_LABEL" 'any(.labels[]; .name == $l)' <<<"$pr" >/dev/null; then
             echo "Severino ticket already sent for this pull request"
             exit 0
           fi
@@ -217,5 +240,5 @@ jobs:
             jq . <<<"$response"
             exit 1
           fi
-          gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=${REVIEW_LABEL}" >/dev/null \
-            || echo "::warning::Ticket sent, but the ${REVIEW_LABEL} label could not be added; a later push may send another"
+          gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=${TICKET_LABEL}" -f "labels[]=${REVIEW_LABEL}" >/dev/null \
+            || echo "::warning::Ticket sent, but the labels could not be added; a later push may send another or still auto-merge"

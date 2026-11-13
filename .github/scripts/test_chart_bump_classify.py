@@ -111,6 +111,9 @@ class Classify(unittest.TestCase):
     def test_new_values_key_is_manual(self):
         self.assertManual(self.run_case(values=(VALUES_BASE, VALUES_HEAD + "extraEnv:\n  FOO: bar\n")), "adds or removes")
 
+    def test_new_empty_values_key_is_manual(self):
+        self.assertManual(self.run_case(values=(VALUES_BASE, VALUES_HEAD + "tls: []\n")), "adds or removes")
+
     def test_image_repository_change_is_manual(self):
         head = VALUES_HEAD.replace("lerianstudio/product-console", "evil/product-console")
         self.assertManual(self.run_case(values=(VALUES_BASE, head)), "image.repository")

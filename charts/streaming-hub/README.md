@@ -47,18 +47,17 @@ reading a pod that will not start — or one that started against the wrong Redi
 ## License (lib-license-go, GLOBAL mode)
 
 streaming-hub `3.0.0` and later refuses to
-boot without a valid Lerian license, in **every** environment. Three
-**unprefixed** variables carry the contract. They follow the platform's
+boot without a valid Lerian license, in **every** environment. Two
+**unprefixed** variables carry the contract (`LICENSE_KEY`, or `LICENSE_FILE_PATH`, which the chart sets). They follow the platform's
 lib-license-go convention, so a `STREAMING_HUB_`-prefixed spelling reads empty.
 
 | Variable | Where | Default | Without it / wrong |
 |----------|-------|---------|--------------------|
 | **`LICENSE_KEY`** | Secret: `secrets.LICENSE_KEY` (always emitted, even empty), or the Secret named by `existingSecretName`, where the Deployments pin it via `secretKeyRef` | `""` | Required unless `streamingHub.licenseFile.existingSecret` is set (file mode, below). Without either the app refuses to start (`ErrMissingLicenseKey`). On the `useExistingSecret` path a Secret without the key fails container creation (`CreateContainerConfigError`, "couldn't find key LICENSE_KEY"). Supply it through Vault/ExternalSecret, never in a values file in git. |
-| **`ORGANIZATION_IDS`** | ConfigMap: `configmap.ORGANIZATION_IDS` | `global` | Must be **exactly** `global`: the hub supports global license mode only. Any other value (`GLOBAL`, an organization id, a comma list) **fails the render**, and the app would refuse it at boot (`ErrLicenseOrganizationIDsInvalid`). |
+| `ORGANIZATION_IDS` | ConfigMap: `configmap.ORGANIZATION_IDS` | unset | Deprecated and ignored: still accepted so an upgrade that sets it keeps validating, never rendered. |
 | `IS_DEVELOPMENT` | ConfigMap: `configmap.IS_DEVELOPMENT` | unset | Deprecated and ignored: still accepted so an upgrade that sets it keeps validating, never rendered. Products validate licenses only on the production license server. |
 
-`streamingHub.extraEnvVars` wins over the ConfigMap, so the render guard judges
-the effective value there too. It also refuses `extraEnvVars.LICENSE_KEY`,
+The render refuses `streamingHub.extraEnvVars.LICENSE_KEY`,
 because that would put the license in plaintext on the Deployment spec.
 
 **Licence file (optional).** `streamingHub.licenseFile.existingSecret` names a Secret
@@ -127,8 +126,8 @@ helm uninstall streaming-hub -n streaming-hub
 
 | `mode`  | Renders | `STREAMING_HUB_ROLE` | When |
 |---------|---------|----------------------|------|
-| `all` (default) | ONE Deployment + Service (+ HPA/PDB) | `all` | Single co-resident deployment, for single-instance setups. Byte-equivalent to the historical single binary. |
-| `split` | TWO Deployments + Services (ingest + delivery), each with its own HPA/PDB | `ingest` / `delivery` | Ingest and delivery scaled independently as N + M replicas. |
+| `all` (default) | ONE Deployment + Service + PDB (+ HPA) | `all` | Single co-resident deployment, for single-instance setups. Byte-equivalent to the historical single binary. |
+| `split` | TWO Deployments + Services (ingest + delivery), each with its own PDB (+ HPA) | `ingest` / `delivery` | Ingest and delivery scaled independently as N + M replicas. |
 
 ### > **DOUBLE-CONSUME HAZARD — the load-bearing rule**
 
@@ -201,20 +200,14 @@ forbids that combination; the budget math is why it also matters operationally.
 
 ## Health, drain, and termination
 
-- **Probes** (verified against the hub source / Dockerfile, on the `http` port `8080`):
-  - `livenessProbe`: `GET /healthz` — stays `200` throughout drain.
-  - `readinessProbe`: `GET /readyz` — flips `NotReady` (503) **first** on SIGTERM so the endpoints controller drains the pod from the Service.
-- **No `preStop` hook.** The hub **self-drains on SIGTERM**: the exec-form
-  ENTRYPOINT delivers SIGTERM straight to PID 1, and the lib-commons Launcher
-  runs the HTTP → consumer → dispatcher teardown.
-- **`terminationGracePeriodSeconds` MUST stay at or above the hub's derived SIGTERM
-  drain ceiling.** At the shipped `STREAMING_HUB_SHUTDOWN_TIMEOUT=30s` +
-  `STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s` the ceiling is `5s` (pre-stop) +
-  `30s` (HTTP) + `5s` (consumer) + `30s` (dispatcher, `min(ShutdownTimeout, 40s)`) +
-  `7s` (runtime-config close) + `10s` slack = **`87s`**. The chart default is
-  `80`, so set at least `87`. If you tune those knobs up, recompute and raise this
-  knob to match, or the orchestrator SIGKILLs a still-draining replica (risking a
-  duplicate delivery).
+- **Probes** come from the `lerian-common` health preset and hit the internal `health` port `8099` (`HEALTH_PORT`):
+  - `startupProbe` and `livenessProbe`: `GET /health`, process only.
+  - `readinessProbe`: `GET /readyz`, the pod's own state (including the `license` check, so a pod whose license server is unreachable at boot stays alive and not ready). Postgres and Kafka hold `/readyz` until their first success, then only report.
+  - `/metrics` and, in multi-tenant mode, `/readyz/tenant/:id` are served on `8099` too. The main port `8080` keeps `/health`, `/version` and `/runtime`; `/healthz` no longer exists.
+- **Port `8099` is an internal ClusterIP Service port** (`health`), never an Ingress backend.
+- **2 replicas, a PDB and a zero-unavailable rolling update** are owned by the preset; the replica count is `streamingHub.<role>.replicaCount`.
+- **Drain.** `SHUTDOWN_DRAIN_DELAY` (default `15s`) keeps serving after SIGTERM, then `SHUTDOWN_TIMEOUT` (default `30s`, the hub refuses to boot at `35s` or more) bounds the teardown. `terminationGracePeriodSeconds` is `drain + timeout + 10s` = `55`. Tune only `streamingHub.health.drainSeconds` / `shutdownSeconds`.
+- `STREAMING_HUB_SHUTDOWN_TIMEOUT` and `STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT` are gone from the chart. The chart refuses an `image.tag` below `3.3.0` (the first image serving `8099`); the image and the chart move together.
 
 ---
 
@@ -238,8 +231,7 @@ so a bare render succeeds and their non-credential-shaped names are still counte
 by the coverage check; plus `STREAMING_HUB_KAFKA_SCRAM_PASSWORD`,
 `STREAMING_HUB_REDIS_PASSWORD` (rate-limiter AUTH; may legitimately stay empty)
 and `POSTGRES_PASSWORD` (migration-toolchain parity; no in-cluster consumer), all
-emit-when-set. Not secrets (live in the ConfigMap): `ORGANIZATION_IDS`
-(the license mode), `STREAMING_HUB_KAFKA_SCRAM_USERNAME`
+emit-when-set. Not secrets (live in the ConfigMap): `STREAMING_HUB_KAFKA_SCRAM_USERNAME`
 (username, not a credential — and **emit-when-set there too**: the Deployment reads
 the Secret first and the ConfigMap second, so an unconditional empty value here
 would overwrite a username projected from Vault into the same key; set it in one
@@ -380,14 +372,14 @@ and a stale value earns one WARN per boot.
 |-----|---------|-------------|
 | `streamingHub.mode` | `all` | Topology switch: `all` \| `split`. Schema-enforced enum. |
 | `streamingHub.image.repository` | `ghcr.io/lerianstudio/streaming-hub` | Image repo. |
-| `streamingHub.image.tag` | `"3.1.0"` | Empty falls back to `Chart.appVersion`. |
+| `streamingHub.image.tag` | `"3.4.0"` | Empty falls back to `Chart.appVersion`. |
 | `streamingHub.image.pullPolicy` | `IfNotPresent` | |
 | `streamingHub.imagePullSecrets` | `[]` | Private registry pull secrets. |
 | `streamingHub.service.type` | `ClusterIP` | Lerian convention (Ingress fronts external). |
 | `streamingHub.service.port` | `8080` | Control-plane HTTP port. |
 | `streamingHub.ingress.enabled` | `false` | Control-plane API ingress (opt-in per env). |
 | `streamingHub.serviceAccount.create` | `true` | |
-| `streamingHub.terminationGracePeriodSeconds` | `90` | Above `87`, the drain ceiling at the shipped timeouts; keep at or above the ceiling if you tune them. |
+| `streamingHub.health.drainSeconds` / `shutdownSeconds` | `15` / `30` | Shutdown must stay below `35`. The grace period is derived: drain + shutdown + 10. |
 | `streamingHub.securityContext` | nonroot 65532, drop ALL, RO rootfs, RuntimeDefault | Distroless:nonroot. |
 | `streamingHub.useExistingSecret` | `false` | `true` = Vault/gitops path. |
 | `streamingHub.existingSecretName` | `""` | Required when `useExistingSecret`. |
@@ -399,14 +391,13 @@ and a stale value earns one WARN per boot.
 | `streamingHub.secrets.STREAMING_HUB_DASHBOARD_CURSOR_HMAC_KEY` | `""` | Dashboard cursor signing key, 32 bytes base64. Mandatory from `appVersion 2.x`; always emitted and pinned via `secretKeyRef`. |
 | `streamingHub.secrets.LICENSE_KEY` | `""` | Lerian license key (lib-license-go, GLOBAL mode). Required unless `streamingHub.licenseFile.existingSecret` is set (file mode, image on lib-license-go v5); always emitted and pinned via `secretKeyRef`. See [License](#license-lib-license-go-global-mode). |
 | `streamingHub.licenseFile.existingSecret` | `""` | Optional Secret with a signed licence file under the key `license`, mounted read-only as the directory `/etc/lerian/license`; sets `LICENSE_FILE_PATH`. Replaces `LICENSE_KEY`. File mode needs an image on lib-license-go v5. |
-| `streamingHub.configmap.ORGANIZATION_IDS` | `global` (template default) | License mode. Must be exactly `global`; any other value fails the render. |
+| `streamingHub.configmap.ORGANIZATION_IDS` | unset | Deprecated and ignored: accepted, never rendered. |
 | `streamingHub.configmap.IS_DEVELOPMENT` | unset | Deprecated and ignored: accepted, never rendered. |
 | `streamingHub.secrets.STREAMING_HUB_REDIS_PASSWORD` | `""` | Rate-limiter Redis AUTH password. Emit-when-set; may stay empty. |
-| `streamingHub.<role>.replicaCount` | `1` | Per role: `all` / `ingest` / `delivery`. |
+| `streamingHub.<role>.replicaCount` | `2` | Per role: `all` / `ingest` / `delivery`. |
 | `streamingHub.<role>.poolMaxOpenConns` | all `25` / ingest `8` / delivery `16` | Postgres pool (connection-budget invariant). |
 | `streamingHub.<role>.poolMaxIdleConns` | all `12` / ingest `4` / delivery `10` | |
 | `streamingHub.<role>.autoscaling.enabled` | `false` | HPA per role (`autoscaling/v2`, CPU+memory). |
-| `streamingHub.<role>.pdb.enabled` | `false` | PodDisruptionBudget per role (`policy/v1`). |
 | `global.externalPostgresDefinitions.enabled` | `false` | Bootstrap Job for the hub's one DB/role (PreSync, sync-wave -10). |
 | `streamingHub.migrations.enabled` | `false` | Out-of-band schema migration Job (PreSync, sync-wave -1). |
 | `streamingHub.migrations.image.repository` | `ghcr.io/lerianstudio/streaming-hub-migrations` | Migrations image (`FROM migrate/migrate` + the hub's `migrations/`). |

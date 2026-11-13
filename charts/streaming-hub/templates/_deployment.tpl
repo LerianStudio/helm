@@ -25,6 +25,7 @@ STREAMING_HUB_ROLE / the pool vars.
 {{/* Postgres server CA bundle — mount + volume, both gated on the same switch. */}}
 {{- $postgresCa := get (get ($.Values.postgres | default dict) "caBundle" | default dict) "enabled" -}}
 {{- $licenseSecret := include "streaming-hub.licenseFileSecret" $ -}}
+{{- $h := include "streaming-hub.health" (dict "root" $ "component" $component) | fromYaml -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -38,12 +39,10 @@ metadata:
   {{- end }}
 spec:
   revisionHistoryLimit: {{ $sh.revisionHistoryLimit | default 10 }}
-  {{- with $sh.deploymentStrategy }}
   strategy:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  {{- if not $cfg.autoscaling.enabled }}
-  replicas: {{ $cfg.replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -74,7 +73,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "streaming-hub.serviceAccountName" $ }}
       automountServiceAccountToken: {{ $sh.serviceAccount.automountServiceAccountToken | default false }}
-      terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 90 }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- if $rolesAnywhere }}
       # IAM Roles Anywhere: fsGroup lets the sidecar's non-root user (65532) read the
       # 0440 iam-certs projection. MERGED into the chart's podSecurityContext — fsGroup
@@ -97,12 +96,15 @@ spec:
             - name: http
               containerPort: {{ $sh.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
             - secretRef:
                 name: {{ include "streaming-hub.secretName" $ }}
             - configMapRef:
                 name: {{ include "streaming-hub.fullname" $ }}
           env:
+            # HEALTH_PORT, SHUTDOWN_DRAIN_DELAY and SHUTDOWN_TIMEOUT come from the health preset.
+            {{- toYaml $h.env | nindent 12 }}
             # --- role differentiator (explicit env WINS over envFrom) ---
             - name: STREAMING_HUB_ROLE
               value: {{ $component | quote }}
@@ -163,16 +165,12 @@ spec:
             # vends short-lived credentials from the IAM Roles Anywhere exchange.
             {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" $.Values.aws) | nindent 12 }}
             {{- end }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "livenessProbe" "probe" $sh.livenessProbe
-                "port" "http" "path" "/healthz"
-                "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "readinessProbe" "probe" $sh.readinessProbe
-                "port" "http" "path" "/readyz"
-                "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml $cfg.resources | nindent 12 }}
           {{- if or $postgresCa $licenseSecret }}
@@ -265,6 +263,7 @@ that role's pods via componentSelectorLabels.
       "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
       "selector" (include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component))
       "namespace" (include "global.namespace" $)
+      "ports" (include "streaming-hub.health" (dict "root" $ "component" $component) | fromYaml).servicePorts
     ) }}
 {{- end -}}
 
@@ -311,13 +310,12 @@ maxUnavailable wins over minAvailable when both are set (mirrors the template).
 {{- define "streaming-hub.pdb" -}}
 {{- $ := .root -}}
 {{- $component := .component -}}
-{{- $cfg := index $.Values.streamingHub $component -}}
+{{- $h := include "streaming-hub.health" (dict "root" $ "component" $component) | fromYaml -}}
 {{- include "lerian-common.pdb" (dict
-      "pdb" $cfg.pdb
+      "pdb" $h.pdb
       "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))
       "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
       "selector" (include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component))
       "namespace" (include "global.namespace" $)
-      "minAvailableDefault" 1
     ) }}
 {{- end -}}

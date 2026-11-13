@@ -1,0 +1,120 @@
+suite: streaming-hub health comes from the lerian-common preset
+templates:
+  - templates/all/deployment.yaml
+  - templates/all/service.yaml
+  - templates/all/pdb.yaml
+  - templates/ingest/deployment.yaml
+  - templates/delivery/pdb.yaml
+  - templates/ingress.yaml
+  # loaded so the deployment can include and hash the rendered ConfigMap and Secret
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: hub
+  namespace: hub
+set:
+  # the default STREAMING_HUB_ENV=production render gate
+  streamingHub.configmap.STREAMING_HUB_KAFKA_TLS_ENABLED: "true"
+  streamingHub.configmap.STREAMING_HUB_KEK_REF: STREAMING_HUB_KEK
+tests:
+  - it: runs 2 replicas with a zero-unavailable rolling update
+    template: templates/all/deployment.yaml
+    asserts:
+      - equal: {path: spec.replicas, value: 2}
+      - equal: {path: spec.strategy.rollingUpdate.maxUnavailable, value: 0}
+      - equal: {path: spec.template.spec.terminationGracePeriodSeconds, value: 55}
+
+  - it: probes the health port and sets HEALTH_PORT
+    template: templates/all/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: "/health", port: health}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: "/readyz", port: health}
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content: {name: health, containerPort: 8099}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+
+  - it: wires the split roles to the same preset
+    template: templates/ingest/deployment.yaml
+    set:
+      streamingHub.mode: split
+    documentSelector: {path: kind, value: Deployment}
+    asserts:
+      - equal: {path: spec.replicas, value: 2}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: "/readyz", port: health}
+
+  - it: exposes the health port as an internal Service port
+    template: templates/all/service.yaml
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
+
+  - it: protects every role with a PDB
+    template: templates/delivery/pdb.yaml
+    set:
+      streamingHub.mode: split
+    asserts:
+      - equal: {path: spec.maxUnavailable, value: 1}
+
+  - it: leaves replicas to the HPA under autoscaling
+    template: templates/all/deployment.yaml
+    set:
+      streamingHub.all.autoscaling.enabled: true
+    documentSelector: {path: kind, value: Deployment}
+    asserts:
+      - notExists: {path: spec.replicas}
+
+  - it: renders replicas 0 when replicaCount is 0
+    template: templates/all/deployment.yaml
+    set:
+      streamingHub.all.replicaCount: 0
+    asserts:
+      - equal: {path: spec.replicas, value: 0}
+
+  - it: refuses an image that predates the health port
+    template: templates/all/service.yaml
+    set:
+      streamingHub.image.tag: "3.2.0"
+    asserts:
+      - failedTemplate:
+          errorPattern: "is below 3.3.0"
+
+  - it: refuses a leftover probe override
+    template: templates/all/service.yaml
+    set:
+      streamingHub.livenessProbe.periodSeconds: 5
+    asserts:
+      - failedTemplate:
+          errorPattern: "livenessProbe is owned by the health preset"
+
+  - it: forces the preset health check on an alb ingress over a user override
+    template: templates/ingress.yaml
+    set:
+      streamingHub.ingress.enabled: true
+      streamingHub.ingress.className: alb
+      streamingHub.ingress.annotations:
+        alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    asserts:
+      - equal: {path: 'metadata.annotations["alb.ingress.kubernetes.io/healthcheck-path"]', value: "/health"}
+      - equal: {path: 'metadata.annotations["alb.ingress.kubernetes.io/healthcheck-port"]', value: "8080"}
+
+  - it: mounts the licence file as a directory and sets the path
+    template: templates/all/deployment.yaml
+    set:
+      streamingHub.licenseFile.existingSecret: my-license
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LICENSE_FILE_PATH, value: /etc/lerian/license/license}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: license-file, mountPath: /etc/lerian/license, readOnly: true}

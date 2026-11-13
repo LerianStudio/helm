@@ -233,32 +233,17 @@ Input: none. Caller: nindent 12.
 {{- end -}}
 
 {{/*
-streaming-hub.licenseGuard — render-time mirror of the app's license config
-gate (lib-license-go, GLOBAL mode). Fails the render for the combination the
-license-gated app refuses at boot, so the operator reads the fix in the `helm`
-output instead of a CrashLoopBackOff:
-  - ORGANIZATION_IDS not EXACTLY "global" (trimmed, case-sensitive: the app
-    compares the literal, so "GLOBAL" or a comma list is refused).
-The EFFECTIVE value is judged: streamingHub.extraEnvVars is explicit env and
-WINS over the ConfigMap (envFrom), so it is read first.
-LICENSE_KEY is deliberately NOT `required` here: like the DSN and the cursor
-HMAC key it is always emitted (even empty) so a bare `helm template` (CI lint,
-kubescape) still renders; an empty key refuses the boot by name.
-It also refuses LICENSE_KEY in extraEnvVars, which would put the license in
-plaintext on the Deployment spec. (configmap.LICENSE_KEY is already rejected by
-the values.schema.json allowlist and skipped by the ConfigMap's leak guard.)
+streaming-hub.licenseGuard — refuses LICENSE_KEY in streamingHub.extraEnvVars,
+which would put the license in plaintext on the Deployment spec.
+(configmap.LICENSE_KEY is already rejected by the values.schema.json allowlist
+and skipped by the ConfigMap's leak guard.) LICENSE_KEY is deliberately NOT
+`required`: like the DSN and the cursor HMAC key it is always emitted (even
+empty) so a bare `helm template` still renders; an empty key refuses the boot.
 Input: root context (.).
 */}}
 {{- define "streaming-hub.licenseGuard" -}}
-{{- $sh := .Values.streamingHub -}}
-{{- $cm := $sh.configmap | default dict -}}
-{{- $x := $sh.extraEnvVars | default dict -}}
-{{- if hasKey $x "LICENSE_KEY" -}}
+{{- if hasKey (.Values.streamingHub.extraEnvVars | default dict) "LICENSE_KEY" -}}
 {{- fail "\n\nERROR: streamingHub.extraEnvVars.LICENSE_KEY is refused: extraEnvVars renders plaintext env on the Deployment. Set streamingHub.secrets.LICENSE_KEY, or carry LICENSE_KEY in the Secret named by streamingHub.existingSecretName (useExistingSecret=true)." -}}
-{{- end -}}
-{{- $org := trim (toString (ternary (get $x "ORGANIZATION_IDS") (get $cm "ORGANIZATION_IDS" | default "global") (hasKey $x "ORGANIZATION_IDS"))) -}}
-{{- if ne $org "global" -}}
-{{- fail (printf "\n\nERROR: ORGANIZATION_IDS must be exactly \"global\" (got %q): streaming-hub supports GLOBAL license mode only, and the app refuses any other value at boot (ErrLicenseOrganizationIDsInvalid). Leave streamingHub.configmap.ORGANIZATION_IDS unset (the chart default is \"global\")." $org) -}}
 {{- end -}}
 {{- end -}}
 
@@ -284,4 +269,29 @@ Input: root context (.).
 {{- fail (printf "\n\nERROR: STREAMING_HUB_ENV=%s requires a KEK reference. Set streamingHub.configmap.STREAMING_HUB_KEK_REF to the name of the variable that carries the KEK in the Secret, or set streamingHub.configmap.STREAMING_HUB_ENV=local for a development install." $env) -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+streaming-hub.health — the lerian-common health preset for one role. Input: dict { root, component }.
+The preset owns probes (HEALTH_PORT 8099), rollout, grace, PDB and the drain env. minImage is the
+first image that serves HEALTH_PORT. The retired probe/grace values are passed through so a
+leftover override fails the render instead of being ignored.
+*/}}
+{{- define "streaming-hub.health" -}}
+{{- $sh := .root.Values.streamingHub -}}
+{{- $cfg := index $sh .component -}}
+{{- include "lerian-common.health" (dict
+      "name" (include "streaming-hub.componentFullname" (dict "context" .root "component" .component))
+      "component" (dict
+        "image" (dict "tag" (include "streaming-hub.defaultTag" .root))
+        "configmap" $sh.configmap
+        "livenessProbe" $sh.livenessProbe
+        "readinessProbe" $sh.readinessProbe
+        "startupProbe" $sh.startupProbe
+        "terminationGracePeriodSeconds" $sh.terminationGracePeriodSeconds)
+      "health" $sh.health
+      "port" $sh.service.port
+      "minImage" "3.3.0"
+      "replicas" $cfg.replicaCount
+      "autoscaling" $cfg.autoscaling) -}}
 {{- end -}}

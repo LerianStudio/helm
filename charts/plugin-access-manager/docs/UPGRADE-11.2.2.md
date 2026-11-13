@@ -24,7 +24,7 @@ This is a patch release that upgrades the application version from `3.17.0` to `
 
 **What this means for operators:**
 
-This release updates the container images for the identity and auth services. The upgrade will trigger a rolling restart of the identity and auth pods to deploy the new image versions. No configuration changes are required unless you have explicitly overridden the image tags in your values.
+This release updates auth and identity images and also rolls Caradhras because its auth-ConfigMap checksum changes, even though the Caradhras server and migrations images stay at `2.1.0`. Replacement Caradhras pods run the `migrate` init container; inspect its result rather than assuming no database work. Review the authorization impact and recovery preparation below before upgrading.
 
 | Component | v11.2.1 | v11.2.2 |
 |-----------|---------|---------|
@@ -35,7 +35,11 @@ This release updates the container images for the identity and auth services. Th
 
 **Action required:**
 
-None, unless you have pinned image tags in your values. If you override `identity.image.tag` or `auth.image.tag` in your `values.yaml`, review whether you want to adopt the new versions or continue using your pinned tags.
+Review partner permissions and image pins, preserve release configuration and credentials, and validate the upgrade in staging.
+
+## Authorization behavior to review
+
+Application 3.19.0 changes the reach of affected partner permission pairs: when a pair granted to the partner also matches its reserved partner role, that matching grant can be tenant-wide even when an editor role also holds the pair. This does not automatically grant every permission to every partner: the pair must still be present in the partner's permissions and the request attributes must be resolved. Review affected reserved-role overlaps and test representative allowed and denied requests before production rollout. The application range also includes manifest scope-reach forwarding changes; do not treat the image bump as behavior-neutral.
 
 # Application Version Updates
 
@@ -67,9 +71,7 @@ The identity service will be upgraded to version `3.19.0`, which may include bug
 
 **Operational impact:**
 
-The identity Deployment will perform a rolling update. By default, the identity service runs with 1 replica. During the rollout, the old pod will be terminated and a new pod with the `3.19.0` image will start. If you run a single replica, expect brief unavailability during the pod replacement.
-
-If you have scaled identity to multiple replicas, the rolling update strategy (`maxSurge: 1`, `maxUnavailable: 1`) allows one new pod to start before an old pod stops, minimizing downtime.
+Identity defaults to an enabled HPA with 2–3 replicas, not a fixed single replica. The locked common-library strategy renders `maxSurge: "25%"` and `maxUnavailable: 0`. Ensure surge capacity and working readiness probes; this Kubernetes strategy is not a guarantee of uninterrupted application service.
 
 **What operators need to do:**
 
@@ -117,9 +119,7 @@ The auth service will be upgraded to version `3.19.0`, which may include bug fix
 
 **Operational impact:**
 
-The auth Deployment will perform a rolling update. By default, the auth service runs with 3 replicas. The rolling update strategy (`maxSurge: 1`, `maxUnavailable: 1`) allows one new pod to start before an old pod stops. With 3 replicas, at least 2 pods will remain available during the rollout, ensuring no service disruption.
-
-If you have scaled auth to a single replica, expect brief unavailability during the pod replacement.
+Auth defaults to an enabled HPA with 3–9 replicas. Its strategy is `maxSurge: "25%"`, `maxUnavailable: 0`; with HPA enabled the Deployment does not fix `spec.replicas`. Validate readiness, capacity and dependencies instead of assuming either inevitable single-replica downtime or guaranteed uninterrupted service.
 
 **What operators need to do:**
 
@@ -141,10 +141,28 @@ You must decide whether to:
 
 > **Important:** If you maintain custom image tag overrides, ensure they are compatible with the chart version you are deploying. Mismatched versions between services can cause integration issues.
 
+# Prepare and preserve configuration
+
+1. Record the installed revision and back up release values/manifest privately. Outputs may contain secrets; never commit or paste them.
+
+   ```bash
+   umask 077
+   mkdir -p private-upgrade-backup
+   helm history plugin-access-manager -n midaz-plugins > private-upgrade-backup/history.txt
+   helm get values plugin-access-manager -n midaz-plugins -o yaml > private-upgrade-backup/values.yaml
+   helm get manifest plugin-access-manager -n midaz-plugins > private-upgrade-backup/manifest.yaml
+   ```
+
+2. Construct `values-11.2.2.yaml` as the **complete intended configuration**, preserving unrelated settings, image decisions, datastore endpoints, storage, license and existing Secret references. Preserve the application-client secret: do not generate replacement credentials. Remove or update retired image pins intentionally; the partial snippets above are not a complete configuration.
+3. Take a consistent PostgreSQL backup and verify the restore procedure before upgrading. Caradhras replacement pods execute the unchanged migrator, which may migrate or no-op depending on the deployed schema. Check actual results; a render does not prove migration safety.
+4. Validate allowed/denied permission cases and the full rollout in staging before production. No live install, migration, upgrade or restore was exercised by the source/render validation behind this guide.
+
+Both commands use `--reset-values` and the same complete file so removed overrides do not silently return. A partial file would discard unrelated settings. Review the entire diff, including Secrets and storage, before applying.
+
 # Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.2
+helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.2 --reset-values -f values-11.2.2.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -152,5 +170,17 @@ helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/
 # Command to upgrade
 
 ```bash
-helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.2
+helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.2 --reset-values -f values-11.2.2.yaml --wait --timeout 10m
 ```
+
+# Verify and recover
+
+Discover actual auth, identity and Caradhras Deployment names from the rendered manifest. Check each rollout/readiness result, inspect the `migrate` init-container outcome privately, and smoke-test authentication, token issuance and representative allowed/denied permissions. Redact logs before sharing them.
+
+If rollback is necessary, replace `PREVIOUS_REVISION` with the recorded Helm revision:
+
+```bash
+helm rollback plugin-access-manager PREVIOUS_REVISION -n midaz-plugins --wait --timeout 10m
+```
+
+Helm rollback does not restore PostgreSQL contents or reverse schema changes. Check old-image/schema compatibility first; if database recovery is needed, stop the rollout and follow the reviewed restore/cutover procedure. Do not assume an application rollback undoes migrator writes.

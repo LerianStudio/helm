@@ -64,7 +64,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version |
 | :---: | :---: | :---: |
-| `5.4.1` | 4.9.0 | 4.9.0 |
+| `5.4.2` | 4.10.0 | 4.10.0 |
 -----------------
 
 ### Plugin BR Bank Transfer 
@@ -214,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `4.5.4` | 3.4.0 |
+| `4.5.5` | 3.5.0 |
 -----------------
 
 ### Plugin BC Correios

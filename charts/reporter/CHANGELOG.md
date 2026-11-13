@@ -1,5 +1,21 @@
 # Reporter Changelog
 
+## [5.4.2](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.2)
+
+Features:
+- Add Helm upgrade guide for reporter `v5.4.1`. (@dy-shimizu)
+
+Fixes:
+- Wire Kafka brokers and roster source for app `4.10.0`. (@fredcamaral)
+
+Improvements:
+- Document app `4.9.0` behavior changes in the `5.4.1` upgrade guide. (@gandalf-at-lerian)
+- Correct license file steps in the `5.4` upgrade guide. (@gandalf-at-lerian)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/reporter-v5.4.1...reporter-v5.4.2)
+
+---
+
 ## [5.4.1](https://github.com/LerianStudio/helm/releases/tag/reporter-v5.4.1)
 
 Fixes:

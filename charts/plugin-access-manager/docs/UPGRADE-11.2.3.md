@@ -1,139 +1,76 @@
-<!-- {% raw %} -->
 # Helm Upgrade from v11.2.2 to v11.2.3
 
-# Topics
+## What changes
 
-- **[Fixes](#fixes)**
-  - [1. Database TLS Configuration for Migrations](#1-database-tls-configuration-for-migrations)
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+Chart 11.2.3 adds `ALLOW_INSECURE_TLS` to the `migrate` init container in the Caradhras Deployment. It comes from the Caradhras ConfigMap, controlled by `caradhras.allowInsecureTLS` (default: `true`). The init container already receives `POSTGRES_SSLMODE` from the auth ConfigMap key `DB_SSLMODE`.
 
-# Fixes
+This is a chart environment-wiring change, not a migration-image update. Auth and identity remain at `3.19.0`; Caradhras and its migrations image remain at `2.1.0`. There is no new SQL migration or dependency-version change in this chart patch.
 
-### 1. Database TLS Configuration for Migrations
+**Do not interpret the extra environment variable as proof of a runtime migration fix.** The default `2.1.0` migrator builds its PostgreSQL DSN and connects directly through pgx; it does not read `ALLOW_INSECURE_TLS` or gate `sslmode=disable` on that flag. Both chart versions ship that same image. A different overridden image must be validated separately. In particular, this patch alone does not establish that a previously failing migration now succeeds or that every component has the same TLS policy.
 
-This release fixes a database connection issue in the Caradhras migrations container when using `sslmode=disable`. The migrations container now correctly reads the `ALLOW_INSECURE_TLS` environment variable to permit insecure database connections when explicitly configured.
+## Correct configuration paths
 
-**What changed:**
+The following are partial examples, not complete upgrade values files. Merge the intended settings into your complete configuration.
 
-The Caradhras migrations Deployment now includes the `ALLOW_INSECURE_TLS` environment variable, sourced from the Caradhras ConfigMap:
-
-**Before (v11.2.2):**
-
-```yaml
-# templates/caradhras/deployment.yaml
-env:
-  - name: DB_SSLMODE
-    valueFrom:
-      configMapKeyRef:
-        name: {{ include "plugin-auth.fullname" . }}
-        key: DB_SSLMODE
-  {{- /* The migrator is licence-gated and, on a fresh install, the first process to
-       fetch the licence file: it needs the key (or file) and, behind a proxy,
-       caradhras.migrations.extraEnvVars (HTTPS_PROXY). */}}
-```
-
-**After (v11.2.3):**
-
-```yaml
-# templates/caradhras/deployment.yaml
-env:
-  - name: DB_SSLMODE
-    valueFrom:
-      configMapKeyRef:
-        name: {{ include "plugin-auth.fullname" . }}
-        key: DB_SSLMODE
-  # lib-commons refuses sslmode=disable unless this is true; same key the server reads.
-  - name: ALLOW_INSECURE_TLS
-    valueFrom:
-      configMapKeyRef:
-        name: {{ include "plugin-caradhras.fullname" . }}
-        key: ALLOW_INSECURE_TLS
-  {{- /* The migrator is licence-gated and, on a fresh install, the first process to
-       fetch the licence file: it needs the key (or file) and, behind a proxy,
-       caradhras.migrations.extraEnvVars (HTTPS_PROXY). */}}
-```
-
-**Why this matters:**
-
-The `lib-commons` library used by the migrations container enforces TLS by default and refuses to connect to a database with `sslmode=disable` unless `ALLOW_INSECURE_TLS` is explicitly set to `true`. Without this environment variable, migrations would fail to connect to databases configured without TLS, even when `DB_SSLMODE=disable` was correctly set.
-
-This fix ensures that:
-- Migrations can connect to databases with `sslmode=disable` when `ALLOW_INSECURE_TLS` is enabled
-- The migrations container uses the same TLS policy as the main Caradhras server
-- Database connection behavior is consistent across all Caradhras components
-
-**Environment variable details:**
-
-| Variable | Source | Purpose |
-|----------|--------|---------|
-| `ALLOW_INSECURE_TLS` | `plugin-caradhras` ConfigMap | Permits database connections with `sslmode=disable` when set to `true` |
-
-**Default behavior:**
-
-The `ALLOW_INSECURE_TLS` value is read from the Caradhras ConfigMap, which is controlled by your chart configuration. If you have not explicitly configured this value, the chart's default behavior applies.
-
-**Operational impact:**
-
-- **Databases with TLS enabled**: No action required. This change does not affect secure database connections.
-- **Databases with `sslmode=disable`**: If you previously experienced migration failures with connection errors, this fix resolves those issues. Ensure `ALLOW_INSECURE_TLS` is set appropriately in your configuration.
-- **New installations**: No action required. The migrations container will correctly read the TLS policy from the ConfigMap.
-
-**Configuration example:**
-
-If you are using a database without TLS (e.g., for development or testing), ensure your values include:
-
-```yaml
-caradhras:
-  config:
-    ALLOW_INSECURE_TLS: "true"
-
-auth:
-  secrets:
-    DB_SSLMODE: "disable"
-```
-
-> **Warning:** Disabling TLS for database connections is not recommended for production environments. Always use encrypted connections (`sslmode=require` or higher) and keep `ALLOW_INSECURE_TLS` set to `false` in production.
-
-**Migration scenarios:**
-
-#### Scenario 1: Using TLS-enabled database (recommended)
-
-No action required. The default secure configuration continues to work:
+For a TLS-capable external PostgreSQL deployment:
 
 ```yaml
 auth:
-  secrets:
+  configmap:
     DB_SSLMODE: "require"
+caradhras:
+  allowInsecureTLS: false
 ```
 
-#### Scenario 2: Using database without TLS (development/testing)
+`require` encrypts the PostgreSQL connection; use CA/hostname verification settings supported by your deployment when required. Confirm the actual rendered settings and connectivity before rollout. Do not describe chart defaults as secure: `auth.configmap.DB_SSLMODE` defaults to `disable`, and `caradhras.allowInsecureTLS` defaults to `true`.
 
-Ensure both `DB_SSLMODE` and `ALLOW_INSECURE_TLS` are configured:
+For an isolated development/test database without TLS only:
 
 ```yaml
-caradhras:
-  config:
-    ALLOW_INSECURE_TLS: "true"
-
 auth:
-  secrets:
+  configmap:
     DB_SSLMODE: "disable"
+caradhras:
+  allowInsecureTLS: true
 ```
 
-> **Important:** If you set `DB_SSLMODE=disable` but do not set `ALLOW_INSECURE_TLS=true`, the migrations container will fail to connect to the database. Both settings must be aligned.
+Do not use `auth.secrets.DB_SSLMODE` or `caradhras.config.ALLOW_INSECURE_TLS`: those paths do not configure these rendered settings. Auth and identity have separate `configmap.ALLOW_INSECURE_TLS` settings; a Caradhras setting is not a global security switch. Check Redis TLS and every relevant component's configuration before removing an insecurity waiver. Never disable transport security merely to work around an unexplained production connection failure.
 
-## Preview changes before upgrading
+## Prepare and preserve the release
+
+1. Record the installed Helm revision and capture the current values and manifest in a private directory. These outputs can contain credentials: never commit, publish or paste them.
+
+   ```bash
+   umask 077
+   mkdir -p private-upgrade-backup
+   helm history plugin-access-manager -n midaz-plugins > private-upgrade-backup/history.txt
+   helm get values plugin-access-manager -n midaz-plugins -o yaml > private-upgrade-backup/values.yaml
+   helm get manifest plugin-access-manager -n midaz-plugins > private-upgrade-backup/manifest.yaml
+   ```
+
+2. Prepare `values-11.2.3.yaml` as the **complete intended configuration**, using the saved overrides and target defaults. Preserve unrelated settings, endpoints, image pins, storage, application-client credentials, license-file references and existing Secret names/references. Correct unused paths rather than retaining both forms. Do not replace existing credentials or use one of the partial snippets above as this file.
+3. Take a consistent PostgreSQL backup using your database runbook and verify the corresponding restore procedure before upgrading. Preserve credential/Secret references privately. Replacement Caradhras pods run the unchanged, up-only migrator init container; an unchanged image is not proof that it will perform no database work on your schema. Review the rendered rollout and migration configuration for your actual deployment.
+4. Validate the TLS settings and migration behavior with the exact selected images in staging. No live upgrade, migration, rollback or restore is demonstrated by this guide's source/render checks.
+
+## Preview and upgrade
+
+Both commands deliberately reset stored Helm overrides and apply the same complete file. `--reset-values` with a partial file would discard unrelated configuration. Review all changes, including datastore, Secret and storage references, before proceeding.
+
+The preview requires the [helm-diff plugin](https://github.com/databus23/helm-diff).
 
 ```bash
-helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.3
+helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.3 --reset-values -f values-11.2.3.yaml
+helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.3 --reset-values -f values-11.2.3.yaml --wait --timeout 10m
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+## Verify and recover
 
-## Command to upgrade
+Discover the actual Deployment names from the rendered manifest; do not assume a release-name-independent selector. Check rollout/readiness and the `migrate` init-container result/logs privately. Test authentication, token issuance and representative allowed/denied authorization requests using your approved smoke-test procedure. Redact logs before sharing them.
+
+If rollback is needed, replace `PREVIOUS_REVISION` with the recorded installed revision:
 
 ```bash
-helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.3
+helm rollback plugin-access-manager PREVIOUS_REVISION -n midaz-plugins --wait --timeout 10m
 ```
-<!-- {% endraw %} -->
+
+Helm rollback restores Kubernetes release configuration, **not database contents or schema**. Check compatibility with database writes and migrations already applied before rolling back. If restoration is necessary, stop the rollout and follow the reviewed database restore/cutover procedure; do not assume an application rollback reverses an up-only migration.

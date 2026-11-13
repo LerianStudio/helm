@@ -297,6 +297,7 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_BULK_MAX_BODY_BYTES` | read only by app versions after 1.0.2; unset (app default `7680` bytes; zero, negative or non-numeric stops the boot) |
 | `SANDBOX_SIMULATION_ENABLED` | unset (app default `"false"`; `"true"` enables `POST /v1/sandbox/boletos/{id}/simulate-payment` and `POST /v1/sandbox/payments/{id}/simulate-status`; with it on, the app refuses to boot when `ENV_NAME=production` and requires `BTG_API_BASE_URL`, `BTG_AUTH_URL`, `BTG_COMMON_BASE_URL` and `SANDBOX_FAKEBTG_ADMIN_URL` to share one origin, `scheme://host:port`) |
 | `SANDBOX_FAKEBTG_ADMIN_URL` | unset (no app default; required when `SANDBOX_SIMULATION_ENABLED` is `"true"`) |
+| `SANDBOX_FAKEBTG_ADMIN_KEY` | unset; an `app.secrets` key, rendered into the Secret (no app default; read only when `SANDBOX_SIMULATION_ENABLED` is `"true"`; sent as `X-Admin-Key` on the fakebtg `/admin/*` calls, for a keyed fakebtg such as the BYOC sandbox; empty means no header. With `MULTI_TENANT_ENABLED=true` it also derives each tenant's synthetic BTG secret, `hex(HMAC-SHA256(key, tenantId))`, instead of the shared constant. The API and the worker both read it; this chart's single Deployment gets it through `envFrom`. Rotating it changes every tenant's derived secret: follow the fakebtg rotation procedure) |
 
 </details>
 
@@ -387,7 +388,7 @@ The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collec
 
 </details>
 
-**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`.
+**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`, `SANDBOX_FAKEBTG_ADMIN_KEY`.
 
 **Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
 

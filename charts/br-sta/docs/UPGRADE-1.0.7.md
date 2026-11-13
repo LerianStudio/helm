@@ -1,6 +1,6 @@
 # Helm Upgrade from v1.0.6 to v1.0.7
 
-This patch release upgrades the application from v1.2.0 to v1.3.0 and removes several deprecated configuration options. The new application version introduces a global license model (no longer requires `ORGANIZATION_IDS`), removes the RabbitMQ publisher (making several publisher tuning parameters obsolete), and changes the credential sweep interval in the scheduler.
+This patch release upgrades the application from v1.2.0 to v1.3.0 and removes several deprecated configuration options. The new application version introduces a global license model (no longer requires `ORGANIZATION_IDS`), removes four legacy RabbitMQ publisher tuning parameters (not RabbitMQ publishing itself), and changes the credential sweep interval in the scheduler.
 
 ## Topics
 
@@ -114,7 +114,7 @@ The chart still renders `ORGANIZATION_IDS` to the ConfigMap if you explicitly se
 
 ### What Changed
 
-Application version 1.3.0 removes the RabbitMQ publisher component. The following configuration options are no longer used:
+Application version 1.3.0 removes the following four legacy publisher tuning parameters. RabbitMQ audit and business-event publishers remain active; this is not removal of the messaging transport:
 
 | Setting | v1.0.6 | v1.0.7 |
 |---------|--------|--------|
@@ -232,12 +232,34 @@ The environment variable is only rendered if you explicitly set `worker.schedule
        credentialIntervalHours: 12
    ```
 
-> **Important:** The new 5-minute sweep interval in version 1.3.0 is not configurable. If your operations depend on a longer interval, you must pin the worker image to version 1.2.0 until you can adapt your processes.
+> **Important:** The abandoned-rotation monitor now runs every 5 minutes; the credential validity monitor already used a 5-minute interval in 1.2.0. Do not pin only an older worker as a workaround: compatibility with the manager, migrations image and resulting database schema must be demonstrated for the complete selected version set.
+
+## Database migrations and preparation
+
+The default migrations image also changes from 1.2.0 to 1.3.0. Application 1.3.0 adds migration 000023 (credential `pending_encryption_key_id` and backfill) and 000024 (rebuild of the `reporter_filings` index). Plan the migration window and inspect the migration result before accepting traffic. For single-tenant external PostgreSQL, the enabled migration Job is a pre-upgrade hook. In multi-tenant mode that Job is not rendered: arrange and verify migrations for every tenant using the application's supported procedure before cutover. Do not assume a Helm rollout alone migrates every tenant.
+
+Before upgrading:
+
+1. Record the current Helm revision and save release configuration privately. These outputs can contain secrets; never commit, publish or paste them.
+
+   ```bash
+   umask 077
+   mkdir -p private-upgrade-backup
+   helm history br-sta -n br-sta > private-upgrade-backup/history.txt
+   helm get values br-sta -n br-sta -o yaml > private-upgrade-backup/values.yaml
+   helm get manifest br-sta -n br-sta > private-upgrade-backup/manifest.yaml
+   ```
+
+2. Take a consistent PostgreSQL backup and verify the restore procedure. Preserve `MASTER_KEYS`, credential material and existing Secret references privately; changing keys or losing them is not a migration strategy.
+3. Prepare `values-1.0.7.yaml` as the **complete intended configuration**, preserving unrelated endpoints, Secret/license references, storage, ingress, resources and overrides. Remove only the retired keys identified above. The partial examples are not complete upgrade values files.
+4. Validate the complete manager/worker/migrations version set, schema and scheduler behavior in staging. No live upgrade, SQL execution or restore is established by chart render checks.
+
+Both commands below use `--reset-values` to discard retired stored overrides and apply the same complete file. A partial file would discard unrelated settings; inspect the full diff before proceeding.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm -n br-sta --version 1.0.7
+helm diff upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm -n br-sta --version 1.0.7 --reset-values -f values-1.0.7.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -245,5 +267,17 @@ helm diff upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm -n br-sta --vers
 ## Command to upgrade
 
 ```bash
-helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm -n br-sta --version 1.0.7
+helm upgrade br-sta oci://ghcr.io/lerianstudio/br-sta-helm -n br-sta --version 1.0.7 --reset-values -f values-1.0.7.yaml --wait --timeout 10m
 ```
+
+## Verify and recover
+
+Check the migration Job result (or the per-tenant migration results), manager/worker rollout readiness and representative STA operations using your approved smoke tests. Discover exact workload names from the rendered manifest rather than assuming a fixed selector. Inspect logs privately and redact them before sharing.
+
+To roll back Kubernetes release configuration, replace `PREVIOUS_REVISION` with the recorded Helm revision:
+
+```bash
+helm rollback br-sta PREVIOUS_REVISION -n br-sta --wait --timeout 10m
+```
+
+A Helm rollback does not reverse SQL migrations, restore PostgreSQL or undo credential/password state already negotiated with BACEN. Verify compatibility before rolling back the application version. If database recovery is required, stop the rollout and use the reviewed backup/restore and cutover procedure; do not blindly run down migrations or discard key material.

@@ -1,288 +1,95 @@
 # Helm Upgrade from v4.1.3 to v4.2.0
 
-## Topics
+## Compatibility boundary
 
-- **[Overview](#overview)**
-- **[Features](#features)**
-  - [1. License file mode support](#1-license-file-mode-support)
-- **[Configuration Reference](#configuration-reference)**
-  - [License file configuration](#license-file-configuration)
-- **[Migration Steps](#migration-steps)**
-  - [Step 1: Choose license mode](#step-1-choose-license-mode)
-  - [Step 2: Configure license file (if using file mode)](#step-2-configure-license-file-if-using-file-mode)
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+Chart `4.2.0` adds optional license-file mounts for manager and worker. It does **not** upgrade the application: both charts ship Fetcher `4.1.0` (`appVersion` and default images).
 
-## Overview
+**Keep `LICENSE_KEY` with the default images.** Fetcher `4.1.0` uses `lib-license-go/v4` and rejects an empty `LICENSE_KEY` during manager and worker startup. Mounting a file or setting `LICENSE_FILE_PATH` does not make those images consume it. This guide does not identify a compatible file-mode application release and therefore does not prescribe a file-only migration.
 
-This guide covers the `fetcher` chart upgrade from `4.1.3` to `4.2.0`. This is a minor release that introduces an alternative licensing mechanism: operators can now provide a signed license file via a Kubernetes Secret instead of using the `LICENSE_KEY` environment variable.
+Existing key-mode configuration remains supported. Leave both `licenseFile.existingSecret` values empty and preserve the current license key and all other settings or external Secret references. An upgrade can restart workloads; do not interpret optional file mounts as a no-restart guarantee.
 
-The application version (`appVersion: 4.1.0`) is unchanged. No breaking changes are introduced. Existing installations using `secrets.LICENSE_KEY` will continue to work without modification. The new license file mode is optional and requires application images built with `lib-license-go v5` or later.
+## Chart changes
 
-## Features
+Between chart tags `fetcher-v4.1.3` and `fetcher-v4.2.0`, the chart adds:
 
-### 1. License file mode support
+| Value | Default | Rendered effect when nonempty |
+|-------|---------|-------------------------------|
+| `manager.licenseFile.existingSecret` | `""` | Mounts the named Secret into manager |
+| `worker.licenseFile.existingSecret` | `""` | Mounts the named Secret into worker |
 
-Both `manager` and `worker` components now support mounting a signed license file from a Kubernetes Secret as an alternative to the `LICENSE_KEY` environment variable. This mode is useful for:
+Each Secret must be in the release namespace and contain key `license`. The chart mounts that key read-only at `/etc/lerian/license/license` with mode `0444` and sets `LICENSE_FILE_PATH` to that path. It uses a directory mount, not `subPath`, so Kubernetes can eventually propagate Secret updates. Application reload behavior is a separate compatibility requirement, not established by this chart change.
 
-- **License rotation without pod restarts**: Kubernetes automatically propagates Secret updates to mounted volumes, allowing license renewal without redeploying pods
-- **Separation of concerns**: License files can be managed independently from application configuration
-- **Enhanced security**: File-based licenses can be rotated via external secret management systems (e.g., Vault, AWS Secrets Manager)
-
-**Before (v4.1.3):**
-
-License was provided exclusively via the `LICENSE_KEY` environment variable:
-
-```yaml
-secrets:
-  LICENSE_KEY: "your-base64-encoded-license-key"
-```
-
-**After (v4.2.0):**
-
-Operators can choose between two modes:
-
-#### Option 1: Environment variable mode (existing behavior)
-
-```yaml
-secrets:
-  LICENSE_KEY: "your-base64-encoded-license-key"
-```
-
-#### Option 2: File mode (new)
+The following is a **chart-wiring reference only**, not a working file-only recipe for the default images:
 
 ```yaml
 manager:
   licenseFile:
-    existingSecret: "fetcher-manager-license"
-
+    existingSecret: fetcher-manager-license
 worker:
   licenseFile:
-    existingSecret: "fetcher-worker-license"
+    existingSecret: fetcher-worker-license
 ```
 
-When `licenseFile.existingSecret` is set, the chart:
+Do not clear `secrets.LICENSE_KEY` or change application image tags based on this example. A future file-mode deployment requires independently verified application support for both components, its documented mode precedence/reload behavior, provisioned Secrets, and a separate tested migration plan.
 
-1. Mounts the Secret as a read-only volume at `/etc/lerian/license`
-2. Sets the `LICENSE_FILE_PATH` environment variable to `/etc/lerian/license/license`
-3. The application reads the license from the file instead of the `LICENSE_KEY` environment variable
+## Prepare and back up
 
-> **Important:** File mode requires application images built with `lib-license-go v5` or later. Verify your `manager.image.tag` and `worker.image.tag` support this feature before enabling it.
+The commands below assume release `fetcher` in namespace `midaz-plugins`. Substitute the existing release and namespace if different. Run these on an authorized operator workstation; this document does not execute them.
 
-> **Note:** The Secret must contain a key named `license` with the signed license file content. The chart expects this exact key name and will mount it at the path specified in `LICENSE_FILE_PATH`.
-
-**Template changes:**
-
-The Deployment templates for both `manager` and `worker` now include conditional volume mounts and environment variables when `licenseFile.existingSecret` is set.
-
-**Before (v4.1.3):**
-
-```yaml
-# manager/deployment.yaml (simplified)
-spec:
-  template:
-    spec:
-      containers:
-        - name: manager
-          env:
-            # LICENSE_KEY from secrets
-```
-
-**After (v4.2.0):**
-
-```yaml
-# manager/deployment.yaml (simplified)
-spec:
-  template:
-    spec:
-      containers:
-        - name: manager
-          env:
-            # LICENSE_KEY from secrets (if not using file mode)
-            # LICENSE_FILE_PATH set to /etc/lerian/license/license (if using file mode)
-          volumeMounts:
-            - name: license-file
-              mountPath: /etc/lerian/license
-              readOnly: true
-      volumes:
-        - name: license-file
-          secret:
-            secretName: fetcher-manager-license
-            defaultMode: 0444
-            items:
-              - key: license
-                path: license
-```
-
-The volume is mounted as a directory (not `subPath`) to ensure that Kubernetes propagates Secret updates to the running pod. The `defaultMode: 0444` sets the file as read-only for all users.
-
-## Configuration Reference
-
-### License file configuration
-
-The following fields have been added to both `manager` and `worker` configuration blocks:
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `manager.licenseFile.existingSecret` | `""` (empty) | Name of an existing Secret containing the signed license file (key: `license`) |
-| `worker.licenseFile.existingSecret` | `""` (empty) | Name of an existing Secret containing the signed license file (key: `license`) |
-
-**Example configuration:**
-
-```yaml
-manager:
-  licenseFile:
-    existingSecret: "fetcher-manager-license"
-
-worker:
-  licenseFile:
-    existingSecret: "fetcher-worker-license"
-```
-
-**Environment variables:**
-
-When `licenseFile.existingSecret` is set, the following environment variable is added to the container:
-
-| Variable | Value | Description |
-|----------|-------|-------------|
-| `LICENSE_FILE_PATH` | `/etc/lerian/license/license` | Path to the mounted license file |
-
-**Secret structure:**
-
-The referenced Secret must contain a key named `license`:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: fetcher-manager-license
-  namespace: midaz-plugins
-type: Opaque
-data:
-  license: <base64-encoded-signed-license-file>
-```
-
-> **Note:** The chart does not create this Secret. Operators must create it manually or via an external secret management system before enabling file mode.
-
-## Migration Steps
-
-### Step 1: Choose license mode
-
-Determine which licensing mode is appropriate for your deployment:
-
-#### Option 1: Keep existing environment variable mode (no action required)
-
-If you are currently using `secrets.LICENSE_KEY` and do not need license rotation without pod restarts, no changes are required. The upgrade will preserve your existing configuration.
-
-```yaml
-secrets:
-  LICENSE_KEY: "your-existing-license-key"
-```
-
-#### Option 2: Migrate to file mode
-
-If you want to enable license rotation without pod restarts, follow Step 2 to configure file mode.
-
-> **Important:** Verify that your application images support `lib-license-go v5` before migrating to file mode. Check the upstream `fetcher` release notes or contact Lerian Studio support to confirm compatibility.
-
-### Step 2: Configure license file (if using file mode)
-
-If you choose to use file mode, create the required Secrets and update your `values.yaml`:
-
-#### 2.1: Create license file Secrets
-
-Create a Secret for each component (`manager` and `worker`) containing the signed license file:
+1. Record the current Helm revision and confirm the installed chart is `4.1.3`.
+2. Back up release values and rendered manifests privately. They may contain credentials. Never commit them, upload them to tickets, or paste them into chat.
+3. Back up externally managed Secrets through the approved secret-management process without printing their contents. Preserve names, keys and access policies. Take the required datastore and object-storage backups and verify the restore procedure before the maintenance window.
 
 ```bash
-# Create manager license Secret
-kubectl create secret generic fetcher-manager-license \
-  -n midaz-plugins \
-  --from-file=license=/path/to/your/signed-license-file.lic
-
-# Create worker license Secret
-kubectl create secret generic fetcher-worker-license \
-  -n midaz-plugins \
-  --from-file=license=/path/to/your/signed-license-file.lic
+umask 077
+mkdir -p fetcher-upgrade-private
+helm history fetcher -n midaz-plugins > fetcher-upgrade-private/history.txt
+helm get values fetcher -n midaz-plugins -o yaml > fetcher-upgrade-private/original-values.yaml
+helm get manifest fetcher -n midaz-plugins > fetcher-upgrade-private/original-manifest.yaml
+cp fetcher-upgrade-private/original-values.yaml fetcher-upgrade-private/intended-values.yaml
 ```
 
-> **Note:** The `--from-file=license=` flag ensures the Secret key is named `license`, which is required by the chart.
+Review `intended-values.yaml` against both releases. It must contain the **complete intended overrides**, not just a partial license snippet: retain image overrides, credentials, license key or existing Secret references, external datastore addresses, storage, ingress, resources, scheduling and other custom settings. An export is a starting point, not proof the intended configuration is complete. Preserve both file-mode settings as empty for the default `4.1.0` images. Do not replace existing credentials with empty example values.
 
-#### 2.2: Update values.yaml
+`--reset-values -f` below deliberately replaces stored overrides with this reviewed file, layered onto the target chart defaults. Omitting an intended override can reset it. Do not use this strategy until the complete configuration has been reviewed.
 
-Create a `values-override.yaml` file to enable file mode:
+## Preview
 
-```yaml
-manager:
-  licenseFile:
-    existingSecret: "fetcher-manager-license"
-
-worker:
-  licenseFile:
-    existingSecret: "fetcher-worker-license"
-
-# Optional: Remove LICENSE_KEY if migrating fully to file mode
-secrets:
-  LICENSE_KEY: ""
-```
-
-> **Important:** If both `licenseFile.existingSecret` and `secrets.LICENSE_KEY` are set, the application behavior depends on the `lib-license-go` library version. Consult the upstream documentation to understand precedence rules. It is recommended to set only one mode to avoid ambiguity.
-
-#### 2.3: Verify Secret structure
-
-Confirm the Secrets contain the correct key:
+Fetch the exact public chart package with your normal approved Helm registry configuration:
 
 ```bash
-kubectl get secret -n midaz-plugins fetcher-manager-license -o jsonpath='{.data.license}' | base64 -d | head -c 50
-kubectl get secret -n midaz-plugins fetcher-worker-license -o jsonpath='{.data.license}' | base64 -d | head -c 50
+helm pull oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 4.2.0 --destination fetcher-upgrade-private
+helm lint fetcher-upgrade-private/fetcher-helm-4.2.0.tgz -f fetcher-upgrade-private/intended-values.yaml
+helm template fetcher fetcher-upgrade-private/fetcher-helm-4.2.0.tgz -n midaz-plugins -f fetcher-upgrade-private/intended-values.yaml > fetcher-upgrade-private/preview.yaml
+helm upgrade fetcher fetcher-upgrade-private/fetcher-helm-4.2.0.tgz -n midaz-plugins --reset-values -f fetcher-upgrade-private/intended-values.yaml --dry-run > fetcher-upgrade-private/upgrade-dry-run.txt
 ```
 
-The output should show the beginning of your signed license file content.
+Keep render/dry-run output private because it may include Secret data. Compare workload names, selectors, PVC names/mounts, external Secret references and all image tags with the current manifest. A successful render does not validate credentials, application startup, licensing, data recovery or a live upgrade. Do not proceed if any persistent resource would be replaced unexpectedly.
 
-## Preview changes before upgrading
+## Upgrade and verify
+
+Use the same reviewed package and complete intended values used for the preview:
 
 ```bash
-helm diff upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm -n midaz-plugins --version 4.2.0
+helm upgrade fetcher fetcher-upgrade-private/fetcher-helm-4.2.0.tgz -n midaz-plugins --reset-values -f fetcher-upgrade-private/intended-values.yaml --wait --timeout 10m
+kubectl get deployments -n midaz-plugins -l app.kubernetes.io/instance=fetcher
+kubectl get pods -n midaz-plugins -l app.kubernetes.io/instance=fetcher
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+Use the actual manager and worker Deployment names from that listing to check rollout status. Do not use `app.kubernetes.io/name=fetcher`: the default component names are `fetcher-manager` and `fetcher-worker`. Do not pass a label selector to `kubectl exec`; it requires a resource name. Scope any additional pod selection to this release and component.
 
-If you are enabling file mode, include your values override file:
+Confirm both components become ready, retain the intended license configuration and datastore connections, and complete an approved functional extraction check. Review logs privately for startup/licensing errors; do not print license files, Secret data or credentials as verification. Helm readiness alone does not prove an extraction succeeded.
+
+## Recovery boundary
+
+If the upgrade fails, stop further changes and retain private diagnostics. After assessing compatibility, use the **previous revision number recorded before the upgrade**:
 
 ```bash
-helm diff upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm -n midaz-plugins --version 4.2.0 -f values-override.yaml
+helm rollback fetcher PREVIOUS_REVISION -n midaz-plugins --wait --timeout 10m
 ```
 
-## Command to upgrade
+Replace `PREVIOUS_REVISION` with that recorded numeric revision. Verify manager and worker readiness and the functional extraction check again. Helm rollback does not restore externally managed Secrets, databases or object storage and cannot reverse arbitrary application/data changes. Restore those only through the separately verified backup/restore runbook and the approved recovery decision. Do not uninstall the release or delete PVCs to recover.
 
-```bash
-helm upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm -n midaz-plugins --version 4.2.0
-```
+## Validation scope
 
-If you are enabling file mode, include your values override file:
-
-```bash
-helm upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm -n midaz-plugins --version 4.2.0 -f values-override.yaml
-```
-
-After the upgrade completes, verify all pods are running:
-
-```bash
-kubectl get pods -n midaz-plugins -l app.kubernetes.io/name=fetcher
-```
-
-If you enabled file mode, verify the license file is mounted correctly:
-
-```bash
-# Check manager pod
-kubectl exec -n midaz-plugins -l app.kubernetes.io/component=manager -- ls -la /etc/lerian/license/
-
-# Check worker pod
-kubectl exec -n midaz-plugins -l app.kubernetes.io/component=worker -- ls -la /etc/lerian/license/
-```
-
-Check manager and worker logs for license validation messages:
-
-```bash
-kubectl logs -n midaz-plugins -l app.kubernetes.io/component=manager --tail=50 | grep -i license
-kubectl logs -n midaz-plugins -l app.kubernetes.io/component=worker --tail=50 | grep -i license
-```
+This guide is based on exact chart release sources, rendered templates and the shipped Fetcher `4.1.0` startup source. No live install, upgrade, license rotation, backup or restore was exercised as part of this documentation review. Operators must validate the procedure in a suitable non-production environment before production use.

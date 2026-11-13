@@ -1,129 +1,81 @@
-<!-- {% raw %} -->
 # Helm Upgrade from v2.5.1 to v2.6.0
-
-## Topics
-
-- **[Overview](#overview)**
-- **[Features](#features)**
-  - [1. New sandbox FakeBTG admin key secret](#1-new-sandbox-fakebtg-admin-key-secret)
-- **[Configuration Changes](#configuration-changes)**
-- **[Migration Steps](#migration-steps)**
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
 
 ## Overview
 
-This guide covers the `plugin-br-payments` chart upgrade from `2.5.1` to `2.6.0`. Both releases ship application image `1.4.0`. This minor version adds support for a new optional secret, `SANDBOX_FAKEBTG_ADMIN_KEY`, to the chart-managed Secret template. The new secret enables administrative operations against the FakeBTG sandbox provider when running in non-production environments.
+This guide covers chart `plugin-br-payments` **2.5.1 → 2.6.0**. Both releases default to application image **1.4.0**. The runtime configuration change is chart/schema support for optional `app.secrets.SANDBOX_FAKEBTG_ADMIN_KEY` in the chart-managed Secret. No new database migration is introduced by this same-application-version chart delta.
 
-Existing deployments that do not use the FakeBTG sandbox can upgrade without any configuration changes. Deployments that require FakeBTG admin functionality must add the new secret value to their values overlay before or after upgrading.
+**Chart support is not application support.** The shipped application 1.4.0 does not read `SANDBOX_FAKEBTG_ADMIN_KEY`. Its FakeBTG administrative adapter sends no authentication credential. Setting this key does **not** enable authenticated sandbox operations, secure that adapter, or activate sandbox simulation. Do not select an unverified newer application image to work around this limitation.
 
-## Features
+Sandbox simulation is non-production only and has separate toggle, admin URL and matching endpoint-origin prerequisites. This guide does not enable it. Keep production configuration unchanged and do not add an unused sandbox credential.
 
-### 1. New sandbox FakeBTG admin key secret
+## Configuration changes
 
-The chart now supports an optional `SANDBOX_FAKEBTG_ADMIN_KEY` secret in the `app.secrets` section. This secret is rendered into the chart-managed Secret resource alongside existing secrets like `POSTGRES_PASSWORD`, `PROVIDER_CLIENT_ID`, and others. The application uses this key to authenticate administrative API calls to the FakeBTG sandbox provider, which simulates BTG Pactual payment operations in development and testing environments.
+| Setting | 2.5.1 | 2.6.0 |
+|---|---|---|
+| Chart version | 2.5.1 | 2.6.0 |
+| Default application image | 1.4.0 | 1.4.0 |
+| `app.secrets.SANDBOX_FAKEBTG_ADMIN_KEY` | Rejected by schema | Optional chart-managed Secret key; no default |
 
-**Before (v2.5.1):**
+No existing configuration key is removed. No new credential is required. Existing operator-managed Secret references must be preserved; adding chart-managed values does not update an external Secret. Never put real credentials in Git, tickets, terminal output or shared logs.
 
-```yaml
-stringData:
-  {{- range $key := list "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "PROVIDER_CLIENT_ID" "PROVIDER_CLIENT_SECRET" "BTG_WEBHOOK_HMAC_SECRET" "INTERNAL_API_KEY" "INTERNAL_API_KEY_PREVIOUS" "CREDENTIAL_ENCRYPTION_KEY" "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS" "LICENSE_KEY" "PLUGIN_AUTH_CLIENT_ID" "PLUGIN_AUTH_CLIENT_SECRET" "MULTI_TENANT_SERVICE_API_KEY" "CONSULT_AUDIT_HMAC_KEY" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET" }}
-  {{- with (index $sec $key) }}
-  {{ $key }}: {{ . | toString | quote }}
-  {{- end }}
-  {{- end }}
-```
+The chart's configuration/Secret checksum annotations change between these releases even with identical values. Expect a rolling restart; assess replica count, readiness and maintenance-window requirements before proceeding.
 
-**After (v2.6.0):**
+## Prepare and preserve configuration
 
-```yaml
-stringData:
-  {{- range $key := list "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "PROVIDER_CLIENT_ID" "PROVIDER_CLIENT_SECRET" "BTG_WEBHOOK_HMAC_SECRET" "INTERNAL_API_KEY" "INTERNAL_API_KEY_PREVIOUS" "CREDENTIAL_ENCRYPTION_KEY" "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS" "LICENSE_KEY" "PLUGIN_AUTH_CLIENT_ID" "PLUGIN_AUTH_CLIENT_SECRET" "MULTI_TENANT_SERVICE_API_KEY" "CONSULT_AUDIT_HMAC_KEY" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET" "SANDBOX_FAKEBTG_ADMIN_KEY" }}
-  {{- with (index $sec $key) }}
-  {{ $key }}: {{ . | toString | quote }}
-  {{- end }}
-  {{- end }}
-```
-
-**Operational impact:**
-
-The new secret is optional. If `app.secrets.SANDBOX_FAKEBTG_ADMIN_KEY` is not set in your values overlay, the chart will not render it into the Secret resource, and the application will not receive the environment variable. Existing deployments that do not use the FakeBTG sandbox provider can upgrade without any changes.
-
-Deployments that use FakeBTG for testing or development and require admin operations (e.g., resetting sandbox state, managing test accounts) should add the new secret to their values overlay:
-
-```yaml
-app:
-  secrets:
-    SANDBOX_FAKEBTG_ADMIN_KEY: "your-fakebtg-admin-key-here"
-```
-
-The application will read this secret as the `SANDBOX_FAKEBTG_ADMIN_KEY` environment variable. Consult your FakeBTG sandbox documentation or provider configuration for the correct admin key value.
-
-> **Important:** The `SANDBOX_FAKEBTG_ADMIN_KEY` is a sensitive credential. Store it securely in your values overlay or use an external secret management solution (e.g., Sealed Secrets, External Secrets Operator) to inject it at deployment time. Do not commit this value to version control in plain text.
-
-> **Note:** The FakeBTG sandbox is intended for non-production environments only. Do not configure `SANDBOX_FAKEBTG_ADMIN_KEY` in production deployments that connect to the real BTG Pactual API.
-
-## Configuration Changes
-
-| Setting | v2.5.1 | v2.6.0 |
-|---------|--------|--------|
-| `Chart.yaml` `version` | `2.5.1` | `2.6.0` |
-| `app.secrets.SANDBOX_FAKEBTG_ADMIN_KEY` | not supported | optional (no default) |
-
-No configuration values were removed. The chart now accepts an optional `SANDBOX_FAKEBTG_ADMIN_KEY` secret in the `app.secrets` map.
-
-### New Secret Variable
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SANDBOX_FAKEBTG_ADMIN_KEY` | (none) | Admin authentication key for FakeBTG sandbox provider. Required only for administrative operations against the FakeBTG sandbox in non-production environments. |
-
-## Migration Steps
-
-1. **(Optional)** If your deployment uses the FakeBTG sandbox provider and requires admin functionality, add the `SANDBOX_FAKEBTG_ADMIN_KEY` secret to your values overlay:
-
-```yaml
-app:
-  secrets:
-    SANDBOX_FAKEBTG_ADMIN_KEY: "your-fakebtg-admin-key-here"
-```
-
-Replace `"your-fakebtg-admin-key-here"` with the actual admin key provided by your FakeBTG sandbox configuration.
-
-2. **(Optional)** If you do not use the FakeBTG sandbox or do not require admin operations, no configuration changes are needed. Proceed directly to the upgrade command.
-
-3. Run the upgrade command during a maintenance window (see [Command to upgrade](#command-to-upgrade)).
-
-4. Verify all pods are running and healthy after the upgrade:
+1. Confirm the actual release, namespace, Deployment name, current image overrides and Secret ownership. Commands below assume release `my-payments`, namespace `midaz-plugins` and the default Deployment name `plugin-br-payments`; adapt them to actual name overrides.
+2. Record the current release revision. Before any change, obtain private consistent datastore backups and a recovery procedure appropriate to the deployment, including operator-owned Secrets and credential references. Validate recovery in an isolated environment. Do not treat a Helm rollback as a data restore.
+3. Export release metadata and user values into a fresh owner-only directory. Disable shell tracing and protect Helm output, which may include secrets:
 
 ```bash
-kubectl get pods -n midaz-plugins -l app.kubernetes.io/name=plugin-br-payments,app.kubernetes.io/instance=my-payments
-kubectl rollout status -n midaz-plugins deployment/plugin-br-payments --timeout=300s
+set +x
+umask 077
+backup_dir="$(mktemp -d "${PWD}/payments-upgrade.XXXXXXXX")"
+helm history my-payments --namespace midaz-plugins > "$backup_dir/history.private.txt"
+helm get values my-payments --namespace midaz-plugins -o yaml > "$backup_dir/current-values.private.yaml"
+helm get manifest my-payments --namespace midaz-plugins > "$backup_dir/manifest.private.yaml"
+cp "$backup_dir/current-values.private.yaml" "$backup_dir/intended-values.private.yaml"
 ```
 
-5. **(Optional)** If you added `SANDBOX_FAKEBTG_ADMIN_KEY`, confirm the secret is present in the chart-managed Secret resource:
-
-```bash
-kubectl get secret -n midaz-plugins plugin-br-payments -o jsonpath='{.data.SANDBOX_FAKEBTG_ADMIN_KEY}' | base64 -d
-```
-
-Expected output: your FakeBTG admin key value (base64-decoded).
-
-6. **(Optional)** Verify the application can authenticate admin operations against the FakeBTG sandbox by checking the application logs for successful admin API calls or by testing a known admin endpoint (consult your FakeBTG sandbox documentation for available admin operations).
-
-> **Note:** The upgrade triggers a rolling restart of the plugin pods. Depending on your replica count and readiness probe configuration, this may cause brief request handling interruptions.
+4. Privately review `intended-values.private.yaml` and construct the **complete intended configuration**. Retain unrelated overrides, routing/authentication/licensing settings, image pins, storage/PVC settings and existing Secret references. Both commands below use `--reset-values`: any omitted override reverts to the new chart default. Do not apply until all intended overrides and credentials are accounted for. Preserve the existing application image pin unless a separately validated change is intended. Do not add the unused sandbox key for application 1.4.0.
 
 ## Preview changes before upgrading
 
+Requires the separately installed [helm-diff plugin](https://github.com/databus23/helm-diff). Preview in the same shell as the private export; store output privately because manifests can contain credentials.
+
 ```bash
-helm diff upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.6.0
+helm diff upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm \
+  --namespace midaz-plugins --version 2.6.0 \
+  --reset-values -f "$backup_dir/intended-values.private.yaml" \
+  > "$backup_dir/preview.private.txt"
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+Review the private preview for unintended Secret, image, PVC, workload or routing changes. Abort if the diff does not match the approved configuration. Any Helm hook execution must be assessed from the actual chart and deployment configuration; do not infer recovery safety from the unchanged application version.
 
 ## Command to upgrade
 
+Apply exactly the configuration reviewed above:
+
 ```bash
-helm upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.6.0
+helm upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm \
+  --namespace midaz-plugins --version 2.6.0 \
+  --reset-values -f "$backup_dir/intended-values.private.yaml" \
+  > "$backup_dir/upgrade.private.txt"
 ```
-<!-- {% endraw %} -->
+
+## Verify and recover
+
+```bash
+kubectl get pods --namespace midaz-plugins \
+  -l app.kubernetes.io/name=plugin-br-payments,app.kubernetes.io/instance=my-payments
+kubectl rollout status --namespace midaz-plugins deployment/plugin-br-payments --timeout=300s
+```
+
+Validate readiness, expected images, dependencies and representative payment behavior without disclosing credentials. Do not print or decode Secret values as a verification step, and do not interpret a rendered sandbox key as proof that application 1.4.0 authenticates FakeBTG requests.
+
+If validation fails, stop the rollout/traffic using the deployment's approved recovery procedure and assess datastore and Secret compatibility before reverting. Select the recorded pre-upgrade revision, not an assumed revision number:
+
+```bash
+helm rollback my-payments <recorded-pre-upgrade-revision> --namespace midaz-plugins
+```
+
+Rollback restores Helm-managed release resources, not database contents, external Secrets, or external side effects; hooks may have additional effects. Restore data/Secrets only through the validated private recovery procedure with writers controlled, then verify data consistency and application readiness before traffic resumes. Retain sensitive backups under the organization's protected retention policy, and remove temporary exports/previews when no longer needed. No live upgrade, backup or restore drill is claimed by this guide.

@@ -1,5 +1,25 @@
 # Plugin-br-payments Changelog
 
+## [2.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.6.0)
+
+Features:
+- Accept the sandbox `fakebtg` admin key in `plugin-br-payments`. (@arthurkz)
+
+Improvements:
+- Add a Helm upgrade guide for `plugin-br-payments` `v2.5.1`. (@victorlazari)
+- Clarify the upgrade process for `plugin-br-payments` `2.5.1`. (@victorlazari)
+- Add a Helm upgrade guide for `plugin-br-payments` `v2.5.0`. (@victorlazari)
+- Add a Helm upgrade guide for `plugin-br-payments` `v2.3.1`. (@victorlazari)
+- Add TLS cutover recovery steps. (@victorlazari)
+- Clarify the TLS contract for `plugin-br-payments`. (@victorlazari)
+
+Fixes:
+- Correct the payments upgrade guidance. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-payments-v2.5.1...plugin-br-payments-v2.6.0)
+
+---
+
 ## [2.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-payments-v2.5.1)
 
 Features:

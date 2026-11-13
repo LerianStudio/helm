@@ -40,7 +40,11 @@ jobs:
       slack_notification: true
       # Channel IDs are not secrets, so both come from variables. The update card goes to
       # SLACK_CHANNEL_DEVOPS_NOTIFICATIONS; SLACK_CHANNEL_DEVOPS keeps only the Severino
-      # mention, which becomes the review ticket.
+      # mention, which becomes the review ticket. For a mainline update that mention comes
+      # from chart-bump-automerge.yml instead, and only when the bump is not routine or CI
+      # fails, so SLACK_BOT_SEVERINO is withheld here (the shared workflow skips the mention
+      # when it is empty). A legacy patch targets a maintenance line, which that workflow
+      # does not watch, so it keeps the mention from here.
       slack_channel: ${{ vars.SLACK_CHANNEL_DEVOPS }}
       slack_notification_channel: ${{ vars.SLACK_CHANNEL_DEVOPS_NOTIFICATIONS }}
     secrets:
@@ -52,4 +56,4 @@ jobs:
       GIT_USER_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
       SLACK_BOT_TOKEN_HELM: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
       SLACK_GROUP_DEVOPS_SRE: ${{ secrets.SLACK_GROUP_DEVOPS_SRE }}
-      SLACK_BOT_SEVERINO: ${{ secrets.SLACK_BOT_SEVERINO }}
+      SLACK_BOT_SEVERINO: ${{ format('{0}', fromJSON(inputs.payload).is_legacy_patch) == 'true' && secrets.SLACK_BOT_SEVERINO || '' }}

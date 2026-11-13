@@ -1,0 +1,221 @@
+name: Chart Bump Auto-merge
+
+# Merges a routine chart bump from app-sync.yml on its own once CI is green, and sends
+# everything else to a human through the Severino review ticket (which app-sync.yml no
+# longer sends for mainline updates). "Routine" is decided by .github/scripts/chart-bump-classify.py:
+# only appVersion/image.tag raised within the same major (plus a description reflow),
+# no new env vars, no other key, file or author. Its docstring is the full rule.
+#
+# pull_request_target, so the rule and this workflow always come from main: a pull request
+# that edits them does not change how it is itself judged. Nothing from the pull request is
+# checked out or executed; the classifier reads the two YAML files through the API.
+#
+# Kill switch: the repository variable AUTOMERGE_ENABLED must be 'true'. With it off or unset
+# every bump takes the manual path. A run already waiting on CI read the variable when it
+# started: cancel it to stop that merge.
+#
+# The merge uses the push bot's token, which is a pull_request bypass actor on the main
+# ruleset (the review requirement), and whose push, unlike GITHUB_TOKEN's, triggers release.yml.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chart-bump-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Checks that must exist and pass; a missing or skipped one is not green.
+  REQUIRED_CHECKS: |-
+    Install + upgrade (kind)
+    Validate Helm chart standard
+    Chart Image Refs
+    Validate PR title
+    Markdown Liquid Guard
+  # This workflow's own jobs, left out of the wait.
+  SELF_CHECKS: '["Classify chart bump","Merge routine bump","Notify Severino"]'
+  REVIEW_LABEL: needs-human-review
+
+jobs:
+  classify:
+    name: Classify chart bump
+    if: >-
+      github.event.pull_request.user.login == 'lerian-studio-midaz-push-bot[bot]'
+      && startsWith(github.event.pull_request.head.ref, 'update/')
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      routine: ${{ steps.classify.outputs.routine }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Classify
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 .github/scripts/chart-bump-classify.py
+
+  automerge:
+    name: Merge routine bump
+    needs: classify
+    if: needs.classify.outputs.routine == 'true' && vars.AUTOMERGE_ENABLED == 'true'
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: write
+    steps:
+      - name: Wait for CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          deadline=$((SECONDS + 45 * 60))
+          # Path-filtered workflows take a moment to register their checks.
+          sleep 60
+          while :; do
+            checks=$(gh pr checks "$PR_NUMBER" --repo "$REPO" --json name,bucket 2>/dev/null || true)
+            if [ -n "$checks" ]; then
+              checks=$(jq -c --argjson self "$SELF_CHECKS" 'map(select(.name as $n | $self | index($n) | not))' <<<"$checks")
+              failed=$(jq -r 'map(select(.bucket == "fail" or .bucket == "cancel")) | .[].name' <<<"$checks")
+              if [ -n "$failed" ]; then
+                echo "::error::Checks failed, leaving the bump to a human:"
+                echo "$failed"
+                exit 1
+              fi
+              missing=""
+              while IFS= read -r name; do
+                [ -z "$name" ] && continue
+                jq -e --arg n "$name" 'any(.[]; .name == $n and .bucket == "pass")' <<<"$checks" >/dev/null || missing+="${name}; "
+              done <<<"$REQUIRED_CHECKS"
+              pending=$(jq -r 'map(select(.bucket == "pending")) | .[].name' <<<"$checks")
+              if [ -z "$missing" ] && [ -z "$pending" ]; then
+                echo "All checks green."
+                break
+              fi
+              echo "Waiting. Required not yet passed: ${missing:-none}. Pending: $(echo "$pending" | paste -sd ',' -)"
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::CI did not finish green within 45 minutes, leaving the bump to a human"
+              exit 1
+            fi
+            sleep 30
+          done
+
+      - name: Check the pull request is unchanged and mergeable
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          state=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid,mergeable,state,labels)
+          echo "$state"
+          jq -e --arg sha "$HEAD_SHA" '.headRefOid == $sha and .mergeable == "MERGEABLE" and .state == "OPEN"' <<<"$state" >/dev/null \
+            || { echo "::error::Pull request moved, conflicts or closed since it was classified"; exit 1; }
+          # A ticket already sent, or a human adding the label, keeps the bump on the manual path.
+          if jq -e --arg l "$REVIEW_LABEL" 'any(.labels[]; .name == $l)' <<<"$state" >/dev/null; then
+            echo "::error::Pull request carries ${REVIEW_LABEL}; leaving it to a human"
+            exit 1
+          fi
+
+      - name: Approve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr review "$PR_NUMBER" --repo "$REPO" --approve \
+            --body "Routine chart bump: only versions raised within the same major, CI green. Approved and merged by chart-bump-automerge.yml."
+
+      - name: Generate push bot token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
+          private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+          repositories: helm
+
+      - name: Merge
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --match-head-commit "$HEAD_SHA"
+
+  # The ticket goes out when the bump is not routine, when auto-merge is off, or when the
+  # classifier or the merge failed: in doubt, a human looks. The label keeps it to one
+  # ticket per pull request across synchronize runs. A cancelled merge (a newer push
+  # superseded it) is left to the newer run.
+  notify-severino:
+    name: Notify Severino
+    needs: [classify, automerge]
+    if: >-
+      always()
+      && needs.classify.result != 'skipped'
+      && (needs.classify.result == 'failure'
+          || needs.automerge.result == 'failure'
+          || (needs.classify.result == 'success'
+              && (needs.classify.outputs.routine != 'true' || vars.AUTOMERGE_ENABLED != 'true')))
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Send Severino review ticket
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+          BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
+          SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+        run: |
+          set -uo pipefail
+          labels=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '.labels[].name')
+          if grep -qx "$REVIEW_LABEL" <<<"$labels"; then
+            echo "Severino ticket already sent for this pull request"
+            exit 0
+          fi
+          if [ -z "$SLACK_BOT_TOKEN" ] || [ -z "$BOT_MENTION" ] || [ -z "$SLACK_CHANNEL" ]; then
+            echo "::error::SLACK_BOT_TOKEN_HELM, SLACK_BOT_SEVERINO or vars.SLACK_CHANNEL_DEVOPS is empty; the review ticket was not sent"
+            exit 1
+          fi
+          # update/<chart>/<ref>-<timestamp>, as helm-update-chart.yml names it.
+          CHART=$(cut -d/ -f2 <<<"$HEAD_REF")
+          # Same text helm-update-chart.yml sends: Severino parses it into the ticket.
+          payload=$(jq -n --arg channel "$SLACK_CHANNEL" \
+            --arg text "<@${BOT_MENTION}> helm chart PR review | ${PR_URL} | Chart: ${CHART}" \
+            '{channel: $channel, text: $text}')
+          response=$(curl -s -X POST \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            -H "Content-type: application/json; charset=utf-8" \
+            --data "$payload" \
+            "https://slack.com/api/chat.postMessage")
+          if ! jq -e '.ok == true' <<<"$response" >/dev/null; then
+            echo "::error::Failed to send the Severino message"
+            jq . <<<"$response"
+            exit 1
+          fi
+          gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" -f "labels[]=${REVIEW_LABEL}" >/dev/null \
+            || echo "::warning::Ticket sent, but the ${REVIEW_LABEL} label could not be added; a later push may send another"

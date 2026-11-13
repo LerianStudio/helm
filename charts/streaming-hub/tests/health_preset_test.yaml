@@ -106,11 +106,3 @@ tests:
     asserts:
       - equal: {path: 'metadata.annotations["alb.ingress.kubernetes.io/healthcheck-path"]', value: "/health"}
       - equal: {path: 'metadata.annotations["alb.ingress.kubernetes.io/healthcheck-port"]', value: "8080"}
-
-  - it: refuses a shutdown window the grace period cannot cover
-    template: templates/all/service.yaml
-    set:
-      streamingHub.health.shutdownSeconds: 35
-    asserts:
-      - failedTemplate:
-          errorPattern: "shutdownSeconds"

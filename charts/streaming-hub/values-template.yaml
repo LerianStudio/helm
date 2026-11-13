@@ -96,9 +96,9 @@ streamingHub:
   existingSecretName: ""
 
   # Per-role sizing. Honor Σ(replicas × poolMaxOpenConns) ≤ Postgres max_connections.
-  all:
-    replicaCount: 2
-  # mode: split uses these instead:
+  # Chart default is 2 per role. Override only to change it (mode: all uses `all:`):
+  # all:
+  #   replicaCount: 2
   # ingest:
   #   replicaCount: 2
   # delivery:

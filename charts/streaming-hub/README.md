@@ -126,7 +126,7 @@ helm uninstall streaming-hub -n streaming-hub
 
 | `mode`  | Renders | `STREAMING_HUB_ROLE` | When |
 |---------|---------|----------------------|------|
-| `all` (default) | ONE Deployment + Service + PDB (+ HPA) | `all` | Single co-resident deployment, for single-instance setups. Byte-equivalent to the historical single binary. |
+| `all` (default) | ONE Deployment + Service + PDB (+ HPA) | `all` | Single co-resident deployment. Byte-equivalent to the historical single binary. |
 | `split` | TWO Deployments + Services (ingest + delivery), each with its own PDB (+ HPA) | `ingest` / `delivery` | Ingest and delivery scaled independently as N + M replicas. |
 
 ### > **DOUBLE-CONSUME HAZARD — the load-bearing rule**

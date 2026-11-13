@@ -13,7 +13,7 @@
 | Env | none | `HEALTH_PORT=8099`, `SHUTDOWN_DRAIN_DELAY=15s`, `SHUTDOWN_TIMEOUT=30s` |
 | Grace period | `terminationGracePeriodSeconds: 90` | computed: drain 15 + shutdown 30 + 10 = 55s |
 | Rollout | `maxSurge: 1`, `maxUnavailable: 0` | `maxSurge: 25%`, `maxUnavailable: 0` |
-| Replicas per role | 1 | 2 (HPA `minReplicas` 2) |
+| Replicas per role | default 1 | default 2 (HPA `minReplicas` 2) |
 | PDB | off by default, `pdb` values | always rendered per role: `maxUnavailable: 1`, `unhealthyPodEvictionPolicy: AlwaysAllow` |
 | Metrics | `/metrics` on 8080 (only `streaming_hub_build_info`) | `/metrics` on 8099 (`health_check_status`, `health_ready`) |
 
@@ -50,7 +50,7 @@ A `--reuse-values` upgrade from 2.1.0 carries the removed keys and fails the ren
 3. **License.** Hub 3.4.0 validates a signed license file (lib-license-go v5). With `LICENSE_KEY`, the pod needs egress to `https://license.lerian.io` at every boot. While the server is unreachable the pod stays up but not ready (8080 closed) and is not restarted; a refused key exits the pod. Without access to the license server, mount a signed license file with `streamingHub.licenseFile.existingSecret` (Secret key `license`, mounted as a directory at `/etc/lerian/license`); the chart sets `LICENSE_FILE_PATH`, which wins over `LICENSE_KEY`.
 4. **BYOC network policy.** The kubelet probes the pod on 8099 now. A policy that admits only 8080 must also admit the node to 8099.
 5. **Load balancer and uptime checks.** A check on `/healthz`, `/readyz` or `/metrics` on 8080 returns 404. Point it at `/health` on 8080 (the chart forces this on an ALB Ingress). Never route an Ingress to 8099.
-6. **Footprint.** Each role now runs 2 replicas, so Postgres connections double; check Σ(replicas x `poolMaxOpenConns`) against `max_connections`. The PDB needs Kubernetes 1.27 or later (`unhealthyPodEvictionPolicy`).
+6. **Footprint.** Each role now defaults to 2 replicas, so Postgres connections double; a values file that sets `replicaCount: 1` (the 2.1.0 values-template did) keeps one replica, and then the PDB lets a drain evict the role's only pod, so raise it to 2; check Σ(replicas x `poolMaxOpenConns`) against `max_connections`. The PDB needs Kubernetes 1.27 or later (`unhealthyPodEvictionPolicy`).
 7. **Readiness behavior.** `/readyz` latches after the first success: a later Postgres or Kafka outage is reported but does not pull the pod from the Service. The pod no longer flips NotReady on SIGTERM; it keeps serving for the 15s drain delay. In the `all` and `ingest` roles `/health` answers 503 if the consumer has exited, so liveness restarts the pod.
 
 ## Rollback

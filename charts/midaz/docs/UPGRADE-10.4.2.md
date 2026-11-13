@@ -15,7 +15,7 @@
 
 #### What changed
 
-The chart now documents how to override global Kafka SASL settings on a per-component basis. This is a documentation-only change — no template logic or default values have been modified.
+The chart documents per-component Kafka SASL overrides and fixes `values.schema.json` to accept `STREAMING_SASL_MECHANISM` and `STREAMING_SASL_USERNAME` in the ledger and tracer `configmap` blocks. Version 10.4.1 rejects those keys during schema validation; 10.4.2 accepts them. This is not a documentation-only change. Template logic and runtime defaults remain unchanged, as does application version 4.4.1. A chart test also now accepts patch-level 4.4.x ledger image tags.
 
 | Setting | v10.4.1 | v10.4.2 |
 |---------|---------|---------|
@@ -49,7 +49,7 @@ global:
 
 #### Why it matters
 
-Previously, operators who needed to disable SASL authentication for a specific component (e.g., the ledger) while keeping it enabled globally had no documented pattern to follow. The chart has always supported per-component overrides through the component-level `configmap` blocks, but this capability was not documented in the `global.streaming` section.
+Previously, the template-level override behavior was not fully documented, and the 10.4.1 schema rejected the ledger and tracer keys needed by this pattern. Version 10.4.2 makes these overrides usable through schema validation as well as documenting them.
 
 This change makes it clear that:
 
@@ -59,11 +59,11 @@ This change makes it clear that:
 
 #### Action required
 
-**None.** This is a documentation enhancement only. Existing deployments continue to work unchanged.
+Existing deployments that do not need these overrides require no configuration change. Operators using the opt-out must upgrade to the schema that accepts it and include the desired overrides in their complete intended configuration.
 
 #### Optional: Using per-component opt-out
 
-If you need to disable SASL authentication for a specific component while keeping global SASL enabled, use the following pattern:
+If you need to disable SASL authentication for a specific component while retaining shared SASL settings, merge the following fragment into your existing configuration. It does not enable streaming: preserve your actual brokers and each intended component's `STREAMING_ENABLED` setting, credentials, Secret references and other prerequisites. Defaults leave streaming disabled. Do not use this fragment as a complete values file.
 
 ```yaml
 global:
@@ -81,16 +81,18 @@ ledger:
 
 This configuration:
 
-- Enables SASL authentication globally for all components
-- Disables SASL authentication only for the ledger
-- Other components (tracer, CRM, etc.) continue using the global SASL settings
+- Selects shared SASL settings for components that already have streaming enabled
+- Overrides the ledger mechanism and username with empty strings; ensure its effective password is empty too
+- Leaves other enabled components inheriting the shared settings unless they override them; their own valid credentials are still required
 
-> **Note:** The component-level `configmap` values always take precedence over `global.streaming` values. Setting a value to an empty string explicitly overrides the global default.
+> **Note:** The component-level `configmap` values take precedence over the corresponding shared SASL values. The ledger broker listener must permit connections without SASL. Inspect existing password settings and Secret references privately; do not overwrite unrelated credentials to clear one field.
+
+Before previewing, save current release values and manifests privately, retain the prior chart version and normal data backups, and prepare `midaz-values.yaml` as the **complete intended configuration**. Preserve unrelated settings, image pins, storage and Secret references. Do not commit live credentials. The commands below use `--reset-values -f`: omitted settings fall back to chart defaults rather than retaining old stored overrides. Render and inspect the effective streaming configuration privately before applying. This chart patch does not change the application version; static validation is not an exercised upgrade or restore. Helm rollback does not restore application data.
 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 10.4.2
+helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 10.4.2 --reset-values -f midaz-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -98,5 +100,5 @@ helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n mi
 ## Command to upgrade
 
 ```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 10.4.2
+helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 10.4.2 --reset-values -f midaz-values.yaml
 ```

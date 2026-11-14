@@ -1,5 +1,24 @@
 # Midaz Changelog
 
+## [11.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.1.0)
+
+Features:
+- Add the inbound trace trust key to ledger and tracer. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `midaz` `v11.0.0`. (@victorlazari)
+- Clarify MongoDB cutover procedures. (@victorlazari)
+- Add Helm upgrade guide for `midaz` `v10.4.3`. (@victorlazari)
+- Add Helm upgrade guide for `midaz` `v10.4.2`. (@victorlazari)
+- Clarify SASL schema and values. (@victorlazari)
+- Add Helm upgrade guide for `midaz` `v10.4.1`. (@victorlazari)
+- Block unsafe MongoDB cutover. (@victorlazari)
+- Fix migration image override keys. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.0.0...midaz-v11.1.0)
+
+---
+
 ## [11.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.0.0)
 
 Features:

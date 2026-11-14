@@ -1,0 +1,33 @@
+suite: otel trust inbound trace context
+release:
+  name: midaz
+  namespace: midaz
+set:
+  ledger.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.RABBITMQ_DEFAULT_PASS: sample
+  ledger.secrets.RABBITMQ_CONSUMER_PASS: sample
+  ledger.configmap.ENV_NAME: development
+  rabbitmq.authentication.erlangCookie.value: "0123456789abcdef0123456789abcdef"
+  tracer.enabled: true
+tests:
+  - it: renders false on ledger by default
+    template: templates/ledger/configmap.yaml
+    asserts:
+      - equal: {path: data.OTEL_TRUST_INBOUND_TRACE_CONTEXT, value: "false"}
+  - it: renders the ledger override
+    template: templates/ledger/configmap.yaml
+    set:
+      ledger.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT: true
+    asserts:
+      - equal: {path: data.OTEL_TRUST_INBOUND_TRACE_CONTEXT, value: "true"}
+  - it: renders false on tracer by default
+    template: templates/tracer/configmap.yaml
+    asserts:
+      - equal: {path: data.OTEL_TRUST_INBOUND_TRACE_CONTEXT, value: "false"}
+  - it: renders the tracer override
+    template: templates/tracer/configmap.yaml
+    set:
+      tracer.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT: true
+    asserts:
+      - equal: {path: data.OTEL_TRUST_INBOUND_TRACE_CONTEXT, value: "true"}

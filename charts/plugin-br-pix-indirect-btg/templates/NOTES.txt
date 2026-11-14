@@ -104,6 +104,30 @@
 
 ---
 
+📖 API Documentation (application 1.10.0 and later):
+{{- $docsBase := printf "http://localhost:%v" .Values.pix.service.port }}
+{{- if .Values.pix.ingress.enabled }}
+{{- $first := first .Values.pix.ingress.hosts }}
+{{- if and $first $first.host }}
+{{- $docsBase = printf "http%s://%s" (ternary "s" "" (and .Values.pix.ingress.tls (gt (len .Values.pix.ingress.tls) 0))) $first.host }}
+{{- end }}
+{{- end }}
+
+  - Error catalog and integration guide (no endpoints): {{ $docsBase }}/swagger/index.html
+  - Webhook events: {{ $docsBase }}/docs/webhooks
+{{- if eq (toString $pix.data.SWAGGER_ENABLED) "true" }}
+  - Endpoint reference, one page per module:
+{{- range $m := list "dict" "payment" "collections" "brcode" "qrcodes" "recurrences" "webhooks" }}
+      {{ $docsBase }}/v1/{{ $m }}/docs
+{{- end }}
+    Each module also serves /openapi.json and /openapi.yaml.
+{{- else }}
+  - Endpoint reference: off (pix.configmap.SWAGGER_ENABLED is "{{ $pix.data.SWAGGER_ENABLED }}").
+    Set it to "true" to serve /v1/<module>/docs.
+{{- end }}
+
+---
+
 📚 Documentation:
 
   For more information, see:

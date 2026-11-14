@@ -73,21 +73,37 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not (has $pb (list "" "true" "false")) -}}
 {{- include $f (dict "msg" (printf "DIRECT_PERMANENT_BLOCK_ENABLED must be true or false, got %q." $pb) "set" "sisbajud.direct.permanentBlockEnabled") -}}
 {{- end -}}
-{{- /* --- streaming (the balance-change stream of the permanent block) ------- */ -}}
+{{- $mpb := include $val (dict "cm" $cm "k" "MENSAGERIA_PERMANENT_BLOCK_ENABLED" "p" ($s.mensageria | default dict) "f" "permanentBlockEnabled" "d" "false") | trim -}}
+{{- if not (has $mpb (list "" "true" "false")) -}}
+{{- include $f (dict "msg" (printf "MENSAGERIA_PERMANENT_BLOCK_ENABLED must be true or false, got %q." $mpb) "set" "sisbajud.mensageria.permanentBlockEnabled") -}}
+{{- end -}}
+{{- /* --- streaming (the balance-change stream of the permanent block) -------
+   The Mensageria switch never turns the stream on by itself: it needs
+   STREAMING_ENABLED written (global.streaming.enabled, configmap or extraEnvVars),
+   so switching it off later keeps the stream the ACTIVE permanents need. */ -}}
 {{- $se := include "plugin-br-sisbajud.streamingEnabled" . -}}
 {{- $sb := include "plugin-br-sisbajud.streamingBrokers" . -}}
-{{- if and (eq $pb "true") (or (ne $se "true") (not $sb)) -}}
-{{- include $f (dict "msg" "sisbajud.direct.permanentBlockEnabled is true (the chart default) and needs STREAMING_ENABLED=true and STREAMING_BROKERS: the permanent block reads the balance-change stream (the app refuses the boot otherwise)." "set" "global.streaming.brokers (+ global.streaming.tlsEnabled/SASL in production), or sisbajud.direct.permanentBlockEnabled=false for an install without brokers (e.g. Mensageria-only)") -}}
+{{- $gs0 := (.Values.global | default dict).streaming | default dict -}}
+{{- $seWritten := or (hasKey ($s.extraEnvVars | default dict) "STREAMING_ENABLED") (hasKey $cm "STREAMING_ENABLED") (hasKey $gs0 "enabled") -}}
+{{- $permAuth := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") -}}
+{{- $switches := list
+  (dict "key" "DIRECT_PERMANENT_BLOCK_ENABLED" "path" "sisbajud.direct.permanentBlockEnabled" "on" $pb "note" " (the chart default)"
+        "streamOk" (and (eq $se "true") $sb) "streamSet" "global.streaming.brokers (+ global.streaming.tlsEnabled/SASL in production), or sisbajud.direct.permanentBlockEnabled=false for an install without brokers (e.g. Mensageria-only)")
+  (dict "key" "MENSAGERIA_PERMANENT_BLOCK_ENABLED" "path" "sisbajud.mensageria.permanentBlockEnabled" "on" $mpb "note" ""
+        "streamOk" (and (eq $se "true") $seWritten $sb) "streamSet" "global.streaming.enabled=true and global.streaming.brokers (+ global.streaming.tlsEnabled/SASL in production), or sisbajud.mensageria.permanentBlockEnabled=false") -}}
+{{- range $w := $switches -}}
+{{- if eq $w.on "true" -}}
+{{- if not $w.streamOk -}}
+{{- include $f (dict "msg" (printf "%s is true%s and needs STREAMING_ENABLED=true (written) and STREAMING_BROKERS: the permanent block reads the balance-change stream (the app refuses the boot otherwise)." $w.path $w.note) "set" $w.streamSet) -}}
 {{- end -}}
 {{- /* The permanent path is served only single-tenant with inbound auth on
    (extensions_executor_permanent.go servable): the app refuses the boot otherwise. */ -}}
-{{- if eq $pb "true" -}}
-{{- $permAuth := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") -}}
 {{- if ne (include "plugin-br-sisbajud.isTrue" $permAuth) "true" -}}
-{{- include $f (dict "msg" "sisbajud.direct.permanentBlockEnabled is true (the chart default) and requires inbound auth on (PLUGIN_AUTH_ENABLED=true): the permanent block is served only with auth on (the app refuses the boot otherwise)." "set" "global.auth.enabled=true, or sisbajud.direct.permanentBlockEnabled=false") -}}
+{{- include $f (dict "msg" (printf "%s is true%s and requires inbound auth on (PLUGIN_AUTH_ENABLED=true): the permanent block is served only with auth on (the app refuses the boot otherwise)." $w.path $w.note) "set" (printf "global.auth.enabled=true, or %s=false" $w.path)) -}}
 {{- end -}}
-{{- if eq (include "plugin-br-sisbajud.multiTenantEnabled" .) "true" -}}
-{{- include $f (dict "msg" "sisbajud.direct.permanentBlockEnabled is true (the chart default) and requires a single-tenant install (MULTI_TENANT_ENABLED=false): the permanent block is not served multi-tenant (the app refuses the boot otherwise)." "set" "global.multiTenant.enabled=false, or sisbajud.direct.permanentBlockEnabled=false") -}}
+{{- if eq (include "plugin-br-sisbajud.multiTenantEnabled" $) "true" -}}
+{{- include $f (dict "msg" (printf "%s is true%s and requires a single-tenant install (MULTI_TENANT_ENABLED=false): the permanent block is not served multi-tenant (the app refuses the boot otherwise)." $w.path $w.note) "set" (printf "global.multiTenant.enabled=false, or %s=false" $w.path)) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- if eq $se "true" -}}
@@ -116,6 +132,10 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
    maintenance, which runs only with streaming on (executorgraph/permanent_emitter.go). */ -}}
 {{- if and (eq $emit "true") (ne $se "true") -}}
 {{- include $f (dict "msg" "EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED=true needs STREAMING_ENABLED=true and STREAMING_BROKERS (the permanent path it publishes from runs only on the balance-change stream; the app refuses the boot otherwise)." "set" "global.streaming.enabled=true and global.streaming.brokers, or sisbajud.direct.permanentResultEmitterEnabled=\"\" (follows the stream) / \"false\"") -}}
+{{- end -}}
+{{- /* errPermanentWithoutEmitter: either switch on with the result emitter off. */ -}}
+{{- if and (or (eq $pb "true") (eq $mpb "true")) (eq $emit "false") -}}
+{{- include $f (dict "msg" "a permanent block switch (DIRECT_PERMANENT_BLOCK_ENABLED or MENSAGERIA_PERMANENT_BLOCK_ENABLED) is true and EXECUTOR_PERMANENT_RESULT_EMITTER_ENABLED is false: the permanent block publishes its results through the emitter (the app refuses the boot otherwise)." "set" "sisbajud.direct.permanentResultEmitterEnabled=\"\" (follows the stream) or \"true\", or the permanent block switch(es) to false") -}}
 {{- end -}}
 {{- $mode := include "plugin-br-sisbajud.executorMode" . -}}
 {{- if not $mode -}}

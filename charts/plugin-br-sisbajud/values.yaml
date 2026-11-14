@@ -53,7 +53,9 @@ global:
   # -- Streaming (lib-streaming / RedPanda): enabled | brokers | tlsEnabled |
   #    saslMechanism | saslUsername (+ compression, requiredAcks, ...; see
   #    lerian-common.streaming.env). Off by default; required by
-  #    sisbajud.direct.permanentBlockEnabled (the balance-change stream).
+  #    sisbajud.direct.permanentBlockEnabled and by
+  #    sisbajud.mensageria.permanentBlockEnabled (the balance-change stream; the
+  #    latter also needs enabled: true written here, it never turns the stream on).
   #    STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT go in sisbajud.secrets.
   streaming: {}
 
@@ -233,6 +235,11 @@ sisbajud:
     #    and verify the server against the CA (both required). false (default,
     #    one-way TLS): the pair is not mounted and the CA is optional.
     mtlsEnabled: false
+    # -- MENSAGERIA_PERMANENT_BLOCK_ENABLED (default false). true: permanent block
+    #    through the Mensageria. Needs global.streaming.enabled=true (written) and
+    #    brokers, global.auth.enabled, single tenant, and the result emitter not
+    #    "false".
+    permanentBlockEnabled: false
     ca:
       # -- Secret holding the CA that issued the Mensageria server certificate,
       #    mounted at <mountPath>/ca.crt -> MENSAGERIA_TLS_CA_FILE. Optional in

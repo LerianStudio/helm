@@ -1,155 +1,128 @@
 <!-- {% raw %} -->
 # Helm Upgrade from v2.6.1 to v2.6.2
 
-## Topics ToC
+## Scope
 
-- **[Fixes](#fixes)**
-  - [1. HealthReportCheckDown Alert Refinement](#1-healthreportcheckdown-alert-refinement)
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+`lerian-common-helm` 2.6.2 is a library chart, not an installable application.
+Its `appVersion` remains `1.0.0`; this release does not update application images.
+The functional change from chart 2.6.1 is in the opt-in
+`lerian-common.health.prometheusRule` helper. Consumers that do not include this
+helper, or leave `monitoring.prometheusRule.enabled` disabled, do not emit its
+PrometheusRule. Updating the library alone does not update deployed consumers:
+the consuming chart must resolve the new dependency and be redeployed.
 
-## Fixes
+## Alert change
 
-### 1. HealthReportCheckDown Alert Refinement
+`HealthReportCheckDown` changes from:
 
-The `HealthReportCheckDown` Prometheus alert rule has been refined to reduce false positives and improve alert accuracy for Report-mode health checks.
-
-#### What changed
-
-The alert query, duration threshold, and annotations have been updated to better handle pod lifecycle events and distinguish between transient failures and persistent degradation.
-
-| Setting | v2.6.1 | v2.6.2 |
-|---------|---------|---------|
-| Alert expression | `max by (job, check) (health_check_status{status=~"down\|degraded", mode="report"}) == 1` | Multi-clause expression with 10-minute lookback window |
-| Alert duration (`for:`) | `15m` | `5m` |
-| Alert summary | `"A reported dependency is down or degraded"` | `"A live pod reports a Report-mode check down or degraded"` |
-| Alert description | _(none)_ | Detailed explanation of check behavior and resolution semantics |
-
-**Before (v2.6.1):**
-
-```yaml
-- alert: HealthReportCheckDown
-  expr: max by (job, check) (health_check_status{status=~"down|degraded", mode="report"}) == 1
-  for: 15m
-  labels: {severity: warning}
-  annotations: {summary: "A reported dependency is down or degraded"}
+```promql
+max by (job, check) (health_check_status{status=~"down|degraded", mode="report"}) == 1
 ```
 
-**After (v2.6.2):**
+with `for: 15m`, to:
 
-```yaml
-- alert: HealthReportCheckDown
-  expr: |-
-    max by (job, check) (
-      (min_over_time((sum without (status) (health_check_status{mode="report",status=~"down|degraded"}))[10m:1m]) > 0)
-      and
-      (sum without (status) (health_check_status{mode="report",status=~"down|degraded"}) > 0)
-    )
-  for: 5m
-  labels: {severity: warning}
-  annotations:
-    summary: "A live pod reports a Report-mode check down or degraded"
-    description: >-
-      A live pod reports the Report-mode check `{{ $labels.check }}` of `{{ $labels.job }}` as down or degraded
-      for the last 10 minutes, or since it started if it is younger, and still now. Report checks never remove the pod from traffic.
-      The check is either an external dependency of the service or a worker of the service itself. A check that has not
-      been up since the pod started points to a code or configuration defect, not to an outage. The alert
-      resolves when the check returns to up or when the pod that reports it stops existing; a resolution by
-      missing series does not prove recovery.
+```promql
+max by (job, check) (
+  (min_over_time((sum without (status) (health_check_status{mode="report",status=~"down|degraded"}))[10m:1m]) > 0)
+  and
+  (sum without (status) (health_check_status{mode="report",status=~"down|degraded"}) > 0)
+)
 ```
 
-#### Why it matters
+with `for: 5m`. Severity remains `warning`. The summary becomes
+`A live pod reports a Report-mode check down or degraded`; the new description
+explains that report checks do not remove pods from traffic and that a missing
+series resolving an alert does not prove recovery.
 
-**Problem solved:**
+The inner aggregation retains labels other than `status`, including the instance
+label when supplied by the metric producer. The final aggregation is still by
+`job, check`, not a separate alert per pod. The subquery uses a 10-minute range
+and a 1-minute resolution; `for: 5m` is additional pending time, not a guarantee
+that every alert fires exactly 5 or 10 minutes after startup. Actual timing and
+resolution depend on samples, staleness, rule evaluation and pod churn. The old
+rule also had a pending duration (`15m`); it did not fire immediately on startup.
+Validate representative startup, recovery and missing-series scenarios in your
+monitoring environment before relying on the new behavior. No Prometheus runtime
+simulation or live upgrade is claimed by this guide.
 
-The v2.6.1 alert fired immediately when a pod started with a down check, even if the check was expected to be down during initialization (e.g., waiting for a database migration). It also did not distinguish between a pod that had been healthy and degraded versus a pod that was misconfigured from the start.
+## Prepare and preview the consuming chart
 
-**Improvements in v2.6.2:**
+Do not run `helm install` or `helm upgrade` against the library itself. Work on
+the product or umbrella chart that already consumes it. Confirm that the selected
+consumer actually calls the health helper and supports the monitoring values.
+A Prometheus Operator installation with the PrometheusRule CRD is required when
+that resource is enabled.
 
-1. **Lookback window:** The new expression uses `min_over_time(...[10m:1m])` to check if the check has been down for at least 10 minutes (or since pod start if younger). This prevents alerts on transient startup failures.
-
-2. **Per-pod granularity:** The `sum without (status)` aggregation preserves the OpenTelemetry instance label, ensuring the alert is scoped to individual pods. A pod that reported `up` in the last 10 minutes cannot fire the alert on its final `down` sample when it terminates.
-
-3. **Faster detection:** The `for: 5m` duration (down from 15m) allows faster alerting once the 10-minute lookback condition is met, reducing mean time to detection for persistent failures.
-
-4. **Clearer semantics:** The new description explains that:
-   - Report-mode checks never remove pods from traffic (unlike Request-mode checks)
-   - A check that has never been `up` since pod start indicates a configuration or code defect, not an infrastructure outage
-   - Alert resolution by missing series (pod deletion) does not prove the underlying issue is fixed
-
-#### Operational impact
-
-> **Important:** This is a library chart (type: library) that is consumed as a dependency by other charts. The `lerian-common.health.prometheusRule` helper is opt-in and only affects charts that explicitly call it with `monitoring.prometheusRule.enabled: true`.
-
-**For operators using the health PrometheusRule:**
-
-- **No configuration changes required.** The alert rule is automatically updated when you upgrade `lerian-common` and redeploy charts that consume the `lerian-common.health.prometheusRule` helper.
-
-- **Alert behavior changes:**
-  - Pods that start with a down check will not fire an alert until the check has been down for 10 minutes (or 5 minutes if the pod is younger than 10 minutes).
-  - Alerts will resolve when the pod is deleted, even if the underlying dependency is still down. Monitor alert resolution patterns to distinguish between pod churn and genuine recovery.
-  - Alerts that fire immediately after pod start (within 10 minutes) indicate a configuration or code defect that should be investigated separately from infrastructure outages.
-
-- **Prometheus query performance:** The new expression uses subqueries (`[10m:1m]`) which may increase query cost. If you observe Prometheus performance degradation, consider increasing the evaluation interval for this rule group or tuning Prometheus resource limits.
-
-**For operators not using the health PrometheusRule:**
-
-No impact. The `lerian-common.health.prometheusRule` helper renders nothing unless `monitoring.prometheusRule.enabled` is set to `true` in the consuming chart.
-
-#### Migration steps
-
-1. **Upgrade `lerian-common` dependency** in your product or umbrella chart's `Chart.yaml`:
-
-```yaml
-dependencies:
-  - name: lerian-common
-    version: 2.6.2
-    repository: oci://registry-1.docker.io/lerianstudio
-```
-
-2. **Update dependencies:**
+1. Preserve the consumer's existing `Chart.yaml`, `Chart.lock`, release revision,
+   complete intended values and Secret references privately. Treat exported values
+   and rendered manifests as sensitive. Preserve unrelated dependency pins.
+2. Change only the existing `lerian-common-helm` dependency version to `2.6.2`,
+   retaining its verified publication repository. The dependency name is
+   `lerian-common-helm`, not `lerian-common`. If the consumer uses an alias, retain it.
+3. Resolve dependencies in the consumer's reviewed source workspace:
 
 ```bash
-helm dependency update
+helm dependency update ./consumer-chart
 ```
 
-3. **Redeploy charts that use the health PrometheusRule:**
+Review `Chart.lock` and every resolved dependency: this command can update other
+ranged dependencies too. Do not ship unrelated upgrades accidentally. Commit the
+reviewed consumer dependency change through that consumer's normal release process.
+For reproducible builds from the approved lock, use:
 
 ```bash
-helm upgrade my-chart . -n lerian --values values.yaml
+helm dependency build ./consumer-chart
+helm lint ./consumer-chart -f complete-intended-values.yaml
+helm template my-product ./consumer-chart -n my-namespace \
+  -f complete-intended-values.yaml > rendered-private.yaml
 ```
 
-4. **Verify the PrometheusRule resource** has been updated:
+`complete-intended-values.yaml` must contain the complete intended configuration,
+including existing overrides and Secret references, not merely the monitoring
+fragment. Render both the previous and updated consumer with identical values and
+release identity. Privately compare the PrometheusRule expression, duration,
+annotations, labels and all other resources. Check query cost and alert routing;
+do not assume that a shorter `for` always means faster detection. No application
+or database migration is introduced by this library diff, but the consuming chart
+may have its own upgrade prerequisites.
+
+If helm-diff is already available, preview the **consumer**, not the library:
 
 ```bash
-kubectl get prometheusrule -n lerian -o yaml | grep -A 20 HealthReportCheckDown
+helm diff upgrade my-product ./consumer-chart -n my-namespace \
+  --reset-values -f complete-intended-values.yaml
 ```
 
-You should see the new multi-clause expression with the 10-minute lookback window.
+## Upgrade and verify
 
-5. **Review existing alerts** in your Prometheus/Alertmanager instance. Alerts that were firing under v2.6.1 may resolve or change behavior:
-   - Alerts for pods that recently started (< 10 minutes ago) will resolve automatically.
-   - Alerts for pods with persistent down checks (> 10 minutes) will continue firing but with updated annotations.
-
-6. **(Optional) Adjust alert routing or silences** if your alerting pipeline relies on the old summary text (`"A reported dependency is down or degraded"`). The new summary is `"A live pod reports a Report-mode check down or degraded"`.
-
-> **Note:** The alert severity remains `warning`. No changes to alert routing based on severity are required.
-
-## Preview changes before upgrading
+After reviewing the complete intended values and the consumer's own upgrade
+procedure:
 
 ```bash
-helm diff upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-common-helm --version 2.6.2 -n lerian-common
+helm upgrade my-product ./consumer-chart -n my-namespace \
+  --reset-values -f complete-intended-values.yaml --wait --timeout 10m
+helm status my-product -n my-namespace
+kubectl get prometheusrule -n my-namespace PROMETHEUSRULE_NAME -o yaml
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+Replace the example release, namespace, path and rendered resource name. The
+explicit reset avoids inheriting unreviewed stored overrides; omitting settings
+from the complete values file can reset them to defaults. Verify that Prometheus
+selects and loads the updated rule, that there are no evaluation errors, and that
+alert routing still matches the intended labels. Rule loading and observed alert
+behavior require live validation; a Helm render does not establish them.
 
-> **Important:** Since `lerian-common` is a library chart, `helm diff` will show no resource changes (library charts render nothing). To preview the impact of this upgrade, run `helm diff` on the **product charts** that consume the `lerian-common.health.prometheusRule` helper with `monitoring.prometheusRule.enabled: true`.
+## Rollback
 
-## Command to upgrade
+Record the previous consumer release revision before the upgrade. If the new rule
+causes unacceptable behavior, follow the consumer's rollback procedure and restore
+the previously reviewed dependency and rule configuration. For a retained Helm
+revision:
 
 ```bash
-helm upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-common-helm --version 2.6.2 -n lerian-common
+helm rollback my-product PREVIOUS_REVISION -n my-namespace --wait --timeout 10m
 ```
 
-> **Note:** Since `lerian-common` is a library chart, you typically do **not** install or upgrade it directly. Instead, update it as a dependency in your umbrella or product chart's `Chart.yaml`, run `helm dependency update`, and upgrade the consuming chart.
+Verify the loaded Prometheus rule again. Helm rollback is not a database or
+persistent-volume restore and does not reverse unrelated application-side effects.
 <!-- {% endraw %} -->

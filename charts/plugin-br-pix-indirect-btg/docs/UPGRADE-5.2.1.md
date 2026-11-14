@@ -23,7 +23,7 @@ The only rendered change is the `helm.sh/chart` label, which changes from `plugi
 
 **Operational impact:**
 
-Upgrading to `5.2.1` restarts the pods of every Deployment in the chart. The `helm.sh/chart` label in each pod template now carries the new chart version. No configuration changes.
+Upgrading to `5.2.1` restarts the pods of the five chart Deployments (`pix`, `inbound`, `outbound`, `reconciliation`, `schedule`), because the `helm.sh/chart` label in their pod templates now carries the new chart version. The bundled PostgreSQL, MongoDB and Valkey pods do not restart. No configuration changes.
 
 **No action required** beyond running the upgrade command. Your existing values files and custom configurations remain fully compatible.
 

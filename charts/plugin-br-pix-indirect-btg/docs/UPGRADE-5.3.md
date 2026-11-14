@@ -164,7 +164,9 @@ inbound:
     enabled: true
     hosts:
       - host: inbound.example.com
+```
 
+```yaml
 # v5.3.0 (new) - workers have no service/ingress
 inbound:
   health:
@@ -237,7 +239,9 @@ pix:
     rollingUpdate:
       maxSurge: 2
       maxUnavailable: 0
+```
 
+```yaml
 # v5.3.0 (new) - preset owns these
 pix:
   health:
@@ -246,7 +250,7 @@ pix:
 
 ### 4. Default replica count increased for pix component
 
-The default `pix.replicaCount` increased from `1` to `2` to improve availability for the HTTP API service.
+The default `pix.replicaCount` increased from `1` to `2`.
 
 | Component | v5.2.3 default | v5.3.0 default |
 |-----------|----------------|----------------|
@@ -295,7 +299,7 @@ The `lerian-common-helm` library chart provides reusable templates for health ch
 
 **Operational impact:**
 
-Helm will automatically fetch the `lerian-common-helm` dependency during the upgrade. No manual action is required.
+The published chart package already includes `lerian-common-helm`, so the upgrade needs no extra repository. No manual action is required.
 
 ### 2. Startup probes added to all components
 
@@ -362,6 +366,8 @@ ports:
 | Variable | Value | Purpose |
 |----------|-------|---------|
 | `HEALTH_PORT` | `8099` | Port for health check endpoints |
+| `SHUTDOWN_DRAIN_DELAY` | `15s` on `pix`, `0s` on workers | Drain delay before shutdown (`health.drainSeconds`) |
+| `SHUTDOWN_TIMEOUT` | `30s` | Graceful shutdown timeout (`health.shutdownSeconds`) |
 
 **Why it matters:**
 
@@ -379,8 +385,6 @@ The health preset automatically sets `terminationGracePeriodSeconds` based on th
 |----------------|--------------------------|
 | `go` (HTTP service) | `55` seconds |
 | `go-worker` (background worker) | `40` seconds |
-
-**Why it matters:**
 
 **Operational impact:**
 
@@ -433,8 +437,11 @@ The following fields are no longer supported and will cause the chart to fail re
 
 - `readinessProbe` (replaced by `health` preset)
 - `livenessProbe` (replaced by `health` preset)
+- `startupProbe` and `terminationGracePeriodSeconds` (owned by the `health` preset)
 - `pdb` (replaced by `health` preset)
 - `deploymentStrategy` (replaced by `health` preset)
+- `configmap.HEALTH_PORT`, `configmap.SHUTDOWN_DRAIN_DELAY` and `configmap.SHUTDOWN_TIMEOUT` (use `health.drainSeconds` and `health.shutdownSeconds`)
+- An `image.tag` below `1.14.0-beta.6`, the first image that serves the health port
 
 **Worker components only (`inbound`, `outbound`, `reconciliation`, `schedule`):**
 
@@ -569,23 +576,29 @@ schedule:
 
 > **Note:** If you rely on the chart's `appVersion` default, no action is required.
 
-**6. Preview the upgrade**
+**6. Give every worker a license key**
+
+From app `1.14.0-beta.6`, the `inbound`, `outbound`, `reconciliation` and `schedule` workers refuse to boot without `LICENSE_KEY`. With chart-managed Secrets (the default), each worker falls back to `pix.secrets.LICENSE_KEY`, so no action is needed. For a worker with `useExistingSecrets: true`, add the `LICENSE_KEY` key to that existing Secret before you upgrade.
+
+> **Note:** Do not upgrade with `--reuse-values` or `--reset-then-reuse-values`: either can retain removed overrides (`pdb`, `deploymentStrategy`, `readinessProbe` and worker `service` blocks), and the render fails. Use `--reset-values -f your-values.yaml` as below. The migrated file must contain your complete intended configuration, not only the changes in this guide: explicitly retain all unrelated settings, image pins and existing-Secret references you still need. Export and back up the current user overrides privately, remove the retired keys, and compare the intended configuration before upgrading. Treat exported values as sensitive; do not commit them or paste them into public issues.
+
+**7. Preview the upgrade**
 
 Use the helm-diff plugin to review all changes before applying:
 
 ```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg -f your-values.yaml
+helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg --reset-values -f your-values.yaml
 ```
 
-**7. Perform the upgrade**
+**8. Perform the upgrade**
 
 Run the upgrade command during a maintenance window:
 
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg -f your-values.yaml
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg --reset-values -f your-values.yaml
 ```
 
-**8. Verify all pods are running**
+**9. Verify all pods are running**
 
 Check that all components have successfully rolled out:
 
@@ -593,7 +606,7 @@ Check that all components have successfully rolled out:
 kubectl get pods -n plugin-br-pix-indirect-btg -l app.kubernetes.io/instance=plugin-br-pix-indirect-btg
 ```
 
-**9. Verify health endpoints**
+**10. Verify health endpoints**
 
 Confirm that the new health endpoints are responding:
 
@@ -608,13 +621,15 @@ curl http://localhost:8099/readyz
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg
+helm diff upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg --reset-values -f your-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 
+Pass the complete migrated values file with `--reset-values`. Plain `-f` can still reuse stored release overrides when the file is empty; `--reset-values` prevents that fallback. It also drops every stored override not supplied in the file, so preserve all intended unrelated settings and existing-Secret references before proceeding. Do not use an empty or partial file unless a reset to the remaining chart defaults is intentional and has been reviewed.
+
 ```bash
-helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg
+helm upgrade plugin-br-pix-indirect-btg oci://registry-1.docker.io/lerianstudio/plugin-br-pix-indirect-btg-helm --version 5.3.0 -n plugin-br-pix-indirect-btg --reset-values -f your-values.yaml
 ```

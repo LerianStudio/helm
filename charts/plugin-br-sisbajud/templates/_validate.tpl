@@ -83,13 +83,13 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
    so switching it off later keeps the stream the ACTIVE permanents need. */ -}}
 {{- $se := include "plugin-br-sisbajud.streamingEnabled" . -}}
 {{- $sb := include "plugin-br-sisbajud.streamingBrokers" . -}}
-{{- $gs0 := (.Values.global | default dict).streaming | default dict -}}
-{{- $seWritten := or (hasKey ($s.extraEnvVars | default dict) "STREAMING_ENABLED") (hasKey $cm "STREAMING_ENABLED") (hasKey $gs0 "enabled") -}}
+{{- $gs := (.Values.global | default dict).streaming | default dict -}}
+{{- $seWritten := or (hasKey ($s.extraEnvVars | default dict) "STREAMING_ENABLED") (hasKey $cm "STREAMING_ENABLED") (hasKey $gs "enabled") -}}
 {{- $permAuth := include "lerian-common.globalValue" (dict "context" $ "configmap" $cm "block" "auth" "field" "enabled" "nativeKey" "PLUGIN_AUTH_ENABLED" "default" "false") -}}
 {{- $switches := list
-  (dict "key" "DIRECT_PERMANENT_BLOCK_ENABLED" "path" "sisbajud.direct.permanentBlockEnabled" "on" $pb "note" " (the chart default)"
+  (dict "path" "sisbajud.direct.permanentBlockEnabled" "on" $pb "note" " (the chart default)"
         "streamOk" (and (eq $se "true") $sb) "streamSet" "global.streaming.brokers (+ global.streaming.tlsEnabled/SASL in production), or sisbajud.direct.permanentBlockEnabled=false for an install without brokers (e.g. Mensageria-only)")
-  (dict "key" "MENSAGERIA_PERMANENT_BLOCK_ENABLED" "path" "sisbajud.mensageria.permanentBlockEnabled" "on" $mpb "note" ""
+  (dict "path" "sisbajud.mensageria.permanentBlockEnabled" "on" $mpb "note" ""
         "streamOk" (and (eq $se "true") $seWritten $sb) "streamSet" "global.streaming.enabled=true and global.streaming.brokers (+ global.streaming.tlsEnabled/SASL in production), or sisbajud.mensageria.permanentBlockEnabled=false") -}}
 {{- range $w := $switches -}}
 {{- if eq $w.on "true" -}}
@@ -110,7 +110,6 @@ travel over plain http: ENVIRONMENT_NAME local|development|test only
 {{- if not $sb -}}
 {{- include $f (dict "msg" "STREAMING_BROKERS is required with STREAMING_ENABLED=true (lib-streaming refuses the boot without a broker)." "set" "global.streaming.brokers (or sisbajud.configmap.STREAMING_BROKERS)") -}}
 {{- end -}}
-{{- $gs := (.Values.global | default dict).streaming | default dict -}}
 {{- $tls := hasKey $cm "STREAMING_TLS_ENABLED" | ternary (index $cm "STREAMING_TLS_ENABLED") ($gs.tlsEnabled | default false) | toString -}}
 {{- if and (not (include "plugin-br-sisbajud.nonProduction" .)) (not (has $tls (list "1" "t" "T" "TRUE" "true" "True"))) -}}
 {{- include $f (dict "msg" "STREAMING_TLS_ENABLED=true is required with STREAMING_ENABLED=true in a production-like environment (the app refuses the boot)." "set" "global.streaming.tlsEnabled=true (+ sisbajud.secrets.STREAMING_TLS_CA_CERT for a private CA)") -}}

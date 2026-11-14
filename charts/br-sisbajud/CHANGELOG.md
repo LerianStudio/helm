@@ -1,5 +1,21 @@
 # Br-sisbajud Changelog
 
+## [1.5.0](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.5.0)
+
+Features:
+- Render the `ajud302b` STA document type. (@fredcamaral)
+
+Improvements:
+- Apply review fixes to chart documentation and upgrade guides. (@dy-shimizu, @gandalf-at-lerian)
+- Cover `configmap` `LICENSE_KEY` and the app `1.1.0` license contract. (@gandalf-at-lerian)
+- Migrate `IS_DEVELOPMENT` and `LICENSE_KEY` at their effective source. (@gandalf-at-lerian)
+- List every `IS_DEVELOPMENT` path and qualify checksum/secret. (@gandalf-at-lerian)
+- Add the verified `1.4.4` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.4.4...br-sisbajud-v1.5.0)
+
+---
+
 ## [1.4.4](https://github.com/LerianStudio/helm/releases/tag/br-sisbajud-v1.4.4)
 
 Fixes:
@@ -83,3 +99,4 @@ Fixes:
 - Pin application to `1.0.0` and guard the execution address. (@guimoreirar)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/br-sisbajud-v1.2.0...br-sisbajud-v1.3.0)
+

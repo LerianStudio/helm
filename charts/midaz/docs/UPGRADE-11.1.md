@@ -1,146 +1,113 @@
-<!-- {% raw %} -->
 # Helm Upgrade from v11.0.0 to v11.1.0
 
-## Topics
+## Release scope and runtime limitation
 
-- **[Features](#features)**
-  - [1. OpenTelemetry Inbound Trace Context Trust Control](#1-opentelemetry-inbound-trace-context-trust-control)
-- **[Configuration Reference](#configuration-reference)**
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+Chart `midaz-helm` 11.1.0 adds `OTEL_TRUST_INBOUND_TRACE_CONTEXT` to the
+ledger and tracer ConfigMaps, with a rendered default of `"false"`. Both
+chart releases retain application version 4.4.2; this is chart wiring, not
+an application upgrade.
 
-## Features
+**The default 4.4.2 ledger and tracer images do not read this environment
+variable.** Their telemetry bootstrap leaves the library's
+`TrustInboundTraceContext` field at its default false value. This was also
+true with chart 11.0.0. Absence of the ConfigMap key in the previous chart
+therefore does not mean those images trusted inbound context.
 
-### 1. OpenTelemetry Inbound Trace Context Trust Control
+Setting the new key to `"true"` renders that value but does not enable the
+advertised inbound trace-continuity opt-in with the default images. Do not
+use ConfigMap presence as proof of runtime behavior or weaken gateway trust
+boundaries on that assumption. No replacement application image is prescribed
+here. An existing image override needs separate source and runtime validation;
+this guide does not certify its behavior or downstream propagation.
 
-**Who is affected:** every release that uses distributed tracing (observability enabled). This change adds explicit control over whether the ledger and tracer services trust W3C trace context headers from inbound requests.
+| Value path | Chart 11.0.0 | Chart 11.1.0 |
+|------------|--------------|--------------|
+| `ledger.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT` | Not provided | `"false"` |
+| `tracer.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT` | Not provided | `"false"` |
 
-#### What Changed
-
-A new environment variable `OTEL_TRUST_INBOUND_TRACE_CONTEXT` has been added to both the ledger and tracer components, with a default value of `"false"`.
-
-| Component | Setting | v11.0.0 | v11.1.0 |
-|-----------|---------|---------|---------|
-| `ledger` | `OTEL_TRUST_INBOUND_TRACE_CONTEXT` | (not present) | `"false"` |
-| `tracer` | `OTEL_TRUST_INBOUND_TRACE_CONTEXT` | (not present) | `"false"` |
-
-**Before (v11.0.0):**
-
-The ledger and tracer ConfigMaps did not include this setting. The OpenTelemetry SDK's default behavior applied, which typically trusts inbound trace context.
-
-**After (v11.1.0):**
+The following is an **incomplete overlay**, not a replacement for your release
+configuration. Keep the default; setting it does not change runtime support.
 
 ```yaml
 ledger:
   configmap:
     OTEL_TRUST_INBOUND_TRACE_CONTEXT: "false"
-
 tracer:
   configmap:
     OTEL_TRUST_INBOUND_TRACE_CONTEXT: "false"
 ```
 
-#### Why This Matters
+## Prepare and preserve the release
 
-The `OTEL_TRUST_INBOUND_TRACE_CONTEXT` setting controls whether your services accept and propagate trace IDs and sampling decisions from incoming HTTP headers (`traceparent`, `tracestate`).
+1. Confirm the installed chart is 11.0.0. Review your effective image pins,
+   enabled components, authentication, external stores, storage, ingress and
+   Secret references. Tracer is disabled by default; do not enable it merely
+   to apply this chart setting.
+2. Save the installed release values, manifests and history privately. They can
+   contain credentials; restrict access, never commit them or paste rendered
+   Secrets into tickets. Record the prior chart package and image revisions.
+3. Create a reviewed **complete intended configuration** in
+   `values-11.1.0.private.yaml`. Reconcile existing overrides with target
+   defaults; preserve unrelated settings, image pins and Secret references.
+   Do not use the small overlay above as that file. The explicit reset below
+   removes stored overrides omitted from it.
+4. Take consistent, private backups of the deployed datastores and required
+   persistent data; verify the restore procedure and recovery window before
+   proceeding. This release adds no image, dependency-lock or datastore topology
+   change, but existing bootstrap and migration hooks can still execute on
+   upgrade, including RabbitMQ bootstrap, ledger migrations and enabled tracer
+   migrations. Review their effective configuration and image overrides.
 
-- **Security boundary:** When set to `"false"` (the new default), the service generates its own trace IDs and makes its own sampling decisions, preventing untrusted callers from manipulating trace data or forcing expensive sampling
-- **Trusted environments:** When set to `"true"`, the service accepts trace context from callers, which is appropriate when all traffic comes through a trusted API gateway, service mesh, or internal network where every caller is authenticated and authorized
-- **Trace continuity:** In a trusted environment, setting this to `"true"` allows end-to-end traces to span from external clients through your services
+## Preview and upgrade
 
-The conservative default of `"false"` protects against:
-- Malicious clients forcing high-cardinality trace IDs that could overwhelm your observability backend
-- Unauthorized sampling decisions that bypass your sampling policies
-- Trace injection attacks in multi-tenant environments
-
-#### Configuration Reference
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `ledger.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT` | `"false"` | Trust W3C trace context headers from callers to the ledger service |
-| `tracer.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT` | `"false"` | Trust W3C trace context headers from callers to the tracer service |
-
-#### Action Required
-
-**For most deployments:** No action required. The default `"false"` is the secure choice for internet-facing or multi-tenant deployments.
-
-**For deployments behind a trusted gateway or service mesh:**
-
-If your Midaz services run behind an API gateway (e.g., Kong, Envoy, NGINX) or service mesh (e.g., Istio, Linkerd) that already authenticates and authorizes all callers, and you want end-to-end trace continuity from external requests, set this to `"true"`:
-
-```yaml
-ledger:
-  configmap:
-    OTEL_TRUST_INBOUND_TRACE_CONTEXT: "true"
-
-tracer:
-  configmap:
-    OTEL_TRUST_INBOUND_TRACE_CONTEXT: "true"
-```
-
-> **Warning:** Only enable this in environments where **every** caller reaching the ledger or tracer is trusted. In a multi-tenant SaaS deployment or any environment with untrusted external clients, keep the default `"false"`.
-
-> **Note:** This setting does not affect outbound trace propagation. The ledger and tracer always propagate trace context to their downstream dependencies (PostgreSQL, MongoDB, RabbitMQ, etc.) regardless of this flag.
-
-#### Template Changes
-
-The ConfigMap templates for both ledger and tracer now include the new environment variable with inline documentation:
-
-**ledger ConfigMap (charts/midaz/templates/ledger/configmap.yaml):**
-
-```yaml
-# Set "true" only when every caller reaching the service is trusted (behind a gateway or
-# mesh); otherwise callers choose the trace id and the sampling decision.
-OTEL_TRUST_INBOUND_TRACE_CONTEXT: {{ $cm.OTEL_TRUST_INBOUND_TRACE_CONTEXT | default "false" | quote }}
-```
-
-**tracer ConfigMap (charts/midaz/templates/tracer/configmap.yaml):**
-
-```yaml
-# Set "true" only when every caller reaching the service is trusted (behind a gateway or
-# mesh); otherwise callers choose the trace id and the sampling decision.
-OTEL_TRUST_INBOUND_TRACE_CONTEXT: {{ $cm.OTEL_TRUST_INBOUND_TRACE_CONTEXT | default "false" | quote }}
-```
-
-The upgrade will restart both the ledger and tracer pods to apply the new ConfigMap. No data loss or downtime beyond the normal rolling update is expected.
-
-## Configuration Reference
-
-The following new configuration fields are available in `values.yaml`:
-
-```yaml
-ledger:
-  configmap:
-    # Trust inbound W3C trace context. "true" only when every caller is trusted
-    # (behind a gateway or mesh).
-    OTEL_TRUST_INBOUND_TRACE_CONTEXT: "false"
-
-tracer:
-  configmap:
-    # Trust inbound W3C trace context. "true" only when every caller is trusted
-    # (behind a gateway or mesh).
-    OTEL_TRUST_INBOUND_TRACE_CONTEXT: "false"
-```
-
-Both fields default to `"false"` and can be overridden in your custom `values.yaml` or via `--set`:
+These commands assume the release and namespace are both `midaz`; substitute
+both consistently for your installation. Keep all render/diff output private.
+The [helm-diff plugin](https://github.com/databus23/helm-diff) is needed only
+for the diff step; inspect and install it through your normal tooling process.
 
 ```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.1.0 \
-  --set ledger.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT="true" \
-  --set tracer.configmap.OTEL_TRUST_INBOUND_TRACE_CONTEXT="true"
+umask 077
+helm template midaz oci://ghcr.io/lerianstudio/midaz-helm \
+  --version 11.1.0 --namespace midaz --is-upgrade \
+  -f values-11.1.0.private.yaml > preview-11.1.0.private.yaml
+helm diff upgrade midaz oci://ghcr.io/lerianstudio/midaz-helm \
+  --version 11.1.0 --namespace midaz --reset-values \
+  -f values-11.1.0.private.yaml > diff-11.1.0.private.txt
 ```
 
-## Preview changes before upgrading
+Review hooks, resource identities, PVC mounts, selectors, images, Secret
+references and pod-template changes. Upgrade-mode validation may require
+preserving the current bundled datastore credentials in the complete private
+configuration; do not retrieve or print them merely to demonstrate this guide.
+The new ConfigMap keys change enabled workloads' pod-template checksums in
+source renders. Actual rollout and availability depend on the installed values,
+replicas, strategy, readiness and capacity; no zero-downtime or data-safety
+promise follows from a static render.
+
+After review and during the approved change window:
 
 ```bash
-helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.1.0
+helm upgrade midaz oci://ghcr.io/lerianstudio/midaz-helm \
+  --version 11.1.0 --namespace midaz --reset-values \
+  -f values-11.1.0.private.yaml
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+## Verify and recover
 
-## Command to upgrade
+Inspect the release's actual workload names, hook Job outcomes, readiness and
+health. Confirm intended images, retained data/configuration and representative
+ledger operations using your established smoke checks. Inspect only the two
+non-secret ConfigMap keys when checking chart wiring; neither those keys nor
+a successful Helm command prove a working trace-context opt-in. Validate actual
+traces separately if running custom images.
 
-```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.1.0
-```
-<!-- {% endraw %} -->
+If verification fails, stop further changes and follow the prepared recovery
+plan. Roll back only after assessing migration/bootstrap effects and compatibility
+with the previous chart and images. Helm rollback restores release resources,
+not database contents or persistent data; it can also run hooks. Data recovery
+requires the tested backup/restore and cutover procedure, not just a Helm rollback.
+
+Static checks for this guide covered exact 11.0.0/11.1.0 chart sources, published
+packages and matching default application source revisions, plus synthetic
+lint/renders. No live upgrade, migration execution, restore drill or runtime
+trace-continuity test was performed.

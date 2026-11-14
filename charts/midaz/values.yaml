@@ -460,6 +460,8 @@ ledger:
     # (intentionally conservative) "false" fallback — pinned explicitly here so
     # this component's shipped default doesn't depend on the mask's fallback.
     ENABLE_TELEMETRY: "true"
+    # -- Trust inbound W3C trace context. "true" only when every caller is trusted (behind a gateway or mesh).
+    OTEL_TRUST_INBOUND_TRACE_CONTEXT: "false"
     # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
     STREAMING_SCHEMA_REGISTRY_URL: ""
     # -- RI permission declaration to the IdP identity service (:4001, distinct from auth :4000).
@@ -945,6 +947,8 @@ tracer:
   datastores: {}
   # -- Escape hatch: any native env var overrides the template default.
   configmap:
+    # -- Trust inbound W3C trace context. "true" only when every caller is trusted (behind a gateway or mesh).
+    OTEL_TRUST_INBOUND_TRACE_CONTEXT: "false"
     # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
     STREAMING_SCHEMA_REGISTRY_URL: ""
     # -- RI permission declaration to the IdP identity service (:4001, distinct from auth :4000).

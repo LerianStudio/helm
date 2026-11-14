@@ -613,6 +613,7 @@
                   "STREAMING_CLOUDEVENTS_SOURCE",
                   "STREAMING_COMPRESSION",
                   "STREAMING_ENABLED",
+                  "STREAMING_KAFKA_BROKERS",
                   "STREAMING_REQUIRED_ACKS",
                   "SWAGGER_BASE_PATH",
                   "SWAGGER_DESCRIPTION",
@@ -652,6 +653,17 @@
           "items": {
             "type": "object"
           }
+        },
+        "licenseFile": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          "description": "Signed licence file instead of LICENSE_KEY: a Secret with key license, mounted at /etc/lerian/license. Needs an image on lib-license-go v5"
         },
         "autoscaling": {
           "type": "object",
@@ -1062,6 +1074,7 @@
                   "STREAMING_CLOUDEVENTS_SOURCE",
                   "STREAMING_COMPRESSION",
                   "STREAMING_ENABLED",
+                  "STREAMING_KAFKA_BROKERS",
                   "STREAMING_REQUIRED_ACKS",
                   "SWAGGER_BASE_PATH",
                   "SWAGGER_DESCRIPTION",
@@ -1131,6 +1144,17 @@
           "items": {
             "type": "object"
           }
+        },
+        "licenseFile": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          "description": "Signed licence file instead of LICENSE_KEY: a Secret with key license, mounted at /etc/lerian/license. Needs an image on lib-license-go v5"
         },
         "keda": {
           "type": "object",
@@ -1312,6 +1336,7 @@
                   "STREAMING_CLOUDEVENTS_SOURCE",
                   "STREAMING_COMPRESSION",
                   "STREAMING_ENABLED",
+                  "STREAMING_KAFKA_BROKERS",
                   "STREAMING_REQUIRED_ACKS",
                   "SWAGGER_BASE_PATH",
                   "SWAGGER_DESCRIPTION",

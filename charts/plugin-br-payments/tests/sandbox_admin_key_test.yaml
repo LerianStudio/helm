@@ -1,0 +1,70 @@
+suite: sandbox fakebtg admin key
+templates:
+  - templates/secrets.yaml
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+set:
+  postgresql.enabled: true
+  app.configmap.BTG_API_BASE_URL: https://btg.example.test
+  app.configmap.BTG_AUTH_URL: https://btg.example.test/token
+  app.configmap.MIDAZ_LEDGER_URL: http://midaz:3000
+  app.configmap.ORGANIZATION_IDS: global
+  app.secrets.PROVIDER_CLIENT_ID: x
+  app.secrets.PROVIDER_CLIENT_SECRET: x
+  app.secrets.PLUGIN_AUTH_CLIENT_ID: x
+  app.secrets.PLUGIN_AUTH_CLIENT_SECRET: x
+  app.secrets.LICENSE_KEY: x
+  app.secrets.CONSULT_AUDIT_HMAC_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.BTG_WEBHOOK_HMAC_SECRET: "0123456789abcdef0123456789abcdef"
+  app.secrets.INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+  app.secrets.CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+tests:
+  - it: renders the key into the Secret when set
+    template: templates/secrets.yaml
+    set:
+      app.secrets.SANDBOX_FAKEBTG_ADMIN_KEY: test-admin-key
+    asserts:
+      - equal:
+          path: stringData.SANDBOX_FAKEBTG_ADMIN_KEY
+          value: test-admin-key
+  - it: leaves the Secret exactly as before when unset
+    template: templates/secrets.yaml
+    asserts:
+      - notExists:
+          path: stringData.SANDBOX_FAKEBTG_ADMIN_KEY
+      - equal:
+          path: stringData
+          value:
+            PROVIDER_CLIENT_ID: x
+            PROVIDER_CLIENT_SECRET: x
+            BTG_WEBHOOK_HMAC_SECRET: "0123456789abcdef0123456789abcdef"
+            INTERNAL_API_KEY: "0123456789abcdef0123456789abcdef"
+            CREDENTIAL_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+            LICENSE_KEY: x
+            PLUGIN_AUTH_CLIENT_ID: x
+            PLUGIN_AUTH_CLIENT_SECRET: x
+            CONSULT_AUDIT_HMAC_KEY: "0123456789abcdef0123456789abcdef"
+  - it: treats an empty key as unset
+    template: templates/secrets.yaml
+    set:
+      app.secrets.SANDBOX_FAKEBTG_ADMIN_KEY: ""
+    asserts:
+      - notExists:
+          path: stringData.SANDBOX_FAKEBTG_ADMIN_KEY
+  - it: keeps the key out of the ConfigMap
+    template: templates/configmap.yaml
+    set:
+      app.secrets.SANDBOX_FAKEBTG_ADMIN_KEY: test-admin-key
+    asserts:
+      - notExists:
+          path: data.SANDBOX_FAKEBTG_ADMIN_KEY
+  - it: reaches the pod through the Secret envFrom
+    template: templates/deployment.yaml
+    set:
+      app.secrets.SANDBOX_FAKEBTG_ADMIN_KEY: test-admin-key
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            secretRef:
+              name: plugin-br-payments

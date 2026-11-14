@@ -99,7 +99,7 @@ Before upgrading, in your overlay:
    `MULTI_TENANT_CACHE_TTL_SEC` in seconds, `MULTI_TENANT_CB_*`) to their canonical names.
 2. **Remove** keys the application no longer reads: `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`,
    `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`,
-   `RECONCILIATION_LOOKBACK_HOURS`, `RECONCILIATION_MAX_PROVIDER_PAGES`, `TRUSTED_PROXIES`,
+   `RECONCILIATION_LOOKBACK_HOURS`, `RECONCILIATION_MAX_PROVIDER_PAGES`,
    `EXAMPLE_STATUS_PROVIDER_MODE`.
 3. **Drop the `null` workarounds** for `OUTBOX_PUBLISH_MAX_ATTEMPTS`,
    `OUTBOX_RETRY_WINDOW_SEC`, `OUTBOX_PROCESSING_TIMEOUT_SEC` and `RECONCILIATION_INTERVAL`:
@@ -111,6 +111,17 @@ Before upgrading, in your overlay:
    `openssl rand -hex 32`, from the platform secret manager) for `SERVICE_TYPE` `both` or
    `api`, or add it to the Secret named by `app.existingSecretName`. Without it the render
    fails, and the application would refuse to boot.
+6. **HTTP edge**: `TRUSTED_PROXIES` is read by the application again (it is no longer
+   refused at render). Set `app.configmap.TRUSTED_PROXIES` to the CIDRs of the proxies or
+   load balancers in front of the service, comma separated (for example
+   `"10.123.0.0/16,10.42.0.0/16"`). Only CIDR notation is accepted, and nothing broader
+   than `/8` (IPv4) or `/48` (IPv6). It is the platform-wide variable: the auth library
+   uses the same value for the client IP it sends to the Access Manager. Unset, the
+   application warns at boot and uses the socket peer. `HTTP_RECEIVE_TIMEOUT_SEC` and
+   `HTTP_IDLE_TIMEOUT_SEC` render only when set. The `HTTP_BODY_LIMIT_BYTES` chart
+   default drops from `"104857600"` to `"4194304"` (4 MiB), which is also the
+   application's ceiling: an overlay that sets a larger value is clamped to 4 MiB and
+   logs a `SECURITY:` warning on every boot, so remove it or set it at or below 4 MiB.
 
 Optionally move connection endpoints to the `global:` block (see `values-template.yaml`);
 native `app.configmap.<KEY>` values keep working and win over it. Pods now roll on a
@@ -145,11 +156,11 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | Key | Default |
 |-----|---------|
 | `SERVER_ADDRESS` | `"0.0.0.0:8080"` |
-| `HTTP_BODY_LIMIT_BYTES` | `"104857600"` |
+| `HTTP_BODY_LIMIT_BYTES` | `"4194304"` (4 MiB, also the application's ceiling: a larger value is clamped to 4 MiB and logs a `SECURITY:` warning on every boot) |
 | `HTTP_READ_BUFFER_SIZE` | unset (app default) |
-| `TLS_TERMINATED_UPSTREAM` | `"true"` |
-| `SERVER_TLS_CERT_FILE` | unset (app default) |
-| `SERVER_TLS_KEY_FILE` | unset (app default) |
+| `HTTP_RECEIVE_TIMEOUT_SEC` | unset (app default `30`) |
+| `HTTP_IDLE_TIMEOUT_SEC` | unset (app default `120`) |
+| `TRUSTED_PROXIES` | unset (app default: no proxy is trusted, `X-Forwarded-For` is ignored and the socket peer is used, with a warning at boot) |
 | `INTERNAL_WORKER_URL` | `""` |
 
 </details>
@@ -284,6 +295,9 @@ preset > chart default. `app.extraEnvVars` stays a verbatim escape hatch.
 | `BTG_MTLS_INBOUND_CERT_HEADER` | unset (app default) |
 | `BTG_WEBHOOK_CERTIFICATE_URL` | unset (app default) |
 | `BTG_BULK_MAX_BODY_BYTES` | read only by app versions after 1.0.2; unset (app default `7680` bytes; zero, negative or non-numeric stops the boot) |
+| `SANDBOX_SIMULATION_ENABLED` | unset (app default `"false"`; `"true"` enables `POST /v1/sandbox/boletos/{id}/simulate-payment` and `POST /v1/sandbox/payments/{id}/simulate-status`; with it on, the app refuses to boot when `ENV_NAME=production` and requires `BTG_API_BASE_URL`, `BTG_AUTH_URL`, `BTG_COMMON_BASE_URL` and `SANDBOX_FAKEBTG_ADMIN_URL` to share one origin, `scheme://host:port`) |
+| `SANDBOX_FAKEBTG_ADMIN_URL` | unset (no app default; required when `SANDBOX_SIMULATION_ENABLED` is `"true"`) |
+| `SANDBOX_FAKEBTG_ADMIN_KEY` | unset; an `app.secrets` key, rendered into the Secret (no app default; read only when `SANDBOX_SIMULATION_ENABLED` is `"true"`; sent as `X-Admin-Key` on the fakebtg `/admin/*` calls, for a keyed fakebtg such as the BYOC sandbox; empty means no header. With `MULTI_TENANT_ENABLED=true` it also derives each tenant's synthetic BTG secret, `hex(HMAC-SHA256(key, tenantId))`, instead of the shared constant. The API and the worker both read it; this chart's single Deployment gets it through `envFrom`. Rotating it changes every tenant's derived secret: follow the fakebtg rotation procedure) |
 
 </details>
 
@@ -374,9 +388,11 @@ The chart injects `ALLOW_INSECURE_OTEL` only together with the node-local collec
 
 </details>
 
-**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`.
+**Secret keys** (`app.secrets`, each rendered only when set): `POSTGRES_PASSWORD`, `POSTGRES_REPLICA_PASSWORD`, `PROVIDER_CLIENT_ID`, `PROVIDER_CLIENT_SECRET`, `BTG_WEBHOOK_HMAC_SECRET`, `INTERNAL_API_KEY`, `INTERNAL_API_KEY_PREVIOUS`, `CREDENTIAL_ENCRYPTION_KEY`, `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`, `LICENSE_KEY`, `PLUGIN_AUTH_CLIENT_ID`, `PLUGIN_AUTH_CLIENT_SECRET`, `MULTI_TENANT_SERVICE_API_KEY`, `CONSULT_AUDIT_HMAC_KEY`, `IDP_M2M_CLIENT_ID`, `IDP_M2M_CLIENT_SECRET`, `SANDBOX_FAKEBTG_ADMIN_KEY`.
 
-**Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES`, `TRUSTED_PROXIES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
+**Refused at render**, with the replacement named: `MULTI_TENANCY_ENABLED`, `MULTI_TENANT_MANAGER_URL`, `MULTI_TENANT_CLIENT_TIMEOUT_SEC`, `MULTI_TENANT_CACHE_TTL_MINUTES`, `MULTI_TENANT_CB_THRESHOLD`, `MULTI_TENANT_CB_TIMEOUT_SEC`, `MIDAZ_ONBOARDING_URL`, `MIDAZ_TRANSACTION_URL`, `OUTBOX_ENABLED`, `OUTBOX_TABLE_NAME`, `CIRCUIT_BREAKER_ENABLED`, `RATE_LIMIT_READ`, `RATE_LIMIT_WRITE`, `RECONCILIATION_LOOKBACK_HOURS`, `EXAMPLE_STATUS_PROVIDER_MODE`, `RECONCILIATION_MAX_PROVIDER_PAGES` (`app.configmap`); `BTG_CLIENT_ID`, `BTG_CLIENT_SECRET`, `BTG_WEBHOOK_SECRET` (`app.secrets`). The retired ones are no longer read by the application.
+
+Also refused at render (`app.configmap`): `SERVER_TLS_CERT_FILE`, `SERVER_TLS_KEY_FILE`. The main port serves plain HTTP; terminate TLS at the Ingress or mesh. `TLS_TERMINATED_UPSTREAM` is no longer rendered: the app stopped reading it.
 
 ## Probes
 

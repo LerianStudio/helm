@@ -8,8 +8,8 @@ type: application
 # version is a PLACEHOLDER. semantic-release in the `helm` repo owns the real
 # chart version on merge — do NOT hand-pick a final number here.
 
-version: 2.1.0
-appVersion: "3.1.0"
+version: 2.2.0
+appVersion: "3.4.0"
 annotations:
   lerian.studio/chart-type: multi-component
 home: https://github.com/LerianStudio/helm/tree/main/charts/streaming-hub
@@ -67,5 +67,6 @@ dependencies:
   # Pulled from the published OCI registry (oci://ghcr.io/lerianstudio), the
   # same form the other charts in this repo use for lerian-common-helm.
   - name: lerian-common-helm
-    version: "2.3.0"
+    # 2.6.0 is the first lerian-common-helm that ships the lerian-common.health preset.
+    version: "2.6.1"
     repository: "oci://ghcr.io/lerianstudio"

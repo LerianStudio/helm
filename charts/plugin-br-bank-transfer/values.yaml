@@ -201,16 +201,16 @@ global:
       # -- Password for bank_transfer user (ignored if useExistingSecret.name is set)
       password: ""
 bankTransfer:
-  # -- Readiness probe configuration. All fields override chart defaults.
-  readinessProbe: {}
-  # -- Liveness probe configuration. All fields override chart defaults.
-  livenessProbe: {}
   # -- Service name
   name: bank-transfer
   # -- Enable or disable the bank-transfer service
   enabled: true
   # -- Number of replicas for the bank-transfer service
   replicaCount: 2
+  # -- Health preset (lerian-common.health): probes, HEALTH_PORT 8099, drain, grace, rollout strategy and PDB
+  # policy are owned by it. Tune only drainSeconds (default 15) and shutdownSeconds (default 30); grace = drain + shutdown + 10.
+  health:
+    stack: go
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   image:
@@ -219,7 +219,7 @@ bankTransfer:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "3.5.0"
+    tag: "3.6.0"
   # -- PostgreSQL migrations. External Postgres: a Job (Helm hook pre-install,pre-upgrade;
   # ArgoCD PreSync). Bundled Postgres: an initContainer of each app pod, so no pod starts
   # on an unmigrated schema; the hook notes below apply to the external Job only.
@@ -281,31 +281,18 @@ bankTransfer:
     readOnlyRootFilesystem: true
     seccompProfile:
       type: RuntimeDefault
-  # -- PodDisruptionBudget configuration
+  # -- PodDisruptionBudget configuration (budget and eviction policy come from the health preset)
   pdb:
     # -- Enable or disable PodDisruptionBudget
     enabled: true
-    # -- Minimum number of available pods. Ignored while maxUnavailable is set
-    # (templates/pdb.yaml renders maxUnavailable first); clear maxUnavailable
-    # to use it.
-    minAvailable: 1
-    # -- Maximum number of unavailable pods. Takes precedence over minAvailable
-    maxUnavailable: 1
     # -- Annotations for the PodDisruptionBudget
     annotations: {}
-  # -- Deployment update strategy
-  deploymentUpdate:
-    # -- Type of deployment strategy
-    type: RollingUpdate
-    # -- Maximum number of pods that can be created over the desired number of pods
-    maxSurge: 100%
-    # -- Maximum number of pods that can be unavailable during the update
-    maxUnavailable: 0
   service:
     # -- Kubernetes service type
     type: ClusterIP
     # -- Port for the HTTP API
     port: 4027
+    # -- The internal `health` port 8099 is added by the health preset on ClusterIP only (multi-tenant); never route an Ingress to it
     annotations: {}
   ingress:
     # -- Enable or disable ingress
@@ -631,36 +618,36 @@ bankTransfer:
     # Midaz M2M Credentials (optional)
     # MIDAZ_CLIENT_ID: ""
     # MIDAZ_CLIENT_SECRET: ""
-  # Streaming credentials (optional — only required when a SASL mechanism
-  # is configured via global.streaming.saslMechanism)
-  # STREAMING_SASL_PASSWORD: ""
-  # STREAMING_TLS_CA_CERT: ""
+    # Streaming credentials (optional — only required when a SASL mechanism
+    # is configured via global.streaming.saslMechanism)
+    # STREAMING_SASL_PASSWORD: ""
+    # STREAMING_TLS_CA_CERT: ""
 
-  # Multi-tenant (only when MULTI_TENANT_ENABLED=true). Redis CA: only when
-  # MULTI_TENANT_REDIS_TLS=true and the cluster's CA isn't in the system trust pool.
-  # MULTI_TENANT_SERVICE_API_KEY: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
-  # MULTI_TENANT_REDIS_PASSWORD: ""
-  # MULTI_TENANT_REDIS_CA_CERT: ""
+    # Multi-tenant (only when MULTI_TENANT_ENABLED=true). Redis CA: only when
+    # MULTI_TENANT_REDIS_TLS=true and the cluster's CA isn't in the system trust pool.
+    # MULTI_TENANT_SERVICE_API_KEY: ""  # REQUIRED when MULTI_TENANT_ENABLED=true
+    # MULTI_TENANT_REDIS_PASSWORD: ""
+    # MULTI_TENANT_REDIS_CA_CERT: ""
 
-  # RabbitMQ credentials (when RABBITMQ_ENABLED=true; RABBITMQ_URL is required,
-  # amqps:// outside development/test/local)
-  # RABBITMQ_URL: ""
-  # RABBITMQ_EVENT_SIGNING_SECRET: ""
+    # RabbitMQ credentials (when RABBITMQ_ENABLED=true; RABBITMQ_URL is required,
+    # amqps:// outside development/test/local)
+    # RABBITMQ_URL: ""
+    # RABBITMQ_EVENT_SIGNING_SECRET: ""
 
-  # Webhook secrets (when WEBHOOK_ENABLED=true)
-  # WEBHOOK_SIGNING_SECRET: ""
-  # WEBHOOK_BROKER_EVENT_SIGNING_SECRET: ""
+    # Webhook secrets (when WEBHOOK_ENABLED=true)
+    # WEBHOOK_SIGNING_SECRET: ""
+    # WEBHOOK_BROKER_EVENT_SIGNING_SECRET: ""
 
-  # Courier outbound M2M credentials (courier integration, added in app 2.2.0)
-  # COURIER_CLIENT_ID: ""
-  # COURIER_CLIENT_SECRET: ""
+    # Courier outbound M2M credentials (courier integration, added in app 2.2.0)
+    # COURIER_CLIENT_ID: ""
+    # COURIER_CLIENT_SECRET: ""
 
-  # Access Manager permission declaration (RI) client pair, used only when
-  # IDP_DECLARATION_ENABLED="true" (configmap.IDP_DECLARATION_ENABLED / IDP_HOST, or
-  # global.idp.{declarationEnabled,host}). With useExistingSecret=true the chart renders
-  # neither key: the existing Secret must carry both.
-  # IDP_M2M_CLIENT_ID: ""
-  # IDP_M2M_CLIENT_SECRET: ""
+    # Access Manager permission declaration (RI) client pair, used only when
+    # IDP_DECLARATION_ENABLED="true" (configmap.IDP_DECLARATION_ENABLED / IDP_HOST, or
+    # global.idp.{declarationEnabled,host}). With useExistingSecret=true the chart renders
+    # neither key: the existing Secret must carry both.
+    # IDP_M2M_CLIENT_ID: ""
+    # IDP_M2M_CLIENT_SECRET: ""
 
   # -- Existing secrets name
   useExistingSecret: false

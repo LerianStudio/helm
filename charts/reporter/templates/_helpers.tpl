@@ -318,6 +318,42 @@ secret-manager inputs must not be blocked at render time.
 {{- end }}
 
 {{/*
+reporter.licenseFileSecret: the component's licence-file Secret name ("" when unset).
+Input: the component values. Trailing default required: include yields "<no value>" for a
+missing key; --reuse-values over an old release has no licenseFile.
+*/}}
+{{- define "reporter.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}
+
+{{- define "reporter.licenseFileEnv" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: LICENSE_FILE_PATH
+  value: /etc/lerian/license/license
+{{- end }}
+{{- end }}
+
+{{- define "reporter.licenseFileMount" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "reporter.licenseFileVolume" -}}
+{{- if include "reporter.licenseFileSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ include "reporter.licenseFileSecret" . | quote }}
+    defaultMode: 0444
+    items:
+      - key: license
+        path: license
+{{- end }}
+{{- end }}
+
+{{/*
 reporter.licenseKeyRequired — refuse to render a reporter >= 4.6.0 without a license.
 
 Reporter 4.6.0 requires LICENSE_KEY in every run mode: the manager AND the worker refuse
@@ -329,8 +365,9 @@ Like reporter.datasourceCredEncKeyRequired, presence is enforced only when the
 COMPONENT'S OWN resolved image tag parses as semver and is >= 4.6.0-0, so a release that
 still runs 4.5.x keeps rendering, and a floating tag ("latest", a digest) is left alone.
 An argocd-vault-plugin reference (`<path:...>`) counts as set: it is resolved after the
-render, and the plugin fails closed when it cannot resolve it. Called only when the
-component does not use an existing Secret, whose contents the chart cannot see.
+render, and the plugin fails closed when it cannot resolve it. A component with licenseFile.existingSecret
+is exempt. Called only when the component does not use an existing Secret, whose contents
+the chart cannot see.
 
 Input (dict): context (root .), component ("manager"|"worker"), tag (resolved image tag).
 */}}
@@ -340,8 +377,8 @@ Input (dict): context (root .), component ("manager"|"worker"), tag (resolved im
 {{- /* Only tags Masterminds semver can parse reach semverCompare: prerelease and build
    metadata are [0-9A-Za-z-] dot-separated. Anything else (4.5.1-custom_1, latest, a digest)
    skips the gate, as a floating tag does. */ -}}
-{{- if and (not $key) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag) (semverCompare ">=4.6.0-0" $tag) -}}
-{{- fail (printf "\n\nERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (%s.image.tag is %q).\n   The manager AND the worker refuse to boot without a license.\n   Set secrets.LICENSE_KEY,\n   or set %s.useExistingSecret=true and %s.existingSecretName to a Secret that carries them.\n   See charts/reporter/docs/UPGRADE-5.1.md.\n" .component .tag .component .component) -}}
+{{- if and (not $key) (not (include "reporter.licenseFileSecret" (index .context.Values .component))) (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$" $tag) (semverCompare ">=4.6.0-0" $tag) -}}
+{{- fail (printf "\n\nERROR: secrets.LICENSE_KEY is REQUIRED for reporter app >= 4.6.0 (%s.image.tag is %q).\n   The manager AND the worker refuse to boot without a license.\n   Set secrets.LICENSE_KEY, or %s.licenseFile.existingSecret (needs an image on lib-license-go v5),\n   or set %s.useExistingSecret=true and %s.existingSecretName to a Secret that carries them.\n   See charts/reporter/docs/UPGRADE-5.1.md.\n" .component .tag .component .component .component) -}}
 {{- end -}}
 {{- end -}}
 
@@ -568,7 +605,10 @@ MULTI_TENANT_ENABLED: {{ $mtRaw | quote }}
       "defaults" (dict "SD_ADDRESS" "")) | nindent 0 }}
 {{- /* Streaming: knob inline; brokers/SASL/TLS transport + identity via global.streaming
    (gated — inert unless enabled AND global.streaming.brokers is set). RABBITMQ_REPORT_EVENTS_EXCHANGE
-   is reporter-specific (RabbitMQ transport) and stays passthrough. */}}
+   is read only by app < 4.10.0 and stays passthrough. App >= 4.10.0 dials
+   STREAMING_KAFKA_BROKERS instead of STREAMING_BROKERS; each component ConfigMap emits it
+   through reporter.streamingKafkaBrokers. The ce-source must be the roster name "reporter":
+   the app refuses to boot with any other value, whether or not streaming is enabled. */}}
 STREAMING_ENABLED: {{ $streamingRaw | default "false" | quote }}
 RABBITMQ_REPORT_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_REPORT_EVENTS_EXCHANGE | default "reporter.events" | quote }}
 {{- if $streamingEnabled }}
@@ -577,7 +617,7 @@ RABBITMQ_REPORT_EVENTS_EXCHANGE: {{ $cm.RABBITMQ_REPORT_EVENTS_EXCHANGE | defaul
       "enabled" $streamingEnabled
       "configmap" $cm
       "clientId" ($cm.STREAMING_CLIENT_ID | default "reporter")
-      "cloudeventsSource" ($cm.STREAMING_CLOUDEVENTS_SOURCE | default "//lerian.reporter")) | nindent 0 }}
+      "cloudeventsSource" ($cm.STREAMING_CLOUDEVENTS_SOURCE | default "reporter")) | nindent 0 }}
 {{- end }}
 {{- /* External midaz datasource (direct-query mode) via postgres datastore mask. */}}
 DATASOURCE_ONBOARDING_CONFIG_NAME: {{ $cm.DATASOURCE_ONBOARDING_CONFIG_NAME | default "midaz_onboarding" | quote }}
@@ -595,6 +635,41 @@ DATASOURCE_ONBOARDING_SSLROOTCERT: {{ $cm.DATASOURCE_ONBOARDING_SSLROOTCERT | de
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+reporter.streamingKafkaBrokers — STREAMING_KAFKA_BROKERS for ONE component ConfigMap.
+Call with (dict "context" $ "component" .Values.manager) (or .Values.worker).
+
+App >= 4.10.0 publishes every business event to Kafka. In single-tenant mode it dials
+STREAMING_KAFKA_BROKERS and refuses to boot with streaming on and that key empty;
+lib-streaming's STREAMING_BROKERS is still validated non-empty but never dialled. In
+multi-tenant mode the Tenant Manager serves the brokers per tenant and the key is not read.
+
+Emits only when streaming is on (same resolution as reporter.commonConfigmapData) and
+the component does not set the key itself (its configmap or extraEnvVars render later
+in the same ConfigMap and would duplicate it). Source: common.configmap.STREAMING_KAFKA_BROKERS
+(escape-hatch passthrough, rendered by reporter.commonConfigmapData, so nothing here), else
+global.streaming.brokers in single-tenant mode. Multi-tenant mode emits nothing.
+*/}}
+{{- define "reporter.streamingKafkaBrokers" -}}
+{{- $ := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $cm := $.Values.common.configmap | default dict -}}
+{{- $s := ($.Values.global | default dict).streaming | default dict -}}
+{{- $streamingRaw := $s.enabled -}}
+{{- if hasKey $cm "STREAMING_ENABLED" }}{{- $streamingRaw = index $cm "STREAMING_ENABLED" -}}{{- end -}}
+{{- $mtRaw := (($.Values.global | default dict).multiTenant | default dict).enabled -}}
+{{- if hasKey $cm "MULTI_TENANT_ENABLED" }}{{- $mtRaw = index $cm "MULTI_TENANT_ENABLED" -}}{{- end -}}
+{{- if kindIs "invalid" $mtRaw }}{{- $mtRaw = "false" -}}{{- end -}}
+{{- $componentSets := or (hasKey ($comp.configmap | default dict) "STREAMING_KAFKA_BROKERS") (hasKey ($comp.extraEnvVars | default dict) "STREAMING_KAFKA_BROKERS") -}}
+{{- if and (eq (include "reporter.isTrue" ($streamingRaw | default "false")) "true")
+           (not (eq (include "reporter.isTrue" $mtRaw) "true"))
+           (not (hasKey $cm "STREAMING_KAFKA_BROKERS"))
+           (not $componentSets)
+           (trim (toString ($s.brokers | default ""))) }}
+STREAMING_KAFKA_BROKERS: {{ $s.brokers | quote }}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Vendored from Bitnami common (charts/common/templates/_names.tpl) so infra

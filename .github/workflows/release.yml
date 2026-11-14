@@ -32,9 +32,14 @@ permissions:
 
 jobs:
   get-changed-paths:
-    if: github.event_name == 'push' && github.actor != 'lerian-studio-midaz-push-bot[bot]'
+    # The push bot's own pushes are this workflow's release commits and are skipped, except the
+    # merge chart-bump-automerge.yml makes with the same bot, which it marks in the commit body.
+    if: >-
+      github.event_name == 'push'
+      && (github.actor != 'lerian-studio-midaz-push-bot[bot]'
+          || contains(github.event.head_commit.message, 'Auto-merged-by: chart-bump-automerge'))
     name: Get Changed Paths
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     outputs:
       matrix: ${{ steps.restrict.outputs.matrix }}
     steps:
@@ -124,19 +129,28 @@ jobs:
       group: helm-release-${{ github.ref }}
       cancel-in-progress: false
       queue: max
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # GitHub-hosted, not Blacksmith: this job holds the GPG signing key and the App
+    # token that bypasses the main ruleset, so it stays off third-party runners.
+    # RELEASE_RUNNERS can move it without editing this file.
+    runs-on: ${{ vars.RELEASE_RUNNERS || vars.FALLBACK_RUNNERS }}
     strategy:
       max-parallel: 1
       fail-fast: false
       matrix:
         chart: ${{ fromJson(needs.get-changed-paths.outputs.matrix) }}
     steps:
+      # Scoped to this repository and to contents: the token only checks out and
+      # pushes (the release commit, its tags and the README sync); the .releaserc
+      # has no @semantic-release/github plugin. The App bypasses the main ruleset,
+      # so an unscoped token would reach every repository the App is installed on.
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_APP_ID }}
           private-key: ${{ secrets.LERIAN_STUDIO_MIDAZ_PUSH_BOT_PRIVATE_KEY }}
+          repositories: helm
+          permission-contents: write
 
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -194,7 +208,7 @@ jobs:
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKERHUB_IMAGE_PUSH_TOKEN }}
 
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u lerianstudio --password-stdin
@@ -347,6 +361,12 @@ jobs:
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          # semantic-release first dry-run pushes to the plain repository URL and
+          # only embeds the token in the URL (and so in git's argv) when that fails.
+          # This env-scoped helper makes the plain URL authenticate.
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: credential.https://github.com.helper
+          GIT_CONFIG_VALUE_0: '!f() { if [ "$1" = get ]; then printf "username=x-access-token\npassword=%s\n" "$GITHUB_TOKEN"; fi; }; f'
           GIT_AUTHOR_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
           GIT_AUTHOR_EMAIL: ${{ secrets.LERIAN_CI_CD_USER_EMAIL }}
           GIT_COMMITTER_NAME: ${{ secrets.LERIAN_CI_CD_USER_NAME }}
@@ -411,9 +431,17 @@ jobs:
           git add README.md
           git commit -S -m "chore(readme): sync ${CHART_NAME} version matrix to ${NEW_VERSION} [skip ci]"
 
+          # The token reaches git through an env-scoped credential helper, not the
+          # remote URL: a URL argument sits in the argv of every git process, where
+          # the log mask does not reach. The config lives only in this step's env.
+          # shellcheck disable=SC2016 # $GITHUB_TOKEN expands when git runs the helper
+          export GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0='credential.https://github.com.helper' \
+            GIT_CONFIG_VALUE_0='!f() { if [ "$1" = get ]; then printf "username=x-access-token\npassword=%s\n" "$GITHUB_TOKEN"; fi; }; f'
+          url="https://github.com/${GITHUB_REPOSITORY}.git"
+
           # A merge can land between the release commit and this push; rebase onto
           # it and retry rather than drop the row.
-          url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           for attempt in 1 2 3 4 5; do
             if git pull --quiet --rebase --autostash "$url" "$BRANCH" && git push --quiet "$url" "HEAD:${BRANCH}"; then
               echo "README version matrix synced (attempt ${attempt})"
@@ -504,7 +532,7 @@ jobs:
     permissions:
       actions: read
       contents: read
-    runs-on: ${{ vars.GENERAL_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     outputs:
       matrix: ${{ steps.collect.outputs.matrix }}
     steps:
@@ -583,7 +611,7 @@ jobs:
       group: helm-gitops-main
       cancel-in-progress: false
       queue: max
-    runs-on: ${{ vars.GITOPS_RUNNERS || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.GITOPS_RUNNERS || vars.FALLBACK_RUNNERS }}
     steps:
       - name: Refuse to sync without the GitOps runner
         if: vars.GITOPS_RUNNERS == ''
@@ -624,6 +652,21 @@ jobs:
             exit 1
           fi
 
+      # The GitOps pool is self-hosted and keeps its home directory between jobs.
+      # A registry login left there (gitops-chart-update logs in to ghcr.io and
+      # never logs out) outlives its token, and helm then sends the expired
+      # credential even to public charts and gets denied. RUNNER_TEMP is emptied
+      # at the start of every job, so registry state kept there cannot leak.
+      - name: Isolate registry credentials to this job
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/registry/docker"
+          {
+            echo "HELM_REGISTRY_CONFIG=${RUNNER_TEMP}/registry/helm-config.json"
+            echo "DOCKER_CONFIG=${RUNNER_TEMP}/registry/docker"
+          } >> "$GITHUB_ENV"
+
       - name: Set up Helm
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
@@ -634,9 +677,16 @@ jobs:
           CHART_VERSION: ${{ matrix.chart.version }}
         run: |
           set -euo pipefail
-          latest=$(helm show chart "oci://ghcr.io/lerianstudio/${CHART_ARTIFACT}" | awk '/^version: / {print $2}')
+          # Outside a pipe, so a helm failure reports its own error instead of
+          # dying silently on pipefail.
+          if ! chart=$(helm show chart "oci://ghcr.io/lerianstudio/${CHART_ARTIFACT}" 2>&1); then
+            printf '%s\n' "$chart"
+            echo "::error::Could not read oci://ghcr.io/lerianstudio/${CHART_ARTIFACT} from the registry"
+            exit 1
+          fi
+          latest=$(awk '/^version: / {print $2}' <<<"$chart")
           if [[ -z "$latest" || "$latest" != "$CHART_VERSION" ]]; then
-            echo '::error::Chart version is not the current published stable version'
+            echo "::error::Chart version ${CHART_VERSION} is not the current published stable version (${latest:-none})"
             exit 1
           fi
 

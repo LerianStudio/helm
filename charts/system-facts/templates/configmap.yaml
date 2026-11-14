@@ -37,7 +37,6 @@ data:
   ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "ENV_NAME" "params" (index .Values "system-facts") "field" "env" "default" "production") | quote }}
   LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "LOG_LEVEL" "params" (index .Values "system-facts") "field" "logLevel" "default" "info") | quote }}
   SERVER_ADDRESS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "SERVER_ADDRESS" "params" (index .Values "system-facts") "field" "serverAddress" "default" ":8080") | quote }}
-  SHUTDOWN_DRAIN_DELAY: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "SHUTDOWN_DRAIN_DELAY" "params" (index .Values "system-facts") "field" "shutdownDrainDelay" "default" "15s") | quote }}
   HTTP_BODY_LIMIT_BYTES: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "HTTP_BODY_LIMIT_BYTES" "params" (index .Values "system-facts") "field" "httpBodyLimitBytes" "default" "104857600") | quote }}
   {{- $insecureTls := include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "ALLOW_INSECURE_TLS" "params" (index .Values "system-facts") "field" "allowInsecureTls" "default" "") }}
   {{- if $insecureTls }}

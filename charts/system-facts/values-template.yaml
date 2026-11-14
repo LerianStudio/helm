@@ -60,7 +60,7 @@ global:
 
 system-facts:
   enabled: true
-  replicaCount: 1
+  replicaCount: 2
 
   image:
     repository: ghcr.io/lerianstudio/system-facts
@@ -90,7 +90,7 @@ system-facts:
 
   autoscaling:
     enabled: true
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 5
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80

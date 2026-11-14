@@ -1,5 +1,69 @@
 # Plugin-access-manager Changelog
 
+## [11.2.3](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.3)
+
+Fixes:
+
+- Removed a redundant optional reference and duplicate unit test suite in the codebase. (@fredcamaral)
+- Ensured that `extraEnvVars.ALLOW_INSECURE_TLS` is accepted on the migrate init container. (@fredcamaral)
+- Provided the Caradhras migrate init container with `ALLOW_INSECURE_TLS`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.2.2...plugin-access-manager-v11.2.3)
+
+---
+
+## [11.2.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.2)
+
+Fixes:
+- Update `plugin-auth` to `3.19.0` and `plugin-identity` to `3.19.0`. (@bedatty, @lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.2.1...plugin-access-manager-v11.2.2)
+
+---
+
+## [11.2.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.1)
+
+Features:
+- Generate the caradhras application secret per install. (@fredcamaral)
+
+Fixes:
+- Refuse a generated app secret on a non-semver `caradhras` tag. (@fredcamaral)
+- Name the kept secret in the offline refusal. (@fredcamaral)
+- Refuse to generate the app client secret when the render cannot read the cluster. (@fredcamaral)
+- Fail an upgrade that would generate the app-lerian client secret. (@fredcamaral)
+- Require the app client secret for GitOps renders and drop dead helper branch. (@fredcamaral)
+- Feed the identity client secret from the provided value only. (@fredcamaral)
+- Keep the app client secret in the identity secret for the console-admin-reconciler. (@fredcamaral)
+- Read the app client secret from one source and hash its input. (@fredcamaral)
+- Roll pods and document the app client secret. (@fredcamaral)
+
+Improvements:
+- Keep the `10.5` guide on its own chart version. (@fredcamaral)
+- State that identity always authenticates as app-lerian and shorten the secret comment. (@fredcamaral)
+- Require the app client secret for renderers without cluster access. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.2.0...plugin-access-manager-v11.2.1)
+
+---
+
+## [11.2.0](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.2.0)
+
+Features:
+- Add license file mount to auth and identity. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.1.2...plugin-access-manager-v11.2.0)
+
+---
+
+## [11.1.2](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.1.2)
+
+Fixes:
+- Stop shipping an unused seed that carries a client secret. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-access-manager-v11.1.1...plugin-access-manager-v11.1.2)
+
+---
+
 ## [11.1.1](https://github.com/LerianStudio/helm/releases/tag/plugin-access-manager-v11.1.1)
 
 Fixes:

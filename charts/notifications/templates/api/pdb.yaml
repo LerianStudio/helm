@@ -1,4 +1,5 @@
-{{- if .Values.api.pdb.enabled }}
+{{- $pdb := (include "notifications.api.health" . | fromYaml).pdb }}
+{{- if and .Values.api.pdb.enabled $pdb }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -13,11 +14,7 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  {{- if and (hasKey .Values.api.pdb "maxUnavailable") (ne .Values.api.pdb.maxUnavailable nil) }}
-  maxUnavailable: {{ .Values.api.pdb.maxUnavailable }}
-  {{- else }}
-  minAvailable: {{ .Values.api.pdb.minAvailable | default 1 }}
-  {{- end }}
+  {{- toYaml $pdb | nindent 2 }}
   selector:
     matchLabels:
       {{- include "notifications.selectorLabels" (dict "context" . "name" .Values.api.name) | nindent 6 }}

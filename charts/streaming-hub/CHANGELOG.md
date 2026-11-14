@@ -1,5 +1,18 @@
 # Streaming-hub Changelog
 
+## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.2.0)
+
+Features:
+- Ship streaming-hub `3.4.0` with the health preset on port `8099`. (@fredcamaral)
+
+Fixes:
+- Warn that a pinned `replicaCount` of `1` ensures one replica is maintained. (@fredcamaral)
+- Document the rollback process for migrations Job and trim the health helper. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v2.1.0...streaming-hub-v2.2.0)
+
+---
+
 ## [2.1.0](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.1.0)
 
 Features:

@@ -293,7 +293,7 @@ manager:
   image:
     repository: ghcr.io/lerianstudio/br-sta-manager
     # -- Defaults to Chart.appVersion.
-    tag: "1.4.0"
+    tag: "1.4.1"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   podAnnotations: {}
@@ -383,7 +383,7 @@ worker:
   image:
     repository: ghcr.io/lerianstudio/br-sta-worker
     # -- Defaults to manager.image.tag, then Chart.appVersion.
-    tag: "1.4.0"
+    tag: "1.4.1"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   podAnnotations: {}
@@ -471,7 +471,7 @@ migrations:
   image:
     repository: ghcr.io/lerianstudio/br-sta-migrations
     # -- Defaults to Chart.appVersion.
-    tag: "1.4.0"
+    tag: "1.4.1"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   useExistingSecret: false
@@ -729,7 +729,7 @@ mockSta:
   image:
     repository: ghcr.io/lerianstudio/mock-sta-server
     # -- Defaults to Chart.appVersion (released with the app under the same tag).
-    tag: "1.4.0"
+    tag: "1.4.1"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   service:

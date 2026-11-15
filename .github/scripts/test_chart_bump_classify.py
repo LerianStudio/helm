@@ -101,12 +101,20 @@ class Classify(unittest.TestCase):
     def test_empty_tag_pinned_to_a_major_jump_is_manual(self):
         base = 'manager:\n  image:\n    tag: ""\n'
         head = 'manager:\n  image:\n    tag: "4.0.0"\n'
-        self.assertManual(self.run_case(chart=(CHART_BASE, CHART_BASE), values=(base, head)), "major")
+        chart_head = CHART_HEAD.replace('"3.5.0"', '"4.0.0"')
+        self.assertManual(self.run_case(chart=(CHART_BASE, chart_head), values=(base, head)), "major")
 
     def test_empty_tag_pinned_to_an_older_version_is_manual(self):
         base = 'manager:\n  image:\n    tag: ""\n'
         head = 'manager:\n  image:\n    tag: "3.3.0"\n'
-        self.assertManual(self.run_case(chart=(CHART_BASE, CHART_BASE), values=(base, head)), "not an upgrade")
+        chart_head = CHART_HEAD.replace('"3.5.0"', '"3.3.0"')
+        self.assertManual(self.run_case(chart=(CHART_BASE, chart_head), values=(base, head)), "not an upgrade")
+
+    # An empty tag that follows something other than appVersion (caradhras migrations).
+    def test_empty_tag_pinned_to_other_than_app_version_is_manual(self):
+        base = 'caradhras:\n  migrations:\n    image:\n      tag: ""\n'
+        head = 'caradhras:\n  migrations:\n    image:\n      tag: "3.5.1"\n'
+        self.assertManual(self.run_case(values=(base, head)), "not the new appVersion")
 
     def test_downgrade_is_manual(self):
         self.assertManual(self.run_case(values=(VALUES_HEAD, VALUES_BASE), chart=(CHART_HEAD, CHART_BASE)), "not an upgrade")

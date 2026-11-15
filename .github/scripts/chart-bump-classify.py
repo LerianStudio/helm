@@ -145,7 +145,15 @@ def check_values_yaml(base_text, head_text, base_app, head_app):
         dotted = ".".join(path)
         if path[-2:] != ("image", "tag"):
             raise NotRoutine(f"values.yaml changes {dotted}, which is not an image tag")
-        old = base[path] if base[path] not in ("", None) else base_app
+        # Not every template defaults an empty tag to appVersion (plugin-access-manager's
+        # caradhras migrations follow the caradhras tag), so '' is only read as appVersion when
+        # the bot pins it to exactly the new appVersion, which is what the bot does.
+        if base[path] in ("", None):
+            if str(head[path]) != str(head_app):
+                raise NotRoutine(f"values.yaml {dotted}: '' -> {head[path]!r} is not the new appVersion {head_app!r}")
+            old = base_app
+        else:
+            old = base[path]
         new = head[path] if head[path] not in ("", None) else head_app
         if old == new:
             continue

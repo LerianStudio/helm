@@ -1,5 +1,17 @@
 # Br-sta Changelog
 
+## [1.0.9](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.9)
+
+Fixes:
+- Update `br-sta-manager` to `1.4.1`. (@lerian-studio)
+- Update `br-sta-worker` to `1.4.1`. (@lerian-studio)
+- Update `br-sta-migrations` to `1.4.1`. (@lerian-studio)
+- Update `mock-sta-server` to `1.4.1`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/br-sta-v1.0.8...br-sta-v1.0.9)
+
+---
+
 ## [1.0.8](https://github.com/LerianStudio/helm/releases/tag/br-sta-v1.0.8)
 
 Fixes:

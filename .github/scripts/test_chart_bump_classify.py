@@ -98,17 +98,23 @@ class Classify(unittest.TestCase):
         head = 'manager:\n  image:\n    tag: "3.5.0"\nworker:\n  image:\n    tag: "3.5.0"\n'
         self.assertRoutine(self.run_case(values=(base, head)))
 
+    # Only values.yaml is in the diff, so the verdict comes from the empty-tag path, not from
+    # Chart.yaml's appVersion check (the appVersions are still read for the '' resolution).
     def test_empty_tag_pinned_to_a_major_jump_is_manual(self):
         base = 'manager:\n  image:\n    tag: ""\n'
         head = 'manager:\n  image:\n    tag: "4.0.0"\n'
         chart_head = CHART_HEAD.replace('"3.5.0"', '"4.0.0"')
-        self.assertManual(self.run_case(chart=(CHART_BASE, chart_head), values=(base, head)), "major")
+        result = self.run_case(files=[{"filename": VALUES, "status": "modified"}], chart=(CHART_BASE, chart_head), values=(base, head))
+        self.assertManual(result, "values.yaml manager.image.tag")
+        self.assertIn("major", result[1])
 
     def test_empty_tag_pinned_to_an_older_version_is_manual(self):
         base = 'manager:\n  image:\n    tag: ""\n'
         head = 'manager:\n  image:\n    tag: "3.3.0"\n'
         chart_head = CHART_HEAD.replace('"3.5.0"', '"3.3.0"')
-        self.assertManual(self.run_case(chart=(CHART_BASE, chart_head), values=(base, head)), "not an upgrade")
+        result = self.run_case(files=[{"filename": VALUES, "status": "modified"}], chart=(CHART_BASE, chart_head), values=(base, head))
+        self.assertManual(result, "values.yaml manager.image.tag")
+        self.assertIn("not an upgrade", result[1])
 
     # An empty tag that follows something other than appVersion (caradhras migrations).
     def test_empty_tag_pinned_to_other_than_app_version_is_manual(self):

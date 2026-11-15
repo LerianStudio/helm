@@ -225,6 +225,12 @@ jobs:
             echo "Checks are ${verdict} on the fresh read; a later completion decides"
             exit 0
           fi
+          # The sweep or a human may have sent it to review since the ready step read the labels.
+          if GH_TOKEN="$CHECKS_TOKEN" gh pr view "$PR_NUMBER" --repo "$REPO" --json labels \
+              --jq '.labels[].name' | grep -qx "$REVIEW_LABEL"; then
+            echo "Pull request now carries ${REVIEW_LABEL}; leaving it to a human"
+            exit 0
+          fi
           # The subject keeps the repository's default (PR title and number), which semantic-release reads.
           gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --admin --match-head-commit "$HEAD_SHA" --body "$MERGE_MARKER"
 
@@ -267,7 +273,7 @@ jobs:
         run: |
           set -euo pipefail
           cutoff=$(date -u -d "-${STALE_MINUTES} minutes" +%Y-%m-%dT%H:%M:%SZ)
-          candidates=$(gh api "repos/${REPO}/pulls?state=open&base=main&per_page=100" | jq -r \
+          candidates=$(gh api --paginate "repos/${REPO}/pulls?state=open&base=main&per_page=100" | jq -r \
             --arg bot "$BOT_LOGIN" --arg label "$TICKET_LABEL" \
             '.[] | select(.user.login == $bot and (.head.ref | startswith("update/")))
                  | select(any(.labels[]; .name == $label) | not)

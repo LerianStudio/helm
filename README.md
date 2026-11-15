@@ -288,7 +288,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Manager Version | Worker Version | Migrations Version |
 | :---: | :---: | :---: | :---: |
-| `1.0.7` | 1.3.0 | 1.3.0 | 1.3.0 |
+| `1.0.8` | 1.4.0 | 1.4.0 | 1.4.0 |
 -----------------
 
 ### Agent

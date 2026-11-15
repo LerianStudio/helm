@@ -12,7 +12,8 @@ closed: every condition below must hold, and an unexpected shape is not routine.
     - every commit is the CI user's, signed and verified, so nobody pushed on top;
     - only charts/<chart>/Chart.yaml and charts/<chart>/values.yaml are modified;
     - Chart.yaml differs only in appVersion and description;
-    - values.yaml differs only in leaves whose path ends in image.tag, none added or removed;
+    - values.yaml differs only in leaves whose path ends in image.tag, none added or removed
+      (an empty tag stands for the chart's appVersion);
     - every changed version is a plain X.Y.Z, strictly higher and on the same major.
       A downgrade or a major bump goes to a human.
 
@@ -130,7 +131,9 @@ def check_chart_yaml(base_text, head_text):
     return changes
 
 
-def check_values_yaml(base_text, head_text):
+def check_values_yaml(base_text, head_text, base_app, head_app):
+    """base_app/head_app are the Chart.yaml appVersions: an empty image.tag means "use
+    appVersion", so the bot pinning '' to the new appVersion is compared as that upgrade."""
     base, head = leaves(yaml.safe_load(base_text) or {}), leaves(yaml.safe_load(head_text) or {})
     if set(base) != set(head):
         diff = sorted(".".join(p) for p in set(base) ^ set(head))
@@ -142,25 +145,33 @@ def check_values_yaml(base_text, head_text):
         dotted = ".".join(path)
         if path[-2:] != ("image", "tag"):
             raise NotRoutine(f"values.yaml changes {dotted}, which is not an image tag")
-        check_version(f"values.yaml {dotted}", base[path], head[path])
+        old = base[path] if base[path] not in ("", None) else base_app
+        new = head[path] if head[path] not in ("", None) else head_app
+        if old == new:
+            continue
+        check_version(f"values.yaml {dotted}", old, new)
         changes += 1
     return changes
 
 
 def classify(pr, files, commits, contents):
-    """contents maps (path, "base"|"head") to the file text. Returns (routine, reason, chart)."""
+    """contents maps (path, "base"|"head") to the file text, and always holds the chart's
+    Chart.yaml, changed or not. Returns (routine, reason, chart)."""
     chart = ""
     try:
         check_metadata(pr)
         check_commits(commits)
         chart = check_files(files)
+        chart_yaml = f"charts/{chart}/Chart.yaml"
+        base_app = (yaml.safe_load(contents[(chart_yaml, "base")]) or {}).get("appVersion")
+        head_app = (yaml.safe_load(contents[(chart_yaml, "head")]) or {}).get("appVersion")
         changes = 0
         for f in files:
             base, head = contents[(f["filename"], "base")], contents[(f["filename"], "head")]
             if f["filename"].endswith("/Chart.yaml"):
                 changes += check_chart_yaml(base, head)
             else:
-                changes += check_values_yaml(base, head)
+                changes += check_values_yaml(base, head, base_app, head_app)
         if changes == 0:
             raise NotRoutine("no version changed")
     except NotRoutine as e:
@@ -192,11 +203,13 @@ def main():
         for page in json.loads(gh_api(f"repos/{repo}/pulls/{number}/commits", paginate=True))
         for c in page
     ]
+    paths = {f["filename"] for f in files if f["status"] == "modified" and CHART_FILE.match(f["filename"])}
+    # The chart's Chart.yaml is read even when unchanged: its appVersion resolves empty image tags.
+    paths |= {f"charts/{CHART_FILE.match(path).group(1)}/Chart.yaml" for path in paths}
     contents = {}
-    for f in files:
-        if f["status"] == "modified" and CHART_FILE.match(f["filename"]):
-            for side, sha in (("base", p["base"]["sha"]), ("head", p["head"]["sha"])):
-                contents[(f["filename"], side)] = gh_api(f"repos/{repo}/contents/{f['filename']}?ref={sha}", raw=True)
+    for path in paths:
+        for side, sha in (("base", p["base"]["sha"]), ("head", p["head"]["sha"])):
+            contents[(path, side)] = gh_api(f"repos/{repo}/contents/{path}?ref={sha}", raw=True)
 
     routine, reason, chart = classify(pr, files, commits, contents)
     print(f"routine={routine}: {reason}")

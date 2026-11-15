@@ -92,6 +92,22 @@ class Classify(unittest.TestCase):
     def test_values_only_bump_is_routine(self):
         self.assertRoutine(self.run_case(files=[{"filename": VALUES, "status": "modified"}]))
 
+    # The shape of #3224: an empty tag (appVersion) pinned to the new appVersion.
+    def test_empty_tag_pinned_to_new_app_version_is_routine(self):
+        base = 'manager:\n  image:\n    tag: ""\nworker:\n  image:\n    tag: ""\n'
+        head = 'manager:\n  image:\n    tag: "3.5.0"\nworker:\n  image:\n    tag: "3.5.0"\n'
+        self.assertRoutine(self.run_case(values=(base, head)))
+
+    def test_empty_tag_pinned_to_a_major_jump_is_manual(self):
+        base = 'manager:\n  image:\n    tag: ""\n'
+        head = 'manager:\n  image:\n    tag: "4.0.0"\n'
+        self.assertManual(self.run_case(chart=(CHART_BASE, CHART_BASE), values=(base, head)), "major")
+
+    def test_empty_tag_pinned_to_an_older_version_is_manual(self):
+        base = 'manager:\n  image:\n    tag: ""\n'
+        head = 'manager:\n  image:\n    tag: "3.3.0"\n'
+        self.assertManual(self.run_case(chart=(CHART_BASE, CHART_BASE), values=(base, head)), "not an upgrade")
+
     def test_downgrade_is_manual(self):
         self.assertManual(self.run_case(values=(VALUES_HEAD, VALUES_BASE), chart=(CHART_HEAD, CHART_BASE)), "not an upgrade")
 

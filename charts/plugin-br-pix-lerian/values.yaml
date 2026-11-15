@@ -31,11 +31,9 @@
 # Override the chart name in resource names
 nameOverride: ""
 fullnameOverride: ""
-
 # Override the namespace where resources are created. Defaults to
 # .Release.Namespace (the -n flag passed to helm install).
 namespaceOverride: ""
-
 # =============================================================================
 # GLOBAL DEFAULTS — applied to all components unless overridden in their block
 # =============================================================================
@@ -43,7 +41,6 @@ global:
   # -- Image pull secrets propagated to every component when the component's
   # own `imagePullSecrets` list is empty.
   imagePullSecrets: []
-
   # ---------------------------------------------------------------------------
   # Shared dependency-connection contracts (lerian-common masks read these).
   # A component's own configmap.<KEY> wins; a per-component dedicated block
@@ -85,7 +82,6 @@ global:
   #    serviceDiscovery: { enabled: true, address: "consul-server.consul:8500",
   #      tls: false, tlsSkipVerify: false, workload: "my-env" }
   serviceDiscovery: {}
-
   # ---------------------------------------------------------------------------
   # External PostgreSQL bootstrap
   # ---------------------------------------------------------------------------
@@ -129,16 +125,15 @@ global:
     # -- Postgres admin credentials (used to create role+databases)
     postgresAdminLogin:
       useExistingSecret:
-        name: ""   # PRODUCTION: set this, leave password empty
+        name: "" # PRODUCTION: set this, leave password empty
       username: "postgres"
-      password: ""   # required when useExistingSecret.name is empty
+      password: "" # required when useExistingSecret.name is empty
     # -- Application credentials for the role created by the bootstrap Job
     pixLerianCredentials:
       useExistingSecret:
-        name: ""   # PRODUCTION: set this, leave password empty
+        name: "" # PRODUCTION: set this, leave password empty
       username: "pixswitch"
       password: ""
-
 # Port allocation: 4111 and 4112 are intentionally unused. Allocate new
 # components from 4118 upward rather than filling the gap.
 # =============================================================================
@@ -156,23 +151,19 @@ spi:
   description: "PIX SPI (Single Person Interface)"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     # Defaults to the per-component image published from
     # apps/<path>/Dockerfile by the plugin-br-pix-lerian build pipeline.
     # Override only when pinning to a different registry or fork.
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-spi-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -185,24 +176,20 @@ spi:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: true
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4101
-
   resources:
     limits:
       cpu: 500m
@@ -210,30 +197,25 @@ spi:
     requests:
       cpu: 100m
       memory: 128Mi
-
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
-
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
   # HEALTH_PORT / SHUTDOWN_* keys set here.
   health:
     stack: go
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- Dedicated datastore connections for this component (override
   #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
   #    redis: {host,port,user,db,tls}.
@@ -265,9 +247,7 @@ spi:
     SYSTEMPLANE_POSTGRES_DSN: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image; the chart renders a Job
@@ -279,31 +259,25 @@ spi:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
-
 # -----------------------------------------------------------------------------
 # spi/systemplane/api — runtime config plane for SPI
 # -----------------------------------------------------------------------------
-
 spiSystemplane:
   enabled: true
   name: "spi-systemplane"
   description: "Runtime config plane for SPI"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-spi-systemplane-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -316,33 +290,27 @@ spiSystemplane:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: false
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4102
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 1
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -352,12 +320,10 @@ spiSystemplane:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/spi-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
@@ -380,32 +346,26 @@ spiSystemplane:
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 # -----------------------------------------------------------------------------
 # adapter-provider-mock/api — BTG provider mock (DO NOT enable in production)
 # -----------------------------------------------------------------------------
 adapterProviderMock:
-  enabled: false   # safety default — explicitly enable in dev/staging values
+  enabled: false # safety default — explicitly enable in dev/staging values
   name: "adapter-provider-mock"
   description: "BTG provider mock"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-adapter-provider-mock-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -418,36 +378,29 @@ adapterProviderMock:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: false
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4103
-
   ingress:
     enabled: false
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 1
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -457,12 +410,10 @@ adapterProviderMock:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/adapter-provider-mock/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
@@ -479,9 +430,7 @@ adapterProviderMock:
     PROVIDER_CLIENT_SECRET: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 # -----------------------------------------------------------------------------
 # dict/hub/api — DICT hub (Postgres + Valkey)
 # -----------------------------------------------------------------------------
@@ -491,20 +440,16 @@ dictHub:
   description: "DICT hub (key directory operations)"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-dict-hub-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -517,33 +462,27 @@ dictHub:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: true
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4104
-
   resources:
-    limits: { cpu: 500m, memory: 512Mi }
-    requests: { cpu: 100m, memory: 128Mi }
-
+    limits: {cpu: 500m, memory: 512Mi}
+    requests: {cpu: 100m, memory: 128Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -553,12 +492,10 @@ dictHub:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- Dedicated datastore connections for this component (override
   #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
   #    redis: {host,port,user,db,tls}.
@@ -587,9 +524,7 @@ dictHub:
     SYSTEMPLANE_POSTGRES_DSN: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image; the chart renders a Job
@@ -601,11 +536,9 @@ dictHub:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
-
 # -----------------------------------------------------------------------------
 # dict/hub/vsync — DICT verification sync worker (background, no ingress)
 # -----------------------------------------------------------------------------
-
 dictHubVsync:
   # -- Ships DISABLED. The worker is a RabbitMQ queue consumer and cannot do
   # anything without secrets.RABBITMQ_URI, which has no safe default; shipping
@@ -618,20 +551,16 @@ dictHubVsync:
   description: "DICT verification sync worker"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-dict-hub-vsync"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -644,33 +573,27 @@ dictHubVsync:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: false
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4105
-
   resources:
-    limits: { cpu: 500m, memory: 512Mi }
-    requests: { cpu: 100m, memory: 128Mi }
-
+    limits: {cpu: 500m, memory: 512Mi}
+    requests: {cpu: 100m, memory: 128Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
-    maxReplicas: 1   # vsync is a singleton worker
-
+    maxReplicas: 1 # vsync is a singleton worker
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099, 15 s drain,
   # 30 s shutdown, grace 55. Owned by the preset.
   health:
@@ -678,12 +601,10 @@ dictHubVsync:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- Dedicated datastore connections for this component (override
   #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
   #    redis: {host,port,user,db,tls}.
@@ -709,9 +630,7 @@ dictHubVsync:
     SYSTEMPLANE_POSTGRES_DSN: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 # -----------------------------------------------------------------------------
 # dict/proxy/api — DICT proxy to BCB (BaseConfig only)
 # -----------------------------------------------------------------------------
@@ -726,20 +645,16 @@ dictProxy:
   description: "DICT proxy to BCB"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-dict-proxy-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -752,33 +667,27 @@ dictProxy:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: true
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4106
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -788,12 +697,10 @@ dictProxy:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/dict-proxy/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
@@ -808,9 +715,7 @@ dictProxy:
     LICENSE_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 # -----------------------------------------------------------------------------
 # dict/systemplane/api — runtime config plane for DICT
 # -----------------------------------------------------------------------------
@@ -820,20 +725,16 @@ dictSystemplane:
   description: "Runtime config plane for DICT"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-dict-systemplane-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -846,33 +747,27 @@ dictSystemplane:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: false
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4107
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 1
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -882,12 +777,10 @@ dictSystemplane:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/dict-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
@@ -908,9 +801,7 @@ dictSystemplane:
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 # -----------------------------------------------------------------------------
 # cob/hub/api — COB hub (Postgres)
 # -----------------------------------------------------------------------------
@@ -920,20 +811,16 @@ cobHub:
   description: "COB hub (BR Code / charge operations)"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-cob-hub-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -946,33 +833,27 @@ cobHub:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: true
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4108
-
   resources:
-    limits: { cpu: 500m, memory: 512Mi }
-    requests: { cpu: 100m, memory: 128Mi }
-
+    limits: {cpu: 500m, memory: 512Mi}
+    requests: {cpu: 100m, memory: 128Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -982,12 +863,10 @@ cobHub:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- Dedicated datastore connections for this component (override
   #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
   #    redis: {host,port,user,db,tls}.
@@ -1014,9 +893,7 @@ cobHub:
     SYSTEMPLANE_POSTGRES_DSN: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image; the chart renders a Job
@@ -1028,11 +905,9 @@ cobHub:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
-
 # -----------------------------------------------------------------------------
 # cob/proxy/api — COB proxy to BCB (BaseConfig only)
 # -----------------------------------------------------------------------------
-
 cobProxy:
   # -- Ships DISABLED. The proxy tier is structural only in this release: it serves
   # health, readyz and an OpenAPI document with no operations, and answers 404 to
@@ -1044,20 +919,16 @@ cobProxy:
   description: "COB proxy to BCB"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-cob-proxy-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -1070,33 +941,27 @@ cobProxy:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: true
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4109
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -1106,12 +971,10 @@ cobProxy:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/cob-proxy/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
@@ -1126,9 +989,7 @@ cobProxy:
     LICENSE_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 # -----------------------------------------------------------------------------
 # cob/systemplane/api — runtime config plane for COB
 # -----------------------------------------------------------------------------
@@ -1138,20 +999,16 @@ cobSystemplane:
   description: "Runtime config plane for COB"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-cob-systemplane-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -1164,33 +1021,27 @@ cobSystemplane:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: false
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4110
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 1
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -1200,12 +1051,10 @@ cobSystemplane:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/cob-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
@@ -1225,9 +1074,7 @@ cobSystemplane:
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 # =============================================================================
 # OPTIONAL DEPENDENCIES (subcharts) — all disabled by default
 #
@@ -1294,7 +1141,6 @@ cobSystemplane:
 # NO path rewriting is performed at the ingress — apps own their /<component>
 # path namespace (e.g. SPI's router registers /spi/health, /spi/keys/lookup).
 # =============================================================================
-
 appsIngress:
   enabled: false
   className: "nginx"
@@ -1366,30 +1212,25 @@ appsIngress:
       pathType: Exact
       component: pixauto
       serviceName: pixauto
-
 # -----------------------------------------------------------------------------
 # adapter-lerian (api) — Lerian provider adapter HTTP entry (br-sfn)
 # -----------------------------------------------------------------------------
 adapterLerian:
-  enabled: false   # safety default — explicitly enable in dev/staging values
+  enabled: false # safety default — explicitly enable in dev/staging values
   name: "adapter-lerian"
   description: "Lerian provider adapter (API)"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-adapter-lerian-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -1402,36 +1243,29 @@ adapterLerian:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: false
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4113
-
   ingress:
     enabled: false
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 1
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -1441,12 +1275,10 @@ adapterLerian:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- Dedicated datastore connections for this component (override
   #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
   #    redis: {host,port,user,db,tls}.
@@ -1470,9 +1302,7 @@ adapterLerian:
     SYSTEMPLANE_POSTGRES_DSN: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
   # Runs as a Helm hook on pre-install + pre-upgrade.
@@ -1481,30 +1311,25 @@ adapterLerian:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
-
 # -----------------------------------------------------------------------------
 # adapter-lerian (systemplane) — runtime config plane for adapter-lerian
 # -----------------------------------------------------------------------------
 adapterLerianSystemplane:
-  enabled: false   # safety default — explicitly enable in dev/staging values
+  enabled: false # safety default — explicitly enable in dev/staging values
   name: "adapter-lerian-systemplane"
   description: "Runtime config plane for adapter-lerian"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-adapter-lerian-systemplane-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -1517,33 +1342,27 @@ adapterLerianSystemplane:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: false
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4115
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 1
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -1553,12 +1372,10 @@ adapterLerianSystemplane:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/adapter-lerian-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
@@ -1581,9 +1398,7 @@ adapterLerianSystemplane:
     WEBHOOK_INGRESS_SECRET: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 # -----------------------------------------------------------------------------
 # pixauto/api — Pix Automático payer side (recurrence authorization)
 #
@@ -1602,20 +1417,16 @@ pixauto:
   description: "Pix Automático payer API"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-pixauto-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -1628,24 +1439,20 @@ pixauto:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: true
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4116
-
   resources:
     limits:
       cpu: 500m
@@ -1653,30 +1460,25 @@ pixauto:
     requests:
       cpu: 100m
       memory: 128Mi
-
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 80
     targetMemoryUtilizationPercentage: 80
-
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
   # HEALTH_PORT / SHUTDOWN_* keys set here.
   health:
     stack: go
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- Dedicated datastore connections for this component (override
   #    global.datastores.*). postgres: {host,user,name,port,ssl,replica*};
   #    redis: {host,port,user,db,tls}.
@@ -1711,9 +1513,7 @@ pixauto:
     SYSTEMPLANE_POSTGRES_DSN: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
   # -- golang-migrate Job that applies SQL migrations from the component's
   # /migrations directory against the database referenced by DATABASE_URL.
   # The migrate binary ships in the same image; the chart renders a Job with
@@ -1727,7 +1527,6 @@ pixauto:
     migrationsPath: /migrations
     ttlSecondsAfterFinished: 300
     backoffLimit: 3
-
 # -----------------------------------------------------------------------------
 # pixauto/systemplane/api — runtime config plane for Pix Automático
 #
@@ -1744,20 +1543,16 @@ pixautoSystemplane:
   description: "Runtime config plane for Pix Automático"
   replicaCount: 1
   revisionHistoryLimit: 10
-
   image:
     repository: "ghcr.io/lerianstudio/plugin-br-pix-lerian-pixauto-systemplane-api"
     pullPolicy: ""
-    tag: ""
-
+    tag: "1.4.0"
   imagePullSecrets: []
-
   # -- Override container entrypoint (e.g., to dispatch to a specific binary
   # inside a multi-binary image). When empty, the image's ENTRYPOINT is used.
   command: []
   # -- Container args
   args: []
-
   podAnnotations: {}
   podSecurityContext: {}
   securityContext:
@@ -1770,33 +1565,27 @@ pixautoSystemplane:
     allowPrivilegeEscalation: false
     seccompProfile:
       type: RuntimeDefault
-
   pdb:
     enabled: false
     # Set EXACTLY ONE of minAvailable / maxUnavailable (0 is honoured; an
     # explicit null unsets a key). Setting both fails the render.
     # minAvailable: 1
     maxUnavailable: 1
-
   deploymentStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-
   service:
     type: ClusterIP
     port: 4117
-
   resources:
-    limits: { cpu: 200m, memory: 256Mi }
-    requests: { cpu: 50m, memory: 64Mi }
-
+    limits: {cpu: 200m, memory: 256Mi}
+    requests: {cpu: 50m, memory: 64Mi}
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 1
-
   # -- Health preset (lerian-common.health): probes on HEALTH_PORT 8099 (/health,
   # /readyz), drain 15s, shutdown 30s, grace 55s. Owned by the preset; the render
   # refuses livenessProbe, readinessProbe, terminationGracePeriodSeconds and
@@ -1806,12 +1595,10 @@ pixautoSystemplane:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   serviceAccount:
     create: true
     annotations: {}
     name: ""
-
   # -- App configuration. PRODUCTIZED: every default now lives in
   #    templates/pixauto-systemplane/configmap.yaml as `$cm.<KEY> | default "<value>"`.
   #    Set a KEY here ONLY to override a default; un-enumerated keys pass
@@ -1830,9 +1617,7 @@ pixautoSystemplane:
     SYSTEMPLANE_SECRET_MASTER_KEY: ""
   useExistingSecret: false
   existingSecretName: ""
-
   extraEnvVars: {}
-
 systemplaneIngress:
   enabled: false
   className: "nginx"
@@ -1860,7 +1645,6 @@ systemplaneIngress:
       pathType: Prefix
       component: adapterLerianSystemplane
       serviceName: adapter-lerian-systemplane
-
 # -----------------------------------------------------------------------------
 # Providers Ingress — outbound-provider adapters (provider mock, BACEN, JD, ...).
 #
@@ -1889,17 +1673,16 @@ providersIngress:
       pathType: Prefix
       component: adapterLerian
       serviceName: adapter-lerian
-    # Reserved for future components — uncomment when the bacen/jd
-    # adapter components ship in the chart:
-    # - path: /bacen
-    #   pathType: Prefix
-    #   component: bacenAdapter
-    #   serviceName: bacen-adapter
-    # - path: /jd
-    #   pathType: Prefix
-    #   component: jdAdapter
-    #   serviceName: jd-adapter
-
+      # Reserved for future components — uncomment when the bacen/jd
+      # adapter components ship in the chart:
+      # - path: /bacen
+      #   pathType: Prefix
+      #   component: bacenAdapter
+      #   serviceName: bacen-adapter
+      # - path: /jd
+      #   pathType: Prefix
+      #   component: jdAdapter
+      #   serviceName: jd-adapter
 postgresql:
   enabled: false
   global:
@@ -1917,7 +1700,6 @@ postgresql:
     username: "pixswitch"
     password: ""
     database: "postgres"
-
 # Valkey (Bitnami chart, OCI registry)
 # Used by spi, dict-hub, dict-hub-vsync, cob-hub, pixauto and adapter-lerian
 # through the discrete REDIS_* keys (optional — caching; required by
@@ -1937,7 +1719,6 @@ valkey:
   auth:
     enabled: true
     password: ""
-
 # RabbitMQ (groundhog2k chart — same as plugin-br-bank-transfer / matcher)
 # Used only by dict-hub-vsync for RABBITMQ_URI.
 # Chosen path: EXTERNAL broker with a CA-signed TLS cert (trusted by the system
@@ -1975,10 +1756,9 @@ rabbitmq:
     password:
       value: ""
     erlangCookie:
-      value: ""                  # MUST be set when enabled=true
-                                 # (groundhog2k chart requires it; generate
-                                 #  with `openssl rand -base64 32`)
-
+      value: "" # MUST be set when enabled=true
+      # (groundhog2k chart requires it; generate
+      #  with `openssl rand -base64 32`)
 # OpenTelemetry Collector (Lerian)
 # Optional in-cluster collector. Disabled by default — set per-component
 # OTEL_EXPORTER_OTLP_ENDPOINT to an external collector for production.

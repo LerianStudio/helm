@@ -1,72 +1,97 @@
 # Helm Upgrade from v11.1.0 to v11.1.1
 
-## Topics
+## Release scope and effective images
 
-- **[Fixes](#fixes)**
-  - [1. Application version bump to 4.4.3](#1-application-version-bump-to-443)
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+Chart 11.1.1 updates application 4.4.2 to 4.4.3. The default ledger/tracer and
+migration images advance to 4.4.3. The chart templates and configuration schema
+are unchanged; application behavior is not necessarily unchanged.
 
-## Fixes
+Existing image overrides can retain older versions. Check `ledger.image.tag`,
+`tracer.image.tag` and the consumed migration overrides
+`ledger.migrations.image.tag` and `tracer.migrations.image.tag`. Migration Jobs
+fall back through their component image tag and appVersion when their own tag is
+empty; do not confuse generated root-level migration image keys with those
+consumed overrides. Select a compatible complete image set deliberately.
 
-### 1. Application version bump to 4.4.3
+Default image/version changes update enabled workload pod templates. The chart
+excludes `helm.sh/chart` from pod labels, so a chart label alone does not guarantee
+a restart. A retained image pin may prevent the advertised application update.
+Do not promise an exact restart count or zero downtime; check the actual replica
+count, update strategy and readiness behavior. Tracer is disabled by default.
 
-This release updates the Midaz application images from `4.4.2` to `4.4.3` for the `ledger`, `tracer`, and their respective migration runners. The chart version increments from `11.1.0` to `11.1.1`. No configuration schema, template logic, or default values change beyond the image tags.
+## Cross-ledger holds: rollout and rollback boundary
 
-#### What changed
+Application 4.4.3 fixes holds whose receiving-ledger destination part also has a
+client account as a source. Such held-payer groups persist `formatVersion: 2`.
+Groups already stored with `formatVersion: 1` retain their earlier behavior.
 
-| Setting | v11.1.0 | v11.1.1 |
-|---------|---------|---------|
-| `appVersion` | `4.4.2` | `4.4.3` |
-| `ledger.image.tag` | `4.4.2` | `4.4.3` |
-| `tracer.image.tag` | `4.4.2` | `4.4.3` |
-| `midaz-ledger-migrations.image.tag` | `4.4.2` | `4.4.3` |
-| `midaz-tracer-migrations.image.tag` | `4.4.2` | `4.4.3` |
+An older pod refuses commit/cancel of a version-2 group without moving balances;
+its reconciler leaves that unreadable group untouched. During a mixed-version
+rolling deployment, retry that refusal after a new-version pod can serve the
+request, following the application's lifecycle/idempotency contract. Do not
+blindly replay an operation with an uncertain result.
 
-The `4.4.3` application version is a patch release that includes bug fixes and stability improvements. No new features, environment variables, or configuration flags are introduced.
+**Do not roll back to 4.4.2 while a version-2 group is still pending.** Older pods
+cannot commit or cancel it. Establish a supported pending-group drain/recovery
+procedure before rollout and verify that condition before considering rollback.
+Unchanged SQL migration files do not imply unrestricted application rollback.
 
-#### Operational impact
+## Prerequisites and migration execution
 
-- **Image pull**: Kubernetes pulls the `4.4.3` images for `midaz-ledger`, `midaz-tracer`, `midaz-ledger-migrations`, and `midaz-tracer-migrations` containers. Ensure your cluster has network access to the image registry and sufficient pull quota.
-- **Rolling restart**: The chart version is part of the `helm.sh/chart` label in the pod templates. All `ledger` and `tracer` pods roll once to pick up the new image tag and chart label.
-- **Migration Jobs**: The `midaz-ledger-migrations` Job runs as a `pre-upgrade` hook on every upgrade, including this one. The `midaz-tracer-migrations` Job also runs if `tracer.enabled` is `true`. Both Jobs use the `4.4.3` migration image.
-- **Downtime**: Rolling updates proceed according to your `strategy`, `maxUnavailable`, and `maxSurge` settings. The default `RollingUpdate` strategy ensures at least one replica remains available during the upgrade if `replicaCount` is greater than 1.
-- **Compatibility**: The `4.4.3` application version is backward-compatible with the database schema applied by `4.4.2` migrations. No schema changes are introduced in this patch release.
+- Take consistent private backups of the database state, configuration and
+  credential references, and establish a tested coordinated restore procedure.
+  Preserve external datastore/storage endpoints and unrelated settings. Do not
+  commit live credentials or expose backup contents in diagnostics.
+- Review effective image pins and supported application/database compatibility.
+  If changing pins, prepare `complete-intended-values.yaml` with the complete
+  intended configuration. Both commands below use `--reset-values`; settings
+  missing from a partial file are discarded. Preserve unrelated overrides and
+  Secret references explicitly.
+- The ledger migration hook requires ledger and its migrations to be enabled;
+  tracer additionally requires tracer and its migrations to be enabled. Confirm
+  the actual rendered conditions rather than assuming every Job always runs.
+- Migration hooks use `before-hook-creation,hook-succeeded` deletion policy.
+  Successful Jobs are normally deleted. Observe/capture their execution results
+  privately while upgrading; an empty post-upgrade Job list is not proof of
+  failure or success. Helm rollback does not undo database changes or restore data.
 
-#### Action required
+## Preview and upgrade
 
-No action required. The upgrade applies automatically when you run `helm upgrade`.
-
-#### Verification after upgrade
-
-Check that the new image tags are running:
-
-```bash
-kubectl get deployment -n midaz -l app.kubernetes.io/name=midaz-ledger -o jsonpath='{.items[0].spec.template.spec.containers[0].image}'
-kubectl get deployment -n midaz -l app.kubernetes.io/name=midaz-tracer -o jsonpath='{.items[0].spec.template.spec.containers[0].image}'
-```
-
-Both commands should return an image reference ending in `:4.4.3`.
-
-Verify that the migration Jobs completed successfully:
-
-```bash
-kubectl get job -n midaz -l app.kubernetes.io/name=midaz-ledger-migrations -o jsonpath='{.items[0].status.succeeded}'
-kubectl get job -n midaz -l app.kubernetes.io/name=midaz-tracer-migrations -o jsonpath='{.items[0].status.succeeded}'
-```
-
-Each command should return `1` if the Job succeeded. The `tracer-migrations` command returns a result only when `tracer.enabled` is `true`.
-
-## Preview changes before upgrading
-
-```bash
-helm diff upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.1.1
-```
-
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
-
-## Command to upgrade
+Use your actual release name and namespace and the same complete intended values
+file throughout. Inspect images, enabled workloads, migration hooks, PVCs/mounts
+and Secret references before applying. A render does not exercise an upgrade,
+migration, live workload availability or restore.
 
 ```bash
-helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm -n midaz --version 11.1.1
+helm diff upgrade midaz oci://ghcr.io/lerianstudio/midaz-helm \
+  -n midaz --version 11.1.1 --reset-values -f complete-intended-values.yaml
 ```
+
+This requires the [helm-diff plugin](https://github.com/databus23/helm-diff).
+After the preview and prerequisites have been checked:
+
+```bash
+helm upgrade midaz oci://ghcr.io/lerianstudio/midaz-helm \
+  -n midaz --version 11.1.1 --reset-values -f complete-intended-values.yaml
+```
+
+## Verify and recover
+
+Inspect all deployments for the intended release rather than assuming the first
+matching item belongs to it:
+
+```bash
+kubectl get deployments -n midaz -l app.kubernetes.io/instance=midaz \
+  -o custom-columns='NAME:.metadata.name,IMAGES:.spec.template.spec.containers[*].image,READY:.status.readyReplicas'
+```
+
+Verify effective image tags, enabled-workload rollout/readiness, the retained
+migration execution evidence and relevant ledger operations. Check tracer only
+when it is enabled. Expect 4.4.3 only for components intentionally advanced to
+that version; retained pins must be assessed explicitly.
+
+On a failure, stop rollout and inspect pending held-payer groups before deciding
+recovery. Do not roll back while version-2 groups remain pending. Coordinate a
+compatible application/data/configuration recovery using the tested procedure;
+Helm rollback alone neither restores data nor resolves an incompatible pending
+intent. No live upgrade, migration execution, rollback or restore test is claimed.

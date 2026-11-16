@@ -87,6 +87,9 @@ data:
   MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "MULTI_TENANT_CIRCUIT_BREAKER_TIMEOUT_SEC" "default" "30") | quote }}
   MULTI_TENANT_MAX_TENANT_POOLS: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "MULTI_TENANT_MAX_TENANT_POOLS" "default" "100") | quote }}
   MULTI_TENANT_CREDENTIAL_SOURCE: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "MULTI_TENANT_CREDENTIAL_SOURCE" "default" "vault") | quote }}
+  {{- if hasKey $cm "MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE" }}
+  MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE: {{ index $cm "MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE" | quote }}
+  {{- end }}
   {{- if hasKey $cm "MULTI_TENANT_DISCOVERY_INTERVAL_SEC" }}
   MULTI_TENANT_DISCOVERY_INTERVAL_SEC: {{ index $cm "MULTI_TENANT_DISCOVERY_INTERVAL_SEC" | quote }}
   {{- end }}
@@ -129,6 +132,71 @@ data:
   MIGRATION_LOCK_TIMEOUT_MS: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "MIGRATION_LOCK_TIMEOUT_MS" "default" "10000") | quote }}
   DB_METRICS_INTERVAL_SEC: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "DB_METRICS_INTERVAL_SEC" "default" "15") | quote }}
   IDEMPOTENCY_RECORD_TTL_HOURS: {{ include "plugin-br-payments.cfg" (dict "root" $ "key" "IDEMPOTENCY_RECORD_TTL_HOURS" "default" "48") | quote }}
+  # ====================================================================
+  # COLLECTIONS (Gestão de Cobrança, its own database)
+  # ====================================================================
+  {{- /* The module ships off: with neither MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE
+     nor COLLECTIONS_POSTGRES_HOST set, the app reads none of these. No chart
+     defaults: each key renders only when set, so the app defaults and bounds
+     apply. The password, PCR client credentials and cursor HMAC key live in the
+     Secret. */}}
+  {{- if hasKey $cm "COLLECTIONS_POSTGRES_HOST" }}
+  COLLECTIONS_POSTGRES_HOST: {{ index $cm "COLLECTIONS_POSTGRES_HOST" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_POSTGRES_PORT" }}
+  COLLECTIONS_POSTGRES_PORT: {{ index $cm "COLLECTIONS_POSTGRES_PORT" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_POSTGRES_USER" }}
+  COLLECTIONS_POSTGRES_USER: {{ index $cm "COLLECTIONS_POSTGRES_USER" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_POSTGRES_DB" }}
+  COLLECTIONS_POSTGRES_DB: {{ index $cm "COLLECTIONS_POSTGRES_DB" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_POSTGRES_SSLMODE" }}
+  COLLECTIONS_POSTGRES_SSLMODE: {{ index $cm "COLLECTIONS_POSTGRES_SSLMODE" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_POSTGRES_MAX_OPEN_CONNS" }}
+  COLLECTIONS_POSTGRES_MAX_OPEN_CONNS: {{ index $cm "COLLECTIONS_POSTGRES_MAX_OPEN_CONNS" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_POSTGRES_MAX_IDLE_CONNS" }}
+  COLLECTIONS_POSTGRES_MAX_IDLE_CONNS: {{ index $cm "COLLECTIONS_POSTGRES_MAX_IDLE_CONNS" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_COMMAND_RESEND_INTERVAL_SEC" }}
+  COLLECTIONS_COMMAND_RESEND_INTERVAL_SEC: {{ index $cm "COLLECTIONS_COMMAND_RESEND_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_COMMAND_PROCESSING_TIMEOUT_SEC" }}
+  COLLECTIONS_COMMAND_PROCESSING_TIMEOUT_SEC: {{ index $cm "COLLECTIONS_COMMAND_PROCESSING_TIMEOUT_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY" }}
+  COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY: {{ index $cm "COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_SUBSCRIPTION_CHECK_INTERVAL_SEC" }}
+  COLLECTIONS_SUBSCRIPTION_CHECK_INTERVAL_SEC: {{ index $cm "COLLECTIONS_SUBSCRIPTION_CHECK_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_NOTICE_APPLY_INTERVAL_SEC" }}
+  COLLECTIONS_NOTICE_APPLY_INTERVAL_SEC: {{ index $cm "COLLECTIONS_NOTICE_APPLY_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_BENEFICIARY_POLL_INTERVAL_SEC" }}
+  COLLECTIONS_BENEFICIARY_POLL_INTERVAL_SEC: {{ index $cm "COLLECTIONS_BENEFICIARY_POLL_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_AGREEMENT_BRANCH_SWEEP_INTERVAL_SEC" }}
+  COLLECTIONS_AGREEMENT_BRANCH_SWEEP_INTERVAL_SEC: {{ index $cm "COLLECTIONS_AGREEMENT_BRANCH_SWEEP_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_INVENTORY_INTERVAL_SEC" }}
+  COLLECTIONS_INVENTORY_INTERVAL_SEC: {{ index $cm "COLLECTIONS_INVENTORY_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_ENABLEMENT_ITEM_INTERVAL_SEC" }}
+  COLLECTIONS_ENABLEMENT_ITEM_INTERVAL_SEC: {{ index $cm "COLLECTIONS_ENABLEMENT_ITEM_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_TITLE_FACT_DISPATCH_INTERVAL_SEC" }}
+  COLLECTIONS_TITLE_FACT_DISPATCH_INTERVAL_SEC: {{ index $cm "COLLECTIONS_TITLE_FACT_DISPATCH_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_TITLE_OUTCOME_POLL_INTERVAL_SEC" }}
+  COLLECTIONS_TITLE_OUTCOME_POLL_INTERVAL_SEC: {{ index $cm "COLLECTIONS_TITLE_OUTCOME_POLL_INTERVAL_SEC" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "COLLECTIONS_DISABLED" }}
+  COLLECTIONS_DISABLED: {{ index $cm "COLLECTIONS_DISABLED" | quote }}
+  {{- end }}
   # ====================================================================
   # OUTBOX
   # ====================================================================
@@ -347,6 +415,9 @@ data:
   # ====================================================================
   {{- if hasKey $cm "WEBHOOK_PUBLIC_BASE_URL" }}
   WEBHOOK_PUBLIC_BASE_URL: {{ index $cm "WEBHOOK_PUBLIC_BASE_URL" | quote }}
+  {{- end }}
+  {{- if hasKey $cm "WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP" }}
+  WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP: {{ index $cm "WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP" | quote }}
   {{- end }}
   {{- if hasKey $cm "WEBHOOK_SKIP_URL_VALIDATION" }}
   WEBHOOK_SKIP_URL_VALIDATION: {{ index $cm "WEBHOOK_SKIP_URL_VALIDATION" | quote }}

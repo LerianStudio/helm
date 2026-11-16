@@ -114,13 +114,13 @@ The commands use release name `plugin-access-manager` and namespace `midaz-plugi
 
 ## Preview changes before upgrading
 
-Use the same complete user-values file for preview and upgrade. A partial file can lose stored overrides; editing a local file without passing `-f` does not apply it. Do not replace this with an isolated `--set` command that drops other release values.
+Use the same complete intended configuration file for preview and upgrade, preserving unrelated overrides and all existing Secret references. Both commands use `--reset-values -f` so removed overrides are not silently reused. A partial file can lose stored settings; an empty mapping (`{}`) intentionally resets to the new chart defaults and does not retain stored overrides. Review the complete file before proceeding, including the required license configuration. Editing a local file without passing `-f` does not apply it. Do not replace this with an isolated `--set` command that drops other release values.
 
 The preview requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install a reviewed plugin version through your normal tooling process. Diff output may expose credentials depending on plugin settings: use Secret suppression and protect the output. ConfigMaps may also contain sensitive operator settings.
 
 ```bash
 helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-access-manager \
-  --version 11.1.0 -n "$NAMESPACE" -f "$VALUES_FILE" --suppress-secrets
+  --version 11.1.0 -n "$NAMESPACE" --reset-values -f "$VALUES_FILE" --suppress-secrets
 ```
 
 Check the rendered image names, Secret references, database settings and expected pod-template changes. A successful preview does not validate application startup or the license.
@@ -131,7 +131,7 @@ Run only after reviewing the preview. The values file must still contain all int
 
 ```bash
 helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-access-manager \
-  --version 11.1.0 -n "$NAMESPACE" -f "$VALUES_FILE" \
+  --version 11.1.0 -n "$NAMESPACE" --reset-values -f "$VALUES_FILE" \
   --wait --timeout 15m
 ```
 

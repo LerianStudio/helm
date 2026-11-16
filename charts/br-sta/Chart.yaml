@@ -1,8 +1,8 @@
 apiVersion: v2
 name: br-sta-helm
-description: A Helm chart for br-sta — the Lerian BACEN STA (Sistema de
-  Transferência de Arquivos) service, a manager (HTTP API) plus its background
-  worker (BACEN transfers, audit trail, scheduled jobs)
+description: A Helm chart for br-sta — the Lerian BACEN STA (Sistema de Transferência
+  de Arquivos) service, a manager (HTTP API) plus its background worker (BACEN transfers,
+  audit trail, scheduled jobs)
 type: application
 annotations:
   lerian.studio/chart-type: multi-component
@@ -16,7 +16,7 @@ version: 1.0.9
 # NOTE: appVersion is the default image tag for the manager, the worker and the
 # migrations Job (the three images are released together under one tag). Override
 # via manager.image.tag / worker.image.tag / migrations.image.tag when needed.
-appVersion: "1.4.1"
+appVersion: "1.4.2"
 keywords:
   - br-sta
   - sta

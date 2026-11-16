@@ -179,6 +179,7 @@ jobs:
           HAS_CHARTS: ${{ steps.scope.outputs.has-charts }}
           IT_PULL_SECRET: ${{ !github.event.pull_request.head.repo.fork && 'it-registry' || '' }}
           # One CI license per license-gated chart (helm-install-values/README.md).
+          HELM_CI_LICENSE_KEY_BR_CCS: ${{ secrets.HELM_CI_LICENSE_KEY_BR_CCS }}
           HELM_CI_LICENSE_KEY_BR_STA: ${{ secrets.HELM_CI_LICENSE_KEY_BR_STA }}
           HELM_CI_LICENSE_KEY_PLUGIN_ACCESS_MANAGER: ${{ secrets.HELM_CI_LICENSE_KEY_PLUGIN_ACCESS_MANAGER }}
           HELM_CI_LICENSE_KEY_CARADHRAS: ${{ secrets.HELM_CI_LICENSE_KEY_CARADHRAS }}

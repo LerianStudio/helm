@@ -189,16 +189,8 @@ jobs:
           SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
         run: bash .github/scripts/severino-ticket.sh
 
-      - name: Approve
-        if: steps.ready.outputs.merge == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: |
-          gh pr review "$PR_NUMBER" --repo "$REPO" --approve \
-            --body "Routine chart bump: only versions raised within the same major, CI green. Approved and merged by chart-bump-merge.yml."
-
+      # No approving review: the bot authored the pull request and cannot approve it, and --admin
+      # already skips the review requirement. Every action on the pull request is the bot's own.
       - name: Generate push bot token
         id: app-token
         if: steps.ready.outputs.merge == 'true'
@@ -216,6 +208,7 @@ jobs:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
           CHECKS_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
           # Read the checks again right before the merge: the bypass skips the review only, so
@@ -233,6 +226,10 @@ jobs:
           fi
           # The subject keeps the repository's default (PR title and number), which semantic-release reads.
           gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --admin --match-head-commit "$HEAD_SHA" --body "$MERGE_MARKER"
+          # Audit trail in the bot's name, in place of the approving review it cannot leave.
+          gh pr comment "$PR_NUMBER" --repo "$REPO" \
+            --body "Auto-merged: routine chart bump (only versions raised within the same major, no new env vars) with CI green. See chart-bump-merge.yml run ${RUN_URL}." \
+            || echo "::warning::Merged, but the audit comment could not be posted"
 
       # The merge was attempted and refused: in doubt, a human looks.
       - name: Send Severino review ticket (merge failed)

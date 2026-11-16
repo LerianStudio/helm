@@ -168,7 +168,7 @@ brCcs:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.2.0-beta.107"
+    tag: "1.1.2"
   # -- PostgreSQL migrations job (Helm hook; ArgoCD PreSync for external PG,
   # PostSync for the bundled subchart). Runs the dedicated br-ccs-migrations
   # image (golang-migrate runner; the app image never migrates). The

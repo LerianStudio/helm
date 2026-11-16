@@ -308,7 +308,7 @@ brSisbajud:
   # -- STA integration (br-sta): fileLockTtl, consumerEnabled,
   # consumerRetryBudget, sourceProduct, bacenSystemCode, expectedTenantSt,
   # maxInboundSizeBytes, transfersEnabled, transfersBaseUrl, documentTypeAjud302,
-  # documentTypeAjud309, clientId, and `stream` (below). STA_CLIENT_SECRET is a
+  # documentTypeAjud309, documentTypeAjud302b, clientId, and `stream` (below). STA_CLIENT_SECRET is a
   # secret. The buckets and endpoint come from objectStorage.sta. Both the
   # consumer and the transfers client are single-tenant only.
   #   stream: br-sta's OWN Kafka cluster, read only by the br-sta fact consumer

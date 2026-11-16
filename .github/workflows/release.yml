@@ -32,7 +32,12 @@ permissions:
 
 jobs:
   get-changed-paths:
-    if: github.event_name == 'push' && github.actor != 'lerian-studio-midaz-push-bot[bot]'
+    # The push bot's own pushes are this workflow's release commits and are skipped, except the
+    # merge chart-bump-automerge.yml makes with the same bot, which it marks in the commit body.
+    if: >-
+      github.event_name == 'push'
+      && (github.actor != 'lerian-studio-midaz-push-bot[bot]'
+          || contains(github.event.head_commit.message, 'Auto-merged-by: chart-bump-automerge'))
     name: Get Changed Paths
     runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
     outputs:

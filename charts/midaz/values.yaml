@@ -260,7 +260,7 @@ ledger:
     # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
     # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
     # rollout); the partition runner is on from 4.5.0-beta.1; a lower tag keeps the 4.4 probes and ports.
-    tag: "4.4.1"
+    tag: "4.4.3"
   # -- Dedicated migration runner (`midaz-ledger-migrations`, built FROM
   # migrate/migrate) applying the onboarding and transaction migration sets.
   migrations:
@@ -460,6 +460,8 @@ ledger:
     # (intentionally conservative) "false" fallback — pinned explicitly here so
     # this component's shipped default doesn't depend on the mask's fallback.
     ENABLE_TELEMETRY: "true"
+    # -- Trust inbound W3C trace context. "true" only when every caller is trusted (behind a gateway or mesh).
+    OTEL_TRUST_INBOUND_TRACE_CONTEXT: "false"
     # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
     STREAMING_SCHEMA_REGISTRY_URL: ""
     # -- RI permission declaration to the IdP identity service (:4001, distinct from auth :4000).
@@ -797,7 +799,7 @@ tracer:
     # -- Image tag used for deployment. The default is the stable 4.4.0. A tag from
     # 4.5.0-beta.94 on turns on the health preset (HEALTH_PORT 8099, preset probes, PDB and
     # rollout); a lower tag keeps the 4.4 probes and ports.
-    tag: "4.4.1"
+    tag: "4.4.3"
   # -- Dedicated migration runner (`midaz-tracer-migrations`, built FROM
   # migrate/migrate). The v4 tracer no longer migrates at startup: it boots
   # against an already-migrated schema, so this Job has to apply it.
@@ -945,6 +947,8 @@ tracer:
   datastores: {}
   # -- Escape hatch: any native env var overrides the template default.
   configmap:
+    # -- Trust inbound W3C trace context. "true" only when every caller is trusted (behind a gateway or mesh).
+    OTEL_TRUST_INBOUND_TRACE_CONTEXT: "false"
     # -- Schema Registry used by the billing serializer. Leave empty to keep billing emission disabled.
     STREAMING_SCHEMA_REGISTRY_URL: ""
     # -- RI permission declaration to the IdP identity service (:4001, distinct from auth :4000).
@@ -1057,8 +1061,7 @@ postgresql:
     replicationPassword: ""
     # -- Secret with the passwords. The default points the subchart at the one this chart keeps across
     # uninstall (templates/datastore-secrets.yaml); midaz's own templates read it as empty. Name yours to replace it.
-    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname"
-      . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "postgresql" }}{{ include "common.names.fullname" . }}{{ end }}'
   primary:
     extraVolumes:
       - name: init-script
@@ -1133,13 +1136,16 @@ mongodb:
     rootUser: midaz
     rootPassword: ""
     # -- Secret with the passwords, as postgresql.auth.existingSecret.
-    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname"
-      . }}{{ end }}'
+    existingSecret: '{{ if eq .Chart.Name "mongodb" }}{{ include "common.names.fullname" . }}{{ end }}'
   resourcesPreset: "medium"
-  # Recreate, not a rolling update: a new mongod cannot open the data directory the old pod still holds.
-  # architecture: replicaset or useStatefulSet: true needs updateStrategy.type: RollingUpdate; a StatefulSet refuses Recreate.
+  # A replica set: the ledger records fee quota usage in a Mongo transaction.
+  architecture: replicaset
+  replicaCount: 1
+  arbiter:
+    enabled: false # one data member needs no arbiter
+  # A StatefulSet refuses Recreate: an install pinned to architecture: standalone must also pin Recreate.
   updateStrategy:
-    type: Recreate
+    type: RollingUpdate
   persistence:
     size: 8Gi
     # -- The data volume outlives the release, like the PostgreSQL ones.
@@ -1192,7 +1198,7 @@ otel-collector-lerian:
   enabled: true
 midaz-ledger-migrations:
   image:
-    tag: 4.4.1
+    tag: 4.4.3
 midaz-tracer-migrations:
   image:
-    tag: 4.4.1
+    tag: 4.4.3

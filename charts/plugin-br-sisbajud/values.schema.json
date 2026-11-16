@@ -95,6 +95,7 @@
               "MAX_PAGINATION_MONTH_DATE_RANGE",
               "MENSAGERIA_BASE_URL",
               "MENSAGERIA_MTLS_ENABLED",
+              "MENSAGERIA_PERMANENT_BLOCK_ENABLED",
               "MENSAGERIA_TLS_CA_FILE",
               "MENSAGERIA_TLS_CLIENT_CERT_FILE",
               "MENSAGERIA_TLS_CLIENT_KEY_FILE",
@@ -205,6 +206,14 @@
               ]
             },
             "DIRECT_PERMANENT_BLOCK_ENABLED": {
+              "type": "string",
+              "enum": [
+                "",
+                "true",
+                "false"
+              ]
+            },
+            "MENSAGERIA_PERMANENT_BLOCK_ENABLED": {
               "type": "string",
               "enum": [
                 "",
@@ -338,6 +347,27 @@
                   "description": "EXECUTOR_DIRECT_PURGE_REFRESH_EVERY (Go duration > 0; default 15m)."
                 }
               }
+            }
+          }
+        },
+        "mensageria": {
+          "type": "object",
+          "properties": {
+            "permanentBlockEnabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "description": "MENSAGERIA_PERMANENT_BLOCK_ENABLED (default false; needs global.streaming.enabled=true written and brokers, inbound auth on, single tenant and the result emitter not false). Never turns the stream on."
             }
           }
         },

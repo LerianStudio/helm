@@ -280,7 +280,8 @@
               "POSTGRES_PASSWORD",
               "POSTGRES_REPLICA_PASSWORD",
               "PROVIDER_CLIENT_ID",
-              "PROVIDER_CLIENT_SECRET"
+              "PROVIDER_CLIENT_SECRET",
+              "SANDBOX_FAKEBTG_ADMIN_KEY"
             ]
           }
         }

@@ -137,7 +137,7 @@ streamingHub:
     # -- Image pull policy.
     pullPolicy: IfNotPresent
     # -- Image tag. Empty falls back to Chart.appVersion via the defaultTag helper.
-    tag: "3.1.0"
+    tag: "3.4.0"
   # -- Secrets for pulling the image from a private registry. The published
   # images are public, so none is needed by default.
   imagePullSecrets: []
@@ -147,12 +147,6 @@ streamingHub:
   annotations: {}
   # -- Annotations applied to every pod.
   podAnnotations: {}
-  # -- Deployment update strategy (shared by all roles).
-  deploymentStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   # -- Pod-level security context. Empty by default (the hub needs no fsGroup).
   podSecurityContext: {}
   # -- Container-level security context (distroless:nonroot, uid/gid 65532).
@@ -207,30 +201,11 @@ streamingHub:
     #    in-cluster Kubernetes API calls. (IRSA's projected token is injected by
     #    the EKS webhook independently of this, so it stays functional.)
     automountServiceAccountToken: false
-  # -- Graceful-shutdown window. Defaults above the hub's derived SIGTERM drain
-  #    ceiling (87s) at STREAMING_HUB_SHUTDOWN_TIMEOUT=30s +
-  #    STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT=5s: 5s pre-stop + 30s HTTP + 5s
-  #    consumer-commit + 30s dispatcher + 7s runtime-config close + 10s slack = 87s
-  #    (see .env.reference).
-  #    If you tune those knobs up, recompute and keep this AT OR ABOVE the new
-  #    ceiling so the orchestrator never SIGKILLs a still-draining replica. NO
-  #    preStop hook is used — the hub self-drains on SIGTERM (PID 1 receives it
-  #    directly; exec-form ENTRYPOINT).
-  terminationGracePeriodSeconds: 90
-  # -- Liveness probe tuning (GET /healthz on the http port; stays 200 during drain).
-  livenessProbe:
-    initialDelaySeconds: 15
-    periodSeconds: 20
-    timeoutSeconds: 5
-    successThreshold: 1
-    failureThreshold: 3
-  # -- Readiness probe tuning (GET /readyz; flips NotReady first on SIGTERM).
-  readinessProbe:
-    initialDelaySeconds: 10
-    periodSeconds: 10
-    timeoutSeconds: 5
-    successThreshold: 1
-    failureThreshold: 3
+  # -- The lerian-common health preset owns probes (HEALTH_PORT 8099), rollout, PDB
+  # and terminationGracePeriodSeconds; tune only health.drainSeconds (default 15)
+  # and health.shutdownSeconds (default 30, must stay below 35).
+  health:
+    stack: go
   # -- Shared default scheduling (per-role blocks may override).
   nodeSelector: {}
   tolerations: []
@@ -249,9 +224,8 @@ streamingHub:
   # telemetry — CHART-LEVEL OTEL wiring toggle (NOT an app env var; never shipped
   # to the container). When enabled, each Deployment injects HOST_IP via the
   # downward API and sets OTEL_EXPORTER_OTLP_ENDPOINT=$(HOST_IP):4317 (node-local
-  # DaemonSet collector pattern; see templates/_deployment.tpl). The hub's own
-  # Prometheus exposition is governed by STREAMING_HUB_METRICS_ENABLED in the
-  # ConfigMap above — a separate, app-read knob.
+  # DaemonSet collector pattern; see templates/_deployment.tpl). The app knob
+  # STREAMING_HUB_METRICS_ENABLED switches OTLP export; /metrics is always served on 8099.
   # ===========================================================================
   telemetry:
     # -- Inject the per-pod OTLP endpoint override (HOST_IP downward API).
@@ -316,9 +290,7 @@ streamingHub:
   # pre-2.x image pin; on 2.x it buys one WARN per boot and changes nothing.
   #
   # LICENSE (lib-license-go, GLOBAL mode; UNPREFIXED platform names). The key is a
-  # Secret (secrets.LICENSE_KEY). Two non-secret companions are allowlisted here:
-  #   ORGANIZATION_IDS — chart default "global"; must stay EXACTLY "global" (the
-  #     app and the render both refuse any other value).
+  # Secret (secrets.LICENSE_KEY). One non-secret companion is allowlisted here:
   #   IS_DEVELOPMENT   — deprecated: still accepted so upgrades keep validating,
   #     never rendered, no effect. Products validate only on the production
   #     license server.
@@ -376,7 +348,6 @@ streamingHub:
     #    it. ALWAYS emitted (even empty, so a bare render succeeds), and pinned via
     #    secretKeyRef on the useExistingSecret path. Never a literal in a values
     #    file in git: supply it through useExistingSecret (Vault/ExternalSecret).
-    #    ORGANIZATION_IDS is non-secret and lives in `configmap`.
     LICENSE_KEY: ""
     # -- SASL/SCRAM password (emit-when-set; required when KAFKA_SCRAM_MECHANISM is set).
     #    The SCRAM username is non-sensitive and lives in the ConfigMap.
@@ -451,7 +422,7 @@ streamingHub:
         cpu: 50m
         memory: 64Mi
   # ===========================================================================
-  # Per-role blocks. Each carries replicaCount, resources, autoscaling, pdb, and
+  # Per-role blocks. Each carries replicaCount, resources, autoscaling, and
   # the Postgres pool sizing injected as explicit per-Deployment env.
   #
   # !!! CONNECTION-BUDGET INVARIANT (the load-bearing operational rule) !!!
@@ -463,7 +434,7 @@ streamingHub:
   # Pool defaults (from .env.reference): all 25/12, ingest 8/4, delivery 16/10.
   # ===========================================================================
   all:
-    replicaCount: 1
+    replicaCount: 2
     poolMaxOpenConns: 25
     poolMaxIdleConns: 12
     resources:
@@ -477,19 +448,15 @@ streamingHub:
       # -- HPA off by default; replicaCount governs. maxReplicas × poolMaxOpenConns
       #    must respect the connection-budget invariant above.
       enabled: false
-      minReplicas: 1
+      minReplicas: 2
       maxReplicas: 3
       targetCPUUtilizationPercentage: 80
       targetMemoryUtilizationPercentage: 80
-    pdb:
-      enabled: false
-      minAvailable: 1
-      annotations: {}
     nodeSelector: {}
     tolerations: []
     affinity: {}
   ingest:
-    replicaCount: 1
+    replicaCount: 2
     poolMaxOpenConns: 8
     poolMaxIdleConns: 4
     resources:
@@ -501,20 +468,16 @@ streamingHub:
         memory: 128Mi
     autoscaling:
       enabled: false
-      minReplicas: 1
+      minReplicas: 2
       # -- maxReplicas × 8 (poolMaxOpenConns) must fit the connection budget.
       maxReplicas: 4
       targetCPUUtilizationPercentage: 80
       targetMemoryUtilizationPercentage: 80
-    pdb:
-      enabled: false
-      minAvailable: 1
-      annotations: {}
     nodeSelector: {}
     tolerations: []
     affinity: {}
   delivery:
-    replicaCount: 1
+    replicaCount: 2
     poolMaxOpenConns: 16
     poolMaxIdleConns: 10
     resources:
@@ -526,15 +489,11 @@ streamingHub:
         memory: 128Mi
     autoscaling:
       enabled: false
-      minReplicas: 1
+      minReplicas: 2
       # -- maxReplicas × 16 (poolMaxOpenConns) must fit the connection budget.
       maxReplicas: 4
       targetCPUUtilizationPercentage: 80
       targetMemoryUtilizationPercentage: 80
-    pdb:
-      enabled: false
-      minAvailable: 1
-      annotations: {}
     nodeSelector: {}
     tolerations: []
     affinity: {}

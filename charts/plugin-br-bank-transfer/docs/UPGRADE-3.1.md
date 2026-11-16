@@ -19,9 +19,9 @@
 
 ## Overview
 
-Chart **3.1.0** adds optional license-file mounts; it still ships application and default migrations **3.5.0**, the same images as chart 3.0.6. **Application 3.5.0 uses lib-license-go v4, requires a nonempty `LICENSE_KEY`, and does not read `LICENSE_FILE_PATH`. Keep the key with these shipped images.** The mount is chart plumbing for a separately verified compatible image, not a file-only migration supported by the defaults. No compatible replacement image is prescribed here; verify its exact license inputs, precedence and reload behavior before removing a key.
+Chart **3.1.0** adds optional license-file mounts; it still ships application and default migrations **3.5.0**, the same images as chart 3.0.6. **Application 3.5.0 uses lib-license-go v4, requires a nonempty `LICENSE_KEY`, and does not read `LICENSE_FILE_PATH`. Keep the key with these shipped images.** The first chart whose default images read the file is **3.2.1** (application and migrations **3.6.0**, on `lib-license-go` v5). In 3.6.0, when both are set, `LICENSE_FILE_PATH` wins over `LICENSE_KEY`. To move to the file, upgrade to chart 3.2.1 and follow its guides; do not remove the key on chart 3.1.0.
 
-The chart also adds new template helpers to support license file mounting and introduces a dedicated PreSync hook Secret for migration jobs that need license validation before the application Secret exists.
+The chart also adds new template helpers to support license file mounting and introduces a dedicated PreSync hook Secret that copies `LICENSE_KEY` to the migration Job, which runs before the application Secret exists.
 
 ## Features
 
@@ -33,7 +33,7 @@ The chart now supports mounting a signed license file from an existing Kubernete
 **Why it matters:**  
 - **File-based licensing:** Applications using `lib-license-go` v5+ can read license data from a file instead of an environment variable
 - **Secret projection:** Mounted Secret files can receive Kubernetes updates (no `subPath`). Application reread and license reload must be verified separately; the shipped 3.5.0 application does not read this file.
-- **Migration support:** The PreSync migration job receives its own copy of the license (either via the hook Secret or the license file mount) to support license-gated schema migrations
+- **Migration support:** The migration container receives the license (hook Secret, application Secret or file mount). The migrations 3.5.0 executable shipped with this chart does not read it; the migrator from application 3.6.0 (chart 3.2.1) requires it.
 
 **How it works:**
 
@@ -41,116 +41,16 @@ The chart now supports mounting a signed license file from an existing Kubernete
 |----------|------------------|---------------|
 | **Existing (v3.0.6)** | `LICENSE_KEY` environment variable from `bankTransfer.secrets.LICENSE_KEY` or `bankTransfer.extraEnvVars.LICENSE_KEY` | No change required |
 | **New (v3.1.0)** | Signed license file from an existing Secret | Set `bankTransfer.licenseFile.existingSecret` to the Secret name; the chart mounts it and sets `LICENSE_FILE_PATH` |
-| **Hybrid** | Both `LICENSE_KEY` and license file | The shipped 3.5.0 application still uses the key and does not read the file. Verify precedence separately for any replacement image. |
+| **Hybrid** | Both `LICENSE_KEY` and license file | The shipped 3.5.0 application uses the key and ignores the file. Application 3.6.0 (chart 3.2.1) uses the file when both are set. |
 
-**Template changes:**
+**Effect on the rendered resources:**
 
-**Before (v3.0.6):**
-```yaml
-# templates/deployment.yaml (no license file support)
-spec:
-  containers:
-    - name: bank-transfer
-      envFrom:
-        - secretRef:
-            name: {{ include "bank-transfer.fullname" . }}
-        - configMapRef:
-            name: {{ include "bank-transfer.fullname" . }}
-      # No volumeMounts for license file
-  # No volumes for license file
-```
-
-**After (v3.1.0):**
-```yaml
-# templates/deployment.yaml (license file mount added conditionally)
-spec:
-  containers:
-    - name: bank-transfer
-      envFrom:
-        - secretRef:
-            name: {{ include "bank-transfer.fullname" . }}
-        - configMapRef:
-            name: {{ include "bank-transfer.fullname" . }}
-      {{- with (include "bank-transfer.licenseFileMount" . | trim) }}
-      volumeMounts:
-        {{- . | nindent 12 }}
-      {{- end }}
-  {{- with (include "bank-transfer.licenseFileVolume" . | trim) }}
-  volumes:
-    {{- . | nindent 8 }}
-  {{- end }}
-```
-
-**ConfigMap changes:**
-
-**Before (v3.0.6):**
-```yaml
-# templates/configmap.yaml (no LICENSE_FILE_PATH)
-data:
-  ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
-  # ... other config
-```
-
-**After (v3.1.0):**
-```yaml
-# templates/configmap.yaml (LICENSE_FILE_PATH added conditionally)
-data:
-  ORGANIZATION_IDS: {{ .Values.bankTransfer.configmap.ORGANIZATION_IDS | quote }}
-  {{- if include "bank-transfer.licenseSecret" $ }}
-  LICENSE_FILE_PATH: "/etc/lerian/license/license"
-  {{- end }}
-  # ... other config
-```
-
-**Migration job changes:**
-
-The PreSync migration job (`templates/migrations.yaml`) now receives license configuration in three ways:
+- **Application container:** with `bankTransfer.licenseFile.existingSecret` set, the chart mounts the Secret at `/etc/lerian/license` and adds `LICENSE_FILE_PATH: "/etc/lerian/license/license"` to the ConfigMap. Without it, the application container does not change.
+- **Migration container:** the chart adds `LICENSE_KEY` (and, with the file, `LICENSE_FILE_PATH` and the mount) to the migration container, from one of these sources:
 
 1. **License file mount:** If `bankTransfer.licenseFile.existingSecret` is set, the file is mounted at `/etc/lerian/license/license` and `LICENSE_FILE_PATH` is set
 2. **LICENSE_KEY from hook Secret:** If `bankTransfer.secrets.LICENSE_KEY` or `bankTransfer.extraEnvVars.LICENSE_KEY` is set and the migration runs as a PreSync Job (external PostgreSQL, non-multi-tenant, without an existing application Secret), a dedicated hook Secret is created with the key and injected via `secretKeyRef`. Its name is the chart fullname truncated to 50 characters, followed by `-license-hook` (normally `bank-transfer-license-hook`).
-3. **LICENSE_KEY from app Secret:** If the migration runs as an init container (bundled PostgreSQL) or the operator uses `bankTransfer.useExistingSecret=true`, the key is read from the application Secret
-
-**Before (v3.0.6):**
-```yaml
-# templates/migrations.yaml (no license support)
-env:
-  - name: POSTGRES_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: {{ include "bank-transfer.fullname" . }}
-        key: POSTGRES_PASSWORD
-  # No LICENSE_KEY or LICENSE_FILE_PATH
-```
-
-**After (v3.1.0):**
-```yaml
-# templates/migrations.yaml (license support added)
-env:
-  - name: POSTGRES_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: {{ include "bank-transfer.fullname" . }}
-        key: POSTGRES_PASSWORD
-  {{- if $licSecret }}
-  - name: LICENSE_KEY
-    valueFrom:
-      secretKeyRef:
-        name: {{ $licSecret }}
-        key: LICENSE_KEY
-        optional: true
-  {{- else if $licKey }}
-  - name: LICENSE_KEY
-    value: {{ $licKey | quote }}
-  {{- end }}
-  {{- if include "bank-transfer.licenseSecret" . }}
-  - name: LICENSE_FILE_PATH
-    value: "/etc/lerian/license/license"
-  {{- end }}
-{{- with (include "bank-transfer.licenseFileMount" . | trim) }}
-volumeMounts:
-  {{- . | nindent 4 }}
-{{- end }}
-```
+3. **LICENSE_KEY in the init container:** If the migration runs as an init container of the Deployment (bundled PostgreSQL), the key comes from the application Secret (`bankTransfer.secrets.LICENSE_KEY`) or inline (`bankTransfer.extraEnvVars.LICENSE_KEY`). With `bankTransfer.useExistingSecret=true`, the key comes from `bankTransfer.existingSecretName` in both migration modes.
 
 **New hook Secret:**
 
@@ -162,11 +62,17 @@ A new template (`templates/license-hook-secret.yaml`) creates a PreSync hook Sec
 - Multi-tenant mode is disabled
 
 **Why this hook Secret exists:**  
-PreSync migration Jobs run before the application Secret is created. If the migration requires license validation (e.g., for licensed schema features), it needs its own copy of the `LICENSE_KEY`. The hook Secret is created with `helm.sh/hook: pre-install,pre-upgrade` and `argocd.argoproj.io/hook: PreSync` annotations, ensuring it exists before the migration Job runs.
+PreSync migration Jobs run before the application Secret is created, so the chart gives the Job its own copy of `LICENSE_KEY`. The hook Secret is created with `helm.sh/hook: pre-install,pre-upgrade` and `argocd.argoproj.io/hook: PreSync` annotations, ensuring it exists before the migration Job runs. The migrations 3.5.0 executable does not read the key.
+
+> **Warning:** The hook Secret stays in the namespace with `LICENSE_KEY` after the upgrade. Its delete policy is `before-hook-creation` (Argo CD: `BeforeHookCreation`), so Helm replaces it only on the next upgrade, and `helm uninstall` does not remove hook resources. After an uninstall, delete it yourself: `kubectl delete secret <release>-license-hook -n <namespace>` (`bank-transfer-license-hook` with the default fullname).
 
 **Operational impact:**
-- **Retain existing key delivery:** Keep `LICENSE_KEY` for the default 3.5.0 application. Even with file mode disabled, migration license injection and conditional hook resources change; inspect the full preview for pod-template changes and migration execution.
-- **License file rotation:** When using a license file Secret, updates to the Secret propagate to running pods automatically (the mount does not use `subPath`)
+- **Retain existing key delivery:** Keep `LICENSE_KEY` for the default 3.5.0 application.
+- **Pod restarts (file mode off):** they depend on where the migration runs.
+  - Bundled PostgreSQL (migration as init container of the `bank-transfer` Deployment): with `bankTransfer.secrets.LICENSE_KEY`, `bankTransfer.extraEnvVars.LICENSE_KEY` or `bankTransfer.useExistingSecret: true`, the init container gains `LICENSE_KEY`, so the Deployment pods restart on the upgrade.
+  - External PostgreSQL (migration as PreSync Job): the Deployment does not change and its pods do not restart. Only the migration Job gains `LICENSE_KEY`; the chart also creates the `bank-transfer-license-hook` Secret when the key comes from values (not with `useExistingSecret`).
+  - No `LICENSE_KEY` in values and no `useExistingSecret`: the Deployment and the Job render the same as in 3.0.6.
+- **License file rotation:** Updates to the license file Secret reach the mounted file in running pods (the mount does not use `subPath`). Application 3.5.0 does not read the file.
 - **Migration licensing:** The default migrations 3.5.0 executable does not initialize license validation. Injection does not make it license-gated; verify the contract of any replacement migrator before changing its inputs.
 
 ## Configuration Reference
@@ -184,7 +90,7 @@ bankTransfer:
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `bankTransfer.licenseFile.existingSecret` | `""` (empty) | Name of an existing Kubernetes Secret containing a signed license file under the key `license`. When set, the chart mounts the file at `/etc/lerian/license/license` and sets `LICENSE_FILE_PATH=/etc/lerian/license/license` in the ConfigMap. Requires an application image built with `lib-license-go` v5 or later. |
+| `bankTransfer.licenseFile.existingSecret` | `""` (empty) | Name of an existing Kubernetes Secret containing a signed license file under the key `license`. When set, the chart mounts the file at `/etc/lerian/license/license` and sets `LICENSE_FILE_PATH=/etc/lerian/license/license` in the ConfigMap. Requires an application image built with `lib-license-go` v5 or later: application 3.6.0, the default from chart 3.2.1. |
 
 **Secret structure:**
 
@@ -225,11 +131,10 @@ When `bankTransfer.licenseFile.existingSecret` is set, the chart automatically a
 
 ### Step 1: Evaluate License Delivery Method
 
-For the shipped 3.5.0 application, retain `LICENSE_KEY`; do not perform a file-only migration. Steps 2 and 3 are chart configuration references only, conditional on separately identifying and verifying a compatible application and migrator. No such replacement version is prescribed here.
+For the shipped 3.5.0 application, retain `LICENSE_KEY`; do not perform a file-only migration. Steps 2 and 3 apply only from chart 3.2.1, whose default application and migrations images (3.6.0) read the file. Do not pin a newer image on chart 3.1.0 for this.
 
 **Choose license file delivery if:**
-- Your application image is built with `lib-license-go` v5 or later
-- The exact replacement image has independently verified file handling and reload behavior
+- Your application and migrations images are 3.6.0 or later (`lib-license-go` v5)
 - Your licensing workflow uses signed license files instead of inline keys
 
 **Keep existing `LICENSE_KEY` delivery if:**
@@ -237,7 +142,7 @@ For the shipped 3.5.0 application, retain `LICENSE_KEY`; do not perform a file-o
 - You do not need file-based licensing
 - You prefer environment variable–based configuration
 
-> **Note:** Both inputs can be delivered, but application 3.5.0 still uses the key and does not read the file. Do not infer precedence or reload behavior from the chart.
+> **Note:** Both inputs can be delivered. Application 3.5.0 uses the key and ignores the file; application 3.6.0 uses the file when both are set.
 
 ### Step 2: Create License File Secret (Optional)
 
@@ -260,7 +165,7 @@ kubectl get secret my-license-secret -n midaz-plugins -o json \
 
 ### Step 3: Update Values Configuration (Optional)
 
-Only after verifying replacement-image compatibility, merge this fragment into a complete, maintained `values-override.yaml` preserving all existing deployment settings. This fragment alone is not a complete deployment configuration:
+Only on chart 3.2.1 or later (application and migrations 3.6.0), merge this fragment into a complete, maintained `values-override.yaml` preserving all existing deployment settings. This fragment alone is not a complete deployment configuration:
 
 ```yaml
 bankTransfer:
@@ -281,11 +186,11 @@ bankTransfer:
     existingSecret: "my-license-secret"
 ```
 
-> **Note:** If you set both `secrets.LICENSE_KEY` and `licenseFile.existingSecret`, the application receives both. Consult your application's documentation to understand which takes precedence.
+> **Note:** If you set both `secrets.LICENSE_KEY` and `licenseFile.existingSecret`, the application receives both. Application 3.5.0 uses the key; application 3.6.0 uses the file.
 
 ## Preview changes before upgrading
 
-Create a fresh private export for review; it may contain credentials. Reconcile it with the target defaults, retaining database, integration, authentication, organization, license and intentional image settings. An empty or `null` export must be replaced with a reviewed YAML mapping. Explicitly preserve old defaults you intentionally depend on, because user-value exports omit computed defaults. If adopting a verified replacement image, merge the optional fragment and its verified image pins into this same file before preview.
+Create a fresh private export for review; it may contain credentials. Reconcile it with the target defaults, retaining database, integration, authentication, organization, license and intentional image settings. An empty or `null` export must be replaced with a reviewed YAML mapping. Explicitly preserve old defaults you intentionally depend on, because user-value exports omit computed defaults. Do not add the license file fragment for this upgrade to chart 3.1.0; adopt it with chart 3.2.1.
 
 ```bash
 umask 077

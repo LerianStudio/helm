@@ -1,367 +1,120 @@
 <!-- {% raw %} -->
-# Helm Upgrade from v11.2.0 to v11.2.1
+# Upgrade Access Manager chart 11.2.0 to 11.2.1
 
-# Topics
+## Scope and prerequisites
 
-- **[Overview](#overview)**
-- **[Changes](#changes)**
-  - [1. App-Lerian Client Secret Management](#1-app-lerian-client-secret-management)
-- **[Migration Steps](#migration-steps)**
-  - [Scenario 1: Fresh Install (No Existing Database)](#scenario-1-fresh-install-no-existing-database)
-  - [Scenario 2: Upgrade with Existing Database](#scenario-2-upgrade-with-existing-database)
-  - [Scenario 3: GitOps / Helm Template Workflows](#scenario-3-gitops--helm-template-workflows)
-  - [Scenario 4: Using External Secrets (auth.useExistingSecret=true)](#scenario-4-using-external-secrets-authuseexistingsecrettrue)
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+This patch changes delivery of the `app-lerian` client credential. Chart `appVersion` remains `3.17.0`; the default Caradhras server remains `2.1.0`. It does not rotate the credential held in the existing Caradhras database.
 
-# Overview
+Schedule a maintenance window: auth, identity and Caradhras pod templates change across these chart versions, including their chart-version labels. Preserve any intentional server, migrator and application image pins in your intended configuration; do not combine this chart upgrade with an unreviewed application upgrade.
 
-This is a patch release that changes how the `AUTHORIZER_CLIENT_SECRET` (app-lerian's client secret) is managed across the auth, identity, and caradhras components. The application version remains `3.17.0`, and no image tags change.
+Before proceeding, have a consistent private backup of the Caradhras database, the current release values and manifests, and all referenced Secrets through your approved secret-backup system. Verify the database restore procedure and retain the current release revision, image references and Secret ownership information. Helm rollback does not restore database contents or external Secrets. Do not delete PVCs, reset the database, or uninstall as an upgrade workaround.
 
-**What changed:**
+All commands below are operator instructions, not evidence of a tested live upgrade. Adapt release and namespace names to your installation.
 
-- The `AUTHORIZER_CLIENT_SECRET` value is now centralized under `auth.secrets.AUTHORIZER_CLIENT_SECRET` instead of being duplicated in both `auth.secrets` and `identity.secrets`
-- A new dedicated Secret resource (`<release>-auth-app-client-secret`) is created to hold this value, shared by all three components
-- The Secret is marked with `helm.sh/resource-policy: keep` to survive uninstalls (required because reinstalling reopens the existing database, which still holds the old secret)
-- New validation logic prevents silent auth breakage: upgrades with an existing database must provide the current secret value
+## Credential delivery in 11.2.1
 
-**Why this matters:**
+- With `auth.useExistingSecret: false`, the chart creates a separate Secret named from the auth fullname plus `-app-client-secret`, containing `AUTHORIZER_CLIENT_SECRET` and annotated `helm.sh/resource-policy: keep`. With default names this is `<release>-auth-app-client-secret`; name overrides can change it.
+- With `auth.useExistingSecret: true`, no separate app-client Secret is created. All three workloads reference key `AUTHORIZER_CLIENT_SECRET` in `auth.existingSecretName` in the release namespace. This Secret must exist before the pods start; a successful offline render does not verify its existence or keys.
+- Auth and identity receive explicit `AUTHORIZER_CLIENT_SECRET` references; Caradhras receives the same key as `appLerianClientSecret`. Chart wiring alone does not prove that a particular Caradhras image consumes it.
+- Remove the obsolete **values override** `identity.secrets.AUTHORIZER_CLIENT_SECRET`. Do not clear the rest of `identity.secrets`. The chart-generated identity Secret can still contain a compatibility copy when `auth.secrets.AUTHORIZER_CLIENT_SECRET` is explicitly supplied; it is incorrect to say this key is always absent from that Secret. Preserve any consumers of that copy during a move to external Secrets.
+- The chart-managed value resolver prefers an explicit auth value, then a matching existing kept Secret visible through `lookup`. Only after those choices does it reject missing values for offline renders or upgrades. Do not depend on lookup for GitOps rendering.
 
-Before this release, operators had to set the same `AUTHORIZER_CLIENT_SECRET` value in two places (`auth.secrets` and `identity.secrets`). The secret is stored in the Caradhras database and must match across all components. If the value changed between installs or upgrades, authentication would break silently.
+The keep annotation is not a backup or proof that reinstall will reopen the same database. Database identity, storage retention, release naming and retained resource ownership must be checked separately. Never replace a kept credential just to make an installation render.
 
-This release:
+## Existing database: preserve the working credential
 
-- Eliminates the duplication risk by single-sourcing the value
-- Prevents accidental secret regeneration on upgrades (which would break auth)
-- Adds explicit validation for GitOps and `helm template` workflows
-- Requires Caradhras `>= 2.4.0-beta.4` for fresh installs that rely on generated secrets
+Do not generate a new credential for this upgrade. Obtain the current working `app-lerian` credential through your approved secret-management process and privately verify it matches the existing application's database state. An old Kubernetes Secret is evidence of a previous configuration, not proof of database agreement. If the credential cannot be established, stop and arrange an approved recovery or coordinated rotation; do not guess it.
 
-**Pods restart during the upgrade:**
+Do not print decoded Secrets in a terminal, paste credentials into chat or tickets, use `--set` to pass credentials, or commit plaintext/base64 Secret data or rendered manifests to Git. Base64 is not encryption. Keep all existing Secret keys and references not explicitly migrated, including database/Redis credentials, product license keys, organization settings, directory keys and bootstrap credentials.
 
-The auth, identity, and caradhras Deployment templates now include a `checksum/app-client-secret` annotation that triggers pod replacement when the secret value changes. Even if your secret value does not change, the pod templates carry the label `helm.sh/chart: plugin-access-manager-<version>`, so any chart version bump replaces the pods of all three components.
+### Preferred GitOps/reference-only path
 
-# Changes
+Use your existing approved external-secret or encrypted-secret delivery mechanism to provision an operator-managed auth environment Secret in the release namespace. It must contain the current `AUTHORIZER_CLIENT_SECRET` **and every other key your existing auth workload and configured database/Redis paths require**. Switching `auth.useExistingSecret` disables generation of the whole auth environment Secret; a Secret containing only the client credential is not a general replacement. Preserve any identity compatibility-copy consumers separately.
 
-### 1. App-Lerian Client Secret Management
-
-**What changed:**
-
-The `AUTHORIZER_CLIENT_SECRET` environment variable is now sourced from a single Secret (`<release>-auth-app-client-secret`) instead of being embedded in the auth and identity Secrets. The value is set once in `auth.secrets.AUTHORIZER_CLIENT_SECRET` and shared across all components.
-
-| Setting | v11.2.0 | v11.2.1 |
-|---------|---------|---------|
-| `auth.secrets.AUTHORIZER_CLIENT_SECRET` | Required | Required (single source) |
-| `identity.secrets.AUTHORIZER_CLIENT_SECRET` | Required | **Removed** (now reads from `auth.secrets`) |
-| Secret resource | Embedded in `<release>-auth` and `<release>-identity` | New dedicated `<release>-auth-app-client-secret` (kept on uninstall) |
-
-**Before (v11.2.0):**
+Edit a private **complete intended values file**, starting from the current user-supplied values and reconciling them with the target defaults. The following is an edit illustration, not a complete configuration and not a file to apply by itself:
 
 ```yaml
-# values.yaml
-auth:
-  secrets:
-    AUTHORIZER_CLIENT_SECRET: "your-secret-here"
-    DB_PASSWORD: ""
-    REDIS_PASSWORD: ""
-    LICENSE_KEY: ""
-
-identity:
-  secrets:
-    AUTHORIZER_CLIENT_SECRET: "your-secret-here"  # Duplicated
-    LICENSE_KEY: ""
-    ORGANIZATION_IDS: ""
-```
-
-**After (v11.2.1):**
-
-```yaml
-# values.yaml
-auth:
-  secrets:
-    AUTHORIZER_CLIENT_SECRET: "your-secret-here"  # Single source
-    DB_PASSWORD: ""
-    REDIS_PASSWORD: ""
-    LICENSE_KEY: ""
-
-identity:
-  secrets:
-    # AUTHORIZER_CLIENT_SECRET removed - now reads from auth.secrets
-    LICENSE_KEY: ""
-    ORGANIZATION_IDS: ""
-```
-
-**Template changes:**
-
-The auth, identity, and caradhras Deployments now reference the secret via `secretKeyRef` instead of reading it from their own Secret resources:
-
-**Before (v11.2.0):**
-
-```yaml
-# templates/auth/deployment.yaml
-envFrom:
-- secretRef:
-    name: {{ include "plugin-auth.fullname" . }}  # Contains AUTHORIZER_CLIENT_SECRET
-
-# templates/identity/deployment.yaml
-envFrom:
-- secretRef:
-    name: {{ include "plugin-identity.fullname" . }}  # Contains AUTHORIZER_CLIENT_SECRET
-```
-
-**After (v11.2.1):**
-
-```yaml
-# templates/auth/deployment.yaml
-envFrom:
-- secretRef:
-    name: {{ include "plugin-auth.fullname" . }}  # No longer contains AUTHORIZER_CLIENT_SECRET
-env:
-- name: AUTHORIZER_CLIENT_SECRET
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "plugin-access-manager.appClientSecretName" . }}
-      key: AUTHORIZER_CLIENT_SECRET
-
-# templates/identity/deployment.yaml
-envFrom:
-- secretRef:
-    name: {{ include "plugin-identity.fullname" . }}  # No longer contains AUTHORIZER_CLIENT_SECRET
-env:
-- name: AUTHORIZER_CLIENT_SECRET
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "plugin-access-manager.appClientSecretName" . }}
-      key: AUTHORIZER_CLIENT_SECRET
-
-# templates/caradhras/deployment.yaml
-env:
-- name: appLerianClientSecret
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "plugin-access-manager.appClientSecretName" . }}
-      key: AUTHORIZER_CLIENT_SECRET
-```
-
-**New Secret resource:**
-
-A new template `templates/caradhras/app-client-secret.yaml` creates the dedicated Secret:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: <release>-auth-app-client-secret
-  annotations:
-    helm.sh/resource-policy: keep
-type: Opaque
-data:
-  AUTHORIZER_CLIENT_SECRET: <base64-encoded-value>
-```
-
-The `keep` annotation ensures the Secret survives `helm uninstall`. This is critical because a reinstall with the same release name reopens the existing Caradhras database, which still holds the old secret. Without the kept Secret, a reinstall would generate a new secret and break authentication.
-
-**Validation logic:**
-
-The chart now enforces these rules:
-
-1. **Fresh installs without a value set:** The chart generates a random 40-character secret, but only if:
-   - The Caradhras image tag is `>= 2.4.0-beta.4` (required for the seed change)
-   - The render can read the cluster (fails for `helm template`, ArgoCD, helmfile, `--dry-run`)
-
-2. **Upgrades without a value set:** The chart fails with an error. An existing Caradhras database keeps the secret app-lerian already holds, so generating a new one would break auth silently.
-
-3. **GitOps / helm template workflows:** The chart fails if no value is set and the render cannot read the cluster (no `lookup` support). You must provide the value explicitly.
-
-**Error messages you might see:**
-
-If you upgrade without setting `auth.secrets.AUTHORIZER_CLIENT_SECRET`:
-
-```
-ERROR: no app-lerian client secret is set on an upgrade. An existing Caradhras database keeps the secret app-lerian already holds, so a generated one would break auth silently.
-   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret to the current value. To change it, rotate it with Caradhras POST /api/regenerate-application-secret?id=admin/app-lerian, then update the value and restart auth, identity and Caradhras in the same window (Console, plugin-fees and Tenant Manager need the new value too).
-```
-
-If you use `helm template` or GitOps without setting the value:
-
-```
-ERROR: no app-lerian client secret is set and this render cannot read the cluster (helm template, ArgoCD, helmfile, client --dry-run), so a generated secret would change on every render.
-   Set auth.secrets.AUTHORIZER_CLIENT_SECRET or auth.useExistingSecret. On an existing install, use the value app-lerian already holds; if this chart generated it, it is in Secret <release>-auth-app-client-secret, key AUTHORIZER_CLIENT_SECRET.
-```
-
-If you try a fresh install with an old Caradhras image:
-
-```
-ERROR: no app-lerian client secret is set and the Caradhras image tag "3.16.0" cannot seed a generated one.
-   Set auth.secrets.AUTHORIZER_CLIENT_SECRET, use auth.useExistingSecret, or pin a semver Caradhras tag >= 2.4.0-beta.4 (a bare digest or latest cannot be checked).
-```
-
-**Why this matters:**
-
-- **Eliminates duplication:** You no longer need to set the same secret in two places
-- **Prevents silent breakage:** The chart refuses to generate a new secret on upgrades, which would break authentication
-- **Supports secret rotation:** The error message documents the correct rotation procedure (Caradhras API call + coordinated restart)
-- **Enforces GitOps best practices:** Renders without cluster access must provide the value explicitly
-
-**Operational impact:**
-
-- **Existing deployments:** You must retrieve the current secret value and set it in `auth.secrets.AUTHORIZER_CLIENT_SECRET` before upgrading (see Migration Steps below)
-- **Fresh installs:** If you provide no value, the chart generates one (requires Caradhras `>= 2.4.0-beta.4`)
-- **GitOps workflows:** You must set the value explicitly in your values file; the chart cannot generate one without cluster read access
-- **Secret rotation:** To change the secret, use the Caradhras API endpoint documented in the error message, then update the value and restart all components in the same maintenance window
-
-# Migration Steps
-
-### Scenario 1: Fresh Install (No Existing Database)
-
-If this is a new installation with no existing Caradhras database:
-
-**Option 1: Let the chart generate a secret (recommended)**
-
-No action required. The chart will generate a random 40-character secret automatically. This requires:
-
-- Caradhras image tag `>= 2.4.0-beta.4`
-- A render that can read the cluster (not `helm template`, ArgoCD, or `--dry-run`)
-
-**Option 2: Provide your own secret**
-
-Set the value in your `values.yaml`:
-
-```yaml
-auth:
-  secrets:
-    AUTHORIZER_CLIENT_SECRET: "your-generated-secret-here"
-```
-
-Then install:
-
-```bash
-helm install plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 11.2.1 -n midaz-plugins -f values.yaml
-```
-
-### Scenario 2: Upgrade with Existing Database
-
-If you are upgrading an existing installation, you **must** retrieve the current secret value and set it in `auth.secrets.AUTHORIZER_CLIENT_SECRET`.
-
-**Step 1: Retrieve the current secret value**
-
-If the chart generated the secret in a previous install, it is stored in the Secret the chart created:
-
-```bash
-kubectl get secret <release>-auth -n midaz-plugins -o jsonpath='{.data.AUTHORIZER_CLIENT_SECRET}' | base64 -d
-```
-
-If you set the value manually in a previous install, use that same value.
-
-**Step 2: Update your values.yaml**
-
-Remove `identity.secrets.AUTHORIZER_CLIENT_SECRET` (if present) and set the value under `auth.secrets`:
-
-```yaml
-auth:
-  secrets:
-    AUTHORIZER_CLIENT_SECRET: "the-value-from-step-1"
-    DB_PASSWORD: ""
-    REDIS_PASSWORD: ""
-    LICENSE_KEY: ""
-
-identity:
-  secrets:
-    # Remove AUTHORIZER_CLIENT_SECRET from here
-    LICENSE_KEY: ""
-    ORGANIZATION_IDS: ""
-```
-
-**Step 3: Upgrade**
-
-```bash
-helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 11.2.1 -n midaz-plugins -f values.yaml
-```
-
-> **Important:** If you do not set `auth.secrets.AUTHORIZER_CLIENT_SECRET`, the upgrade will fail with an error message. Do not attempt to bypass this by generating a new secret — it will break authentication.
-
-### Scenario 3: GitOps / Helm Template Workflows
-
-If you use ArgoCD, helmfile, or `helm template` (any workflow that cannot read the cluster), you **must** provide the secret value explicitly.
-
-**Step 1: Retrieve the current secret value**
-
-If upgrading an existing install:
-
-```bash
-kubectl get secret <release>-auth -n midaz-plugins -o jsonpath='{.data.AUTHORIZER_CLIENT_SECRET}' | base64 -d
-```
-
-If this is a fresh install, generate a secret:
-
-```bash
-openssl rand -base64 30
-```
-
-**Step 2: Set the value in your values file**
-
-```yaml
-auth:
-  secrets:
-    AUTHORIZER_CLIENT_SECRET: "your-secret-here"
-```
-
-**Step 3: Commit and sync**
-
-Commit the updated `values.yaml` to your Git repository and sync with your GitOps tool.
-
-> **Note:** The chart will fail to render if you do not set this value and the render cannot read the cluster. This is intentional to prevent generating a new secret on every render, which would cause constant pod restarts.
-
-### Scenario 4: Using External Secrets (auth.useExistingSecret=true)
-
-If you manage secrets externally and set `auth.useExistingSecret=true`, you must ensure your external Secret contains the `AUTHORIZER_CLIENT_SECRET` key.
-
-**Step 1: Verify your external Secret**
-
-Your external Secret must include:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: your-external-secret-name
-  namespace: midaz-plugins
-type: Opaque
-data:
-  AUTHORIZER_CLIENT_SECRET: <base64-encoded-value>
-  DB_PASSWORD: <base64-encoded-value>
-  REDIS_PASSWORD: <base64-encoded-value>
-  LICENSE_KEY: <base64-encoded-value>
-```
-
-**Step 2: Update your values.yaml**
-
-```yaml
+# MERGE these settings into your COMPLETE intended values; retain other settings.
 auth:
   useExistingSecret: true
-  existingSecretName: "your-external-secret-name"
+  existingSecretName: access-manager-auth-env
+# Remove only identity.secrets.AUTHORIZER_CLIENT_SECRET from the old values.
+# Preserve identity's existing Secret mode/name and all its other settings.
 ```
 
-**Step 3: Upgrade**
+Replace the example Secret name with your provisioned name. Preserve existing `auth-database.auth.existingSecret`, database connection settings, Redis references, `identity.useExistingSecret` / `identity.existingSecretName`, and `caradhras.useExistingSecret` / `caradhras.existingSecretName` where configured. Do not redirect unrelated secrets into the new auth Secret inadvertently. With bundled PostgreSQL the password normally comes from the database Secret's `password` key; external-database configurations can use the auth environment Secret's `DB_PASSWORD` key. Inspect the rendered references for your specific configuration.
+
+Commit only non-sensitive references/configuration, or encrypted resources handled by your approved deployment system. Configure ordering so required external Secrets are available before application rollout. Retain every required non-client key in existing external identity Secrets. The explicit identity environment reference selects the auth Secret for this credential; removing a redundant key from another Secret is not required to make that reference work and can break another consumer.
+
+External Secret value changes do **not** by themselves change the checksum based on `auth.secrets.AUTHORIZER_CLIENT_SECRET`. Do not rely on that checksum for externally managed rotation; use your established controlled rollout mechanism. Rotation of the database credential and dependent clients is a separate coordinated operation, not a values-only edit.
+
+### Alternative: privately supplied chart-managed value
+
+If you retain chart-managed Secrets, set `auth.secrets.AUTHORIZER_CLIENT_SECRET` to the current credential only in your private complete intended values file or approved decrypted deployment input. Remove only the obsolete identity override. Keep every unrelated setting intact; do not paste an example containing empty passwords or license keys over your configuration.
+
+Helm release records and rendered output can contain sensitive data in this mode. Protect their storage/access and keep backups, diffs and render artifacts private. A private local file is not permission to put the credential into Git.
+
+## Fresh installs: do not assume the shipped default can seed a new credential
+
+The shipped Caradhras `2.1.0` does not consume `appLerianClientSecret` in its application-seeding path. Supplying an arbitrary generated value, whether in values or an external Secret, does not establish that the seeded database application has the same credential. A no-action default installation is not a supported recipe for generated-secret seeding.
+
+The chart's automatic-generation branch requires a semver server tag `>=2.4.0-beta.4`, cluster Secret lookup capability, no reusable kept value, and a fresh install rather than an upgrade. Offline/client renders cannot demonstrate this branch. The `2.4.0-beta.4` seed source reads `appLerianClientSecret` for `admin/app-lerian`, but that source fact is **not** a full compatibility, migration or production-readiness certification for that prerelease or every numerically newer image.
+
+This guide therefore does not prescribe a server-image jump as a chart migration workaround. For a fresh database, stop until an independently approved server/migrator combination and validated seeding/bootstrap runbook establish matching credentials. Do not use an unverified tag solely to satisfy the chart's version check.
+
+Preserve the deployed images' licensing prerequisites. In particular the default Caradhras `2.1.0` release requires a nonempty `LICENSE_KEY` for product `caradhras`; a chart-accepted license-file mount alone does not satisfy that runtime prerequisite. Preserve auth and identity licensing separately.
+
+## Prepare private complete values and preview
+
+Run from an approved private workspace outside any Git checkout; disable shell tracing. The export can contain credentials. Set release and namespace to your actual deployment. `helm get values` is a starting point, not a complete intended configuration until reviewed against target defaults and all required Secret references.
 
 ```bash
-helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager --version 11.2.1 -n midaz-plugins -f values.yaml
+set -eu
+set +x
+umask 077
+RELEASE=plugin-access-manager
+NAMESPACE=midaz-plugins
+PRIVATE_DIR="$(mktemp -d "${HOME}/.access-manager-upgrade.XXXXXX")"
+chmod 700 "$PRIVATE_DIR"
+helm get values "$RELEASE" -n "$NAMESPACE" -o yaml > "$PRIVATE_DIR/current-user-values.yaml"
+helm get manifest "$RELEASE" -n "$NAMESPACE" > "$PRIVATE_DIR/current-manifest.yaml"
+helm history "$RELEASE" -n "$NAMESPACE" > "$PRIVATE_DIR/history.txt"
+cp "$PRIVATE_DIR/current-user-values.yaml" "$PRIVATE_DIR/intended-values.yaml"
+VALUES="$PRIVATE_DIR/intended-values.yaml"
 ```
 
-The chart will read `AUTHORIZER_CLIENT_SECRET` from your external Secret and use it for all three components (auth, identity, caradhras).
+Now edit `$VALUES` privately as described above and verify that it is the complete intended configuration. Back up the database and Secrets using your established backup system; the three exports above do not back them up. Do not proceed while credential agreement, backups or any required license/Secret key is unresolved.
 
-> **Warning:** If you also set `identity.useExistingSecret=true`, ensure your identity external Secret does **not** contain `AUTHORIZER_CLIENT_SECRET`. The chart now reads it from the auth Secret only. The identity Secret should contain only `LICENSE_KEY`, `ORGANIZATION_IDS`, and any Google Workspace directory keys.
-
-# Preview changes before upgrading
+Use **the same complete intended file** and reset semantics for every preview and upgrade. `--reset-values` is deliberate: removed legacy overrides must not be silently reused. It also discards old overrides you forgot to include, so a short migration fragment is unsafe.
 
 ```bash
-helm diff upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.1
+helm template "$RELEASE" oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
+  --version 11.2.1 -n "$NAMESPACE" --is-upgrade \
+  -f "$VALUES" > "$PRIVATE_DIR/target-manifest.yaml"
+
+# Optional, if the approved helm-diff plugin is already installed:
+helm diff upgrade "$RELEASE" oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
+  --version 11.2.1 -n "$NAMESPACE" --reset-values -f "$VALUES" \
+  > "$PRIVATE_DIR/upgrade.diff"
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+`helm template` has no stored release values to reset; it uses target defaults plus this file and cannot prove live lookup/adoption. Inspect private output for the expected Secret names/keys, images, persistent-storage bindings, ingress/configuration and all three workloads' credential references. Do not publish diffs or manifests; they may contain encoded credentials. Rendering an existing-Secret reference cannot prove database agreement, startup readiness, secret existence or compatibility-copy consumers.
 
-# Command to upgrade
+## Upgrade and verify
+
+After private review and approved backup/recovery readiness:
 
 ```bash
-helm upgrade plugin-access-manager oci://registry-1.docker.io/lerianstudio/plugin-access-manager -n midaz-plugins --version 11.2.1
+helm upgrade "$RELEASE" oci://registry-1.docker.io/lerianstudio/plugin-access-manager \
+  --version 11.2.1 -n "$NAMESPACE" --reset-values -f "$VALUES" \
+  > "$PRIVATE_DIR/upgrade-result.txt"
 ```
+
+Check the actual auth, identity and Caradhras Deployments created by this release for successful rollout; use their rendered names rather than an assumed label selector. Verify application readiness, existing login and a representative existing machine-client authentication/authorization flow through your approved smoke tests without logging credentials or tokens. A Helm command exit status alone does not demonstrate authentication works.
+
+If verification fails, stop further rollout and use the pre-reviewed recovery plan. A Helm rollback alone neither restores database state nor reverts external/kept Secrets. Keep the database application credential, restored Secret contents and all dependent clients consistent; do not regenerate a credential, delete a kept Secret or restore only one side as a quick fix. Any actual rotation requires a separately validated, version-specific authorization and coordinated dependent-client rollout procedure.
+
+## Verification boundary
+
+The release-source comparison and local synthetic renders support chart wiring and the source-specific caveats above. They are not a live install, upgrade, credential rotation, kept-Secret adoption test, database backup/restore drill or application compatibility certification. Passing documentation checks does not remove these operational prerequisites.
 <!-- {% endraw %} -->

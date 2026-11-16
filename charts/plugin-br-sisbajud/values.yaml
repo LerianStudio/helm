@@ -494,8 +494,13 @@ migrations:
   enabled: true
   image:
     repository: ghcr.io/lerianstudio/plugin-br-sisbajud-migrations
-    # -- Defaults to Chart.appVersion.
-    tag: ""
+    # -- Defaults to Chart.appVersion when empty. Pinned to 1.4.0 because the
+    # v1.5.0 release did not publish plugin-br-sisbajud-migrations:1.5.0 (its
+    # build failed on a proxy.golang.org timeout). 1.4.0 runs the same schema:
+    # migrations/, migrations-image/Dockerfile, go.mod and every package
+    # cmd/postgres-migrations imports are identical between v1.4.0 and v1.5.0.
+    # Set back to "" once the 1.5.0 migrations image exists.
+    tag: "1.4.0"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   # -- MIGRATIONS_TIMEOUT_SEC

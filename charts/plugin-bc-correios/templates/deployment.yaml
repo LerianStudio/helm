@@ -24,10 +24,12 @@ spec:
       {{- include "bc-correios.selectorLabels" (dict "context" . "name" $component.name) | nindent 6 }}
   template:
     metadata:
-      {{- with $component.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- with $component.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "bc-correios.selectorLabels" (dict "context" . "component" $component.name "name" $component.name) | nindent 8 }}
         app.kubernetes.io/version: {{ include "bc-correios.versionLabelValue" . }}

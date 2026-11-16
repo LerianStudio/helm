@@ -1,0 +1,105 @@
+suite: licence file and licence key
+templates:
+  - templates/ledger/deployment.yaml
+  - templates/tracer/deployment.yaml
+  - templates/ledger/secrets.yaml
+  - templates/ledger/configmap.yaml
+  - templates/tracer/secrets.yaml
+  - templates/tracer/configmap.yaml
+  - templates/ledger/partition-cronjob.yaml
+  - templates/ledger/partition-reconcile-job.yaml
+release:
+  name: midaz
+  namespace: midaz
+set:
+  tracer.enabled: true
+  ledger.image.tag: 4.5.2
+  ledger.configmap.ENV_NAME: development
+  ledger.secrets.RABBITMQ_DEFAULT_PASS: sample
+  ledger.secrets.RABBITMQ_CONSUMER_PASS: sample
+  ledger.secrets.LCRYPTO_HASH_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  rabbitmq.authentication.erlangCookie.value: "0123456789abcdef0123456789abcdef"
+tests:
+  - it: renders no licence mount with licenseFile null
+    set:
+      ledger.licenseFile: null
+      tracer.licenseFile: null
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+        template: templates/ledger/deployment.yaml
+      - notExists:
+          path: spec.template.spec.volumes
+        template: templates/tracer/deployment.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: mounts the licence Secret as a directory in file mode
+    set:
+      ledger.licenseFile.existingSecret: ledger-licence
+      tracer.licenseFile.existingSecret: tracer-licence
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_FILE_PATH
+            value: /etc/lerian/license/license
+        template: templates/ledger/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: license-file
+            mountPath: /etc/lerian/license
+            readOnly: true
+        template: templates/tracer/deployment.yaml
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: tracer-licence
+        template: templates/tracer/deployment.yaml
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: ledger-licence
+        template: templates/ledger/partition-reconcile-job.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.volumes[0].secret.secretName
+          value: ledger-licence
+        template: templates/ledger/partition-cronjob.yaml
+  - it: carries LICENSE_KEY to the reconcile hook through a hook Secret
+    set:
+      ledger.secrets.LICENSE_KEY: placeholder-key
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: midaz-ledger-license-hook
+                key: LICENSE_KEY
+                optional: true
+        template: templates/ledger/partition-reconcile-job.yaml
+        documentIndex: 1
+      - equal:
+          path: metadata.name
+          value: midaz-ledger-license-hook
+        template: templates/ledger/partition-reconcile-job.yaml
+        documentIndex: 0
+  - it: gives multi-tenant partition runs the Valkey password
+    set:
+      ledger.useExistingSecret: true
+      ledger.existingSecretName: ledger-credentials
+      ledger.configmap.MULTI_TENANT_ENABLED: "true"
+      ledger.configmap.MULTI_TENANT_URL: http://tenant-manager
+      ledger.configmap.MULTI_TENANT_REDIS_HOST: valkey
+      valkey.auth.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: midaz-valkey
+                key: valkey-password
+        template: templates/ledger/partition-reconcile-job.yaml

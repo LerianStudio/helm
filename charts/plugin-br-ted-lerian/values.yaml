@@ -96,7 +96,7 @@ plugin-br-ted-lerian:
   # -- Enable or disable the TED service
   enabled: true
   # -- Number of replicas for the TED service
-  replicaCount: 1
+  replicaCount: 2
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   # ----- Workload · image ----------------------------------------------------
@@ -106,7 +106,7 @@ plugin-br-ted-lerian:
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.0.0-beta.64" # defaults to appVersion when empty
+    tag: "1.0.0-beta.86" # defaults to appVersion when empty
   # -- Secrets for pulling images from a private registry
   imagePullSecrets:
     - name: ghcr-credential
@@ -129,28 +129,11 @@ plugin-br-ted-lerian:
     # -- Defines the root filesystem as read-only
     readOnlyRootFilesystem: true
   # ----- Workload · availability & rollout -----------------------------------
-  # -- Seconds Kubernetes waits after SIGTERM before killing the pod
-  # 55 = 15s drain + 30s shutdown budget + 10s margin
-  terminationGracePeriodSeconds: 55
-  # -- PodDisruptionBudget configuration
-  pdb:
-    # -- Enable or disable PodDisruptionBudget
-    enabled: true
-    # -- Minimum number of available pods
-    minAvailable: 1
-    # -- Maximum number of unavailable pods
-    maxUnavailable: 1
-    # -- Annotations for the PodDisruptionBudget
-    annotations: {}
-  # -- Deployment update strategy
-  deploymentUpdate:
-    # -- Type of deployment strategy
-    type: RollingUpdate
-    # -- Maximum number of pods that can be created over the desired number of pods
-    maxSurge: 1
-    # -- Maximum number of pods that can be unavailable during the update
-    # (0 keeps the old pod serving until the surged pod is ready)
-    maxUnavailable: 0
+  # -- Health preset (lerian-common.health). The preset owns the probes (served on the
+  # internal port 8099, never through the Ingress), HEALTH_PORT, SHUTDOWN_*, the grace
+  # period, the rollout strategy and the PodDisruptionBudget; none is a value.
+  health:
+    stack: go
   # ----- Workload · networking -----------------------------------------------
   service:
     # -- Kubernetes service type
@@ -189,7 +172,7 @@ plugin-br-ted-lerian:
     # -- Enable or disable horizontal pod autoscaling
     enabled: true
     # -- Minimum number of replicas
-    minReplicas: 1
+    minReplicas: 2
     # -- Maximum number of replicas
     maxReplicas: 5
     # -- Target CPU utilization percentage for autoscaling

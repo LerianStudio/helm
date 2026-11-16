@@ -1,5 +1,74 @@
 # Plugin-br-sisbajud Changelog
 
+## [1.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.6.0)
+
+Features:
+- Add the mensageria permanent block switch with the app guards. (@fredcamaral)
+
+Improvements:
+- Hoist the streaming values and drop the unused switch key. (@fredcamaral)
+
+Documentation:
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.5.1`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.5.1...plugin-br-sisbajud-v1.6.0)
+
+---
+
+## [1.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.5.1)
+
+Fixes:
+
+- Default the images to `1.3.0`. (@brunobls)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.5.0...plugin-br-sisbajud-v1.5.1)
+
+---
+
+## [1.5.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.5.0)
+
+Features:
+- Open the health container port to facilitate monitoring. (@brunobls)
+- Set the health port and shutdown budget to improve application stability. (@brunobls)
+- Validate and emit the Midaz CRM URL to ensure proper configuration. (@brunobls)
+- Require the Midaz URL in single tenant mode to enforce correct setup. (@brunobls)
+- Emit the Midaz connection environment variables to support integration. (@brunobls)
+
+Fixes:
+- Open the health port the app really listens on to correct the monitoring setup. (@fredcamaral)
+- Default the images to `1.3.0-rc.1` to ensure compatibility. (@fredcamaral)
+- Refuse a grace period below the shutdown budget to prevent premature shutdowns. (@brunobls)
+- Probe readiness on the health port to ensure accurate health checks. (@brunobls)
+- Allow the CRM URL in any mode to enhance flexibility. (@brunobls)
+
+Improvements:
+- Match the Midaz validator header to its rules for consistency in documentation. (@fredcamaral)
+- Name the app release `1.3.0` in chart text for clarity. (@fredcamaral)
+- Document the health port to provide better guidance. (@brunobls)
+- Describe the CRM URL in any mode to improve documentation clarity. (@brunobls)
+- Document the Midaz CRM URL to assist in configuration. (@brunobls)
+- Document the Midaz connection environment variables to aid in setup. (@brunobls)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.4.0...plugin-br-sisbajud-v1.5.0)
+
+---
+
+## [1.4.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.4.0)
+
+Features:
+- Add license file mount and pass the license key to migrators. (@fredcamaral)
+
+Fixes:
+- Project only the license key in the license file volume. (@fredcamaral)
+
+Improvements:
+- Add the `1.3.1` upgrade guide. (@fredcamaral)
+- Name the removed readiness note in the `1.3.1` guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.3.1...plugin-br-sisbajud-v1.4.0)
+
+---
+
 ## [1.3.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.3.1)
 
 Fixes:
@@ -112,3 +181,4 @@ Fixes:
 - Made mensageria MTLS optional and fixed render gates. (@guimoreirar)
 
 [View all changes](https://github.com/LerianStudio/helm/commits/plugin-br-sisbajud-v1.0.0)
+

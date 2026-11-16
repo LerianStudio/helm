@@ -1,4 +1,5 @@
 {{- if (index .Values "system-facts").enabled }}
+{{- $h := include "system-facts.api.health" . | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,14 +10,9 @@ metadata:
 spec:
   revisionHistoryLimit: {{ (index .Values "system-facts").revisionHistoryLimit | default 10 }}
   strategy:
-    type: {{ (index .Values "system-facts").deploymentUpdate.type }}
-    {{- if eq (index .Values "system-facts").deploymentUpdate.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ (index .Values "system-facts").deploymentUpdate.maxSurge }}
-      maxUnavailable: {{ (index .Values "system-facts").deploymentUpdate.maxUnavailable }}
-    {{- end }}
-  {{- if not (index .Values "system-facts").autoscaling.enabled }}
-  replicas: {{ (index .Values "system-facts").replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -38,7 +34,7 @@ spec:
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}
       {{- end }}
       serviceAccountName: {{ include "system-facts.serviceAccountName" . }}
-      terminationGracePeriodSeconds: {{ dig "terminationGracePeriodSeconds" 55 (index .Values "system-facts") | int }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- include "lerian-common.rolesAnywhere.podSecurityContext" (dict "aws" .Values.aws "podSecurityContext" (index .Values "system-facts").podSecurityContext) | nindent 6 }}
       containers:
         - name: {{ include "system-facts.fullname" . }}
@@ -60,13 +56,17 @@ spec:
           {{- $vk := .Values.valkey | default dict }}
           {{- $vkAuth := $vk.auth | default dict }}
           {{- $vkInternal := and (ne (toString $vk.enabled) "false") (not $vk.external) $vkAuth.enabled }}
+          {{- $licenseSecret := include "system-facts.licenseFileSecret" (index .Values "system-facts") }}
           envFrom:
           - secretRef:
               name: {{ if (index .Values "system-facts").useExistingSecret }}{{ (index .Values "system-facts").existingSecretName }}{{ else }}{{ include "system-facts.fullname" . }}{{ end }}
           - configMapRef:
               name: {{ include "system-facts.fullname" . }}
-          {{- if or $otelEnabled $rolesAnywhereEnabled $pgInternal $vkInternal }}
           env:
+          {{- toYaml $h.env | nindent 10 }}
+          {{- if $licenseSecret }}
+          {{- include "system-facts.licenseFileEnv" . | nindent 10 }}
+          {{- end }}
           {{- if $pgInternal }}
           {{- include "system-facts.infraSecretRef" (dict "context" . "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
           {{- end }}
@@ -79,21 +79,20 @@ spec:
           {{- if $rolesAnywhereEnabled }}
           {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}
           {{- end }}
-          {{- end }}
           ports:
             - name: http
               containerPort: {{ (index .Values "system-facts").service.port }}
               protocol: TCP
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "livenessProbe" "probe" (index .Values "system-facts").livenessProbe
-                "port" (index .Values "system-facts").service.port
-                "path" "/health" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "readinessProbe" "probe" (index .Values "system-facts").readinessProbe
-                "port" (index .Values "system-facts").service.port
-                "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
+            {{- toYaml $h.ports | nindent 12 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
+          {{- if $licenseSecret }}
+          {{- include "system-facts.licenseFileVolumeMount" . | nindent 10 }}
+          {{- end }}
           resources:
             {{- toYaml (index .Values "system-facts").resources | nindent 12 }}
         {{- if $rolesAnywhereEnabled }}
@@ -101,6 +100,11 @@ spec:
         {{- end }}
       {{- if $rolesAnywhereEnabled }}
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" "system-facts-iam-tls") | nindent 6 }}
+      {{- else if $licenseSecret }}
+      volumes:
+      {{- end }}
+      {{- if $licenseSecret }}
+      {{- include "system-facts.licenseFileVolume" $licenseSecret | nindent 8 }}
       {{- end }}
       {{- if or (index .Values "system-facts").nodeSelector (index .Values "system-facts").affinity (index .Values "system-facts").tolerations }}
       {{- include "lerian-common.scheduling" (index .Values "system-facts") | nindent 6 }}

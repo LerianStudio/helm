@@ -1,5 +1,20 @@
 # Fetcher Changelog
 
+## [4.2.0](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.2.0)
+
+Features:
+- Add an optional license file mount for `lib-license-go` `v5`. (@fredcamaral)
+
+Improvements:
+- Add the `4.1.3` upgrade guide. (@fredcamaral)
+- Make the `4.1.3` Mongo checks actionable. (@fredcamaral)
+- Reword the `4.1.3` upgrade guide for clarity. (@fredcamaral)
+- Add the verified `4.1.3` upgrade guide. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v4.1.3...fetcher-v4.2.0)
+
+---
+
 ## [4.1.3](https://github.com/LerianStudio/helm/releases/tag/fetcher-v4.1.3)
 
 Fixes:
@@ -348,3 +363,4 @@ Contributors: @gui.rodrigues,
 Contributors: @ferr3ira.gabriel, @gui.rodrigues, @guimoreirar,
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/fetcher-v1.0.0...fetcher-v1.1.0)
+

@@ -88,13 +88,7 @@ data:
   STREAMING_HUB_HTTP_LISTEN_ADDR: {{ $cm.STREAMING_HUB_HTTP_LISTEN_ADDR | default ":8080" | quote }}
   STREAMING_HUB_METRICS_ENABLED: {{ $cm.STREAMING_HUB_METRICS_ENABLED | default "true" | quote }}
   STREAMING_HUB_SWAGGER_ENABLED: {{ $cm.STREAMING_HUB_SWAGGER_ENABLED | default "false" | quote }}
-  STREAMING_HUB_SHUTDOWN_TIMEOUT: {{ $cm.STREAMING_HUB_SHUTDOWN_TIMEOUT | default "30s" | quote }}
-  STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT: {{ $cm.STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT | default "5s" | quote }}
-  # --- license (lib-license-go, GLOBAL mode; UNPREFIXED platform convention) ---
   # LICENSE_KEY is a Secret (streamingHub.secrets.LICENSE_KEY), never this ConfigMap.
-  # ORGANIZATION_IDS must be EXACTLY "global" — the app refuses any other value at
-  # boot, and streaming-hub.licenseGuard refuses it at render.
-  ORGANIZATION_IDS: {{ $cm.ORGANIZATION_IDS | default "global" | quote }}
   # --- kafka / redpanda (external; SCRAM password + CA cert live in the Secret) ---
   STREAMING_HUB_KAFKA_BROKERS: {{ $cm.STREAMING_HUB_KAFKA_BROKERS | default "localhost:19092" | quote }}
   STREAMING_HUB_KAFKA_SCRAM_MECHANISM: {{ $cm.STREAMING_HUB_KAFKA_SCRAM_MECHANISM | default "" | quote }}
@@ -199,7 +193,7 @@ data:
       STREAMING_HUB_PULL_BURST is deliberately ABSENT from the list: it has no
       line above any more, so leaving it enumerated would make this hatch skip it
       and an operator who set it would get nothing, silently. */ -}}
-  {{- /* IS_DEVELOPMENT, STREAMING_HUB_ALLOW_PRIVATE_SINKS, STREAMING_HUB_DISPATCH_CLAIM_BATCH,
+  {{- /* ORGANIZATION_IDS, IS_DEVELOPMENT, STREAMING_HUB_ALLOW_PRIVATE_SINKS, STREAMING_HUB_DISPATCH_CLAIM_BATCH,
       STREAMING_HUB_DLQ_GROUP and the unread RATE_LIMIT_* keys stay listed so the hatch
       below never emits them. The schema still accepts them. */ -}}
   {{- $enumerated := dict
@@ -208,7 +202,6 @@ data:
       "OTEL_EXPORTER_OTLP_ENDPOINT" 1 "OTEL_INSECURE_EXPORTER" 1 "ENV_NAME" 1 "AWS_REGION" 1
       "STREAMING_HUB_ENV" 1 "STREAMING_HUB_LOG_LEVEL" 1 "STREAMING_HUB_HTTP_LISTEN_ADDR" 1
       "STREAMING_HUB_METRICS_ENABLED" 1 "STREAMING_HUB_SWAGGER_ENABLED" 1
-      "STREAMING_HUB_SHUTDOWN_TIMEOUT" 1 "STREAMING_HUB_PRE_STOP_DRAIN_TIMEOUT" 1
       "ORGANIZATION_IDS" 1
       "IS_DEVELOPMENT" 1
       "STREAMING_HUB_KAFKA_BROKERS" 1 "STREAMING_HUB_KAFKA_SCRAM_MECHANISM" 1

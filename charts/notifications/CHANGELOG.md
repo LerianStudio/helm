@@ -1,5 +1,27 @@
 # Notifications Changelog
 
+## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.2.0)
+
+Features:
+- Serve notifications probes on the health port `8099`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.1.0...notifications-v1.2.0)
+
+---
+
+## [1.1.0](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.1.0)
+
+Features:
+- Add an optional license file mount to notifications. (@fredcamaral)
+
+Improvements:
+- Correct the `notifications` `1.0.2` restart claim in the documentation. (@fredcamaral)
+- Add an upgrade guide for `notifications` `1.0.2`. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.2...notifications-v1.1.0)
+
+---
+
 ## [1.0.2](https://github.com/LerianStudio/helm/releases/tag/notifications-v1.0.2)
 
 Fixes:
@@ -16,3 +38,4 @@ Fixes:
 - Ensure notifications properly handle edge cases related to user preferences. (@fredcamaral)
 
 [Compare changes](https://github.com/LerianStudio/helm/compare/notifications-v1.0.0...notifications-v1.0.1)
+

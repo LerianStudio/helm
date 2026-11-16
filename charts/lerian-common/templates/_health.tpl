@@ -120,6 +120,8 @@ lerian-common.health.prometheusRule — opt-in PrometheusRule with the health
 alerts (BYOC). Renders nothing unless monitoring.prometheusRule.enabled. The
 health_* rules need the OTLP metrics of the Lerian services; the kube_* rules
 work on any kube-prometheus-stack. Severity: page > ticket > warning.
+HealthReportCheckDown is per pod (sum without (status) keeps the OTel instance): a pod that reported up
+in the last 10m cannot fire on its final down sample; a pod bad since start fires after 5m.
 
 Inputs: monitoring (.Values.monitoring: prometheusRule.{enabled, labels}),
 name, labels (rendered block), namespace (the release namespace; also scopes
@@ -154,10 +156,23 @@ spec:
           labels: {severity: page}
           annotations: {summary: "A request-path store is down on some pods of the service"}
         - alert: HealthReportCheckDown
-          expr: max by (job, check) (health_check_status{status=~"down|degraded", mode="report"}) == 1
-          for: 15m
+          expr: |-
+            max by (job, check) (
+              (min_over_time((sum without (status) (health_check_status{mode="report",status=~"down|degraded"}))[10m:1m]) > 0)
+              and
+              (sum without (status) (health_check_status{mode="report",status=~"down|degraded"}) > 0)
+            )
+          for: 5m
           labels: {severity: warning}
-          annotations: {summary: "A reported dependency is down or degraded"}
+          annotations:
+            summary: "A live pod reports a Report-mode check down or degraded"
+            description: >-
+              A live pod reports the Report-mode check `{{`{{ $labels.check }}`}}` of `{{`{{ $labels.job }}`}}` as down or degraded
+              for the last 10 minutes, or since it started if it is younger, and still now. Report checks never remove the pod from traffic.
+              The check is either an external dependency of the service or a worker of the service itself. A check that has not
+              been up since the pod started points to a code or configuration defect, not to an outage. The alert
+              resolves when the check returns to up or when the pod that reports it stops existing; a resolution by
+              missing series does not prove recovery.
         - alert: HealthPodNotReady
           expr: health_ready < 1
           for: 10m

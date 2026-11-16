@@ -74,10 +74,12 @@
 {{- end -}}
 {{- /* Permission declaration — api-only, so it rides the api's own surface. */ -}}
 {{- $http = mergeOverwrite $http (fromYaml (include "plugin-br-pix-jd.declarationEnv" (dict "root" $ "authEnabled" (index $platform "PLUGIN_AUTH_ENABLED")))) -}}
+{{- /* Courier admission — api-only: the worker serves no Courier routes. */ -}}
+{{- $courier := fromYaml (include "plugin-br-pix-jd.courierAuthEnv" $) | default dict -}}
 {{- /* Merge order IS the precedence contract: platform < rate-limit < CORS < http
-   < extraConfigmap. The escape hatch merges last and therefore wins — stated
-   plainly in values.yaml rather than claimed otherwise. */ -}}
-{{- $data := mergeOverwrite $platform $domain $qrcode $signing $mt $streaming $rateLimit $corsEnv $http (.Values.api.extraConfigmap | default dict) -}}
+   < courier < extraConfigmap. The escape hatch merges last and therefore wins —
+   stated plainly in values.yaml rather than claimed otherwise. */ -}}
+{{- $data := mergeOverwrite $platform $domain $qrcode $signing $mt $streaming $rateLimit $corsEnv $http $courier (.Values.api.extraConfigmap | default dict) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

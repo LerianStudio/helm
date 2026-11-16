@@ -29,14 +29,6 @@ on:
         description: "Space-separated chart names to test"
         type: string
         default: ""
-      runner:
-        description: "Runner to install on — raise it for a chart that does not fit"
-        type: choice
-        options:
-          - blacksmith-8vcpu-ubuntu-2404
-          - blacksmith-4vcpu-ubuntu-2404
-          - blacksmith-16vcpu-ubuntu-2404
-        default: blacksmith-8vcpu-ubuntu-2404
 
 concurrency:
   group: helm-install-test-${{ github.ref }}
@@ -58,7 +50,11 @@ jobs:
     # Raising the node rather than trimming requests in a fixture: this gate exists
     # to install the chart as written, and shrinking resources to fit would test
     # something nobody deploys.
-    runs-on: ${{ inputs.runner || 'blacksmith-8vcpu-ubuntu-2404' }}
+    #
+    # INSTALL_TEST_RUNNERS wins, then LARGE_RUNNERS (the org's 8 vCPU pool), then
+    # FALLBACK_RUNNERS, so the pool moves without editing this file and never drops
+    # to the 4 vCPU ceiling described above.
+    runs-on: ${{ vars.INSTALL_TEST_RUNNERS || vars.LARGE_RUNNERS || vars.FALLBACK_RUNNERS }}
     timeout-minutes: 60 # a full sweep installs every app chart sequentially, now waiting for Ready
     steps:
       # persist-credentials: false because the step that follows runs
@@ -124,7 +120,7 @@ jobs:
           python3 .github/scripts/changed-charts.py
 
       - name: Setup Helm
-        if: steps.scope.outputs.has-charts == 'true'
+        if: steps.scope.outputs.has-charts == 'true' || steps.scope.outputs.fixtures != ''
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
 
       # Both logins write to the runner's docker config, which the script turns into
@@ -137,7 +133,7 @@ jobs:
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKERHUB_IMAGE_PULL_TOKEN }}
 
       - name: Log in to GitHub Container Registry
         if: steps.scope.outputs.has-charts == 'true' && !github.event.pull_request.head.repo.fork
@@ -147,24 +143,26 @@ jobs:
           username: lerianstudio
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # By convention: charts/<c>/tests/test_*.py run as scripts, charts/<c>/tests/*_test.yaml via helm-unittest.
+      # By convention: <dir>/tests/test_*.py run as scripts, <dir>/tests/*_test.yaml via helm-unittest,
+      # for each changed chart and for the fixture charts of a changed library.
       - name: Run chart tests
-        if: steps.scope.outputs.has-charts == 'true'
+        if: steps.scope.outputs.has-charts == 'true' || steps.scope.outputs.fixtures != ''
         shell: bash
         env:
           CHARTS: ${{ steps.scope.outputs.charts-list }}
+          FIXTURES: ${{ steps.scope.outputs.fixtures }}
         run: |
           set -euo pipefail
           shopt -s nullglob
-          for c in $CHARTS; do
-            py=(charts/"$c"/tests/test_*.py); suites=(charts/"$c"/tests/*_test.yaml)
+          for d in $(for c in $CHARTS; do echo "charts/$c"; done) $FIXTURES; do
+            py=("$d"/tests/test_*.py); suites=("$d"/tests/*_test.yaml)
             (( ${#py[@]} + ${#suites[@]} )) || continue
-            helm dependency update "charts/$c"
+            helm dependency update "$d"
             for t in "${py[@]}"; do python3 "$t"; done
             (( ${#suites[@]} )) || continue
             # helm-unittest v1.1.2, pinned by commit like the actions above.
             helm plugin list | grep -q '^unittest' || helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 33c48cac798e465deda9a66c8e6c07c0973cf53d --verify=false
-            helm unittest "charts/$c"
+            helm unittest "$d"
           done
 
       - name: Create kind cluster

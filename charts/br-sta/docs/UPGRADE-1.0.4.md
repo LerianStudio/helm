@@ -13,7 +13,7 @@ This is a patch release that stops rendering the `common.license.isDevelopment` 
 
 The `isDevelopment` field has been removed from the `common.license` configuration block. This field was previously used to route the license SDK to a development gateway. The chart no longer renders it.
 
-> **Historical scope:** This guide covers chart 1.0.3 to 1.0.4 with the default app 1.0.0 images (license SDK v4.1.0), not later application releases. Chart 1.0.4 removes only the modeled `common.license.isDevelopment` mapping; it does not disable the SDK's `IS_DEVELOPMENT` switch. An exact pod environment value of `IS_DEVELOPMENT=true` still selects the development gateway. The variable can also enter through `common.configmap`, `common.secrets`, an operator-managed shared Secret, `common.secretRefs.IS_DEVELOPMENT`, or the component's `extraEnvVars`.
+> **Historical scope:** This guide covers chart 1.0.3 to 1.0.4 with the default app 1.0.0 images (license SDK v4.1.0), not later application releases. Chart 1.0.4 removes only the modeled `common.license.isDevelopment` mapping; it does not disable the SDK's `IS_DEVELOPMENT` switch. An exact pod environment value of `IS_DEVELOPMENT=true` still selects the development gateway. The variable can also enter through `common.configmap`, `worker.configmap` (worker only), `common.secrets`, an operator-managed shared Secret, `common.secretRefs.IS_DEVELOPMENT`, or the component's `extraEnvVars`.
 
 #### What Changed
 

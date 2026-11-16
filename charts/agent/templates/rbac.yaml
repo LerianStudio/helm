@@ -80,15 +80,14 @@ rules:
   # `watch`: nothing here waits on a StorageClass, and the cluster scope keeps
   # no standing subscriptions.
   #
-  # Cluster-scoped because a StorageClass is. What a holder gets is written out
-  # in docs/threat-model.md; in short, it can add a class and move which one is
-  # default, which redirects where FUTURE volumes are provisioned and reaches no
-  # existing volume or its contents.
+  # Cluster-scoped because a StorageClass is. The grant lets the agent add a
+  # class and change which one is default, which sets where FUTURE volumes are
+  # provisioned. It does not reach any existing volume or its contents.
   #
-  # This is the ONLY cluster-scoped write the repair path added. The other
-  # components of the initial set need ClusterRoles, aggregated APIServices and
-  # admission webhooks, and the threat model says per component why the agent
-  # did not get those and what an operator installs by hand instead.
+  # Besides namespace creation, this is the only cluster-scoped write the
+  # agent holds. Components that need ClusterRoles, aggregated APIServices or
+  # admission webhooks are not installed by the agent; an operator installs
+  # them by hand.
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
@@ -254,17 +253,11 @@ rules:
   # stop a running product's credential being refreshed, and the objects are
   # looked up by the exact name of the Secret they fill rather than enumerated.
   #
-  # Rendered ONLY for a client who configured a vault. A client who left
-  # agent.secretVault.provider empty never has a Secret with a residence to fill - the
-  # control plane composes one only for a cluster that REPORTED a vault - so the
-  # grant would be a standing power nobody exercises. It is not an idle one
-  # either, for a client who happens to run External Secrets for the rest of
-  # their estate: `create` on externalsecrets is the ability to write an object
-  # naming any store this namespace can reach and land its material in a Secret
-  # here, which the agent may then read. The client-side mitigation in
-  # docs/threat-model.md - scoping the store's identity to this platform's path
-  # prefix - is advice only a vault user ever reads, so the grant follows the
-  # same switch the feature does.
+  # Rendered only when agent.secretVault.provider is set. Without a vault there
+  # is no Secret for External Secrets to fill, so the grant is omitted.
+  # `create` on externalsecrets lets the agent point an object at any store this
+  # namespace can reach, so scope the store's identity to this platform's path
+  # prefix (agent.secretVault.pathPrefix).
   - apiGroups: ["external-secrets.io"]
     resources: ["externalsecrets", "pushsecrets"]
     verbs: ["get", "create", "update"]

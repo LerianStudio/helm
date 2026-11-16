@@ -114,7 +114,7 @@ func TestPixJDSingleTenantCarriesTheSigningPEMs(t *testing.T) {
 
 	// An argocd-vault-plugin placeholder is substituted after helm runs, so it has
 	// to cross the render byte for byte.
-	placeholder := "<path:secret/data/benedita/plugin-br-pix-jd/dev-st#JD_PAYMENT_SIGNING_PRIVATE_KEY>"
+	placeholder := "<path:secret/data/example/plugin-br-pix-jd#JD_PAYMENT_SIGNING_PRIVATE_KEY>"
 	data = pixJDAPISecretData(t, append(pixJDCert(t), "--set-string", "api.secrets.JD_PAYMENT_SIGNING_PRIVATE_KEY="+placeholder)...)
 	if got := data["JD_PAYMENT_SIGNING_PRIVATE_KEY"]; got != placeholder {
 		t.Errorf("AVP placeholder rendered as %q, want %q", got, placeholder)

@@ -25,7 +25,10 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "plugin-br-payments.labels" (dict "context" .) | nindent 8 }}
+        {{- include "plugin-br-payments.selectorLabels" (dict "context" .) | nindent 8 }}
+        app.kubernetes.io/version: {{ include "plugin-br-payments.versionLabelValue" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/part-of: plugin-br-payments
       annotations:
         {{- /* Roll the pods when their configuration changes (the ConfigMap and
                Secret are read through envFrom, which Kubernetes does not re-read). */}}
@@ -137,6 +140,7 @@ spec:
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
               value: "IPv4"
           {{- end }}
+          {{- with (include "plugin-br-payments.licenseFileMount" . | trim) }}{{ . | nindent 10 }}{{- end }}
           resources:
             {{- toYaml .Values.app.resources | nindent 12 }}
           startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
@@ -186,8 +190,14 @@ spec:
           resources:
             {{- toYaml .Values.aws.rolesAnywhere.sidecar.resources | nindent 12 }}
         {{- end }}
-      {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- $licVolume := include "plugin-br-payments.licenseFileVolume" . | trim }}
+      {{- $raOn := and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
+      {{- if or $raOn $licVolume }}
       volumes:
+        {{- with $licVolume }}
+        {{- . | nindent 8 }}
+        {{- end }}
+        {{- if $raOn }}
         - name: iam-certs
           secret:
             secretName: {{ .Values.aws.rolesAnywhere.certificateSecretName | default "plugin-br-payments-iam-tls" }}
@@ -197,6 +207,7 @@ spec:
                 path: tls.crt
               - key: tls.key
                 path: tls.key
+        {{- end }}
       {{- end }}
       {{- with .Values.app.nodeSelector }}
       nodeSelector:

@@ -349,7 +349,7 @@ Confirm the migrations image exists at your pinned tag before upgrading:
 docker pull ghcr.io/lerianstudio/plugin-br-pix-jd-migrations:1.13.0-beta.4
 ```
 
-If the image doesn't exist, check the [releases page](https://github.com/lerianstudio/plugin-br-pix-jd/releases) for available tags.
+If the image doesn't exist, check the tags that `ghcr.io/lerianstudio/plugin-br-pix-jd-migrations` publishes.
 
 ### Step 3: Review Migration Job Configuration
 

@@ -25,7 +25,7 @@ This is a patch-level chart version bump with no functional changes, configurati
 - ConfigMap or Secret structure
 - Deployment, Service, or other Kubernetes resource definitions
 
-**Migration required:** None. Existing values files and configuration remain fully compatible. The rendered manifests change the `helm.sh/chart` label to `streaming-hub-2.0.1`. This label is also on the pod templates, so the upgrade restarts the hub pods.
+**Migration required:** None. Existing values files and configuration remain fully compatible. The rendered manifests change the `helm.sh/chart` label to `streaming-hub-helm-2.0.1`. This label is also on the pod templates, so the upgrade restarts the hub pods.
 
 > **Note:** Besides the version, the only change is in the chart README: the chart license is now Elastic License 2.0 (was Apache-2.0). Operators can safely upgrade without reviewing application release notes or adjusting configuration.
 
@@ -34,7 +34,7 @@ This is a patch-level chart version bump with no functional changes, configurati
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version 2.0.1 -n streaming-hub
+helm diff upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version 2.0.1 -n streaming-hub
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -44,5 +44,5 @@ helm diff upgrade streaming-hub oci://registry-1.docker.io/lerianstudio/streamin
 ## Command to upgrade
 
 ```bash
-helm upgrade streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version 2.0.1 -n streaming-hub
+helm upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version 2.0.1 -n streaming-hub
 ```

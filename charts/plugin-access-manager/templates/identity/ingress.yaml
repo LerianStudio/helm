@@ -2,7 +2,7 @@
 {{- $h := include "plugin-identity.health" . | fromYaml -}}
 {{- include "lerian-common.ingress" (dict
       "context" .
-      "ingress" .Values.identity.ingress
+      "ingress" (include "plugin-access-manager.ingress" (dict "ingress" .Values.identity.ingress "global" (.Values.global).ingress) | fromYaml)
       "global" (.Values.global).ingress
       "subdomain" "identity"
       "name" (include "plugin-identity.fullname" .)

@@ -18,39 +18,6 @@
 
 A new environment variable `SHUTDOWN_DRAIN_DELAY` has been added to the ledger deployment, and the `terminationGracePeriodSeconds` has been increased to accommodate the shutdown sequence.
 
-**Before (v10.1.1):**
-
-```yaml
-spec:
-  template:
-    spec:
-      terminationGracePeriodSeconds: 60
-      containers:
-        - name: {{ include "midaz-ledger.fullname" . }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "midaz-ledger.fullname" . }}
-          env:
-            # No SHUTDOWN_DRAIN_DELAY
-```
-
-**After (v10.2.0):**
-
-```yaml
-spec:
-  template:
-    spec:
-      terminationGracePeriodSeconds: 72
-      containers:
-        - name: {{ include "midaz-ledger.fullname" . }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "midaz-ledger.fullname" . }}
-          env:
-            - name: SHUTDOWN_DRAIN_DELAY
-              value: "15s"
-```
-
 #### Termination grace period changes
 
 | Setting | v10.1.1 | v10.2.0 |
@@ -76,39 +43,6 @@ The `SHUTDOWN_DRAIN_DELAY` is hardcoded to `15s` in the deployment template. A `
 
 A new environment variable `SHUTDOWN_DRAIN_DELAY` has been added to the tracer deployment, and the `terminationGracePeriodSeconds` has been increased.
 
-**Before (v10.1.1):**
-
-```yaml
-spec:
-  template:
-    spec:
-      terminationGracePeriodSeconds: 45
-      containers:
-        - name: {{ include "midaz-tracer.fullname" . }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "midaz-tracer.fullname" . }}
-          env:
-            # No SHUTDOWN_DRAIN_DELAY
-```
-
-**After (v10.2.0):**
-
-```yaml
-spec:
-  template:
-    spec:
-      terminationGracePeriodSeconds: 55
-      containers:
-        - name: {{ include "midaz-tracer.fullname" . }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "midaz-tracer.fullname" . }}
-          env:
-            - name: SHUTDOWN_DRAIN_DELAY
-              value: "15s"
-```
-
 #### Termination grace period changes
 
 | Setting | v10.1.1 | v10.2.0 |
@@ -117,7 +51,7 @@ spec:
 
 #### Configuration
 
-Similar to the ledger service, the `SHUTDOWN_DRAIN_DELAY` is hardcoded to `15s`.
+Similar to the ledger service, the `SHUTDOWN_DRAIN_DELAY` is hardcoded to `15s`. The tracer image this chart deploys (`4.4.0`) does not read it: its shutdown drain is still `READYZ_DRAIN_GRACE_SECONDS` (default `12`) from the tracer ConfigMap.
 
 ## Configuration Reference
 

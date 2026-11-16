@@ -20,7 +20,7 @@ Dois tokens, entregues pelo time de operações da Lerian por canal seguro:
 | **Token de telemetria** | Autentica o envio dos dados ao destino. |
 | **Token do Fleet** | Ajuste a configuração de coleta remotamente no Grafana. |
 
-Não precisa de mais nada da Lerian: endereço de destino, perímetro de
+Além deles, a Lerian informa o identificador do seu ambiente e a versão do chart. Endereço de destino, perímetro de
 coleta e regras de tratamento de dados já vêm no chart.
 
 ---
@@ -113,8 +113,7 @@ singleton:
 ```
 
 Os blocos repetidos declaram que o Secret é **obrigatório**: com eles, um pod
-sem credencial não sobe. Sem eles, o pod subiria e descartaria telemetria em
-silêncio. Copie como está.
+sem credencial não sobe. Sem eles, a instalação falha. Copie como está.
 
 > O mesmo conteúdo existe como modelo em `examples/values-cliente.yaml`. Nele o
 > `origin.id` é o marcador `SUBSTITUIR-prd`, e a instalação **falha** (`origin.id
@@ -151,21 +150,6 @@ alloy-lerian-singleton-xxxxxxx-xxxxx  2/2     Running
 alloy-lerian-kube-state-metrics-...   1/1     Running
 ```
 
-### A configuração remota chegou?
-
-```console
-kubectl logs -n monitoring \
-  -l 'app.kubernetes.io/instance=alloy-lerian,app.kubernetes.io/name in (node,singleton)' \
-  -c alloy --tail=-1 | grep "successfully loaded remote configuration"
-```
-
-Uma linha por pod do agente significa que o Fleet autenticou e entregou a
-configuração de coleta. **Este é o sinal de que a instalação está completa.**
-
-> O `--tail=-1` não é detalhe: sem ele o `kubectl` mostra só as últimas linhas
-> de cada pod, e esta mensagem acontece na **partida**. Em um agente que já roda
-> há algum tempo ela fica fora da janela, e o resultado vazio pareceria falha.
-
 ### Há erro de entrega?
 
 ```console
@@ -192,7 +176,6 @@ abaixo.
 | `Exporting failed... 401` | Token de telemetria inválido | Peça a reemissão à Lerian. 401 é permanente: o dado é descartado na hora, sem nova tentativa |
 | `Exporting failed... 403` | Chamada chegando por caminho inesperado | Acione a Lerian com a linha de log completa |
 | `Exporting failed... connection refused` ou timeout | Saída HTTPS bloqueada | Veja [Quais acessos de saída o agente precisa?](#quais-acessos-de-saída-o-agente-precisa) no FAQ |
-| Nenhum `successfully loaded remote configuration` | Token do Fleet inválido ou destino do Fleet bloqueado | Confira a chave `fleet-token` e os acessos de saída, no FAQ |
 | Pod que reiniciou não volta, e os outros seguem rodando | O Fleet está indisponível no momento do reinício | Acione a Lerian: o diagnóstico e a retomada são do nosso lado |
 
 ---
@@ -249,19 +232,20 @@ Somente saída, HTTPS na porta 443. Nada disca para dentro do cluster.
 | `fleet-management-prod-015.grafana.net` | Busca da configuração de coleta |
 
 Se houver proxy ou firewall de saída, os dois domínios precisam estar liberados.
+Os nós também baixam as imagens de `docker.io`, `quay.io` e `registry.k8s.io`, a menos que o cluster use um espelho de registro.
 
 ### Por que o agente usa `hostNetwork`?
 
 As aplicações enviam telemetria para o IP do nó em que elas mesmas rodam, o que
 mantém o tráfego local. Sem `hostNetwork`, cada envio atravessaria a rede do
-cluster e o agente deixaria de identificar corretamente o nó de origem de cada
+cluster e o agente deixaria de identificar corretamente o pod de origem de cada
 registro.
 
 O agente continua rodando **não-root** (uid 473), com sistema de arquivos raiz
 somente-leitura e sem privilégios elevados. A exceção é só para a rede.
 
-> Se o cluster aplica Pod Security Admission no modo `restricted`, o namespace
-> precisa de exceção — esse perfil proíbe `hostNetwork`:
+> Se o cluster aplica Pod Security Admission no modo `baseline` ou `restricted`, o namespace
+> precisa de exceção — os dois perfis proíbem `hostNetwork`:
 >
 > ```console
 > kubectl label namespace monitoring \
@@ -274,9 +258,7 @@ somente-leitura e sem privilégios elevados. A exceção é só para a rede.
 componente, quatro no total na instalação padrão do perfil `client`: agente por
 nó, agente único, `kube-state-metrics` e um par extra só para ler o consumo dos
 contêineres (`nodes/proxy`, verbo `get`). Os verbos são `get`, `list` e `watch`
-(o do `kube-state-metrics` usa só `list` e `watch`), e servem para associar cada
-registro ao pod e namespace de origem, e para ler as métricas de consumo dos
-contêineres. O agente não cria, altera nem remove nada no cluster.
+(o do `kube-state-metrics` usa só `list` e `watch`). O agente não cria, altera nem remove nada no cluster.
 
 ### Quanto consome?
 
@@ -296,16 +278,13 @@ Só os namespaces onde os produtos Lerian estão instalados são coletados
 (`midaz` e `midaz-plugins`, por padrão). Telemetria de outros namespaces é
 descartada no agente, antes de qualquer envio.
 
-Se os produtos Lerian estão em outro lugar no cluster de vocês, avise a Lerian:
-o ajuste é remoto, sem mexer na instalação.
+Se os produtos Lerian estão em outro lugar no cluster de vocês, avise a Lerian.
 
 ### O que exatamente é coletado?
 
-Logs de aplicação, métricas de uso e traces de requisição, dos namespaces onde
-os produtos Lerian estão instalados.
+Logs de aplicação, métricas de uso, traces de requisição e eventos do Kubernetes, dos namespaces onde os produtos Lerian estão instalados. Também saem métricas que não pertencem a nenhum namespace: estado e capacidade dos nós e dos volumes persistentes, o consumo agregado de cada nó e as métricas do próprio agente.
 
-Os tokens ficam no cluster de vocês, no Secret criado no passo 1 — a Lerian
-nunca recebe o valor deles.
+Os tokens ficam no cluster de vocês, no Secret criado no passo 1.
 
 ### Dados sensíveis saem do nosso cluster?
 
@@ -324,17 +303,15 @@ CPF, CNPJ, matrícula, número de contrato, client_id, chave de idempotência, I
 identificadores de rastreio seguem em claro nos dois lugares, para que um chamado
 possa ser rastreado.
 
-O mascaramento do agente não é configurável e não pode ser desligado — nem na instalação,
-nem remotamente pela Lerian.
+O mascaramento do agente não é configurável na instalação.
 
 ### O que a Lerian consegue mudar remotamente?
 
-A configuração de coleta: quais sinais são coletados, de quais namespaces, com
+A configuração de coleta do agente por nó: quais sinais são coletados, de quais namespaces, com
 qual frequência e qual tratamento recebem. É o que evita pedir um upgrade de
 chart ou uma janela de manutenção a cada ajuste.
 
-O que a gestão remota **não** faz: não executa comandos no cluster, não acessa
-outros recursos e não desliga o mascaramento de dados sensíveis.
+O que a gestão remota **não** faz: não executa comandos no cluster.
 
 ### Precisamos atualizar o chart com frequência?
 

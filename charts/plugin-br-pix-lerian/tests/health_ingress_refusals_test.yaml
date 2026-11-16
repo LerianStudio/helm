@@ -1,0 +1,120 @@
+suite: health ingress and environment ownership
+release: {name: test, namespace: test}
+templates:
+  - templates/ingress-apps.yaml
+  - templates/ingress-providers.yaml
+  - templates/ingress-systemplane.yaml
+  - templates/adapter-lerian/ingress.yaml
+  - templates/adapter-provider-mock/ingress.yaml
+  - templates/spi/deployment.yaml
+  - templates/spi/configmap.yaml
+  - templates/spi/secrets.yaml
+tests:
+  - it: refuses readiness under apps ingress
+    template: templates/ingress-apps.yaml
+    set:
+      appsIngress.enabled: true
+      appsIngress.hosts: [example.test]
+      appsIngress.routes: [{component: spi, path: /spi/readyz}]
+    asserts:
+      - failedTemplate: {errorPattern: '/spi/readyz'}
+  - it: refuses metrics under providers ingress
+    template: templates/ingress-providers.yaml
+    set:
+      adapterLerian.enabled: true
+      providersIngress.enabled: true
+      providersIngress.hosts: [example.test]
+      providersIngress.routes: [{component: adapterLerian, path: /lerian/metrics}]
+    asserts:
+      - failedTemplate: {errorPattern: '/lerian/metrics'}
+  - it: refuses nested readiness under systemplane ingress
+    template: templates/ingress-systemplane.yaml
+    set:
+      systemplaneIngress.enabled: true
+      systemplaneIngress.hosts: [example.test]
+      systemplaneIngress.routes: [{component: spiSystemplane, path: /spi/readyz/tenant/x}]
+    asserts:
+      - failedTemplate: {errorPattern: '/spi/readyz/tenant/x'}
+  - it: refuses readiness on adapter ingress
+    template: templates/adapter-lerian/ingress.yaml
+    set:
+      adapterLerian.enabled: true
+      adapterLerian.ingress.enabled: true
+      adapterLerian.ingress.hosts: [{host: example.test, paths: [{path: /readyz}]}]
+    asserts:
+      - failedTemplate: {errorPattern: '/readyz'}
+  - it: refuses metrics on mock ingress
+    template: templates/adapter-provider-mock/ingress.yaml
+    set:
+      adapterProviderMock.enabled: true
+      adapterProviderMock.ingress.enabled: true
+      adapterProviderMock.ingress.hosts: [{host: example.test, paths: [{path: /metrics}]}]
+    asserts:
+      - failedTemplate: {errorPattern: '/metrics'}
+  - it: refuses extra health port
+    template: templates/spi/deployment.yaml
+    set: {spi.extraEnvVars.HEALTH_PORT: '8199'}
+    asserts:
+      - failedTemplate: {errorPattern: 'extraEnvVars.HEALTH_PORT'}
+  - it: refuses extra drain delay
+    template: templates/spi/deployment.yaml
+    set: {spi.extraEnvVars.SHUTDOWN_DRAIN_DELAY: 40s}
+    asserts:
+      - failedTemplate: {errorPattern: 'extraEnvVars.SHUTDOWN_DRAIN_DELAY'}
+  - it: refuses extra shutdown timeout
+    template: templates/spi/deployment.yaml
+    set: {spi.extraEnvVars.SHUTDOWN_TIMEOUT: 90s}
+    asserts:
+      - failedTemplate: {errorPattern: 'extraEnvVars.SHUTDOWN_TIMEOUT'}
+  - it: allows ordinary paths and names containing reserved words
+    template: templates/ingress-apps.yaml
+    set:
+      appsIngress.enabled: true
+      appsIngress.hosts: [example.test]
+      appsIngress.routes: [{component: spi, path: /spi/v1}, {component: spi, path: /spi/health}, {component: spi, path: /metrics-extra}, {component: spi, path: /spi/myreadyz}]
+    asserts:
+      - lengthEqual: {path: 'spec.rules[0].http.paths', count: 4}
+  - it: ignores reserved paths for disabled ingress
+    template: templates/ingress-apps.yaml
+    set:
+      appsIngress.enabled: false
+      appsIngress.hosts: [example.test]
+      appsIngress.routes: [{component: spi, path: /readyz}]
+    asserts:
+      - hasDocuments: {count: 0}
+  - it: ignores reserved routes for disabled components
+    template: templates/ingress-apps.yaml
+    set:
+      appsIngress.enabled: true
+      appsIngress.hosts: [example.test]
+      appsIngress.routes: [{component: dictProxy, path: /readyz}, {component: spi, path: /spi/v1}]
+    asserts:
+      - lengthEqual: {path: 'spec.rules[0].http.paths', count: 1}
+  - it: ignores routes without hosts
+    template: templates/ingress-apps.yaml
+    set:
+      appsIngress.enabled: true
+      appsIngress.hosts: []
+      appsIngress.routes: [{component: spi, path: /readyz}]
+    asserts:
+      - isKind: {of: Ingress}
+  - it: ignores disabled adapter ingress paths
+    template: templates/adapter-lerian/ingress.yaml
+    set:
+      adapterLerian.enabled: true
+      adapterLerian.ingress.enabled: false
+      adapterLerian.ingress.hosts: [{host: example.test, paths: [{path: /readyz}]}]
+    asserts:
+      - hasDocuments: {count: 0}
+  - it: ignores extra health variables on disabled components
+    template: templates/spi/deployment.yaml
+    set: {spi.enabled: false, spi.extraEnvVars.HEALTH_PORT: '8199'}
+    asserts:
+      - hasDocuments: {count: 0}
+  - it: accepts health duration settings through the preset
+    template: templates/spi/deployment.yaml
+    set: {spi.health.drainSeconds: 5, spi.health.shutdownSeconds: 40}
+    asserts:
+      - equal: {path: spec.template.spec.terminationGracePeriodSeconds, value: 55}
+      - contains: {path: 'spec.template.spec.containers[0].env', content: {name: SHUTDOWN_DRAIN_DELAY, value: 5s}}
+      - contains: {path: 'spec.template.spec.containers[0].env', content: {name: SHUTDOWN_TIMEOUT, value: 40s}}

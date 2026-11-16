@@ -86,46 +86,12 @@ streamingHub:
 
 The `streaming-hub.licenseGuard` helper in `templates/_helpers.tpl` has been simplified to remove the `IS_DEVELOPMENT` + `STREAMING_HUB_ENV` cross-validation.
 
-**Before (v2.0.1):**
-
-```yaml
-{{- $isDev := toString (ternary (get $x "IS_DEVELOPMENT") (get $cm "IS_DEVELOPMENT" | default "") (hasKey $x "IS_DEVELOPMENT")) -}}
-{{- $env := trim (toString (ternary (get $x "STREAMING_HUB_ENV") (get $cm "STREAMING_HUB_ENV" | default "production") (hasKey $x "STREAMING_HUB_ENV"))) -}}
-{{- if and (eq $isDev "true") (eq $env "production") -}}
-{{- fail "\n\nERROR: IS_DEVELOPMENT=\"true\" points license validation at the DEVELOPMENT license server, which the app refuses when STREAMING_HUB_ENV=production (ErrLicenseDevServerInProduction). Unset streamingHub.configmap.IS_DEVELOPMENT, or set STREAMING_HUB_ENV to a non-production environment." -}}
-{{- end -}}
-```
-
-**After (v2.0.2):**
-
-```yaml
-# IS_DEVELOPMENT validation block removed entirely
-```
-
 **Impact:** 
 
 - Helm renders that previously failed with `ErrLicenseDevServerInProduction` will now succeed
 - The `IS_DEVELOPMENT` field is silently ignored during rendering
 
-**ConfigMap rendering:**
-
-The `IS_DEVELOPMENT` field is no longer rendered to the ConfigMap, even when present in `streamingHub.configmap`:
-
-**Before (v2.0.1):**
-
-```yaml
-data:
-  ORGANIZATION_IDS: "global"
-  IS_DEVELOPMENT: "true"  # Rendered when set
-```
-
-**After (v2.0.2):**
-
-```yaml
-data:
-  ORGANIZATION_IDS: "global"
-  # IS_DEVELOPMENT is never rendered
-```
+The `IS_DEVELOPMENT` key is no longer rendered to the ConfigMap, even when present in `streamingHub.configmap`.
 
 > **Note:** The `IS_DEVELOPMENT` key remains in the `$enumerated` list with a comment explaining it is deprecated and ignored. This ensures operators who set it via `streamingHub.configmap` do not accidentally have it rendered through the catch-all mechanism.
 
@@ -175,7 +141,7 @@ streamingHub:
 Proceed with the Helm upgrade using the updated values:
 
 ```bash
-helm upgrade streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm \
+helm upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm \
   --version 2.0.2 \
   -n streaming-hub \
   -f values.yaml
@@ -196,7 +162,7 @@ Expected output should show successful license validation with no errors.
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version 2.0.2 -n streaming-hub
+helm diff upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version 2.0.2 -n streaming-hub -f values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -206,6 +172,6 @@ helm diff upgrade streaming-hub oci://registry-1.docker.io/lerianstudio/streamin
 ## Command to upgrade
 
 ```bash
-helm upgrade streaming-hub oci://registry-1.docker.io/lerianstudio/streaming-hub-helm --version 2.0.2 -n streaming-hub
+helm upgrade streaming-hub oci://ghcr.io/lerianstudio/streaming-hub-helm --version 2.0.2 -n streaming-hub -f values.yaml
 ```
 <!-- {% endraw %} -->

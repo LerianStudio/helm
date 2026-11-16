@@ -88,8 +88,6 @@ worker:
   secrets:
     APP_ENC_KEY: ""  # REQUIRED - Base64 encoded 32-byte key (generate with: openssl rand -base64 32)
     APP_ENC_KEY_VERSION: "1"
-    CRYPTO_ENCRYPT_SECRET_KEY_SEAWEEDFS: ""
-    CRYPTO_HASH_SECRET_KEY_SEAWEEDFS: ""
 
   useExistingSecret: false
   existingSecretName: ""
@@ -115,11 +113,6 @@ common:
     RABBITMQ_GENERATE_FETCHER_KEY: "fetcher.generate-fetcher.key"
     RABBITMQ_HEALTH_CHECK_URL: ""  # Set to http://<rabbitmq-host>:15672
 
-    # SeaweedFS - REQUIRED
-    SEAWEEDFS_HOST: ""  # REQUIRED - SeaweedFS filer host
-    SEAWEEDFS_FILER_PORT: "8888"
-    SEAWEEDFS_TTL: "6M"
-
     # Redis/Valkey - REQUIRED
     REDIS_HOST: ""  # REQUIRED - Redis/Valkey host
     REDIS_PORT: "6379"
@@ -141,8 +134,7 @@ secrets:
   RABBITMQ_DEFAULT_PASS: ""  # REQUIRED - RabbitMQ password
   REDIS_USER: ""
   REDIS_PASSWORD: ""
-  LICENSE_KEY: ""  # REQUIRED - Lerian license key
-  ORGANIZATION_IDS: ""
+  LICENSE_KEY: ""  # Lerian license key, required unless licenseFile.existingSecret is set
 
 # External RabbitMQ Bootstrap - Apply definitions to external RabbitMQ
 externalRabbitmqDefinitions:

@@ -8,7 +8,7 @@
 #   transform/mask_body_sensitive_data_replace_* (log PII masking), batch
 # - Connectors: spanmetrics
 # - Exporters: otlphttp/server (OTLP/HTTP)
-# - client.id: `resource/add_client_id` ships the placeholder `Firmino`. Set your
+# - client.id: `resource/add_client_id` ships the placeholder `change-me`. Set your
 #   own value; the chart does not validate it.
 
 opentelemetry-collector:
@@ -383,7 +383,7 @@ opentelemetry-collector:
       resource/add_client_id:
         attributes:
           - key: client.id
-            value: "Firmino"
+            value: "change-me"
             action: upsert
 
     connectors:

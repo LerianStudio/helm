@@ -14,6 +14,9 @@ data:
   # Common shared values (dependency connections via lerian-common masks/helpers;
   # everything else an escape-hatch passthrough — see reporter.commonConfigmapData)
   {{- include "reporter.commonConfigmapData" . | nindent 2 }}
+  {{- with (include "reporter.streamingKafkaBrokers" (dict "context" $ "component" .Values.manager)) }}
+  {{- . | nindent 2 }}
+  {{- end }}
   # Service specific values
   {{- $idpEnvKeys := include "lerian-common.idp.keys" (dict "kind" "env") | fromJsonArray }}
   {{- range $key, $value := .Values.manager.configmap }}

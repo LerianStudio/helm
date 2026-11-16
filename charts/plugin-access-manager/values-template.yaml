@@ -53,7 +53,6 @@ identity:
     ALLOW_INSECURE_TLS: "true"
 
   secrets:
-    AUTHORIZER_CLIENT_SECRET: ""
     LICENSE_KEY: ""
     ORGANIZATION_IDS: ""
     REDIS_PASSWORD: ""
@@ -89,11 +88,6 @@ auth:
 # The Caradhras UI (SPA console) stays disabled by default.
 caradhras:
   # auth.initUser needs Caradhras >= 2.1.0, which also needs a license key.
-  image:
-    tag: "2.1.0"
-  migrations:
-    image:
-      tag: "2.1.0"
   secrets:
     LICENSE_KEY: ""
   ui:

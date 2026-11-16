@@ -5,9 +5,9 @@
 
 - **[Overview](#overview)**
 - **[Breaking Changes](#breaking-changes)**
-  - [1. PodDisruptionBudget minAvailable field removed](#1-poddisruptionbudget-minavailable-field-removed)
+  - [1. PodDisruptionBudget default no longer sets minAvailable](#1-poddisruptionbudget-default-no-longer-sets-minavailable)
 - **[Features](#features)**
-  - [1. Improved boolean flag handling for TLS settings](#1-improved-boolean-flag-handling-for-tls-settings)
+  - [1. Boolean flag handling for TLS settings](#1-boolean-flag-handling-for-tls-settings)
 - **[Configuration Reference](#configuration-reference)**
 - **[Migration Steps](#migration-steps)**
 - **[Preview changes before upgrading](#preview-changes-before-upgrading)**
@@ -15,24 +15,24 @@
 
 ## Overview
 
-This guide covers the `tracer` chart upgrade from `2.1.4` to `3.0.0`. This major version bump removes the `minAvailable` field from the PodDisruptionBudget configuration and introduces improved boolean flag handling for TLS-related settings. The application version remains unchanged at `1.0.0`.
+This guide covers the `tracer` chart upgrade from `2.1.4` to `3.0.0`. This major version bump changes the default PodDisruptionBudget values (the chart no longer sets `minAvailable` by default) and accepts boolean values for TLS-related settings. The application version remains unchanged at `1.0.0`.
 
 | Field | v2.1.4 | v3.0.0 |
 |-------|--------|--------|
 | Chart version | `2.1.4` | `3.0.0` |
 | App version | `1.0.0` | `1.0.0` |
 
-> **Important:** This release removes the `tracer.pdb.minAvailable` field. Operators who have explicitly set this value must migrate to `maxUnavailable` or remove the override before upgrading.
+> **Important:** The chart default for `tracer.pdb.minAvailable` is removed. `minAvailable` is still honored when you set it, and takes precedence over `maxUnavailable`. If you set it explicitly, no migration is required.
 
 ## Breaking Changes
 
-### 1. PodDisruptionBudget minAvailable field removed
+### 1. PodDisruptionBudget default no longer sets minAvailable
 
-The `minAvailable` field has been removed from the PodDisruptionBudget configuration. The chart now uses only `maxUnavailable` to control pod disruption behavior.
+The chart default values no longer include `minAvailable`. By default the PodDisruptionBudget now uses only `maxUnavailable`. If you set `tracer.pdb.minAvailable` in your values file, the chart still renders it.
 
-| Setting | v2.1.4 | v3.0.0 |
-|---------|--------|--------|
-| `tracer.pdb.minAvailable` | `1` | removed |
+| Setting | v2.1.4 default | v3.0.0 default |
+|---------|----------------|----------------|
+| `tracer.pdb.minAvailable` | `1` | not set |
 | `tracer.pdb.maxUnavailable` | `1` | `1` |
 
 **Before (v2.1.4):**
@@ -94,19 +94,19 @@ spec:
 
 **Operational impact:**
 
-The chart now prioritizes `maxUnavailable` as the primary disruption control mechanism. The template logic has been updated to:
+The template logic is:
 
-1. Use `minAvailable` if explicitly set (for backward compatibility during migration)
-2. Fall back to `maxUnavailable: 1` if `maxUnavailable` is not set or invalid
-3. Use the configured `maxUnavailable` value otherwise
+1. Use `minAvailable` if it is set.
+2. Otherwise, use `maxUnavailable: 1` if `maxUnavailable` is not set.
+3. Otherwise, use the configured `maxUnavailable` value.
 
-> **Warning:** If you have explicitly set `tracer.pdb.minAvailable` in your values file, you must migrate to `maxUnavailable` before upgrading. The `minAvailable` field is deprecated and will be completely removed in a future release.
+> **Note:** Because `minAvailable` takes precedence, a values file that still sets it keeps its current PodDisruptionBudget. To use `maxUnavailable` instead, remove `minAvailable` from your values file.
 
-**Migration scenarios:**
+**Options:**
 
-#### Option 1: Keep existing behavior with maxUnavailable
+#### Option 1: Use maxUnavailable instead of minAvailable
 
-If your current configuration uses `minAvailable: 1` with a single replica or small replica count, the equivalent configuration is:
+To switch from `minAvailable` to `maxUnavailable`, remove `minAvailable` from your values file and set:
 
 ```yaml
 tracer:
@@ -123,7 +123,7 @@ For deployments with multiple replicas where you want to ensure a minimum number
 
 ```yaml
 tracer:
-  replicas: 3
+  replicaCount: 3
   pdb:
     enabled: true
     maxUnavailable: 1
@@ -131,7 +131,7 @@ tracer:
 
 This ensures at least 2 pods remain available during disruptions.
 
-#### Option 3: Remove minAvailable override
+#### Option 3: Keep the chart default
 
 If you have not customized the PDB configuration, no action is required. The chart will use the default `maxUnavailable: 1`.
 
@@ -139,72 +139,22 @@ If you have not customized the PDB configuration, no action is required. The cha
 
 ## Features
 
-### 1. Improved boolean flag handling for TLS settings
+### 1. Boolean flag handling for TLS settings
 
-The chart introduces a new helper template `tracer.flagDefaultTrue` to correctly handle boolean flags that default to `true`. This fixes an issue where explicitly setting a flag to `false` would be treated as empty and fall back to the default `true` value.
+The chart renders both flags with the `tracer.flagDefaultTrue` helper. Each defaults to `true`; an explicit boolean `false` in your values file renders as `"false"`.
 
 **Affected configuration keys:**
 
-| Setting | v2.1.4 | v3.0.0 |
-|---------|--------|--------|
-| `tracer.configmap.ALLOW_INSECURE_TLS` | uses `default "true"` | uses `tracer.flagDefaultTrue` helper |
-| `tracer.configmap.MULTI_TENANT_REDIS_TLS` | uses `default "true"` | uses `tracer.flagDefaultTrue` helper |
-
-**Template change:**
-
-**Before (v2.1.4):**
-
-```yaml
-data:
-  ALLOW_INSECURE_TLS: {{ .Values.tracer.configmap.ALLOW_INSECURE_TLS | default "true" | quote }}
-  # ... other fields ...
-  MULTI_TENANT_REDIS_TLS: {{ .Values.tracer.configmap.MULTI_TENANT_REDIS_TLS | default "true" | quote }}
-```
-
-**After (v3.0.0):**
-
-```yaml
-data:
-  ALLOW_INSECURE_TLS: {{ include "tracer.flagDefaultTrue" .Values.tracer.configmap.ALLOW_INSECURE_TLS | quote }}
-  # ... other fields ...
-  MULTI_TENANT_REDIS_TLS: {{ include "tracer.flagDefaultTrue" .Values.tracer.configmap.MULTI_TENANT_REDIS_TLS | quote }}
-```
-
-**New helper template:**
-
-```yaml
-{{/*
-A flag that defaults to "true". Sprig `default` treats an explicit boolean false
-as empty, so a bool is rendered as-is. Input: the value.
-*/}}
-{{- define "tracer.flagDefaultTrue" -}}
-{{- if kindIs "bool" . }}{{ . }}{{ else }}{{ . | default "true" }}{{ end -}}
-{{- end }}
-```
+| Setting | v3.0.0 |
+|---------|--------|
+| `tracer.configmap.ALLOW_INSECURE_TLS` | uses `tracer.flagDefaultTrue` helper |
+| `tracer.configmap.MULTI_TENANT_REDIS_TLS` | uses `tracer.flagDefaultTrue` helper |
 
 **Operational impact:**
 
-This change fixes a bug where setting `ALLOW_INSECURE_TLS: false` or `MULTI_TENANT_REDIS_TLS: false` in your values file would be ignored and the flag would default to `"true"`. With v3.0.0, boolean `false` values are now correctly rendered.
+To set either flag to `false`, use boolean `false` or the string `"false"`. Both forms render `"false"`.
 
-**Before (v2.1.4) - bug:**
-
-```yaml
-tracer:
-  configmap:
-    ALLOW_INSECURE_TLS: false  # Incorrectly rendered as "true"
-```
-
-**After (v3.0.0) - fixed:**
-
-```yaml
-tracer:
-  configmap:
-    ALLOW_INSECURE_TLS: false  # Correctly rendered as "false"
-```
-
-> **Note:** If you have been working around this bug by setting the value as a string `"false"`, you can now use a boolean `false` directly. Both forms will work correctly in v3.0.0.
-
-**Production configuration example:**
+**Example configuration:**
 
 ```yaml
 tracer:
@@ -238,7 +188,7 @@ tracer:
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `ALLOW_INSECURE_TLS` | `true` | When `false`, enforces TLS certificate validation for all outbound connections. Set to `false` in production. |
+| `ALLOW_INSECURE_TLS` | `true` | Passed to the application as `ALLOW_INSECURE_TLS`. |
 | `MULTI_TENANT_REDIS_TLS` | `true` | When `true`, uses TLS for Redis connections in multi-tenant mode. Set to `false` only for local development. |
 
 **Example configuration:**
@@ -252,7 +202,7 @@ tracer:
 
 ## Migration Steps
 
-This upgrade requires manual changes if you have customized the PodDisruptionBudget configuration.
+This upgrade needs no mandatory changes. Review your PodDisruptionBudget configuration if you want to use `maxUnavailable` instead of `minAvailable`.
 
 **Recommended upgrade process:**
 
@@ -264,7 +214,7 @@ This upgrade requires manual changes if you have customized the PodDisruptionBud
    grep -A 5 "pdb:" your-values.yaml
    ```
 
-3. If `minAvailable` is present, migrate to `maxUnavailable`:
+3. If `minAvailable` is present and you want `maxUnavailable` instead, migrate. `minAvailable` takes precedence while it is set:
 
    **Remove:**
    
@@ -283,18 +233,8 @@ This upgrade requires manual changes if you have customized the PodDisruptionBud
        maxUnavailable: 1
    ```
 
-4. If you have been working around the boolean flag bug by using string values, you can now use boolean values:
+4. To set a TLS flag to `false`, use boolean `false` or the string `"false"`:
 
-   **Before (workaround):**
-   
-   ```yaml
-   tracer:
-     configmap:
-       ALLOW_INSECURE_TLS: "false"
-   ```
-
-   **After (native boolean):**
-   
    ```yaml
    tracer:
      configmap:
@@ -326,8 +266,6 @@ This upgrade requires manual changes if you have customized the PodDisruptionBud
    ```bash
    kubectl logs -n tracer -l app.kubernetes.io/name=tracer-helm --tail=50
    ```
-
-> **Important:** The removal of `minAvailable` is a breaking change. Ensure you have migrated to `maxUnavailable` before upgrading to avoid unexpected PDB behavior.
 
 ## Preview changes before upgrading
 

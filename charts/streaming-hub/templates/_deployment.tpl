@@ -24,6 +24,8 @@ STREAMING_HUB_ROLE / the pool vars.
 {{- $rolesAnywhere := and $.Values.aws $.Values.aws.rolesAnywhere $.Values.aws.rolesAnywhere.enabled -}}
 {{/* Postgres server CA bundle — mount + volume, both gated on the same switch. */}}
 {{- $postgresCa := get (get ($.Values.postgres | default dict) "caBundle" | default dict) "enabled" -}}
+{{- $licenseSecret := include "streaming-hub.licenseFileSecret" $ -}}
+{{- $h := include "streaming-hub.health" (dict "root" $ "component" $component) | fromYaml -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,12 +39,10 @@ metadata:
   {{- end }}
 spec:
   revisionHistoryLimit: {{ $sh.revisionHistoryLimit | default 10 }}
-  {{- with $sh.deploymentStrategy }}
   strategy:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  {{- if not $cfg.autoscaling.enabled }}
-  replicas: {{ $cfg.replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -50,19 +50,19 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "streaming-hub.labels" (dict "context" $ "component" $component) | nindent 8 }}
+        {{- include "streaming-hub.podLabels" (dict "context" $ "component" $component) | nindent 8 }}
       annotations:
         # Config-rollout trigger. Every role consumes the shared ConfigMap and the
         # chart Secret through envFrom ONLY, so a value change rewrites those objects
         # while leaving the pod template byte-identical — `helm upgrade` then cuts no
         # new ReplicaSet and the running pods keep the OLD config until an unrelated
         # restart. Hashing the rendered manifests into the template closes that.
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/configmap.yaml") $ | fromYaml).data | toYaml | sha256sum }}
         {{- if not $sh.useExistingSecret }}
         # Only when the chart OWNS the Secret. Under useExistingSecret the Secret is
         # Vault/gitops-managed and changes outside Helm's view, so a hash of the
         # (empty) rendered template would be a constant that never triggers anything.
-        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") $ | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/secrets.yaml") $ | fromYaml).data | toYaml | sha256sum }}
         {{- end }}
       {{- with $sh.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -73,7 +73,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "streaming-hub.serviceAccountName" $ }}
       automountServiceAccountToken: {{ $sh.serviceAccount.automountServiceAccountToken | default false }}
-      terminationGracePeriodSeconds: {{ $sh.terminationGracePeriodSeconds | default 80 }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- if $rolesAnywhere }}
       # IAM Roles Anywhere: fsGroup lets the sidecar's non-root user (65532) read the
       # 0440 iam-certs projection. MERGED into the chart's podSecurityContext — fsGroup
@@ -96,12 +96,15 @@ spec:
             - name: http
               containerPort: {{ $sh.service.port }}
               protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
             - secretRef:
                 name: {{ include "streaming-hub.secretName" $ }}
             - configMapRef:
                 name: {{ include "streaming-hub.fullname" $ }}
           env:
+            # HEALTH_PORT, SHUTDOWN_DRAIN_DELAY and SHUTDOWN_TIMEOUT come from the health preset.
+            {{- toYaml $h.env | nindent 12 }}
             # --- role differentiator (explicit env WINS over envFrom) ---
             - name: STREAMING_HUB_ROLE
               value: {{ $component | quote }}
@@ -109,6 +112,11 @@ spec:
               value: {{ $cfg.poolMaxOpenConns | quote }}
             - name: STREAMING_HUB_POSTGRES_MAX_IDLE_CONNS
               value: {{ $cfg.poolMaxIdleConns | quote }}
+            {{- if $licenseSecret }}
+            # Licence-file mode: the signed file replaces LICENSE_KEY (needs lib-license-go v5).
+            - name: LICENSE_FILE_PATH
+              value: /etc/lerian/license/license
+            {{- end }}
             {{- if $sh.useExistingSecret }}
             # Existing-Secret path: Helm cannot inspect the external Secret's keys
             # at render time, so the boot-critical keys are pinned via explicit
@@ -138,6 +146,9 @@ spec:
                 secretKeyRef:
                   name: {{ include "streaming-hub.secretName" $ }}
                   key: LICENSE_KEY
+                  {{- if $licenseSecret }}
+                  optional: true
+                  {{- end }}
             {{- end }}
             {{- range $k, $v := $sh.extraEnvVars }}
             # Un-enumerated per-Deployment env hatch (key -> value map).
@@ -154,24 +165,30 @@ spec:
             # vends short-lived credentials from the IAM Roles Anywhere exchange.
             {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" $.Values.aws) | nindent 12 }}
             {{- end }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "livenessProbe" "probe" $sh.livenessProbe
-                "port" "http" "path" "/healthz"
-                "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict
-                "kind" "readinessProbe" "probe" $sh.readinessProbe
-                "port" "http" "path" "/readyz"
-                "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3
-              ) | nindent 10 }}
+          startupProbe:
+            {{- toYaml $h.startupProbe | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $h.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $h.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml $cfg.resources | nindent 12 }}
+          {{- if or $postgresCa $licenseSecret }}
           {{- if $postgresCa }}
           # Postgres server CA. The app never reads this path by itself — the DSN's
           # sslrootcert names it, and the hardened 2.x boot refuses to connect
           # without a readable bundle there.
+          {{- end }}
           volumeMounts:
+            {{- if $postgresCa }}
             {{- include "streaming-hub.postgresCaVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- if $licenseSecret }}
+            # Directory mount, never subPath, so a rotated licence file propagates.
+            - name: license-file
+              mountPath: /etc/lerian/license
+              readOnly: true
+            {{- end }}
           {{- end }}
         {{- if $rolesAnywhere }}
         # IAM Roles Anywhere credential sidecar. Serves an IMDS-compatible endpoint on
@@ -186,7 +203,7 @@ spec:
       # so only the sidecar's fsGroup can read it.
       {{- include "lerian-common.rolesAnywhere.volume" (dict "aws" $.Values.aws "iamTlsDefault" (printf "%s-iam-tls" (include "streaming-hub.fullname" $))) | nindent 6 }}
       {{- end }}
-      {{- if $postgresCa }}
+      {{- if or $postgresCa $licenseSecret }}
       {{- /*
       lerian-common.rolesAnywhere.volume emits the `volumes:` key itself, so this
       block opens it only when that branch did not — a second `volumes:` would be
@@ -195,7 +212,18 @@ spec:
       {{- if not $rolesAnywhere }}
       volumes:
       {{- end }}
+      {{- if $postgresCa }}
       {{- include "streaming-hub.postgresCaVolume" (dict "context" $ "hook" false) | nindent 8 }}
+      {{- end }}
+      {{- if $licenseSecret }}
+        - name: license-file
+          secret:
+            secretName: {{ $licenseSecret | quote }}
+            defaultMode: 0444
+            items:
+              - key: license
+                path: license
+      {{- end }}
       {{- end }}
       {{- /* Scheduling: a component's nodeSelector / affinity / tolerations replace
              the shared ones; a component's spread overrides streamingHub.spread
@@ -235,6 +263,7 @@ that role's pods via componentSelectorLabels.
       "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
       "selector" (include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component))
       "namespace" (include "global.namespace" $)
+      "ports" (include "streaming-hub.health" (dict "root" $ "component" $component) | fromYaml).servicePorts
     ) }}
 {{- end -}}
 
@@ -256,7 +285,7 @@ Fail-loud gate. lerian-common.hpa emits each metric behind its own `if`, so an
 autoscaling block with BOTH targets unset (an operator nulling the values.yaml
 defaults) renders an HPA with an EMPTY `metrics:` list — accepted by the API
 server, permanently unable to scale — while the Deployment simultaneously omits
-`replicas:` (see the autoscaling.enabled branch above), pinning the role at the
+`replicas:`, pinning the role at the
 API default of 1. Refuse the render instead of shipping that silent pair.
 */}}
 {{- if not (or $cfg.autoscaling.targetCPUUtilizationPercentage $cfg.autoscaling.targetMemoryUtilizationPercentage) -}}
@@ -274,20 +303,18 @@ API default of 1. Refuse the render instead of shipping that silent pair.
 {{/*
 =============================================================================
 streaming-hub.pdb — the shared, component-parameterized PDB (policy/v1).
-Input: dict { root, component }. Emitted only when that role's pdb.enabled.
-maxUnavailable wins over minAvailable when both are set (mirrors the template).
+Input: dict { root, component }.
 =============================================================================
 */}}
 {{- define "streaming-hub.pdb" -}}
 {{- $ := .root -}}
 {{- $component := .component -}}
-{{- $cfg := index $.Values.streamingHub $component -}}
+{{- $h := include "streaming-hub.health" (dict "root" $ "component" $component) | fromYaml -}}
 {{- include "lerian-common.pdb" (dict
-      "pdb" $cfg.pdb
+      "pdb" $h.pdb
       "name" (include "streaming-hub.componentFullname" (dict "context" $ "component" $component))
       "labels" (include "streaming-hub.labels" (dict "context" $ "component" $component))
       "selector" (include "streaming-hub.componentSelectorLabels" (dict "context" $ "component" $component))
       "namespace" (include "global.namespace" $)
-      "minAvailableDefault" 1
     ) }}
 {{- end -}}

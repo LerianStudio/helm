@@ -7,6 +7,7 @@
 {{- $bankTransfer := .Values.bankTransfer | default dict }}
 {{- $migrations := get $bankTransfer "migrations" | default dict }}
 {{- $configmap := get $bankTransfer "configmap" | default dict }}
+{{- $secrets := get $bankTransfer "secrets" | default dict }}
 {{- /* Same datastore mask configmap.yaml uses for POSTGRES_HOST/PORT/USER/SSLMODE — without
    this, an external Postgres set only via global.datastores.postgres (no native
    bankTransfer.configmap.POSTGRES_HOST) falls through to the bundled-subchart hostname here,
@@ -95,6 +96,35 @@
     {{- else }}
     {{- include "bank-transfer.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 4 }}
     {{- end }}
+    {{- /* LICENSE_KEY: the operator's app Secret, else the PreSync hook Secret (Job) or the app Secret (init container). */}}
+    {{- $licKey := include "bank-transfer.licenseKeyValue" . }}
+    {{- $licSecret := "" }}
+    {{- if $appUseExisting }}
+    {{- $licSecret = get $bankTransfer "existingSecretName" }}
+    {{- else if not $internalPg }}
+    {{- if $licKey }}{{- $licSecret = include "bank-transfer.licenseHookName" . }}{{- end }}
+    {{- else if $secrets.LICENSE_KEY }}
+    {{- $licSecret = include "bank-transfer.fullname" . }}
+    {{- end }}
+    {{- if $licSecret }}
+    - name: LICENSE_KEY
+      valueFrom:
+        secretKeyRef:
+          name: {{ $licSecret }}
+          key: LICENSE_KEY
+          optional: true
+    {{- else if $licKey }}
+    - name: LICENSE_KEY
+      value: {{ $licKey | quote }}
+    {{- end }}
+    {{- if include "bank-transfer.licenseSecret" . }}
+    - name: LICENSE_FILE_PATH
+      value: "/etc/lerian/license/license"
+    {{- end }}
+  {{- with (include "bank-transfer.licenseFileMount" . | trim) }}
+  volumeMounts:
+    {{- . | nindent 4 }}
+  {{- end }}
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000
@@ -146,7 +176,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "bank-transfer.labels" (dict "context" . "component" "migrations" "name" (get $bankTransfer "name") ) | nindent 8 }}
+        {{- include "bank-transfer.labels" (dict "context" . "component" "migrations" "name" (get $bankTransfer "name") "podTemplate" true) | nindent 8 }}
       {{- with (get $migrations "podAnnotations") }}
       annotations:
         {{- toYaml . | nindent 8 }}
@@ -166,6 +196,10 @@ spec:
       {{- end }}
       containers:
         {{- include "bank-transfer.migrationsContainer" . | nindent 8 }}
+      {{- with (include "bank-transfer.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- with (get $bankTransfer "nodeSelector") }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

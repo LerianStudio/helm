@@ -65,7 +65,9 @@ data:
   VSYNC_CHUNK_PROCESSING_DEADLINE_MIN: {{ $cm.VSYNC_CHUNK_PROCESSING_DEADLINE_MIN | default "30" | quote }}
   VSYNC_MAX_JOB_ATTEMPTS: {{ $cm.VSYNC_MAX_JOB_ATTEMPTS | default "3" | quote }}
   VSYNC_EVENTSYNC_MAX_PAGES: {{ $cm.VSYNC_EVENTSYNC_MAX_PAGES | default "100" | quote }}
-  VSYNC_GATE_TTL_SEC: {{ $cm.VSYNC_GATE_TTL_SEC | default "3600" | quote }}
+  {{- if hasKey $cm "VSYNC_GATE_TTL_SEC" }}
+  VSYNC_GATE_TTL_SEC: {{ $cm.VSYNC_GATE_TTL_SEC | quote }}
+  {{- end }}
   VSYNC_TENANT_CONCURRENCY: {{ $cm.VSYNC_TENANT_CONCURRENCY | default "4" | quote }}
   {{- /* OTEL_RESOURCE_SERVICE_VERSION: from image tag (image.tag then
      Chart.AppVersion); override via dictSystemplane.configmap.OTEL_RESOURCE_SERVICE_VERSION. */}}

@@ -1,25 +1,9 @@
-# Midaz Pull Request Checklist
+# Helm Chart Pull Request Checklist
 
-## Pull Request Type
-[//]: # (Check the appropriate box for the type of pull request.)
+## Chart
+[//]: # (Name the one chart this PR changes, as its directory under charts/. A shared change names pipe or doc.)
 
-- [ ] Midaz
-- [ ] Plugin Access Manager
-- [ ] Plugin CRM
-- [ ] Reporter
-- [ ] Plugin Fees
-- [ ] Plugin BR PIX Direct JD
-- [ ] Plugin BR PIX Indirect BTG
-- [ ] Plugin BR PIX Switch
-- [ ] Plugin BR Bank Transfer
-- [ ] Otel Collector
-- [ ] Pipeline
-- [ ] Documentation
-- [ ] Fetcher
-- [ ] BR STA
-- [ ] BR CCS
-- [ ] BR SLC
-- [ ] Common
+Chart:
 
 ## Checklist
 Please check each item after it's completed.

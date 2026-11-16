@@ -35,15 +35,11 @@ Your release is named {{ .Release.Name }}.
 == Dependencies ==
 
   PostgreSQL:  {{ if .Values.postgresql.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
-  RabbitMQ:    {{ if .Values.rabbitmq.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
   Valkey:      {{ if .Values.valkey.enabled }}ENABLED (subchart){{ else }}DISABLED (external){{ end }}
   SeaweedFS:   {{ if .Values.seaweedfs.enabled }}ENABLED (inline){{ else }}DISABLED{{ end }}
 
 {{ if .Values.global.externalPostgresDefinitions.enabled -}}
   NOTE: PostgreSQL bootstrap job will run to create the plugin-bc-correios database and role.
-{{- end }}
-{{ if .Values.global.externalRabbitmqDefinitions.enabled -}}
-  NOTE: RabbitMQ bootstrap job will run to import exchanges, queues, and bindings (vhost "/"). It does not create users: the broker account referenced by bc-correios.secrets.RABBITMQ_URL must already exist.
 {{- end }}
 
 For more information, see:

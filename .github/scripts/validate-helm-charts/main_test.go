@@ -153,6 +153,12 @@ metadata:
   namespace: data
 ---
 apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-headless
+  namespace: data
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: app
@@ -168,6 +174,8 @@ data:
 		{"hand-rolled release prefix", "mongodb-mongodb.data.svc.cluster.local", "some-chart", true},
 		{"collapse honored", "mongodb.data.svc.cluster.local", "some-chart", false},
 		{"right name, wrong namespace", "mongodb.other.svc.cluster.local", "some-chart", true},
+		{"statefulset pod under a rendered service", "mongodb-0.mongodb-headless.data.svc.cluster.local", "some-chart", false},
+		{"statefulset pod under a missing service", "mongodb-0.mongodb-gone.data.svc.cluster.local", "some-chart", true},
 		{"unrelated sibling release", "reporter-manager.reporter.svc.cluster.local", "some-chart", false},
 		{"waived chart and key", "mongodb-mongodb.data.svc.cluster.local", "waived-chart", false},
 	}

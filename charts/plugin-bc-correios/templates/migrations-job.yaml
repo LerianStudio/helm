@@ -1,0 +1,22 @@
+{{- $component := index .Values "bc-correios" -}}
+{{- if and $component.enabled $component.migrations.enabled }}
+{{- /*
+Regular release resource (a pre-install hook would wait on the bundled PostgreSQL). The name hashes the
+spec and the Postgres connection, so a new image or connection is a new Job; ArgoCD hooks prune old ones.
+*/ -}}
+{{- $spec := include "bc-correios.migrationsJobSpec" . -}}
+{{- $cm := $component.configmap -}}
+{{- $conn := list ($cm.POSTGRES_HOST | default (include "common.names.dependency.fullname" (dict "chartName" "postgresql" "chartValues" .Values.postgresql "context" .))) $cm.POSTGRES_PORT $cm.POSTGRES_USER $cm.POSTGRES_NAME $cm.POSTGRES_SSLMODE -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "bc-correios.fullname" . }}-migrations-{{ print $spec ($conn | toJson) | sha256sum | trunc 8 }}
+  namespace: {{ include "global.namespace" . }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+  labels:
+    {{- include "bc-correios.labels" (dict "context" . "component" "migrations" "name" "migrations") | nindent 4 }}
+spec:
+  {{- $spec | nindent 2 }}
+{{- end }}

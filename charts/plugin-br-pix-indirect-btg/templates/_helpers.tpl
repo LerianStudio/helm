@@ -631,6 +631,8 @@ Validate required configuration fields
 {{- fail "\n\nERROR: pix.configmap.MIDAZ_LEDGER_ID is required. Set your Midaz ledger ID.\n" }}
 {{- end }}
 
+{{/* Required while the chart renders any Secret that reads them; only all-existing-Secrets frees them */}}
+{{- if not (and .Values.pix.useExistingSecrets .Values.inbound.useExistingSecrets .Values.outbound.useExistingSecrets .Values.reconciliation.useExistingSecrets .Values.schedule.useExistingSecrets) }}
 {{/* BTG Secrets - Required */}}
 {{- if not .Values.pix.secrets.BTG_CLIENT_ID }}
 {{- fail "\n\nERROR: pix.secrets.BTG_CLIENT_ID is required. Set your BTG client ID in secrets section.\n" }}
@@ -654,9 +656,10 @@ Validate required configuration fields
 {{- fail "\n\nERROR: pix.secrets.MIDAZ_CLIENT_SECRET is required. Set your Midaz client secret in secrets section.\n" }}
 {{- end }}
 
-{{/* License - Required */}}
-{{- if not .Values.pix.secrets.LICENSE_KEY }}
-{{- fail "\n\nERROR: pix.secrets.LICENSE_KEY is required. Set your license key in secrets section.\n" }}
+{{/* License - Required unless a signed licence file is mounted (licenseFile.existingSecret) */}}
+{{- if not (or .Values.pix.secrets.LICENSE_KEY (include "plugin-br-pix-indirect-btg.licenseSecret" .)) }}
+{{- fail "\n\nERROR: pix.secrets.LICENSE_KEY is required unless licenseFile.existingSecret is set. Set your license key in secrets section.\n" }}
+{{- end }}
 {{- end }}
 
 {{/* Organization IDs - Required */}}
@@ -767,4 +770,39 @@ Outbound BTG client mTLS — read-only volumeMount for the cert volume above.
   mountPath: {{ .Values.mtls.mountPath | default "/etc/btg/mtls" | quote }}
   readOnly: true
 {{- end -}}
+{{- end -}}
+
+{{/*
+Optional signed licence file: the Secret licenseFile.existingSecret is mounted as a
+DIRECTORY (never subPath, so rotations propagate) on every component. The nil-safe
+read keeps --reuse-values over old releases working.
+*/}}
+{{- define "plugin-br-pix-indirect-btg.licenseSecret" -}}
+{{- (.Values.licenseFile | default dict).existingSecret | default "" -}}
+{{- end -}}
+
+{{- define "plugin-br-pix-indirect-btg.licenseFileEnv" -}}
+{{- if include "plugin-br-pix-indirect-btg.licenseSecret" . }}
+- name: LICENSE_FILE_PATH
+  value: "/etc/lerian/license/license"
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-br-pix-indirect-btg.licenseFileMount" -}}
+{{- if include "plugin-br-pix-indirect-btg.licenseSecret" . }}
+- name: license-file
+  mountPath: /etc/lerian/license
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "plugin-br-pix-indirect-btg.licenseFileVolume" -}}
+{{- with include "plugin-br-pix-indirect-btg.licenseSecret" . }}
+- name: license-file
+  secret:
+    secretName: {{ . | quote }}
+    items:
+      - key: license
+        path: license
+{{- end }}
 {{- end -}}

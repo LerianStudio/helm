@@ -36,15 +36,18 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ (include (print $.Template.BasePath "/configmap.yaml") . | fromYaml).data | toYaml | sha256sum }}
         {{- if not $s.useExistingSecret }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        checksum/secret: {{ (include (print $.Template.BasePath "/secrets.yaml") . | fromYaml).stringData | toYaml | sha256sum }}
         {{- end }}
         {{- with $s.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "plugin-br-sisbajud.labels" (dict "context" $ "component" "sisbajud") | nindent 8 }}
+        {{- include "plugin-br-sisbajud.selectorLabels" (dict "context" $ "component" "sisbajud") | nindent 8 }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/part-of: {{ include "plugin-br-sisbajud.name" . }}
     spec:
       {{- with (include "plugin-br-sisbajud.pullSecrets" (dict "context" $ "list" $s.imagePullSecrets)) }}
       {{- . | nindent 6 }}
@@ -90,6 +93,9 @@ spec:
             - name: http
               containerPort: {{ $s.service.port }}
               protocol: TCP
+            - name: health
+              containerPort: {{ get $extra "HEALTH_PORT" | default $s.healthPort | default 8099 }}
+              protocol: TCP
             {{- if $webhookOn }}
             - name: webhook
               containerPort: {{ $wh.port | default 9082 }}
@@ -123,11 +129,15 @@ spec:
             {{- . | nindent 12 }}
             {{- end }}
           {{- include "lerian-common.httpProbe" (dict "kind" "livenessProbe" "probe" $s.livenessProbe "port" "http" "path" "/version" "initialDelay" 15 "period" 20 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
-          {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "http" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
+          {{- include "lerian-common.httpProbe" (dict "kind" "readinessProbe" "probe" $s.readinessProbe "port" "health" "path" "/readyz" "initialDelay" 10 "period" 10 "timeout" 5 "success" 1 "failure" 3) | nindent 10 }}
           resources:
             {{- toYaml $s.resources | nindent 12 }}
-          {{- if or $mt.caSecret $mountPair (and $webhookOn $whTls.existingSecret) $s.extraVolumeMounts }}
+          {{- $licMount := include "plugin-br-sisbajud.licenseFileMount" . | trim }}
+          {{- if or $mt.caSecret $mountPair (and $webhookOn $whTls.existingSecret) $s.extraVolumeMounts $licMount }}
           volumeMounts:
+            {{- with $licMount }}
+            {{- . | nindent 12 }}
+            {{- end }}
             {{- if $mt.caSecret }}
             - name: mensageria-ca
               mountPath: {{ $mt.caMount }}
@@ -163,6 +173,7 @@ spec:
       {{- if $raOn }}
       {{- $volumes = concat $volumes ((include "lerian-common.rolesAnywhere.volume" (dict "aws" .Values.aws "iamTlsDefault" (printf "%s-iam-tls" $fullname)) | fromYaml).volumes) }}
       {{- end }}
+      {{- $volumes = concat $volumes (include "plugin-br-sisbajud.licenseFileVolume" . | fromYamlArray) }}
       {{- $volumes = concat $volumes ($s.extraVolumes | default list) }}
       {{- with $volumes }}
       volumes:

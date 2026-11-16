@@ -55,7 +55,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "plugin-br-pix-jd.componentLabels" (dict "root" $ "name" "migrations") | nindent 8 }}
+        {{- include "plugin-br-pix-jd.componentPodLabels" (dict "root" $ "name" "migrations") | nindent 8 }}
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false

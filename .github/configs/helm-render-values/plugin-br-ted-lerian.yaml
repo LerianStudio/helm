@@ -2,12 +2,12 @@
 # test). NOT a production example — values-template.yaml is. It renders the
 # self-contained bundle (bundled PostgreSQL + Valkey, so every secretKeyRef
 # points at a Secret of the same release and the release-name collapse is
-# exercised), the same topology the anacleto chaos/fuzzing lanes run.
+# exercised), the same topology a self-contained install runs.
 # No value here is a credential.
 #
 # namespaceOverride is cleared because the chart default pins the workload to
 # "plugin-br-ted-lerian" while the bundled subcharts follow the release
-# namespace; every GitOps lane sets the override to its release namespace, which
+# namespace; every deployment sets the override to its release namespace, which
 # is what an empty override reproduces here.
 namespaceOverride: ""
 

@@ -28,11 +28,10 @@ This is a transition from a beta version to a stable release. The stable `3.16.1
 **Who is affected:**
 
 - Installations using the chart's default image tags (no explicit `auth.image.tag` or `identity.image.tag` override)
-- Installations that explicitly pinned to `3.16.0-beta.5`
 
 **Who is NOT affected:**
 
-- Installations with explicit image tag overrides pointing to a different version
+- Installations with explicit image tag overrides, including a pin to `3.16.0-beta.5`: they keep that tag until you change it (see the options below)
 
 **Migration steps:**
 
@@ -53,7 +52,9 @@ auth:
 identity:
   image:
     tag: "3.16.0-beta.5"
+```
 
+```yaml
 # After (v10.4.1) - remove explicit tags
 auth:
   image: {}
@@ -75,7 +76,9 @@ auth:
 identity:
   image:
     tag: "3.16.0-beta.5"
+```
 
+```yaml
 # After (v10.4.1)
 auth:
   image:

@@ -77,7 +77,9 @@ data:
   VSYNC_CHUNK_PROCESSING_DEADLINE_MIN: {{ $cm.VSYNC_CHUNK_PROCESSING_DEADLINE_MIN | default "30" | quote }}
   VSYNC_EVENTSYNC_MAX_PAGES: {{ $cm.VSYNC_EVENTSYNC_MAX_PAGES | default "100" | quote }}
   VSYNC_FILE_RECON_ENABLED: {{ $cm.VSYNC_FILE_RECON_ENABLED | default "false" | quote }}
-  VSYNC_GATE_TTL_SEC: {{ $cm.VSYNC_GATE_TTL_SEC | default "300" | quote }}
+  {{- if hasKey $cm "VSYNC_GATE_TTL_SEC" }}
+  VSYNC_GATE_TTL_SEC: {{ $cm.VSYNC_GATE_TTL_SEC | quote }}
+  {{- end }}
   VSYNC_MAX_JOB_ATTEMPTS: {{ $cm.VSYNC_MAX_JOB_ATTEMPTS | default "5" | quote }}
   VSYNC_OK_CACHE_TTL_SEC: {{ $cm.VSYNC_OK_CACHE_TTL_SEC | default "60" | quote }}
   VSYNC_SCOPE_CONCURRENCY: {{ $cm.VSYNC_SCOPE_CONCURRENCY | default "10" | quote }}

@@ -283,8 +283,7 @@
     an ABSENT key means "verify": this Job carries the broker's ADMIN credential, and
     an unconditional -k sent it over an unverified channel whenever protocol is https.
     Pattern and env-var name follow
-    charts/plugin-br-bank-transfer/templates/bootstrap-rabbitmq.yaml:71-76 (same block
-    at charts/plugin-bc-correios/templates/bootstrap-rabbitmq.yaml:66-71) — the base-URL
+    charts/plugin-br-bank-transfer/templates/bootstrap-rabbitmq.yaml:71-76 — the base-URL
     block below was already copied from that sibling; this is the block that sits
     directly above it there and was left behind.
     Expected values key: externalRabbitmqDefinitions.connection.skipTlsVerify (bool,

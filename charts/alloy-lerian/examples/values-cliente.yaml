@@ -31,8 +31,7 @@ origin:
 # qual perfil esta ativo.
 #
 # O default do chart e `optional: true`, e e o default certo para o perfil
-# `own`: la o destino e um balanceador interno que nao autentica, nenhum Secret
-# existe, e MEDIDO na benedita — com `optional: false` fixo no chart, TODO
+# `own`: nenhum Secret de credencial existe, e MEDIDO — com `optional: false` fixo no chart, TODO
 # ambiente proprio travava em CreateContainerConfigError.
 #
 # No perfil `client` a postura se inverte: 401 e falha PERMANENTE, o dado e

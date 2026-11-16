@@ -31,7 +31,7 @@ print(json.dumps({
             'collector.os="linux"',
             'role="node"',
             # Sem isto o matcher alcancaria QUALQUER agente linux com papel node
-            # — inclusive os internos, que rodam `alloy-lerian-internal`. O
+            # — inclusive os agentes da propria Lerian. O
             # atributo e fixo no chart do BYOC (_fleet.tpl), nao parametrizavel.
             # Nao e fronteira de seguranca: atributos de remotecfg sao
             # auto-declarados. Serve para ENDERECAR, nao para isolar.

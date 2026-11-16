@@ -21,7 +21,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name ) | nindent 8 }}
+        {{- include "plugin-caradhras-ui.labels" (dict "context" . "name" $ui.name "pod" true) | nindent 8 }}
     spec:
       {{- with $ui.imagePullSecrets }}
       imagePullSecrets:

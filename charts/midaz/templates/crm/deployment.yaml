@@ -23,7 +23,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz-crm.labels" (dict "context" . "name" .Values.crm.name ) | nindent 8 }}
+        {{- include "midaz-crm.podLabels" (dict "context" . "name" .Values.crm.name ) | nindent 8 }}
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/crm/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/crm/configmap.yaml") . | sha256sum }}

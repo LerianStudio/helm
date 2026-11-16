@@ -16,11 +16,9 @@ This is a minor release. The GHCR API, worker and migrations images all exist at
   recipient a payment needs, plus the end-to-end id that makes the payment one
   initiated by key. Lookups are limited per payer account (default 100 per 60
   seconds), because DICT counts every lookup against the payer and the institution.
-  See [plugin-br-pix-jd#367](https://github.com/LerianStudio/plugin-br-pix-jd/issues/367).
 - **An on-us payment by key credits the account DICT binds the key to.** The
   account the order names is checked against DICT before anything is held; a field
-  that differs is refused naming that field
-  ([plugin-br-pix-jd#314](https://github.com/LerianStudio/plugin-br-pix-jd/issues/314)).
+  that differs is refused naming that field.
 
 ## Access manager prerequisite
 

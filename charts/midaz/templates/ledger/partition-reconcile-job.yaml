@@ -2,6 +2,26 @@
 {{- if and .Values.ledger.enabled (include "midaz.ledgerPartitionEnabled" .) (ne (toString (dig "enabled" true $reconcile)) "false") }}
 {{- /* Run after migrations; the daily pass retries unavailable databases or indexes. */}}
 {{- $component := printf "%s-partition-reconcile" .Values.ledger.name }}
+{{- if and .Values.ledger.secrets.LICENSE_KEY (not .Values.ledger.useExistingSecret) }}
+{{- /* The hook runs before this release's Secret is written: carry LICENSE_KEY alone, ahead of the Job. */}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "midaz-ledger.licenseHookSecretName" . }}
+  labels:
+    {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: {{ sub (dig "syncWave" "1" $reconcile | int) 1 | toString | quote }}
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+    helm.sh/hook-delete-policy: before-hook-creation
+type: Opaque
+data:
+  LICENSE_KEY: {{ .Values.ledger.secrets.LICENSE_KEY | b64enc | quote }}
+---
+{{- end }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -22,7 +42,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "midaz.labels" (dict "context" . "component" $component "name" $component) | nindent 8 }}
+        {{- include "midaz.podLabels" (dict "context" . "component" $component "name" $component) | nindent 8 }}
     spec:
-      {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "reconcile-indexes" "--tolerate-unavailable")) | nindent 6 }}
+      {{- include "midaz-ledger.partitionPodSpec" (dict "context" . "args" (list "reconcile-indexes" "--tolerate-unavailable") "licenseHook" true) | nindent 6 }}
 {{- end }}

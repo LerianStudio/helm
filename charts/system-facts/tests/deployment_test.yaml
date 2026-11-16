@@ -1,31 +1,233 @@
-suite: API deployment shutdown grace
+suite: API deployment health preset
 templates:
   - templates/deployment.yaml
+  - templates/hpa.yaml
+  - templates/service.yaml
+  - templates/pdb.yaml
+  - templates/ingress.yaml
   - templates/configmap.yaml
   - templates/secrets.yaml
 release:
   name: system-facts
   namespace: system-facts
 tests:
-  - it: gives the API pod 55s to shut down
+  - it: gives the API pod drain + shutdown + 10 seconds to shut down
     asserts:
       - equal:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 55
         template: templates/deployment.yaml
 
-  - it: honours an override
+  - it: tunes the grace through the health preset knobs
     set:
-      system-facts.terminationGracePeriodSeconds: 90
+      system-facts.health.drainSeconds: 5
+      system-facts.health.shutdownSeconds: 20
     asserts:
       - equal:
           path: spec.template.spec.terminationGracePeriodSeconds
-          value: 90
+          value: 35
         template: templates/deployment.yaml
 
-  - it: sets a 15s drain delay on the API pod
+  - it: owns the drain env in the preset, not in the ConfigMap
+    asserts:
+      - notExists:
+          path: data.SHUTDOWN_DRAIN_DELAY
+        template: templates/configmap.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: SHUTDOWN_DRAIN_DELAY, value: 15s}
+        template: templates/deployment.yaml
+
+  - it: serves probes and readiness on the named health port
     asserts:
       - equal:
-          path: data.SHUTDOWN_DRAIN_DELAY
-          value: "15s"
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: health}
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.httpGet
+          value: {path: /health, port: health}
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+        template: templates/deployment.yaml
+
+  - it: rolls out with zero unavailable pods
+    asserts:
+      - equal:
+          path: spec.strategy.rollingUpdate
+          value: {maxSurge: 25%, maxUnavailable: 0}
+        template: templates/deployment.yaml
+
+  - it: floors the autoscaler at two replicas and renders no fixed replica count
+    asserts:
+      - equal:
+          path: spec.minReplicas
+          value: 2
+        template: templates/hpa.yaml
+      - notExists:
+          path: spec.replicas
+        template: templates/deployment.yaml
+
+  - it: runs two replicas when autoscaling is off
+    set:
+      system-facts.autoscaling.enabled: false
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 2
+        template: templates/deployment.yaml
+
+  - it: exposes 8099 only as the named health port on the ClusterIP Service
+    asserts:
+      - contains:
+          path: spec.ports
+          content: {name: health, port: 8099, targetPort: 8099, protocol: TCP}
+        template: templates/service.yaml
+
+  - it: drops the health port from a LoadBalancer Service
+    set:
+      system-facts.service.type: LoadBalancer
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 1
+        template: templates/service.yaml
+
+  - it: never routes the Ingress to the health port
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 8080
+        template: templates/ingress.yaml
+
+  - it: keeps the PodDisruptionBudget evicting unhealthy pods
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+        template: templates/pdb.yaml
+      - equal:
+          path: spec.unhealthyPodEvictionPolicy
+          value: AlwaysAllow
+        template: templates/pdb.yaml
+
+  - it: refuses an image below the first one that serves the health port
+    set:
+      system-facts.image.tag: 1.2.0-beta.3
+    asserts:
+      - failedTemplate:
+          errorPattern: "below 1.2.0-beta.4"
+        template: templates/service.yaml
+
+  - it: refuses a probe override
+    set:
+      system-facts.readinessProbe.periodSeconds: 30
+    asserts:
+      - failedTemplate:
+          errorPattern: "owned by the health preset"
+        template: templates/service.yaml
+
+  - it: refuses HEALTH_PORT in the configmap values
+    set:
+      system-facts.configmap.HEALTH_PORT: "9000"
+    asserts:
+      - failedTemplate:
+          errorPattern: "owned by the health preset"
+        template: templates/service.yaml
+
+  - it: never renders LICENSE_ENABLED from extraEnvVars
+    set:
+      system-facts.extraEnvVars:
+        - name: LICENSE_ENABLED
+          value: "false"
+    asserts:
+      - notExists:
+          path: data.LICENSE_ENABLED
         template: templates/configmap.yaml
+
+  - it: leaves REDIS_TLS unset under a cloud preset
+    set:
+      global.cloud: aws
+    asserts:
+      - notExists:
+          path: data.REDIS_TLS
+        template: templates/configmap.yaml
+
+  - it: renders REDIS_TLS from global.datastores.redis.tls
+    set:
+      global.datastores.redis.tls: true
+    asserts:
+      - equal:
+          path: data.REDIS_TLS
+          value: "true"
+        template: templates/configmap.yaml
+
+  - it: never renders LICENSE_ENABLED from secrets
+    set:
+      system-facts.secrets.LICENSE_ENABLED: "false"
+    asserts:
+      - notExists:
+          path: stringData.LICENSE_ENABLED
+        template: templates/secrets.yaml
+
+  - it: renders no SD_ keys
+    asserts:
+      - notExists:
+          path: data.SD_ENABLED
+        template: templates/configmap.yaml
+
+  - it: mounts no licence file with licenseFile null
+    set:
+      system-facts.licenseFile: null
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+        template: templates/deployment.yaml
+
+  - it: mounts the licence Secret as a directory in file mode
+    set:
+      system-facts.licenseFile.existingSecret: sf-license
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: sf-license
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_FILE_PATH
+            value: /etc/lerian/license/license
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: license-file
+            mountPath: /etc/lerian/license
+            readOnly: true
+        template: templates/deployment.yaml
+
+  # The migrations Job pod shares name+instance with the API pods. Without the
+  # component, the PDB fails SyncFailed (Job has no scale subresource) and the
+  # Service routes port 8099 to a pod with no readiness probe.
+  - it: selects only the API component in the PDB and the Service
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: system-facts
+            app.kubernetes.io/instance: system-facts
+            app.kubernetes.io/component: system-facts
+        template: templates/pdb.yaml
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: system-facts
+            app.kubernetes.io/instance: system-facts
+            app.kubernetes.io/component: system-facts
+        template: templates/service.yaml

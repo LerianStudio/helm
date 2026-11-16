@@ -45,7 +45,7 @@ bankTransfer:
 helm diff upgrade plugin-br-bank-transfer oci://registry-1.docker.io/lerianstudio/plugin-br-bank-transfer-helm --version 1.2.1 -n plugin-br-bank-transfer
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+> **Note:** Requires the helm-diff plugin. Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
 ## Command to upgrade
 

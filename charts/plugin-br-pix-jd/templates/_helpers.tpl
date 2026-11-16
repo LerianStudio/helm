@@ -97,6 +97,14 @@ Honors global.commonLabels so a platform-wide label set lands on every object.
 */}}
 {{- define "plugin-br-pix-jd.componentLabels" -}}
 helm.sh/chart: {{ include "plugin-br-pix-jd.chart" .root }}
+{{ include "plugin-br-pix-jd.componentPodLabels" . }}
+{{- end }}
+
+{{/*
+componentPodLabels — componentLabels without helm.sh/chart, for pod templates: the
+chart version changes on every release and would restart every pod each time.
+*/}}
+{{- define "plugin-br-pix-jd.componentPodLabels" -}}
 {{ include "plugin-br-pix-jd.componentSelectorLabels" . }}
 app.kubernetes.io/version: {{ .root.Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .root.Release.Service }}
@@ -288,6 +296,15 @@ Input: root context ($).
    worse than a refused install. */ -}}
 {{- if and (.Values.namespaceOverride | default "") (include "plugin-br-pix-jd.postgresRenders" .) -}}
 {{- fail "\n\nERROR: namespaceOverride cannot be combined with the bundled Postgres.\nnamespaceOverride moves this chart's objects, but the postgresql subchart stays in the\nrelease namespace, and its NetworkPolicy is scoped there — so the api may be unable to\nreach it. Either drop namespaceOverride, or set postgresql.enabled=false and point\napi.configmap.POSTGRES_HOST at a datastore reachable from the target namespace.\n" -}}
+{{- end -}}
+{{- /* The Courier account-claims sweep is a WORKER job: COURIER_ACCOUNT_CLAIMS_ENABLED
+   is read only by cmd/worker, the api never sees it. Enabling the sweep with the
+   worker disabled therefore configures a job nothing ever runs — silently, because
+   an unclaimed account surfaces only later, downstream of the Courier's ownership
+   map. Refuse the contradiction at render, naming both keys. */ -}}
+{{- $courierClaims := ((.Values.courier | default dict).accountClaims | default dict) -}}
+{{- if and (eq (toString ($courierClaims.enabled | default false)) "true") (not .Values.worker.enabled) -}}
+{{- fail "\n\nERROR: courier.accountClaims.enabled=true requires worker.enabled=true.\nThe account-claims sweep is a worker job (COURIER_ACCOUNT_CLAIMS_ENABLED is read only\nby the worker process); with the worker disabled nothing would ever run it. Enable the\nworker (--set worker.enabled=true) or drop courier.accountClaims.enabled.\n" -}}
 {{- end -}}
 {{- end }}
 
@@ -539,7 +556,7 @@ POSTGRES_CONN_MAX_IDLE_TIME_MINS: {{ include "plugin-br-pix-jd.cfg" (dict "confi
 POSTGRES_CONNECT_TIMEOUT_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "POSTGRES_CONNECT_TIMEOUT_SEC" "default" "10") | quote }}
 MIGRATIONS_PATH: {{ include "plugin-br-pix-jd.cfg" (dict "configmap" $cm "key" "MIGRATIONS_PATH" "default" "/migrations") | quote }}
 {{- /* ALLOW_INSECURE_TLS — modeled as a first-class key, not left to the escape hatch,
-   because the benedita test environments run Postgres, Valkey and RabbitMQ WITHOUT TLS
+   because test environments may run Postgres, Valkey and RabbitMQ WITHOUT TLS
    and lib-commons refuses a plaintext connection to any of them unless this is set.
    Reaching a required knob through extraConfigmap would be the chart admitting it does
    not model its own deployment target.
@@ -1010,6 +1027,63 @@ JOBS_RECONCILE_STUCK_THRESHOLD_SEC: {{ include "plugin-br-pix-jd.cfg" (dict "con
 
 {{/*
 ------------------------------------------------------------------------------
+courierAuthEnv — the lib-auth admission pair for the JD Courier, api-only.
+
+The Courier calls the api's channel routes on an M2M credential whose manifest
+role is `service`, and lib-auth admits that role only under the inverted
+authorization model:
+  AUTH_M2M_INVERSION_ENABLED=true      — authorize the application under its
+    manifest roles. The legacy model fabricates a "{product}-editor-role"
+    subject for ANY application token, and editor holds none of the channel
+    route pairs, so every Courier delivery is 403.
+  AUTH_M2M_PRODUCT_FORWARD_ENABLED=true — forward the product context; gated on
+    inversion inside lib-auth, so inversion WITHOUT it also refuses the
+    Courier 403.
+ALWAYS A PAIR, which is why the chart exposes one switch (courier.enabled) and
+never the two variables separately. api.extraConfigmap merges last and still
+wins, for the day a deployment must split them deliberately.
+
+Off (the default), NOTHING is emitted: both variables default to false inside
+the app (lib-auth envDefault), and the chart does not emit literals it does not
+own — the same reasoning DEPLOYMENT_MODE documents in platformEnv.
+
+API-ONLY by design: the worker serves no Courier routes, so the pair would be
+inert noise there and the worker ConfigMap never includes this helper.
+
+Input: root context ($).
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.courierAuthEnv" -}}
+{{- $courier := .Values.courier | default dict -}}
+{{- if eq (toString ($courier.enabled | default false)) "true" }}
+AUTH_M2M_INVERSION_ENABLED: "true"
+AUTH_M2M_PRODUCT_FORWARD_ENABLED: "true"
+{{- end }}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
+courierClaimsEnv — the Courier account-claims sweep switch, worker-only.
+
+COURIER_ACCOUNT_CLAIMS_ENABLED (app default false, read ONLY by cmd/worker)
+registers the worker sweep that claims each participant's CRM accounts on that
+participant's own Courier. It is an OUTBOUND call, so it is independent of the
+courierAuthEnv admission pair above; what it does require is a worker to run it,
+which consistencyGates refuses at render when worker.enabled is false. Off,
+NOTHING is emitted — same reasoning as courierAuthEnv.
+
+Input: root context ($).
+------------------------------------------------------------------------------
+*/}}
+{{- define "plugin-br-pix-jd.courierClaimsEnv" -}}
+{{- $claims := ((.Values.courier | default dict).accountClaims | default dict) -}}
+{{- if eq (toString ($claims.enabled | default false)) "true" }}
+COURIER_ACCOUNT_CLAIMS_ENABLED: "true"
+{{- end }}
+{{- end }}
+
+{{/*
+------------------------------------------------------------------------------
 domainSecrets — the PIX credentials, shared by api and worker.
 
 Emits `KEY: <b64>` lines with no leading indent; the caller nindents under `data:`.
@@ -1155,7 +1229,7 @@ Input dict: root, configmap, graceSeconds.
 {{- fail "\n\nERROR: STREAMING_ENABLED=true requires OUTBOX_ENABLED=true.\nUse cases write a streaming envelope to the outbox table and the outbox dispatcher is\nthe SOLE publish path, so streaming without the outbox starts a producer nothing ever\nfeeds — events are silently never published.\n" -}}
 {{- end -}}
 {{- if not (index $cm "STREAMING_BROKERS" | default "") -}}
-{{- fail "\n\nERROR: STREAMING_BROKERS is required when STREAMING_ENABLED=true.\nComma-separated Kafka broker list, e.g. redpanda.dev-st.lerian.net:9092\n" -}}
+{{- fail "\n\nERROR: STREAMING_BROKERS is required when STREAMING_ENABLED=true.\nComma-separated Kafka broker list, e.g. redpanda.example.com:9092\n" -}}
 {{- end -}}
 {{- $closeTimeout := index $cm "STREAMING_CLOSE_TIMEOUT_S" | default "30" | toString | atoi -}}
 {{- if ge $closeTimeout (int .graceSeconds) -}}
@@ -1303,3 +1377,11 @@ The minImage guard compares one semver: a tier on another line (rc, v2.0.0-*) mu
       "name" "plugin-br-pix-jd-worker" "component" .Values.worker "health" .Values.worker.health
       "minImage" (include "plugin-br-pix-jd.minImage" .) "replicas" .Values.worker.replicaCount) -}}
 {{- end -}}
+
+{{/*
+Licence file (optional): licenseFile.existingSecret, mounted as a directory (never subPath)
+at /etc/lerian/license, key `license`. Input: a component (.Values.api or .Values.worker).
+*/}}
+{{- define "plugin-br-pix-jd.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}

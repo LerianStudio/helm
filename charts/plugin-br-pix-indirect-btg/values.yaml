@@ -35,6 +35,11 @@ global:
       roles:
         - role: "readWrite"
           db: "plugin-br-pix-indirect-btg-db"
+# -- Optional signed licence file, an alternative to pix.secrets.LICENSE_KEY. The Secret is mounted
+# read-only as the directory /etc/lerian/license (key `license`) on every component. File mode needs
+# an image on lib-license-go v5.
+licenseFile:
+  existingSecret: ""
 # -- Outbound (client) mTLS to the BTG API, shared by the components that call
 # BTG directly (pix and reconciliation). Independent of the inbound webhook
 # `MTLS_ENABLED` toggle. The Secret (created by the chart from `tls.crt`/`tls.key`
@@ -83,7 +88,7 @@ pix:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -293,7 +298,7 @@ inbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -405,7 +410,7 @@ outbound:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -530,7 +535,7 @@ reconciliation:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -650,7 +655,7 @@ schedule:
     # -- Image pull policy
     pullPolicy: Always
     # -- Image tag used for deployment
-    tag: "1.14.0"
+    tag: "1.15.0"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm
@@ -745,6 +750,7 @@ postgresql:
     username: "pix_btg"
     password: ""
     database: "pix_btg"
+  primary:
     persistence:
       size: 8Gi
     resourcesPreset: large
@@ -769,8 +775,6 @@ postgresql:
 valkey:
   # Redis is used to handle scenarios where real-time performance and fast data retrieval are essential.
   # This component is responsible for providing an in-memory data store
-  # For more details, refer to the documentation:
-  # https://docs.lerian.studio/docs/midaz-components#why-redis
   enabled: true
   auth:
     enabled: false

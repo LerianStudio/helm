@@ -59,7 +59,7 @@ prometheus.relabel "allowlist_objetos" {
   // recebe argumento de namespace; sem esta regra a allowlist acima filtra só a
   // FAMÍLIA, e cada pod, deployment e PVC do cliente sai do cluster dele.
   //
-  // MEDIDO em voluti-stg (2026-10-20), primeiro BYOC migrado: 1.109 séries
+  // MEDIDO em cliente B (stg), em 2026-10-20, primeiro BYOC migrado: 1.109 séries
   // `kube_*`, das quais 647 (58%) eram de kube-system, observability e security
   // do cliente. O agente anterior entregava só os namespaces da Lerian.
   //
@@ -75,7 +75,7 @@ prometheus.relabel "allowlist_objetos" {
   // Só o `include` vira regra. O `exclude` do perfil `own` fica de fora: lá o
   // cluster é nosso, e aplicá-lo aqui tiraria os `kube_*` de kube-system dos
   // ambientes internos — mudança que esta correção não pediu nem mediu.
-  // VERIFICADO: com `examples/values-benedita.yaml` o render sai idêntico ao
+  // VERIFICADO: com os values de um ambiente interno o render sai idêntico ao
   // anterior, fora este comentário.
   rule {
     source_labels = ["namespace"]
@@ -105,7 +105,7 @@ prometheus.relabel "allowlist_objetos" {
 
 **Impact:**
 
-Measured in a client cluster (`voluti-stg`, first BYOC migration):
+Measured in a client cluster (the first BYOC migration):
 
 - **Before:** 1,109 `kube_*` series collected, of which 647 (58%) were from client-owned namespaces (`kube-system`, `observability`, `security`)
 - **After:** 462 `kube_*` series collected (only from `midaz` and `midaz-plugins` namespaces, plus 74 cluster-scoped series)

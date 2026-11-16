@@ -155,10 +155,9 @@ consul:
     # ---- Agent config: disable the DNS listener -----------------------------
     # lib-service-discovery uses the Consul HTTP API, never Consul DNS. Setting
     # the DNS port to -1 stops the agent from listening on :8600. The upstream
-    # chart still declares port 8600 (dns-tcp/dns-udp) on the server Service,
-    # the container ports, and a separate "<consul-fullname>-dns" Service on
-    # port 53, but nothing binds them — one less open listener on the SD
-    # backend. Extend this JSON for any other agent tuning.
+    # chart still declares port 8600 (dns-tcp/dns-udp) on the server Service
+    # and the container ports, but nothing binds them — one less open listener
+    # on the SD backend. Extend this JSON for any other agent tuning.
     extraConfig: |
       {"ports": {"dns": -1}}
 
@@ -187,6 +186,11 @@ consul:
 
   # No service mesh / sidecar injection.
   connectInject:
+    enabled: false
+
+  # No Consul DNS: the listener is off (ports.dns -1), so the anonymous DNS
+  # read grant and the "-dns" Service are not rendered.
+  dns:
     enabled: false
 
   # No gateways of any kind.

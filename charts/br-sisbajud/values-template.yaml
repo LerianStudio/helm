@@ -130,7 +130,7 @@ brSisbajud:
   secrets:
     POSTGRES_PASSWORD: ""              # <- REQUIRED for external Postgres in production
     REDIS_PASSWORD: ""
-    LICENSE_KEY: ""                    # <- REQUIRED in production (empty = dev bypass in local|development|staging|e2e|test)
+    LICENSE_KEY: ""                    # <- REQUIRED in every environment
     VAULT_APPROLE_SECRET_ID: ""        # <- REQUIRED for approle
     STREAMING_SASL_PASSWORD: ""        # <- REQUIRED when saslMechanism is set
     STREAMING_TLS_CA_CERT: ""          # base64 PEM of a private broker CA (empty = system trust pool)

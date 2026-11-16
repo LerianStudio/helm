@@ -1,0 +1,95 @@
+name: Chart Bump Auto-merge
+
+# Classifies every chart bump the push bot opens from app-sync.yml, and sends anything that is
+# not routine to a human through the Severino review ticket (which app-sync.yml no longer
+# sends for mainline updates). "Routine" is decided by .github/scripts/chart-bump-classify.py:
+# only appVersion/image.tag raised within the same major (plus a description reflow), no new
+# env vars, no other key, file or author. Its docstring is the full rule.
+#
+# A routine bump is merged by chart-bump-merge.yml, which runs for a few seconds each time a
+# CI check completes and merges on the last one, instead of a runner waiting on CI here.
+#
+# pull_request_target, so the rule and this workflow always come from main: a pull request
+# that edits them does not change how it is itself judged. Nothing from the pull request is
+# checked out or executed; the classifier reads the YAML files through the API.
+#
+# Kill switch: the repository variable AUTOMERGE_ENABLED must be 'true'. With it off or unset
+# every bump takes the manual path. Adding the needs-human-review label to a pull request
+# also keeps it off auto-merge.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chart-bump-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Veto: set with the ticket, or by a human to stop a merge.
+  REVIEW_LABEL: needs-human-review
+  # Dedupe: the ticket was sent, so later runs do not send another.
+  TICKET_LABEL: severino-ticket-sent
+
+jobs:
+  classify:
+    name: Classify chart bump
+    if: >-
+      github.event.pull_request.user.login == 'lerian-studio-midaz-push-bot[bot]'
+      && startsWith(github.event.pull_request.head.ref, 'update/')
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      routine: ${{ steps.classify.outputs.routine }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Classify
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 .github/scripts/chart-bump-classify.py
+
+  # Not routine, auto-merge off, or the classifier failed: in doubt, a human looks.
+  # A failed CI on a routine bump is ticketed by chart-bump-merge.yml.
+  notify-severino:
+    name: Notify Severino
+    needs: classify
+    if: >-
+      always()
+      && needs.classify.result != 'skipped'
+      && needs.classify.result != 'cancelled'
+      && (needs.classify.result == 'failure'
+          || needs.classify.outputs.routine != 'true'
+          || vars.AUTOMERGE_ENABLED != 'true')
+    runs-on: ${{ (github.event.repository.visibility == 'public' && vars.PUBLIC_RUNNERS) || vars.GENERAL_RUNNERS || vars.FALLBACK_RUNNERS }}
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Send Severino review ticket
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
+          BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
+          SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+        run: bash .github/scripts/severino-ticket.sh

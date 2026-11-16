@@ -58,10 +58,10 @@ só quando os nomes de serviço/namespace diferirem.
 ## 3. Ordem de instalação
 
 1. Definir a estratégia de MongoDB: embutido (`mongodb.enabled: true`, só demo) **ou**
-   externo (`mongodb.enabled: false` + `MONGO_HOST` real + `MONGODB_PASS`; `MONGODB_URI` é só o esquema, `mongodb` ou `mongodb+srv`).
+   externo (`mongodb.enabled: false` + `MONGO_HOST` real + `MONGODB_PASS`; `MONGODB_URI` é só o esquema: `mongodb`. O console sempre adiciona `MONGO_PORT`, que uma URI `mongodb+srv` recusa).
    Pra Mongo gerenciado (DocumentDB) setar também `global.cloud: aws` pra aplicar
    automaticamente o formato da connection string TLS (seção 5).
-2. Fornecer os secrets de produção obrigatórios **antes** do `helm install`: `secrets.NEXTAUTH_SECRET` (chave de assinatura do NextAuth — o console não sobe sem ela), `secrets.MONGODB_PASS` só com MongoDB externo (com o embutido, deixe vazio: o chart conecta a senha), e — quando auth ligado — `PLUGIN_AUTH_CLIENT_ID`/`_SECRET`.
+2. Fornecer os secrets de produção obrigatórios **antes** do `helm install`: `secrets.NEXTAUTH_SECRET` (chave de assinatura do NextAuth — o console não sobe sem ela), `secrets.MONGODB_PASS` só com MongoDB externo (com o embutido, deixe vazio: o chart conecta a senha, exceto com `useExistingSecret: true`, em que o seu Secret precisa ter `MONGODB_PASS` com a senha root do MongoDB embutido), e — quando auth ligado — `PLUGIN_AUTH_CLIENT_ID`/`_SECRET`.
 3. Ligar a autorização **explicitamente** em qualquer ambiente exposto:
    `global.auth.enabled: "true"` (ou `configmap.PLUGIN_AUTH_ENABLED: "true"`). A
    imagem publicada do console recusa subir com a autorização desligada (sai com código 1) — ver seção 5.
@@ -98,6 +98,9 @@ global:
   # Preset de nuvem gerenciada (connection string TLS do DocumentDB), aplicado quando
   # nada mais específico sobrescreve. gcp/azure não têm preset de Mongo hoje.
   cloud: "aws"
+# Telemetria ligada precisa de um exporter, senão o render falha (seção 5)
+otel:
+  external: true
 ```
 
 | Campo global | Efeito (env var) | Chave nativa que sobrescreve |

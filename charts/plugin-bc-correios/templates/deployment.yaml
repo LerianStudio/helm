@@ -1,7 +1,5 @@
 {{- $component := index .Values "bc-correios" -}}
 {{- if $component.enabled }}
-{{- include "bc-correios.rabbitmqErlangCookieRequired" . }}
-{{- include "bc-correios.rabbitmqExistingSecretConsistent" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,12 +24,16 @@ spec:
       {{- include "bc-correios.selectorLabels" (dict "context" . "name" $component.name) | nindent 6 }}
   template:
     metadata:
-      {{- with $component.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- with $component.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
-        {{- include "bc-correios.labels" (dict "context" . "component" $component.name "name" $component.name) | nindent 8 }}
+        {{- include "bc-correios.selectorLabels" (dict "context" . "component" $component.name "name" $component.name) | nindent 8 }}
+        app.kubernetes.io/version: {{ include "bc-correios.versionLabelValue" . }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
     spec:
       {{- with $component.imagePullSecrets }}
       imagePullSecrets:
@@ -74,10 +76,6 @@ spec:
               # Wait for PostgreSQL
               wait_for_service "$POSTGRES_HOST" "$POSTGRES_PORT"
 
-              # Wait for RabbitMQ (AMQP port)
-              # Uses RABBITMQ_HOST from configmap — no credentials required for TCP check
-              wait_for_service "$RABBITMQ_HOST" "5672"
-
               # Wait for Valkey/Cache
               CACHE_HOST=$(echo "$CACHE_ADDR" | cut -d: -f1)
               CACHE_PORT=$(echo "$CACHE_ADDR" | cut -d: -f2)
@@ -102,18 +100,7 @@ spec:
           - configMapRef:
               name: {{ include "bc-correios.fullname" . }}
           env:
-          {{- $secretName := ternary $component.existingSecretName (include "bc-correios.fullname" .) $component.useExistingSecret }}
-          {{- $pg := .Values.postgresql | default dict }}
-          {{- $pgAuth := $pg.auth | default dict }}
-          {{- if or (and (ne (toString $pg.enabled) "false") (not $pg.external)) $pgAuth.existingSecret }}
-          {{- include "bc-correios.infraSecretRef" (dict "context" $ "subchart" "postgresql" "key" "password" "envName" "POSTGRES_PASSWORD") | nindent 10 }}
-          {{- else if $component.secrets.POSTGRES_PASSWORD }}
-          - name: POSTGRES_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: {{ $secretName }}
-                key: POSTGRES_PASSWORD
-          {{- end }}
+          {{- include "bc-correios.postgresPasswordEnv" . | nindent 10 }}
           {{- if include "bc-correios.valkeyPasswordFromSubchart" . }}
           {{- include "bc-correios.infraSecretRef" (dict "context" $ "subchart" "valkey" "key" (include "bc-correios.valkeyPasswordKey" .) "envName" "CACHE_PASSWORD") | nindent 10 }}
           {{- end }}

@@ -41,7 +41,7 @@ otelcol.processor.transform {{ $nome | quote }} {
 
       // --- BANK ACCOUNT AND BRANCH ---
       // ⚠️ Estas duas SO funcionam por NOME DE CAMPO — o inverso das de telefone, e
-      // a razao esta no dado real. MEDIDO em Cappta-Prd:
+      // a razao esta no dado real. MEDIDO em cliente A (prd):
       //
       //   account:388408                  6 digitos
       //   account:12880000007785418277   20 digitos
@@ -63,7 +63,7 @@ otelcol.processor.transform {{ $nome | quote }} {
       // ⚠️ OS SUFIXOS SAO ENUMERADOS, e nao `[A-Za-z]*`, de proposito.
       //
       // A primeira versao aceitava so `account=`, `account_number=`, `branch=` e
-      // `agency=` exatos. MEDIDO contra o log do Banqi: nao mascarava nada la, porque
+      // `agency=` exatos. MEDIDO contra o log do cliente C: nao mascarava nada la, porque
       // os campos sao camelCase com sufixo — `accountNumberDestination`, `agencyNumber`
       // — e nem `accountNumber=` sozinho casava.
       //

@@ -68,18 +68,13 @@ at the destination with no owner.
 
 WHO USES THIS CHART, which is what the rule encodes:
 
-  - our three SaaS environments: aws-production, aws-staging, aws-devops. Reserved,
-    exempt from the pattern. They predate the convention and renaming them would
-    orphan the metric history of every series already carrying those names.
+  - our SaaS environments, listed in `$reserved` below. Reserved, exempt from the
+    pattern. They predate the convention and renaming them would orphan the
+    metric history of every series already carrying those names.
   - client clusters: <client>-<stage>, lowercase, stage = stg | prd. Nothing else.
     The client name is a SINGLE word — acme-prd, never acme-corp-prd. Composition
     is refused deliberately: the identifier is parsed by routing and cost rules
     that split on the last hyphen, and a composed name makes that split ambiguous.
-
-Internal test clusters (benedita, clotilde, lazari-sandbox and the like) are NOT a
-case here: they report to a separate self-hosted Grafana and will not run this
-chart. No exemption is carved for them, on purpose — an exemption that nothing uses
-is a rule someone will later mistake for a supported path.
 
 Only stg and prd are accepted as stages. hml was dropped: a stage nobody routes to
 is a stage that produces telemetry nobody watches.
@@ -209,13 +204,13 @@ nao para o agente: o exportador tenta, falha, e a telemetria acumula na fila ate
 estourar. O sintoma seria "nao chega nada", sem erro que aponte a causa.
 */}}
 {{- if not $e -}}
-{{- fail "\n\nalloy-lerian: `destination.endpoint` esta vazio.\n\nO chart tem default — `https://telemetry.lerian.io`, o ponto de entrada de\nproducao — entao isto significa que o valor foi zerado explicitamente.\n\nEndpoint vazio nao para o agente: ele coleta, tenta entregar, falha, e a\ntelemetria acumula na fila ate estourar. Nao chega nada, e nada diz por que.\n\nInforme um destino, ou remova a chave para usar o default:\n\n  destination:\n    endpoint: https://telemetry.lerian.io      # BYOC, o default\n    endpoint: http://nlb-interno...:4318       # ambientes internos\n" -}}
+{{- fail "\n\nalloy-lerian: `destination.endpoint` esta vazio.\n\nO chart tem default — `https://telemetry.lerian.io`, o ponto de entrada de\nproducao — entao isto significa que o valor foi zerado explicitamente.\n\nEndpoint vazio nao para o agente: ele coleta, tenta entregar, falha, e a\ntelemetria acumula na fila ate estourar. Nao chega nada, e nada diz por que.\n\nInforme um destino, ou remova a chave para usar o default:\n\n  destination:\n    endpoint: https://telemetry.lerian.io      # BYOC, o default\n" -}}
 {{- end -}}
 {{/*
 Plaintext is refused only when a CREDENTIAL travels to this endpoint. Cleartext
 transmission of the token is the risk; plain HTTP by itself is not, and an
-internal Service inside our own cluster is a legitimate destination — benedita
-uses exactly that, over http, with no credential.
+internal Service inside our own cluster is a legitimate destination — an own
+environment can use exactly that, over http, with no credential.
 
 Tying the rule to the credential rather than to the scheme keeps the internal
 path working while making it impossible to send a token in the clear across a
@@ -232,13 +227,8 @@ The endpoint AS IT GOES INTO THE PUBLISHED CONFIGURATION.
 
 ⚠️ WHY THIS IS NOT SIMPLY `destinationEndpoint`.
 
-The configuration published to Fleet is ONE, shared by every client. The endpoint
-was the last thing still baked into its text, and that made the sharing work only
-by coincidence: every BYOC client happens to use the same public gateway. Our own
-internal environments do NOT — they reach an internal load balancer that bypasses
-the gateway entirely, and MEASURED, a configuration carrying the public endpoint
-gets `403 PermissionDenied` there, which is a PERMANENT failure: dropped on the
-spot, no retry.
+The configuration published to Fleet is ONE, shared by every install, so the
+endpoint cannot be baked into its text: the destination can differ per install.
 
 So the published text carries a reference, and the pod supplies the value.
 
@@ -266,8 +256,8 @@ values entry is what gets checked.
 {{- end -}}
 
 {{/*
-Whether the destination requires authentication. Internal platforms do not
-validate the credential, so the header is omitted there rather than sent empty.
+Whether the destination requires authentication. Where it does not, the header
+is omitted rather than sent empty.
 */}}
 {{- define "alloy-lerian.destinationAuthenticated" -}}
 {{- if hasKey .Values.destination.credential "enabled" -}}
@@ -402,7 +392,7 @@ NODE-EXPORTER TARGET — onde raspar metricas de no
 Mesma logica do clusterObjectTarget: instalar o exportador e raspa-lo sao
 decisoes SEPARADAS. Um ambiente que ja rode node-exporter mantem
 `node-exporter.enabled: false` e aponta aqui para o existente — foi o caso medido
-na benedita, que roda `prometheus-prometheus-node-exporter` ha 40 dias.
+em um ambiente que ja roda `prometheus-prometheus-node-exporter` ha 40 dias.
 
 Vazio + subchart habilitado => deriva o Service do subchart (`<release>-node-exporter`;
 o subchart roda sob o alias `node-exporter`, entao o nome nao leva `prometheus-`).
@@ -449,9 +439,9 @@ coleta nada, em silencio.
 
 
 {{- define "alloy-lerian.assertNodeInfra" -}}
-{{- $requested := (.Values.collection).nodeInfrastructure | default false -}}
+{{- $requested := or ((.Values.collection).nodeInfrastructure) ((index .Values "node-exporter" | default dict).enabled) | default false -}}
 {{- if and $requested (eq (include "alloy-lerian.profile" .) "client") -}}
-{{- fail "\n\nalloy-lerian: `collection.nodeInfrastructure` is not available in the client profile.\n\nNode CPU, memory and filesystem describe the host, which belongs to the client.\nWe have no standing to act on it, and it would cross the public network for no\nreturn.\n\nCluster-object metrics (pod phase, deployment state, autoscaler) are collected\nin both profiles — those describe workloads we operate.\n" -}}
+{{- fail "\n\nalloy-lerian: `collection.nodeInfrastructure` and `node-exporter.enabled` are not available in the client profile.\n\nNode CPU, memory and filesystem describe the host, which belongs to the client.\nWe have no standing to act on it, and it would cross the public network for no\nreturn.\n\nCluster-object metrics (pod phase, deployment state, autoscaler) are collected\nin both profiles — those describe workloads we operate.\n" -}}
 {{- end -}}
 {{/* Emits NOTHING. An assertion helper that returns a value gets that value
      written into the manifest by the call site — which produced

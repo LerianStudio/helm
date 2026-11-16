@@ -19,8 +19,7 @@ Renders ONLY when all three are true:
     global.externalPostgresDefinitions.enabled: that flag owns the optional
     database/role bootstrap Job and is normally false for an already
     provisioned database. Coupling control-plane migrations to it prevented
-    migrations from running in established environments such as Benedita
-    stg-mt, even though the application was already connected to the external
+    migrations from running in established environments, even though the application was already connected to the external
     control-plane database. The migration Job reads the same POSTGRES_* values
     as the app, so it needs an external connection, not bootstrap ownership.
 
@@ -121,7 +120,6 @@ spec:
       # traffic. Mirrors plugin-br-bank-transfer's component-scoped
       # selector labels, which exclude its own migration pod the same way.
       labels:
-        helm.sh/chart: {{ include "plugin-br-payments.chart" . }}
         app.kubernetes.io/version: {{ include "plugin-br-payments.versionLabelValue" . }}
         app.kubernetes.io/managed-by: {{ .Release.Service }}
         app.kubernetes.io/part-of: plugin-br-payments
@@ -185,8 +183,27 @@ spec:
                   name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
                   key: POSTGRES_PASSWORD
             {{- end }}
+            {{- /* Licence-gated migrator: LICENSE_KEY comes from the app Secret (operator's under
+                 useExistingSecret, else the pre-install hook Secret); optional keeps v4 images unaffected. */}}
+            {{- if or .Values.app.useExistingSecret .Values.app.secrets.LICENSE_KEY }}
+            - name: LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.app.useExistingSecret }}{{ .Values.app.existingSecretName }}{{ else }}{{ include "plugin-br-payments.fullname" . }}{{ end }}
+                  key: LICENSE_KEY
+                  optional: true
+            {{- end }}
+            {{- if include "plugin-br-payments.licenseSecret" . }}
+            - name: LICENSE_FILE_PATH
+              value: "/etc/lerian/license/license"
+            {{- end }}
+          {{- with (include "plugin-br-payments.licenseFileMount" . | trim) }}{{ . | nindent 10 }}{{- end }}
           resources:
             {{- toYaml (.Values.app.controlplaneMigrations.resources | default $defaultMigrationResources) | nindent 12 }}
+      {{- with (include "plugin-br-payments.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- with .Values.app.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

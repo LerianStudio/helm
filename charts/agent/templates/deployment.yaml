@@ -32,7 +32,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "lerian-agent.labels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 8 }}
+        {{- include "lerian-agent.podLabels" (dict "context" . "component" .Values.agent.name "name" .Values.agent.name) | nindent 8 }}
     spec:
       {{- with .Values.agent.imagePullSecrets }}
       {{- include "lerian-common.imagePullSecrets" . | nindent 6 }}

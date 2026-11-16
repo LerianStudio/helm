@@ -31,69 +31,6 @@ The default `timeoutSeconds` values for health probes have been increased across
 **Why this matters:**
 
 - **Prevents false positives:** The 1-second default was too aggressive for production environments, especially when pods experience temporary CPU throttling, network latency, or are under load
-- **Aligns with best practices:** Kubernetes probes should allow sufficient time for the application to respond, particularly for readiness checks that may involve database or external service health verification
-
-**Before (v10.2.0):**
-
-```yaml
-# templates/auth/deployment.yaml
-readinessProbe:
-  httpGet:
-    path: /readyz
-    port: 4000
-  initialDelaySeconds: 25
-  periodSeconds: 5
-  timeoutSeconds: 1  # too aggressive
-  successThreshold: 1
-  failureThreshold: 3
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 4000
-  initialDelaySeconds: 30
-  periodSeconds: 5
-  timeoutSeconds: 1  # too aggressive
-  successThreshold: 1
-  failureThreshold: 3
-```
-
-```yaml
-# templates/_helpers.tpl
-{{- define "caradhras.readinessProbeTimeoutSeconds" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.readinessProbe.timeoutSeconds "oldVal" (dig "backend" "readinessProbe" "timeoutSeconds" "" .Values.auth) "default" 1) -}}
-{{- end }}
-```
-
-**After (v10.2.1):**
-
-```yaml
-# templates/auth/deployment.yaml
-readinessProbe:
-  httpGet:
-    path: /readyz
-    port: 4000
-  initialDelaySeconds: 25
-  periodSeconds: 5
-  timeoutSeconds: 8  # increased for readiness
-  successThreshold: 1
-  failureThreshold: 3
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 4000
-  initialDelaySeconds: 30
-  periodSeconds: 5
-  timeoutSeconds: 3  # increased for liveness
-  successThreshold: 1
-  failureThreshold: 3
-```
-
-```yaml
-# templates/_helpers.tpl
-{{- define "caradhras.readinessProbeTimeoutSeconds" -}}
-{{- include "caradhras.value" (dict "newVal" .Values.caradhras.readinessProbe.timeoutSeconds "oldVal" (dig "backend" "readinessProbe" "timeoutSeconds" "" .Values.auth) "default" 3) -}}
-{{- end }}
-```
 
 **Operational impact:**
 
@@ -102,6 +39,7 @@ livenessProbe:
 - **Probe behavior change:** Pods will wait longer for health check responses before marking the probe as failed. This means:
   - A pod under load may take up to 8 seconds to respond to readiness checks before being marked unready (previously 1 second)
   - A pod under load may take up to 3 seconds to respond to liveness checks before being restarted (previously 1 second)
+
 **Example: Keeping custom timeout values**
 
 If you have specific timeout requirements, continue to override them in your values:
@@ -135,43 +73,6 @@ Chart **10.2.1** adds graceful shutdown handling to the caradhras deployment to 
 The caradhras deployment now includes:
 - A `preStop` lifecycle hook that delays SIGTERM by 15 seconds
 - A `terminationGracePeriodSeconds` of 55 seconds (previously used the Kubernetes default of 30 seconds)
-
-**Before (v10.2.0):**
-
-```yaml
-# templates/caradhras/deployment.yaml
-spec:
-  template:
-    spec:
-      # terminationGracePeriodSeconds not set (defaults to 30s)
-      containers:
-      - name: caradhras
-        # no lifecycle hooks
-        resources:
-          {{- toYaml .Values.caradhras.resources | nindent 12 }}
-        readinessProbe:
-          # ...
-```
-
-**After (v10.2.1):**
-
-```yaml
-# templates/caradhras/deployment.yaml
-spec:
-  template:
-    spec:
-      terminationGracePeriodSeconds: 55
-      containers:
-      - name: caradhras
-        resources:
-          {{- toYaml .Values.caradhras.resources | nindent 12 }}
-        lifecycle:
-          preStop:
-            exec:
-              command: ["sleep", "15"]
-        readinessProbe:
-          # ...
-```
 
 **Why this matters:**
 

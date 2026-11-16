@@ -99,7 +99,7 @@ for caso in "${selecionados[@]}"; do
       echo "  observado: o agente emitiu corpo string — a premissa do caso mudou"
       FALHAS=$((FALHAS+1))
     else
-      echo "OK    [${caso}]  (lacuna conhecida: corpo nao-string nao e sanitizado)"
+      echo "OK    [${caso}]  (corpo nao-string confirmado)"
     fi
     continue
   fi

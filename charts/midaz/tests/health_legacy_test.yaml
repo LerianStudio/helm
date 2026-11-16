@@ -1,0 +1,158 @@
+suite: health layout below the preset image
+templates:
+  - templates/ledger/deployment.yaml
+  - templates/ledger/service.yaml
+  - templates/ledger/pdb.yaml
+  - templates/ledger/configmap.yaml
+  - templates/tracer/deployment.yaml
+  - templates/tracer/service.yaml
+  - templates/tracer/pdb.yaml
+  - templates/tracer/configmap.yaml
+  - templates/ledger/secrets.yaml
+  - templates/tracer/secrets.yaml
+values:
+  - ../values-quickstart.yaml
+release:
+  name: midaz
+  namespace: midaz
+set:
+  tracer.enabled: true
+tests:
+  - it: default tag keeps the 4.4 probes, ports and drain on the ledger
+    template: templates/ledger/deployment.yaml
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: '^lerianstudio/midaz-ledger:4\.4\.[0-9]+$'
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value: {path: /health, port: http}
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: http}
+      - notExists:
+          path: spec.template.spec.containers[0].startupProbe
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value: [{name: http, containerPort: 3002, protocol: TCP}]
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 72
+      - equal:
+          path: spec.strategy.rollingUpdate
+          value: {maxSurge: 100%, maxUnavailable: 0}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: SHUTDOWN_DRAIN_DELAY, value: 15s}
+
+  - it: default tag exposes no health port on the ledger Service and keeps the PDB at 1
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 1
+        template: templates/ledger/service.yaml
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+        template: templates/ledger/pdb.yaml
+
+  - it: default tag renders the RabbitMQ health URL on the ledger and the drain grace on the tracer
+    asserts:
+      - equal:
+          path: data.RABBITMQ_HEALTH_CHECK_URL
+          value: http://midaz-rabbitmq:15672
+        template: templates/ledger/configmap.yaml
+      - equal:
+          path: data.RABBITMQ_PORT_AMQP
+          value: "15672"
+        template: templates/ledger/configmap.yaml
+      - equal:
+          path: data.READYZ_DRAIN_GRACE_SECONDS
+          value: "12"
+        template: templates/tracer/configmap.yaml
+
+  - it: default tag keeps the 4.4 tracer probes and Service
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: 4020}
+        template: templates/tracer/deployment.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].startupProbe
+        template: templates/tracer/deployment.yaml
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 55
+        template: templates/tracer/deployment.yaml
+      - lengthEqual:
+          path: spec.ports
+          count: 2
+        template: templates/tracer/service.yaml
+
+  - it: below the preset image the probe, grace, update and PDB values are honored
+    set:
+      ledger.terminationGracePeriodSeconds: 120
+      ledger.readinessProbe.path: /rz
+      ledger.deploymentUpdate.maxSurge: 2
+      ledger.pdb.minAvailable: 1
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 120
+        template: templates/ledger/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /rz
+        template: templates/ledger/deployment.yaml
+      - equal:
+          path: spec.strategy.rollingUpdate.maxSurge
+          value: 2
+        template: templates/ledger/deployment.yaml
+      - equal:
+          path: spec.minAvailable
+          value: 1
+        template: templates/ledger/pdb.yaml
+
+  - it: 4.5.0-beta.93 is still below the preset image
+    set:
+      ledger.image.tag: 4.5.0-beta.93
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].startupProbe
+        template: templates/ledger/deployment.yaml
+
+  - it: 4.5.0-beta.94 renders the preset
+    set:
+      ledger.image.tag: 4.5.0-beta.94
+      tracer.image.tag: 4.5.0-beta.94
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.httpGet
+          value: {path: /health, port: health}
+        template: templates/ledger/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value: {path: /readyz, port: health}
+        template: templates/ledger/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HEALTH_PORT, value: "8099"}
+        template: templates/ledger/deployment.yaml
+      - lengthEqual:
+          path: spec.ports
+          count: 2
+        template: templates/ledger/service.yaml
+      - equal:
+          path: spec.maxUnavailable
+          value: 1
+        template: templates/ledger/pdb.yaml
+      - notExists:
+          path: data.RABBITMQ_HEALTH_CHECK_URL
+        template: templates/ledger/configmap.yaml
+      - notExists:
+          path: data.READYZ_DRAIN_GRACE_SECONDS
+        template: templates/tracer/configmap.yaml
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.httpGet
+          value: {path: /health, port: health}
+        template: templates/tracer/deployment.yaml

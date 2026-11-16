@@ -47,8 +47,9 @@ global:
   auth: {}
     # enabled: "true"
     # host: "http://plugin-access-manager-auth:4000"
-  # -- Streaming backend (only when STREAMING_ENABLED=true; the worker needs it
-  # for Fetcher job-event notifications since fetcher 2.0.0-beta.5).
+  # -- Streaming backend (only when STREAMING_ENABLED=true). App >= 4.10.0 publishes every
+  # business event to Kafka; single-tenant installs set brokers, which the chart passes as
+  # STREAMING_KAFKA_BROKERS. Multi-tenant installs take brokers from the Tenant Manager.
   streaming: {}
     # brokers: "redpanda:9092"
   # -- Env-wide multi-tenancy gate. When true, also set MULTI_TENANT_URL etc.
@@ -147,6 +148,8 @@ secrets:
   OBJECT_STORAGE_SECRET_KEY: ""
   # Fetcher integration — base64-encoded 32-byte encryption key:
   APP_ENC_KEY: ""
+  # Lerian license key. REQUIRED for app >= 4.6.0 (the chart refuses to render without it):
+  LICENSE_KEY: ""
   # Required (fail-fast) once manager/worker image.tag is app >= 3.0.0 — at-rest encryption
   # of registered data-source credentials; both components refuse to boot without it.
   # Generate once (openssl rand -hex 32), use the SAME value for manager and worker, and do

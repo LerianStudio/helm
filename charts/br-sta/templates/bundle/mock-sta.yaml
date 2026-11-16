@@ -4,7 +4,7 @@ development-class environment). A BACEN STA counterparty simulator: the file
 transfer and password web services over plain HTTP. When enabled, the app's
 STA_SCHEME / STA_FILE_HOST / STA_PASSWORD_HOST default to this Service (see
 br-sta.configmapData), which also activates the app's mock profile.
-The image is public on GHCR (it follows the app's imagePullSecrets, if any).
+The image is not public: it needs a ghcr.io pull secret (it follows the top-level imagePullSecrets unless mockSta.imagePullSecrets is set).
 */ -}}
 {{- if eq (include "br-sta.mockStaEnabled" .) "true" }}
 {{- $ms := .Values.mockSta -}}

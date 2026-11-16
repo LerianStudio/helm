@@ -1,18 +1,18 @@
 # Arcabouço de verificação de sanitização
 
-**Executado e validado:** 2026-08-08 · **Subtarefa:** ST-003-02
+**Executado e validado:** 2026-08-08
 **Agente:** `grafana/alloy:v1.21.3`
 
 ## Por que existe
 
-Em produção as regras rodam com `error_mode = "ignore"`. **Uma regra malformada não gera erro — produz saída que aparenta estar mascarada.** Verificado empiricamente ([evidência](../subtasks/T-003/EVIDENCIA-retrovinculacao.md)): a notação `$$1` emite o texto literal `$1***`, sem qualquer aviso, mesmo em `error_mode = "propagate"`.
+Em produção as regras rodam com `error_mode = "ignore"`. **Uma regra malformada não gera erro — produz saída que aparenta estar mascarada.** Verificado empiricamente: a notação `$$1` emite o texto literal `$1***`, sem qualquer aviso, mesmo em `error_mode = "propagate"`.
 
 Logo, a única verificação válida é **comparar a saída observada com a esperada**. Revisão de configuração não detecta esta classe de falha.
 
 ## Uso
 
 ```bash
-./porta-de-entrega.sh             # PORTA BLOQUEANTE — 5 verificações
+./porta-de-entrega.sh             # PORTA BLOQUEANTE — 6 verificações
 ./verificar.sh                    # só os casos, todos
 ./verificar.sh telefone-canonico  # um caso
 ```
@@ -28,8 +28,9 @@ Código de saída 0 = liberado. Diferente de 0 = bloqueado.
 | 1 | Nenhuma notação `$$N` no **código** | Emite texto literal sem erro |
 | 2 | Nenhuma função editora aninhada em `set()` | Falha na carga do agente |
 | 3 | Nenhum lookahead/lookbehind | Não suportado pelo motor |
-| 4 | Cada classe tem as 4 categorias; e o `body` esperado das de preservação **não** contém notação | Regra sem cobertura completa passa despercebida |
+| 4 | Cada classe tem as 5 categorias; e o `body` esperado das de preservação **não** contém notação | Regra sem cobertura completa passa despercebida |
 | 5 | Todos os casos passam contra o agente real | — |
+| 6 | Regras do arcabouço idênticas às do template do chart, na mesma ordem | Sem isso o teste valida um conjunto e a produção usa outro |
 
 ### Bloqueio verificado com 4 defeitos deliberados
 
@@ -48,7 +49,7 @@ Corrigido: os checks 1 a 3 filtram linhas de comentário; o check 4 lê apenas o
 
 ## Integração em CI
 
-`ci-sanitizacao.yml.modelo` é o fluxo pronto, **não instalado**: o chart ainda não existe no repositório. Quando existir (T-004), copiar para `.github/workflows/` ajustando os caminhos.
+O fluxo de CI é `.github/workflows/sanitizacao.yml`, que executa `porta-de-entrega.sh`.
 
 A versão do agente é **pinada** no fluxo. Atualizá-la exige reverificar as asserções — comportamento de regex pode mudar entre versões, e a falha seria silenciosa em produção.
 
@@ -63,7 +64,7 @@ sanitizacao/
     └── <caso>.esperado.json  # saída esperada + categoria
 ```
 
-## As 4 categorias obrigatórias por regra
+## As 5 categorias obrigatórias por regra
 
 | Categoria | O que verifica | Estado |
 |---|---|---|
@@ -71,8 +72,9 @@ sanitizacao/
 | `formaAlternativa` | Variante de formato da mesma classe | ✅ |
 | `ausencia` | A regra **não** altera o que não casa | ✅ |
 | **`preservacaoDeFragmento`** | **A saída contém o fragmento capturado, não a notação literal** | ✅ |
+| `falsoPositivo` | Entrada parecida com a classe, sem PII, sai idêntica | ✅ |
 
-**A quarta é a única capaz de detectar notação de retrovinculação incorreta.** As outras três passariam com a regra errada.
+**A quarta é a única capaz de detectar notação de retrovinculação incorreta.** As outras passariam com a regra errada.
 
 ## Detecção de regressão — verificada
 
@@ -124,11 +126,7 @@ O motor desta versão é RE2. **Não suporta**:
 | `(?: \w+)*?` não-guloso | `Joao ********** Carlos Pereira Silva` | Casa o mínimo; não mascara o meio |
 | `[A-Z]\w*` ancorado em caixa | ✅ funciona | Termos de nome começam em maiúscula; o texto seguinte no log é minúsculo — delimita o valor sem retrovisor |
 
-**Foram necessárias DUAS regras**, não uma:
-- **3+ termos** — exige ≥1 termo no meio (`(?: [A-Z]\w*)+`)
-- **exatamente 2 termos** — a regra de 3+ não casa, porque não há meio
-
-**A ordem é obrigatória: 3+ antes de 2.** Verificado por regressão — invertendo, `Ana Beatriz Costa Lima` vira `Ana ********** Beatriz Costa Lima`: **o nome completo permanece exposto** com uma máscara decorativa antes. Passa em revisão visual.
+Hoje é **uma** regra: ela mantém o primeiro termo e mascara todos os seguintes. As duas regras anteriores (3+ termos e exatamente 2) vazavam o sobrenome.
 
 ### Dependência de convenção — registrar como premissa
 
@@ -180,7 +178,7 @@ O endereço é o único com mascaramento integral, e é decisão deliberada.
 
 ## Limite de alcance: CORPO de REGISTRO, e nada mais
 
-Medido em cluster real (T-005), nao inferido do codigo. As 10 regras operam sobre
+Medido em cluster real, nao inferido do codigo. As 10 regras operam sobre
 `body` dentro de `log_statements`. Consequencia direta:
 
 | Onde o dado esta | Sanitizado |
@@ -230,7 +228,7 @@ que o arcabouco cobre e nao cobre.
 
 ### Medido, não suposto
 
-Amostrei 20 registros reais chegando ao destino na benedita, de 7 serviços
+Amostrei 20 registros reais chegando ao destino, de 7 serviços
 distintos: **20 de 20 têm corpo string.** A lacuna não se manifesta no tráfego
 atual — mas o mecanismo permite, e "hoje ninguém faz" não é controle.
 
@@ -287,8 +285,6 @@ protegem uma convenção de nomenclatura que nada obriga.
 
 Acrescentar um rótulo à lista (`beneficiario`, `nomeCliente`, `pix_key`) é **baixo
 risco e alto retorno** — cada rótulo novo é cobertura que não existia. Remover um é
-o oposto, e a porta só percebe se algum caso usar aquele rótulo:
-**verificado por injeção** — retirar apenas `holder` expõe `holderName=Ana Silva` e a
-porta libera com "0 falhas".
+o oposto, e a porta só percebe se algum caso usar aquele rótulo.
 
 Se remover um rótulo, escreva um caso para ele antes, para que a remoção apareça.

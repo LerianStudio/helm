@@ -86,7 +86,7 @@ spec:
 - During rolling updates, manager pods will take up to 55 seconds to terminate gracefully instead of the default 30 seconds
 - No configuration changes are required — the new behavior is applied automatically on upgrade
 
-> **Note:** The chart hardcodes `SHUTDOWN_DRAIN_DELAY` and `terminationGracePeriodSeconds`. A `SHUTDOWN_DRAIN_DELAY` set in `manager.configmap` or `manager.extraEnvVars` no longer takes effect, because the container `env` entry overrides the ConfigMap.
+> **Note:** The chart hardcodes `SHUTDOWN_DRAIN_DELAY` and `terminationGracePeriodSeconds`. A `SHUTDOWN_DRAIN_DELAY` set in `manager.extraEnvVars` no longer takes effect, because the container `env` entry overrides the ConfigMap. The values schema already rejects the key in `manager.configmap`.
 
 ## Configuration Reference
 

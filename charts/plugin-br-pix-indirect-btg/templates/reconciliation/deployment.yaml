@@ -26,7 +26,7 @@ spec:
         checksum/mtls: {{ include "plugin-br-pix-indirect-btg.mtlsChecksum" . }}
         {{- end }}
       labels:
-        {{- include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | nindent 8 }}
+        {{- omit (include "reconciliation.labels" (dict "context" . "name" .Values.reconciliation.name ) | fromYaml) "helm.sh/chart" | toYaml | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
     {{- with .Values.reconciliation.imagePullSecrets }}
@@ -58,6 +58,7 @@ spec:
           {{- $otelEnabled := (index .Values "otel-collector-lerian").enabled }}
           env:
           {{- toYaml $h.env | nindent 10 }}
+          {{- with (include "plugin-br-pix-indirect-btg.licenseFileEnv" . | trim) }}{{ . | nindent 10 }}{{- end }}
           {{- with $infraEnv }}{{ . | nindent 10 }}{{- end }}
           {{- if $otelEnabled }}
           - name: "HOST_IP"
@@ -72,9 +73,15 @@ spec:
           startupProbe: {{- toYaml $h.startupProbe | nindent 12 }}
           livenessProbe: {{- toYaml $h.livenessProbe | nindent 12 }}
           readinessProbe: {{- toYaml $h.readinessProbe | nindent 12 }}
-          {{- if .Values.mtls.enabled }}
+          {{- $licMount := include "plugin-br-pix-indirect-btg.licenseFileMount" . | trim }}
+          {{- if or .Values.mtls.enabled $licMount }}
           volumeMounts:
+            {{- if .Values.mtls.enabled }}
             {{- include "plugin-br-pix-indirect-btg.mtlsVolumeMount" . | nindent 12 }}
+            {{- end }}
+            {{- with $licMount }}
+            {{- . | nindent 12 }}
+            {{- end }}
           {{- end }}
       {{- with .Values.reconciliation.nodeSelector }}
       nodeSelector:
@@ -88,7 +95,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.mtls.enabled }}
+      {{- $licVolume := include "plugin-br-pix-indirect-btg.licenseFileVolume" . | trim }}
+      {{- if or .Values.mtls.enabled $licVolume }}
       volumes:
+        {{- if .Values.mtls.enabled }}
         {{- include "plugin-br-pix-indirect-btg.mtlsVolume" . | nindent 8 }}
+        {{- end }}
+        {{- with $licVolume }}
+        {{- . | nindent 8 }}
+        {{- end }}
       {{- end }}

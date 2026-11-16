@@ -1,11 +1,8 @@
-# Helm Upgrade from v0.x to v1.x
+# plugin-br-ted-lerian Helm chart v1.0
 
 ## Topics
 
-- **[Breaking Changes](#breaking-changes)**
-  - [Chart Name Change](#chart-name-change)
-  - [Values Structure](#values-structure)
-  - [Namespace Override](#namespace-override)
+- **[Installing](#installing)**
 - **[Features](#features)**
   - [1. Bundled Infrastructure Subcharts](#1-bundled-infrastructure-subcharts)
   - [2. External PostgreSQL Bootstrap Job](#2-external-postgresql-bootstrap-job)
@@ -19,71 +16,22 @@
   - [Scenario 1: External Datastores (Default)](#scenario-1-external-datastores-default)
   - [Scenario 2: Bundled Datastores](#scenario-2-bundled-datastores)
   - [Scenario 3: External Datastores with Bootstrap Job](#scenario-3-external-datastores-with-bootstrap-job)
-- **[Configuration Reference](#configuration-reference)**
-  - [Global Configuration](#global-configuration)
-  - [Service Configuration](#service-configuration)
-  - [Infrastructure Subcharts](#infrastructure-subcharts)
-  - [AWS Integration](#aws-integration)
-- **[Migration Steps](#migration-steps)**
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
 
 ---
 
-## Breaking Changes
+## Installing
 
-### Chart Name Change
+Chart `1.0.0` is the first release of this chart. Its name is `plugin-br-ted-lerian-helm` and it deploys app version `1.0.0-beta.33`.
 
-The chart name has changed from `plugin-br-ted-lerian` to `plugin-br-ted-lerian-helm`.
-
-| Setting | v0.0.0 | v1.0.0 |
-|---------|--------|--------|
-| Chart name | N/A (chart did not exist) | `plugin-br-ted-lerian-helm` |
-| OCI repository | N/A | `oci://registry-1.docker.io/lerianstudio/plugin-br-ted-lerian-helm` |
-
-**Impact:** When upgrading, you must reference the new chart name in your `helm upgrade` command.
-
-### Values Structure
-
-All service-specific configuration is now nested under the `plugin-br-ted-lerian` key. This is a fundamental restructuring that affects every configuration value.
-
-**Before (v0.0.0):**
-```yaml
-replicaCount: 1
-image:
-  repository: ghcr.io/lerianstudio/plugin-br-ted-lerian
-  tag: "1.0.0-beta.33"
-service:
-  port: 8080
+```sh
+helm upgrade --install plugin-br-ted-lerian \
+  oci://ghcr.io/lerianstudio/plugin-br-ted-lerian-helm \
+  --version 1.0.0 \
+  --namespace plugin-br-ted-lerian --create-namespace \
+  --values my-values.yaml
 ```
 
-**After (v1.0.0):**
-```yaml
-plugin-br-ted-lerian:
-  replicaCount: 1
-  image:
-    repository: ghcr.io/lerianstudio/plugin-br-ted-lerian
-    tag: "1.0.0-beta.33"
-  service:
-    port: 8080
-```
-
-> **Warning:** All existing values files must be restructured. Every configuration key that was previously at the root level must now be nested under `plugin-br-ted-lerian`.
-
-### Namespace Override
-
-The chart now supports explicit namespace configuration through `namespaceOverride`.
-
-| Setting | v0.0.0 | v1.0.0 |
-|---------|--------|--------|
-| Namespace control | Implicit (Release.Namespace) | Explicit via `namespaceOverride` |
-| Default namespace | Release namespace | `plugin-br-ted-lerian` |
-
-```yaml
-namespaceOverride: "plugin-br-ted-lerian"
-```
-
-**Impact:** If you were relying on the release namespace, you may need to explicitly set `namespaceOverride` to match your current deployment namespace.
+All service settings sit under the `plugin-br-ted-lerian` key in the values file. The chart's own resources render into the namespace set by `namespaceOverride` (default `plugin-br-ted-lerian`), and the bundled PostgreSQL and Valkey subcharts render into the release namespace, so keep `--namespace` and `namespaceOverride` equal.
 
 ---
 
@@ -91,7 +39,7 @@ namespaceOverride: "plugin-br-ted-lerian"
 
 ### 1. Bundled Infrastructure Subcharts
 
-The chart now includes optional PostgreSQL and Valkey (Redis) subcharts for self-contained deployments.
+The chart includes optional PostgreSQL and Valkey (Redis) subcharts for self-contained deployments.
 
 | Feature | Default | Description |
 |---------|---------|-------------|
@@ -132,8 +80,8 @@ valkey:
 > **Note:** When subcharts are enabled, `POSTGRES_HOST` and `REDIS_HOST` automatically resolve to the in-cluster service names, and passwords are read directly from the subchart's own Secret. No manual configuration is required.
 
 **New environment variables (when subcharts enabled):**
-- `POSTGRES_HOST`: Defaults to `<release-name>-postgresql` (subchart service)
-- `REDIS_HOST`: Defaults to `<release-name>-valkey-master` (subchart service)
+- `POSTGRES_HOST`: Defaults to `<postgresql-subchart-fullname>.<namespace>.svc.cluster.local` (the in-cluster PostgreSQL Service)
+- `REDIS_HOST`: Defaults to `<valkey-subchart-fullname>-primary.<namespace>.svc.cluster.local:6379` (the in-cluster Valkey primary Service)
 
 ### 2. External PostgreSQL Bootstrap Job
 
@@ -163,18 +111,18 @@ global:
       password: ""
 ```
 
-> **Important:** The `boilerplateCredentials.password` must match `plugin-br-ted-lerian.secrets.POSTGRES_PASSWORD`. Use `useExistingSecret.name` to ensure both read from the same Secret.
+> **Important:** The `boilerplateCredentials.password` (the password the Job gives the role) must be the same value as `plugin-br-ted-lerian.secrets.POSTGRES_PASSWORD` (the password the service logs in with).
 
 **Job behavior:**
 - Creates role `plugin-br-ted-lerian` if it doesn't exist
 - Creates database `plugin-br-ted-lerian` if it doesn't exist
-- Grants all privileges on the database and schema
+- Grants all privileges on the database and the `public` schema
 - Idempotent: safe to run multiple times
 - TTL: 300 seconds after completion
 
 ### 3. AWS IAM Roles Anywhere Integration
 
-The chart now supports AWS IAM Roles Anywhere for temporary credential provisioning via X.509 certificates.
+The chart supports AWS IAM Roles Anywhere for temporary credential provisioning via X.509 certificates.
 
 | Feature | Default | Description |
 |---------|---------|-------------|
@@ -200,14 +148,14 @@ aws:
 ```
 
 **New environment variables (when enabled):**
-- `AWS_CONTAINER_CREDENTIALS_FULL_URI`: Points to local IMDS endpoint (`http://127.0.0.1:9911/credentials`)
-- `AWS_REGION`: Set to `aws.rolesAnywhere.region`
+- `AWS_EC2_METADATA_SERVICE_ENDPOINT`: Points to the local IMDS endpoint (`http://127.0.0.1:9911`)
+- `AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE`: `IPv4`
 
 > **Note:** The sidecar exchanges the X.509 certificate for temporary AWS credentials, exposing them via a local IMDS-compatible endpoint.
 
 ### 4. Cloud Topology Presets
 
-The chart now supports cloud-specific topology presets that configure TLS, SSL, and connection defaults for managed cloud services.
+The chart supports cloud-specific topology presets that configure TLS, SSL, and connection defaults for managed cloud services.
 
 | Feature | Default | Description |
 |---------|---------|-------------|
@@ -218,18 +166,12 @@ global:
   cloud: "aws"
 ```
 
-**Impact:** When set, the cloud preset configures default TLS/SSL settings for PostgreSQL and Redis connections. Explicit configuration in `global.datastores` or `plugin-br-ted-lerian.configmap` still overrides the preset.
+**Impact:** When set, the cloud preset configures default TLS/SSL settings for PostgreSQL connections. Explicit configuration in `global.datastores` or `plugin-br-ted-lerian.configmap` still overrides the preset.
 
 ### 5. Enhanced Security Context
 
-The chart now includes a comprehensive security context with non-root user enforcement and read-only root filesystem.
+The chart includes a comprehensive security context with non-root user enforcement and read-only root filesystem.
 
-**Before (v0.0.0):**
-```yaml
-# No security context defined
-```
-
-**After (v1.0.0):**
 ```yaml
 plugin-br-ted-lerian:
   securityContext:
@@ -242,11 +184,11 @@ plugin-br-ted-lerian:
     readOnlyRootFilesystem: true
 ```
 
-**Impact:** The container now runs as user `65532:65532` with a read-only root filesystem. If your application writes to the filesystem, you must mount writable volumes explicitly.
+**Impact:** The container runs as user `65532:65532` with a read-only root filesystem.
 
 ### 6. PodDisruptionBudget
 
-The chart now creates a PodDisruptionBudget to control voluntary disruptions during cluster maintenance.
+The chart creates a PodDisruptionBudget to control voluntary disruptions during cluster maintenance.
 
 | Feature | Default | Description |
 |---------|---------|-------------|
@@ -263,7 +205,7 @@ plugin-br-ted-lerian:
     annotations: {}
 ```
 
-**Impact:** During cluster maintenance or node drains, Kubernetes will ensure at least 1 pod remains available.
+**Impact:** When both `minAvailable` and `maxUnavailable` are set, the chart renders only `maxUnavailable`. To use `minAvailable`, set `maxUnavailable: null` in your values.
 
 ### 7. Productized Configuration
 
@@ -356,9 +298,9 @@ plugin-br-ted-lerian:
 - `REDIS_PROTOCOL`: Redis protocol version (default: `3`)
 - `REDIS_POOL_SIZE`: Connection pool size (default: `10`)
 - `REDIS_MIN_IDLE_CONNS`: Minimum idle connections (default: `2`)
-- `REDIS_READ_TIMEOUT_MS`: Read timeout in milliseconds (default: `3000`)
-- `REDIS_WRITE_TIMEOUT_MS`: Write timeout in milliseconds (default: `3000`)
-- `REDIS_DIAL_TIMEOUT_MS`: Dial timeout in milliseconds (default: `5000`)
+- `REDIS_READ_TIMEOUT`: Read timeout in whole seconds, from `readTimeoutMs` (default: `3`)
+- `REDIS_WRITE_TIMEOUT`: Write timeout in whole seconds, from `writeTimeoutMs` (default: `3`)
+- `REDIS_DIAL_TIMEOUT`: Dial timeout in whole seconds, from `dialTimeoutMs` (default: `5`)
 
 #### Rate Limiting
 
@@ -392,7 +334,7 @@ plugin-br-ted-lerian:
 
 ### 8. Feature Toggles
 
-The chart now includes feature toggles for optional integrations.
+The chart includes feature toggles for optional integrations.
 
 | Feature | Default | Description |
 |---------|---------|-------------|
@@ -442,10 +384,8 @@ plugin-br-ted-lerian:
 - `ENABLE_TELEMETRY`: Enable telemetry (default: `false`)
 - `OTEL_LIBRARY_NAME`: Library name (default: `github.com/LerianStudio/plugin-br-ted-lerian`)
 - `OTEL_RESOURCE_SERVICE_NAME`: Service name (default: `plugin-br-ted-lerian`)
-- `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP endpoint (from `global.observability.otlpEndpoint` or pod IP)
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP endpoint (from `global.observability.otlpEndpoint`; with `otel.enabled: true` the chart replaces it with `$(HOST_IP):4317`, the node IP)
 - `OTEL_RESOURCE_DEPLOYMENT_ENVIRONMENT`: Deployment environment (default: `production`)
-
-> **Note:** These features are inert until both the toggle is enabled and the corresponding `global.*` configuration is provided.
 
 ---
 
@@ -453,7 +393,7 @@ plugin-br-ted-lerian:
 
 ### Scenario 1: External Datastores (Default)
 
-This is the default configuration for production environments where PostgreSQL and Redis are managed externally (e.g., AWS RDS, ElastiCache).
+This configuration is for environments where PostgreSQL and Redis are managed externally (e.g., AWS RDS, ElastiCache).
 
 ```yaml
 global:
@@ -465,8 +405,7 @@ global:
       user: "plugin-br-ted-lerian"
       ssl: "require"
     redis:
-      host: "my-elasticache.example.com"
-      port: "6379"
+      host: "my-elasticache.example.com:6379"
 
 plugin-br-ted-lerian:
   secrets:
@@ -481,11 +420,6 @@ valkey:
   enabled: false
   external: true
 ```
-
-**Migration from v0.0.0:**
-1. Nest all existing configuration under `plugin-br-ted-lerian`
-2. Move datastore connection details to `global.datastores`
-3. Keep existing secrets under `plugin-br-ted-lerian.secrets`
 
 ### Scenario 2: Bundled Datastores
 
@@ -511,12 +445,6 @@ valkey:
     password: ""  # Auto-generated
 ```
 
-**Migration from v0.0.0:**
-1. Nest all existing configuration under `plugin-br-ted-lerian`
-2. Enable subcharts: `postgresql.enabled: true` and `valkey.enabled: true`
-3. Remove `plugin-br-ted-lerian.secrets.POSTGRES_PASSWORD` and `REDIS_PASSWORD` (auto-generated by subcharts)
-4. Remove any explicit `POSTGRES_HOST` or `REDIS_HOST` configuration (auto-resolved)
-
 ### Scenario 3: External Datastores with Bootstrap Job
 
 This configuration uses external datastores but automates the initial database setup via the bootstrap Job.
@@ -531,8 +459,7 @@ global:
       user: "plugin-br-ted-lerian"
       ssl: "require"
     redis:
-      host: "my-elasticache.example.com"
-      port: "6379"
+      host: "my-elasticache.example.com:6379"
   externalPostgresDefinitions:
     enabled: true
     connection:
@@ -546,9 +473,6 @@ global:
         name: "plugin-br-ted-lerian-db-credentials"
 
 plugin-br-ted-lerian:
-  secrets:
-    POSTGRES_PASSWORD: ""  # Read from boilerplateCredentials secret
-    REDIS_PASSWORD: "my-redis-password"
   useExistingSecret: true
   existingSecretName: "plugin-br-ted-lerian-db-credentials"
 
@@ -561,289 +485,4 @@ valkey:
   external: true
 ```
 
-**Migration from v0.0.0:**
-1. Nest all existing configuration under `plugin-br-ted-lerian`
-2. Move datastore connection details to `global.datastores`
-3. Create a Secret with `DB_PASSWORD_BOILERPLATE` key containing the database password
-4. Enable bootstrap Job: `global.externalPostgresDefinitions.enabled: true`
-5. Configure admin credentials via `postgresAdminLogin.useExistingSecret`
-6. Set `plugin-br-ted-lerian.useExistingSecret: true` and reference the same Secret
-
----
-
-## Configuration Reference
-
-### Global Configuration
-
-```yaml
-global:
-  # Cloud topology preset
-  cloud: ""  # aws | gcp | azure | ""
-
-  # Shared datastore configuration
-  datastores:
-    postgres:
-      host: ""
-      port: "5432"
-      user: "plugin-br-ted-lerian"
-      ssl: ""
-    redis:
-      host: ""
-      port: "6379"
-
-  # Observability configuration
-  observability:
-    enabled: false
-    otlpEndpoint: ""
-    deploymentEnvironment: ""
-
-  # Authentication configuration
-  auth:
-    enabled: false
-    host: ""
-
-  # Multi-tenancy configuration
-  multiTenant:
-    url: ""
-    redisHost: ""
-    redisPort: ""
-    redisTls: ""
-
-  # Service discovery configuration
-  serviceDiscovery:
-    address: ""
-    tls: ""
-    tlsSkipVerify: ""
-    workload: ""
-    preferView: ""
-    internalScheme: ""
-    externalPort: ""
-
-  # Streaming configuration
-  streaming:
-    brokers: ""
-    tlsEnabled: ""
-    saslMechanism: ""
-    saslUsername: ""
-    saslAllowPlaintext: ""
-    compression: ""
-    requiredAcks: ""
-    batchLingerMs: ""
-    importantEmitTimeoutMs: ""
-
-  # External PostgreSQL bootstrap
-  externalPostgresDefinitions:
-    enabled: false
-    connection:
-      host: "plugin-br-ted-lerian-postgresql"
-      port: "5432"
-    postgresAdminLogin:
-      useExistingSecret:
-        name: ""
-      username: "postgres"
-      password: ""
-    boilerplateCredentials:
-      useExistingSecret:
-        name: ""
-      password: ""
-```
-
-### Service Configuration
-
-```yaml
-plugin-br-ted-lerian:
-  # Identity
-  name: plugin-br-ted-lerian
-  description: "TED transfers plugin for Midaz"
-  enabled: true
-  replicaCount: 1
-  revisionHistoryLimit: 10
-
-  # Image
-  image:
-    repository: ghcr.io/lerianstudio/plugin-br-ted-lerian
-    pullPolicy: IfNotPresent
-    tag: "1.0.0-beta.33"
-  imagePullSecrets:
-    - name: ghcr-credential
-
-  # Security
-  podAnnotations: {}
-  podSecurityContext: {}
-  securityContext:
-    runAsGroup: 65532
-    runAsUser: 65532
-    runAsNonRoot: true
-    capabilities:
-      drop:
-        - ALL
-    readOnlyRootFilesystem: true
-
-  # Availability
-  pdb:
-    enabled: true
-    minAvailable: 1
-    maxUnavailable: 1
-    annotations: {}
-  deploymentUpdate:
-    type: RollingUpdate
-    maxSurge: 1
-    maxUnavailable: 1
-
-  # Networking
-  service:
-    type: ClusterIP
-    port: 8080
-    annotations: {}
-  ingress:
-    enabled: true
-    className: "nginx"
-    annotations: {}
-    hosts:
-      - host: "plugin-br-ted-lerian.lerian.net"
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-
-  # Resources
-  resources:
-    limits:
-      cpu: 200m
-      memory: 256Mi
-    requests:
-      cpu: 50m
-      memory: 64Mi
-  autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 5
-    targetCPUUtilizationPercentage: 80
-    targetMemoryUtilizationPercentage: 80
-
-  # Scheduling
-  nodeSelector: {}
-  tolerations: {}
-  affinity: {}
-
-  # Feature toggles
-  multiTenant:
-    enabled: false
-  serviceDiscovery:
-    enabled: false
-  streaming:
-    enabled: false
-  otel:
-    enabled: false
-    libraryName: "github.com/LerianStudio/plugin-br-ted-lerian"
-    serviceName: "plugin-br-ted-lerian"
-    endpoint: ""
-    deploymentEnvironment: "production"
-
-  # Application configuration
-  env: "production"
-  logLevel: "info"
-  serverAddress: ":8080"
-  httpBodyLimitBytes: "104857600"
-  allowInsecureTls: ""
-  tlsTerminatedUpstream: "true"
-  defaultTenantId: "11111111-1111-1111-1111-111111111111"
-  infraConnectTimeoutSec: "30"
-  dbMetricsIntervalSec: "15"
-  idempotencyRetryWindowSec: "300"
-
-  # CORS
-  cors:
-    allowedOrigins: "*"
-    allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-    allowedHeaders: "Origin,Content-Type,Accept,Authorization,X-Request-ID"
-
-  # Database
-  database:
-    name: "plugin-br-ted-lerian"
-    migrationsPath: "migrations"
-    maxOpenConns: "25"
-    maxIdleConns: "5"
-    connMaxLifetimeMins: "30"
-    connMaxIdleTimeMins: "5"
-    connectTimeoutSec: "10"
-
-  # Redis
-  redis:
-    db: "0"
-    protocol: "3"
-    poolSize: "10"
-    minIdleConns: "2"
-    readTimeoutMs: "3000"
-    writeTimeoutMs: "3000"
-    dialTimeoutMs: "5000"
-
-  # Rate limiting
-  rateLimit:
-    enabled: "true"
-    max: "500"
-    windowSec: "60"
-
-  # Swagger
-  swagger:
-    enabled: "true"
-    title: "Plugin Br Ted Lerian"
-
-  # Raw overrides (escape hatch)
-  configmap: {}
-
-  # Secrets
-  secrets:
-    POSTGRES_PASSWORD: ""
-    REDIS_PASSWORD: ""
-    MULTI_TENANT_SERVICE_API_KEY: ""
-    MULTI_TENANT_REDIS_PASSWORD: ""
-  useExistingSecret: false
-  existingSecretName: ""
-
-  # Extra environment variables
-  extraEnvVars: []
-
-  # Service account
-  serviceAccount:
-    create: true
-    annotations: {}
-    name: ""
-```
-
-### Infrastructure Subcharts
-
-```yaml
-postgresql:
-  enabled: false
-  external: true
-  global:
-    security:
-      allowInsecureImages: true
-  image:
-    repository: bitnamisecure/postgresql
-    tag: ""
-    digest: "sha256:db2312d9b243afa8c3b3f5496e478d17d0dff9791d06f3b93b9567abd86ae92f"
-  auth:
-    username: "plugin-br-ted-lerian"
-    database: "plugin-br-ted-lerian"
-    password: ""
-
-valkey:
-  enabled: false
-  external: true
-  auth:
-    enabled: true
-    password: ""
-```
-
-### AWS Integration
-
-```yaml
-aws:
-  rolesAnywhere:
-    enabled: false
-    trustAnchorArn: ""
-    profileArn: ""
-    roleArn: ""
-    region:
+The Secret `plugin-br-ted-lerian-db-credentials` must hold the key `DB_PASSWORD_BOILERPLATE` (read by the Job) and the keys the service reads from it: `POSTGRES_PASSWORD` with the same value, plus `REDIS_PASSWORD` when Redis auth is on. With `useExistingSecret: true` the chart does not render its own Secret.

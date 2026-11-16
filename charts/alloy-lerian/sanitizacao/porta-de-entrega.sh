@@ -83,7 +83,7 @@ echo "[4/6] Cobertura: cada classe tem TODAS as categorias obrigatorias"
 # cenarios entre classes e nao seguem o eixo de 4 categorias.
 # ⚠️ `falso-positivo` acrescentada em 2026-08-28, e a razao esta em producao: a
 # regra de documento mascarava SHA de commit, resourceVersion e timestamp epoch.
-# MEDIDO no log de aws-devops (evento do ArgoCD):
+# MEDIDO no log de um ambiente interno (evento do ArgoCD):
 #
 #   msg="Partial sync operation to 8562e2e9f6ae0abcd12345678901ef succeeded"
 #   -> ...abcd123********ef...

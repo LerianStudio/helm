@@ -51,6 +51,10 @@ spec:
             {{- toYaml .Values.sisbajud.securityContext | nindent 12 }}
       containers:
         {{- include "plugin-br-sisbajud.migrationsContainer" (dict "context" $ "name" "migrate" "hook" true) | nindent 8 }}
+      {{- with (include "plugin-br-sisbajud.licenseFileVolume" . | trim) }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- if or .Values.sisbajud.nodeSelector .Values.sisbajud.affinity .Values.sisbajud.tolerations }}
       {{- include "lerian-common.scheduling" .Values.sisbajud | nindent 6 }}
       {{- end }}

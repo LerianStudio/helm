@@ -6,9 +6,27 @@ release:
   name: midaz
   namespace: midaz
 tests:
-  - it: leaves prerelease runner disabled by default
+  - it: renders neither workload on the default 4.4.0 tag
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/partition-cronjob.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: renders both workloads on stable 4.5.x
     set:
-      ledger.image.tag: 4.5.0-beta.119
+      ledger.image.tag: 4.5.2
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/partition-cronjob.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/ledger/partition-reconcile-job.yaml
+  - it: renders neither workload when disabled
+    set:
+      ledger.partition.enabled: false
     asserts:
       - hasDocuments:
           count: 0

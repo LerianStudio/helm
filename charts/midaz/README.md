@@ -3,14 +3,14 @@
 ## Chart Contract
 
 - Chart type: `multi-component`
-- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided), `ledger.secrets.LICENSE_KEY` (the ledger refuses to boot without it; `tracer.secrets.LICENSE_KEY` too when the tracer is enabled), `rabbitmq.authentication.erlangCookie.value` while the bundled RabbitMQ is enabled (a stable value, e.g. `openssl rand -hex 32`; the chart refuses to render without it, since the broker cannot boot on an empty cookie), plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). The standalone CRM defaults to `crm.configmap.KMS_VENDOR: "none"` (legacy mode on those keys, like the ledger); for envelope encryption set `KMS_VENDOR: "hashicorp-vault"` and your own `KMS_VAULT_ADDR` (the chart bundles no Vault and no longer defaults it to `http://midaz-hc-vault:8200`). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. With a 4.x ledger the chart refuses to render `ENV_NAME=production` (the default) unless `PLUGIN_AUTH_ENABLED=true`: enable auth (`global.auth.enabled` or `ledger.configmap.PLUGIN_AUTH_ENABLED`) or set a non-production `global.env.name`. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled datastores' Secrets (see Dependency notes) and are only required when the matching backend is external.
+- Required secrets: `ledger.secrets.RABBITMQ_DEFAULT_PASS` and `ledger.secrets.RABBITMQ_CONSUMER_PASS` (operator-provided), `ledger.secrets.LICENSE_KEY` (the ledger refuses to boot without it; `tracer.secrets.LICENSE_KEY` too when the tracer is enabled), or `ledger.licenseFile.existingSecret` / `tracer.licenseFile.existingSecret` (a Secret holding a signed licence file under the key `license`, mounted as a read-only directory at `/etc/lerian/license`; file mode needs an image on lib-license-go v5), `rabbitmq.authentication.erlangCookie.value` while the bundled RabbitMQ is enabled (a stable value, e.g. `openssl rand -hex 32`; the chart refuses to render without it, since the broker cannot boot on an empty cookie), plus `crm.secrets.LCRYPTO_HASH_SECRET_KEY` and `crm.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` (app crypto material). The standalone CRM defaults to `crm.configmap.KMS_VENDOR: "none"` (legacy mode on those keys, like the ledger); for envelope encryption set `KMS_VENDOR: "hashicorp-vault"` and your own `KMS_VAULT_ADDR` (the chart bundles no Vault and no longer defaults it to `http://midaz-hc-vault:8200`). With a 4.x `ledger.image.tag` and `KMS_VENDOR=none`, `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` and `ledger.secrets.LCRYPTO_ENCRYPT_SECRET_KEY` are required too: the unified binary serves CRM in-process and initializes its cipher from them at boot. `LCRYPTO_ENCRYPT_SECRET_KEY` must be hex encoding an AES key of 16, 24, or 32 bytes (32, 48, or 64 hex characters); the chart rejects anything else at render time. With a 4.x ledger the chart refuses to render `ENV_NAME=production` (the default) unless `PLUGIN_AUTH_ENABLED=true`: enable auth (`global.auth.enabled` or `ledger.configmap.PLUGIN_AUTH_ENABLED`) or set a non-production `global.env.name`. The database, replica, and cache passwords (`DB_ONBOARDING_PASSWORD`, `DB_ONBOARDING_REPLICA_PASSWORD`, `MONGO_ONBOARDING_PASSWORD`, `DB_TRANSACTION_PASSWORD`, `DB_TRANSACTION_REPLICA_PASSWORD`, `MONGO_TRANSACTION_PASSWORD`, `REDIS_PASSWORD`, `crm.secrets.MONGO_PASSWORD`) are single-sourced from the bundled datastores' Secrets (see Dependency notes) and are only required when the matching backend is external.
 - Dependency notes: PostgreSQL and MongoDB passwords are single-sourced from Secrets this chart keeps across uninstall (`<release>-postgresql` key `password`/`replication-password`, `<release>-mongodb` key `mongodb-root-password`), Valkey's from the bundled Bitnami subchart Secret (`<release>-valkey` key `valkey-password`); all are injected into the ledger/crm workloads via `secretKeyRef`. RabbitMQ is also bundled. The bundled RabbitMQ gives its only users, `transaction` and `consumer`, the ledger's `RABBITMQ_DEFAULT_PASS` and `RABBITMQ_CONSUMER_PASS` (from `ledger.secrets`, or from `ledger.existingSecretName`, which the chart reads at render: that path needs `helm install`/`helm upgrade` against the cluster, and `helm template` or Argo CD refuse it). When a backend is external (`<subchart>.enabled=false`/`.external=true`), supply its password through the component `secrets` block or point the subchart at an `auth.existingSecret`.
 - Production overrides: Provide RabbitMQ and CRM crypto credentials through the component `secrets` (or `useExistingSecret`); let the chart own the database/cache passwords (or set `<subchart>.auth.existingSecret`/`<subchart>.auth.password`). Override image tags, ingress, resources, namespace, and persistence as needed.
 - Source/license: Source is in `github.com/LerianStudio/helm`; license is Elastic License 2.0.
 
-> **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` (or the equivalent `global.datastores.*` host masks) accordingly. Two more names do not follow the release name: the component Services are always `midaz-ledger`, `midaz-crm` and `midaz-tracer` (the `midaz` prefix comes from `nameOverride`, default `midaz`), so a `TRACER_BASE_URL` points at `midaz-tracer:<port>` whatever the release is called; and the tracer's own `DB_HOST` does follow the release name (see the Tracer section). Mixed naming is therefore expected under a custom release name.
+> **Release name:** The single-source Secret names are resolved collapse-aware from the bundled subcharts (`common.names.dependency.fullname`), so they follow any release name automatically — no `midaz` assumption. The bundled service **hosts** in `configmap` (e.g. `midaz-postgresql-primary`, `midaz-mongodb-headless`, `midaz-valkey-primary`, `midaz-rabbitmq`), however, are static literals that assume the release is named **`midaz`** (`helm install midaz ...`). If you install under a different release name, override the `*_HOST` entries under `ledger.configmap`/`crm.configmap` (or the equivalent `global.datastores.*` host masks) accordingly. Two more names do not follow the release name: the component Services are always `midaz-ledger`, `midaz-crm` and `midaz-tracer` (the `midaz` prefix comes from `nameOverride`, default `midaz`), so a `TRACER_BASE_URL` points at `midaz-tracer:<port>` whatever the release is called; and the tracer's own `DB_HOST` does follow the release name (see the Tracer section). Mixed naming is therefore expected under a custom release name.
 
-> **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`<release>-mongodb`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets. Deleting only the Secrets resets nothing: a reinstall generates new passwords that the kept data never learned.
+> **Uninstall keeps the data.** `helm uninstall` leaves the bundled MongoDB volume (`datadir-<release>-mongodb-0`), the PostgreSQL volumes (`data-<release>-postgresql-*`) and both password Secrets (`<release>-postgresql`, `<release>-mongodb`), so a reinstall under the same release name opens the same data with the same passwords. Deleting the data is a separate, manual step: delete those PVCs and Secrets. Deleting only the Secrets resets nothing: a reinstall generates new passwords that the kept data never learned.
 
 Source code can be found here:
 * https://github.com/LerianStudio/helm/tree/main/charts/midaz
@@ -84,6 +84,11 @@ reference; `values.schema.json` validates it.
 
 ## Install Midaz Helm Chart:
 
+**Prerequisites:**
+
+- Kubernetes 1.27 or later. The default pod-spreading preset uses `matchLabelKeys` (see Pod Spreading).
+- Helm 3.8 or later. The chart is published as an OCI artifact, which Helm supports from 3.8.
+
 To install Midaz using Helm, run:
 
 ```console
@@ -92,7 +97,9 @@ $ helm install midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --versio
 
 Replace `<version>` with the desired chart version. This creates a namespace called `midaz` if it doesn't already exist and deploys the Midaz Helm chart.
 
-The default ledger image is `4.5.0-beta.94`, the first release that serves the health port. Pin `ledger.image.tag` explicitly in production values; the default moves to the stable release when 4.5.0 ships.
+The default ledger and tracer image is the stable `4.4.0`. A `ledger.image.tag` or `tracer.image.tag` of `4.5.0-beta.94` or later, the first image that serves the health port, turns on the health preset (`HEALTH_PORT` 8099, preset probes, PDB and rollout strategy). The ledger partition runner is on for any `ledger.image.tag` from `4.5.0-beta.1`. Below `4.5.0-beta.94` the chart renders the 4.4 layout: probes on the main port, `RABBITMQ_HEALTH_CHECK_URL` on the ledger, `READYZ_DRAIN_GRACE_SECONDS` on the tracer, and it honors `readinessProbe`, `livenessProbe`, `terminationGracePeriodSeconds`, `deploymentUpdate` and `pdb.maxUnavailable`/`minAvailable` values.
+
+Upgrading a release that runs a `4.5.0` pre-release (chart `10.3.0` to `10.3.2` on default values): set `ledger.image.tag` and `tracer.image.tag` to the running tag before `helm upgrade`. Without the pin the default `4.4.0` migration Job finds a schema newer than its migrations and fails (`no migration found for version N`), so the upgrade stops before any pod changes. `ledger.migrations.enabled: false` or `tracer.migrations.enabled: false` removes the stop of that component only, and with Argo CD an empty `deploymentSyncWave` lets a Deployment apply even when its migrations Job fails; keep the pin in those installs.
 
 After installation, you can verify that the release was successful by listing the Helm releases in the midaz namespace:
 
@@ -253,12 +260,12 @@ Midaz deploys the following core services:
 |---|---|---|
 | `ledger.enabled` | Enable or disable the ledger service. | `true` |
 | `ledger.name` | Service name. | `"ledger"` |
-| `ledger.health.stack`, `tracer.health.stack` | Runtime stack for the health preset. Probes, `HEALTH_PORT` 8099 (`/health`, `/readyz`, internal `health` Service port only), drain, grace, rollout strategy and PDB are owned by the chart; the render refuses probe, grace, `SHUTDOWN_*` and `HEALTH_PORT` overrides. | `go` |
+| `ledger.health.stack`, `tracer.health.stack` | Runtime stack for the health preset. Probes, `HEALTH_PORT` 8099 (`/health`, `/readyz`, internal `health` Service port only), drain, grace, rollout strategy and PDB are owned by the chart from image tag `4.5.0-beta.94`; at those tags the render refuses probe, grace, `SHUTDOWN_*` and `HEALTH_PORT` overrides. | `go` |
 | `ledger.health.shutdownSeconds` | `SHUTDOWN_TIMEOUT` in seconds, the one shutdown budget after the 15s drain; pod grace is drain + this + 10s. | unset (preset: `30`) |
 | `ledger.replicaCount` | Number of replicas for the ledger service. | `2` |
 | `ledger.image.repository` | Repository for the ledger service container image. | `"lerianstudio/midaz-ledger"` |
 | `ledger.image.pullPolicy` | Image pull policy. | `"IfNotPresent"` |
-| `ledger.image.tag` | Image tag used for deployment. | See `values.yaml` |
+| `ledger.image.tag` | Image tag used for deployment. From `4.5.0-beta.94` the health preset applies. | `"4.4.0"` |
 | `ledger.imagePullSecrets` | Secrets for pulling images from a private registry. | `[]` |
 | `ledger.nameOverride` | Overrides the default generated name by Helm. | `""` |
 | `ledger.fullnameOverride` | Overrides the full name generated by Helm. | `""` |
@@ -295,7 +302,7 @@ Midaz deploys the following core services:
 | `ledger.serviceAccount.annotations` | Annotations for the service account. | `{}` |
 | `ledger.serviceAccount.name` | Service account name. If not defined, it will be generated automatically. | `""` |
 | `ledger.aws.rolesAnywhere.enabled` | Enable the AWS IAM Roles Anywhere sidecar on the ledger, for clusters without IRSA. The multi-tenant ledger reads its per-tenant Tracer M2M credential from Secrets Manager. On EKS keep it `false` and set `ledger.serviceAccount.annotations["eks.amazonaws.com/role-arn"]`; never enable both. When enabled, `trustAnchorArn`, `profileArn` and `roleArn` are required, the client certificate Secret (`certificateSecretName`, default `<midaz-ledger.fullname>-iam-tls`) must be provisioned outside the chart, and `ledger.podSecurityContext` is replaced with `fsGroup: 65532`. Set `AWS_REGION` in `ledger.extraEnvVars`. | `false` |
-| `ledger.partition.enabled` | Run the partition runner (CronJob and reconcile hook Job). Unset means auto: on for stable ledger tags `>= 4.5.0`, off below that, for pre-releases and for non-SemVer tags; `true`/`false` pins it. | unset |
+| `ledger.partition.enabled` | Run the partition runner (CronJob and reconcile hook Job). Unset means auto: on for ledger tags `>= 4.5.0-beta.1` (every ledger image from that tag on ships the runner), off below that and for non-SemVer tags; `true`/`false` pins it. | unset |
 | `ledger.partition.schedule` | Cron schedule of the `partition ensure --reconcile-indexes` CronJob. Keep it outside the database's backup and maintenance windows. | `"0 6 * * *"` |
 | `ledger.partition.timeZone` | IANA time zone for `schedule`; empty uses the kube-controller-manager's zone, UTC on most managed clusters. | `""` |
 | `ledger.partition.activeDeadlineSeconds` | Hard timeout for one `ensure` run, in seconds. | `1800` |
@@ -307,7 +314,7 @@ Midaz deploys the following core services:
 
 #### Ledger Partition Runner
 
-Stable ledger images from `4.5.0` on ship a `/partition` binary next to `/app`, and the chart runs it in two workloads that reuse the ledger image, ConfigMap, Secret and scheduling settings: the `midaz-ledger-partition` CronJob runs `/partition ensure --reconcile-indexes` daily (creates future partitions on a partitioned database, reports their health and retries pending registered indexes), and the `midaz-ledger-partition-reconcile-<tag>` hook Job runs `/partition reconcile-indexes --tolerate-unavailable` on every install, upgrade and Argo CD sync, after the ledger migration Job and alongside the app rollout (Helm hook weight `10`, Argo CD wave `ledger.partition.reconcile.syncWave`, the Deployment's wave). Both set `DB_TRANSACTION_*` and `MULTI_TENANT_*` inline from the release values, so the `pre-upgrade` hook never reads the previous ConfigMap. On a database that keeps the unpartitioned layout both exit `0` without changes (`ensure` logs `skipped_reason=unpartitioned` per table). The hook never fails a deploy because of an unreachable tenant or a pending index; those still fail the daily CronJob (`kube_job_status_failed`). A non-zero exit of the CronJob is the alert signal: `1` a database or table needs attention, `2` a usage or startup error. The hook still fails on an invalid registry entry, a failed index build, a name conflict or a startup error. Set `ledger.partition.enabled=false` to turn both off, or `ledger.partition.reconcile.enabled=false` to keep only the CronJob; on a partitioned database `ensure` is what keeps future partitions ahead of the clock, and without it new rows eventually land in the DEFAULT partition.
+Ledger images from `4.5.0-beta.1` on ship a `/partition` binary next to `/app`, and the chart runs it in two workloads that reuse the ledger image, ConfigMap, Secret and scheduling settings: the `midaz-ledger-partition` CronJob runs `/partition ensure --reconcile-indexes` daily (creates future partitions on a partitioned database, reports their health and retries pending registered indexes), and the `midaz-ledger-partition-reconcile-<tag>` hook Job runs `/partition reconcile-indexes --tolerate-unavailable` on every install, upgrade and Argo CD sync, after the ledger migration Job and alongside the app rollout (Helm hook weight `10`, Argo CD wave `ledger.partition.reconcile.syncWave`, the Deployment's wave). Both set `DB_TRANSACTION_*` and `MULTI_TENANT_*` inline from the release values, so the `pre-upgrade` hook never reads the previous ConfigMap. On a database that keeps the unpartitioned layout both exit `0` without changes (`ensure` logs `skipped_reason=unpartitioned` per table). The hook never fails a deploy because of an unreachable tenant or a pending index; those still fail the daily CronJob (`kube_job_status_failed`). A non-zero exit of the CronJob is the alert signal: `1` a database or table needs attention, `2` a usage or startup error. The hook still fails on an invalid registry entry, a failed index build, a name conflict or a startup error. Set `ledger.partition.enabled=false` to turn both off, or `ledger.partition.reconcile.enabled=false` to keep only the CronJob; on a partitioned database `ensure` is what keeps future partitions ahead of the clock, and without it new rows eventually land in the DEFAULT partition.
 
 Signals to watch: the exit code of the CronJob (`kube_job_status_failed{job_name=~".*-partition-.*"} > 0` with kube-state-metrics); on a partitioned single-tenant database the ledger gauges `ledger_partition_future_buffer_depth` (warn when below the table's horizon for more than a day), `ledger_partition_default_rows` and `ledger_partition_default_inserts_total` (any value above zero is act-now); in multi-tenant mode `tenant_dependency_up_ratio{dependency="partition"} == 0` for a tenant whose partitions are unhealthy. To check a database without waiting for the schedule, run `kubectl -n <namespace> create job partition-manual --from=cronjob/midaz-ledger-partition`.
 
@@ -438,7 +445,6 @@ To enable the CRM service:
 crm:
   enabled: true
   configmap:
-    MONGO_HOST: "midaz-mongodb"  # Use your MongoDB host
     MONGO_NAME: "crm"
     MONGO_USER: "midaz"
   # MONGO_PASSWORD is single-sourced from the chart's bundled-MongoDB Secret
@@ -657,12 +663,53 @@ Notes:
       MONGO_FEES_PASSWORD: { your-host-pass }
   ```
 
+#### MongoDB replica set (chart 11.0.0)
+
+The bundled MongoDB is now a one-member replica set (`mongodb.architecture: replicaset`, `replicaCount: 1`, no arbiter). The ledger records fee quota usage in a Mongo transaction, and a single-tenant ledger refuses to boot on a standalone MongoDB. The ledger and CRM hosts now default to `midaz-mongodb-headless`.
+
+**Who is affected:** every release with `mongodb.enabled: true` (the default). An external MongoDB is untouched, but it must be a replica set or DocumentDB 4.0+ instance-based.
+
+**Upgrading without acting:** the replica set starts on a new empty volume (`datadir-midaz-mongodb-0`), because a StatefulSet cannot mount the old claim `midaz-mongodb`, so holders, fee packages and every other Mongo document appear to be gone. With the Helm CLI the old volume is kept, unmounted. With Argo CD and prune on, the old claim is deleted and, with reclaimPolicy `Delete`, so is the data. With Argo CD and prune off (the default), the old Deployment `midaz-mongodb` keeps running and its pod is selected by the new `midaz-mongodb-headless` Service, so the ledger splits its connections between the old and the new MongoDB; delete `deploy/midaz-mongodb` and `svc/midaz-mongodb` before the ledger runs again.
+
+**Option A, stay standalone for now.** Valid only while the ledger runs a release that does not record quota usage in a transaction; a newer single-tenant ledger refuses to boot on standalone.
+
+```yaml
+mongodb:
+  architecture: standalone
+  updateStrategy:
+    type: Recreate
+```
+
+**Option B, migrate the data.** Commands assume release `midaz` in namespace `midaz`; turn Argo CD auto-sync off first. Under Argo CD the sync would undo the scale to 0 below on an install with autoscaling off (the Deployments then render `spec.replicas` from `replicaCount`), so before the sync that takes 11.0.0 set `ledger.autoscaling.enabled: false` and `ledger.replicaCount: 0` in the application values (and `crm.autoscaling.enabled: false` and `crm.replicaCount: 0` when `crm.enabled`): the Deployments then carry `replicas: 0` through the sync, which runs with prune (safe once the volume is patched to Retain). Run the `wait` before the dump. There is no Helm release to `helm upgrade`: after the restore, put the original values back and sync, then check that the ledger has ready pods (`kubectl -n midaz get deploy -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name=midaz-ledger'`). With autoscaling on (the default) the Deployments omit `spec.replicas` and the HPA does not scale a Deployment sitting at 0, so scale both explicitly: `kubectl -n midaz scale deploy -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name in (midaz-ledger,midaz-crm)' --replicas=<n>`, `<n>` being the `autoscaling.minReplicas` you use.
+
+```console
+$ kubectl -n midaz scale deploy -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name in (midaz-ledger,midaz-crm)' --replicas=0
+$ kubectl -n midaz wait --for=delete pod -l 'app.kubernetes.io/instance=midaz,app.kubernetes.io/name in (midaz-ledger,midaz-crm)' --timeout=120s
+$ kubectl -n midaz exec deploy/midaz-mongodb -- sh -c 'mongodump --username "$MONGODB_ROOT_USER" --password "$MONGODB_ROOT_PASSWORD" --authenticationDatabase admin --archive' > midaz-mongo.archive
+$ PV=$(kubectl -n midaz get pvc midaz-mongodb -o jsonpath='{.spec.volumeName}')
+$ kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+$ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 11.0.0 -n midaz -f values.yaml --set ledger.autoscaling.enabled=false,ledger.replicaCount=0,crm.autoscaling.enabled=false,crm.replicaCount=0
+$ kubectl -n midaz rollout status sts/midaz-mongodb
+$ kubectl -n midaz exec -i midaz-mongodb-0 -- sh -c 'mongorestore --username "$MONGODB_ROOT_USER" --password "$MONGODB_ROOT_PASSWORD" --authenticationDatabase admin --archive --drop --nsExclude "admin.*" --nsExclude "config.*"' < midaz-mongo.archive
+$ helm upgrade midaz oci://registry-1.docker.io/lerianstudio/midaz-helm --version 11.0.0 -n midaz -f values.yaml
+```
+
+The password comes from the container's own `MONGODB_ROOT_USER` and `MONGODB_ROOT_PASSWORD` variables, so it never travels in the `pods/exec` request (kubectl sends exec arguments as query parameters, which an audit log records) and a custom `mongodb.auth.rootUser` needs no change. Inside the container `--password` is still visible in the mongod-side process list for the duration of the command: the MongoDB tools read no password from the environment, and a `--config` file would put it on disk. Then check holders and fee packages through the API, and once satisfied delete the old claim and its disk: `kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'`, then `kubectl -n midaz delete pvc midaz-mongodb`.
+
+**Also check:**
+
+- an own `mongodb.auth.existingSecret` needs a `mongodb-replica-set-key` key;
+- an Argo CD install that sets `mongodb.auth.rootPassword` also sets `mongodb.auth.replicaSetKey`, or the key changes on every render;
+- values that pin a Mongo host to `midaz-mongodb` change to `midaz-mongodb-headless`;
+- values that set `mongodb.updateStrategy.type: Recreate` drop it, unless they also pin `mongodb.architecture: standalone` (Option A): a StatefulSet refuses Recreate and the upgrade fails;
+- connection strings do not change.
 
 ### RabbitMQ
 
 - **Version:** 2.1.11
 - **Repository:** https://groundhog2k.github.io/helm-charts
 - **How to disable:** Set `rabbitmq.enabled` to `false` in the values file.
+- **Broker version:** the bundled image is RabbitMQ 3.13.6. The Midaz ledger documents RabbitMQ 4.1.x as its supported broker, so for production use an external RabbitMQ 4.1.x.
 
 - **Important — no persistent volume:** by default, the bundled RabbitMQ has no persistent volume. When its pod is recreated, it loses its queues and messages. For production, give it a volume with `rabbitmq.storage.requestedSize` (for example `8Gi`, plus `rabbitmq.storage.className` if you need a specific StorageClass), or use an external RabbitMQ instance. Kubernetes refuses changes to a StatefulSet's `volumeClaimTemplates`, so adding the volume to an existing release requires deleting the RabbitMQ StatefulSet first.
 

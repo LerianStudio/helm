@@ -59,13 +59,13 @@
 | `global.scheduling.spread.nodeTaintsPolicy` | string | `""` | `Honor` \| `Ignore` \| `""` (omitted = Kubernetes default `Ignore`). `Honor` counts only nodes whose taints the pod tolerates. |
 | `ledger.name` | string | `ledger` | Service name |
 | `ledger.enabled` | bool | `true` | Enable or disable the ledger service |
-| `ledger.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it |
+| `ledger.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it (image tag `4.5.0-beta.94` or later) |
 | `ledger.health.shutdownSeconds` | int | unset (preset: `30`) | `SHUTDOWN_TIMEOUT`: the one shutdown budget after the drain; pod grace is drain + this + 10s |
 | `ledger.replicaCount` | int | `2` | Number of replicas for the ledger service |
 | `ledger.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
 | `ledger.image.repository` | string | `lerianstudio/midaz-ledger` | Repository for the ledger service container image |
 | `ledger.image.pullPolicy` | string | `IfNotPresent` | Image pull policy |
-| `ledger.image.tag` | string | See `values.yaml` | Image tag used for deployment |
+| `ledger.image.tag` | string | `4.4.0` | Image tag used for deployment. A tag from `4.5.0-beta.94` on turns on the health preset; a lower tag keeps the 4.4 probes and ports |
 | `ledger.migrations` | object | `{}` | Dedicated migration runner (`midaz-ledger-migrations`, built FROM migrate/migrate) applying the onboarding and transaction migration sets. |
 | `ledger.migrations.enabled` | bool | `nil` | Run the migration Job. Unset means auto: on for 4.x ledger tags, which removed in-process migration, off for 3.x, which still migrates at startup. Set false to keep it off when the schema is applied out-of-band. |
 | `ledger.migrations.image.repository` | string | `lerianstudio/midaz-ledger-migrations` | Repository for the ledger migration-runner image |
@@ -83,7 +83,7 @@
 | `ledger.migrations.resources.limits` | object | See `values.yaml` | CPU and memory limits for the migration Job |
 | `ledger.migrations.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests for the migration Job |
 | `ledger.partition` | object | `{}` | Partition runner (`/partition`, shipped in the ledger image). A CronJob runs `partition ensure` on its schedule, daily by default: it creates the time partitions of the partitioned transaction tables ahead of the clock and reports their health through its exit code (0 healthy or unpartitioned, 1 needs attention, 2 invalid configuration). In multi-tenant mode it visits every active tenant. |
-| `ledger.partition.enabled` | bool | `nil` | Run the `partition ensure` CronJob. Unset (the default) means auto: on for stable ledger tags >= 4.5.0, whose image ships the runner, off below that, for pre-releases and for non-SemVer tags. Set true for a pre-release that already carries the runner; set false to keep it off. |
+| `ledger.partition.enabled` | bool | `nil` | Run the `partition ensure` CronJob. Unset (the default) means auto: on for ledger tags >= 4.5.0-beta.1 (every ledger image from that tag on ships the runner), off below that and for non-SemVer tags. Set true or false to override. |
 | `ledger.partition.schedule` | string | `"0 6 * * *"` | Cron schedule of the `partition ensure` run, read in `timeZone`. The default, 06:00 in that zone, stays clear of the early-morning backup and maintenance windows managed PostgreSQL services often default to; pick a time outside your database's own windows. |
 | `ledger.partition.timeZone` | string | `""` | IANA time zone for `schedule` (e.g. "America/Sao_Paulo"). Empty uses the time zone of the kube-controller-manager, UTC on most managed clusters; set it to pin the schedule to a zone. |
 | `ledger.partition.activeDeadlineSeconds` | int | `1800` | Hard timeout for one run, in seconds |
@@ -123,6 +123,7 @@
 | `ledger.datastores` | object | `templates/ledger/configmap.yaml` | Dedicated datastore masks for this component (override global.datastores). Sub-keys: postgresOnboarding / postgresTransaction / mongoOnboarding / mongoTransaction / mongoCrm / mongoFees / redis / broker (host/port/user/replicaHost). The Postgres `ssl` field is read from the generic `postgres` key (`postgres.ssl`), not from `postgresOnboarding`/`postgresTransaction`: those keys' `ssl` is ignored. |
 | `ledger.configmap` | object | `{}` | Escape hatch: any native env var (e.g. DB_ONBOARDING_MAX_OPEN_CONNS) overrides the template default. |
 | `ledger.useExistingSecret` | bool | `false` | Existing secrets name |
+| `ledger.licenseFile.existingSecret` | string | `""` | Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license; `ledger.secrets.LICENSE_KEY` is then not required. Needs an image on lib-license-go v5. |
 | `ledger.extraEnvVars` | object | `{}` | Extra environment variables |
 | `ledger.secrets` | object | `templates/ledger/secrets.yaml` | Secrets for storing sensitive data |
 | `ledger.secrets.DB_ONBOARDING_PASSWORD` | string | `""` | Onboarding module passwords. DB_ONBOARDING_PASSWORD / DB_ONBOARDING_REPLICA_PASSWORD are single-sourced from the Bitnami postgresql subchart Secret (key `password`, replicas included) and MONGO_ONBOARDING_PASSWORD from the mongodb subchart Secret (key `mongodb-root-password`). Only set these for an EXTERNAL backend (subchart disabled / .external=true) without an existingSecret override. |
@@ -130,7 +131,7 @@
 | `ledger.secrets.MONGO_CRM_PASSWORD` | string | `""` | CRM and Fees module passwords. The unified ledger binary (midaz v4) opens these Mongo databases in-process; same single-source rule as the modules above. Rendered into the ledger Secret, never the ConfigMap. |
 | `ledger.secrets.LCRYPTO_HASH_SECRET_KEY` | string | `""` | CRM holder-field crypto (lib-crypto). Operator-provided key material protecting PII at rest. Required when the ledger serves CRM and KMS_VENDOR is unset or "none" (legacy mode, local symmetric keys). |
 | `ledger.secrets.KMS_VAULT_SECRET_ID` | string | `""` | Vault AppRole SecretID, the credential half of the KMS auth pair. Only set when ledger.configmap.KMS_VENDOR="hashicorp-vault" (envelope encryption). The RoleID counterpart is not secret and stays in the ConfigMap. |
-| `ledger.secrets.LICENSE_KEY` | string | `""` | Product license key. Required: the ledger refuses to boot when empty. |
+| `ledger.secrets.LICENSE_KEY` | string | `""` | Product license key. Required unless `ledger.licenseFile.existingSecret` is set. |
 | `ledger.secrets.REDIS_PASSWORD` | string | `""` | Shared passwords. REDIS_PASSWORD is single-sourced from the Bitnami valkey subchart Secret (key `valkey-password`); only set it for an EXTERNAL Valkey/Redis without an existingSecret override. RABBITMQ_* are operator-provided; the bundled RabbitMQ gives them to its `transaction` and `consumer` users. |
 | `ledger.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Rendered into the ledger Secret. |
 | `ledger.secrets.STREAMING_SASL_PASSWORD` | string | `""` | Streaming (lib-streaming) SASL/TLS material. Operator-provided; only set when the streaming backend uses SASL auth and/or a private TLS CA. When set, they are rendered into the ledger Secret (never the ConfigMap). |
@@ -178,8 +179,8 @@
 | `crm.ingress.className` | string | `""` | Ingress class name |
 | `crm.ingress.annotations` | object | `{}` | Additional ingress annotations |
 | `crm.ingress.tls` | list | `[]` | TLS configuration for ingress |
-| `crm.resources.limits` | string | See `values.yaml` | CPU and memory limits for pods |
-| `crm.resources.requests` | string | See `values.yaml` | Minimum CPU and memory requests |
+| `crm.resources.limits` | object | See `values.yaml` | CPU and memory limits for pods |
+| `crm.resources.requests` | object | See `values.yaml` | Minimum CPU and memory requests |
 | `crm.autoscaling.enabled` | bool | `true` | Enable or disable horizontal pod autoscaling |
 | `crm.autoscaling.minReplicas` | int | `1` | Minimum number of replicas |
 | `crm.autoscaling.maxReplicas` | int | `3` | Maximum number of replicas |
@@ -200,12 +201,12 @@
 | `crm.useExistingSecret` | bool | `false` | Existing secrets name |
 | `tracer.name` | string | `tracer` | Service name |
 | `tracer.enabled` | bool | `false` | Enable or disable the Tracer service (disabled by default; opt-in per env) |
-| `tracer.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it |
+| `tracer.health.stack` | string | `go` | Runtime stack for the health preset; probes, `HEALTH_PORT` 8099, drain, grace, strategy and PDB come from it (image tag `4.5.0-beta.94` or later) |
 | `tracer.replicaCount` | int | `1` | Number of replicas for the Tracer service |
 | `tracer.revisionHistoryLimit` | int | `10` | Number of old ReplicaSets to retain for deployment rollback |
 | `tracer.image.repository` | string | `lerianstudio/midaz-tracer` | Repository for the Tracer service container image. In midaz v4 tracer ships from the monorepo (`components/tracer`) and the release pipeline publishes it as `midaz-tracer`; the standalone `lerianstudio/tracer` 1.x image predates the configuration contract this chart renders. |
 | `tracer.image.pullPolicy` | string | `Always` | Image pull policy |
-| `tracer.image.tag` | string | See `values.yaml` | Image tag used for deployment |
+| `tracer.image.tag` | string | `4.4.0` | Image tag used for deployment. A tag from `4.5.0-beta.94` on turns on the health preset; a lower tag keeps the 4.4 probes and ports |
 | `tracer.migrations` | object | `{}` | Dedicated migration runner (`midaz-tracer-migrations`, built FROM migrate/migrate). The v4 tracer no longer migrates at startup: it boots against an already-migrated schema, so this Job has to apply it. |
 | `tracer.migrations.enabled` | bool | `true` | Enable or disable the tracer migration Job |
 | `tracer.migrations.image.repository` | string | `lerianstudio/midaz-tracer-migrations` | Repository for the tracer migration-runner image |
@@ -253,11 +254,12 @@
 | `tracer.affinity` | object | `{}` | Affinity rules for pod scheduling |
 | `tracer.datastores` | object | `templates/tracer/configmap.yaml` | Dedicated datastore mask (override global.datastores). Sub-key: postgres (host/port/user/ssl). |
 | `tracer.configmap` | object | `{}` | Escape hatch: any native env var overrides the template default. |
+| `tracer.licenseFile.existingSecret` | string | `""` | Existing Secret with a signed licence file (key `license`), mounted as a directory at /etc/lerian/license; `tracer.secrets.LICENSE_KEY` is then not required. Needs an image on lib-license-go v5. |
 | `tracer.extraEnvVars` | object | `{}` | Extra environment variables |
 | `tracer.secrets` | object | `templates/tracer/secrets.yaml` | Secrets for storing sensitive data |
 | `tracer.secrets.DB_PASSWORD` | string | `""` | PostgreSQL password. Single-sourced from the Bitnami postgresql subchart Secret (key `password`) when internal; only set for an EXTERNAL PostgreSQL (subchart disabled / .external=true) without an existingSecret override. |
 | `tracer.secrets.API_KEY` | string | `""` | API Key value (read by the app as $API_KEY when API_KEY_ENABLED=true). |
-| `tracer.secrets.LICENSE_KEY` | string | `""` | Product license key. Required: the tracer refuses to boot when empty. |
+| `tracer.secrets.LICENSE_KEY` | string | `""` | Product license key. Required unless `tracer.licenseFile.existingSecret` is set. |
 | `tracer.secrets.SD_TOKEN` | string | `""` | Service discovery (lib-service-discovery) Consul ACL token. Operator-provided; only set when the Consul server enforces ACLs. Emitted into the tracer Secret only when set. |
 | `otel-collector-lerian` | object | `{}` | OTEL exporter configuration for midaz services. When enabled, HOST_IP, POD_IP, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_RESOURCE_ATTRIBUTES are injected into the `ledger`, `crm` and `tracer` deployments. Port is fixed at 4317. If you need a different collector endpoint, leave enabled=false and configure OTEL env vars directly in the application configmap (ledger.configmap / crm.configmap). |
 | `otel-collector-lerian.enabled` | bool | `true` | Inject OTEL env vars into the midaz ledger, crm and tracer deployments |

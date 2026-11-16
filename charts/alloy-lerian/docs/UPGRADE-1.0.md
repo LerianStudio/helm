@@ -91,7 +91,7 @@ Do not pass a token with `--from-literal`: the value is visible in `ps -eo args`
 
 2. The chart will reference this secret but never create it. If the secret does not exist and `profile: client` is set, the deployment will fail.
 
-> **Note:** In `profile: own`, authentication is disabled by default as traffic goes through an internal load balancer within the VPC. The telemetry secret is not required in this case. `profile: own` does **not** turn Fleet Management off: set `fleetManagement.enabled: false` explicitly if you run without Fleet.
+> **Note:** In `profile: own`, destination authentication is disabled by default; set `destination.credential.enabled: true` to require it. The telemetry secret is not required in this case. `profile: own` does **not** turn Fleet Management off: set `fleetManagement.enabled: false` explicitly if you run without Fleet.
 
 ---
 
@@ -122,7 +122,7 @@ The `profile` parameter controls collection scope and authentication requirement
 
 | Profile | Description | Node Metrics | Authentication |
 |---------|-------------|--------------|----------------|
-| `own` | Your own environment | Enabled by default | Disabled (internal LB) |
+| `own` | Your own environment | Enabled by default | Disabled by default |
 | `client` | Client cluster (BYOC) | Disabled by default | Required |
 
 **Example for client cluster:**
@@ -138,7 +138,7 @@ origin:
 ```yaml
 profile: "own"
 origin:
-  id: "aws-staging"
+  id: "acme-stg"
 ```
 
 > **Important:** The profile is **not inferable** from cluster properties. It must be explicitly set based on operational responsibility.
@@ -157,7 +157,6 @@ origin:
 The format is `<client>-<stage>` where:
 - Client name is a **single word** (e.g., `acme-prd`, never `acme-corp-prd`)
 - Stage is `stg` or `prd`
-- The three SaaS environments (`aws-staging`, `aws-production`, `aws-devops`) are the only exempt values
 
 > **Warning:** Changing the origin ID for a live environment orphans every existing series at the destination. This is a data migration, not a configuration change.
 
@@ -351,9 +350,7 @@ destination:
 **Authentication behavior:**
 
 - `profile: client` — authentication is **required** (derived from profile)
-- `profile: own` — authentication is **disabled** (traffic goes via internal LB)
-
-> **Note:** Internal environments (`aws-staging`, `aws-production`) override the endpoint to use an internal load balancer that does not require authentication.
+- `profile: own` — authentication is **disabled** by default; set `destination.credential.enabled: true` to require it
 
 ### 11. Retry and Queue Configuration
 
@@ -491,7 +488,7 @@ Deploy the chart in your own environment where you operate the entire cluster.
 ```yaml
 profile: "own"
 origin:
-  id: "aws-staging"
+  id: "acme-stg"
 
 collection:
   namespaces:
@@ -512,12 +509,10 @@ node-exporter:
   enabled: true
 
 destination:
-  endpoint: "http://internal-lb.vpc.local"
+  endpoint: "https://telemetry.example.com"
   credential:
     enabled: false
 ```
-
-> **Note:** Internal environments override the endpoint to use an internal load balancer. Authentication is disabled as traffic does not leave the VPC.
 
 ---
 

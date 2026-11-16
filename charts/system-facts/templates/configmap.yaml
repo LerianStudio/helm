@@ -37,7 +37,6 @@ data:
   ENV_NAME: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "ENV_NAME" "params" (index .Values "system-facts") "field" "env" "default" "production") | quote }}
   LOG_LEVEL: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "LOG_LEVEL" "params" (index .Values "system-facts") "field" "logLevel" "default" "info") | quote }}
   SERVER_ADDRESS: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "SERVER_ADDRESS" "params" (index .Values "system-facts") "field" "serverAddress" "default" ":8080") | quote }}
-  SHUTDOWN_DRAIN_DELAY: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "SHUTDOWN_DRAIN_DELAY" "params" (index .Values "system-facts") "field" "shutdownDrainDelay" "default" "15s") | quote }}
   HTTP_BODY_LIMIT_BYTES: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "HTTP_BODY_LIMIT_BYTES" "params" (index .Values "system-facts") "field" "httpBodyLimitBytes" "default" "104857600") | quote }}
   {{- $insecureTls := include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "ALLOW_INSECURE_TLS" "params" (index .Values "system-facts") "field" "allowInsecureTls" "default" "") }}
   {{- if $insecureTls }}
@@ -82,6 +81,17 @@ data:
   # REDIS — connection host via global.datastores.redis mask; tuning below
   # =============================================================================
   REDIS_HOST: {{ include "lerian-common.datastore.value" (dict "context" $ "configmap" (index .Values "system-facts").configmap "type" "redis" "field" "host" "nativeKey" "REDIS_HOST" "default" $redisDefault) | quote }}
+  {{- /* An explicit REDIS_TLS in extraEnvVars (legacy) is emitted by the passthrough below. */}}
+  {{- $redisTlsExtra := false }}
+  {{- range ((index .Values "system-facts").extraEnvVars | default list) }}{{- if eq .name "REDIS_TLS" }}{{- $redisTlsExtra = true }}{{- end }}{{- end }}
+  {{- if not $redisTlsExtra }}
+  {{- $redisGlobalTls := ((((.Values.global | default dict).datastores | default dict).redis | default dict)) }}
+  {{- if hasKey (index .Values "system-facts").configmap "REDIS_TLS" }}
+  REDIS_TLS: {{ index (index .Values "system-facts").configmap "REDIS_TLS" | toString | quote }}
+  {{- else if hasKey $redisGlobalTls "tls" }}
+  REDIS_TLS: {{ $redisGlobalTls.tls | toString | quote }}
+  {{- end }}
+  {{- end }}
   REDIS_DB: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "REDIS_DB" "params" (index .Values "system-facts").redis "field" "db" "default" "0") | quote }}
   REDIS_PROTOCOL: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "REDIS_PROTOCOL" "params" (index .Values "system-facts").redis "field" "protocol" "default" "3") | quote }}
   REDIS_POOL_SIZE: {{ include "lerian-common.cfgValue" (dict "configmap" (index .Values "system-facts").configmap "nativeKey" "REDIS_POOL_SIZE" "params" (index .Values "system-facts").redis "field" "poolSize" "default" "10") | quote }}
@@ -168,20 +178,6 @@ data:
       )) }}{{ . | nindent 2 }}{{- end }}
 
   # =============================================================================
-  # SERVICE DISCOVERY — enable per-component; server config from global.serviceDiscovery
-  # =============================================================================
-  {{- $sdEnabled := eq (dig "serviceDiscovery" "enabled" false (index .Values "system-facts") | toString) "true" }}
-  SD_ENABLED: {{ $sdEnabled | quote }}
-  {{- with (include "lerian-common.serviceDiscovery.env" (dict
-        "context" $
-        "enabled" $sdEnabled
-        "name" (include "system-facts.fullname" .)
-        "port" (index .Values "system-facts").service.port
-        "namespace" (include "global.namespace" $)
-        "ingressHost" (include "lerian-common.firstIngressHost" (dict "ingress" (index .Values "system-facts").ingress))
-      )) }}{{ . | nindent 2 }}{{- end }}
-
-  # =============================================================================
   # STREAMING — enable per-component; broker/TLS/SASL from global.streaming.
   # Identity passed explicitly (clientId/cloudeventsSource fall back to the name).
   # =============================================================================
@@ -198,7 +194,7 @@ data:
   # Extra Env Vars (IDP_DECLARATION_ENABLED / IDP_HOST here already fed lerian-common.idp.env)
   {{- with (index .Values "system-facts").extraEnvVars }}
   {{- range . }}
-  {{- if not (has .name $idpEnvKeys) }}
+  {{- if not (or (has .name $idpEnvKeys) (eq .name "LICENSE_ENABLED")) }}
   {{ .name }}: {{ .value | quote }}
   {{- end }}
   {{- end }}

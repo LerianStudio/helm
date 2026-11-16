@@ -1,299 +1,126 @@
 <!-- {% raw %} -->
-# Helm Upgrade from v2.6.0 to v2.7.0
+# Upgrade Payments chart 2.6.0 to 2.7.0
 
-## Topics
+## Scope and stop conditions
 
-- **[Overview](#overview)**
-- **[Features](#features)**
-  - [1. Collections module (Gestão de Cobrança)](#1-collections-module-gestão-de-cobrança)
-  - [2. Webhook public URL insecure HTTP flag](#2-webhook-public-url-insecure-http-flag)
-- **[Configuration Reference](#configuration-reference)**
-  - [Collections database configuration](#collections-database-configuration)
-  - [Collections worker intervals](#collections-worker-intervals)
-  - [Collections authentication](#collections-authentication)
-  - [Webhook configuration](#webhook-configuration)
-- **[Migration Steps](#migration-steps)**
-- **[Preview changes before upgrading](#preview-changes-before-upgrading)**
-- **[Command to upgrade](#command-to-upgrade)**
+Chart `2.7.0` advances the default application from `1.4.0` to `1.5.0`. It adds conditional Collections configuration and `WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP`. Collections is off without the activation setting for the selected tenancy mode. That does **not** make the application upgrade a no-op: main-database migrations and pod-template changes remain relevant without Collections.
 
-## Overview
+**Do not proceed without approved data-retention, migration and recovery readiness.** Application 1.5.0 introduces main migrations 000062–000070 relative to 1.4.0. Migration `000063_deprecate_chave_idempotencia` deletes the rows in the legacy `chave_idempotencia` table if present, then renames it. Its source explains that obsolete cached response bodies exceeded their retention period. This deletion is not gated by Collections. Migration `000070_add_boleto_our_number_active_v2` builds indexes without `CONCURRENTLY`; its documented SHARE lock blocks boleto writes while the indexes build.
 
-This guide covers the `plugin-br-payments` chart upgrade from `2.6.0` to `2.7.0`. The application version advances from `1.4.0` to `1.5.0`. This minor release introduces the Collections module (Gestão de Cobrança), a new subsystem with its own PostgreSQL database for managing payment collections, subscriptions, beneficiaries, and title lifecycle. The module is **disabled by default** and requires explicit configuration to activate.
+Schedule an appropriate maintenance window and control incoming traffic and background writers. Privately record the current Helm revision, full intended configuration, workload images, database/schema versions, PVC/storage bindings and external Secret ownership/references. Require consistent protected backups of affected databases and required Secret/configuration metadata, plus an isolated tested recovery procedure. Apply retention/access controls to backups; a backup is not permission to retain expired personal data indefinitely or reintroduce it into service.
 
-The upgrade also adds a new webhook configuration flag to allow insecure HTTP URLs in non-production environments.
+Helm rollback does not restore deleted rows, reverse external payment effects, or guarantee old application/schema compatibility. Assess those independently. Never restore legacy data under a new process that can rerun destructive migration, delete PVCs, uninstall, or regenerate credentials as a quick recovery workaround. If writer controls, migration ownership, image compatibility, backup or restore readiness are unknown, stop.
 
-All new configuration keys are **optional**. Existing deployments will continue to work without values changes; the Collections module will remain inactive unless you provide the required database credentials and enable the module.
+## Collections activation and database isolation
 
-## Features
+The module uses its own database and migration history. It must not share the host application's database/schema migration table. A separate database may use the same PostgreSQL server; `COLLECTIONS_POSTGRES_HOST` is not a requirement for a separate physical server.
 
-### 1. Collections module (Gestão de Cobrança)
+- **Single-tenant:** a nonempty `COLLECTIONS_POSTGRES_HOST` activates Collections. Supply a different host/port/database target from the main database, a nonempty user/database name, and the required cursor key. Production additionally requires the Collections password and an accepted secure SSL mode. Explicitly verify the database is distinct even when DNS aliases differ.
+- **Multi-tenant:** a nonempty `MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE` names the provisioned Tenant Manager module. It is **not a boolean**; `"true"` would select a module literally named `true`. Setting only `COLLECTIONS_POSTGRES_HOST` does not activate this mode. Use explicit, distinct host and Collections module names, including `MULTI_TENANT_POSTGRES_MODULE`, and validate each tenant's database resolution and migration readiness through the approved Tenant Manager procedure. An empty host module is only warned about at boot: ambiguous databases can refuse requests, while host background paths remain unguarded. Do not use that warning as a safe configuration recipe.
 
-The Collections module is a new subsystem for managing payment collections (cobrança). It operates on a separate PostgreSQL database and includes workers for:
+The chart emits the new ConfigMap/Secret keys only when supplied; it does not provision the databases, tenant modules or partner credentials. Do not combine this upgrade with an unvalidated tenant/database cutover.
 
-- Command dispatch and processing
-- Subscription lifecycle checks
-- Notice application
-- Beneficiary polling
-- Agreement branch sweeps
-- Inventory reconciliation
-- Enablement item processing
-- Title fact dispatch and outcome polling
+### Required secrets and process settings
 
-The module ships **disabled by default**. To activate it, you must:
+`COLLECTIONS_CURSOR_HMAC_KEY` is required whenever Collections is on in either tenancy mode. It must be standard base64 encoding of **exactly 32 bytes**, not a free-form string or a URL-safe encoding. Generate and deliver it through approved private secret-management tooling; retain the intended key consistently across dependent instances. Never paste a real key into this guide, Git, logs or chat.
 
-1. Provide a PostgreSQL database for Collections (separate from the main plugin database)
-2. Set `MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE` to `"true"` in `app.configmap`, **or**
-3. Set `COLLECTIONS_POSTGRES_HOST` in `app.configmap`
+Single-tenant PCR credentials `COLLECTIONS_PCR_CLIENT_ID` and `COLLECTIONS_PCR_CLIENT_SECRET` must be supplied together or both omitted. Omission satisfies this pairing check, not proof of partner authorization or business-flow readiness. Preserve all other existing application, database, license and partner credentials. Use the deployment's established Secret mode: enabling an external Secret suppresses chart-generated values and requires all needed keys to be provisioned before rollout.
 
-If neither of these keys is set, the application will not load the Collections module and none of the Collections environment variables will be read.
+The following are application 1.5.0 defaults when omitted, **not recommended production tuning**. The SSL default is not accepted for a production Collections connection; configure a validated secure connection explicitly.
 
-**New ConfigMap keys (all optional):**
+| Setting | App default | Enabled-module requirement |
+|---|---|---|
+| `COLLECTIONS_POSTGRES_PORT` | `5432` | Match provisioned target |
+| `COLLECTIONS_POSTGRES_USER` | empty | Required in single-tenant |
+| `COLLECTIONS_POSTGRES_DB` | `plugin-br-payments-collections` | Distinct from host database |
+| `COLLECTIONS_POSTGRES_SSLMODE` | `disable` | Secure accepted mode in production |
+| `COLLECTIONS_POSTGRES_MAX_OPEN_CONNS` | `10` | Review capacity |
+| `COLLECTIONS_POSTGRES_MAX_IDLE_CONNS` | `5` | Review capacity |
+| `COLLECTIONS_POSTGRES_PASSWORD` | empty | Required in production single-tenant |
 
-```yaml
-app:
-  configmap:
-    # Enable the Collections module (required to activate)
-    MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE: "true"
-    
-    # Collections database connection
-    COLLECTIONS_POSTGRES_HOST: "collections-db.example.com"
-    COLLECTIONS_POSTGRES_PORT: "5432"
-    COLLECTIONS_POSTGRES_USER: "collections_user"
-    COLLECTIONS_POSTGRES_DB: "collections"
-    COLLECTIONS_POSTGRES_SSLMODE: "require"
-    COLLECTIONS_POSTGRES_MAX_OPEN_CONNS: "25"
-    COLLECTIONS_POSTGRES_MAX_IDLE_CONNS: "5"
-    
-    # Collections worker intervals (seconds)
-    COLLECTIONS_COMMAND_RESEND_INTERVAL_SEC: "30"
-    COLLECTIONS_COMMAND_PROCESSING_TIMEOUT_SEC: "300"
-    COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY: "10"
-    COLLECTIONS_SUBSCRIPTION_CHECK_INTERVAL_SEC: "60"
-    COLLECTIONS_NOTICE_APPLY_INTERVAL_SEC: "120"
-    COLLECTIONS_BENEFICIARY_POLL_INTERVAL_SEC: "300"
-    COLLECTIONS_AGREEMENT_BRANCH_SWEEP_INTERVAL_SEC: "600"
-    COLLECTIONS_INVENTORY_INTERVAL_SEC: "900"
-    COLLECTIONS_ENABLEMENT_ITEM_INTERVAL_SEC: "180"
-    COLLECTIONS_TITLE_FACT_DISPATCH_INTERVAL_SEC: "60"
-    COLLECTIONS_TITLE_OUTCOME_POLL_INTERVAL_SEC: "120"
-    
-    # Disable the module entirely (overrides all other settings)
-    COLLECTIONS_DISABLED: "false"
-```
+Worker durations below are seconds, with inclusive accepted bounds. Dispatch concurrency is a count, not seconds. Process defaults also seed tenant operational defaults where applicable; review per-tenant configuration independently.
 
-**New Secret keys (all optional):**
+| Setting | Default | Bounds |
+|---|---|---|
+| `COLLECTIONS_COMMAND_RESEND_INTERVAL_SEC` | `10` | 1–3600 |
+| `COLLECTIONS_COMMAND_PROCESSING_TIMEOUT_SEC` | `300` | 180–3600 |
+| `COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY` | `4` | 1–64 |
+| `COLLECTIONS_SUBSCRIPTION_CHECK_INTERVAL_SEC` | `300` | 60–3600 |
+| `COLLECTIONS_NOTICE_APPLY_INTERVAL_SEC` | `5` | 1–300 |
+| `COLLECTIONS_BENEFICIARY_POLL_INTERVAL_SEC` | `30` | 5–3600 |
+| `COLLECTIONS_AGREEMENT_BRANCH_SWEEP_INTERVAL_SEC` | `3600` | 60–86400 |
+| `COLLECTIONS_INVENTORY_INTERVAL_SEC` | `900` | 60–86400 |
+| `COLLECTIONS_ENABLEMENT_ITEM_INTERVAL_SEC` | `5` | 1–300 |
+| `COLLECTIONS_TITLE_FACT_DISPATCH_INTERVAL_SEC` | `5` | 1–300 |
+| `COLLECTIONS_TITLE_OUTCOME_POLL_INTERVAL_SEC` | `30` | 5–3600 |
 
-```yaml
-app:
-  secrets:
-    # Collections database password
-    COLLECTIONS_POSTGRES_PASSWORD: "your-collections-db-password"
-    
-    # Collections PCR (Payment Collection Registry) OAuth2 credentials
-    COLLECTIONS_PCR_CLIENT_ID: "your-pcr-client-id"
-    COLLECTIONS_PCR_CLIENT_SECRET: "your-pcr-client-secret"
-    
-    # Collections cursor HMAC key for pagination security
-    COLLECTIONS_CURSOR_HMAC_KEY: "your-cursor-hmac-key"
-```
+`COLLECTIONS_DISABLED` defaults to `false`. In single-tenant, `true` refuses **new issuance** with `422 PBP-0833`; existing issuance continues. It is not a module shutdown, database disconnect or worker kill switch, and it is not the multi-tenant disablement control. Recovery requires separately approved writer/traffic controls, not this flag alone.
 
-> **Important:** The Collections module requires a **separate PostgreSQL database**. Do not reuse the main plugin database (`POSTGRES_HOST`) for Collections. The module expects its own schema and migration history.
+### Migration completion is not pod readiness
 
-> **Note:** All Collections configuration keys are rendered conditionally using `{{- if hasKey $cm "KEY_NAME" }}`. If you do not set a key in your values overlay, it will not appear in the ConfigMap or Secret, and the application will use its internal defaults (defined in `internal/bootstrap/config.go`).
+Invalid required process configuration can refuse boot. A Collections database/schema outage is different: single-tenant Collections migrations run asynchronously after license acceptance, retry failures and gate Collections paths with `503` until schema readiness. They do not gate general application readiness. Multi-tenant schema migration belongs to Tenant Manager. Therefore healthy pods do not prove Collections works.
 
-**Template changes:**
+Review the separate Collections migration set 000001–000029 before enablement. Single-tenant main-schema migrations run in the host startup path; multi-tenant schema ownership must follow Tenant Manager's deployment-specific procedure. Verify both database targets and migration trails, not merely a successful Helm command or log grep.
 
-The `templates/configmap.yaml` file now includes a new section for Collections configuration:
+## Webhook HTTP acknowledgment
 
-**After (v2.7.0):**
+`WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP` defaults to `false` and concerns **this service's own** `WEBHOOK_PUBLIC_BASE_URL`, not every webhook endpoint. It is not a TLS certificate-validation bypass.
 
-```yaml
-  # ====================================================================
-  # COLLECTIONS (Gestão de Cobrança, its own database)
-  # ====================================================================
-  {{- /* The module ships off: with neither MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE
-     nor COLLECTIONS_POSTGRES_HOST set, the app reads none of these. No chart
-     defaults: each key renders only when set, so the app defaults and bounds
-     apply. The password, PCR client credentials and cursor HMAC key live in the
-     Secret. */}}
-  {{- if hasKey $cm "COLLECTIONS_POSTGRES_HOST" }}
-  COLLECTIONS_POSTGRES_HOST: {{ index $cm "COLLECTIONS_POSTGRES_HOST" | quote }}
-  {{- end }}
-  {{- if hasKey $cm "COLLECTIONS_POSTGRES_PORT" }}
-  COLLECTIONS_POSTGRES_PORT: {{ index $cm "COLLECTIONS_POSTGRES_PORT" | quote }}
-  {{- end }}
-  # ... (additional 13 Collections keys)
-```
+Application 1.5.0 refuses the flag when true unless `ENV_NAME` is `local`, `development` or `test` (case-insensitive). Do not interpret every non-production environment, such as staging, as allowlisted. Production retains HTTPS validation. Outside production, an HTTP public URL can already boot without this flag, with a security/future-refusal warning. In the allowed development/test environments, the flag acknowledges HTTP and changes that warning; it does not make clear-text callbacks safe. Keep production HTTPS and existing endpoint/authentication requirements intact.
 
-The `templates/secrets.yaml` file now includes four new secret keys in the `stringData` range:
+## Prepare complete private values
 
-**Before (v2.6.0):**
-
-```yaml
-  {{- range $key := list "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "PROVIDER_CLIENT_ID" "PROVIDER_CLIENT_SECRET" "BTG_WEBHOOK_HMAC_SECRET" "INTERNAL_API_KEY" "INTERNAL_API_KEY_PREVIOUS" "CREDENTIAL_ENCRYPTION_KEY" "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS" "LICENSE_KEY" "PLUGIN_AUTH_CLIENT_ID" "PLUGIN_AUTH_CLIENT_SECRET" "MULTI_TENANT_SERVICE_API_KEY" "CONSULT_AUDIT_HMAC_KEY" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET" "SANDBOX_FAKEBTG_ADMIN_KEY" }}
-```
-
-**After (v2.7.0):**
-
-```yaml
-  {{- range $key := list "POSTGRES_PASSWORD" "POSTGRES_REPLICA_PASSWORD" "PROVIDER_CLIENT_ID" "PROVIDER_CLIENT_SECRET" "BTG_WEBHOOK_HMAC_SECRET" "INTERNAL_API_KEY" "INTERNAL_API_KEY_PREVIOUS" "CREDENTIAL_ENCRYPTION_KEY" "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS" "LICENSE_KEY" "PLUGIN_AUTH_CLIENT_ID" "PLUGIN_AUTH_CLIENT_SECRET" "MULTI_TENANT_SERVICE_API_KEY" "CONSULT_AUDIT_HMAC_KEY" "IDP_M2M_CLIENT_ID" "IDP_M2M_CLIENT_SECRET" "SANDBOX_FAKEBTG_ADMIN_KEY" "COLLECTIONS_POSTGRES_PASSWORD" "COLLECTIONS_PCR_CLIENT_ID" "COLLECTIONS_PCR_CLIENT_SECRET" "COLLECTIONS_CURSOR_HMAC_KEY" }}
-```
-
-**Operational impact:**
-
-- If you do not set any Collections configuration keys, the upgrade will have no effect on your deployment. The Collections module will remain inactive.
-- If you set `MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE: "true"` or `COLLECTIONS_POSTGRES_HOST`, the application will attempt to connect to the Collections database at startup. If the database is unreachable or credentials are invalid, the application will fail to start.
-- The Collections workers run as background goroutines within the main application process. They do not require additional pods or services.
-
-### 2. Webhook public URL insecure HTTP flag
-
-A new optional configuration flag `WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP` was added to allow webhook URLs with the `http://` scheme in non-production environments. By default, the application requires `https://` for all webhook URLs.
-
-**New ConfigMap key:**
-
-```yaml
-app:
-  configmap:
-    # Allow insecure HTTP webhook URLs (default: false, requires https://)
-    WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP: "true"
-```
-
-> **Warning:** Setting `WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP: "true"` disables TLS validation for webhook URLs. Use this flag **only in development or testing environments**. Production deployments should always use HTTPS webhooks.
-
-**Template changes:**
-
-The `templates/configmap.yaml` file now includes the new flag in the webhook configuration section:
-
-**After (v2.7.0):**
-
-```yaml
-  {{- if hasKey $cm "WEBHOOK_PUBLIC_BASE_URL" }}
-  WEBHOOK_PUBLIC_BASE_URL: {{ index $cm "WEBHOOK_PUBLIC_BASE_URL" | quote }}
-  {{- end }}
-  {{- if hasKey $cm "WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP" }}
-  WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP: {{ index $cm "WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP" | quote }}
-  {{- end }}
-  {{- if hasKey $cm "WEBHOOK_SKIP_URL_VALIDATION" }}
-  WEBHOOK_SKIP_URL_VALIDATION: {{ index $cm "WEBHOOK_SKIP_URL_VALIDATION" | quote }}
-  {{- end }}
-```
-
-**Operational impact:**
-
-If you do not set this flag, the application will continue to enforce HTTPS for all webhook URLs. Existing deployments are unaffected.
-
-## Configuration Reference
-
-### Collections database configuration
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE` | not set | Enable the Collections module in multi-tenant mode. Set to `"true"` to activate. |
-| `COLLECTIONS_POSTGRES_HOST` | not set | Collections database hostname. Setting this value also activates the module. |
-| `COLLECTIONS_POSTGRES_PORT` | `"5432"` (app default) | Collections database port. |
-| `COLLECTIONS_POSTGRES_USER` | not set | Collections database username. |
-| `COLLECTIONS_POSTGRES_DB` | not set | Collections database name. |
-| `COLLECTIONS_POSTGRES_SSLMODE` | `"require"` (app default) | PostgreSQL SSL mode (`disable`, `require`, `verify-ca`, `verify-full`). |
-| `COLLECTIONS_POSTGRES_MAX_OPEN_CONNS` | `25` (app default) | Maximum number of open database connections. |
-| `COLLECTIONS_POSTGRES_MAX_IDLE_CONNS` | `5` (app default) | Maximum number of idle database connections. |
-
-### Collections worker intervals
-
-All intervals are in seconds. The application uses internal defaults if these keys are not set.
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `COLLECTIONS_COMMAND_RESEND_INTERVAL_SEC` | `30` (app default) | Interval for resending pending commands. |
-| `COLLECTIONS_COMMAND_PROCESSING_TIMEOUT_SEC` | `300` (app default) | Timeout for command processing. |
-| `COLLECTIONS_COMMAND_DISPATCH_CONCURRENCY` | `10` (app default) | Number of concurrent command dispatch workers. |
-| `COLLECTIONS_SUBSCRIPTION_CHECK_INTERVAL_SEC` | `60` (app default) | Interval for checking subscription status. |
-| `COLLECTIONS_NOTICE_APPLY_INTERVAL_SEC` | `120` (app default) | Interval for applying payment notices. |
-| `COLLECTIONS_BENEFICIARY_POLL_INTERVAL_SEC` | `300` (app default) | Interval for polling beneficiary updates. |
-| `COLLECTIONS_AGREEMENT_BRANCH_SWEEP_INTERVAL_SEC` | `600` (app default) | Interval for sweeping agreement branches. |
-| `COLLECTIONS_INVENTORY_INTERVAL_SEC` | `900` (app default) | Interval for inventory reconciliation. |
-| `COLLECTIONS_ENABLEMENT_ITEM_INTERVAL_SEC` | `180` (app default) | Interval for processing enablement items. |
-| `COLLECTIONS_TITLE_FACT_DISPATCH_INTERVAL_SEC` | `60` (app default) | Interval for dispatching title facts. |
-| `COLLECTIONS_TITLE_OUTCOME_POLL_INTERVAL_SEC` | `120` (app default) | Interval for polling title outcomes. |
-| `COLLECTIONS_DISABLED` | `"false"` (app default) | Disable the Collections module entirely. Set to `"true"` to override all other settings. |
-
-### Collections authentication
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `COLLECTIONS_POSTGRES_PASSWORD` | not set | Collections database password (stored in Secret). |
-| `COLLECTIONS_PCR_CLIENT_ID` | not set | OAuth2 client ID for Payment Collection Registry integration (stored in Secret). |
-| `COLLECTIONS_PCR_CLIENT_SECRET` | not set | OAuth2 client secret for Payment Collection Registry integration (stored in Secret). |
-| `COLLECTIONS_CURSOR_HMAC_KEY` | not set | HMAC key for securing pagination cursors (stored in Secret). |
-
-### Webhook configuration
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP` | `"false"` (app default) | Allow `http://` webhook URLs. Set to `"true"` only in non-production environments. |
-
-## Migration Steps
-
-1. **(Optional)** If you want to enable the Collections module, provision a new PostgreSQL database for Collections. Do not reuse the main plugin database.
-
-2. **(Optional)** If enabling Collections, add the required configuration to your values overlay:
-
-```yaml
-app:
-  configmap:
-    MULTI_TENANT_COLLECTIONS_POSTGRES_MODULE: "true"
-    COLLECTIONS_POSTGRES_HOST: "collections-db.example.com"
-    COLLECTIONS_POSTGRES_PORT: "5432"
-    COLLECTIONS_POSTGRES_USER: "collections_user"
-    COLLECTIONS_POSTGRES_DB: "collections"
-    COLLECTIONS_POSTGRES_SSLMODE: "require"
-  secrets:
-    COLLECTIONS_POSTGRES_PASSWORD: "your-collections-db-password"
-    COLLECTIONS_PCR_CLIENT_ID: "your-pcr-client-id"
-    COLLECTIONS_PCR_CLIENT_SECRET: "your-pcr-client-secret"
-    COLLECTIONS_CURSOR_HMAC_KEY: "your-cursor-hmac-key"
-```
-
-3. **(Optional)** If you need to allow insecure HTTP webhook URLs in a non-production environment, add the flag to your values overlay:
-
-```yaml
-app:
-  configmap:
-    WEBHOOK_PUBLIC_ALLOW_INSECURE_HTTP: "true"
-```
-
-4. Preview the rendered diff with the helm-diff plugin (see [Preview changes before upgrading](#preview-changes-before-upgrading)).
-
-5. Run the upgrade command during a maintenance window (see [Command to upgrade](#command-to-upgrade)).
-
-6. Verify all pods are running and healthy after the upgrade:
+Run operator commands from a private workspace, not a Git checkout. These examples are not evidence of a live upgrade. Adapt release/namespace names. Keep exports, manifests, diffs and Helm output private; they can contain credentials, including encoded Secret data.
 
 ```bash
-kubectl get pods -n midaz-plugins
+set -eu
+set +x
+umask 077
+RELEASE=my-payments
+NAMESPACE=midaz-plugins
+PRIVATE_DIR="$(mktemp -d "${HOME}/.payments-upgrade.XXXXXX")"
+chmod 700 "$PRIVATE_DIR"
+helm get values "$RELEASE" -n "$NAMESPACE" -o yaml > "$PRIVATE_DIR/current-user-values.yaml"
+helm get manifest "$RELEASE" -n "$NAMESPACE" > "$PRIVATE_DIR/current-manifest.yaml"
+helm history "$RELEASE" -n "$NAMESPACE" > "$PRIVATE_DIR/history.txt"
+cp "$PRIVATE_DIR/current-user-values.yaml" "$PRIVATE_DIR/intended-values.yaml"
+VALUES="$PRIVATE_DIR/intended-values.yaml"
 ```
 
-7. **(If Collections is enabled)** Check the application logs to confirm the Collections module initialized successfully and the database connection is healthy:
+Edit `$VALUES` privately against target defaults. It must be the **complete intended configuration**, not a Collections-only fragment. Preserve unrelated settings, database/PVC bindings, ingress, partner configuration, licenses, Secret names/keys and intentional image pins. These exports do not back up databases or external Secrets. Retain them only under the approved protected recovery/retention policy; remove temporary copies after that policy permits.
+
+A retained `app.image.tag: "1.4.0"` keeps the older runtime and does not acquire 1.5.0 Collections behavior merely because the new chart renders its keys. Make any image-pin change explicit and independently validated. ConfigMap/Secret checksum changes roll pods across these chart versions even with retained image pins; the default Deployment strategy is RollingUpdate, not proof of zero downtime.
+
+## Preview and upgrade with identical inputs
+
+`--reset-values` intentionally prevents silent reuse of removed overrides. It also discards any old override omitted from `$VALUES`, so do not proceed with an incomplete fragment. Use the same complete private file for every preview and upgrade.
 
 ```bash
-kubectl logs -n midaz-plugins -l app.kubernetes.io/name=plugin-br-payments --tail=100 | grep -i collections
+helm template "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm \
+  --version 2.7.0 -n "$NAMESPACE" --is-upgrade -f "$VALUES" \
+  > "$PRIVATE_DIR/target-manifest.yaml"
+
+# Optional: only with the approved helm-diff plugin already installed.
+helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm \
+  --version 2.7.0 -n "$NAMESPACE" --reset-values -f "$VALUES" \
+  > "$PRIVATE_DIR/upgrade.diff"
 ```
 
-8. **(If Collections is enabled)** Verify the Collections workers are running by checking for log entries related to command dispatch, subscription checks, and other Collections background tasks.
+`helm template` has no stored release values to reset and cannot prove live Secret existence, database resolution, credentials, migrations or business compatibility. Inspect the private result for expected images, database targets, Secret references, release-scoped resource names and storage bindings. Use the public [helm-diff documentation](https://github.com/databus23/helm-diff) for the plugin; do not publish its output.
 
-> **Note:** The upgrade triggers a rolling restart of the plugin pods. Depending on your replica count and readiness probe configuration, this may cause brief request handling interruptions.
-
-> **Important:** If you enable the Collections module and the database connection fails, the application will fail to start. Verify your database credentials and network connectivity before upgrading.
-
-## Preview changes before upgrading
+Only after approved backups, maintenance/writer controls, migration ownership and recovery readiness:
 
 ```bash
-helm diff upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.7.0
+helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/plugin-br-payments-helm \
+  --version 2.7.0 -n "$NAMESPACE" --reset-values -f "$VALUES" \
+  > "$PRIVATE_DIR/upgrade-result.txt"
 ```
 
-> **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
+Verify the actual Deployment created by this release reaches its expected image and rollout state, using its private rendered name rather than a namespace-wide or guessed selector. Confirm main-schema migration completion and, when enabled, the correct Collections migration trail/schema readiness for each applicable database/tenant. Exercise approved representative existing payment and Collections workflows, partner authorization/callbacks and expected unavailable-module behavior without recording sensitive payloads. Verify relevant background processing separately; general readiness is insufficient.
 
-## Command to upgrade
+If verification fails, stop further rollout and apply the pre-reviewed recovery plan with writers controlled. Assess schema/image compatibility, external effects and the retention consequences before any restore; do not assume Helm rollback restores the database or makes deleted legacy data safe to reuse.
 
-```bash
-helm upgrade my-payments oci://ghcr.io/lerianstudio/plugin-br-payments-helm --namespace midaz-plugins --version 2.7.0
-```
+## Verification boundary
+
+This guide is based on chart tags `plugin-br-payments-v2.6.0` and `plugin-br-payments-v2.7.0`, their published packages with locked dependencies, and application 1.5.0 source matched to the shipped image revision. Offline renders establish emitted manifests only. No live installation, upgrade, migration, restore, partner transaction or tenant cutover is certified here.
 <!-- {% endraw %} -->

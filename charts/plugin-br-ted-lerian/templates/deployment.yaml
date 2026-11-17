@@ -72,11 +72,13 @@ spec:
           {{- /* ALLOW_INSECURE_OTEL is a modeled setting: plugin-br-ted-lerian.configmap.ALLOW_INSECURE_OTEL, then
              global.observability.allowInsecureOtel, then the node-local reason; lerian-common
              resolves it and emits the one env entry. A key in plugin-br-ted-lerian.extraEnvVars or a
-             non-empty plugin-br-ted-lerian.secrets value (the legacy routes) still stands, so the helper
+             non-empty plugin-br-ted-lerian.secrets value (the legacy routes; the Secret only while the model is unset) still stands, so the helper
              adds no duplicate then.
              An existing Secret (useExistingSecret) is not visible to the chart, so a value
              there is overridden by this entry; set plugin-br-ted-lerian.configmap.ALLOW_INSECURE_OTEL instead. */}}
-          {{- $legacyAllow := (and (not (index .Values "plugin-br-ted-lerian").useExistingSecret) (ne (toString (index ((index .Values "plugin-br-ted-lerian").secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
+          {{- /* The model wins over the Secret: a configmap, knob or global value (a refusal too) keeps the entry. */}}
+          {{- $otelModelSet := or (not (kindIs "invalid" (index ((index $.Values "plugin-br-ted-lerian").configmap | default dict) "ALLOW_INSECURE_OTEL"))) (not (kindIs "invalid" (index (($.Values.global | default dict).observability | default dict) "allowInsecureOtel"))) }}
+          {{- $legacyAllow := (and (not $otelModelSet) (not (index .Values "plugin-br-ted-lerian").useExistingSecret) (ne (toString (index ((index .Values "plugin-br-ted-lerian").secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
           {{- range ((index .Values "plugin-br-ted-lerian").extraEnvVars | default list) }}{{- if eq .name "ALLOW_INSECURE_OTEL" }}{{- $legacyAllow = true }}{{- end }}{{- end }}
           {{- include "lerian-common.otel.podEnv" (dict "context" $ "configmap" (index .Values "plugin-br-ted-lerian").configmap "port" 4317 "scheme" "http://" "allowInsecure" (not $legacyAllow)) | nindent 10 }}
           {{- end }}

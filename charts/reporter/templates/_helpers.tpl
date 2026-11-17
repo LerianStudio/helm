@@ -630,7 +630,7 @@ DATASOURCE_ONBOARDING_SSLMODE: {{ include $dv (dict "context" $ "dedicated" $ded
 DATASOURCE_ONBOARDING_SSLROOTCERT: {{ $cm.DATASOURCE_ONBOARDING_SSLROOTCERT | default "" | quote }}
 {{- /* Escape hatch: any OTHER key the operator adds under common.configmap. */}}
 {{- range $key, $value := $cm }}
-{{- if not (has $key $explicit) }}
+{{- if not (or (has $key $explicit) (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value))) }}
 {{ $key }}: {{ $value | quote }}
 {{- end }}
 {{- end }}
@@ -752,5 +752,28 @@ With useExistingSecret the chart cannot see the Secret, so the entry is emitted.
 {{- if not (or $legacyEnv $legacySecret) -}}
 - name: "ALLOW_INSECURE_OTEL"
   value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ "configmap" $src) | quote }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+reporter.otelAllowInsecureConfigmap — ALLOW_INSECURE_OTEL for ONE component ConfigMap
+(manager, worker; the KEDA ScaledJob worker reads the worker ConfigMap), so
+global.observability.allowInsecureOtel also reaches the app with the node-local
+collector off. Emits the global value only when it is non-null and no other source
+renders the key in that ConfigMap: <component>.configmap and common.configmap pass a
+non-null value through themselves (a null one is skipped there: unset, as in
+reporter.otelAllowInsecureEnv), and a key in <component>.extraEnvVars renders as is.
+*/}}
+{{- define "reporter.otelAllowInsecureConfigmap" -}}
+{{- $ := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $key := "ALLOW_INSECURE_OTEL" -}}
+{{- $obs := ($.Values.global | default dict).observability | default dict -}}
+{{- $set := false -}}
+{{- range $m := list ($comp.configmap | default dict) ($.Values.common.configmap | default dict) -}}
+{{- if and (hasKey $m $key) (not (kindIs "invalid" (index $m $key))) }}{{ $set = true }}{{ end -}}
+{{- end -}}
+{{- if and (hasKey $obs "allowInsecureOtel") (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) (not $set) (not (hasKey ($comp.extraEnvVars | default dict) $key)) -}}
+ALLOW_INSECURE_OTEL: {{ index $obs "allowInsecureOtel" | toString | quote }}
 {{- end -}}
 {{- end -}}

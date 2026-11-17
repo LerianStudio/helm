@@ -19,7 +19,12 @@ data:
   {{- end }}
   # Worker specific values
   {{- range $key, $value := .Values.worker.configmap }}
+  {{- if not (and (eq $key "ALLOW_INSECURE_OTEL") (kindIs "invalid" $value)) }}
   {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  {{- with (include "reporter.otelAllowInsecureConfigmap" (dict "context" $ "component" .Values.worker) | trim) }}
+  {{- . | nindent 2 }}
   {{- end }}
   # Rate Limiting - Three-tier system with Redis backend
   # Set RATE_LIMIT_ENABLED=false to disable (requires ALLOW_RATELIMIT_DISABLED in strict tier)

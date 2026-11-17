@@ -699,3 +699,189 @@ tests:
           path: spec.jobTargetRef.template.spec.containers[0].env
           content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
           count: 1
+
+  - it: "manager ConfigMap: collector off + global value reaches the app"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "manager ConfigMap: the component configmap value is the only one"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "component reason"
+
+  - it: "manager ConfigMap: the common.configmap value is the only one"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "common reason"
+
+  - it: "manager ConfigMap: the extraEnvVars value is the only one"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "operator reason"
+
+  - it: "manager ConfigMap: a null component value is unset and the global fills in"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "manager ConfigMap: a null common value is unset and the global fills in"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "manager ConfigMap: a component refusal stands over the global"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: "manager ConfigMap: nothing set renders no key"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: "manager ConfigMap: a null global renders no key"
+    template: templates/manager/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: "worker ConfigMap: collector off + global value reaches the app"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "worker ConfigMap: the component configmap value is the only one"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: "component reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "component reason"
+
+  - it: "worker ConfigMap: the common.configmap value is the only one"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "common reason"
+
+  - it: "worker ConfigMap: the extraEnvVars value is the only one"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "operator reason"
+
+  - it: "worker ConfigMap: a null component value is unset and the global fills in"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "worker ConfigMap: a null common value is unset and the global fills in"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      common.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: "env-wide reason"
+
+  - it: "worker ConfigMap: a component refusal stands over the global"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - equal:
+          path: data.ALLOW_INSECURE_OTEL
+          value: ""
+
+  - it: "worker ConfigMap: nothing set renders no key"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL
+
+  - it: "worker ConfigMap: a null global renders no key"
+    template: templates/worker/configmap.yaml
+    set:
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: null
+    asserts:
+      - notExists:
+          path: data.ALLOW_INSECURE_OTEL

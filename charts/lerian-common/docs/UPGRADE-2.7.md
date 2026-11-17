@@ -23,11 +23,11 @@ The `lerian-common` chart v2.7.0 introduces a **modeled configuration setting** 
 
 **Why it matters:**
 
-The **lib-observability** library refuses plaintext OTLP exporters in production unless `ALLOW_INSECURE_OTEL` carries a reason string. Previously, operators had to set this variable per component via `extraEnvVars` or component-specific `configmap` keys. With v2.7.0, operators can declare the setting **once** at the umbrella level (`global.observability.allowInsecureOtel`), and all components that ship to the node-local collector inherit it automatically.
+For example, **lib-observability v4.8.1** refuses enabled plaintext OTLP exporters in production-like environments without an accepted reason. Library 2.6.3 already emitted a default reason; 2.7.0 adds modeled resolution. A shared global setting is inherited only by consumers that pass `context` and do not override it. Verify the exact consumer image/library and startup path; this library ships no application image.
 
 **Backward compatibility:**
 
-This is a **non-breaking change**. Existing deployments that do not pass `context` to `lerian-common.otel.podEnv` continue to emit the default reason string (`"node-local collector on the pod's own node"`). Product charts that already set `ALLOW_INSECURE_OTEL` via component `configmap` or `extraEnvVars` retain precedence over the new global setting.
+Calls without `context` continue to emit the default reason string (`"node-local collector on the pod's own node"`). With `context`, the helper reads the explicitly passed component ConfigMap and then the global setting. It does not read `extraEnvVars`. An explicit container `env` entry overrides the same key imported with `envFrom`; duplicate explicit entries are not a safe precedence mechanism. Check the consumer's call and resulting manifest before calling adoption non-breaking.
 
 ## Features
 
@@ -80,7 +80,7 @@ global:
     allowInsecureOtel: ""
 ```
 
-> **Important:** Setting `allowInsecureOtel` to an empty string (`""`) or `false` **refuses** plaintext OTLP. Applications will fail to start if the collector endpoint uses `http://` and `ALLOW_INSECURE_OTEL` is empty.
+> **Important:** With modeled resolution actually enabled and no higher-priority component/caller override, these values emit an empty string or `"false"`. Compatible lib-observability releases refuse plaintext in production-like environments when telemetry uses that gate. This is not a universal boot guarantee: verify the exact consumer image, library version, environment and enabled telemetry path. Rendering alone does not exercise startup.
 
 #### Precedence
 
@@ -164,7 +164,7 @@ No action required. If the product chart does not pass `context` to `lerian-comm
 
 **For operators who already set `ALLOW_INSECURE_OTEL` via `extraEnvVars`:**
 
-Your existing configuration retains precedence. The component-level `configmap.ALLOW_INSECURE_OTEL` (or `extraEnvVars` entry) overrides the global setting.
+`extraEnvVars` is not an input to this helper. Preserve unrelated entries and coordinate with the consumer maintainer: pass the desired component ConfigMap explicitly, or suppress helper emission with boolean `allowInsecure: false` and own the value elsewhere exactly once. An `envFrom` ConfigMap does not override an explicit helper-generated `env` value.
 
 **For operators who want to refuse plaintext OTLP:**
 
@@ -176,7 +176,7 @@ global:
     allowInsecureOtel: ""
 ```
 
-Applications will fail to start if the collector endpoint uses `http://`. Ensure your collector is configured with TLS and update the `lerian-common.otel.podEnv` call to use `scheme: "https"`.
+Verify that the consumer passes `context` and has no higher-priority component/caller override; otherwise this global setting is not effective. Compatible applications in production-like environments refuse their enabled plaintext telemetry path. For TLS, configure a verified TLS collector and trust, then use `scheme: "https"`; changing the scheme alone does not provision TLS.
 
 #### Legacy `allowInsecure` parameter
 
@@ -203,19 +203,19 @@ env:
 
 | Block | Field | Default | Description |
 |-------|-------|---------|-------------|
-| `global.observability` | `allowInsecureOtel` | `""` | Reason string for `ALLOW_INSECURE_OTEL` (environment-wide); empty or `false` refuses plaintext OTLP |
+| `global.observability` | `allowInsecureOtel` | Unset; helper fallback reason | Presence-aware setting; explicit empty or `false` is a refusal, subject to higher-priority overrides |
 
 ### New component configuration field
 
 | Block | Field | Default | Description |
 |-------|-------|---------|-------------|
-| `<component>.configmap` | `ALLOW_INSECURE_OTEL` | `""` | Reason string for `ALLOW_INSECURE_OTEL` (component-level override); takes precedence over `global.observability.allowInsecureOtel` |
+| `<component>.configmap` | `ALLOW_INSECURE_OTEL` | Unset; falls through | Only the ConfigMap passed to the helper is read; explicit empty/false overrides the global value |
 
 ### Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ALLOW_INSECURE_OTEL` | `"node-local collector on the pod's own node"` | Reason string that permits plaintext OTLP exporters in production; required by **lib-observability** when `OTEL_EXPORTER_OTLP_ENDPOINT` uses `http://` |
+| `ALLOW_INSECURE_OTEL` | `"node-local collector on the pod's own node"` | Helper fallback reason for HTTP; verify the actual application's enabled telemetry and production policy |
 
 ## Migration Steps
 
@@ -238,7 +238,7 @@ global:
 4. **Upgrade the umbrella chart:**
 
 ```bash
-helm upgrade my-umbrella . -n lerian --values values.yaml
+helm upgrade my-umbrella . -n lerian --reset-values --values values.yaml
 ```
 
 5. **Verify the environment variable** in running pods:
@@ -296,7 +296,7 @@ helm template my-chart . --values test-values.yaml > after.yaml
 diff before.yaml after.yaml
 ```
 
-4. **Document the change** in your product chart's CHANGELOG (note: adopting the modeled setting is **not** a breaking change for operators).
+4. Document the consumer's actual compatibility and rollout impact. A new explicit helper value can override a previously imported ConfigMap value; do not assume adoption is non-breaking.
 
 ### For Standalone Deployments
 
@@ -314,19 +314,22 @@ myapp:
 
 ## Preview changes before upgrading
 
+Do not install, diff or upgrade the library as a release. Update the actual consumer dependency named `lerian-common-helm` to 2.7.0 through its normal development/review process and verify the resulting lock/package; dependency update can change other packages too. Use the verified consumer release/path/namespace below, not the library name.
+
 ```bash
-helm diff upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-common-helm --version 2.7.0 -n lerian-common
+helm template my-product ./my-product -n product --is-upgrade -f intended-values.yaml > target-private.yaml
+helm diff upgrade my-product ./my-product -n product --reset-values -f intended-values.yaml --suppress-secrets
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
-> **Important:** Since `lerian-common` is a library chart, `helm diff` will show no resource changes (library charts render nothing). To preview the impact of adopting v2.7.0, run `helm diff` on the **product charts** that consume it after updating their `lerian-common` dependency to v2.7.0.
+Use a restricted private directory (`umask 077`); rendered manifests and values can contain credentials. Both `intended-values.yaml` above and `values.yaml` in the umbrella example must be complete intended configurations, preserving unrelated settings, pins and Secret references: reset discards omissions. For consumers relying on `lookup`, follow their server-preview/current-bundled-password requirements privately, never decoded terminal output or CLI `--set`. Client-only previews can fail or synthesize misleading credential/checksum changes. No server preview was exercised here.
 
 ## Command to upgrade
 
 ```bash
-helm upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-common-helm --version 2.7.0 -n lerian-common
+helm upgrade my-product ./my-product -n product --reset-values -f intended-values.yaml
 ```
 
-> **Note:** Since `lerian-common` is a library chart, you typically do **not** install or upgrade it directly. Instead, update the dependency version in your umbrella or product chart's `Chart.yaml` and run `helm dependency update`.
+Compare all actual consumer pod templates, checksums, labels, images, selectors and hooks; a dependency bump alone does not establish rollout. Preserve consistent private backups and rehearse recovery before applying, then verify rollouts and enabled integrations. Helm rollback does not restore data or guarantee old-binary compatibility. Exact published 2.6.3/2.7.0 packages and synthetic consumer renders prove helper output only, not application boot, real dependency build, cluster upgrade or restore. This library has no standalone workloads, ports, licence gates, migrations or NOTES; validate those in the chosen consumer.
 <!-- {% endraw %} -->

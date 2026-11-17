@@ -1,0 +1,229 @@
+# Generated from the CI render fixture plus the telemetry switch; covers the
+# modeled ALLOW_INSECURE_OTEL setting resolved by lerian-common.
+suite: modeled ALLOW_INSECURE_OTEL
+set:
+  global:
+    env:
+      name: development
+    auth:
+      enabled: false
+    streaming:
+      enabled: true
+    objectStorage:
+      sta:
+        bucket: br-sta-transfer
+      staAuditExports:
+        bucket: br-sta-audit-exports
+    observability:
+      enabled: true
+  common:
+    secrets:
+      MASTER_KEYS: v1:0000000000000000000000000000000000000000000000000000000000000000
+      RABBITMQ_DEFAULT_PASS: dev-only-rabbitmq
+      RABBITMQ_ERLANG_COOKIE: dev-only-erlang-cookie-not-for-production
+      AWS_ACCESS_KEY_ID: any
+      AWS_SECRET_ACCESS_KEY: any
+      LICENSE_KEY: REPLACE_WITH_YOUR_LICENSE_KEY
+    license:
+      organizationIds: REPLACE_WITH_YOUR_ORGANIZATION_ID
+  postgresql:
+    enabled: true
+    external: false
+    auth:
+      password: dev-only-postgres
+      postgresPassword: dev-only-postgres-admin
+  valkey:
+    enabled: true
+    external: false
+    auth:
+      password: dev-only-valkey
+  rabbitmq:
+    enabled: true
+  seaweedfs:
+    enabled: true
+  redpandaBundle:
+    enabled: true
+  mockSta:
+    enabled: true
+tests:
+- it: emits the node-local reason by default
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+- it: takes global.observability.allowInsecureOtel env-wide
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+- it: the component configmap wins over the global
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    common:
+      configmap:
+        ALLOW_INSECURE_OTEL: component reason
+- it: an explicit refusal stands as the one entry
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    common:
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+- it: a null global is unset
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    global:
+      observability:
+        allowInsecureOtel: null
+- it: the chart knob sits between the configmap and the global
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: knob reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    common:
+      security:
+        allowInsecureOtel: knob reason
+- it: the configmap wins over the chart knob
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: knob reason
+  set:
+    common:
+      security:
+        allowInsecureOtel: knob reason
+      configmap:
+        ALLOW_INSECURE_OTEL: component reason
+- it: the worker's own configmap wins on the worker
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: worker reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: common reason
+  set:
+    common:
+      configmap:
+        ALLOW_INSECURE_OTEL: common reason
+    worker:
+      configmap:
+        ALLOW_INSECURE_OTEL: worker reason
+- it: a legacy extraEnvVars entry stands, with no duplicate
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: legacy reason
+  set:
+    worker:
+      extraEnvVars:
+      - name: ALLOW_INSECURE_OTEL
+        value: legacy reason

@@ -1263,14 +1263,17 @@ subchart Secrets, and the node-local OTLP endpoint. Input: dict root, component.
 {{- $telemetry := eq (include "br-sta.isTrue" (include "lerian-common.globalValue" (dict "context" . "configmap" $cm "block" "observability" "field" "enabled" "nativeKey" "ENABLE_TELEMETRY" "default" "false"))) "true" }}
 {{- $obs := (.Values.global | default dict).observability | default dict }}
 {{- if and $telemetry (not (or (hasKey $cm "OTEL_EXPORTER_OTLP_ENDPOINT") $obs.otlpEndpoint (hasKey $x "OTEL_EXPORTER_OTLP_ENDPOINT"))) }}
-{{- /* The operator's ALLOW_INSECURE_OTEL (common.security.allowInsecureOtel, configmap,
-   secrets, the worker's own configmap or this pod's extraEnvVars) stands, even set
-   empty, which the app reads as a refusal: the helper's own env entry would override
-   the envFrom value. Only the worker has a configmap of its own.
-   The Secret drops an empty value, so only a non-empty one there counts. */}}
-{{- $ownCm := ternary (.Values.worker.configmap | default dict) dict (eq $component "worker") }}
-{{- $operatorAllow := or (hasKey $cm "ALLOW_INSECURE_OTEL") (hasKey $ownCm "ALLOW_INSECURE_OTEL") (include "lerian-common.cfgValue" (dict "configmap" $cm "nativeKey" "ALLOW_INSECURE_OTEL" "params" (.Values.common.security | default dict) "field" "allowInsecureOtel" "default" "")) (get (.Values.common.secrets | default dict) "ALLOW_INSECURE_OTEL") (hasKey $x "ALLOW_INSECURE_OTEL") }}
-{{ include "lerian-common.otel.podEnv" (dict "port" 4317 "allowInsecure" (not $operatorAllow)) }}
+{{- /* ALLOW_INSECURE_OTEL is a modeled setting: the worker's own configmap (worker
+   pod), then common.configmap, then common.security.allowInsecureOtel, then
+   global.observability.allowInsecureOtel, then the node-local reason; lerian-common
+   resolves it and emits the one env entry. A key in this pod's extraEnvVars (the
+   legacy route) still stands, so the helper adds no duplicate then. */}}
+{{- $otelCm := merge (dict) (ternary (.Values.worker.configmap | default dict) dict (eq $component "worker")) $cm }}
+{{- $otelSec := .Values.common.security | default dict }}
+{{- if and (not (hasKey $otelCm "ALLOW_INSECURE_OTEL")) (hasKey $otelSec "allowInsecureOtel") (not (kindIs "invalid" $otelSec.allowInsecureOtel)) }}
+{{- $_ := set $otelCm "ALLOW_INSECURE_OTEL" $otelSec.allowInsecureOtel }}
+{{- end }}
+{{ include "lerian-common.otel.podEnv" (dict "context" . "configmap" $otelCm "port" 4317 "allowInsecure" (not (hasKey $x "ALLOW_INSECURE_OTEL"))) }}
 {{- end }}
 {{- end -}}
 {{- end -}}

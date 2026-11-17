@@ -1,0 +1,238 @@
+# Generated from the CI render fixture plus the telemetry switch; covers the
+# modeled ALLOW_INSECURE_OTEL setting resolved by lerian-common.
+suite: modeled ALLOW_INSECURE_OTEL
+set:
+  global:
+    auth:
+      enabled: false
+      host: http://plugin-access-manager-auth.example.invalid:4000
+    kms:
+      vendor: hashicorp-vault
+      vaultAddr: http://vault.example.invalid:8200
+      vaultAuthMethod: token
+    observability:
+      enabled: true
+  sisbajud:
+    app:
+      environmentName: development
+      deploymentMode: local
+    mensageria:
+      baseUrl: https://mensageria.example.invalid
+      mtlsEnabled: false
+    executor:
+      streamingHubTenantId: default
+      m2mSubject: render-fixture-subject
+      heartbeatEvery: 1m
+      responseDeadlineMargin: 2h
+    direct:
+      permanentBlockEnabled: false
+    midaz:
+      baseUrl: https://midaz.example.invalid
+      authAddress: https://access-manager.example.invalid
+    secrets:
+      LICENSE_KEY: REPLACE_WITH_YOUR_LICENSE_KEY
+      MENSAGERIA_CLIENT_ID: render-fixture-only
+      MENSAGERIA_CLIENT_SECRET: render-fixture-only
+      EXECUTOR_HUB_WEBHOOK_SECRET: render-fixture-only
+      VAULT_TOKEN: render-fixture-only
+      MIDAZ_LEDGER_CLIENT_ID: render-fixture-only
+      MIDAZ_LEDGER_CLIENT_SECRET: render-fixture-only
+  postgresql:
+    enabled: true
+  valkey:
+    enabled: true
+tests:
+- it: emits the node-local reason by default
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+- it: takes global.observability.allowInsecureOtel env-wide
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+- it: the component configmap wins over the global
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    sisbajud:
+      configmap:
+        ALLOW_INSECURE_OTEL: component reason
+- it: an explicit refusal stands as the one entry
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    sisbajud:
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+- it: a null global is unset
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    global:
+      observability:
+        allowInsecureOtel: null
+- it: a legacy extraEnvVars entry stands, with no duplicate
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: legacy reason
+  set:
+    sisbajud:
+      extraEnvVars:
+        ALLOW_INSECURE_OTEL: legacy reason
+- it: a non-empty value in the chart Secret stands (legacy route), with no env entry
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    sisbajud:
+      secrets:
+        ALLOW_INSECURE_OTEL: secret reason
+- it: an empty value in the chart Secret is not a route, so the modeled entry stays
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    sisbajud:
+      secrets:
+        ALLOW_INSECURE_OTEL: ''
+- it: with an existing Secret the chart cannot see the value, so the modeled entry is emitted
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    sisbajud:
+      secrets:
+        ALLOW_INSECURE_OTEL: secret reason
+      useExistingSecret: true
+      existingSecretName: app-secret
+- it: a refusal in the model wins over a Secret reason
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  set:
+    sisbajud:
+      secrets:
+        ALLOW_INSECURE_OTEL: secret reason
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+- it: a global value wins over a Secret refusal
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    sisbajud:
+      secrets:
+        ALLOW_INSECURE_OTEL: 'false'
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason

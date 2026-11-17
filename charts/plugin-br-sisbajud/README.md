@@ -102,6 +102,18 @@ Liveness probes `/version` on the HTTP port (static build info, always 200): the
 - Residual: a mutable SemVer tag re-pushed in a mirror is still only a label; the chart cannot detect it.
 - AWS credentials come via IRSA (`serviceAccount` annotations) or this chart's `aws.rolesAnywhere` block; this chart has no `secretRefs`.
 
+## Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+With telemetry on and no explicit endpoint, the pod ships telemetry to the collector on its own node at `http://$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so the chart sets that variable on the container. The value resolves in this order:
+
+1. `sisbajud.configmap.ALLOW_INSECURE_OTEL`
+2. `global.observability.allowInsecureOtel`, one value for the whole environment
+3. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string is an explicit refusal, and the app then refuses the plaintext exporter in production. The configmap value also lands in the ConfigMap, so it also reaches the app when you point at an explicit plaintext endpoint.
+
+A key in `sisbajud.extraEnvVars` or a non-empty `sisbajud.secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. The Secret counts only while nothing in the order above is set: a configmap, knob or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `sisbajud.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
 ## DIRECT-only executor (no Mensageria)
 
 `sisbajud.executor.enabled: "true"` with an empty `sisbajud.mensageria.baseUrl` boots the executor without the Sisbajud Mensageria. The chart then requires only `executor.m2mSubject`, `responseDeadlineMargin`, `heartbeatEvery`, `tickEvery` (plus the license, KMS, PostgreSQL, Redis, `PLUGIN_AUTH_HOST` and `global.auth.enabled: true`: the direct channel is served only with inbound auth on, and the render fails without it). It emits no `EXECUTOR_TRANSPORT` / Hub webhook / SQS keys except `EXECUTOR_HUB_WEBHOOK_MAX_HANDLE_ATTEMPTS` (the direct drainer cap), renders no webhook Service, Ingress or container port, and does not require `MENSAGERIA_CLIENT_ID/SECRET`, `EXECUTOR_HUB_WEBHOOK_SECRET` or `STREAMING_HUB_TENANT_ID`. Direct orders arrive on `POST /v1/institutions/{institutionId}/executor/...` (opt-in per institution).

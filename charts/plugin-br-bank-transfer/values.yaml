@@ -31,6 +31,9 @@ global:
   # (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT / ALLOW_INSECURE_OTEL override.)
   # Example: observability: { enabled: true }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }

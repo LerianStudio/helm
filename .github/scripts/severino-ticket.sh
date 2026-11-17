@@ -6,6 +6,7 @@
 # Used by chart-bump-automerge.yml (not routine) and chart-bump-merge.yml (CI failed).
 #
 # env: GH_TOKEN REPO PR_NUMBER SLACK_BOT_TOKEN BOT_MENTION SLACK_CHANNEL TICKET_LABEL REVIEW_LABEL
+#      REASON (optional): why the bump needs a human; Severino puts it in the task body.
 set -euo pipefail
 
 pr=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json state,url,headRefName,labels)
@@ -25,9 +26,13 @@ fi
 PR_URL=$(jq -r .url <<<"$pr")
 # update/<chart>/<ref>-<timestamp>, as helm-update-chart.yml names it.
 CHART=$(jq -r .headRefName <<<"$pr" | cut -d/ -f2)
-payload=$(jq -n --arg channel "$SLACK_CHANNEL" \
-  --arg text "<@${BOT_MENTION}> helm chart PR review | ${PR_URL} | Chart: ${CHART}" \
-  '{channel: $channel, text: $text}')
+TEXT="<@${BOT_MENTION}> helm chart PR review | ${PR_URL} | Chart: ${CHART}"
+# "|" separates Severino's fields, so it cannot appear inside the reason; one line, 300 chars.
+REASON=$(printf '%s' "${REASON:-}" | tr '|\n' '/ ' | cut -c1-300)
+if [ -n "$REASON" ]; then
+  TEXT="${TEXT} | Reason: ${REASON}"
+fi
+payload=$(jq -n --arg channel "$SLACK_CHANNEL" --arg text "$TEXT" '{channel: $channel, text: $text}')
 response=$(curl -s -X POST \
   -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
   -H "Content-type: application/json; charset=utf-8" \

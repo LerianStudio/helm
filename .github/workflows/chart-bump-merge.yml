@@ -133,7 +133,11 @@ jobs:
         run: |
           # The completion that triggered this run can take a moment to show in the checks API.
           sleep 10
-          echo "verdict=$(bash .github/scripts/chart-bump-checks.sh | tail -n1)" >> "$GITHUB_OUTPUT"
+          # stdout ends with the verdict; stderr carries the detail (which checks failed).
+          out=$(bash .github/scripts/chart-bump-checks.sh 2>&1)
+          echo "$out"
+          echo "verdict=$(tail -n1 <<<"$out")" >> "$GITHUB_OUTPUT"
+          echo "detail=$(sed '$d' <<<"$out" | tail -n1)" >> "$GITHUB_OUTPUT"
 
       - name: Send Severino review ticket
         if: steps.checks.outputs.verdict == 'failed'
@@ -144,6 +148,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
           BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
           SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+          REASON: "CI failed on a routine bump: ${{ steps.checks.outputs.detail }}"
         run: bash .github/scripts/severino-ticket.sh
 
       - name: Check the pull request is unchanged and mergeable
@@ -187,6 +192,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
           BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
           SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+          REASON: routine bump, but the pull request is not mergeable (conflict with main?)
         run: bash .github/scripts/severino-ticket.sh
 
       # No approving review: the bot authored the pull request and cannot approve it, and --admin
@@ -241,6 +247,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_HELM }}
           BOT_MENTION: ${{ secrets.SLACK_BOT_SEVERINO }}
           SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEVOPS }}
+          REASON: routine bump with green CI, but GitHub refused the auto-merge
         run: bash .github/scripts/severino-ticket.sh
 
   # Safety net for the event-driven merge above: a bot bump still open STALE_MINUTES after its
@@ -289,6 +296,7 @@ jobs:
           status=0
           for n in $stale; do
             echo "Chart bump #${n} still open after ${STALE_MINUTES} minutes; sending the ticket"
-            PR_NUMBER="$n" bash .github/scripts/severino-ticket.sh || status=1
+            PR_NUMBER="$n" REASON="not merged ${STALE_MINUTES} minutes after its last push (no CI result reached the auto-merge)" \
+              bash .github/scripts/severino-ticket.sh || status=1
           done
           exit "$status"

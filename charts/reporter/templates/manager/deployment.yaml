@@ -98,6 +98,11 @@ spec:
           {{- with (include "reporter.otelAllowInsecureEnv" (dict "context" $ "component" .Values.manager) | trim) }}
           {{- . | nindent 10 }}
           {{- end }}
+          {{- else }}
+          {{- /* Collector off: the model must still beat a Secret reason (envFrom). */}}
+          {{- with (include "reporter.otelAllowInsecureEnv" (dict "context" $ "component" .Values.manager "nodeLocal" false) | trim) }}
+          {{- . | nindent 10 }}
+          {{- end }}
           {{- end }}
           {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
           {{- include "lerian-common.rolesAnywhere.imdsEnv" (dict "aws" .Values.aws) | nindent 10 }}

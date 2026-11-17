@@ -233,6 +233,122 @@ tests:
           content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
           count: 1
 
+  - it: "manager: a YAML false in secrets.ALLOW_INSECURE_OTEL renders \"false\" in the Secret, so the legacy route stands"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: a YAML 0 in secrets.ALLOW_INSECURE_OTEL renders \"0\" in the Secret, so the legacy route stands"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: 0
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: collector off: a model refusal wins over a Secret reason via the container env"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      manager.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "manager: collector off: a global value wins over a Secret reason via the container env"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "manager: collector off: a common.configmap value wins over a Secret reason via the container env"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+
+  - it: "manager: collector off: with useExistingSecret the modeled value goes on the container"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      manager.useExistingSecret: true
+      manager.existingSecretName: "ext-secret"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "manager: collector off: a Secret reason with no model gets no container entry"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: collector off: a model with no Secret leaves it to the ConfigMap (no container entry)"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "manager: collector off: an extraEnvVars key stays the legacy route (no container entry)"
+    template: templates/manager/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+      manager.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
   - it: "manager: with useExistingSecret the chart cannot see the Secret and emits the entry"
     template: templates/manager/deployment.yaml
     set:
@@ -460,6 +576,122 @@ tests:
           content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
           count: 1
 
+  - it: "worker Deployment: a YAML false in secrets.ALLOW_INSECURE_OTEL renders \"false\" in the Secret, so the legacy route stands"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: a YAML 0 in secrets.ALLOW_INSECURE_OTEL renders \"0\" in the Secret, so the legacy route stands"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: 0
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: collector off: a model refusal wins over a Secret reason via the container env"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "worker Deployment: collector off: a global value wins over a Secret reason via the container env"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker Deployment: collector off: a common.configmap value wins over a Secret reason via the container env"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+
+  - it: "worker Deployment: collector off: with useExistingSecret the modeled value goes on the container"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      worker.useExistingSecret: true
+      worker.existingSecretName: "ext-secret"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker Deployment: collector off: a Secret reason with no model gets no container entry"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: collector off: a model with no Secret leaves it to the ConfigMap (no container entry)"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker Deployment: collector off: an extraEnvVars key stays the legacy route (no container entry)"
+    template: templates/worker/deployment.yaml
+    set:
+      keda.enabled: false
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
   - it: "worker Deployment: with useExistingSecret the chart cannot see the Secret and emits the entry"
     template: templates/worker/deployment.yaml
     set:
@@ -686,6 +918,122 @@ tests:
           path: spec.jobTargetRef.template.spec.containers[0].env
           content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
           count: 1
+
+  - it: "worker ScaledJob: a YAML false in secrets.ALLOW_INSECURE_OTEL renders \"false\" in the Secret, so the legacy route stands"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: false
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: a YAML 0 in secrets.ALLOW_INSECURE_OTEL renders \"0\" in the Secret, so the legacy route stands"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      secrets.ALLOW_INSECURE_OTEL: 0
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: collector off: a model refusal wins over a Secret reason via the container env"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      worker.configmap.ALLOW_INSECURE_OTEL: ""
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: ""}
+          count: 1
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "secret reason"}
+
+  - it: "worker ScaledJob: collector off: a global value wins over a Secret reason via the container env"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker ScaledJob: collector off: a common.configmap value wins over a Secret reason via the container env"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      common.configmap.ALLOW_INSECURE_OTEL: "common reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "common reason"}
+          count: 1
+
+  - it: "worker ScaledJob: collector off: with useExistingSecret the modeled value goes on the container"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      worker.useExistingSecret: true
+      worker.existingSecretName: "ext-secret"
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - contains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "env-wide reason"}
+          count: 1
+
+  - it: "worker ScaledJob: collector off: a Secret reason with no model gets no container entry"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: collector off: a model with no Secret leaves it to the ConfigMap (no container entry)"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      global.observability.allowInsecureOtel: "env-wide reason"
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
+
+  - it: "worker ScaledJob: collector off: an extraEnvVars key stays the legacy route (no container entry)"
+    template: templates/worker/keda-scaled-job.yaml
+    set:
+      keda.enabled: true
+      otel-collector-lerian.enabled: false
+      secrets.ALLOW_INSECURE_OTEL: "secret reason"
+      global.observability.allowInsecureOtel: "env-wide reason"
+      worker.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.jobTargetRef.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL}
+          any: true
 
   - it: "worker ScaledJob: with useExistingSecret the chart cannot see the Secret and emits the entry"
     template: templates/worker/keda-scaled-job.yaml

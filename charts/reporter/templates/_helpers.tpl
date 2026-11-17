@@ -733,6 +733,12 @@ Legacy routes stand, and then this emits nothing (no duplicate env name):
   - a non-empty secrets.ALLOW_INSECURE_OTEL in the chart's own Secret (useExistingSecret
     false) while nothing in the order above is set — a set value, a refusal included, wins.
 With useExistingSecret the chart cannot see the Secret, so the entry is emitted.
+
+Pass "nodeLocal" false from the collector-off branch: the entry is then emitted only when
+the model (configmap tiers or global) is set, no extraEnvVars key exists, and a Secret
+route is present (non-empty secrets.ALLOW_INSECURE_OTEL, or useExistingSecret), so the
+modeled value wins over the Secret as with the collector on. Otherwise the ConfigMap
+(reporter.otelAllowInsecureConfigmap) carries it.
 */}}
 {{- define "reporter.otelAllowInsecureEnv" -}}
 {{- $ := .context -}}
@@ -749,7 +755,15 @@ With useExistingSecret the chart cannot see the Secret, so the entry is emitted.
 {{- $legacyEnv := hasKey ($comp.extraEnvVars | default dict) $key -}}
 {{- $secretVal := index ($.Values.secrets | default dict) $key -}}
 {{- $legacySecret := and (not $comp.useExistingSecret) (not $modelSet) (not (kindIs "invalid" $secretVal)) (ne (toString $secretVal) "") -}}
-{{- if not (or $legacyEnv $legacySecret) -}}
+{{- $emit := not (or $legacyEnv $legacySecret) -}}
+{{- if eq (toString .nodeLocal) "false" -}}
+{{- /* Collector off: the ConfigMap carries the model, but the Secret, read after it by
+   the worker's envFrom, would beat it. Put the modeled value on the container when a
+   Secret could hold the key: the chart's own (non-empty) or an existing one. */ -}}
+{{- $secretRoute := or $comp.useExistingSecret (and (not (kindIs "invalid" $secretVal)) (ne (toString $secretVal) "")) -}}
+{{- $emit = and $modelSet (not $legacyEnv) $secretRoute -}}
+{{- end -}}
+{{- if $emit -}}
 - name: "ALLOW_INSECURE_OTEL"
   value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ "configmap" $src) | quote }}
 {{- end -}}

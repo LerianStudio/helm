@@ -52,7 +52,7 @@ Both `existingSecret` fields default to empty strings (`""`), which means:
 - The chart continues to use the existing `LICENSE_KEY` environment variable approach
 - Keep a nonempty `LICENSE_KEY` in each chart-managed component Secret, or in the external Secret selected through that component's `useExistingSecret` and `existingSecretName`
 - No file mounting occurs
-- The existing environment-key licensing path is retained; this does not mean a no-rollout upgrade. Rendering the two published releases with identical key-mode values changes auth and identity pod-template checksums.
+- The existing environment-key licensing path is retained; this does not mean a no-rollout upgrade. Rendering the two published releases with identical key-mode values changes auth, identity and Caradhras pod-template checksums.
 
 **Before (v11.1.2):**
 
@@ -148,7 +148,7 @@ For this historical upgrade from v11.1.2 to v11.2.0, keep environment-key licens
 1. Make private backups of the release values and manifests, and confirm the existing database/data recovery procedure. Release values and rendered Secrets may contain credentials; do not print them to a terminal, CI log, or review comment.
 2. Prepare a private `values-upgrade.yaml` containing the **complete intended configuration** for the target release, not just the licensing fragment. Preserve all unrelated overrides, explicit image pins, ingress/TLS, resources, persistence, database settings/current credentials, bootstrap prerequisites, and external Secret references. Retain nonempty `LICENSE_KEY` for both default services, either via chart-managed Secrets or their selected external Secrets. Keep `auth.licenseFile.existingSecret` and `identity.licenseFile.existingSecret` empty. Do not use placeholder credentials from documentation as real values.
 3. Use that same file with `--reset-values` in every preview and upgrade below. Resetting deliberately avoids implicit reuse of removed stored overrides; it also discards omitted settings, so review the full intended configuration first. Private value files must not be committed.
-4. Plan for auth and identity rollouts even when file mounts remain disabled: the published releases change their pod-template checksums with identical key-mode configuration. Verify readiness and normal authenticated operation after rollout. Do not infer runtime validation from chart tests.
+4. Plan for auth, identity and Caradhras rollouts even when file mounts remain disabled: the published releases change their pod-template checksums with identical key-mode configuration. Verify readiness and normal authenticated operation after rollout. Do not infer runtime validation from chart tests.
 
 File-only migration is not an upgrade step for the default images in this release. Any future adoption requires separately verified compatible images and their supported license format, startup, rotation, and rollback procedures; no such replacement image is established by this guide.
 

@@ -214,7 +214,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version | Console Version |
 | :---: | :---: |
-| `4.5.5` | 3.5.0 |
+| `4.5.6` | 3.6.0 |
 -----------------
 
 ### Plugin BC Correios

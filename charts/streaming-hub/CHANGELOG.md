@@ -1,5 +1,26 @@
 # Streaming-hub Changelog
 
+## [2.2.1](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.2.1)
+
+Features:
+- Show `allowInsecureOtel` in the `global.observability` example. (@guimoreirar)
+- Document `ALLOW_INSECURE_OTEL` in `values.yaml`. (@guimoreirar)
+
+Fixes:
+- Ensure the modeled `ALLOW_INSECURE_OTEL` takes precedence over the chart Secret. (@guimoreirar)
+- Maintain a chart-Secret `ALLOW_INSECURE_OTEL` and document the setting. (@guimoreirar)
+- Retrieve `ALLOW_INSECURE_OTEL` from the modeled setting. (@guimoreirar)
+- Keep an `ALLOW_INSECURE_OTEL` set in `streamingHub.secrets`. (@guimoreirar)
+- Allow the node-local OTEL hop to boot in production. (@guimoreirar)
+
+Improvements:
+- Correct the `2.1.0` upgrade guide for app `3.1.0`. (@gandalf-at-lerian)
+- State license server egress as an install requirement. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/streaming-hub-v2.2.0...streaming-hub-v2.2.1)
+
+---
+
 ## [2.2.0](https://github.com/LerianStudio/helm/releases/tag/streaming-hub-v2.2.0)
 
 Features:

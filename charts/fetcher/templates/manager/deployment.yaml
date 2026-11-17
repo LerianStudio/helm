@@ -82,7 +82,13 @@ spec:
               value: "http://$(HOST_IP):4317"
             {{- /* The node-local hop is plaintext: ALLOW_INSECURE_OTEL (modeled setting,
                    legacy extraEnvVars/Secret routes still stand) — see fetcher.otelAllowInsecureEnv. */}}
-            {{- with include "fetcher.otelAllowInsecureEnv" (dict "context" $ "component" .Values.manager) }}
+            {{- with include "fetcher.otelAllowInsecureEnv" (dict "context" $ "component" .Values.manager "hopOn" true) }}
+            {{- . | nindent 12 }}
+            {{- end }}
+          {{- else }}
+            {{- /* Hop off: the ConfigMaps carry ALLOW_INSECURE_OTEL, but the Secrets load after them;
+                   an entry is added only so the model beats a Secret value. */}}
+            {{- with include "fetcher.otelAllowInsecureEnv" (dict "context" $ "component" .Values.manager "hopOn" false) }}
             {{- . | nindent 12 }}
             {{- end }}
           {{- end }}

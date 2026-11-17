@@ -310,10 +310,8 @@ component values. Nil-safe so --reuse-values over an old release cannot nil-poin
 {{- end }}
 
 {{/*
-fetcher.otelAllowInsecureEnv — the ALLOW_INSECURE_OTEL env entry for a component
-container that ships to the node-local collector over plaintext
-(http://$(HOST_IP):4317). The caller includes it only where it emits that
-endpoint. lib-observability refuses a plaintext exporter in production unless
+fetcher.otelAllowInsecureEnv — the ALLOW_INSECURE_OTEL env entry of a component
+container. lib-observability refuses a plaintext exporter in production unless
 the variable carries a reason.
 
 A modeled setting, resolved by lerian-common.otel.allowInsecure from the merged
@@ -323,12 +321,20 @@ configmap (component wins over common; null is unset):
 "" or "false" is an explicit refusal and is emitted as is.
 
 Legacy routes stand and then no entry is added (a duplicate env name breaks the
-apply): a key in <component>.extraEnvVars, or a non-empty ALLOW_INSECURE_OTEL in
-the chart's own Secrets (<component>.secrets unless useExistingSecret, or the
-shared top-level secrets) while nothing in the model is set. An existing Secret
-is not visible to the chart, so the entry is emitted and wins over it.
+apply): a key in <component>.extraEnvVars, or an ALLOW_INSECURE_OTEL the chart's
+own Secrets render (<component>.secrets unless useExistingSecret, or the shared
+top-level secrets) while nothing in the model is set. The Secrets render every
+non-null value whose string form is non-empty (a YAML false as "false", 0 as
+"0"), so the same values count here.
 
-Inputs (dict): context (root), component (.Values.manager / .Values.worker).
+hopOn (bool): the container ships to http://$(HOST_IP):4317 (plaintext). Then the
+entry is emitted unless a legacy route stands. With the hop off the ConfigMaps
+carry the model, but envFrom loads the Secrets after them, so a Secret value
+would beat it: the entry is emitted only when the model is set and a Secret may
+hold the key (a visible Secret value, or an existing Secret the chart cannot
+see), so the model wins as documented.
+
+Inputs (dict): context (root), component (.Values.manager / .Values.worker), hopOn.
 */}}
 {{- define "fetcher.otelAllowInsecureEnv" -}}
 {{- $ctx := .context -}}
@@ -343,16 +349,19 @@ Inputs (dict): context (root), component (.Values.manager / .Values.worker).
 {{- end -}}
 {{- $obs := (($ctx.Values.global | default dict).observability) | default dict -}}
 {{- $modelSet := or (hasKey $cm "ALLOW_INSECURE_OTEL") (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) -}}
-{{- $legacy := hasKey ($comp.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL" -}}
-{{- if not $modelSet -}}
-{{- if and (not $comp.useExistingSecret) (ne (toString (index ($comp.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "") -}}
-{{- $legacy = true -}}
+{{- $compSecret := index ($comp.secrets | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- $sharedSecret := index ($ctx.Values.secrets | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- $secretSet := or
+      (and (not $comp.useExistingSecret) (not (kindIs "invalid" $compSecret)) (ne (toString $compSecret) ""))
+      (and (not (kindIs "invalid" $sharedSecret)) (ne (toString $sharedSecret) "")) -}}
+{{- $emit := false -}}
+{{- if hasKey ($comp.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- else if .hopOn -}}
+{{- $emit = or $modelSet (not $secretSet) -}}
+{{- else -}}
+{{- $emit = and $modelSet (or $secretSet $comp.useExistingSecret) -}}
 {{- end -}}
-{{- if ne (toString (index ($ctx.Values.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "" -}}
-{{- $legacy = true -}}
-{{- end -}}
-{{- end -}}
-{{- if not $legacy -}}
+{{- if $emit -}}
 - name: "ALLOW_INSECURE_OTEL"
   value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ctx "configmap" $cm) | quote }}
 {{- end -}}

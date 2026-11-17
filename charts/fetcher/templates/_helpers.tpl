@@ -307,3 +307,52 @@ component values. Nil-safe so --reuse-values over an old release cannot nil-poin
 {{- define "fetcher.licenseFileSecret" -}}
 {{- ((.licenseFile | default dict).existingSecret | default "") -}}
 {{- end }}
+
+{{/*
+fetcher.otelAllowInsecureEnv — the ALLOW_INSECURE_OTEL env entry for a component
+container that ships to the node-local collector over plaintext
+(http://$(HOST_IP):4317). The caller includes it only where it emits that
+endpoint. lib-observability refuses a plaintext exporter in production unless
+the variable carries a reason.
+
+A modeled setting, resolved by lerian-common.otel.allowInsecure from the merged
+configmap (component wins over common; null is unset):
+  <component>.configmap.ALLOW_INSECURE_OTEL > common.configmap.ALLOW_INSECURE_OTEL
+  > global.observability.allowInsecureOtel > the node-local reason.
+"" or "false" is an explicit refusal and is emitted as is.
+
+Legacy routes stand and then no entry is added (a duplicate env name breaks the
+apply): a key in <component>.extraEnvVars, or a non-empty ALLOW_INSECURE_OTEL in
+the chart's own Secrets (<component>.secrets unless useExistingSecret, or the
+shared top-level secrets) while nothing in the model is set. An existing Secret
+is not visible to the chart, so the entry is emitted and wins over it.
+
+Inputs (dict): context (root), component (.Values.manager / .Values.worker).
+*/}}
+{{- define "fetcher.otelAllowInsecureEnv" -}}
+{{- $ctx := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $compCm := $comp.configmap | default dict -}}
+{{- $commonCm := (($ctx.Values.common | default dict).configmap) | default dict -}}
+{{- $cm := dict -}}
+{{- if not (kindIs "invalid" (index $compCm "ALLOW_INSECURE_OTEL")) -}}
+{{- $_ := set $cm "ALLOW_INSECURE_OTEL" (index $compCm "ALLOW_INSECURE_OTEL") -}}
+{{- else if not (kindIs "invalid" (index $commonCm "ALLOW_INSECURE_OTEL")) -}}
+{{- $_ := set $cm "ALLOW_INSECURE_OTEL" (index $commonCm "ALLOW_INSECURE_OTEL") -}}
+{{- end -}}
+{{- $obs := (($ctx.Values.global | default dict).observability) | default dict -}}
+{{- $modelSet := or (hasKey $cm "ALLOW_INSECURE_OTEL") (not (kindIs "invalid" (index $obs "allowInsecureOtel"))) -}}
+{{- $legacy := hasKey ($comp.extraEnvVars | default dict) "ALLOW_INSECURE_OTEL" -}}
+{{- if not $modelSet -}}
+{{- if and (not $comp.useExistingSecret) (ne (toString (index ($comp.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "") -}}
+{{- $legacy = true -}}
+{{- end -}}
+{{- if ne (toString (index ($ctx.Values.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "" -}}
+{{- $legacy = true -}}
+{{- end -}}
+{{- end -}}
+{{- if not $legacy -}}
+- name: "ALLOW_INSECURE_OTEL"
+  value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ctx "configmap" $cm) | quote }}
+{{- end -}}
+{{- end }}

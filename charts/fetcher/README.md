@@ -110,6 +110,19 @@ fetcher does **not** adopt `lerian-common.serviceDiscovery` — this chart has
 no `SD_*` contract at all today (no Consul/lib-service-discovery integration),
 so there is nothing to migrate onto that mask.
 
+### Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+With telemetry on (`global.observability.enabled`, or the legacy `common.configmap.ENABLE_TELEMETRY: "true"`) and no explicit endpoint, the manager and the worker ship telemetry to the collector on their own node at `http://$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so the chart sets that variable on each of those two containers, and only there: an explicit endpoint (`global.observability.otlpEndpoint` or `common.configmap.OTEL_EXPORTER_OTLP_ENDPOINT`) gets no entry. The value resolves in this order, for each component:
+
+1. `manager.configmap.ALLOW_INSECURE_OTEL` / `worker.configmap.ALLOW_INSECURE_OTEL`
+2. `common.configmap.ALLOW_INSECURE_OTEL`, shared by both
+3. `global.observability.allowInsecureOtel`, one value for the whole environment
+4. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string or `"false"` is an explicit refusal, and the app then refuses the plaintext exporter in production. The component and common ConfigMaps already pass their `configmap` keys through, so a configmap value also reaches the app when the node-local collector is off and you point at an explicit plaintext endpoint; the global value does not, set a configmap key in that case.
+
+A key in `manager.extraEnvVars` / `worker.extraEnvVars`, or a non-empty `ALLOW_INSECURE_OTEL` in the chart's own Secrets (`manager.secrets` / `worker.secrets`, or the shared top-level `secrets`), is the legacy route, and the chart then adds no entry of its own for that component. The Secret counts only while nothing in the order above is set: a configmap or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `useExistingSecret: true` the chart cannot see the component Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `manager.configmap.ALLOW_INSECURE_OTEL` / `worker.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
 ### Global Settings
 
 | Parameter | Description | Default |

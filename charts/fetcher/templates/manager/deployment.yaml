@@ -80,6 +80,11 @@ spec:
                   fieldPath: status.hostIP
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
               value: "http://$(HOST_IP):4317"
+            {{- /* The node-local hop is plaintext: ALLOW_INSECURE_OTEL (modeled setting,
+                   legacy extraEnvVars/Secret routes still stand) — see fetcher.otelAllowInsecureEnv. */}}
+            {{- with include "fetcher.otelAllowInsecureEnv" (dict "context" $ "component" .Values.manager) }}
+            {{- . | nindent 12 }}
+            {{- end }}
           {{- end }}
           {{- if and .Values.aws .Values.aws.rolesAnywhere .Values.aws.rolesAnywhere.enabled }}
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT

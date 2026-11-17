@@ -22,7 +22,7 @@ The chart removes `helm.sh/chart` from service and worker pod labels while retai
 
 Removing the label does **not** guarantee that future chart-only upgrades avoid rollouts. The service hashes full generated ConfigMap and Secret manifests, including chart-version labels. The worker hashes configuration and Secret data instead. Compare rendered pod templates for each release; there is no no-restart guarantee.
 
-The default `system-facts.ingress.hosts[0].host` changes from `system-facts.lerian.net` to `system-facts.example.com`. This can affect **existing releases** adopting new defaults with ingress enabled and no explicit hostname override. Reusing historical values can retain the old hostname. Ingress is disabled by default; when enabled, set the intended hostname explicitly and inspect the rendered Ingress. Neither historical nor example domains are instructions to use that hostname in production.
+The default `system-facts.ingress.hosts[0].host` changes from `system-facts.lerian.net` to `system-facts.example.com`. This can affect **existing releases** adopting new defaults with ingress enabled and no explicit hostname override. Reusing historical values can retain the old hostname. Ingress is enabled by default in both releases. Set the intended hostname explicitly, or explicitly disable ingress when it is not intended, and inspect the rendered Ingress before upgrading. Neither historical nor example domains are instructions to use that hostname in production.
 
 Dependencies and default image versions are unchanged between these chart releases. This does not certify application runtime, datastore or operational compatibility for a particular environment.
 

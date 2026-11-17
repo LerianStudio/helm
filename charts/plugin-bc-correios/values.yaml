@@ -41,12 +41,14 @@ bc-correios:
   # -- Number of old ReplicaSets to retain for deployment rollback
   revisionHistoryLimit: 10
   image:
-    # -- Repository for the bc-correios service container image
-    repository: ghcr.io/lerianstudio/plugin-bc-correios
+    # -- Repository for the bc-correios service container image. App 1.2.1 and later
+    # publish as br-correios; app 1.2.0 and earlier exist only as
+    # ghcr.io/lerianstudio/plugin-bc-correios, so pinning one of them needs that repository too.
+    repository: ghcr.io/lerianstudio/br-correios
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag used for deployment
-    tag: "1.1.0"
+    tag: "1.2.2"
   # -- Secrets for pulling images from a private registry
   imagePullSecrets: []
   # -- Overrides the default generated name by Helm

@@ -160,7 +160,7 @@ The health preset adds a `health` port to each component's Service:
 ```yaml
 ports:
   - name: http
-    port: 4000
+    port: 4101 # spi; the main port is component-specific
     targetPort: http
     protocol: TCP
   - name: health
@@ -229,7 +229,7 @@ The `lerian-common-helm` library chart dependency has been updated from version 
 
 **Why it matters:**
 
-The library chart provides shared workload fragments (Service, HPA, ServiceAccount, scheduling helpers) and the new `lerian-common.health` preset used by all components. Version 2.6.0 introduces the health preset and related template helpers.
+The library chart provides shared workload fragments (Service, HPA, ServiceAccount, scheduling helpers) and the new `lerian-common.health` preset used by all components. Version 2.6.0 includes the health preset and related template helpers.
 
 **How to handle it:**
 

@@ -70,7 +70,7 @@ global:
   # required in every environment. Default: production.
   # Example: env: { name: "development" }
   env: {}
-  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment.
+  # -- Env-wide observability: enabled | otlpEndpoint | deploymentEnvironment | allowInsecureOtel.
   # With enabled=true and no otlpEndpoint, the pods ship to the node-local
   # collector at http://$(HOST_IP):4317.
   # Example: observability: { enabled: true }

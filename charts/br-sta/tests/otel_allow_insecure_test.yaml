@@ -313,3 +313,50 @@ tests:
       content:
         name: ALLOW_INSECURE_OTEL
         value: knob reason
+- it: a non-empty value in the chart Secret stands (legacy route), with no env entry
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    common:
+      secrets:
+        ALLOW_INSECURE_OTEL: secret reason
+- it: an empty value in the chart Secret is not a route, so the modeled entry stays
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    common:
+      secrets:
+        ALLOW_INSECURE_OTEL: ''
+- it: with an existing Secret the chart cannot see the value, so the modeled entry is emitted
+  template: templates/worker/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    common:
+      secrets:
+        ALLOW_INSECURE_OTEL: secret reason
+      useExistingSecret: true
+      existingSecretName: br-sta

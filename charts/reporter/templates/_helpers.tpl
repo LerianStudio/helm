@@ -711,3 +711,46 @@ The guard compares one semver (rc sorts above beta): an rc tier must bump to an 
       "minImage" (include "reporter.minImage" .)
       "replicas" .Values.worker.replicaCount "autoscaling" .Values.worker.autoscaling) -}}
 {{- end -}}
+
+{{/*
+reporter.otelAllowInsecureEnv — the ALLOW_INSECURE_OTEL container env entry for a
+component that ships to the node-local collector (`$(HOST_IP):4317`, plaintext).
+Call it inside the same `otel-collector-lerian.enabled` gate that emits that endpoint:
+  {{- with (include "reporter.otelAllowInsecureEnv" (dict "context" $ "component" .Values.manager) | trim) }}
+  {{- . | nindent 10 }}
+  {{- end }}
+
+lib-observability refuses a plaintext exporter in production unless ALLOW_INSECURE_OTEL
+carries a reason. Value (lerian-common.otel.allowInsecure; null = unset, "" / "false" =
+an explicit refusal that stops the chain):
+  <component>.configmap.ALLOW_INSECURE_OTEL
+  > common.configmap.ALLOW_INSECURE_OTEL   (the chart's shared tier, same order as its ConfigMaps)
+  > global.observability.allowInsecureOtel
+  > "node-local collector on the pod's own node"
+
+Legacy routes stand, and then this emits nothing (no duplicate env name):
+  - the key in <component>.extraEnvVars;
+  - a non-empty secrets.ALLOW_INSECURE_OTEL in the chart's own Secret (useExistingSecret
+    false) while nothing in the order above is set — a set value, a refusal included, wins.
+With useExistingSecret the chart cannot see the Secret, so the entry is emitted.
+*/}}
+{{- define "reporter.otelAllowInsecureEnv" -}}
+{{- $ := .context -}}
+{{- $comp := .component | default dict -}}
+{{- $key := "ALLOW_INSECURE_OTEL" -}}
+{{- $src := dict -}}
+{{- range $m := list ($comp.configmap | default dict) ($.Values.common.configmap | default dict) -}}
+{{- if and (not (hasKey $src $key)) (hasKey $m $key) (not (kindIs "invalid" (index $m $key))) -}}
+{{- $_ := set $src $key (index $m $key) -}}
+{{- end -}}
+{{- end -}}
+{{- $obs := ($.Values.global | default dict).observability | default dict -}}
+{{- $modelSet := or (hasKey $src $key) (and (hasKey $obs "allowInsecureOtel") (not (kindIs "invalid" (index $obs "allowInsecureOtel")))) -}}
+{{- $legacyEnv := hasKey ($comp.extraEnvVars | default dict) $key -}}
+{{- $secretVal := index ($.Values.secrets | default dict) $key -}}
+{{- $legacySecret := and (not $comp.useExistingSecret) (not $modelSet) (not (kindIs "invalid" $secretVal)) (ne (toString $secretVal) "") -}}
+{{- if not (or $legacyEnv $legacySecret) -}}
+- name: "ALLOW_INSECURE_OTEL"
+  value: {{ include "lerian-common.otel.allowInsecure" (dict "context" $ "configmap" $src) | quote }}
+{{- end -}}
+{{- end -}}

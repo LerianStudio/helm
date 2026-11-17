@@ -58,7 +58,8 @@
           "properties": {
             "deploymentEnvironment": {},
             "enabled": {},
-            "otlpEndpoint": {}
+            "otlpEndpoint": {},
+            "allowInsecureOtel": {}
           },
           "description": "Env-wide observability. Consumed by lerian-common.globalValue (block \"observability\")."
         },

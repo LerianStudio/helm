@@ -135,6 +135,19 @@ render-equivalent for the bundled dev topology (no override needed) unless noted
 (FQDN `<svc>.reporter.svc.cluster.local` form) are unchanged from the
 pre-adoption defaults — kept byte-identical for existing installs.
 
+### Plaintext OTEL to the node-local collector (`ALLOW_INSECURE_OTEL`)
+
+With `otel-collector-lerian.enabled` on (the default), the manager and the worker (Deployment or KEDA ScaledJob) ship telemetry to the collector on their own node at `$(HOST_IP):4317`, in plaintext. lib-observability refuses a plaintext exporter in production unless `ALLOW_INSECURE_OTEL` carries a reason, so the chart sets that variable on each of those containers. The value resolves in this order:
+
+1. `manager.configmap.ALLOW_INSECURE_OTEL` / `worker.configmap.ALLOW_INSECURE_OTEL`
+2. `common.configmap.ALLOW_INSECURE_OTEL`, the chart's shared tier for both components
+3. `global.observability.allowInsecureOtel`, one value for the whole environment
+4. the default reason, `node-local collector on the pod's own node`
+
+`null` counts as unset. An empty string or `"false"` is an explicit refusal, and the app then refuses the plaintext exporter in production. The component and common ConfigMaps already pass their `configmap` keys through, so a value set there also reaches the app when `otel-collector-lerian.enabled` is off; the global one reaches only the node-local containers. Do not set the key in both `common.configmap` and a component `configmap`: that component's ConfigMap would carry it twice.
+
+A key in `manager.extraEnvVars` / `worker.extraEnvVars` or a non-empty `secrets.ALLOW_INSECURE_OTEL` in the chart's own Secret is the legacy route, and the chart then adds no entry of its own. The Secret counts only while nothing in the order above is set: a configmap or global value, a refusal included, keeps the chart's entry, which wins over the Secret. With `manager.useExistingSecret` / `worker.useExistingSecret: true` the chart cannot see the Secret, so the container entry overrides any `ALLOW_INSECURE_OTEL` held there; set `<component>.configmap.ALLOW_INSECURE_OTEL` instead. This needs `lerian-common-helm` 2.7.0 or later, which the chart depends on.
+
 ### Pod Spreading (`global.scheduling.spread`)
 
 Every Deployment of this chart (the manager, and the worker when it runs as a

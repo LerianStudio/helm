@@ -43,6 +43,7 @@ global:
     # enabled: "true"
     # otlpEndpoint: "otel-collector:4317"
     # deploymentEnvironment: "production"
+    # allowInsecureOtel: "node-local collector on the pod's own node"   # ALLOW_INSECURE_OTEL on the node-local hop; "" refuses
   # -- plugin-access-manager auth, env-wide (per-component override via configmap).
   auth: {}
     # enabled: "true"

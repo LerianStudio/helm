@@ -42,6 +42,8 @@ helm diff upgrade plugin-bc-correios \
 
 Inspect the application Deployment, its two checksums, image pins, ConfigMap, generated Secret, all referenced Secrets, migration resources, selectors and storage identities. A changed credential requires a coordinated server/client rotation plan, not merely a changed checksum.
 
+Without `--dry-run=server`, helm-diff renders without cluster lookups. When the bundled PostgreSQL and Valkey passwords are not set in values, the preview then shows their Secret password keys as changed and a new `checksum/secret` on the Valkey primary Deployment. `helm upgrade` looks up and keeps the stored passwords, so these lines are a preview artifact, not a credential change. Add `--dry-run=server` to the preview to compare against the stored Secrets.
+
 After the release, rehearsal and recovery gates pass, apply the **same** complete intended file:
 
 ```bash

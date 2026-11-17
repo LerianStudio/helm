@@ -7,13 +7,13 @@ Chart:     {{ .Chart.Name }} {{ .Chart.Version }} (appVersion {{ .Chart.AppVersi
 Components:
   - API              {{ include "notifications.fullname" . }}      :{{ .Values.api.containerPort }}
 {{- if .Values.workerEmail.enabled }}
-  - Worker (email)   {{ include "workerEmail.fullname" . }}              :{{ .Values.workerEmail.containerPort }}
+  - Worker (email)   {{ include "workerEmail.fullname" . }}              :8099 (health)
 {{- end }}
 {{- if .Values.workerSms.enabled }}
-  - Worker (sms)     {{ include "workerSms.fullname" . }}                :{{ .Values.workerSms.containerPort }}
+  - Worker (sms)     {{ include "workerSms.fullname" . }}                :8099 (health)
 {{- end }}
 {{- if .Values.workerWebhook.enabled }}
-  - Worker (webhook) {{ include "workerWebhook.fullname" . }}            :{{ .Values.workerWebhook.containerPort }}
+  - Worker (webhook) {{ include "workerWebhook.fullname" . }}            :8099 (health)
 {{- end }}
 
 {{- if .Values.migrations.enabled }}

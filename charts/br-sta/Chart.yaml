@@ -3,36 +3,27 @@ name: br-sta-helm
 description: A Helm chart for br-sta — the Lerian BACEN STA (Sistema de
   Transferência de Arquivos) service, a manager (HTTP API) plus its background
   worker (BACEN transfers, audit trail, scheduled jobs)
-
 type: application
 annotations:
   lerian.studio/chart-type: multi-component
-
 home: https://github.com/LerianStudio/helm
-
 sources:
   - https://github.com/LerianStudio/helm/tree/main/charts/br-sta
-
 maintainers:
   - name: "Lerian Studio"
     email: "support@lerian.studio"
-
-version: 1.0.6
-
+version: 1.0.10
 # NOTE: appVersion is the default image tag for the manager, the worker and the
 # migrations Job (the three images are released together under one tag). Override
 # via manager.image.tag / worker.image.tag / migrations.image.tag when needed.
-appVersion: "1.2.0"
-
+appVersion: "1.4.2"
 keywords:
   - br-sta
   - sta
   - bacen
   - file-transfer
   - lerian
-
 icon: https://avatars.githubusercontent.com/u/148895005?s=200&v=4
-
 # lerian-common-helm is the shared library (env contracts, datastore / object
 # storage / KMS masks). The infra subcharts are DECLARED (exact pins,
 # condition-gated) so the chart can optionally bundle infra for dev/evaluation,

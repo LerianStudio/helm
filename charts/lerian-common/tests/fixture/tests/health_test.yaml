@@ -208,7 +208,7 @@ tests:
   - it: no PrometheusRule by default
     asserts:
       - hasDocuments: {count: 4}
-  - it: monitoring.prometheusRule.enabled renders the health rules for the release namespace
+  - it: monitoring.prometheusRule.enabled renders the health rules for the release namespace, the report-check alert needs 10m of badness on one pod and a sample now
     documentSelector: {path: kind, value: PrometheusRule}
     release: {namespace: prod}
     set: {monitoring.prometheusRule: {enabled: true, labels: {release: prom}}}
@@ -217,7 +217,16 @@ tests:
       - lengthEqual: {path: "spec.groups[0].rules", count: 9}
       - equal: {path: "spec.groups[0].rules[0].alert", value: HealthStoreDown}
       - equal: {path: "spec.groups[0].rules[4].expr", value: 'kube_deployment_status_replicas_available{namespace="prod"} == 0 and kube_deployment_spec_replicas{namespace="prod"} > 0'}
-
+      - equal: {path: "spec.groups[0].rules[2].alert", value: HealthReportCheckDown}
+      - equal:
+          path: "spec.groups[0].rules[2].expr"
+          value: |-
+            max by (job, check) (
+              (min_over_time((sum without (status) (health_check_status{mode="report",status=~"down|degraded"}))[10m:1m]) > 0)
+              and
+              (sum without (status) (health_check_status{mode="report",status=~"down|degraded"}) > 0)
+            )
+      - equal: {path: "spec.groups[0].rules[2].for", value: 5m}
   - it: shutdownSeconds 0 is refused
     set: {app.health: {stack: go, shutdownSeconds: 0}}
     asserts:

@@ -96,6 +96,12 @@ spec:
                 configMapKeyRef:
                   name: {{ include "plugin-auth.fullname" . }}
                   key: DB_SSLMODE
+            # lib-commons refuses sslmode=disable unless this is true; same key the server reads.
+            - name: ALLOW_INSECURE_TLS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "plugin-caradhras.fullname" . }}
+                  key: ALLOW_INSECURE_TLS
             {{- /* The migrator is licence-gated and, on a fresh install, the first process to
                  fetch the licence file: it needs the key (or file) and, behind a proxy,
                  caradhras.migrations.extraEnvVars (HTTPS_PROXY). */}}

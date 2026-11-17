@@ -1516,6 +1516,8 @@ func findServiceAccountName(node interface{}) string {
 // Group 1 is the Service name, group 2 its namespace.
 var collapseHostPattern = regexp.MustCompile(`([a-z0-9][a-z0-9.-]*?)\.([a-z0-9][a-z0-9-]*)\.svc\.cluster\.local`)
 
+var statefulSetPodName = regexp.MustCompile(`-[0-9]+$`)
+
 // knownCollapseHostDrift lists "<chart>:<KEY>" pairs that still build their host
 // by hand and are known to miss the collapse, where KEY is the ConfigMap data
 // key or the container env name carrying the host. Each entry MUST carry a
@@ -1608,6 +1610,11 @@ func danglingCollapseHostMessage(rendered, release, chartName string) string {
 				continue
 			}
 			if serviceKeys[name+"."+namespace] || serviceNamesAnyNamespace[name] {
+				continue
+			}
+			// A StatefulSet pod behind a headless Service: <sts>-<ordinal>.<svc>.
+			if pod, svc, ok := strings.Cut(name, "."); ok && statefulSetPodName.MatchString(pod) &&
+				(serviceKeys[svc+"."+namespace] || serviceNamesAnyNamespace[svc]) {
 				continue
 			}
 			if knownCollapseHostDrift[chartName+":"+cv.key] {

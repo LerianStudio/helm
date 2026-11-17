@@ -62,6 +62,9 @@ global:
   # collector at http://$(HOST_IP):4317.
   # Example: observability: { enabled: true }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide auth (plugin-access-manager): enabled | host -> PLUGIN_AUTH_ENABLED / PLUGIN_AUTH_HOST.
   # PLUGIN_AUTH_ENABLED=false is accepted by the app ONLY with a development-class
   # ENV_NAME (development|develop|dev|local|test) and DEPLOYMENT_MODE != saas; the

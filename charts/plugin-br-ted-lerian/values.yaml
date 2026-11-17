@@ -33,6 +33,9 @@ global:
   # OTEL identity (library/service name/version) stays in plugin-br-ted-lerian.otel.
   # Example: observability: { enabled: true, otlpEndpoint: "otel-collector:4317" }
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   enabled: true
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Env-wide plugin-access-manager auth. Consumed by lerian-common.auth.env
   # (block "auth"). Fields: enabled, host. (configmap.PLUGIN_AUTH_* overrides.)
   # Example: auth: { host: "http://plugin-access-manager-auth:4000" }

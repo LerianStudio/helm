@@ -1,5 +1,63 @@
 # Midaz Changelog
 
+## [11.1.1](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.1.1)
+
+Fixes:
+- Update `midaz-ledger` to `4.4.3`, `midaz-tracer` to `4.4.3`, `midaz-tracer-migrations` to `4.4.3`, and `midaz-ledger-migrations` to `4.4.3`. (@lerian-studio)
+
+Improvements:
+- Qualify runtime support documentation for midaz. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.1.0...midaz-v11.1.1)
+
+---
+
+## [11.1.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.1.0)
+
+Features:
+- Add the inbound trace trust key to ledger and tracer. (@fredcamaral)
+
+Improvements:
+- Add Helm upgrade guide for `midaz` `v11.0.0`. (@victorlazari)
+- Clarify MongoDB cutover procedures. (@victorlazari)
+- Add Helm upgrade guide for `midaz` `v10.4.3`. (@victorlazari)
+- Add Helm upgrade guide for `midaz` `v10.4.2`. (@victorlazari)
+- Clarify SASL schema and values. (@victorlazari)
+- Add Helm upgrade guide for `midaz` `v10.4.1`. (@victorlazari)
+- Block unsafe MongoDB cutover. (@victorlazari)
+- Fix migration image override keys. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v11.0.0...midaz-v11.1.0)
+
+---
+
+## [11.0.0](https://github.com/LerianStudio/helm/releases/tag/midaz-v11.0.0)
+
+Features:
+- Run the bundled MongoDB as a one-member replica set. This change is significant as it alters the default setup of MongoDB within the application. (@fredcamaral)
+
+Fixes:
+- Allow the replica-set key to be generated when upgrading from a standalone setup. This ensures a smoother transition and avoids potential configuration issues during upgrades. (@fredcamaral)
+
+Improvements:
+- Document the process to hold the ledger and CRM at zero through the Argo CD sync, providing clearer guidance for maintaining system states during synchronization. (@fredcamaral)
+- Advise on keeping the MongoDB password off `kubectl exec` arguments for enhanced security practices. (@fredcamaral)
+- Include instructions to wait for the ledger to drain before performing a MongoDB dump, ensuring data consistency and integrity. (@fredcamaral)
+- Warn users that a `Recreate` update strategy will fail during the replica set upgrade, helping them avoid potential pitfalls during updates. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.3...midaz-v11.0.0)
+
+---
+
+## [10.4.3](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.3)
+
+Fixes:
+- Update `midaz-ledger` to `4.4.2`, `midaz-tracer` to `4.4.2`, `midaz-tracer-migrations` to `4.4.2`, and `midaz-ledger-migrations` to `4.4.2`. (@lerian-studio)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/midaz-v10.4.2...midaz-v10.4.3)
+
+---
+
 ## [10.4.2](https://github.com/LerianStudio/helm/releases/tag/midaz-v10.4.2)
 
 Features:

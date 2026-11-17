@@ -401,7 +401,7 @@ Look for any errors related to health checks, graceful shutdown, or application 
 ## Preview changes before upgrading
 
 ```bash
-helm diff upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 4.1.0 -n fetcher
+helm diff upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 4.1.0 -n fetcher -f your-custom-values.yaml
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
@@ -409,5 +409,7 @@ helm diff upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm -
 ## Command to upgrade
 
 ```bash
-helm upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 4.1.0 -n fetcher
+helm upgrade fetcher oci://registry-1.docker.io/lerianstudio/fetcher-helm --version 4.1.0 -n fetcher -f your-custom-values.yaml
 ```
+
+Pass the values file you edited in the migration steps. Without `-f` or `--set`, Helm reuses the values of the previous release, so the removed preset-owned keys and the new `LICENSE_KEY` would not be applied.

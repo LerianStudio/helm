@@ -53,7 +53,9 @@ global:
   # -- Streaming (lib-streaming / RedPanda): enabled | brokers | tlsEnabled |
   #    saslMechanism | saslUsername (+ compression, requiredAcks, ...; see
   #    lerian-common.streaming.env). Off by default; required by
-  #    sisbajud.direct.permanentBlockEnabled (the balance-change stream).
+  #    sisbajud.direct.permanentBlockEnabled and by
+  #    sisbajud.mensageria.permanentBlockEnabled (the balance-change stream; the
+  #    latter also needs enabled: true written here, it never turns the stream on).
   #    STREAMING_SASL_PASSWORD / STREAMING_TLS_CA_CERT go in sisbajud.secrets.
   streaming: {}
 
@@ -233,6 +235,11 @@ sisbajud:
     #    and verify the server against the CA (both required). false (default,
     #    one-way TLS): the pair is not mounted and the CA is optional.
     mtlsEnabled: false
+    # -- MENSAGERIA_PERMANENT_BLOCK_ENABLED (default false). true: permanent block
+    #    through the Mensageria. Needs global.streaming.enabled=true (written) and
+    #    brokers, global.auth.enabled, single tenant, and the result emitter not
+    #    "false".
+    permanentBlockEnabled: false
     ca:
       # -- Secret holding the CA that issued the Mensageria server certificate,
       #    mounted at <mountPath>/ca.crt -> MENSAGERIA_TLS_CA_FILE. Optional in
@@ -487,8 +494,13 @@ migrations:
   enabled: true
   image:
     repository: ghcr.io/lerianstudio/plugin-br-sisbajud-migrations
-    # -- Defaults to Chart.appVersion.
-    tag: ""
+    # -- Defaults to Chart.appVersion when empty. Pinned to 1.4.0 because the
+    # v1.5.0 release did not publish plugin-br-sisbajud-migrations:1.5.0 (its
+    # build failed on a proxy.golang.org timeout). 1.4.0 runs the same schema:
+    # migrations/, migrations-image/Dockerfile, go.mod and every package
+    # cmd/postgres-migrations imports are identical between v1.4.0 and v1.5.0.
+    # Set back to "" once the 1.5.0 migrations image exists.
+    tag: "1.4.0"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   # -- MIGRATIONS_TIMEOUT_SEC

@@ -1,0 +1,72 @@
+suite: br-ccs addresses the bundled datastores by the Services the subcharts render
+templates:
+  - templates/configmap.yaml
+  - templates/migrations.yaml
+release:
+  name: br-ccs
+  namespace: br-ccs
+tests:
+  # The bundled postgresql subchart in standalone mode publishes <fullname>,
+  # not <fullname>-primary; only replication adds the -primary suffix.
+  - it: points POSTGRES_HOST at the standalone postgresql Service
+    template: templates/configmap.yaml
+    asserts:
+      - equal:
+          path: data.POSTGRES_HOST
+          value: br-ccs-postgresql.br-ccs.svc.cluster.local
+
+  - it: points POSTGRES_HOST at the primary Service in replication mode
+    template: templates/configmap.yaml
+    set:
+      postgresql.architecture: replication
+    asserts:
+      - equal:
+          path: data.POSTGRES_HOST
+          value: br-ccs-postgresql-primary.br-ccs.svc.cluster.local
+
+  # Bitnami collapses <release>-<subchart> to <release> when the release name
+  # already contains the subchart name.
+  - it: honours the Bitnami name collapse for postgresql
+    template: templates/configmap.yaml
+    release:
+      name: postgresql
+      namespace: br-ccs
+    asserts:
+      - equal:
+          path: data.POSTGRES_HOST
+          value: postgresql.br-ccs.svc.cluster.local
+
+  - it: honours the Bitnami name collapse for valkey
+    template: templates/configmap.yaml
+    release:
+      name: valkey
+      namespace: br-ccs
+    asserts:
+      - equal:
+          path: data.REDIS_HOST
+          value: valkey-primary.br-ccs.svc.cluster.local:6379
+
+  - it: keeps the valkey primary Service for an ordinary release
+    template: templates/configmap.yaml
+    asserts:
+      - equal:
+          path: data.REDIS_HOST
+          value: br-ccs-valkey-primary.br-ccs.svc.cluster.local:6379
+
+  - it: lets an explicit POSTGRES_HOST win over the derived default
+    template: templates/configmap.yaml
+    set:
+      brCcs.configmap.POSTGRES_HOST: pg.example
+    asserts:
+      - equal:
+          path: data.POSTGRES_HOST
+          value: pg.example
+
+  - it: derives the migrations job host the same way
+    template: templates/migrations.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: POSTGRES_HOST
+            value: br-ccs-postgresql.br-ccs.svc.cluster.local

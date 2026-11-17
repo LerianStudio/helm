@@ -21,7 +21,6 @@
 nameOverride: "br-sta"
 fullnameOverride: ""
 namespaceOverride: ""
-
 # =============================================================================
 # global — the env-wide contract (lerian-common). Set these ONCE per environment
 # (umbrella / GitOps layer). Every block is empty by default, so the chart falls
@@ -111,20 +110,16 @@ global:
   # MASTER_KEYS itself is ALWAYS a secret: common.secrets.MASTER_KEYS.
   # Example: kms: { vendor: "aws", keyId: "arn:aws:kms:sa-east-1:<account>:key/<id>" }
   kms: {}
-
 # -- Pull secrets for the manager, worker, migrations Job and mock STA. The app images are
 # public on GHCR, so none is needed by default; set it for a private mirror or
 # registry, or for the mock STA image (not public), e.g. [{name: my-registry-credential}]. Per-component lists override it.
 imagePullSecrets: []
-
 serviceAccount:
   create: true
   annotations: {}
   name: ""
-
 # -- Pod-level security context
 podSecurityContext: {}
-
 # -- Container security context (alpine nonroot image — UID/GID 65532)
 securityContext:
   runAsNonRoot: true
@@ -137,10 +132,8 @@ securityContext:
       - ALL
   seccompProfile:
     type: RuntimeDefault
-
 # -- Image used by the wait-for-dependencies initContainers.
 waitImage: busybox:1.36
-
 # =============================================================================
 # common — the SHARED application configuration (manager + worker). Rendered as
 # ONE ConfigMap and ONE Secret that both Deployments load via envFrom.
@@ -153,7 +146,6 @@ common:
   datastores: {}
   kms: {}
   objectStorage: {}
-
   # ---------------------------------------------------------------------------
   # Grouped parameters (lerian-common.cfgValue). Each field maps to ONE env key;
   # the defaults are in templates/_helpers.tpl and listed in README.md. Leave a
@@ -259,7 +251,6 @@ common:
   # dedupTtlSec, reconciliationWindowSec, redeliveryWindowSec, doctypeResolver
   # (required when on: payload in production), doctypeMap.
   reporterEvents: {}
-
   # -- Escape hatch: native env keys emitted verbatim into the SHARED ConfigMap.
   # A key here wins over the grouped/global parameters above. Empty by default.
   configmap: {}
@@ -291,7 +282,6 @@ common:
   # must carry every credential the enabled features need.
   useExistingSecret: false
   existingSecretName: ""
-
 # =============================================================================
 # manager — cmd/manager: the HTTP API (transfers, credentials, audit read API,
 # connectivity probe). Stateless; scales horizontally.
@@ -303,7 +293,7 @@ manager:
   image:
     repository: ghcr.io/lerianstudio/br-sta-manager
     # -- Defaults to Chart.appVersion.
-    tag: ""
+    tag: "1.4.2"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   podAnnotations: {}
@@ -381,7 +371,6 @@ manager:
   # SSL_CERT_FILE at a bundle through extraEnvVars). Empty by default.
   extraVolumes: []
   extraVolumeMounts: []
-
 # =============================================================================
 # worker — cmd/worker: the background process (BACEN outbound scheduler, inbound
 # polling, audit publisher/consumer, business-event delivery, partition manager,
@@ -394,7 +383,7 @@ worker:
   image:
     repository: ghcr.io/lerianstudio/br-sta-worker
     # -- Defaults to manager.image.tag, then Chart.appVersion.
-    tag: ""
+    tag: "1.4.2"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   podAnnotations: {}
@@ -428,7 +417,6 @@ worker:
   nodeSelector: {}
   tolerations: []
   affinity: {}
-
   # ---------------------------------------------------------------------------
   # Worker-only grouped parameters, rendered into the worker ConfigMap (layered
   # over the shared one). Defaults in templates/_helpers.tpl / README.md.
@@ -459,7 +447,6 @@ worker:
   # bucket is configured), intervalSec, batchSize, objectPrefix, serviceName.
   # Bucket/endpoint/region/path style come from objectStorage.staAuditExports.
   auditExportGenerator: {}
-
   # -- Escape hatch: native env keys emitted verbatim into the WORKER ConfigMap
   # (it is loaded after the shared one, so a key here wins for the worker only).
   configmap: {}
@@ -468,7 +455,6 @@ worker:
   # -- Extra pod volumes / container mounts (same use as manager.extraVolumes).
   extraVolumes: []
   extraVolumeMounts: []
-
 # =============================================================================
 # Detached migrations — the br-sta-migrations image applies the SQL schema to the
 # br_sta database before the app boots (golang-migrate via lib-commons). The
@@ -485,7 +471,7 @@ migrations:
   image:
     repository: ghcr.io/lerianstudio/br-sta-migrations
     # -- Defaults to Chart.appVersion.
-    tag: ""
+    tag: "1.4.2"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   useExistingSecret: false
@@ -511,14 +497,12 @@ migrations:
       memory: 64Mi
     limits:
       memory: 256Mi
-
 # -- Values block for the lerian-common library dependency. INERT (a library
 # chart renders nothing and reads no values), but it must be declared: Helm
 # injects a values key for every declared dependency, and the closed root schema
 # (additionalProperties: false) would otherwise reject the render with
 # "additional properties 'lerian-common-helm' not allowed".
 lerian-common-helm: {}
-
 # =============================================================================
 # Bundled infra subcharts — DISABLED by default. External PostgreSQL, Valkey,
 # RabbitMQ and S3 object storage are the production path: wire them via
@@ -545,7 +529,6 @@ postgresql:
   auth:
     username: br_sta
     database: br_sta
-
 valkey:
   enabled: false
   external: true
@@ -556,7 +539,6 @@ valkey:
   image:
     repository: bitnamilegacy/valkey
     tag: "8.0.2-debian-12-r6"
-
 # -- Bundled RabbitMQ (groundhog2k/rabbitmq), DISABLED by default. Single-source
 # credentials (Pattern B): the broker reads its user, password and Erlang cookie
 # from the chart's SHARED app Secret (common.secrets.RABBITMQ_DEFAULT_PASS /
@@ -586,7 +568,6 @@ rabbitmq:
       memory: 256Mi
     limits:
       memory: 1Gi
-
 # -- Bundled SeaweedFS (S3-compatible object storage), DISABLED by default.
 # When enabled and no endpoint is set explicitly, TRANSFER_S3_ENDPOINT (and the
 # audit-export endpoint) derive from this subchart's S3 Service
@@ -647,7 +628,6 @@ seaweedfs:
     enableAuth: false
     logs:
       type: "emptyDir"
-
 # -- Bucket bootstrap Job for the bundled SeaweedFS (rendered only when
 # seaweedfs.enabled). Idempotent list-then-create via `weed shell`. A regular Job
 # named after a hash of its spec (not a hook): the app's /readyz fails until the
@@ -669,12 +649,10 @@ seaweedfsBuckets:
       memory: 64Mi
     limits:
       memory: 256Mi
-
 # -- Toggle for the bundled Redpanda below. It lives OUTSIDE the redpanda block
 # because the redpanda chart's values schema is closed and rejects `enabled`.
 redpandaBundle:
   enabled: false
-
 # -- Bundled Redpanda (Kafka API), DISABLED by default (redpandaBundle.enabled). DEV
 # ONLY: one broker, no TLS, no SASL, no external listener, no cert-manager — the
 # chart refuses to render it in a production-like environment. When enabled and
@@ -715,7 +693,6 @@ redpanda:
   # Runs rpk cluster-config against the broker after install; not needed here.
   post_install_job:
     enabled: false
-
 # -- Topic bootstrap Job for the bundled Redpanda (rendered only with
 # redpandaBundle.enabled). The app never creates its topics (its credential is
 # granted on the literal names only), so this Job ensures them idempotently with
@@ -739,7 +716,6 @@ redpandaTopics:
       memory: 64Mi
     limits:
       memory: 256Mi
-
 # -- Bundled mock STA server, DISABLED by default. DEV ONLY: a BACEN STA
 # counterparty simulator (file transfer + password web services over plain HTTP),
 # so a dev install exercises uploads and verdict polling without touching BACEN.
@@ -753,7 +729,7 @@ mockSta:
   image:
     repository: ghcr.io/lerianstudio/mock-sta-server
     # -- Defaults to Chart.appVersion (released with the app under the same tag).
-    tag: ""
+    tag: "1.4.2"
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   service:

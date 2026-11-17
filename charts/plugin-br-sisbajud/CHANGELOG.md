@@ -1,5 +1,32 @@
 # Plugin-br-sisbajud Changelog
 
+## [1.6.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.6.1)
+
+Fixes:
+- Default the app image to version `1.5.0`. (@gandalf-at-lerian)
+
+Improvements:
+- Qualify runtime support in the documentation. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.6.0...plugin-br-sisbajud-v1.6.1)
+
+---
+
+## [1.6.0](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.6.0)
+
+Features:
+- Add the mensageria permanent block switch with the app guards. (@fredcamaral)
+
+Improvements:
+- Hoist the streaming values and drop the unused switch key. (@fredcamaral)
+
+Documentation:
+- Add Helm upgrade guide for `plugin-br-sisbajud` `v1.5.1`. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/plugin-br-sisbajud-v1.5.1...plugin-br-sisbajud-v1.6.0)
+
+---
+
 ## [1.5.1](https://github.com/LerianStudio/helm/releases/tag/plugin-br-sisbajud-v1.5.1)
 
 Fixes:

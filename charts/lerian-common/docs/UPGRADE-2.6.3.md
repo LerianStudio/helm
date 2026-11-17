@@ -12,7 +12,7 @@
 
 ### 1. OpenTelemetry Insecure Exporter Support
 
-The `lerian-common.otel.podEnv` helper now automatically emits the `ALLOW_INSECURE_OTEL` environment variable when using plaintext (HTTP) OpenTelemetry exporters. This fixes a boot failure where applications using lib-observability would exit in production environments when connecting to a node-local collector over plaintext.
+The `lerian-common.otel.podEnv` helper now emits `ALLOW_INSECURE_OTEL` by default for its HTTP exporter endpoint. This can satisfy the plaintext-exporter gate in applications using a compatible lib-observability version; it does not prove application startup. Adopting it also changes the security posture of consumers that previously refused plaintext, so review the transport policy before upgrading the product chart.
 
 #### What changed
 
@@ -24,9 +24,9 @@ The `lerian-common.otel.podEnv` template helper has been enhanced to:
 
 #### Why it matters
 
-**Problem:** The lib-observability library refuses plaintext OTLP exporters in production unless `ALLOW_INSECURE_OTEL` carries a reason string. The node-local collector hop (pod → DaemonSet on the same node) uses plaintext for performance, but without `ALLOW_INSECURE_OTEL`, applications would exit at boot with an error.
+**Runtime prerequisite:** For example, lib-observability v4.8.1 rejects enabled plaintext exporters in production-like environments unless `ALLOW_INSECURE_OTEL` carries an accepted reason. Verify the actual consumer image/library and enabled telemetry path; this library chart ships no application image and does not certify every consumer's startup behavior.
 
-**Solution:** The helper now automatically sets `ALLOW_INSECURE_OTEL="node-local collector on the pod's own node"` when using HTTP scheme, allowing the application to start successfully while documenting why insecure transport is acceptable in this specific case.
+**Chart behavior:** The helper sets `ALLOW_INSECURE_OTEL="node-local collector on the pod's own node"` by default with HTTP. That reason is not a security assessment: verify the endpoint, network controls and policy. Use a validated TLS collector where plaintext is not permitted. Other application startup requirements still apply.
 
 #### Operational impact
 
@@ -35,12 +35,12 @@ The `lerian-common.otel.podEnv` template helper has been enhanced to:
 **For operators using product charts that consume this helper:**
 
 - **No action required** if your product chart has not yet adopted the `lerian-common.otel.podEnv` helper
-- **No action required** if your product chart uses the helper with default settings — the new behavior is automatic and fixes the boot failure
-- **Action required** only if you already set `ALLOW_INSECURE_OTEL` via ConfigMap, `extraEnvVars`, or a chart-specific knob (see [Migration Steps](#migration-steps) below)
+- **Review required** when the product adopts this dependency: default helper settings now permit plaintext rather than preserving a previous refusal. Verify the shipped application's library version and all other startup prerequisites.
+- **Additional coordination required** if you already set `ALLOW_INSECURE_OTEL` via ConfigMap, `extraEnvVars`, or a chart-specific knob (see [Migration Steps](#migration-steps) below)
 
 **For chart maintainers:**
 
-If your product chart already sets `ALLOW_INSECURE_OTEL` through another mechanism (ConfigMap, `extraEnvVars`, or a dedicated values field), you must pass `allowInsecure=false` to prevent duplicate environment variable entries, which would break the Kubernetes apply:
+An explicit container `env` entry overrides the same key imported with `envFrom`. Thus the new default can override an operator's ConfigMap refusal without creating a duplicate list entry. If the product owns the value elsewhere, pass `allowInsecure=false` and emit/import the intended value exactly once. Duplicate explicit `env` entries are a separate apply/patch hazard; do not rely on their ordering.
 
 **Before (v2.6.2):**
 
@@ -86,11 +86,11 @@ The `lerian-common.otel.podEnv` helper accepts a new optional input:
 
 2. **If you do NOT set `ALLOW_INSECURE_OTEL` anywhere:**
 
-   - **No action required.** Upgrade to v2.6.3 and the helper will automatically emit the variable, fixing the boot failure.
+   - Review the product's plaintext policy before adoption. The helper adds a reason string, not a general startup guarantee.
 
 3. **If you DO set `ALLOW_INSECURE_OTEL` via values:**
 
-   - **Option 1 (recommended):** Remove your custom `ALLOW_INSECURE_OTEL` setting and let the helper manage it automatically:
+   - **Option 1 (only if the default reason matches approved policy):** Remove only the custom `ALLOW_INSECURE_OTEL` entry and preserve every unrelated environment variable. The following minimal example has no other entries:
 
      **Before (v2.6.2):**
 
@@ -119,9 +119,9 @@ The `lerian-common.otel.podEnv` helper accepts a new optional input:
 
    ```yaml
    dependencies:
-     - name: lerian-common
+     - name: lerian-common-helm
        version: 2.6.3
-       repository: oci://registry-1.docker.io/lerianstudio
+       repository: oci://ghcr.io/lerianstudio
    ```
 
 2. **Update dependencies:**
@@ -150,7 +150,7 @@ The `lerian-common.otel.podEnv` helper accepts a new optional input:
    helm template my-chart . --values test-values.yaml | grep -A 2 "ALLOW_INSECURE_OTEL"
    ```
 
-   You should see exactly **one** `ALLOW_INSECURE_OTEL` entry per container.
+   Inspect the parsed manifest per applicable container, including `envFrom` sources: grep alone does not prove uniqueness or effective precedence. Expect one explicit entry only when the helper owns an HTTP setting; HTTPS and operator-owned paths can emit none from this helper.
 
 #### Configuration example
 
@@ -229,19 +229,22 @@ env:
 
 ## Preview changes before upgrading
 
+Do not install, diff or upgrade this library as a release: Helm libraries are dependencies, not deployable products. Preview the actual consumer after updating its dependency and lock through the normal chart-development process. Resolve and verify the intended locked package; `helm dependency update` can change other dependencies too.
+
 ```bash
-helm diff upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-common-helm --version 2.6.3 -n lerian-common
+helm template my-product ./my-product -n product --is-upgrade -f intended-values.yaml > target-private.yaml
+helm diff upgrade my-product ./my-product -n product --reset-values -f intended-values.yaml --suppress-secrets
 ```
 
 > **Note:** Requires the [helm-diff plugin](https://github.com/databus23/helm-diff). Install with: `helm plugin install https://github.com/databus23/helm-diff`
 
-> **Important:** Since `lerian-common` is a library chart, `helm diff` will show no resource changes (library charts render nothing). To preview the impact of this fix, run `helm diff` on the **product charts** that consume the `lerian-common.otel.podEnv` helper.
+Use a private restricted directory (`umask 077`) for values, backups and rendered output. `intended-values.yaml` must contain the complete intended consumer configuration, preserving unrelated settings, image pins and Secret references: reset discards omitted overrides. If the consumer relies on cluster `lookup`, use its documented lookup-aware server preview and preserve current bundled-store passwords privately; never decode credentials to terminal or use CLI `--set`. Client rendering can fail or generate misleading credential/checksum differences. No cluster/server preview is certified here.
 
 ## Command to upgrade
 
 ```bash
-helm upgrade lerian-common oci://registry-1.docker.io/lerianstudio/lerian-common-helm --version 2.6.3 -n lerian-common
+helm upgrade my-product ./my-product -n product --reset-values -f intended-values.yaml
 ```
 
-> **Note:** Since `lerian-common` is a library chart, you typically do **not** install or upgrade it directly. Instead, update the dependency version in your umbrella or product chart's `Chart.yaml` to `2.6.3` and run `helm dependency update`, then upgrade your product chart.
+Use the verified consumer release/namespace/path instead of these illustrative names. Compare all consumer pod templates, checksums, labels, images, selectors and hooks before applying; adopting a library alone does not prove which workloads roll. Take consistent private data/configuration backups and rehearse recovery first. Verify rollouts and enabled integrations afterward. Helm rollback does not restore data or guarantee old-binary compatibility. Exact published library packages 2.6.2/2.6.3 and synthetic consumer renders establish helper output, not application boot, real dependency build, live upgrade or restore. There are no standalone workloads, ports, licence gates, migrations or NOTES in this library; those belong to the chosen consumer.
 <!-- {% endraw %} -->

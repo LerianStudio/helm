@@ -8,9 +8,9 @@ bc-correios:
   replicaCount: 2
 
   image:
-    repository: ghcr.io/lerianstudio/plugin-bc-correios
+    repository: ghcr.io/lerianstudio/br-correios
     pullPolicy: IfNotPresent
-    tag: "1.1.0"  # REQUIRED - Set the image version
+    tag: "1.2.2"  # REQUIRED - Set the image version
 
   imagePullSecrets: []
 

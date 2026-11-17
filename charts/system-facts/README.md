@@ -190,11 +190,17 @@ migrations:
 - **Runner image.** Published by the `system-facts` release as
   `system-facts-migrations`; `.migrations.image.tag` is written by the release.
 
+## Health, probes and rollout
+
+The chart pairs with app images that serve `/health`, `/readyz` and `/metrics` on the internal **health port 8099** (`HEALTH_PORT`). The `lerian-common` health preset owns probes (`startup` and `liveness` on `/health`, `readiness` on `/readyz`, all on the named container port `health`), the drain and shutdown env, the grace period, the rollout strategy (`maxUnavailable: 0`) and the PodDisruptionBudget (`maxUnavailable: 1`, `unhealthyPodEvictionPolicy: AlwaysAllow`). The API runs 2 replicas (the autoscaler floors at 2). Port 8099 is a named ClusterIP Service port `health` only: no Ingress routes to it, and a LoadBalancer or NodePort Service drops it.
+
+The only knobs are `system-facts.health.drainSeconds` (default 15) and `shutdownSeconds` (default 30); grace = drain + shutdown + 10. Setting `livenessProbe`, `readinessProbe`, `startupProbe` or `terminationGracePeriodSeconds`, or `HEALTH_PORT` / `SHUTDOWN_*` in `configmap`, fails the render. The chart also refuses an `image.tag` below `1.2.0-beta.4` (pre-releases of older lines included). Roll back chart and image together: an older image on this chart fails the render.
+
 ## internal-facts-worker (optional)
 
 `worker.enabled=true` adds a second workload next to the API: the `system-facts-worker` image, which consumes product events from RedPanda and delivers them to the System Facts API as facts. Off by default, so a chart bump alone changes nothing.
 
-It renders a Deployment, ConfigMap, Secret and ServiceAccount, and **no** Service, Ingress, HPA, PDB, database, Redis or migrations: the admin port (`/health`, `/readyz`) is for the kubelet only. The worker pod carries its own `app.kubernetes.io/name` (`<name>-worker`), because the API Service, HPA and PDB select on the API's name and would otherwise pick it up.
+It renders a Deployment, ConfigMap, Secret and ServiceAccount, and **no** Service, Ingress, HPA, PDB, database, Redis or migrations: its only listener, the health port 8099 (`/health`, `/readyz`), is for the kubelet only. The worker pod carries its own `app.kubernetes.io/name` (`<name>-worker`), because the API Service, HPA and PDB select on the API's name and would otherwise pick it up.
 
 | Value | Env | Notes |
 |-------|-----|-------|
@@ -213,12 +219,12 @@ The consumer switch (`STREAMING_CONSUMER_ENABLED=true`) is always rendered. The 
 - the consumer switch is turned off (the worker would boot, stay ready and read nothing);
 - a required URL, broker, credential or SASL username/password is missing;
 - `worker.replicaCount` exceeds `worker.partitionCeiling` (default `1`). Parallelism is bounded by distinct tenants, so extra replicas idle with a green probe. Single-tenant Midaz stamps tenant `default` on every record: the ceiling there is 1;
-- `worker.terminationGracePeriodSeconds` is below 60 (consumer close 30 s + admin drain 10 s + telemetry flush);
+- `worker.health.shutdownSeconds` is below 50 (grace = shutdown + 10 must cover the 30 s consumer close plus the 30 s `SHUTDOWN_TIMEOUT`);
 - `WORKER_PRODUCTS` (from `worker.products`, `worker.configmap` or `worker.extraEnvVars`) has an empty entry, a duplicate, an unknown product, or `plugin-br-pix-jd` without `midaz` (its manifest mirrors `lerian.midaz.transaction_id`);
 - `SYSTEM_FACTS_URL` or `SYSTEM_FACTS_AUTH_URL` is plain `http://` while `SYSTEM_FACTS_ALLOW_INSECURE_HTTP` is not `true`. There is no loopback exception: a pod never reaches the API on its own loopback;
 - `SYSTEM_FACTS_ALLOW_INSECURE_HTTP` (through `worker.configmap` or `worker.extraEnvVars`) is not a Go boolean (`true`/`false`, `1`/`0`, `t`/`f`, `T`/`F`, `TRUE`/`FALSE`, `True`/`False`): the binary refuses it at boot.
 
-The image tag tracks `appVersion` when `worker.image.tag` is empty; the app release writes `.worker.image.tag`.
+The image tag tracks `appVersion` when `worker.image.tag` is empty; the app release writes `.worker.image.tag`. The chart refuses a tag below `1.2.0-beta.4`, the first image that serves the health port.
 
 ### Product selection and in-cluster http
 

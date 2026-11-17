@@ -9,12 +9,14 @@ plugin-br-sisbajud {{ .Values.sisbajud.image.tag | default .Chart.AppVersion }} 
 {{- end }}
   KMS:         {{ include "plugin-br-sisbajud.kmsProvider" . }}
   Permanent:   DIRECT_PERMANENT_BLOCK_ENABLED={{ include "plugin-br-sisbajud.val" (dict "cm" (.Values.sisbajud.configmap | default dict) "k" "DIRECT_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.direct | default dict) "f" "permanentBlockEnabled" "d" "true") | default "true" }}. Off stops only NEW permanents; ACTIVE ones keep running.
+               MENSAGERIA_PERMANENT_BLOCK_ENABLED={{ include "plugin-br-sisbajud.val" (dict "cm" (.Values.sisbajud.configmap | default dict) "k" "MENSAGERIA_PERMANENT_BLOCK_ENABLED" "p" (.Values.sisbajud.mensageria | default dict) "f" "permanentBlockEnabled" "d" "false") | default "false" }}.
                Alert on sisbajud_executor_permanent_active_with_switch_off > 0 (see the chart README).
 
 Verify:
   kubectl -n {{ include "global.namespace" . }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
-  kubectl -n {{ include "global.namespace" . }} port-forward svc/{{ include "plugin-br-sisbajud.fullname" . }} {{ .Values.sisbajud.service.port }}:{{ .Values.sisbajud.service.port }}
-  curl -s localhost:{{ .Values.sisbajud.service.port }}/readyz
+  # the probes are on the pod's health port, which no Service exposes
+  kubectl -n {{ include "global.namespace" . }} port-forward deploy/{{ include "plugin-br-sisbajud.fullname" . }} {{ .Values.sisbajud.healthPort | default 8099 }}:{{ .Values.sisbajud.healthPort | default 8099 }}
+  curl -s localhost:{{ .Values.sisbajud.healthPort | default 8099 }}/readyz
 
 {{- if eq (include "plugin-br-sisbajud.migrationsOn" .) "true" }}
 {{- if eq (include "plugin-br-sisbajud.postgresBundled" .) "true" }}

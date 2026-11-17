@@ -1,0 +1,38 @@
+suite: notifications image floor and worker singleton
+templates:
+  - templates/api/deployment.yaml
+  - templates/worker-email/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: notifications
+  namespace: notifications
+set:
+  secrets.LICENSE_KEY: sample
+tests:
+  - it: default render succeeds at the appVersion floor
+    template: templates/api/deployment.yaml
+    asserts:
+      - isKind:
+          of: Deployment
+  - it: admits 1.2.0-beta.6
+    template: templates/api/deployment.yaml
+    set: {api.image.tag: 1.2.0-beta.6}
+    asserts:
+      - isKind:
+          of: Deployment
+  - it: refuses 1.2.0-beta.5
+    template: templates/api/deployment.yaml
+    set: {api.image.tag: 1.2.0-beta.5}
+    asserts:
+      - failedTemplate: {errorPattern: "image.tag 1.2.0-beta.5 is below 1.2.0-beta.6"}
+  - it: refuses a worker below the floor
+    template: templates/worker-email/deployment.yaml
+    set: {workerEmail.image.tag: 1.1.0}
+    asserts:
+      - failedTemplate: {errorPattern: "is below 1.2.0-beta.6"}
+  - it: worker is a singleton that recreates
+    template: templates/worker-email/deployment.yaml
+    asserts:
+      - equal: {path: spec.replicas, value: 1}
+      - equal: {path: spec.strategy.type, value: Recreate}

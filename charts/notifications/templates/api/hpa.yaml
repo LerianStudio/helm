@@ -1,4 +1,5 @@
-{{- if .Values.api.autoscaling.enabled }}
+{{- $a := (include "notifications.api.health" . | fromYaml).autoscaling }}
+{{- if $a }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -11,7 +12,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "notifications.fullname" . }}
-  minReplicas: {{ .Values.api.autoscaling.minReplicas }}
+  minReplicas: {{ $a.minReplicas }}
   maxReplicas: {{ .Values.api.autoscaling.maxReplicas }}
   {{- $cpu := .Values.api.autoscaling.targetCPUUtilizationPercentage }}
   {{- $mem := .Values.api.autoscaling.targetMemoryUtilizationPercentage }}

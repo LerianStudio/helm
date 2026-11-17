@@ -2,6 +2,7 @@ suite: caradhras dsn quotes the database password
 templates:
   - templates/caradhras/deployment.yaml
   - templates/caradhras/secrets.yaml
+  - templates/caradhras/app-client-secret.yaml
   - templates/auth/secrets.yaml
   - templates/auth-database/secrets.yaml
   - templates/caradhras/configmap.yaml
@@ -10,7 +11,6 @@ release:
   name: pam
   namespace: pam
 set:
-  identity.secrets.AUTHORIZER_CLIENT_SECRET: x
   identity.secrets.LICENSE_KEY: x
   auth.secrets.AUTHORIZER_CLIENT_SECRET: x
   auth.secrets.LICENSE_KEY: x

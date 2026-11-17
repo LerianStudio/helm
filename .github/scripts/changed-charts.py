@@ -3,7 +3,8 @@
 
 Reads the changed-file list from /tmp/changed.txt — which the caller fills from the
 pull request's own file list, not from a local diff — and writes `charts` (a JSON
-array) and `has-charts` to $GITHUB_OUTPUT.
+array) and `has-charts` to $GITHUB_OUTPUT. A library's fixture charts
+(charts/<lib>/tests/*/Chart.yaml) are emitted as `fixtures`.
 
 The rule is deliberately narrow: a pull request is verified against the charts it
 changed, never against the repository. Three things put a chart in scope:
@@ -104,10 +105,12 @@ def main():
     # the case where consumers pinning its `file://` path are most certainly broken,
     # and where checking existence first would drop it silently instead.
     notices = []
+    fixtures = []
     for name in sorted(scope):
         chart_yaml = CHARTS / name / "Chart.yaml"
         gone = not chart_yaml.exists()
         if gone or is_library(name):
+            fixtures += sorted(str(p.parent) for p in (CHARTS / name / "tests").glob("*/Chart.yaml"))
             deps = local_dependents(name)
             if not deps:
                 continue
@@ -134,6 +137,7 @@ def main():
         if "GITHUB_OUTPUT" in os.environ
         else sys.stdout
     )
+    out.write(f"fixtures={' '.join(fixtures)}\n")
     # Two shapes of the same list: `charts` feeds a job matrix, `charts-list` feeds
     # a shell loop. Emitting both keeps every caller off ad-hoc jq.
     if not final:

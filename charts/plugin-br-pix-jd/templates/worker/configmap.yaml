@@ -14,10 +14,13 @@
 {{- $mt := fromYaml (include "plugin-br-pix-jd.multiTenantEnv" (dict "root" $ "configmap" .Values.worker.configmap)) -}}
 {{- $streaming := fromYaml (include "plugin-br-pix-jd.streamingEnv" (dict "root" $ "configmap" .Values.worker.configmap "graceSeconds" (fromYaml (include "plugin-br-pix-jd.worker.health" .)).terminationGracePeriodSeconds)) -}}
 {{- $cfg := .Values.worker.configmap | default dict -}}
+{{- /* Courier account-claims sweep — worker-only: the api never reads the switch. The
+   AUTH_M2M admission pair is deliberately NOT here; it belongs to the api alone. */ -}}
+{{- $courierClaims := fromYaml (include "plugin-br-pix-jd.courierClaimsEnv" $) | default dict -}}
 {{- /* NO rate-limit, CORS, Swagger or SERVER_ADDRESS block here: cmd/worker has no HTTP
    listener at all, so those keys would be inert noise the operator has to reason about.
    The worker's own surface is the cron cadence. */ -}}
-{{- $data := mergeOverwrite $platform $domain $qrcode $cron $mt $streaming (.Values.worker.extraConfigmap | default dict) -}}
+{{- $data := mergeOverwrite $platform $domain $qrcode $cron $mt $streaming $courierClaims (.Values.worker.extraConfigmap | default dict) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

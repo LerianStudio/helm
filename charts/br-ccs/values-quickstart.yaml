@@ -1,0 +1,98 @@
+# =============================================================================
+# br-ccs — QUICKSTART values (the layperson layer)
+# -----------------------------------------------------------------------------
+# The full values.yaml is the power-user API. This file is the short list of
+# DEPENDENCY-CONNECTION knobs a non-expert fills to get br-ccs running: where the
+# database / cache / broker live, which optional features to turn on, the image
+# tag, the ingress host, and the operator-provided secrets. Everything else has a
+# working default in the chart; reach it only via `brCcs.configmap.<KEY>` (the
+# escape hatch) when you must.
+#
+#   helm install br-ccs charts/br-ccs -f values-quickstart.yaml
+#
+# Anything with CHANGE_ME MUST be set. The bundled Bitnami subcharts (postgresql,
+# valkey) are ON by default, so the datastore *host* knobs below only matter when
+# you point br-ccs at EXTERNAL infra (set <subchart>.enabled=false / external=true).
+# =============================================================================
+
+global:
+  # -- Set each dependency connection ONCE here; the component emits its native
+  #    env keys from it. Leave a block out to keep the in-cluster bundled default.
+  datastores: {}
+    # postgres: { host: "postgresql.internal", port: "5432", user: "br-ccs", name: "br-ccs", ssl: "require" }
+    # redis:    { host: "valkey.internal:6379" }
+    # broker:   { host: "rabbitmq.internal", port: "5672", user: "br-ccs" }   # only when RABBITMQ_ENABLED
+  # -- OTel collector (leave empty to keep telemetry off / the bundled endpoint).
+  observability: {}
+    # enabled: "true"
+    # otlpEndpoint: "otel-collector:4317"
+    # deploymentEnvironment: "production"
+  # -- plugin-access-manager auth, env-wide (per-component override via configmap).
+  auth: {}
+    # enabled: "true"
+    # host: "http://plugin-access-manager:4000"
+  # -- Tenant-manager (only needed when MULTI_TENANT_ENABLED=true below).
+  multiTenant: {}
+    # url: "http://tenant-manager:8090"
+    # redisHost: "tenant-manager-redis"
+  # -- Streaming backend (only needed when STREAMING_ENABLED=true below).
+  streaming: {}
+    # brokers: "kafka:9092"
+    # saslMechanism: "SCRAM-SHA-512"
+    # saslUsername: "br-ccs"
+    # tlsEnabled: "true"
+  # -- Consul service discovery (only needed when SD_ENABLED=true below).
+  serviceDiscovery: {}
+    # address: "consul:8500"
+    # tls: "false"
+
+brCcs:
+  enabled: true
+  image:
+    tag: "1.0.0"   # -- pin the br-ccs image version
+  ingress:
+    enabled: false
+    # className: "nginx"
+    # hosts: [{ host: "br-ccs.example.com", paths: [{ path: "/", pathType: Prefix }] }]
+  # -- Turn on env-wide dependency features (they read the matching global.* block):
+  multiTenant:
+    enabled: false      # MULTI_TENANT_ENABLED — then set global.multiTenant + secrets.MULTI_TENANT_SERVICE_API_KEY
+  serviceDiscovery:
+    enabled: false      # SD_ENABLED — then set global.serviceDiscovery
+  streaming:
+    enabled: false      # STREAMING_ENABLED — then set global.streaming + secrets.STREAMING_SASL_PASSWORD
+  # -- A few common non-dependency overrides live under the escape hatch:
+  configmap: {}
+    # RABBITMQ_ENABLED: "true"          # then set global.datastores.broker + secrets.RABBITMQ_DEFAULT_PASS
+    # OBJECT_STORAGE_CCS_ENDPOINT: "http://seaweedfs:8333"   # then set the *_ACCESS_KEY/*_SECRET_KEY secrets
+    # PLUGIN_AUTH_ENABLED: "true"       # inbound auth; also set global.auth.host
+  secrets:
+    # -- Crypto master key. REQUIRED in production (empty fails fast at boot);
+    #    64 hex chars: openssl rand -hex 32
+    CCS_CRYPTO_MASTER_KEY: "CHANGE_ME"
+    # -- Fetcher snapshot decryption key (base64; = the Fetcher APP_ENC_KEY). Empty = plaintext passthrough.
+    # FETCHER_CRYPTO_KEY: "CHANGE_ME"
+    # -- Only for EXTERNAL infra (subchart disabled / .external=true):
+    # POSTGRES_PASSWORD: "CHANGE_ME"
+    # REDIS_PASSWORD: "CHANGE_ME"
+    # -- Only when the matching feature is enabled:
+    # RABBITMQ_DEFAULT_PASS: "CHANGE_ME"          # RABBITMQ_ENABLED=true
+    # MULTI_TENANT_SERVICE_API_KEY: "CHANGE_ME"   # multiTenant.enabled=true
+    # STREAMING_SASL_PASSWORD: "CHANGE_ME"        # streaming.enabled=true (SASL)
+    # SD_TOKEN: "CHANGE_ME"                        # serviceDiscovery.enabled=true (Consul ACL)
+    # -- Object storage credentials (per bucket) — only when the endpoint is set:
+    # OBJECT_STORAGE_CCS_ACCESS_KEY: "CHANGE_ME"
+    # OBJECT_STORAGE_CCS_SECRET_KEY: "CHANGE_ME"
+    # -- Per-upstream M2M OAuth2 client credentials (when PLUGIN_AUTH_ENABLED=true):
+    # FETCHER_CLIENT_ID: "CHANGE_ME"
+    # FETCHER_CLIENT_SECRET: "CHANGE_ME"
+    # STA_CLIENT_ID: "CHANGE_ME"
+    # STA_CLIENT_SECRET: "CHANGE_ME"
+
+# --- dependencies (Helm requires subchart values at the root) ---
+# Bundled datastores are ON by default. Disable one to use EXTERNAL infra
+# (then set its global.datastores.<type> host + the matching secret above).
+# postgresql:
+#   enabled: false
+# valkey:
+#   enabled: false

@@ -1,4 +1,5 @@
 {{- if .Values.workerWebhook.enabled }}
+{{- $h := include "notifications.health" (dict "context" . "key" "workerWebhook" "name" .Values.workerWebhook.name) | fromYaml }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,9 +10,9 @@ metadata:
 spec:
   revisionHistoryLimit: {{ .Values.workerWebhook.revisionHistoryLimit | default 10 }}
   strategy:
-    {{- toYaml .Values.workerWebhook.deploymentStrategy | nindent 4 }}
-  {{- if not .Values.workerWebhook.autoscaling.enabled }}
-  replicas: {{ .Values.workerWebhook.replicaCount }}
+    {{- toYaml $h.strategy | nindent 4 }}
+  {{- if hasKey $h "replicas" }}
+  replicas: {{ $h.replicas }}
   {{- end }}
   selector:
     matchLabels:
@@ -30,7 +31,7 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "notifications.serviceAccountName" . }}
-      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
       {{- with (concat .Values.imagePullSecrets .Values.workerWebhook.imagePullSecrets) }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -46,20 +47,15 @@ spec:
           securityContext:
             {{- toYaml .Values.workerWebhook.securityContext | nindent 12 }}
           ports:
-            - name: health
-              containerPort: {{ .Values.workerWebhook.containerPort }}
-              protocol: TCP
+            {{- toYaml $h.ports | nindent 12 }}
           envFrom:
             - configMapRef:
                 name: {{ include "notifications.configMapName" . }}
             - secretRef:
                 name: {{ include "notifications.secretName" . }}
           env:
+            {{- toYaml $h.env | nindent 12 }}
             {{- with (include "notifications.licenseFileEnv" . | trim) }}{{ . | nindent 12 }}{{ end }}
-            # Worker binds /health and /readyz on this address (overrides the
-            # shared ConfigMap default to match this worker's containerPort).
-            - name: WORKER_HEALTH_ADDRESS
-              value: ":{{ .Values.workerWebhook.containerPort }}"
             {{- range $key, $value := .Values.workerWebhook.extraEnvVars }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -67,32 +63,12 @@ spec:
           {{- with (include "notifications.licenseFileVolumeMount" . | trim) }}{{ . | nindent 10 }}{{ end }}
           resources:
             {{- toYaml .Values.workerWebhook.resources | nindent 12 }}
-          {{- if .Values.workerWebhook.probes.startup.enabled }}
           startupProbe:
-            httpGet:
-              path: {{ .Values.workerWebhook.probes.startup.path }}
-              port: health
-            initialDelaySeconds: {{ .Values.workerWebhook.probes.startup.initialDelaySeconds }}
-            periodSeconds: {{ .Values.workerWebhook.probes.startup.periodSeconds }}
-            timeoutSeconds: {{ .Values.workerWebhook.probes.startup.timeoutSeconds }}
-            failureThreshold: {{ .Values.workerWebhook.probes.startup.failureThreshold }}
-          {{- end }}
+            {{- toYaml $h.startupProbe | nindent 12 }}
           readinessProbe:
-            httpGet:
-              path: {{ .Values.workerWebhook.probes.readiness.path }}
-              port: health
-            initialDelaySeconds: {{ .Values.workerWebhook.probes.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.workerWebhook.probes.readiness.periodSeconds }}
-            timeoutSeconds: {{ .Values.workerWebhook.probes.readiness.timeoutSeconds }}
-            failureThreshold: {{ .Values.workerWebhook.probes.readiness.failureThreshold }}
+            {{- toYaml $h.readinessProbe | nindent 12 }}
           livenessProbe:
-            httpGet:
-              path: {{ .Values.workerWebhook.probes.liveness.path }}
-              port: health
-            initialDelaySeconds: {{ .Values.workerWebhook.probes.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.workerWebhook.probes.liveness.periodSeconds }}
-            timeoutSeconds: {{ .Values.workerWebhook.probes.liveness.timeoutSeconds }}
-            failureThreshold: {{ .Values.workerWebhook.probes.liveness.failureThreshold }}
+            {{- toYaml $h.livenessProbe | nindent 12 }}
       {{- with (include "notifications.licenseFileVolume" . | trim) }}{{ . | nindent 6 }}{{ end }}
       {{- with .Values.workerWebhook.nodeSelector }}
       nodeSelector:

@@ -242,6 +242,11 @@ manager:
   extraEnvVars: {}
   useExistingSecret: false
   existingSecretName: ""
+  # -- Optional signed licence file, an alternative to secrets.LICENSE_KEY. The Secret
+  # (key `license`) is mounted read-only as the directory /etc/lerian/license.
+  # File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
 # Worker component - Background processor
 worker:
   name: "fetcher-worker"
@@ -344,6 +349,11 @@ worker:
   extraEnvVars: {}
   useExistingSecret: false
   existingSecretName: ""
+  # -- Optional signed licence file, an alternative to secrets.LICENSE_KEY. The Secret
+  # (key `license`) is mounted read-only as the directory /etc/lerian/license.
+  # File mode needs an image on lib-license-go v5.
+  licenseFile:
+    existingSecret: ""
 # Common configuration shared between manager and worker
 # -- Dedicated datastore masks for THIS release (override global.datastores).
 # Sub-keys (each host/port/params):
@@ -372,6 +382,7 @@ secrets:
   RABBITMQ_DEFAULT_PASS: ""
   REDIS_USER: ""
   REDIS_PASSWORD: ""
+  # Required unless manager/worker.licenseFile.existingSecret is set.
   LICENSE_KEY: ""
 # =============================================================================
 # Optional Dependencies - Enable to deploy components in Kubernetes

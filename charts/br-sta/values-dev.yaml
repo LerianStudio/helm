@@ -21,9 +21,8 @@
 # multi-tenancy, the reporter -> BACEN bridge.
 #
 # The license is NOT relaxed: the app refuses to boot in every ENV_NAME without
-# LICENSE_KEY and ORGANIZATION_IDS. The values below are placeholders so the
-# chart renders; the pods will not boot until you set a real key and
-# organization id.
+# LICENSE_KEY. The value below is a placeholder so the chart renders; the pods
+# will not boot until you set a real key.
 #
 # Pairs with the br-sisbajud dev bundle: point br-sisbajud at this release's
 # transfers API (brSisbajud.sta.transfersBaseUrl =
@@ -49,9 +48,6 @@ global:
 common:
   swagger:
     enabled: true
-  license:
-    # PLACEHOLDER: replace with your Lerian organization id.
-    organizationIds: "REPLACE_WITH_YOUR_ORGANIZATION_ID"
   secrets:
     # Public, dev-only values. They never land in a ConfigMap.
     # Envelope-encryption key material: "v1:<64 hex chars>" (an all-zero key —

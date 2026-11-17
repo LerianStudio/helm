@@ -56,6 +56,16 @@
       },
       "additionalProperties": true
     },
+    "courier": {
+      "type": "object",
+      "properties": {
+        "accountClaims": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
     "migrations": {
       "type": "object",
       "additionalProperties": true

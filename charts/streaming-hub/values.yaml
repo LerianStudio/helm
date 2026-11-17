@@ -63,6 +63,8 @@ global:
   #    plaintext node-local hop; see the README). The per-pod OTLP endpoint override is
   #    governed separately by streamingHub.telemetry.enabled.
   observability: {}
+  # example ↓ (uncomment & fill; comments render nothing = default stays empty):
+  #   allowInsecureOtel: "node-local collector on the pod's own node"
   # -- Shared multi-tenant contract (lib-commons/multitenancy). `enabled` drives the
   #    UNPREFIXED MULTI_TENANT_ENABLED knob; override per component via
   #    streamingHub.configmap.MULTI_TENANT_ENABLED. Fields: url (MULTI_TENANT_URL),

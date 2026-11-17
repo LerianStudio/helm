@@ -1,5 +1,27 @@
 # System-facts Changelog
 
+## [1.3.1](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.3.1)
+
+Fixes:
+- Ensure the migrations pod is excluded from the API service. (@fredcamaral)
+- Ensure the migrations pod is excluded from the API disruption budget. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.3.0...system-facts-v1.3.1)
+
+---
+
+## [1.3.0](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.3.0)
+
+Features:
+- Serve system-facts probes on the health port `8099`. (@fredcamaral)
+
+Improvements:
+- Assert the system-facts ingress routes to the main port. (@fredcamaral)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/system-facts-v1.2.0...system-facts-v1.3.0)
+
+---
+
 ## [1.2.0](https://github.com/LerianStudio/helm/releases/tag/system-facts-v1.2.0)
 
 Features:

@@ -14,7 +14,7 @@ CHART = Path(__file__).resolve().parents[1]
 BASE = {
     'auth': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'},
              'initUser': {'enabled': False}},
-    'identity': {'secrets': {'AUTHORIZER_CLIENT_SECRET': 'render-only', 'LICENSE_KEY': 'render-only'}},
+    'identity': {'secrets': {'LICENSE_KEY': 'render-only'}},
     'caradhras': {'secrets': {'LICENSE_KEY': 'render-only'}},
 }
 PRE_LICENSE = {'image': {'tag': '1.8.6'}}
@@ -624,7 +624,7 @@ class StartupContract(unittest.TestCase):
     def test_migrate_skip_rbac_chain_only_when_true(self):
         default = self.migrate_env({})
         self.assertEqual(set(default), {'POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB',
-                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE',
+                                        'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_SSLMODE', 'ALLOW_INSECURE_TLS',
                                         'LICENSE_KEY'})
         self.assertEqual(self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': False}}}), default)
         env = self.migrate_env({'caradhras': {'migrations': {'skipRBACChain': True}}})

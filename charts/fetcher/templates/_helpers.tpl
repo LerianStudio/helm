@@ -299,3 +299,11 @@ Health preset of the worker: no Service and no main port, HEALTH_PORT is its onl
       "replicas" .Values.worker.replicaCount
     ) -}}
 {{- end }}
+
+{{/*
+Optional signed licence file Secret of a component ("" = key mode). Input: the
+component values. Nil-safe so --reuse-values over an old release cannot nil-pointer.
+*/}}
+{{- define "fetcher.licenseFileSecret" -}}
+{{- ((.licenseFile | default dict).existingSecret | default "") -}}
+{{- end }}

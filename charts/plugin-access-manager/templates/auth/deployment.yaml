@@ -20,6 +20,7 @@ spec:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/auth/secrets.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/auth/configmap.yaml") . | sha256sum }}
+        checksum/app-client-secret: {{ .Values.auth.secrets.AUTHORIZER_CLIENT_SECRET | toString | sha256sum }}
       labels:
         {{- include "plugin-auth.labels" (dict "context" . "name" .Values.auth.name "pod" true) | nindent 8 }}
     spec:
@@ -48,6 +49,7 @@ spec:
               name: {{ include "plugin-auth.fullname" . }}
           env:
             {{- toYaml $h.env | nindent 12 }}
+            {{- include "plugin-access-manager.appClientSecretEnv" (dict "context" $ "envName" "AUTHORIZER_CLIENT_SECRET") | nindent 12 }}
             {{- with (include "plugin-access-manager.licenseFileEnv" .Values.auth | trim) }}{{ . | nindent 12 }}{{ end }}
           {{- if (index .Values "otel-collector-lerian").enabled }}
             - name: "HOST_IP"

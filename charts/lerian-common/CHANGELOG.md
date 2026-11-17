@@ -1,5 +1,17 @@
 # Lerian-common Changelog
 
+## [2.6.3](https://github.com/LerianStudio/helm/releases/tag/lerian-common-v2.6.3)
+
+Fixes:
+- Allow the node-local OTEL hop to boot in production environments. (@guimoreirar)
+
+Improvements:
+- Update and correct the library upgrade guide for better clarity. (@victorlazari)
+
+[Compare changes](https://github.com/LerianStudio/helm/compare/lerian-common-v2.6.2...lerian-common-v2.6.3)
+
+---
+
 ## [2.6.2](https://github.com/LerianStudio/helm/releases/tag/lerian-common-v2.6.2)
 
 Fixes:

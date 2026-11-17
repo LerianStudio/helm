@@ -1267,7 +1267,8 @@ subchart Secrets, and the node-local OTLP endpoint. Input: dict root, component.
    pod), then common.configmap, then common.security.allowInsecureOtel, then
    global.observability.allowInsecureOtel, then the node-local reason; lerian-common
    resolves it and emits the one env entry. A key in this pod's extraEnvVars or a
-   non-empty common.secrets value (the legacy routes) still stands, so the helper adds
+   non-empty common.secrets value (the legacy routes; the Secret
+   only while the model is unset) still stands, so the helper adds
    no duplicate then. An existing Secret (common.useExistingSecret) is not visible to the
    chart, so a value there is overridden by this entry; set the configmap key instead. */}}
 {{- /* Chosen by presence, not merged: sprig merge fills an empty value from the next
@@ -1279,7 +1280,9 @@ subchart Secrets, and the node-local OTLP endpoint. Input: dict root, component.
 {{- $_ := set $otelCm "ALLOW_INSECURE_OTEL" (index .map .key) }}
 {{- end }}
 {{- end }}
-{{- $legacyAllow := or (hasKey $x "ALLOW_INSECURE_OTEL") (and (not .Values.common.useExistingSecret) (ne (toString (index (.Values.common.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
+{{- /* The model wins over the Secret: a configmap, knob or global value (a refusal too) keeps the entry. */}}
+{{- $otelModelSet := or (not (kindIs "invalid" (index $otelCm "ALLOW_INSECURE_OTEL"))) (not (kindIs "invalid" (index ((.Values.global | default dict).observability | default dict) "allowInsecureOtel"))) }}
+{{- $legacyAllow := or (hasKey $x "ALLOW_INSECURE_OTEL") (and (not $otelModelSet) (not .Values.common.useExistingSecret) (ne (toString (index (.Values.common.secrets | default dict) "ALLOW_INSECURE_OTEL" | default "")) "")) }}
 {{ include "lerian-common.otel.podEnv" (dict "context" . "configmap" $otelCm "port" 4317 "allowInsecure" (not $legacyAllow)) }}
 {{- end }}
 {{- end -}}

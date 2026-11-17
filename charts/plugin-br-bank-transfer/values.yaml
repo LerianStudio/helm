@@ -474,6 +474,16 @@ bankTransfer:
     # templates/configmap.yaml. OTEL_EXPORTER_OTLP_ENDPOINT follows
     # global.observability.otlpEndpoint. The app derives service name, version
     # and environment itself.
+    #
+    # ALLOW_INSECURE_OTEL — with telemetry on and no endpoint set, the pod ships
+    # to the node-local collector at $(HOST_IP):4317 in plaintext, which
+    # lib-observability refuses in production unless this carries a reason. The
+    # chart sets it on the container: this key, else
+    # global.observability.allowInsecureOtel, else "node-local collector on the
+    # pod's own node". "" or "false" refuses (the app then will not boot on the
+    # node-local hop in production); null is unset. Also rendered here for an
+    # explicit plaintext endpoint, where the chart sets no default.
+    # ALLOW_INSECURE_OTEL: "node-local collector on the pod's own node"
     # =================================================================
 
     # =================================================================

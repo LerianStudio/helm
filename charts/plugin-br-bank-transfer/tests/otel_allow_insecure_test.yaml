@@ -1,0 +1,51 @@
+suite: node-local OTEL hop in production
+templates:
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+  - templates/migrations.yaml
+set:
+  bankTransfer.configmap.MIDAZ_BASE_URL: http://midaz-onboarding:3000
+  bankTransfer.configmap.CRM_BASE_URL: http://midaz-crm:4000
+  bankTransfer.configmap.FEES_BASE_URL: http://plugin-fees:4000
+  bankTransfer.configmap.JD_SANDBOX_MODE: "true"
+  bankTransfer.secrets.JD_INCOMING_RAW_XML_ENCRYPTION_KEY: sample
+  bankTransfer.secrets.RECIPIENT_DETAILS_ENCRYPTION_KEY: sample
+  global.observability.enabled: true
+tests:
+  - it: the plaintext node-local endpoint carries ALLOW_INSECURE_OTEL
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "$(HOST_IP):4317"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an operator value in extraEnvVars stands
+    template: templates/deployment.yaml
+    set:
+      bankTransfer.extraEnvVars.ALLOW_INSECURE_OTEL: "operator reason"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: an explicit endpoint gets neither the node hop nor the variable
+    template: templates/deployment.yaml
+    set:
+      global.observability.otlpEndpoint: https://otel.example.com:4317
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}
+
+  - it: telemetry off emits nothing
+    template: templates/deployment.yaml
+    set:
+      global.observability.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ALLOW_INSECURE_OTEL, value: "node-local collector on the pod's own node"}

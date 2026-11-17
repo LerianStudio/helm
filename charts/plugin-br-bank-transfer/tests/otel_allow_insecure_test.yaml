@@ -77,3 +77,121 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content: {name: ALLOW_INSECURE_OTEL, value: ""}
+
+  - it: a null component value is unset and falls through to the global
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: env-wide reason
+      bankTransfer.configmap.ALLOW_INSECURE_OTEL: null
+    asserts:
+    - contains:
+        path: spec.template.spec.containers[0].env
+        content:
+          name: ALLOW_INSECURE_OTEL
+          value: env-wide reason
+    - notContains:
+        path: spec.template.spec.containers[0].env
+        content:
+          name: ALLOW_INSECURE_OTEL
+          value: ''
+
+  - it: a null global is unset and leaves the node-local reason
+    template: templates/deployment.yaml
+    set:
+      global.observability.allowInsecureOtel: null
+    asserts:
+    - contains:
+        path: spec.template.spec.containers[0].env
+        content:
+          name: ALLOW_INSECURE_OTEL
+          value: node-local collector on the pod's own node
+
+  - it: 'bankTransfer: the ConfigMap renders configmap.ALLOW_INSECURE_OTEL (reaches the app with the collector off)'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: component reason
+    set:
+      bankTransfer:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'bankTransfer: the ConfigMap takes global.observability.allowInsecureOtel when the component is unset'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'bankTransfer: a null component value falls through to the global in the ConfigMap'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: env-wide reason
+    set:
+      bankTransfer:
+        configmap:
+          ALLOW_INSECURE_OTEL: null
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'bankTransfer: an explicit refusal renders as the empty value'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: ''
+    set:
+      bankTransfer:
+        configmap:
+          ALLOW_INSECURE_OTEL: ''
+      global:
+        observability:
+          allowInsecureOtel: env-wide reason
+
+  - it: 'bankTransfer: nothing renders in the ConfigMap when neither is set'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - notExists:
+        path: data.ALLOW_INSECURE_OTEL
+
+  - it: 'bankTransfer: a legacy extraEnvVars entry renders once, from extraEnvVars'
+    template: templates/configmap.yaml
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+    - equal:
+        path: data.ALLOW_INSECURE_OTEL
+        value: legacy reason
+    set:
+      bankTransfer:
+        configmap:
+          ALLOW_INSECURE_OTEL: component reason
+        extraEnvVars:
+          ALLOW_INSECURE_OTEL: legacy reason

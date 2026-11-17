@@ -27,7 +27,8 @@ global:
   multiTenant: {}
   # -- Env-wide telemetry gate. Consumed by lerian-common.globalValue (block
   # "observability"). Fields: enabled, otlpEndpoint (unset = the node-local
-  # collector at $(HOST_IP):4317). (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT override.)
+  # collector at $(HOST_IP):4317), allowInsecureOtel (ALLOW_INSECURE_OTEL on the plaintext node-local hop; see the README).
+  # (configmap.ENABLE_TELEMETRY / OTEL_EXPORTER_OTLP_ENDPOINT / ALLOW_INSECURE_OTEL override.)
   # Example: observability: { enabled: true }
   observability: {}
   # -- Env-wide auth (plugin-access-manager). Consumed by lerian-common.globalValue

@@ -327,7 +327,7 @@ For implementation and configuration details, see the [README](https://charts.le
 
 | Chart Version |
 | :---: |
-| `2.6.3` |
+| `2.7.0` |
 -----------------
 
 ### System Facts

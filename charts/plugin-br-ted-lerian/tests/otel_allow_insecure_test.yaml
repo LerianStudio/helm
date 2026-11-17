@@ -1,0 +1,141 @@
+# Generated from the CI render fixture plus the telemetry switch; covers the
+# modeled ALLOW_INSECURE_OTEL setting resolved by lerian-common.
+suite: modeled ALLOW_INSECURE_OTEL
+set:
+  namespaceOverride: ''
+  global:
+    datastores:
+      postgres:
+        ssl: disable
+    auth:
+      enabled: false
+      host: http://plugin-access-manager-auth.example.invalid:4000
+    observability:
+      enabled: true
+  plugin-br-ted-lerian:
+    env: development
+    allowInsecureTls: 'true'
+    ingress:
+      hosts:
+      - host: plugin-br-ted-lerian.example.invalid
+        paths:
+        - path: /
+          pathType: Prefix
+    otel:
+      enabled: true
+  postgresql:
+    enabled: true
+    external: false
+  valkey:
+    enabled: true
+    external: false
+    architecture: standalone
+tests:
+- it: emits the node-local reason by default
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+- it: takes global.observability.allowInsecureOtel env-wide
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+- it: the component configmap wins over the global
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: component reason
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    plugin-br-ted-lerian:
+      configmap:
+        ALLOW_INSECURE_OTEL: component reason
+- it: an explicit refusal stands as the one entry
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: ''
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: env-wide reason
+  set:
+    global:
+      observability:
+        allowInsecureOtel: env-wide reason
+    plugin-br-ted-lerian:
+      configmap:
+        ALLOW_INSECURE_OTEL: ''
+- it: a null global is unset
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    global:
+      observability:
+        allowInsecureOtel: null
+- it: a legacy extraEnvVars entry stands, with no duplicate
+  template: templates/deployment.yaml
+  documentSelector:
+    path: kind
+    value: Deployment
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[0].env
+      content:
+        name: ALLOW_INSECURE_OTEL
+        value: node-local collector on the pod's own node
+  set:
+    plugin-br-ted-lerian:
+      extraEnvVars:
+      - name: ALLOW_INSECURE_OTEL
+        value: legacy reason

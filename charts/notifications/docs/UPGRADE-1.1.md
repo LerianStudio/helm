@@ -174,7 +174,7 @@ The file Secret must exist before new pods start. Missing Secrets or a missing `
 
 ```bash
 helm diff upgrade "$RELEASE" oci://ghcr.io/lerianstudio/notifications-helm \
-  --version 1.1.0 -n "$NAMESPACE" -f "$VALUES_FILE"
+  --version 1.1.0 -n "$NAMESPACE" --reset-values -f "$VALUES_FILE"
 ```
 
 Requires an installed, compatible [helm-diff plugin](https://github.com/databus23/helm-diff); review and pin plugins according to your environment policy. Diff output may contain sensitive configuration; keep it private. Review every change and the migrations hook before proceeding, using the same values and secret resolution process for preview and upgrade.
@@ -183,10 +183,10 @@ Requires an installed, compatible [helm-diff plugin](https://github.com/databus2
 
 ```bash
 helm upgrade "$RELEASE" oci://ghcr.io/lerianstudio/notifications-helm \
-  --version 1.1.0 -n "$NAMESPACE" -f "$VALUES_FILE" --wait --timeout 10m
+  --version 1.1.0 -n "$NAMESPACE" --reset-values -f "$VALUES_FILE" --wait --timeout 10m
 ```
 
-Do not run a bare `--set licenseFile.existingSecret=...` upgrade that loses unrelated release overrides. The complete preserved values file is the input to both commands above.
+Do not run a bare `--set licenseFile.existingSecret=...` upgrade that loses unrelated release overrides. The complete preserved values file is the input to both commands above. Both commands explicitly reset stored overrides; an incomplete file can remove unrelated configuration or Secret references. An empty intended mapping otherwise permits implicit reuse of stored values.
 
 ## Verify
 
